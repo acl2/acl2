@@ -2148,20 +2148,20 @@
 ;; We don't fix up the counterexample here because we don't have access to the cut-nodenum-type-alist, etc.
 (defund call-stp-on-file (input-filename
                           output-filename
-                          print ;whether to print the result (valid/invalid/timeout)
-                          timeout ;a number of seconds (now conflicts!), or nil for no timeout
+                          print ;whether to print the result (valid/invalid/max-conflicts)
+                          max-conflicts ;a number of conflicts, or nil for no max
                           counterexamplep
                           state)
   (declare (xargs :stobjs state
                   :guard (and (stringp input-filename)
                               (stringp output-filename)
                               ;;(booleanp print)
-                              (or (null timeout)
-                                  (natp timeout))
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
                               (booleanp counterexamplep))))
   (b* ((counterexample-arg (if counterexamplep "y" "n"))
-       ((mv status state) (if timeout ;;timeout is the the number of seconds (now conflicts!):
-                              (call-axe-script "callstplimited.bash" (list input-filename output-filename (nat-to-string timeout) counterexample-arg) state)
+       ((mv status state) (if max-conflicts
+                              (call-axe-script "callstplimited.bash" (list input-filename output-filename (nat-to-string max-conflicts) counterexample-arg) state)
                             ;;don't time out:
                             (call-axe-script "callstp.bash" (list input-filename output-filename counterexample-arg) state)))
        ;;(- (cw "STP exit status: ~x0~%" status))
@@ -2170,7 +2170,7 @@
     ;;(STP seems to exit with status 0 for both Valid and Invalid examples and with non-zero status for errors.)
     (if (not (eql 0 status)) ;;todo: do we still need to do all these checks?
         (if (eql 143 status)
-            ;;exit status 143 seems to indicate timeout (why?!  perhaps it's 128+15 where 15 represents the TERM signal)
+            ;;exit status 143 seems to indicate max-conflicts (why?!  perhaps it's 128+15 where 15 represents the TERM signal)
             (prog2$ (cw "!! STP timed out !!")
                     (mv *timedout* state))
           (if (eql 201 status)
@@ -2217,8 +2217,8 @@
   (let ((res (mv-nth 0 (call-stp-on-file
                         input-filename
                         output-filename
-                        print ;whether to print the result (valid/invalid/timeout)
-                        timeout ;a number of seconds (now conflicts!), or nil for no timeout
+                        print ;whether to print the result (valid/invalid/max-conflicts)
+                        max-conflicts ;a number of conflicts, or nil for no max
                         counterexamplep
                         state
                         ))))
@@ -2233,13 +2233,13 @@
   :hints (("Goal" :in-theory (enable call-stp-on-file))))
 
 (defthm raw-counterexamplep-of-cadr-of-mv-nth-0-of-call-stp-on-file
-  (implies (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print timeout counterexamplep state)))
-           (raw-counterexamplep (cadr (mv-nth 0 (call-stp-on-file input-filename output-filename print timeout counterexamplep state)))))
+  (implies (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
+           (raw-counterexamplep (cadr (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))))
   :hints (("Goal" :in-theory (enable call-stp-on-file))))
 
 (defthm len-of-mv-nth-0-of-call-stp-on-file
-  (implies (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print timeout counterexamplep state)))
-           (equal (len (mv-nth 0 (call-stp-on-file input-filename output-filename print timeout counterexamplep state)))
+  (implies (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
+           (equal (len (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
                   2))
   :hints (("Goal" :in-theory (e/d (call-stp-on-file) (;LIST::EQUAL-CONS-CASES
                                                       )))))
@@ -2295,7 +2295,7 @@
                               base-filename
                               cut-nodenum-type-alist ;tells the types of vars introduced at the cuts (some may be true input vars)
                               print
-                              timeout ;a number of seconds (now conflicts!), or nil for no timeout
+                              max-conflicts ;a number of conflicts!, or nil for no max
                               constant-array-info ;may get an entry when we create translated-query-core (e.g., if a term is equated to a constant array)
                               counterexamplep
                               state)
@@ -2309,8 +2309,8 @@
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               ;;(consp nodenums-to-translate) ;think
                               (stringp base-filename)
-                              (or (null timeout)
-                                  (natp timeout))
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
                               (booleanp counterexamplep)
                               (symbolp dag-array-name)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -2325,7 +2325,7 @@
         (maybe-make-temp-dir state))
        (base-filename (concatenate 'string temp-dir-name "/" base-filename))
        (base-filename (maybe-shorten-filename base-filename))
-       (- (and print (cw "(Calling STP ~s0 (timeout ~x1):~%" extra-string timeout)))
+       (- (and print (cw "(Calling STP ~s0 (max-conflicts ~x1):~%" extra-string max-conflicts)))
        (stp-input-filename (string-append base-filename ".cvc"))
        (stp-output-filename (string-append base-filename ".out"))
        ;;write the STP file...
@@ -2351,7 +2351,7 @@
         (mv *error* state))
        ;; Call STP on the file:
        ((mv result state)
-        (call-stp-on-file stp-input-filename stp-output-filename print timeout counterexamplep state))
+        (call-stp-on-file stp-input-filename stp-output-filename print max-conflicts counterexamplep state))
        (counterexamplep (and (consp result)
                              (eq *counterexample* (car result)))) ;todo: maybe this should be labeled as :raw-counterexample?
        (counterexample
@@ -2407,7 +2407,7 @@
                                                       base-filename
                                                       cut-nodenum-type-alist
                                                       print
-                                                      timeout
+                                                      max-conflicts
                                                       constant-array-info
                                                       counterexamplep
                                                       state))))
@@ -2439,7 +2439,7 @@
                                        cut-nodenum-type-alist
                                        extra-asserts
                                        print
-                                       timeout ;a number of seconds (now conflicts!), or nil for no timeout
+                                       max-conflicts ;a number of conflicts, or nil for no max
                                        counterexamplep
                                        state)
   (declare (xargs :stobjs state
@@ -2457,7 +2457,7 @@
                         (consp nodenums-to-translate) ;why?
                         (nat-listp nodenums-to-translate)
                         (all-< nodenums-to-translate dag-len)
-                        (natp timeout)
+                        (natp max-conflicts)
                         (nodenum-type-alistp cut-nodenum-type-alist)
                         (all-< (strip-cars cut-nodenum-type-alist) dag-len)
                         (string-treep extra-asserts))))
@@ -2472,7 +2472,7 @@
                           extra-asserts
                           base-filename
                           cut-nodenum-type-alist
-                          print timeout constant-array-info
+                          print max-conflicts constant-array-info
                           counterexamplep
                           state)))
 
@@ -2487,7 +2487,7 @@
                                                                cut-nodenum-type-alist
                                                                extra-asserts
                                                                print
-                                                               timeout
+                                                               max-conflicts
                                                                counterexamplep
                                                                state))))
              (or (eq *error* res)
@@ -2515,7 +2515,7 @@
 ;get this working by generating an appropriate cut-nodenum-type-alist
 ;; ;pass in a dag-array-name?
 ;; ;; returns (mv validp timedoutp state) where validp indicates whether STP said "Valid."
-;; (defun prove-with-stp-quick (dag-lst var-type-alist timeout state)
+;; (defun prove-with-stp-quick (dag-lst var-type-alist max-conflicts state)
 ;;   (declare (xargs :mode :program
 ;;                   :stobjs state))
 ;;   (let* ((dag-array (make-into-array 'dag-array dag-lst))
@@ -2529,7 +2529,7 @@
 ;;                              ;var-type-alist
 ;;                              nil ;cut-nodenum-type-alist fffixme!
 ;;                              nil t   ;print
-;;                              timeout
+;;                              max-conflicts
 ;;                              state)))
 
 ;; ;; ;get this working again by generating an appropriate cut-nodenum-type-alist
@@ -2539,7 +2539,7 @@
 ;; ;was called prove-whole-dag-with-stp before changes
 ;; (defun prove-array-node-with-stp (dag-array
 ;;                                   nodenum ;; the node to be proved true
-;;                                   var-type-alist timeout state)
+;;                                   var-type-alist max-conflicts state)
 ;;   (declare (xargs :mode :program
 ;;                   :stobjs state))
 ;;   (prove-equality-query-with-stp nodenum
@@ -2551,7 +2551,7 @@
 ;;                            ;var-type-alist
 ;;                            nil   ;cut-nodenum-type-alist
 ;;                           nil t     ;print
-;;                            timeout
+;;                            max-conflicts
 ;;                            state))
 
 ;; ;now can return nil

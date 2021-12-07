@@ -274,7 +274,7 @@
 
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 ;; A true counterexample returned in the info is fixed up to bind vars, not nodenums
-(defun apply-tactic-stp (problem print timeout state)
+(defun apply-tactic-stp (problem print max-conflicts state)
   (declare (xargs :stobjs (state)
 ;                  :mode :program
                   :guard (proof-problemp problem)
@@ -322,7 +322,7 @@
                                     dag-parent-array ;must be named 'dag-parent-array (fixme generalize?)
                                     "TACTIC-QUERY"
                                     print
-                                    timeout
+                                    max-conflicts
                                     t ;counterexamplep ;todo:;pass in
                                     state)))
     ;; this tactic has to prove the whole problem (it can't return a residual DAG)
@@ -416,7 +416,7 @@
 ;todo: add more printing
 ;todo: print message if a tactic has no effect
 ;todo: print an error if :cases is given followed by no more tactics?
-(defun apply-proof-tactic (problem tactic rule-alist monitor simplify-xors print timeout call-stp-when-pruning state)
+(defun apply-proof-tactic (problem tactic rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning state)
   (declare (xargs :stobjs (state)
                   :mode :program
                   :guard (and (proof-problemp problem)
@@ -433,7 +433,7 @@
         (if (eq :acl2 tactic)
             (apply-tactic-acl2 problem print state)
           (if (eq :stp tactic)
-              (apply-tactic-stp problem print timeout state)
+              (apply-tactic-stp problem print max-conflicts state)
             (if (and (consp tactic)
                      (eq :cases (car tactic)))
                 (apply-tactic-cases problem (fargs tactic) print state)
@@ -447,11 +447,11 @@
 (mutual-recursion
  ;; Apply the given TACTICS in order, to try to prove the PROBLEM
  ;; (mv result info-acc state), where result is :valid, :invalid, :error, or :unknown.
- (defun apply-proof-tactics-to-problem (problem tactics rule-alist monitor simplify-xors print timeout call-stp-when-pruning info-acc state)
+ (defun apply-proof-tactics-to-problem (problem tactics rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning info-acc state)
    (declare (xargs :stobjs (state)
                    :mode :program
-                   :guard (and (or (null timeout)
-                                   (natp timeout))
+                   :guard (and (or (null max-conflicts)
+                                   (natp max-conflicts))
                                (proof-problemp problem)
                                (rule-alistp rule-alist)
                                (tacticsp tactics)
@@ -469,7 +469,7 @@
                  (mv *unknown* info-acc state)))
      (b* ((tactic (first tactics))
           ((mv result info state)
-           (apply-proof-tactic problem tactic rule-alist monitor simplify-xors print timeout call-stp-when-pruning state))
+           (apply-proof-tactic problem tactic rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning state))
           (info-acc (add-to-end info info-acc)))
        (if (eq *valid* result)
            (prog2$ (and (rest tactics) (cw "(Tactics not used: ~x0)~%" (rest tactics)))
@@ -481,27 +481,27 @@
              (if (eq *no-change* result)
                  ;; This tactic did nothing, so try the remaining tactics:
                  (prog2$ (cw "(No change: ~x0.)~%" tactic)
-                         (apply-proof-tactics-to-problem problem (rest tactics) rule-alist monitor simplify-xors print timeout call-stp-when-pruning info-acc state)
+                         (apply-proof-tactics-to-problem problem (rest tactics) rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning info-acc state)
                          )
                ;; This tactic returned one or more subproblems to solve (TODO: What if there are zero subproblems returned -- should return :valid instead..)?
                (if (and (consp result)
                         (eq *problems* (car result)))
                    ;; Apply the rest of the tactics to all the residual problems:
-                   (apply-proof-tactics-to-problems 1 (cdr result) (rest tactics) rule-alist monitor simplify-xors print timeout call-stp-when-pruning info-acc nil state)
+                   (apply-proof-tactics-to-problems 1 (cdr result) (rest tactics) rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning info-acc nil state)
                  (prog2$ (er hard 'apply-proof-tactics-to-problem "Bad tactic result: ~x0." result)
                          (mv *error* nil state))))))))))
 
  ;; Apply the given TACTICS to try to prove each of the PROBLEMS
  ;; Returns (mv result info-acc state), where result is :valid, :invalid, :error, or :unknown.
  ;; Returns info about the last problem for each step that has multiple problems.
- (defun apply-proof-tactics-to-problems (num problems tactics rule-alist monitor simplify-xors print timeout call-stp-when-pruning
+ (defun apply-proof-tactics-to-problems (num problems tactics rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning
                                              info-acc ;includes info for all previous steps, but not other problems in this step
                                              prev-info ; may include info for previous problems in the current step (list of problems)
                                              state)
    (declare (xargs :stobjs (state)
                    :mode :program
-                   :guard (and (or (null timeout)
-                                   (natp timeout))
+                   :guard (and (or (null max-conflicts)
+                                   (natp max-conflicts))
                                (proof-problemsp problems)
                                (rule-alistp rule-alist)
                                (tacticsp tactics)
@@ -513,11 +513,11 @@
      (b* ( ;; Try to prove the first problem:
           (- (cw "(Attacking sub-problem ~x0 of ~x1.~%" num (+ num (- (len problems) 1))))
           ((mv result new-info-acc state)
-           (apply-proof-tactics-to-problem (first problems) tactics rule-alist monitor simplify-xors print timeout call-stp-when-pruning info-acc state))
+           (apply-proof-tactics-to-problem (first problems) tactics rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning info-acc state))
           (new-info (car (last new-info-acc))))
        (if (eq result *valid*)
            (prog2$ (cw "Proved problem ~x0.)~%" num)
-                   (apply-proof-tactics-to-problems (+ 1 num) (rest problems) tactics rule-alist monitor simplify-xors print timeout call-stp-when-pruning
+                   (apply-proof-tactics-to-problems (+ 1 num) (rest problems) tactics rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning
                                                     info-acc
                                                     new-info ;replaces the prev-info (todo: use it somehow?)
                                                     state))
@@ -581,7 +581,7 @@
                             ;;types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                             print
                             ;debug
-                            timeout ;a number of seconds, or nil for no timeout
+                            max-conflicts ;a number of conflicts, or nil for no max
                             call-stp-when-pruning
                             rules
                             monitor
@@ -594,8 +594,8 @@
                           )
                   :mode :program
                   :guard (and ;(natp tests) ;TODO: add to guard
-                          (or (null timeout)
-                              (natp timeout))
+                          (or (null max-conflicts)
+                              (natp max-conflicts))
                           (booleanp simplify-assumptions)
                           (symbol-listp rules)
                           (booleanp call-stp-when-pruning)
@@ -631,7 +631,7 @@
        (- (cw "Variables in DAG: ~x0~%" vars))
        ((mv result info-acc state)
         (apply-proof-tactics-to-problem (make-problem dag assumptions)
-                                        tactics rule-alist monitor simplify-xors print timeout call-stp-when-pruning nil state)))
+                                        tactics rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning nil state)))
     ;;todo: returning the dag and assumptions here seems a bit gross:
     (mv result info-acc dag assumptions state)))
 
@@ -648,7 +648,7 @@
                               name
                               print
                               debug ; whether to refrain from deleting the temp dir containing STP inputs
-                              timeout ;a number of seconds, or nil for no timeout
+                              max-conflicts ;a number of conflicts, or nil for no max
                               call-stp-when-pruning
                               rules
                               monitor
@@ -663,8 +663,8 @@
                           )
                   :mode :program
                   :guard (and ;(natp tests) ;TODO: add to guard
-                              (or (null timeout)
-                                  (natp timeout))
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
                               (booleanp simplify-assumptions)
                               (booleanp debug)
                               (symbol-listp rules)
@@ -678,7 +678,7 @@
                              assumptions
                              simplify-assumptions
                              print
-                             timeout
+                             max-conflicts
                              call-stp-when-pruning
                              rules
                              monitor
@@ -729,7 +729,7 @@
                               ;;(types 'nil) ;gives types to the vars so we can generate tests for sweeping
                               (name 'nil) ;the name of the proof if we care to give it one.  also used for the name of the theorem
                               (debug 'nil)
-                              (timeout '*default-stp-timeout*) ;1000 here broke proofs
+                              (max-conflicts '*default-stp-max-conflicts*) ;1000 here broke proofs
                               (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include rules for the :acl2 tactic
                               (monitor 'nil)
                               (simplify-xors 't)
@@ -747,7 +747,7 @@
                                       ,name
                                       ',print
                                       ,debug
-                                      ,timeout
+                                      ,max-conflicts
                                       ,call-stp-when-pruning
                                       ,rules
                                       ,monitor
@@ -774,7 +774,7 @@
                               name
                               print
                               ;debug
-                              timeout
+                              max-conflicts
                               call-stp-when-pruning
                               rules
                               monitor
@@ -788,8 +788,8 @@
                           )
                   :mode :program
                   :guard (and ;(natp tests) ;TODO: add to guard
-                              (or (null timeout)
-                                  (natp timeout))
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
                               (symbol-listp rules)
                               (tacticsp tactics)
                               (booleanp call-stp-when-pruning)
@@ -821,7 +821,7 @@
        ((mv result info-acc state)
         (apply-proof-tactics-to-problem
          (make-problem dag assumptions)
-         tactics rule-alist monitor simplify-xors print timeout call-stp-when-pruning nil state))
+         tactics rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning nil state))
        (state (maybe-remove-temp-dir state)))
     (if (eq result *valid*)
         (b* ((- (cw "Proof of equivalence succeeded.~%"))
@@ -857,7 +857,7 @@
        ;;               tests
        ;;               types
        ;;               :name (or name 'main-miter)
-       ;;               :timeout timeout
+       ;;               :max-conflicts max-conflicts
        ;;               :initial-rule-sets (if (eq :auto initial-rule-sets)
        ;;                                      (add-rules-to-rule-sets extra-rules (phased-bv-axe-rule-sets state) state) ;todo: overkill?
        ;;                                    initial-rule-sets) ;todo: add the extra rules here too?
@@ -879,7 +879,7 @@
                               ;;(types 'nil) ;gives types to the vars so we can generate tests for sweeping
                               (name 'nil) ;the name of the miter, if we care to give it one.  also used for the name of the theorem
                               ;;(debug 'nil)
-                              (timeout '*default-stp-timeout*)
+                              (max-conflicts '*default-stp-max-conflicts*)
                               (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include acl2 rules here...
                               (monitor 'nil)
                               (simplify-xors 't)
@@ -895,7 +895,7 @@
                                       ,name
                                       ',print
                                       ;;  ,debug
-                                      ,timeout
+                                      ,max-conflicts
                                       ,call-stp-when-pruning
                                       ,rules
                                       ,monitor

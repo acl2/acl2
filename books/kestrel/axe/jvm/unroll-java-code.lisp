@@ -134,7 +134,7 @@
                                 memoizep
                                 vars-for-array-elements
                                 prune-branches
-                                call-stp ;t, nil, or a timeout
+                                call-stp ;t, nil, or a max-conflicts
                                 steps
                                 branches
                                 param-names
@@ -355,7 +355,7 @@
                              memoizep
                              vars-for-array-elements
                              prune-branches
-                             call-stp ;t, nil, or a timeout
+                             call-stp ;t, nil, or a max-conflicts
                              produce-theorem
                              steps
                              branches
@@ -413,7 +413,7 @@
                                  memoizep
                                  vars-for-array-elements
                                  prune-branches
-                                 call-stp ;t, nil, or a timeout
+                                 call-stp ;t, nil, or a max-conflicts
                                  steps
                                  branches
                                  param-names
@@ -543,7 +543,7 @@
          (print                   "How much to print (t or nil of :brief, etc.; default nil)")
          (vars-for-array-elements "whether to introduce vars for individual array elements (nil, t, or :bits)")
          (prune-branches          "whether to aggressively prune unreachable branches in the result")
-         (call-stp                "whether to call STP when pruning (t, nil, or a number of conflicts before timeout)")
+         (call-stp                "whether to call STP when pruning (t, nil, or a number of conflicts before giving up)")
          (print-interval "How often to print (number of nodes)")
          (memoizep "Whether to memoize rewrites during unrolling (boolean, default t).")
          (steps "A number of steps to run, or :auto, meaning run until the method returns. (Consider using :output :all when using :steps, especially if the computation may not complete after that many steps.)")

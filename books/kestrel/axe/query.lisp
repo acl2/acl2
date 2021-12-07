@@ -49,7 +49,7 @@
        ((when erp) (mv *error* state))
        (monitor nil) ;todo
        (call-stp-when-pruning t)
-       (timeout *default-stp-timeout*) ; timeout ;a number of conflicts, or nil for no timeout
+       (max-conflicts *default-stp-max-conflicts*) ; max-conflicts ;a number of conflicts, or nil for no max
        ;;(rule-alist (make-rule-alist rules (w state))) ;todo; don't need both of these..
 ;(assumptions (translate-terms assumptions 'prove-with-tactics-fn (w state))) ;throws an error on bad input
        ;; ((mv dag assumptions2)
@@ -66,7 +66,7 @@
         (apply-proof-tactics-to-problem (make-problem dag assumptions)
                                         tactics rule-alist monitor
                                         t ;simplify-xors (todo: make this an option?)
-                                        print timeout call-stp-when-pruning nil state)))
+                                        print max-conflicts call-stp-when-pruning nil state)))
     (if (eq *error* result)
         (prog2$ (er hard? 'query-fn "Error encountered in the tactic prover.")
                 (mv *unknown* state))
