@@ -934,40 +934,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; soundness of literal execution
-
-(defruled exec-literal-when-check-safe-literal
-  (implies (not (resulterrp (check-safe-literal lit)))
-           (b* ((outcome (exec-literal lit cstate)))
-             (and (not (resulterrp outcome))
-                  (equal (eoutcome->cstate outcome)
-                         (cstate-fix cstate))
-                  (equal (len (eoutcome->values outcome))
-                         1))))
-  :enable (check-safe-literal
-           exec-literal))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; soundness of variable execution
-
-(defruled exec-path-when-check-safe-path
-  (implies (not (resulterrp (check-safe-path path (cstate-to-vartable cstate))))
-           (b* ((outcome (exec-path path cstate)))
-             (and (not (resulterrp outcome))
-                  (equal (eoutcome->cstate outcome)
-                         (cstate-fix cstate))
-                  (equal (len (eoutcome->values outcome))
-                         1))))
-  :enable (check-safe-path
-           exec-path
-           path-to-var
-           not-resulterrp-when-valuep
-           not-resulterrp-when-identifierp
-           read-var-value-when-check-var))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; soundness of variable addition
 
 (defrule add-var-value-when-add-var
@@ -1175,6 +1141,40 @@
 (defruled check-safe-expression-list-not-error-when-rev
   (implies (not (resulterrp (check-safe-expression-list (rev es) vartab funtab)))
            (not (resulterrp (check-safe-expression-list es vartab funtab)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; soundness of literal execution
+
+(defruled exec-literal-when-check-safe-literal
+  (implies (not (resulterrp (check-safe-literal lit)))
+           (b* ((outcome (exec-literal lit cstate)))
+             (and (not (resulterrp outcome))
+                  (equal (eoutcome->cstate outcome)
+                         (cstate-fix cstate))
+                  (equal (len (eoutcome->values outcome))
+                         1))))
+  :enable (check-safe-literal
+           exec-literal))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; soundness of variable execution
+
+(defruled exec-path-when-check-safe-path
+  (implies (not (resulterrp (check-safe-path path (cstate-to-vartable cstate))))
+           (b* ((outcome (exec-path path cstate)))
+             (and (not (resulterrp outcome))
+                  (equal (eoutcome->cstate outcome)
+                         (cstate-fix cstate))
+                  (equal (len (eoutcome->values outcome))
+                         1))))
+  :enable (check-safe-path
+           exec-path
+           path-to-var
+           not-resulterrp-when-valuep
+           not-resulterrp-when-identifierp
+           read-var-value-when-check-var))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
