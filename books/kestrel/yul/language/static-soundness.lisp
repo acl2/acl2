@@ -48,7 +48,7 @@
     ", the ACL2 execution functions of Yul code
      take an artificial limit counter as input,
      and return an error when that limit is exhausted.
-     In formulating the Yul static soundness theorem,
+     In formulating the Yul static soundness theorems,
      we need to exclude limit errors
      from the dynamic errors rules out by the static semantic checks:
      the static semantic checks rule out all dynamic errors
@@ -67,6 +67,101 @@
        (b* ((info (fty::resulterr->info x)))
          (and (consp info)
               (eq (car info) :limit)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define funinfo-to-funtype ((funinfo funinfop))
+  :returns (ftype funtypep)
+  :short "Turn function information into a function type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A function type is the static counterpart of function information.
+     We extract the number of inputs and outputs
+     from the function information's input and output lists."))
+  (b* (((funinfo funinfo) funinfo))
+    (make-funtype :in (len funinfo.inputs) :out (len funinfo.outputs)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define funscope-to-funtable ((funscope funscopep))
+  :returns (funtab funtablep)
+  :short "Turn a function scope into a function table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We turn the function information values of the omap into function types.
+     They keys of the omap are unchanged.")
+   (xdoc::p
+    "See @(tsee funenv-to-funtable) for more explanation on
+     the purpose of this computation."))
+  (b* ((funscope (funscope-fix funscope))
+       ((when (omap::empty funscope)) nil)
+       ((mv name funinfo) (omap::head funscope))
+       (funtab (funscope-to-funtable (omap::tail funscope))))
+    (omap::update name (funinfo-to-funtype funinfo) funtab))
+  :verify-guards :after-returns
+  :hooks (:fix)
+  ///
+
+  (defrule in-funscope-to-funtable-iff-in-funscope
+    (equal (consp (omap::in fun (funscope-to-funtable funscope)))
+           (consp (omap::in fun (funscope-fix funscope)))))
+
+  (defrule keys-of-funscope-to-funtable
+    (equal (omap::keys (funscope-to-funtable funscope))
+           (omap::keys (funscope-fix funscope))))
+
+  (defruled funscope-to-funtable-of-update
+    (implies (and (identifierp fun)
+                  (funinfop info)
+                  (funscopep funscope))
+             (equal (funscope-to-funtable (omap::update fun info funscope))
+                    (omap::update fun
+                                  (funinfo-to-funtype info)
+                                  (funscope-to-funtable funscope))))
+    :enable (funscopep
+             omap::update
+             omap::head
+             omap::tail
+             omap::mapp)
+    :disable (omap::weak-update-induction
+              omap::use-weak-update-induction)
+    :expand ((funscope-to-funtable (cons (car funscope)
+                                         (omap::update fun
+                                                       info
+                                                       (cdr funscope)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define funenv-to-funtable ((funenv funenvp))
+  :returns (funtab funtablep)
+  :short "Turn a function environment into a function table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In formulating the static soundness theorems,
+     we need to relate the ACL2 dynamic execution functions,
+     which take function environments as arguments,
+     with the ACL2 static safety checking functions,
+     which take function tables as arguments:
+     the function tables are the static counterparts of
+     the function environments.
+     This ACL2 function carries out this mapping,
+     by creating function tables for the function scopes
+     and joining them together.
+     It is a run-time invariant that
+     the function scopes in a function environment have disjoint keys;
+     thus, the use of @(tsee omap::update*) is not going to
+     overwrite any mappings.
+     However, we do not need to require this invariant here,
+     as this ACL2 function can be well-defined without it."))
+  (b* (((when (endp funenv)) nil)
+       (funtab-cdr (funenv-to-funtable (cdr funenv)))
+       (funtab-car (funscope-to-funtable (car funenv))))
+    (omap::update* funtab-car funtab-cdr))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -148,63 +243,6 @@
   (or (endp vars)
       (and (check-var (car vars) vartab)
            (check-var-list (cdr vars) vartab)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; function tables
-
-(define funinfo-to-funtype ((funinfo funinfop))
-  :returns (ftype funtypep)
-  (b* (((funinfo funinfo) funinfo))
-    (make-funtype :in (len funinfo.inputs) :out (len funinfo.outputs)))
-  :hooks (:fix))
-
-(define funscope-to-funtable ((funscope funscopep))
-  :returns (funtab funtablep)
-  (b* ((funscope (funscope-fix funscope))
-       ((when (omap::empty funscope)) nil)
-       ((mv name funinfo) (omap::head funscope))
-       (funtab (funscope-to-funtable (omap::tail funscope))))
-    (omap::update name (funinfo-to-funtype funinfo) funtab))
-  :verify-guards :after-returns
-  :hooks (:fix)
-  ///
-
-  (defrule in-funscope-to-funtable-iff-in-funscope
-    (equal (consp (omap::in fun (funscope-to-funtable funscope)))
-           (consp (omap::in fun (funscope-fix funscope)))))
-
-  (defruled funscope-to-funtable-of-update
-    (implies (and (identifierp fun)
-                  (funinfop info)
-                  (funscopep funscope))
-             (equal (funscope-to-funtable (omap::update fun info funscope))
-                    (omap::update fun
-                                  (funinfo-to-funtype info)
-                                  (funscope-to-funtable funscope))))
-    :enable (funscopep
-             omap::update
-             omap::head
-             omap::tail
-             omap::mapp)
-    :disable (omap::weak-update-induction
-              omap::use-weak-update-induction)
-    :expand ((funscope-to-funtable (cons (car funscope)
-                                         (omap::update fun
-                                                       info
-                                                       (cdr funscope))))))
-
-  (defrule keys-of-funscope-to-funtable
-    (equal (omap::keys (funscope-to-funtable funscope))
-           (omap::keys (funscope-fix funscope)))))
-
-(define funenv-to-funtable ((funenv funenvp))
-  :returns (funtab funtablep)
-  (b* (((when (endp funenv)) nil)
-       (funtab-cdr (funenv-to-funtable (cdr funenv)))
-       (funtab-car (funscope-to-funtable (car funenv))))
-    (omap::update* funtab-car funtab-cdr))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
