@@ -1088,3 +1088,103 @@
        (pred stmts funtab)
        :induct (len stmts)
        :enable (base-case step-case)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection check-safe-extends-vartable
+  :short "Theorems about the variable table being extended
+          by the ACL2 safety checking functions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The safety checking functions that return udpated variables tables,
+     namely @(tsee check-safe-statement) and @(tsee check-safe-statement-list),
+     extend the variable table in general.
+     That is, the resulting variable table is always a superset
+     of the initial variable table;
+     this is not strict superset, i.e. they may be equal.
+     We prove that for @(tsee add-var) and @(tsee add-vars) first,
+     which are the functions that actually extend the variable table
+     in the safety checking functions,
+     and then we prove it on the safety checking functions by induction."))
+
+  (defrule add-var-extends-vartable
+    (implies (vartablep vartab)
+             (b* ((vartab1 (add-var var vartab)))
+               (implies (not (resulterrp vartab1))
+                        (set::subset vartab vartab1))))
+    :enable add-var)
+
+  (defrule add-vars-extends-vartable
+    (implies (vartablep vartab)
+             (b* ((vartab1 (add-vars vars vartab)))
+               (implies (not (resulterrp vartab1))
+                        (set::subset vartab vartab1))))
+    :enable (add-vars
+             set::subset-transitive))
+
+  (defrule check-safe-variable-single-extends-vartable
+    (implies (vartablep vartab)
+             (b* ((vartab1 (check-safe-variable-single name init vartab funtab)))
+               (implies (not (resulterrp vartab1))
+                        (set::subset vartab vartab1))))
+    :enable check-safe-variable-single)
+
+  (defrule check-safe-variable-multi-extends-vartable
+    (implies (vartablep vartab)
+             (b* ((vartab1 (check-safe-variable-multi name init vartab funtab)))
+               (implies (not (resulterrp vartab1))
+                        (set::subset vartab vartab1))))
+    :enable check-safe-variable-multi)
+
+  (defthm-check-safe-statements/blocks/cases/fundefs-flag
+
+    (defthm check-safe-statement-extends-vartable
+      (implies
+       (vartablep vartab)
+       (b* ((vartab-modes (check-safe-statement stmt vartab funtab)))
+         (implies (not (resulterrp vartab-modes))
+                  (set::subset vartab
+                               (vartable-modes->variables vartab-modes)))))
+      :flag check-safe-statement)
+
+    (defthm check-safe-statement-list-extends-vartable
+      (implies
+       (vartablep vartab)
+       (b* ((vartab-modes (check-safe-statement-list stmts vartab funtab)))
+         (implies (not (resulterrp vartab-modes))
+                  (set::subset vartab
+                               (vartable-modes->variables vartab-modes)))))
+      :flag check-safe-statement-list)
+
+    (defthm check-safe-block-extends-vartable
+      t
+      :rule-classes nil
+      :flag check-safe-block)
+
+    (defthm check-safe-block-option-extends-vartable
+      t
+      :rule-classes nil
+      :flag check-safe-block-option)
+
+    (defthm check-safe-swcase-extends-vartable
+      t
+      :rule-classes nil
+      :flag check-safe-swcase)
+
+    (defthm check-safe-swcase-list-extends-vartable
+      t
+      :rule-classes nil
+      :flag check-safe-swcase-list)
+
+    (defthm check-safe-fundef-extends-vartable
+      t
+      :rule-classes nil
+      :flag check-safe-fundef)
+
+    :hints (("Goal"
+             :in-theory
+             (enable check-safe-statement
+                     check-safe-statement-list
+                     set::subset-transitive
+                     vartablep-when-vartable-resultp-and-not-resulterrp)))))
