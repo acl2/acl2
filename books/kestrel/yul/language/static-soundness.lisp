@@ -736,35 +736,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection static-soundness-of-variable-reading
-  :short "Theorems about the static soundness of variable reading."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If @(tsee check-var) and @(tsee check-vars) succeed,
-     also @(tsee read-var-value) and @(tsee read-vars-values) do."))
-
-  (defruled read-var-value-when-check-var
-    (implies (check-var var (cstate-to-vartable cstate))
-             (not (resulterrp (read-var-value var cstate))))
-    :enable (check-var
-             read-var-value
-             not-resulterrp-when-valuep
-             cstate-to-vartable
-             vartablep-to-identifier-setp
-             omap::consp-of-omap-in-to-set-in-of-omap-keys))
-
-  (defruled read-vars-values-when-check-var-list
-    (implies (check-var-list vars (cstate-to-vartable cstate))
-             (not (resulterrp (read-vars-values vars cstate))))
-    :enable (check-var-list
-             read-vars-values
-             valuep-when-value-resultp-and-not-resulterrp
-             not-resulterrp-when-value-listp
-             value-listp-when-value-list-resultp-and-not-resulterrp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection theorems-about-cstate-to-vartable-and-execution
   :short "Theorems about @(tsee cstate-to-vartable) and execution."
   :long
@@ -931,6 +902,35 @@
                                        set::subset-transitive
                                        cstate-to-vartable-fold-def
                                        set::intersect-with-subset-left)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection static-soundness-of-variable-reading
+  :short "Theorems about the static soundness of variable reading."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @(tsee check-var) and @(tsee check-vars) succeed,
+     also @(tsee read-var-value) and @(tsee read-vars-values) do."))
+
+  (defruled read-var-value-when-check-var
+    (implies (check-var var (cstate-to-vartable cstate))
+             (not (resulterrp (read-var-value var cstate))))
+    :enable (check-var
+             read-var-value
+             not-resulterrp-when-valuep
+             cstate-to-vartable
+             vartablep-to-identifier-setp
+             omap::consp-of-omap-in-to-set-in-of-omap-keys))
+
+  (defruled read-vars-values-when-check-var-list
+    (implies (check-var-list vars (cstate-to-vartable cstate))
+             (not (resulterrp (read-vars-values vars cstate))))
+    :enable (check-var-list
+             read-vars-values
+             valuep-when-value-resultp-and-not-resulterrp
+             not-resulterrp-when-value-listp
+             value-listp-when-value-list-resultp-and-not-resulterrp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
