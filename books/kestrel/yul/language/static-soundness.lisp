@@ -681,6 +681,175 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection theorems-about-cstate-to-vartable-and-execution
+  :short "Theorems about @(tsee cstate-to-vartable) and execution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We prove theorems saying how the execution functions,
+     and the auxiliary functions they use,
+     operate on the variable tables obtained from the computation states.
+     Many functions leave the variable table unchanged;
+     some extend it, which we express via @(tsee set::subset).
+     In the case of @(tsee restrict-vars),
+     the theorem provides the exact result.")
+   (xdoc::p
+    "For the @(tsee set::subset) cases,
+     we could prove more precise results, in terms of set operations;
+     we had that during the development of the static soundness proof,
+     but at some point it seemed that the @(tsee set::subset) formulation
+     was more convenient.
+     This is somewhat undesirable though:
+     it seems more principled and clear to calculate the exact variable tables,
+     rather than just constraining them to be superset.
+     We will revisit this, seeing if we can keep the proof working
+     with the theorems reformulated
+     (perhaps this may actually make the overall proof simpler).")
+   (xdoc::p
+    "Note the use of the @('cstate-to-vartable-fold-def') rule
+     in the mutual induction proof below.
+     This rule, and its undesirability,
+     is discussed in @(tsee cstate-to-vartable).
+     This might be actually related to the issue
+     discussed in the paragraph just above."))
+
+  (defrule cstate-to-vartable-of-write-var-value
+    (b* ((cstate1 (write-var-value var val cstate)))
+      (implies (not (resulterrp cstate1))
+               (equal (cstate-to-vartable cstate1)
+                      (cstate-to-vartable cstate))))
+    :enable (write-var-value
+             cstate-to-vartable
+             omap::consp-of-omap-in-to-set-in-of-omap-keys))
+
+  (defrule cstate-to-vartable-of-write-vars-values
+    (b* ((cstate1 (write-vars-values vars vals cstate)))
+      (implies (not (resulterrp cstate1))
+               (equal (cstate-to-vartable cstate1)
+                      (cstate-to-vartable cstate))))
+    :enable write-vars-values)
+
+  (defrule cstate-to-vartable-of-restrict-vars
+    (equal (cstate-to-vartable (restrict-vars vars cstate))
+           (set::intersect (identifier-set-fix vars)
+                           (cstate-to-vartable cstate)))
+    :enable (cstate-to-vartable
+             restrict-vars))
+
+  (defrule cstate-to-vartable-of-add-var-value
+    (b* ((cstate1 (add-var-value var val cstate)))
+      (implies (not (resulterrp cstate1))
+               (equal (cstate-to-vartable cstate1)
+                      (set::insert (identifier-fix var)
+                                   (cstate-to-vartable cstate)))))
+    :enable (add-var-value
+             cstate-to-vartable))
+
+  (defrule cstate-to-vartable-of-add-vars-values
+    (b* ((cstate1 (add-vars-values vars vals cstate)))
+      (implies (not (resulterrp cstate1))
+               (equal (cstate-to-vartable cstate1)
+                      (set::list-insert (identifier-list-fix vars)
+                                        (cstate-to-vartable cstate)))))
+    :enable (add-vars-values
+             set::list-insert))
+
+  (defrule cstate-to-vartable-of-exec-literal
+    (b* ((outcome (exec-literal lit cstate)))
+      (implies (not (resulterrp outcome))
+               (equal (cstate-to-vartable (eoutcome->cstate outcome))
+                      (cstate-to-vartable cstate))))
+    :enable exec-literal)
+
+  (defrule cstate-to-vartable-of-exec-path
+    (b* ((outcome (exec-path path cstate)))
+      (implies (not (resulterrp outcome))
+               (equal (cstate-to-vartable (eoutcome->cstate outcome))
+                      (cstate-to-vartable cstate))))
+    :enable exec-path)
+
+  (defthm-exec-flag
+
+    (defthm cstate-to-vartable-of-exec-expression
+      (b* ((outcome (exec-expression expr cstate funenv limit)))
+        (implies (not (resulterrp outcome))
+                 (equal (cstate-to-vartable (eoutcome->cstate outcome))
+                        (cstate-to-vartable cstate))))
+      :flag exec-expression)
+
+    (defthm cstate-to-vartable-of-exec-expression-list
+      (b* ((outcome (exec-expression-list exprs cstate funenv limit)))
+        (implies (not (resulterrp outcome))
+                 (equal (cstate-to-vartable (eoutcome->cstate outcome))
+                        (cstate-to-vartable cstate))))
+      :flag exec-expression-list)
+
+    (defthm cstate-to-vartable-of-exec-funcall
+      (b* ((outcome (exec-funcall call cstate funenv limit)))
+        (implies (not (resulterrp outcome))
+                 (equal (cstate-to-vartable (eoutcome->cstate outcome))
+                        (cstate-to-vartable cstate))))
+      :flag exec-funcall)
+
+    (defthm cstate-to-vartable-of-exec-function
+      (b* ((outcome (exec-function fun args cstate funenv limit)))
+        (implies (not (resulterrp outcome))
+                 (equal (cstate-to-vartable (eoutcome->cstate outcome))
+                        (cstate-to-vartable cstate))))
+      :flag exec-function)
+
+    (defthm cstate-to-vartable-of-exec-statement
+      (b* ((outcome (exec-statement stmt cstate funenv limit)))
+        (implies (not (resulterrp outcome))
+                 (set::subset (cstate-to-vartable cstate)
+                              (cstate-to-vartable
+                               (soutcome->cstate outcome)))))
+      :flag exec-statement)
+
+    (defthm cstate-to-vartable-of-exec-statement-list
+      (b* ((outcome (exec-statement-list stmts cstate funenv limit)))
+        (implies (not (resulterrp outcome))
+                 (set::subset (cstate-to-vartable cstate)
+                              (cstate-to-vartable
+                               (soutcome->cstate outcome)))))
+      :flag exec-statement-list)
+
+    (defthm cstate-to-vartable-of-exec-block
+      (b* ((outcome (exec-block block cstate funenv limit)))
+        (implies (not (resulterrp outcome))
+                 (equal (cstate-to-vartable (soutcome->cstate outcome))
+                        (cstate-to-vartable cstate))))
+      :flag exec-block)
+
+    (defthm cstate-to-vartable-of-exec-for-iterations
+      (b* ((outcome (exec-for-iterations test update body cstate funenv limit)))
+        (implies (not (resulterrp outcome))
+                 (equal (cstate-to-vartable (soutcome->cstate outcome))
+                        (cstate-to-vartable cstate))))
+      :flag exec-for-iterations)
+
+    (defthm cstate-to-vartable-of-exec-switch-rest
+      (b* ((outcome (exec-switch-rest cases default target cstate funenv limit)))
+        (implies (not (resulterrp outcome))
+                 (equal (cstate-to-vartable (soutcome->cstate outcome))
+                        (cstate-to-vartable cstate))))
+      :flag exec-switch-rest)
+
+    :hints (("Goal" :in-theory (enable exec-expression
+                                       exec-expression-list
+                                       exec-funcall
+                                       exec-function
+                                       exec-statement
+                                       exec-statement-list
+                                       exec-block
+                                       exec-for-iterations
+                                       exec-switch-rest
+                                       set::subset-transitive
+                                       cstate-to-vartable-fold-def
+                                       set::intersect-with-subset-left)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; soundness of literal execution
 
 (defruled exec-literal-when-check-safe-literal
@@ -727,152 +896,18 @@
 
 ; variable restriction on variable table
 
-(defrule cstate-to-vartable-of-restrict-vars
-  (equal (cstate-to-vartable (restrict-vars vars cstate))
-         (set::intersect (identifier-set-fix vars)
-                         (cstate-to-vartable cstate)))
-  :enable (cstate-to-vartable
-           restrict-vars))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; variable writing on variable table
-
-(defrule cstate-to-vartable-of-write-var-value
-  (b* ((cstate1 (write-var-value var val cstate)))
-    (implies (not (resulterrp cstate1))
-             (equal (cstate-to-vartable cstate1)
-                    (cstate-to-vartable cstate))))
-  :enable (write-var-value
-           cstate-to-vartable
-           omap::consp-of-omap-in-to-set-in-of-omap-keys))
-
-(defrule cstate-to-vartable-of-write-vars-values
-  (b* ((cstate1 (write-vars-values vars vals cstate)))
-    (implies (not (resulterrp cstate1))
-             (equal (cstate-to-vartable cstate1)
-                    (cstate-to-vartable cstate))))
-  :enable write-vars-values)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; variable addition on variable table
 
-(defrule cstate-to-vartable-of-add-var-value
-  (b* ((cstate1 (add-var-value var val cstate)))
-    (implies (not (resulterrp cstate1))
-             (equal (cstate-to-vartable cstate1)
-                    (set::insert (identifier-fix var)
-                                 (cstate-to-vartable cstate)))))
-  :enable (add-var-value
-           cstate-to-vartable))
-
-(defrule cstate-to-vartable-of-add-vars-values
-  (b* ((cstate1 (add-vars-values vars vals cstate)))
-    (implies (not (resulterrp cstate1))
-             (equal (cstate-to-vartable cstate1)
-                    (set::list-insert (identifier-list-fix vars)
-                                      (cstate-to-vartable cstate)))))
-  :enable (add-vars-values
-           set::list-insert))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; variable table manipulation by dynamic semantics
 
-(defrule cstate-to-vartable-of-exec-literal
-  (b* ((outcome (exec-literal lit cstate)))
-    (implies (not (resulterrp outcome))
-             (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                    (cstate-to-vartable cstate))))
-  :enable exec-literal)
-
-(defrule cstate-to-vartable-of-exec-path
-  (b* ((outcome (exec-path path cstate)))
-    (implies (not (resulterrp outcome))
-             (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                    (cstate-to-vartable cstate))))
-  :enable exec-path)
-
-(defthm-exec-flag
-
-  (defthm cstate-to-vartable-of-exec-expression
-    (b* ((outcome (exec-expression expr cstate funenv limit)))
-      (implies (not (resulterrp outcome))
-               (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                      (cstate-to-vartable cstate))))
-    :flag exec-expression)
-
-  (defthm cstate-to-vartable-of-exec-expression-list
-    (b* ((outcome (exec-expression-list exprs cstate funenv limit)))
-      (implies (not (resulterrp outcome))
-               (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                      (cstate-to-vartable cstate))))
-    :flag exec-expression-list)
-
-  (defthm cstate-to-vartable-of-exec-funcall
-    (b* ((outcome (exec-funcall call cstate funenv limit)))
-      (implies (not (resulterrp outcome))
-               (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                      (cstate-to-vartable cstate))))
-    :flag exec-funcall)
-
-  (defthm cstate-to-vartable-of-exec-function
-    (b* ((outcome (exec-function fun args cstate funenv limit)))
-      (implies (not (resulterrp outcome))
-               (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                      (cstate-to-vartable cstate))))
-    :flag exec-function)
-
-  (defthm cstate-to-vartable-of-exec-statement
-    (b* ((outcome (exec-statement stmt cstate funenv limit)))
-      (implies (not (resulterrp outcome))
-               (set::subset (cstate-to-vartable cstate)
-                            (cstate-to-vartable
-                             (soutcome->cstate outcome)))))
-    :flag exec-statement)
-
-  (defthm cstate-to-vartable-of-exec-statement-list
-    (b* ((outcome (exec-statement-list stmts cstate funenv limit)))
-      (implies (not (resulterrp outcome))
-               (set::subset (cstate-to-vartable cstate)
-                            (cstate-to-vartable
-                             (soutcome->cstate outcome)))))
-    :flag exec-statement-list)
-
-  (defthm cstate-to-vartable-of-exec-block
-    (b* ((outcome (exec-block block cstate funenv limit)))
-      (implies (not (resulterrp outcome))
-               (equal (cstate-to-vartable (soutcome->cstate outcome))
-                      (cstate-to-vartable cstate))))
-    :flag exec-block)
-
-  (defthm cstate-to-vartable-of-exec-for-iterations
-    (b* ((outcome (exec-for-iterations test update body cstate funenv limit)))
-      (implies (not (resulterrp outcome))
-               (equal (cstate-to-vartable (soutcome->cstate outcome))
-                      (cstate-to-vartable cstate))))
-    :flag exec-for-iterations)
-
-  (defthm cstate-to-vartable-of-exec-switch-rest
-    (b* ((outcome (exec-switch-rest cases default target cstate funenv limit)))
-      (implies (not (resulterrp outcome))
-               (equal (cstate-to-vartable (soutcome->cstate outcome))
-                      (cstate-to-vartable cstate))))
-    :flag exec-switch-rest)
-
-  :hints (("Goal" :in-theory (enable exec-expression
-                                     exec-expression-list
-                                     exec-funcall
-                                     exec-function
-                                     exec-statement
-                                     exec-statement-list
-                                     exec-block
-                                     exec-for-iterations
-                                     exec-switch-rest
-                                     set::subset-transitive
-                                     cstate-to-vartable-fold-def
-                                     set::intersect-with-subset-left))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
