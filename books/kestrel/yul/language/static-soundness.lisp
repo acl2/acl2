@@ -18,6 +18,7 @@
 (include-book "kestrel/std/util/defund-sk" :dir :system)
 
 (local (include-book "../library-extensions/lists"))
+(local (include-book "../library-extensions/omaps"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,58 +36,6 @@
      which the dynamic semantics defensively checks."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; omaps
-
-(defruled omap::consp-of-omap-in-to-set-in-of-omap-keys
-  (iff (consp (omap::in key map))
-       (set::in key (omap::keys map)))
-  :enable omap::in)
-
-(defrule omap::keys-of-restrict
-  (equal (omap::keys (omap::restrict keys map))
-         (set::intersect keys (omap::keys map)))
-  :enable (set::double-containment
-           set::pick-a-point-subset-strategy)
-  :prep-lemmas
-  ((defrule lemma1
-     (implies (set::in x (omap::keys (omap::restrict keys map)))
-              (set::in x (omap::keys map)))
-     :enable omap::restrict)
-   (defrule lemma2
-     (implies (set::in x (omap::keys (omap::restrict keys map)))
-              (set::in x keys))
-     :enable omap::restrict)
-   (defrule lemma3
-     (implies (and (set::in x (omap::keys map))
-                   (set::in x keys))
-              (set::in x (omap::keys (omap::restrict keys map))))
-     :enable omap::restrict)))
-
-(defrule omap::keys-of-mfix
-  (equal (omap::keys (omap::mfix map))
-         (omap::keys map))
-  :enable omap::keys)
-
-(defrule omap::keys-of-update*
-  (equal (omap::keys (omap::update* new old))
-         (set::union (omap::keys new) (omap::keys old)))
-  :enable omap::update*)
-
-(defrule omap::consp-of-in-of-update*
-  (equal (consp (omap::in key (omap::update* map1 map2)))
-         (or (consp (omap::in key map1))
-             (consp (omap::in key map2))))
-  :enable (omap::in omap::update*))
-
-(defrule omap::in-of-update*
-  (equal (omap::in key (omap::update* map1 map2))
-         (if (consp (omap::in key map1))
-             (omap::in key map1)
-           (omap::in key map2)))
-  :enable (omap::update* omap::in))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
