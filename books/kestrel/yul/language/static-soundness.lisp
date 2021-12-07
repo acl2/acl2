@@ -370,7 +370,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection static-soundness-theorems-about-add-funs
-  :short "Theorems about @(tsee add-funs) for the static soundness proof"
+  :short "Theorems about @(tsee add-funs) for the static soundness proof."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -578,10 +578,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; extension of static safety checks to lists of function definitions
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; extension of check-var to lists
 
 (define check-var-list ((vars identifier-listp) (vartab vartablep))
@@ -593,20 +589,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; variable tables
-
-(defruled vartablep-to-identifier-setp
-  (equal (vartablep x)
-         (identifier-setp x))
-  :enable (vartablep identifier-setp))
-
-(defrule vartable-fix-when-identifier-setp
-  (implies (identifier-setp x)
-           (equal (vartable-fix x)
-                  x))
-  :enable vartablep-to-identifier-setp)
 
 (define cstate-to-vartable ((cstate cstatep))
   :returns (vartab vartablep)
@@ -1072,14 +1055,6 @@
         (vals in-vals)
         (vars in-vars)
         (cstate (cstate nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; theorems about add-funs
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; function environment safety under safety checking
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

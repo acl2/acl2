@@ -207,6 +207,26 @@
            (not (resulterrp x)))
   :enable (vartablep resulterrp))
 
+;;;;;;;;;;;;;;;;;;;;
+
+; Occasionally useful when using set operations on variable tables.
+; It may be better to define variable tables as wrapped sets and avoid this.
+(defruled vartablep-to-identifier-setp
+  (equal (vartablep x)
+         (identifier-setp x))
+  :enable (vartablep identifier-setp))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; Useful to get rid of the fixer when the variable table
+; is known to be a set of identifiers (e.g. due to using set operations).
+; It may be better to define variable tables as wrapped sets and avoid this.
+(defrule vartable-fix-when-identifier-setp
+  (implies (identifier-setp x)
+           (equal (vartable-fix x)
+                  x))
+  :enable vartablep-to-identifier-setp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-var ((var identifierp) (vartab vartablep))
