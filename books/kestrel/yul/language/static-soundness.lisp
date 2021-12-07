@@ -511,70 +511,96 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; modes
+(defsection static-soundness-theorems-about-modes
+  :short "Theorems about modes for the static soundness proof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Values of rnumeration fixtype like @(tsee mode)
+     are usually compared via their kinds (i.e. @(tsee mode-kind)),
+     rather than directly;
+     the fixtype definition macros in fact generate theorems to this effect,
+     along with useful theorems such as the forward chaining rule that
+     @(tsee mode-kind) is one of four known possibilities.")
+   (xdoc::p
+    "However, our ACL2 static safety checking functions return sets of modes
+     (for statements, blocks, and other constructs),
+     and the static soundness theorems say that
+     the mode returned by the ACL2 execution functions are in those sets.
+     This set membership formulation does not blend well with
+     the kind-centric treatment of modes.
+     Thus, here we introduce theorems that
+     turn kind comparisons into mode comparisons.
+     Because some of the theorems about kinds no longer apply,
+     we also need to add some similar theorems for modes,
+     and certain explicit non-equality theorems.")
+   (xdoc::p
+    "This is not very satisfactory.
+     There may be a way to avoid all of this,
+     and somehow handle mode kinds with set membership well."))
 
-(defruled mode-continue-lemma
-  (implies (modep mode)
-           (equal (equal (mode-kind mode) :continue)
-                  (equal mode (mode-continue)))))
+  (defruled mode-continue-lemma
+    (implies (modep mode)
+             (equal (equal (mode-kind mode) :continue)
+                    (equal mode (mode-continue)))))
 
-(defruled mode-break-lemma
-  (implies (modep mode)
-           (equal (equal (mode-kind mode) :break)
-                  (equal mode (mode-break)))))
+  (defruled mode-break-lemma
+    (implies (modep mode)
+             (equal (equal (mode-kind mode) :break)
+                    (equal mode (mode-break)))))
 
-(defruled mode-regular-lemma
-  (implies (modep mode)
-           (equal (equal (mode-kind mode) :regular)
-                  (equal mode (mode-regular)))))
+  (defruled mode-regular-lemma
+    (implies (modep mode)
+             (equal (equal (mode-kind mode) :regular)
+                    (equal mode (mode-regular)))))
 
-(defruled mode-leave-lemma
-  (implies (modep mode)
-           (equal (equal (mode-kind mode) :leave)
-                  (equal mode (mode-leave)))))
+  (defruled mode-leave-lemma
+    (implies (modep mode)
+             (equal (equal (mode-kind mode) :leave)
+                    (equal mode (mode-leave)))))
 
-(defrule mode-regular-not-continue
-  (not (equal (mode-regular)
-              (mode-continue))))
+  (defrule mode-regular-not-continue
+    (not (equal (mode-regular)
+                (mode-continue))))
 
-(defrule mode-regular-not-break
-  (not (equal (mode-regular)
-              (mode-break))))
+  (defrule mode-regular-not-break
+    (not (equal (mode-regular)
+                (mode-break))))
 
-(defrule mode-leave-not-continue
-  (not (equal (mode-leave)
-              (mode-continue))))
+  (defrule mode-leave-not-continue
+    (not (equal (mode-leave)
+                (mode-continue))))
 
-(defrule mode-leave-not-break
-  (not (equal (mode-leave)
-              (mode-break))))
+  (defrule mode-leave-not-break
+    (not (equal (mode-leave)
+                (mode-break))))
 
-(defruled mode-leave-if-not-regular/continue/break
-  (implies (and (modep mode)
-                (not (equal mode (mode-regular)))
-                (not (equal mode (mode-continue)))
-                (not (equal mode (mode-break))))
-           (equal (equal mode (mode-leave))
-                  t)))
+  (defruled mode-leave-if-not-regular/continue/break
+    (implies (and (modep mode)
+                  (not (equal mode (mode-regular)))
+                  (not (equal mode (mode-continue)))
+                  (not (equal mode (mode-break))))
+             (equal (equal mode (mode-leave))
+                    t)))
 
-(defruled mode-possibilities
-  (implies (modep x)
-           (or (equal x (mode-regular))
-               (equal x (mode-leave))
-               (equal x (mode-break))
-               (equal x (mode-continue)))))
+  (defruled mode-possibilities
+    (implies (modep x)
+             (or (equal x (mode-regular))
+                 (equal x (mode-leave))
+                 (equal x (mode-break))
+                 (equal x (mode-continue)))))
 
-(defruled mode-lemma
-  (implies (and (set::in (soutcome->mode outcome) modes)
-                (not (equal (soutcome->mode outcome) (mode-break)))
-                (not (equal (soutcome->mode outcome) (mode-continue)))
-                (not (set::in (mode-leave) modes)))
-           (equal (soutcome->mode outcome) (mode-regular)))
-  :use (:instance mode-possibilities (x (soutcome->mode outcome)))
-  :disable (equal-of-mode-leave
-            equal-of-mode-continue
-            equal-of-mode-break
-            equal-of-mode-regular))
+  (defruled mode-lemma
+    (implies (and (set::in (soutcome->mode outcome) modes)
+                  (not (equal (soutcome->mode outcome) (mode-break)))
+                  (not (equal (soutcome->mode outcome) (mode-continue)))
+                  (not (set::in (mode-leave) modes)))
+             (equal (soutcome->mode outcome) (mode-regular)))
+    :use (:instance mode-possibilities (x (soutcome->mode outcome)))
+    :disable (equal-of-mode-leave
+              equal-of-mode-continue
+              equal-of-mode-break
+              equal-of-mode-regular)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
