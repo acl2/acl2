@@ -165,6 +165,139 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define funinfo-safep ((funinfo funinfop) (funtab funtablep))
+  :returns (yes/no booleanp)
+  :short "Check the safety of function information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A key execution invariant needed for the static soundness proof
+     is that, if the code being executed passes the static safety checks,
+     then the functions in the function environments pass those checks.
+     This predicate captures this notion of safety for function information:
+     it performs the same checks as @(tsee check-safe-fundef),
+     except that it does so on function information
+     instead of a function definition
+     (so we could not use @(tsee check-safe-undef) here,
+     because we have no function definition).
+     Safety is necessarily checked with respect to some function table.
+     See @(tsee funscope-safep) and @(tsee funenv-safep)
+     for more information."))
+  (b* (((funinfo funinfo) funinfo)
+       (vartab (add-vars (append funinfo.inputs funinfo.outputs) nil))
+       ((when (resulterrp vartab)) nil)
+       (modes (check-safe-block funinfo.body vartab funtab))
+       ((when (resulterrp modes)) nil)
+       ((when (set::in (mode-break) modes)) nil)
+       ((when (set::in (mode-continue) modes)) nil))
+    t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define funscope-safep ((funscope funscopep) (funtab funtablep))
+  :returns (yes/no booleanp)
+  :short "Check the safety of a function scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee funinfo-safep) for motivation (i.e. the invariant).
+     This predicate checks the safety of all the values of the omap."))
+  (b* (((when (or (not (mbt (funscopep funscope)))
+                  (omap::empty funscope)))
+        t)
+       ((mv & info) (omap::head funscope)))
+    (and (funinfo-safep info funtab)
+         (funscope-safep (omap::tail funscope) funtab)))
+  :hooks (:fix)
+  ///
+
+  (defrule funscope-safep-of-update
+    (implies (and (identifierp fun)
+                  (funinfop funinfo)
+                  (funscopep funscope)
+                  (funinfo-safep funinfo funtab)
+                  (funscope-safep funscope funtab))
+             (funscope-safep (omap::update fun funinfo funscope) funtab))
+    :enable (funscopep
+             omap::update
+             omap::head
+             omap::tail)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define funenv-safep ((funenv funenvp))
+  :returns (yes/no booleanp)
+  :short "Check the safey of a function environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The invariant alluded to in @(tsee funinfo-safep) is here defined.
+     Recall that a function enviroment is a stack of function scope.
+     The invariant is that each function scope is safe
+     (i.e. all the functions in the scope are safe)
+     with respect to the function table consisting of
+     that scope and all the preceding scopes in the stack.
+     In fact, as a new function scope is pushed onto the stack,
+     the functions are safe with respect to
+     not only the functions already in scope,
+     but also the functions of the new scope:
+     a function is always in its own scope,
+     making recursive calls possible."))
+  (or (endp funenv)
+      (and (funscope-safep (car funenv) (funenv-to-funtable funenv))
+           (funenv-safep (cdr funenv))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled check-safe-block-when-funscope-safep
+  (implies (and (identifierp fun)
+                (funscopep funscope)
+                (funscope-safep funscope funtab)
+                (consp (omap::in fun funscope)))
+           (b* ((funinfo (cdr (omap::in fun funscope)))
+                (vartab (add-vars
+                         (append (funinfo->inputs funinfo)
+                                 (funinfo->outputs funinfo))
+                         nil))
+                (modes (check-safe-block (funinfo->body funinfo)
+                                         vartab
+                                         funtab)))
+             (and (not (resulterrp vartab))
+                  (not (resulterrp modes))
+                  (not (set::in (mode-break) modes))
+                  (not (set::in (mode-continue) modes)))))
+  :enable (funscope-safep
+           funinfo-safep))
+
+(defruled check-safe-block-when-funenv-safep
+  (b* ((funinfoenv (find-fun fun funenv)))
+    (implies (and (funenv-safep funenv)
+                  (not (resulterrp funinfoenv)))
+             (b* ((funinfo (funinfo+funenv->info funinfoenv))
+                  (funenv1 (funinfo+funenv->env funinfoenv))
+                  (vartab (add-vars
+                           (append (funinfo->inputs funinfo)
+                                   (funinfo->outputs funinfo))
+                           nil))
+                  (modes (check-safe-block (funinfo->body funinfo)
+                                           vartab
+                                           (funenv-to-funtable funenv1))))
+               (and (not (resulterrp vartab))
+                    (not (resulterrp modes))
+                    (not (set::in (mode-break) modes))
+                    (not (set::in (mode-continue) modes))
+                    (funenv-safep funenv1)))))
+  :enable (find-fun
+           funenv-safep)
+  :hints ('(:use (:instance check-safe-block-when-funscope-safep
+            (fun (identifier-fix fun))
+            (funscope (funscope-fix (car funenv)))
+            (funtab (funenv-to-funtable funenv))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; modes
 
 (defruled mode-continue-lemma
@@ -722,97 +855,6 @@
                 (equal (len vals) (len paths)))
            (not (resulterrp
                  (write-vars-values (paths-to-vars paths) vals cstate)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; safety of function environments
-
-(define funinfo-safep ((funinfo funinfop) (funtab funtablep))
-  :returns (yes/no booleanp)
-  (b* (((funinfo funinfo) funinfo)
-       (vartab (add-vars (append funinfo.inputs funinfo.outputs) nil))
-       ((when (resulterrp vartab)) nil)
-       (modes (check-safe-block funinfo.body vartab funtab))
-       ((when (resulterrp modes)) nil)
-       ((when (set::in (mode-break) modes)) nil)
-       ((when (set::in (mode-continue) modes)) nil))
-    t)
-  :hooks (:fix))
-
-(define funscope-safep ((funscope funscopep) (funtab funtablep))
-  :returns (yes/no booleanp)
-  (b* (((when (or (not (mbt (funscopep funscope)))
-                  (omap::empty funscope)))
-        t)
-       ((mv & info) (omap::head funscope)))
-    (and (funinfo-safep info funtab)
-         (funscope-safep (omap::tail funscope) funtab)))
-  :hooks (:fix)
-  ///
-
-  (defrule funscope-safep-of-update
-    (implies (and (identifierp fun)
-                  (funinfop funinfo)
-                  (funscopep funscope)
-                  (funinfo-safep funinfo funtab)
-                  (funscope-safep funscope funtab))
-             (funscope-safep (omap::update fun funinfo funscope) funtab))
-    :enable (funscopep
-             omap::update
-             omap::head
-             omap::tail)))
-
-(define funenv-safep ((funenv funenvp))
-  :returns (yes/no booleanp)
-  (or (endp funenv)
-      (and (funscope-safep (car funenv) (funenv-to-funtable funenv))
-           (funenv-safep (cdr funenv))))
-  :hooks (:fix))
-
-(defruled check-safe-block-when-funscope-safep
-  (implies (and (identifierp fun)
-                (funscopep funscope)
-                (funscope-safep funscope funtab)
-                (consp (omap::in fun funscope)))
-           (b* ((funinfo (cdr (omap::in fun funscope)))
-                (vartab (add-vars
-                         (append (funinfo->inputs funinfo)
-                                 (funinfo->outputs funinfo))
-                         nil))
-                (modes (check-safe-block (funinfo->body funinfo)
-                                         vartab
-                                         funtab)))
-             (and (not (resulterrp vartab))
-                  (not (resulterrp modes))
-                  (not (set::in (mode-break) modes))
-                  (not (set::in (mode-continue) modes)))))
-  :enable (funscope-safep
-           funinfo-safep))
-
-(defruled check-safe-block-when-funenv-safep
-  (b* ((funinfoenv (find-fun fun funenv)))
-    (implies (and (funenv-safep funenv)
-                  (not (resulterrp funinfoenv)))
-             (b* ((funinfo (funinfo+funenv->info funinfoenv))
-                  (funenv1 (funinfo+funenv->env funinfoenv))
-                  (vartab (add-vars
-                           (append (funinfo->inputs funinfo)
-                                   (funinfo->outputs funinfo))
-                           nil))
-                  (modes (check-safe-block (funinfo->body funinfo)
-                                           vartab
-                                           (funenv-to-funtable funenv1))))
-               (and (not (resulterrp vartab))
-                    (not (resulterrp modes))
-                    (not (set::in (mode-break) modes))
-                    (not (set::in (mode-continue) modes))
-                    (funenv-safep funenv1)))))
-  :enable (find-fun
-           funenv-safep)
-  :hints ('(:use (:instance check-safe-block-when-funscope-safep
-            (fun (identifier-fix fun))
-            (funscope (funscope-fix (car funenv)))
-            (funtab (funenv-to-funtable funenv))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
