@@ -20,6 +20,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule identifier-setp-of-list-insert
+  (implies (and (identifier-listp list)
+                (identifier-setp set))
+           (identifier-setp (set::list-insert list set)))
+  :enable set::list-insert)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ static-soundness
   :short "Proof of static soundness of Yul."
   :long
@@ -1113,12 +1121,6 @@
   :enable (check-var-list
            check-var
            set::list-in))
-
-(defrule identifier-setp-of-list-insert
-  (implies (and (identifier-listp list)
-                (identifier-setp set))
-           (identifier-setp (set::list-insert list set)))
-  :enable set::list-insert)
 
 (defruled check-var-list-of-add-vars-of-append-not-error
   (implies (and (identifier-listp vars)
