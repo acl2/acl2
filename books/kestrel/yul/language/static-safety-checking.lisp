@@ -16,6 +16,7 @@
 
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/nat-result" :dir :system)
+(include-book "kestrel/std/util/defund-sk" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -975,3 +976,95 @@
       (enable vartablep-when-vartable-resultp-and-not-resulterrp))))
 
   (fty::deffixequiv-mutual check-safe-statements/blocks/cases/fundefs))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-safe-fundef-list ((fundefs fundef-listp) (funtab funtablep))
+  :returns (_ resulterr-optionp)
+  :short "Check if a list of function definitions is safe."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not really add anything
+     compared to @(tsee check-safe-statement-list),
+     in the sense that checking the safey of a list of function definitions
+     is the same as checking the safety of them as a list of statements.
+     However, it is convenient to define a dedicated ACL2 function
+     to check the safety of lists of function definitions directly,
+     and that does not return any information if the safety checks succeed.
+     (This ACL2 function is used in the "
+    (xdoc::seetopic "static-soundness" "static soundness proof")
+    ".)")
+   (xdoc::p
+    "We prove that if a list of statements passes the safety checks,
+     the list of function definitions extraced from the statements
+     passed the safety checks according to this ACL2 function.
+     Given that the statement checking functions take variables tables as inputs
+     while the function definition checking function do not,
+     and given that the statement checking functions modify variable tables
+     and thread them through the list of statements,
+     we carry out the induction proof on a predicate
+     that is universally quantified over variable tables."))
+  (b* (((when (endp fundefs)) nil)
+       ((ok &) (check-safe-fundef (car fundefs) funtab))
+       ((ok &) (check-safe-fundef-list (cdr fundefs) funtab)))
+    nil)
+  :hooks (:fix)
+  ///
+
+  (defruled check-safe-fundef-list-of-statements-to-fundefs
+    (implies (not (resulterrp
+                   (check-safe-statement-list stmts vartab funtab)))
+             (not (resulterrp
+                   (check-safe-fundef-list (statements-to-fundefs stmts)
+                                           funtab))))
+    :use pred-holds
+    :enable pred-necc
+
+    :prep-lemmas
+
+    ((defund-sk pred (stmts funtab)
+       (forall vartab
+               (implies
+                (not (resulterrp
+                      (check-safe-statement-list stmts vartab funtab)))
+                (not (resulterrp
+                      (check-safe-fundef-list (statements-to-fundefs stmts)
+                                              funtab)))))
+       :rewrite :direct)
+
+     (defruled base-case
+       (implies (not (consp stmts))
+                (pred stmts funtab))
+       :enable (pred
+                statements-to-fundefs
+                check-safe-statement-list
+                check-safe-fundef-list))
+
+
+     (defruled step-lemma
+       (implies (and (consp stmts)
+                     (pred (cdr stmts) funtab)
+                     (not (resulterrp
+                           (check-safe-statement-list stmts vartab funtab))))
+                (not (resulterrp
+                      (check-safe-fundef-list (statements-to-fundefs stmts)
+                                              funtab))))
+       :expand (check-safe-statement-list stmts vartab funtab)
+       :enable (pred-necc
+                check-safe-statement
+                statements-to-fundefs
+                check-safe-statement-list
+                check-safe-fundef-list))
+
+     (defruled step-case
+       (implies (and (consp stmts)
+                     (pred (cdr stmts) funtab))
+                (pred stmts funtab))
+       :expand (pred stmts funtab)
+       :enable step-lemma)
+
+     (defruled pred-holds
+       (pred stmts funtab)
+       :induct (len stmts)
+       :enable (base-case step-case)))))

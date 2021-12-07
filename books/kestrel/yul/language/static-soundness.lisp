@@ -15,8 +15,6 @@
 
 (include-book "../library-extensions/osets")
 
-(include-book "kestrel/std/util/defund-sk" :dir :system)
-
 (local (include-book "../library-extensions/lists"))
 (local (include-book "../library-extensions/omaps"))
 
@@ -40,12 +38,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define resulterr-limitp (x)
+  :returns (yes/no booleanp)
   :short "Recognize limit errors."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in @(see dynamic-semantics),
-     the ACL2 execution functions of Yul code
+    "As explained in the "
+    (xdoc::seetopic "dynamic-semantics" "dynamic semantics")
+    ", the ACL2 execution functions of Yul code
      take an artificial limit counter as input,
      and return an error when that limit is exhausted.
      In formulating the Yul static soundness theorem,
@@ -63,7 +63,6 @@
      in particular the fact that they return error limits of this form.
      This predicate must be adapted if that form changes;
      the static soundness proof will fail in that case."))
-  :returns (yes/no booleanp)
   (and (resulterrp x)
        (b* ((info (fty::resulterr->info x)))
          (and (consp info)
@@ -139,71 +138,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; extension of static safety checks to lists of function definitions
-
-(define check-safe-fundef-list ((fundefs fundef-listp) (funtab funtablep))
-  :returns (_ resulterr-optionp)
-  (b* (((when (endp fundefs)) nil)
-       ((ok &) (check-safe-fundef (car fundefs) funtab))
-       ((ok &) (check-safe-fundef-list (cdr fundefs) funtab)))
-    nil)
-  :hooks (:fix))
-
-(defruled check-safe-fundef-list-of-statements-to-fundefs
-  (implies (not (resulterrp
-                 (check-safe-statement-list stmts vartab funtab)))
-           (not (resulterrp
-                 (check-safe-fundef-list (statements-to-fundefs stmts)
-                                         funtab))))
-  :use pred-holds
-  :enable pred-necc
-
-  :prep-lemmas
-
-  ((defund-sk pred (stmts funtab)
-     (forall vartab
-             (implies (not (resulterrp
-                            (check-safe-statement-list stmts vartab funtab)))
-                      (not (resulterrp
-                            (check-safe-fundef-list (statements-to-fundefs stmts)
-                                                    funtab)))))
-     :rewrite :direct)
-
-   (defruled base
-     (implies (not (consp stmts))
-              (pred stmts funtab))
-     :enable (pred
-              statements-to-fundefs
-              check-safe-statement-list
-              check-safe-fundef-list))
-
-
-   (defruled step-lemma
-     (implies (and (consp stmts)
-                   (pred (cdr stmts) funtab)
-                   (not (resulterrp
-                         (check-safe-statement-list stmts vartab funtab))))
-              (not (resulterrp
-                    (check-safe-fundef-list (statements-to-fundefs stmts)
-                                            funtab))))
-     :do-not-induct t
-     :expand (check-safe-statement-list stmts vartab funtab)
-     :enable (pred-necc
-              check-safe-statement
-              statements-to-fundefs
-              check-safe-statement-list
-              check-safe-fundef-list))
-
-   (defruled step
-     (implies (and (consp stmts)
-                   (pred (cdr stmts) funtab))
-              (pred stmts funtab))
-     :expand (pred stmts funtab)
-     :enable step-lemma)
-
-   (defruled pred-holds
-     (pred stmts funtab)
-     :induct (len stmts)
-     :enable (base step))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
