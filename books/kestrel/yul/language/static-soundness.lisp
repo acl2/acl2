@@ -539,22 +539,22 @@
      There may be a way to avoid all of this,
      and somehow handle mode kinds with set membership well."))
 
-  (defruled mode-continue-lemma
+  (defruled equal-of-mode-kind-continue
     (implies (modep mode)
              (equal (equal (mode-kind mode) :continue)
                     (equal mode (mode-continue)))))
 
-  (defruled mode-break-lemma
+  (defruled equal-of-mode-kind-break
     (implies (modep mode)
              (equal (equal (mode-kind mode) :break)
                     (equal mode (mode-break)))))
 
-  (defruled mode-regular-lemma
+  (defruled equal-of-mode-kind-regular
     (implies (modep mode)
              (equal (equal (mode-kind mode) :regular)
                     (equal mode (mode-regular)))))
 
-  (defruled mode-leave-lemma
+  (defruled equal-of-mode-kind-leave
     (implies (modep mode)
              (equal (equal (mode-kind mode) :leave)
                     (equal mode (mode-leave)))))
@@ -590,7 +590,7 @@
                  (equal x (mode-break))
                  (equal x (mode-continue)))))
 
-  (defruled mode-lemma
+  (defruled soutcome->mode-regular-lemma
     (implies (and (set::in (soutcome->mode outcome) modes)
                   (not (equal (soutcome->mode outcome) (mode-break)))
                   (not (equal (soutcome->mode outcome) (mode-continue)))
@@ -1417,10 +1417,10 @@
                         resulterr-limitp
 
                         ;; for subgoal 86:
-                        mode-continue-lemma
-                        mode-break-lemma
-                        mode-regular-lemma
-                        mode-leave-lemma
+                        equal-of-mode-kind-continue
+                        equal-of-mode-kind-break
+                        equal-of-mode-kind-leave
+                        equal-of-mode-kind-regular
 
                         ;; for subgoal 77:
                         cstate-to-vartable-fold-def ; works with next
@@ -1436,7 +1436,7 @@
 
                         ;; for subgoal 61:
                         mode-leave-if-not-regular/continue/break
-                        mode-lemma
+                        soutcome->mode-regular-lemma
 
                         ;; for subgoal 35:
                         vartablep-when-vartable-resultp-and-not-resulterrp
