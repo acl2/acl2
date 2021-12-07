@@ -13,6 +13,8 @@
 (include-book "static-safety-checking")
 (include-book "dynamic-semantics")
 
+(local (include-book "../library-extensions/lists"))
+
 (include-book "kestrel/std/util/defund-sk" :dir :system)
 (include-book "kestrel/utilities/osets" :dir :system)
 
@@ -32,15 +34,6 @@
      which the dynamic semantics defensively checks."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; lists
-
-(defrule non-zero-len-when-consp
-  (implies (consp x)
-           (> (len x) 0))
-  :rule-classes :type-prescription)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
