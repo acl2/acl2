@@ -96,14 +96,3 @@
         |i|
         |j|
         :output-file "conditionals.c")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-#|
-
-On macOS or Linux, you can compile and run this code as follows:
-
-gcc -o conditionals conditionals.c conditionals-test.c
-./conditionals
-
-|#
