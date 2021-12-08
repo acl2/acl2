@@ -107,3 +107,13 @@
   :short "Null pointer for a given referenced type."
   (make-pointer :address? nil :reftype reftype)
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pointer->address ((ptr pointerp))
+  :guard (not (pointer-nullp ptr))
+  :returns (address addressp)
+  :short "Address of a non-null pointer."
+  (address-fix (pointer->address? ptr))
+  :guard-hints (("Goal" :in-theory (enable pointer-nullp)))
+  :hooks (:fix))

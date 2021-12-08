@@ -169,9 +169,11 @@
    (xdoc::p
     "for C loops.
      We order the @(tsee update-array) calls
-     according to their first argument (i.e. the pointer).
-     Note that for a C functions this first argument is an ACL2 variable,
-     while for a C loop it is a @('(read-var <identifier> ...)').
+     according to their first argument (i.e. the address).
+     Note that for a C function this first argument is
+     @(tsee pointer->address) applied to an ACL2 variable,
+     while for a C loop it is
+     @(tsee pointer->address) applied to a @('(read-var <identifier> ...)').
      These two kinds of first arguments never appear together.
      We prove rules that order according to the symbols,
      which apply to proofs of theorems of C functions,
@@ -293,8 +295,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define update-array ((ptr pointerp) (array arrayp) (compst compustatep))
-  :guard (not (pointer-nullp ptr))
+(define update-array ((addr addressp) (array arrayp) (compst compustatep))
   :returns (new-compst compustatep)
   :short (xdoc::topstring
           "Update an array in a "
@@ -305,12 +306,9 @@
   (xdoc::topstring
    (xdoc::p
     "This is like @(tsee write-array), but it does not return an error.
-     First, the guard requires the pointer to be non-null,
-     which ensures that we always get an address (via @(tsee address-fix)).
-     Second, we update the heap with the new array regardless of
+     We update the heap with the new array regardless of
      whether an old array at that address exists or not,
-     and whether, if it exists, its type and length match the new array;
-     we do not consider the type of the pointer either here.
+     and whether, if it exists, its type and length match the new array.
      This way, @(tsee update-array) always guarantees that
      the array goes into the heap,
      thus simplifying rules about it.
@@ -318,12 +316,10 @@
      we ensure that all the conditions mentioned above hold,
      so in a way @(tsee update-array) caches the fact that
      those conditions are satisfied."))
-  (b* ((address (address-fix (pointer->address? ptr)))
-       (heap (compustate->heap compst))
-       (new-heap (omap::update address (array-fix array) heap))
+  (b* ((heap (compustate->heap compst))
+       (new-heap (omap::update (address-fix addr) (array-fix array) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)
-  :guard-hints (("Goal" :in-theory (enable pointer-nullp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -597,7 +593,7 @@
                 update-var-aux))))
 
   (defruled write-var-okp-of-update-array
-    (equal (write-var-okp var val (update-array ptr array compst))
+    (equal (write-var-okp var val (update-array addr array compst))
            (write-var-okp var val compst))
     :enable (write-var-okp
              update-array
@@ -717,7 +713,7 @@
 
   (defruled read-var-of-update-array
     (implies (not (equal (compustate-frames-number compst) 0))
-             (equal (read-var var (update-array ptr array compst))
+             (equal (read-var var (update-array addr array compst))
                     (read-var var compst)))
     :enable (read-var
              update-array
@@ -886,23 +882,21 @@
      yields an array of appropriate type and length.
      The rule is used as last resort,
      only if the computation state is an ACL2 variable
-     (as enforced by the @(tsee syntaxp) hypothesis)."))
+     (as enforced by the @(tsee syntaxp) hypothesis).")
+   (xdoc::p
+    "We include the rule saying that
+     @(tsee pointer->address) returns an address,
+     needed to discharge the @(tsee addressp) hypotheses
+     of the rule @('write-array-okp-of-update-array') below."))
 
-  (define write-array-okp ((ptr pointerp)
-                           (array arrayp)
-                           (compst compustatep))
+  (define write-array-okp ((addr addressp) (array arrayp) (compst compustatep))
     :returns (yes/no booleanp)
     :parents nil
-    (b* ((address (pointer->address? ptr))
-         (reftype (pointer->reftype ptr))
+    (b* ((addr (address-fix addr))
          (heap (compustate->heap compst))
-         ((when (not address)) nil)
-         (address+array (omap::in address heap))
-         ((unless (consp address+array)) nil)
-         (old-array (cdr address+array))
-         ((unless (equal reftype
-                         (type-of-array-element old-array)))
-          nil)
+         (addr+array (omap::in addr heap))
+         ((unless (consp addr+array)) nil)
+         (old-array (cdr addr+array))
          ((unless (equal (type-of-array-element array)
                          (type-of-array-element old-array)))
           nil)
@@ -913,60 +907,55 @@
     :hooks (:fix))
 
   (defruled write-array-okp-of-add-frame
-    (equal (write-array-okp ptr array (add-frame fun compst))
-           (write-array-okp ptr array compst))
+    (equal (write-array-okp addr array (add-frame fun compst))
+           (write-array-okp addr array compst))
     :enable (write-array-okp
              add-frame
              push-frame))
 
   (defruled write-array-okp-of-enter-scope
-    (equal (write-array-okp ptr array (enter-scope compst))
-           (write-array-okp ptr array compst))
+    (equal (write-array-okp addr array (enter-scope compst))
+           (write-array-okp addr array compst))
     :enable (write-array-okp
              enter-scope
              push-frame
              pop-frame))
 
   (defruled write-array-okp-of-add-var
-    (equal (write-array-okp ptr array (add-var var val compst))
-           (write-array-okp ptr array compst))
+    (equal (write-array-okp addr array (add-var var val compst))
+           (write-array-okp addr array compst))
     :enable (write-array-okp
              add-var
              push-frame
              pop-frame))
 
   (defruled write-array-okp-of-update-var
-    (equal (write-array-okp ptr array (update-var var val compst))
-           (write-array-okp ptr array compst))
+    (equal (write-array-okp addr array (update-var var val compst))
+           (write-array-okp addr array compst))
     :enable (write-array-okp
              update-var
              push-frame
              pop-frame))
 
   (defruled write-array-okp-of-update-array
-    (implies (and (not (pointer-nullp ptr))
-                  (not (pointer-nullp ptr2))
-                  (equal (pointer->reftype ptr)
-                         (type-of-array-element array))
-                  (equal (pointer->reftype ptr2)
-                         (type-of-array-element array2)))
-             (equal (write-array-okp ptr array (update-array ptr2 array2 compst))
-                    (if (equal (pointer->address? ptr)
-                               (pointer->address? ptr2))
-                        (and (equal (type-of-array-element array)
-                                    (type-of-array-element array2))
-                             (equal (array-length array)
-                                    (array-length array2)))
-                      (write-array-okp ptr array compst))))
+    (implies
+     (and (addressp addr)
+          (addressp addr2))
+     (equal (write-array-okp addr array (update-array addr2 array2 compst))
+            (if (equal addr addr2)
+                (and (equal (type-of-array-element array)
+                            (type-of-array-element array2))
+                     (equal (array-length array)
+                            (array-length array2)))
+              (write-array-okp addr array compst))))
     :enable (write-array-okp
-             update-array
-             pointer-nullp))
+             update-array))
 
   (defruled write-array-okp-when-arrayp-of-read-array
     (implies (and (syntaxp (symbolp compst))
-                  (equal old-array (read-array ptr compst))
+                  (equal old-array (read-array addr compst))
                   (arrayp old-array))
-             (equal (write-array-okp ptr array compst)
+             (equal (write-array-okp addr array compst)
                     (and (equal (type-of-array-element array)
                                 (type-of-array-element old-array))
                          (equal (array-length array)
@@ -974,9 +963,9 @@
     :enable (write-array-okp read-array arrayp))
 
   (defruled write-array-to-update-array
-    (implies (write-array-okp ptr array compst)
-             (equal (write-array ptr array compst)
-                    (update-array ptr array compst)))
+    (implies (write-array-okp addr array compst)
+             (equal (write-array addr array compst)
+                    (update-array addr array compst)))
     :enable (write-array write-array-okp update-array))
 
   (defval *atc-write-array-rules*
@@ -986,7 +975,8 @@
       write-array-okp-of-add-var
       write-array-okp-of-update-var
       write-array-okp-of-update-array
-      write-array-okp-when-arrayp-of-read-array)))
+      write-array-okp-when-arrayp-of-read-array
+      addressp-of-pointer->address)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -999,62 +989,51 @@
      skip over all the functions that represent the computation states,
      except for possibly @(tsee update-array):
      this is similar to the interaction
-     between @(tsee read-var) and @(tsee update-var),
-     with some complications motivated by
-     the possibility that pointers may be null
-     and the additional type information contained in pointers.")
+     between @(tsee read-var) and @(tsee update-var).")
    (xdoc::p
-    "These complications in the @('read-array-of-update-array') rule
-     suggests that,
-     while the current model of pointers (see @(tsee pointer))
-     seems adequate to represent pointer values in C,
-     we should change @(tsee read-array), @(tsee write-array), and maybe others
-     to operate directly on addresses:
-     this way, we avoid concerns about null pointers and pointer types.
-     We will investigate this soon."))
+    "We include the rule saying that
+     @(tsee pointer->address) returns an address,
+     needed to discharge the @(tsee addressp) hypotheses
+     of the rule @('read-array-of-update-array') below."))
 
   (defruled read-array-of-add-frame
-    (equal (read-array ptr (add-frame fun compst))
-           (read-array ptr compst))
+    (equal (read-array addr (add-frame fun compst))
+           (read-array addr compst))
     :enable (add-frame push-frame read-array))
 
   (defruled read-array-of-enter-scope
-    (equal (read-array ptr (enter-scope compst))
-           (read-array ptr compst))
+    (equal (read-array addr (enter-scope compst))
+           (read-array addr compst))
     :enable (enter-scope
              push-frame
              pop-frame
              read-array))
 
   (defruled read-array-of-add-var
-    (equal (read-array ptr (add-var var val compst))
-           (read-array ptr compst))
+    (equal (read-array addr (add-var var val compst))
+           (read-array addr compst))
     :enable (add-var
              push-frame
              pop-frame
              read-array))
 
   (defruled read-array-of-update-var
-    (equal (read-array ptr (update-var var val compst))
-           (read-array ptr compst))
+    (equal (read-array addr (update-var var val compst))
+           (read-array addr compst))
     :enable (update-var
              push-frame
              pop-frame
              read-array))
 
   (defruled read-array-of-update-array
-    (implies (and (not (pointer-nullp ptr))
-                  (not (pointer-nullp ptr2))
-                  (equal (type-of-array-element array)
-                         (pointer->reftype ptr)))
-             (equal (read-array ptr (update-array ptr2 array compst))
-                    (if (equal (pointer->address? ptr)
-                               (pointer->address? ptr2))
+    (implies (and (addressp addr)
+                  (addressp addr2))
+             (equal (read-array addr (update-array addr2 array compst))
+                    (if (equal addr addr2)
                         (array-fix array)
-                      (read-array ptr compst))))
+                      (read-array addr compst))))
     :enable (read-array
-             update-array
-             pointer-nullp))
+             update-array))
 
   (defval *atc-read-array-rules*
     '(read-array-of-add-frame
@@ -1062,6 +1041,7 @@
       read-array-of-add-var
       read-array-of-update-var
       read-array-of-update-array
+      addressp-of-pointer->address
       array-fix-when-arrayp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1076,8 +1056,8 @@
    (xdoc::p
     "When @(tsee update-array) is applied to @(tsee update-array),
      we have rules similar to the ones for @(tsee update-var).
-     If the two pointers have the same address, we overwrite the array.
-     When the two pointers are not null and have different addresses,
+     If the two addresses are the same, we overwrite the array.
+     When the addresses differ,
      we swap the @(tsee update-var)s
      if the right pointer is smaller than the left one,
      where smaller is a syntactic check:
@@ -1089,30 +1069,34 @@
      we compare the identifier terms,
      which boils down to comparing the variable names.
      Either way, we normalize the nests of @(tsee update-array) calls
-     by ordering them according to the pointer.")
-   (xdoc::p
-    "As observed in @(see atc-read-array-rules),
-     it should be possible to simplify some of these rules
-     by changing @(tsee read-array) and @(tsee write-array),
-     and consequently @(tsee update-array),
-     to operate directly on addresses rather than pointers.")
+     by ordering them according to the pointer.
+     We are talking about pointers here, and not addresses,
+     because, as mentioned in @(see atc-symbolic-computation-states),
+     during symbolic execution the addresses in question
+     have the form @('(pointer->address <pointer>)'),
+     which is what the @(tsee syntaxp) hypotheses below are based on.")
    (xdoc::p
     "We also include a rule saying that
      updating an array with the existing one is a no-op.
      This is similar to @('update-var-of-read-var').
      In particular, it uses two possibly different computation states,
-     for the reasons explained for @('update-var-of-read-var')."))
+     for the reasons explained for @('update-var-of-read-var').")
+   (xdoc::p
+    "We include the rule saying that
+     @(tsee pointer->address) returns an address,
+     needed to discharge the @(tsee addressp) hypotheses
+     of the rule @('read-array-of-update-array') below."))
 
   (defruled update-array-of-add-frame
-    (equal (update-array ptr array (add-frame fun compst))
-           (add-frame fun (update-array ptr array compst)))
+    (equal (update-array addr array (add-frame fun compst))
+           (add-frame fun (update-array addr array compst)))
     :enable (update-array
              add-frame
              push-frame))
 
   (defruled update-array-of-enter-scope
-    (equal (update-array ptr array (enter-scope compst))
-           (enter-scope (update-array ptr array compst)))
+    (equal (update-array addr array (enter-scope compst))
+           (enter-scope (update-array addr array compst)))
     :enable (update-array
              enter-scope
              push-frame
@@ -1120,8 +1104,8 @@
              top-frame))
 
   (defruled update-array-of-add-var
-    (equal (update-array ptr array (add-var var val compst))
-           (add-var var val (update-array ptr array compst)))
+    (equal (update-array addr array (add-var var val compst))
+           (add-var var val (update-array addr array compst)))
     :enable (update-array
              add-var
              push-frame
@@ -1129,8 +1113,8 @@
              top-frame))
 
   (defruled update-array-of-update-var
-    (equal (update-array ptr array (update-var var val compst))
-           (update-var var val (update-array ptr array compst)))
+    (equal (update-array addr array (update-var var val compst))
+           (update-var var val (update-array addr array compst)))
     :enable (update-array
              update-var
              push-frame
@@ -1138,49 +1122,54 @@
              top-frame))
 
   (defruled update-array-of-update-array-same
-    (equal (update-array ptr array (update-array ptr array2 compst))
-           (update-array ptr array compst))
+    (equal (update-array addr array (update-array addr array2 compst))
+           (update-array addr array compst))
     :enable update-array)
 
   (defruled update-array-of-update-array-less-symbol
-    (implies (and (syntaxp (and (symbolp ptr)
-                                (symbolp ptr2)
-                                (symbol< ptr2 ptr)))
-                  (not (pointer-nullp ptr))
-                  (not (pointer-nullp ptr2))
-                  (not (equal (pointer->address? ptr)
-                              (pointer->address? ptr2))))
-             (equal (update-array ptr array (update-array ptr2 array2 compst))
-                    (update-array ptr2 array2 (update-array ptr array compst))))
-    :enable (update-array
-             pointer-nullp))
+    (implies
+     (and (syntaxp (and (ffn-symb-p addr 'pointer->address)
+                        (ffn-symb-p addr2 'pointer->address)
+                        (b* ((ptr (fargn addr 1))
+                             (ptr2 (fargn addr2 1)))
+                          (and (symbolp ptr)
+                               (symbolp ptr2)
+                               (symbol< ptr2 ptr)))))
+          (addressp addr)
+          (addressp addr2)
+          (not (equal addr addr2)))
+     (equal (update-array addr array (update-array addr2 array2 compst))
+            (update-array addr2 array2 (update-array addr array compst))))
+    :enable update-array)
 
   (defruled update-array-of-update-array-less-ident
-    (implies (and (syntaxp (and (ffn-symb-p ptr 'read-var)
-                                (ffn-symb-p ptr2 'read-var)
-                                (<< (fargn ptr2 1)
-                                    (fargn ptr 1))))
-                  (not (pointer-nullp ptr))
-                  (not (pointer-nullp ptr2))
-                  (not (equal (pointer->address? ptr)
-                              (pointer->address? ptr2))))
-             (equal (update-array ptr array (update-array ptr2 array2 compst))
-                    (update-array ptr2 array2 (update-array ptr array compst))))
-    :enable (update-array
-             pointer-nullp))
+    (implies
+     (and (syntaxp (and (ffn-symb-p addr 'pointer->address)
+                        (ffn-symb-p addr2 'pointer->address)
+                        (b* ((ptr (fargn addr 1))
+                             (ptr2 (fargn addr2 1)))
+                          (and (ffn-symb-p ptr 'read-var)
+                               (ffn-symb-p ptr2 'read-var)
+                               (<< (fargn ptr2 1)
+                                   (fargn ptr 1))))))
+          (addressp addr)
+          (addressp addr2)
+          (not (equal addr addr2)))
+     (equal (update-array addr array (update-array addr2 array2 compst))
+            (update-array addr2 array2 (update-array addr array compst))))
+    :enable update-array)
 
   (defruled update-array-of-read-array-same
     (implies (and (syntaxp (symbolp compst))
-                  (not (pointer-nullp ptr))
+                  (addressp addr)
                   (compustatep compst1)
-                  (arrayp (read-array ptr compst))
-                  (equal (read-array ptr compst)
-                         (read-array ptr compst1)))
-             (equal (update-array ptr (read-array ptr compst) compst1)
+                  (arrayp (read-array addr compst))
+                  (equal (read-array addr compst)
+                         (read-array addr compst1)))
+             (equal (update-array addr (read-array addr compst) compst1)
                     compst1))
     :enable (read-array
              update-array
-             pointer-nullp
              arrayp
              omap::update-of-cdr-of-in-when-in)
     :prep-lemmas
@@ -1199,7 +1188,8 @@
       update-array-of-update-array-same
       update-array-of-update-array-less-symbol
       update-array-of-update-array-less-ident
-      update-array-of-read-array-same)))
+      update-array-of-read-array-same
+      addressp-of-pointer->address)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1235,7 +1225,7 @@
     :enable update-var)
 
   (defruled compustate-frames-number-of-update-array
-    (equal (compustate-frames-number (update-array ptr array compst))
+    (equal (compustate-frames-number (update-array addr array compst))
            (compustate-frames-number compst))
     :enable (update-array
              compustate-frames-number))

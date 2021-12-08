@@ -929,11 +929,16 @@
                     (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                          ,(atc-syntaxp-hyp-for-expr-pure 'y)
                          (pointerp x)
-                         (,apred (read-array x compst))
+                         (not (pointer-nullp x))
+                         (equal array
+                                (read-array (pointer->address x) compst))
+                         (equal (pointer->reftype x)
+                                (type-of-array-element array))
+                         (,apred array)
                          (,ipred y)
-                         (,atype-array-itype-index-okp (read-array x compst) y))
+                         (,atype-array-itype-index-okp array y))
                     (equal (exec-arrsub x y compst)
-                           (,atype-array-read-itype (read-array x compst) y))))
+                           (,atype-array-read-itype array y))))
          (event `(defruled ,name
                    ,formula
                    :enable (exec-arrsub
@@ -1841,13 +1846,17 @@
                  (,epred val)
                  (equal ptr (read-var (expr-ident->get arr) compst1))
                  (pointerp ptr)
-                 (equal array (read-array ptr compst1))
+                 (not (pointer-nullp ptr))
+                 (equal array
+                        (read-array (pointer->address ptr) compst1))
+                 (equal (pointer->reftype ptr)
+                        (type-of-array-element array))
                  (,apred array)
                  (equal index (exec-expr-pure sub compst1))
                  (,ipred index)
                  (,atype-array-itype-index-okp array index))
             (equal (exec-expr-asg e compst fenv limit)
-                   (write-array ptr
+                   (write-array (pointer->address ptr)
                                 (,atype-array-write-itype array index val)
                                 compst1))))
          (event `(defruled ,name

@@ -3918,7 +3918,7 @@
      the names of the formals must be portable C identifiers.
      For each array formal @('a') of @('fn'),
      we generate a pointer variable @('a-ptr') as explained,
-     along with a binding @('(a (read-array a-ptr compst))'):
+     along with a binding @('(a (read-array (pointer->address a-ptr) compst))'):
      this binding relates the two variables,
      and lets us use the guard of @('fn') as hypothesis in the theorem,
      which uses @('a'),
@@ -3962,7 +3962,7 @@
      we introduce an additional @('a-ptr') variable,
      similarly to the case of non-recursive @('fn').
      We generate two bindings @('(a-ptr (read-var <a> compst))')
-     and @('(a (read-array a-ptr compst))'),
+     and @('(a (read-array (pointer->address a-ptr) compst))'),
      in that order.
      The first binding serves to tie @('a-ptr')
      to the corresponding variable in the computation state,
@@ -3977,7 +3977,7 @@
      the bindings are put into a @(tsee b*),
      which enforces the order.
      We generate no substitution map in @('pointer-subst') here,
-     because that only applied to @(tsee exec-fun),
+     because that only applies to @(tsee exec-fun),
      which is not used for C loops.")
    (xdoc::p
     "The reason for generating and using these bindings in the theorems,
@@ -3995,15 +3995,16 @@
   (b* (((when (endp typed-formals)) (mv nil nil nil nil))
        ((cons formal type) (car typed-formals))
        (formal-ptr (add-suffix-to-fn formal "-PTR"))
+       (formal-addr `(pointer->address ,formal-ptr))
        (formal-id `(ident ,(symbol-name formal)))
        (arrayp (type-case type :pointer))
        (bindings (if fn-recursivep
                      (if arrayp
                          (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                               `(,formal (read-array ,formal-ptr ,compst-var)))
+                               `(,formal (read-array ,formal-addr ,compst-var)))
                        (list `(,formal (read-var ,formal-id ,compst-var))))
                    (if arrayp
-                       (list `(,formal (read-array ,formal-ptr ,compst-var)))
+                       (list `(,formal (read-array ,formal-addr ,compst-var)))
                      nil)))
        (subst? (and arrayp
                     (list (cons formal formal-ptr))))
@@ -4014,12 +4015,13 @@
                                 ',(type-pointer->referenced type)))))
        (inst (if fn-recursivep
                  (if arrayp
-                     (list `(,formal (read-array (read-var ,formal-id
-                                                           ,compst-var)
+                     (list `(,formal (read-array (pointer->address
+                                                  (read-var ,formal-id
+                                                            ,compst-var))
                                                  ,compst-var)))
                    (list `(,formal (read-var ,formal-id ,compst-var))))
                (if arrayp
-                   (list `(,formal (read-array ,formal-ptr ,compst-var)))
+                   (list `(,formal (read-array ,formal-addr ,compst-var)))
                  nil)))
        ((mv more-bindings more-hyps more-subst more-inst)
         (atc-gen-outer-bindings-and-hyps (cdr typed-formals)
@@ -4068,8 +4070,8 @@
   (b* (((when (endp pointer-vars)) nil)
        (var (car pointer-vars))
        (hyps (loop$ for var2 in (cdr pointer-vars)
-                    collect `(not (equal (pointer->address? ,var)
-                                         (pointer->address? ,var2)))))
+                    collect `(not (equal (pointer->address ,var)
+                                         (pointer->address ,var2)))))
        (more-hyps (atc-gen-diff-address-hyps (cdr pointer-vars))))
     (append hyps more-hyps)))
 
@@ -4085,7 +4087,7 @@
   (xdoc::topstring
    (xdoc::p
     "The correctness theorem of a C function says that
-     executing the fucntion on a generic computation state
+     executing the function on a generic computation state
      (satisfying conditions in the hypotheses of the theorem)
      and on generic arguments
      yields an optional result (absent if the function is @('void'))
@@ -4113,7 +4115,8 @@
      the array variables are bound to
      the possibly modified arrays returned by @('fn')."))
   (cond ((endp mod-arrs) compst-var)
-        (t `(write-array ,(cdr (assoc-eq (car mod-arrs) pointer-subst))
+        (t `(write-array (pointer->address
+                          ,(cdr (assoc-eq (car mod-arrs) pointer-subst)))
                          ,(car mod-arrs)
                          ,(atc-gen-cfun-final-compustate (cdr mod-arrs)
                                                          pointer-subst
@@ -5198,7 +5201,7 @@
        (mod-var (car mod-vars))
        (ptr (cdr (assoc-eq mod-var pointer-subst))))
     (if ptr
-        `(write-array ,ptr
+        `(write-array (pointer->address ,ptr)
                       ,mod-var
                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
                                                       pointer-subst

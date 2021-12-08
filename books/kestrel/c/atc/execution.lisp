@@ -1301,24 +1301,32 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first operand must be a pointer to an array.
+    "The first operand must be a non-null pointer to an array
+     of type consistent with the array.
      The second operand must be an integer value (of any integer type).
      The resulting index must be in range for the array,
      and the indexed element is returned as result."))
   (b* ((arr (value-result-fix arr))
-       (sub (value-result-fix sub))
        ((when (errorp arr)) arr)
-       ((when (errorp sub)) sub)
        ((unless (pointerp arr)) (error (list :mistype-array :array
                                              :required :pointer
                                              :supplied (type-of-value arr))))
+       ((when (pointer-nullp arr)) (error (list :null-pointer)))
+       (addr (pointer->address arr))
+       (reftype (pointer->reftype arr))
+       (array (read-array addr compst))
+       ((when (errorp array))
+        (error (list :array-not-found arr (compustate-fix compst))))
+       ((unless (equal reftype (type-of-array-element array)))
+        (error (list :mistype-array-read
+                     :pointer reftype
+                     :array (type-of-array-element array))))
+       (sub (value-result-fix sub))
+       ((when (errorp sub)) sub)
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
                                              :required (type-sint)
                                              :supplied (type-of-value sub))))
-       (array (read-array arr compst))
-       ((when (errorp array))
-        (error (list :array-not-found arr (compustate-fix compst))))
        (index (exec-integer sub))
        (err (error (list :array-index-out-of-range
                          :pointer arr
@@ -1366,7 +1374,8 @@
              err))
           (t (error (impossible)))))
   :guard-hints (("Goal"
-                 :use (:instance array-resultp-of-read-array (ptr arr))
+                 :use (:instance array-resultp-of-read-array
+                       (addr (pointer->address arr)))
                  :in-theory (e/d (arrayp
                                   array-resultp)
                                  (array-resultp-of-read-array))))
@@ -1646,8 +1655,15 @@
                (error (list :mistype-array :array
                             :required :pointer
                             :supplied (type-of-value ptr))))
-              (array (read-array ptr compst))
+              ((when (pointer-nullp ptr)) (error (list :null-pointer)))
+              (addr (pointer->address ptr))
+              (reftype (pointer->reftype ptr))
+              (array (read-array addr compst))
               ((when (errorp array)) array)
+              ((unless (equal reftype (type-of-array-element array)))
+               (error (list :mistype-array-read
+                            :pointer reftype
+                            :array (type-of-array-element array))))
               (idx (exec-expr-pure sub compst))
               ((when (errorp idx)) idx)
               ((unless (value-integerp idx))
@@ -1665,61 +1681,61 @@
            (cond ((uchar-arrayp array)
                   (b* (((unless (ucharp val)) err-elem)
                        ((unless (uchar-array-index-okp array index)) err-idx))
-                    (write-array ptr
+                    (write-array addr
                                  (uchar-array-write array index val)
                                  compst)))
                  ((schar-arrayp array)
                   (b* (((unless (scharp val)) err-elem)
                        ((unless (schar-array-index-okp array index)) err-idx))
-                    (write-array ptr
+                    (write-array addr
                                  (schar-array-write array index val)
                                  compst)))
                  ((ushort-arrayp array)
                   (b* (((unless (ushortp val)) err-elem)
                        ((unless (ushort-array-index-okp array index)) err-idx))
-                    (write-array ptr
+                    (write-array addr
                                  (ushort-array-write array index val)
                                  compst)))
                  ((sshort-arrayp array)
                   (b* (((unless (sshortp val)) err-elem)
                        ((unless (sshort-array-index-okp array index)) err-idx))
-                    (write-array ptr
+                    (write-array addr
                                  (sshort-array-write array index val)
                                  compst)))
                  ((uint-arrayp array)
                   (b* (((unless (uintp val)) err-elem)
                        ((unless (uint-array-index-okp array index)) err-idx))
-                    (write-array ptr
+                    (write-array addr
                                  (uint-array-write array index val)
                                  compst)))
                  ((sint-arrayp array)
                   (b* (((unless (sintp val)) err-elem)
                        ((unless (sint-array-index-okp array index)) err-idx))
-                    (write-array ptr
+                    (write-array addr
                                  (sint-array-write array index val)
                                  compst)))
                  ((ulong-arrayp array)
                   (b* (((unless (ulongp val)) err-elem)
                        ((unless (ulong-array-index-okp array index)) err-idx))
-                    (write-array ptr
+                    (write-array addr
                                  (ulong-array-write array index val)
                                  compst)))
                  ((slong-arrayp array)
                   (b* (((unless (slongp val)) err-elem)
                        ((unless (slong-array-index-okp array index)) err-idx))
-                    (write-array ptr
+                    (write-array addr
                                  (slong-array-write array index val)
                                  compst)))
                  ((ullong-arrayp array)
                   (b* (((unless (ullongp val)) err-elem)
                        ((unless (ullong-array-index-okp array index)) err-idx))
-                    (write-array ptr
+                    (write-array addr
                                  (ullong-array-write array index val)
                                  compst)))
                  ((sllong-arrayp array)
                   (b* (((unless (sllongp val)) err-elem)
                        ((unless (sllong-array-index-okp array index)) err-idx))
-                    (write-array ptr
+                    (write-array addr
                                  (sllong-array-write array index val)
                                  compst)))
                  (t (error :impossible)))))
