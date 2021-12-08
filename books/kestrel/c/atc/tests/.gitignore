@@ -41,3 +41,4 @@ operators.c
 operators
 
 ops-diff-types.c
+ops-diff-types
