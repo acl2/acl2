@@ -95,7 +95,8 @@ FAILING_TEST_TARGETS := \
   paramtypes3/ok \
   paramtypes4/ok \
   param3/ok \
-  iface_basic7/ok
+  iface_basic7/ok \
+  pluscolon/ok
 
 SPECFILES := $(wildcard */spec.sv)
 TESTS := $(patsubst %/spec.sv,%,$(SPECFILES))
@@ -109,12 +110,30 @@ OUTDIRS_VCS := $(patsubst %,%/simv.daidir,$(TESTS))
 print_tests :
 	@echo $(TESTS)
 
+ifneq ($(NO_NCV),1)
+NCV_PAT := %/outputs.ncv.data
+else
+NCV_PAT :=
+endif
+
+ifneq ($(NO_VCS),1)
+VCS_PAT := %/outputs.vcs.data
+else
+VCS_PAT :=
+endif
+
+ifneq ($(NO_IV),1)
+IV_PAT := %/outputs.iv.data
+else
+IV_PAT :=
+endif
+
 # %/ok : %/outputs.ncv.data %/outputs.vcs.data %/outputs.iv.data cosim-core
-%/ok : %/outputs.ncv.data %/outputs.vcs.data cosim-core
+%/ok : $(NCV_PAT) $(VCS_PAT) $(IV_PAT)
 	@echo "Making $*/ok"
 	@rm -f $*.ok $*/cosim.out
 	COSIM_TESTDIR=$* $(STARTJOB) -c "./cosim-core < run.lsp &> $*/cosim.out"
-	@! egrep -i "failed|error" $*/cosim.out > /dev/null
+	@! egrep "Test failed|ACL2 Error" $*/cosim.out > /dev/null
 	@mv $*/cosim.out $*/ok
 	@ls -l $*/ok
 
@@ -123,6 +142,8 @@ print_tests :
 	@cd $*; \
          if [ -e twovalued ]; then \
            infile=../twovalued.data; \
+	 elif [ -e threevalued ]; then \
+	   infile=../threevalued.data; \
          else \
            infile=../fourvalued.data; \
          fi; \
@@ -138,6 +159,8 @@ print_tests :
 	@cd $*; \
          if [ -e twovalued ]; then \
            infile=../twovalued.data; \
+	 elif [ -e threevalued ]; then \
+	   infile=../threevalued.data; \
          else \
            infile=../fourvalued.data; \
          fi; \
@@ -153,6 +176,8 @@ print_tests :
 	@cd $*; \
          if [ -e twovalued ]; then \
            infile=../twovalued.data; \
+	 elif [ -e threevalued ]; then \
+	   infile=../threevalued.data; \
          else \
            infile=../fourvalued.data; \
          fi; \
@@ -179,7 +204,7 @@ passing : $(PASSING_TESTS)
 failing: $(FAILING_TEST_TARGETS)
 
 # all : $(TESTCERTS) ncv vcs iv
-all : $(TESTCERTS) ncv vcs
+all : $(TESTCERTS)
 
 .PHONY: cleansim
 cleansim:
