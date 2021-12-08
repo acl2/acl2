@@ -2194,6 +2194,12 @@ identifier, so we convert it into a hidpiece.</p>"
     ;;    inc_or_dec_expression ::= inc_or_dec_operator { attribute_instance } variable_lvalue      ;; pre increments
     ;;                            | variable_lvalue { attribute_instance } inc_or_dec_operator      ;; post increments
 
+
+    ;; Unary operators aren't supposed to be nested without parens, even in
+    ;; SystemVerilog.  However, in practice many implementations support
+    ;; certain nestings such as ! | a, ~ | a.  The pattern for VCS, at least,
+    ;; seems to be that lognot/bitnot allow another unary op inside, whereas
+    ;; others don't.
     (seq tokstream
 
 ; For a unary operator I think it makes sense to only to look for a linestart
@@ -2271,7 +2277,9 @@ identifier, so we convert it into a hidpiece.</p>"
               (mv nil primary tokstream))))
 
           (atts :w= (vl-parse-0+-attribute-instances))
-          (primary := (vl-parse-primary))
+          (primary := (if (member-eq op '(:vl-unary-lognot :vl-unary-bitnot))
+                          (vl-parse-unary-expression)
+                        (vl-parse-primary)))
 
           ;; We had a prefix unary-operator, so we don't need to try to handle
           ;; post-increment/decrement operators here, because no matter what

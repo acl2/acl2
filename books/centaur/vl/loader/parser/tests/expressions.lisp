@@ -567,6 +567,9 @@
    (make-exprtest :input "1 + (* foo = 3 + (* bar = 1 *) 4 *) 2"
                   :successp nil)
 
+   (make-exprtest :input "! | a"
+                  :expect
+                  '(:VL-UNARY-LOGNOT NIL (:VL-UNARY-BITOR NIL (ID "a"))))
    ))
 
 
