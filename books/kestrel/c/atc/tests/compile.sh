@@ -23,19 +23,26 @@
 # stop on error:
 set -e
 
-# generate binaries:
-gcc -o arrays arrays.c arrays-test.c
-gcc -o assign assign.c assign-test.c
-gcc -o calls calls.c calls-test.c
-gcc -o checksum checksum.c checksum-test.c
-gcc -o conditionals conditionals.c conditionals-test.c
-gcc -o constants constants.c constants-test.c
-gcc -o conversions conversions.c conversions-test.c
-gcc -o int int.c int-test.c
-gcc -o locvars locvars.c locvars-test.c
-gcc -o loops loops.c loops-test.c
-gcc -o mbt mbt.c mbt-test.c
-gcc -o nonstrict nonstrict.c nonstrict-test.c
-gcc -o not not.c not-test.c
-gcc -o operators operators.c operators-test.c
-gcc -o ops-diff-types ops-diff-types.c ops-diff-types-test.c
+# generate binaries
+# (the -Wno-implicit-function-declaration option serves to prevent
+# GCC on macOS from complaining about the generated functions
+# called by the handwritten code without the former being declared;
+# the proper way to handle this is by extending ATC to generate .h files
+# and to include those in the handwritten files,
+# but for now we simply suppress the error;
+# GCC on Linux does not need this option, but it works fine with it):
+gcc -Wno-implicit-function-declaration -o arrays arrays.c arrays-test.c
+gcc -Wno-implicit-function-declaration -o assign assign.c assign-test.c
+gcc -Wno-implicit-function-declaration -o calls calls.c calls-test.c
+gcc -Wno-implicit-function-declaration -o checksum checksum.c checksum-test.c
+gcc -Wno-implicit-function-declaration -o conditionals conditionals.c conditionals-test.c
+gcc -Wno-implicit-function-declaration -o constants constants.c constants-test.c
+gcc -Wno-implicit-function-declaration -o conversions conversions.c conversions-test.c
+gcc -Wno-implicit-function-declaration -o int int.c int-test.c
+gcc -Wno-implicit-function-declaration -o locvars locvars.c locvars-test.c
+gcc -Wno-implicit-function-declaration -o loops loops.c loops-test.c
+gcc -Wno-implicit-function-declaration -o mbt mbt.c mbt-test.c
+gcc -Wno-implicit-function-declaration -o nonstrict nonstrict.c nonstrict-test.c
+gcc -Wno-implicit-function-declaration -o not not.c not-test.c
+gcc -Wno-implicit-function-declaration -o operators operators.c operators-test.c
+gcc -Wno-implicit-function-declaration -o ops-diff-types ops-diff-types.c ops-diff-types-test.c
