@@ -11,4 +11,5 @@ int main(void) {
   printf("%u! = %u\n", 7, f(7));
   printf("%u! = %u\n", 8, f(8));
   printf("%u! = %u\n", 9, f(9));
+  return 0;
 }

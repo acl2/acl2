@@ -28,4 +28,5 @@ int main(void) {
   test_read();
   test_write();
   test_copy();
+  return 0;
 }

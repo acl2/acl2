@@ -15,4 +15,5 @@ int main(void) {
   mbt_test(200);
   mbt_dollar_test(10);
   mbt_dollar_test(200);
+  return 0;
 }

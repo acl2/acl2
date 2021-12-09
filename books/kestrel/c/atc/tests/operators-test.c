@@ -82,4 +82,5 @@ int main(void) {
     printf("All tests passed.\n");
   else
     printf("Some tests failed.\n");
+  return 0;
 }
