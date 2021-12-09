@@ -13,6 +13,8 @@
 (include-book "dead-code-eliminator")
 (include-book "dead-code-eliminator-verification")
 
+(include-book "no-function-definitions")
+
 (include-book "for-loop-init-rewriter")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
