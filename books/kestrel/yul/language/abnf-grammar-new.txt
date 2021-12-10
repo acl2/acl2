@@ -9,8 +9,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; This file contains an ABNF grammar of Yul,
-; derived from the official grammar in the Solidity specification
-; (https://docs.soliditylang.org/en/latest/grammar.html).
+; derived from the official grammars in the Solidity specification
+; (https://docs.soliditylang.org/en/latest/grammar.html)
+; and the ANTLR4 grammars in
+; https://github.com/ethereum/solidity/tree/develop/docs/grammar/*.g4
 ; This is the new grammar of Yul; see :DOC CONCRETE-SYNTAX.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -20,13 +22,23 @@
 ; We add some additional rules here,
 ; which correspond to some regex constructs used in the Solidity/Yul grammar,
 ; as indicated by the comments below saying 'corresponds to ...'.
-; We omit the 'yul-' prefix since the context is Yul here.
+; We omit the 'yul-' prefix in rule names since the context is Yul here,
+; but we add 'corresponds to ...' if the rule name here is not the same
+; as the rule name in the official grammars.
 ; We organize the rules bottom-up.
 ; We leave out the yul-evm-builtin rule because that seems to belong
 ; more to the EVM dialect of Yul than to generic Yul.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; This section defines tokens that are to be returned by a tokenizer.
+
+;; The rules in this section mostly correspond to rules in
+;; https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityLexer
+;; (except for boolean (yul-boolean) and literal (yul-literal); see below,
+;; and except for hex-string, which is also in SolidityParser; see below.
+
+; corresponds to yul-boolean
 boolean = %s"true" / %s"false"
 
 ; corresponds to '"':
@@ -50,12 +62,14 @@ nonzero-decimal-digit = %x31-39
 ; corresponds to [0-9a-fA-F]:
 hex-digit = decimal-digit / %i"a" / %i"b" / %i"c" / %i"d" / %i"e" / %i"f"
 
+; corresponds to yul-decimal-number
 decimal-number = "0" / nonzero-decimal-digit *decimal-digit
 
+; Corresponds to yul-hex-number
 hex-number = %s"0x" *hex-digit
 
-hex-string = dquote [ 2hex-digit *( [ "_" ] 2hex-digit ) ] dquote
-           / squote [ 2hex-digit *( [ "_" ] 2hex-digit ) ] squote
+hex-string = %s"hex" ( dquote [ 2hex-digit *( [ "_" ] 2hex-digit ) ] dquote
+                     / squote [ 2hex-digit *( [ "_" ] 2hex-digit ) ] squote )
 
 double-quoted-printable = %x20-21 / %x23-5B / %x5D-7E ; anything but " or \
 
@@ -66,9 +80,11 @@ escape-sequence = "\"
                   / %s"u" 4hex-digit
                   / %s"x" 2hex-digit )
 
+; corresponds to yul-string-literal
 string-literal = dquote *( double-quoted-printable / escape-sequence ) dquote
                / squote *( single-quoted-printable / escape-sequence ) squote
 
+; corresponds to yul-literal
 literal = decimal-number
         / hex-number
         / boolean
@@ -87,36 +103,146 @@ identifier-start = lowercase-letter / uppercase-letter / "$" / "_"
 ; corresponds to [a-zA-Z0-9$_]:
 identifier-rest = identifier-start / decimal-digit
 
+; corresponds to yul-identifier
 identifier = identifier-start *identifier-rest
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The rules in this section have to do with separating lexemes
+;; into tokens, whitespace, and comments.
+;; These generally correspond to rules in
+;; https://github.com/ethereum/solidity/blob/develop/docs/grammar/SolidityLexer.g4
+;; although the way whitespace and comments are handled is different in ABNF
+;; than it is in ANTLR4.
+
+;; --------------------------------
+;; keywords
+
+;; Keywords that could be used as identifiers if they were not keywords.
+;; Note that %s"true" and %s"false" arew not here since we want
+;; them to lex as a boolean literal and therefore a token.
+;; However, %s"leave", %s"break", and %s"continue" should be here
+;; since we want the lexer to recognize them as keywords rather than
+;; identifiers.
+keyword = %s"function"
+          / %s"if"
+          / %s"for"
+          / %s"switch"
+          / %s"case"
+          / %s"default"
+          / %s"let"
+          / %s"leave"
+          / %s"break"
+          / %s"continue"
+
+;; Keywords that could not be used as identifiers if they were not keywords.
+symbol = "." / ","
+         / "->"
+         / "(" / ")"
+         / ":="
+         / "{" / "}"
+
+
+;;; --------------------------------
+;;; whitespace and comments
+
+; Corresponds to [ \t\r\n\u000C]
+whitespace-char = %x20 / %x09 / %x0d / %x0a / %x0c
+
+; ANTLR4 rule:
+; YulWS: [ \t\r\n\u000C]+ -> skip ;
+
+whitespace = 1*whitespace-char
+
+; ANTLR4 rule:
+; YulCOMMENT: '/*' .*? '*/' -> channel(HIDDEN) ;
+; Note, the "?" means shortest match.  To do that in our abnf grammar,
+; we must split this out into a number of rules.
+
+not-star = %x00-29 / %x2b-7f
+not-star-or-slash = %x00-29 / %x2b-2e / %x30-7f
+
+block-comment = "/*" rest-of-block-comment
+
+rest-of-block-comment = "*" rest-of-block-comment-after-star
+                        / not-star rest-of-block-comment
+
+rest-of-block-comment-after-star = "/"
+                                   / "*" rest-of-block-comment-after-star
+                                   / not-star-or-slash rest-of-block-comment
+
+; ANTLR4 rule:
+; YulLINE_COMMENT: '//' ~[\r\n]* -> channel(HIDDEN) ;
+
+not-lf-or-cr = %x00-09 / %x0b-0c / %x0e-7f
+
+end-of-line-comment = "//" *not-lf-or-cr
+
+comment = block-comment / end-of-line-comment
+
+
+;; --------------------------------
+;; tokens
+
+token = keyword
+        / literal
+        / identifier
+        / symbol
+
+lexeme = token / comment / whitespace
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Syntactic grammar, to be applied to a sequence of tokens after
+;; comments and whitespace have been removed.
+
+;; All of the rules in this section
+;; (and three in the top section above: boolean (yul-boolean),
+;; literal (yul-literal), and hex-string)
+;; are defined in the SolidityParser grammar
+;; https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityParser
+
+; corresponds to yul-path
 path = identifier *( "." identifier )
 
+; corresponds to yul-expression
 expression = path / function-call / literal
 
+; corresponds to yul-function-call,
+; except does not bother to separate out yul-evm-builtin from identifier
 function-call = identifier "(" [ expression *( "," expression ) ] ")"
 
+; corresponds to yul-function-definition
 function-definition = %s"function" identifier
                       "(" [ identifier *( "," identifier ) ] ")"
                       "->" identifier *( "," identifier )
                       block
 
+; corresponds to yul-if-statement
 if-statement = %s"if" expression block
 
+; corresponds to yul-for-statement
 for-statement = %s"for" block expression block block
 
-switch-statement = expression
+; corresponds to yul-switch-statement
+switch-statement = %s"switch" expression
                    ( 1*( %s"case" literal block ) [ %s"default" block ]
                    / %s"default" block )
 
+; corresponds to yul-assignment
 assignment = path ":=" expression
            / path 1*( "," path ) ":=" function-call
 
+; corresponds to yul-variable-declaration
 variable-declaration = %s"let" identifier [ ":=" expression ]
                      / %s"let" identifier *( "," identifier )
                        [ ":=" function-call ]
 
+; corresponds to yul-block
 block = "{" *statement "}"
 
+; corresponds to yul-statement
 statement = block
           / variable-declaration
           / assignment
