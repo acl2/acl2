@@ -108,4 +108,10 @@
 
   ///
 
-  (fty::deffixequiv-mutual statements/blocks/cases/fundefs-noloopinitp))
+  (fty::deffixequiv-mutual statements/blocks/cases/fundefs-noloopinitp)
+
+  (defrule block-option-noloopinitp-when-blockp
+    (implies (blockp block)
+             (equal (block-option-noloopinitp block)
+                    (block-noloopinitp block)))
+    :enable block-option-some->val))
