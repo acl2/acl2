@@ -567,6 +567,13 @@
   :ok vartable-modes
   :pred vartable-modes-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-vartable-modes-p
+  (implies (vartable-modes-p x)
+           (not (resulterrp x)))
+  :enable (vartable-modes-p resulterrp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines check-safe-statements/blocks/cases/fundefs
@@ -995,7 +1002,13 @@
       :in-theory
       (enable vartablep-when-vartable-resultp-and-not-resulterrp))))
 
-  (fty::deffixequiv-mutual check-safe-statements/blocks/cases/fundefs))
+  (fty::deffixequiv-mutual check-safe-statements/blocks/cases/fundefs)
+
+  (defrule check-safe-block-option-when-blockp
+    (implies (blockp block)
+             (equal (check-safe-block-option block vartab funtab)
+                    (check-safe-block block vartab funtab)))
+    :enable (check-safe-block-option block-option-some->val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
