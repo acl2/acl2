@@ -30,7 +30,7 @@
 
 (in-package "VL")
 
-(include-book "../../mlib/hid-tools")
+(include-book "type-disamb-aux")
 (include-book "centaur/fty/visitor" :dir :system)
 (local (include-book "../../util/default-hints"))
 (local (std::add-default-post-define-hook :fix))
@@ -44,56 +44,6 @@
 ;; that doesn't work, so we only need to convert expressions to datatypes, not
 ;; vice versa.
 
-(define vl-expr-to-datatype ((x vl-expr-p)
-                             (ss vl-scopestack-p))
-  :returns (mv (warnings vl-warninglist-p
-                         "Warning if we couldn't make sense of something.")
-               (type (iff (vl-datatype-p type) type)
-                     "The resulting datatype, if it is one."))
-  (b* ((warnings nil)
-       (x (vl-expr-fix x)))
-    (vl-expr-case x
-      :vl-index (b* (((mv err trace ?context tail)
-                      (vl-follow-scopeexpr x.scope ss))
-                     ((when err)
-                      (mv (warn :type :vl-expr-to-datatype-fail
-                                :msg "Couldn't look up variable ~a0: ~@1"
-                                :args (list x err))
-                          nil))
-                     ((vl-hidstep decl) (car trace))
-                     ((unless (or (eq (tag decl.item) :vl-typedef)
-                                  (eq (tag decl.item) :vl-paramdecl)))
-                      ;; not a type
-                      (mv nil nil))
-                     ((when (and (eq (tag decl.item) :vl-paramdecl)
-                                 (b* (((vl-paramdecl param) decl.item))
-                                   (not (vl-paramtype-case param.type :vl-typeparam)))))
-                      (mv nil nil))
-                     ;; We have either a typedef or paramdecl.  It's weird if we
-                     ;; have indices.  It might be a little less weird to have a
-                     ;; partselect bc it could look like a packed dimension, but
-                     ;; I don't think it's allowed and it'd still be weird if
-                     ;; e.g. the type was unpacked.
-                     ((when (consp x.indices))
-                      (mv (warn :type :vl-expr-to-datatype-fail
-                                :msg "Type name with indices: ~a0"
-                                :args (list x))
-                          nil))
-                     ((unless (vl-partselect-case x.part :none))
-                      (mv (warn :type :vl-expr-to-datatype-fail
-                                :msg "Type name with partselect: ~a0"
-                                :args (list x))
-                          nil))
-                     ;; It's also weird if there's a tail, i.e. some sort of
-                     ;; selects into the type.
-                     ((unless (vl-hidexpr-case tail :end))
-                      (mv (warn :type :vl-expr-to-datatype-fail
-                                :msg "Type name with field selects: ~a0"
-                                :args (list x))
-                          nil)))
-                  (mv nil (make-vl-usertype :name x.scope)))
-      :otherwise (mv nil nil))))
-
 (fty::defvisitor-template type-disambiguate ((x :object)
                                              (ss vl-scopestack-p))
   :returns (mv (warnings (:join (append-without-guard warnings1 warnings)
@@ -105,6 +55,8 @@
   :type-fns ((vl-fundecl vl-fundecl-type-disambiguate)
              (vl-taskdecl vl-taskdecl-type-disambiguate)
              (vl-paramvalue vl-paramvalue-type-disambiguate)))
+
+
 
 (local (in-theory (disable cons-equal
                            acl2::true-listp-append
@@ -136,17 +88,7 @@
                  (new-x vl-expr-p))
     :measure (two-nats-measure (vl-expr-count x) 1)
     (b* (((mv warnings x1) (vl-expr-type-disambiguate-aux x ss)))
-      (vl-expr-case x1
-        :vl-call (if (and x1.systemp (not x1.typearg) (consp x1.plainargs) (car x1.plainargs))
-                     ;; System calls' first argument may be a type
-                     (b* (((wmv warnings typearg)
-                           (vl-expr-to-datatype (car x1.plainargs) ss)))
-                       (mv warnings
-                           (if typearg
-                               (change-vl-call x1 :typearg typearg :plainargs (cdr x1.plainargs))
-                             x1)))
-                   (mv warnings x1))
-        :otherwise (mv warnings x1))))
+      (vl-expr-type-disambiguate1 x1 ss warnings)))
 
   (define vl-patternkey-type-disambiguate ((x vl-patternkey-p)
                                            (ss vl-scopestack-p))

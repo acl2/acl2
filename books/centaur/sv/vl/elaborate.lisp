@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "vl-svstmt")
 (include-book "centaur/fty/visitor" :dir :system)
+(include-book "centaur/vl/transforms/annotate/type-disamb-aux" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -270,6 +271,14 @@ information is stored in the elabindex before translating the expression.</p>")
    (iff (member x (list y))
         (equal x y))
    :hints(("Goal" :in-theory (enable acl2::member-of-cons)))))
+
+(local
+ (defret exprlist-count-of-call-type-disambiguate
+   (<= (vl-maybe-exprlist-count new-plainargs) (vl-maybe-exprlist-count
+                                                plainargs))
+   :hints(("Goal" :in-theory (enable vl-call-type-disambiguate)))
+   :rule-classes :linear
+   :fn vl-call-type-disambiguate))
 
 (fty::defvisitor-multi vl-elaborate
   :defines-args (:ruler-extenders :all
@@ -844,7 +853,17 @@ information is stored in the elabindex before translating the expression.</p>")
           (mv (and* ok1 ok2) warnings new-x elabindex))
 
         :vl-call
-        (b* (((wmv ok1 warnings new-plainargs elabindex)
+        (b* (((wmv warnings x.typearg x.plainargs)
+              (vl-call-type-disambiguate x.systemp x.typearg x.plainargs
+                                         (vl-elabindex->ss)))
+             ;; check reclimit for typearg disambiguation case
+             ((when (zp reclimit))
+              (mv nil
+                  (fatal :type :vl-expr-elaborate-fail
+                         :msg "Recursion limit ran out processing ~a0 -- dependency loop?"
+                         :args (list x))
+                  x elabindex))
+             ((wmv ok1 warnings new-plainargs elabindex)
               ;; Heuristic decision: Resolve arguments to constants iff this is
               ;; a system call.  That way we get the dimension resolved for
               ;; things like $size.
@@ -855,7 +874,7 @@ information is stored in the elabindex before translating the expression.</p>")
               (vl-call-namedargs-elaborate x.namedargs elabindex :reclimit reclimit))
              ((wmv ok3 warnings new-typearg elabindex)
               (if x.typearg
-                  (vl-datatype-elaborate x.typearg elabindex :reclimit reclimit)
+                  (vl-datatype-elaborate x.typearg elabindex :reclimit (1- (lnfix reclimit)))
                 (mv t nil nil elabindex)))
              ((wmv ok4 warnings new-fnname elabindex)
               (vl-scopeexpr-elaborate x.name elabindex :reclimit reclimit))
