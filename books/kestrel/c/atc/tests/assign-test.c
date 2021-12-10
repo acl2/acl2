@@ -18,4 +18,5 @@ void test_g() {
 int main(void) {
   test_f();
   test_g();
+  return 0;
 }

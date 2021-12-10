@@ -371,14 +371,3 @@
         |bitior_sint_sint_test3|
         |bitior_sint_sint_test4|
         :output-file "operators.c")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-#|
-
-On macOS or Linux, you can compile and run this code as follows:
-
-  gcc -o operators operators.c operators-test.c
-  ./operators
-
-|#

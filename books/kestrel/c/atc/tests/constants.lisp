@@ -146,14 +146,3 @@
         |unsigned_long_long_octal|
         |unsigned_long_long_hexadecimal|
         :output-file "constants.c")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-#|
-
-On macOS or Linux, you can compile and run this code as follows:
-
-  gcc -o constants constants.c constants-test.c
-  ./f
-
-|#

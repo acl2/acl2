@@ -23,4 +23,5 @@ void test_checksum() {
 int main(void) {
   test_legacy();
   test_checksum();
+  return 0;
 }

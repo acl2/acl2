@@ -7,4 +7,5 @@ int main(void) {
   unsigned int s = two(b, a);
   printf("one(%d, %d) = %d\n", a, b, r);
   printf("two(%d, %d) = %d\n", b, a, s);
+  return 0;
 }

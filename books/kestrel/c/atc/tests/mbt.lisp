@@ -39,14 +39,3 @@
 (c::atc |mbt|
         |mbt_dollar|
         :output-file "mbt.c")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-#|
-
-On macOS or Linux, you can compile and run this code as follows:
-
-  gcc -o mbt mbt.c mbt-test.c
-  ./f
-
-|#

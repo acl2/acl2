@@ -13,4 +13,5 @@ void g_test(int i) {
 int main(void) {
   f_test(100, 99);
   g_test(10000);
+  return 0;
 }

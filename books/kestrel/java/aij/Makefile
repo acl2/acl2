@@ -28,6 +28,8 @@
 # This file assumes that
 # a Java 8 (or later) compiler and related tools (e.g. the latest OpenJDK)
 # is in the path.
+# We compile the file requiring the source to be Java 8,
+# and ensuring that the class files are Java 8.
 
 ################################################################################
 
@@ -40,7 +42,7 @@ aij: java/out/artifacts/AIJ_jar/AIJ.jar
 java/out/artifacts/AIJ_jar/AIJ.jar: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate class files:"
 	mkdir -p java/out/production/AIJ
-	javac -d java/out/production/AIJ java/src/edu/kestrel/acl2/aij/*.java
+	javac -target 8 -source 8 -d java/out/production/AIJ java/src/edu/kestrel/acl2/aij/*.java
 	@echo ""
 	@echo "Generate jar file:"
 	mkdir -p java/out/artifacts/AIJ_jar
