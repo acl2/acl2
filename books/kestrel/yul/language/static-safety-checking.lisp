@@ -1008,7 +1008,7 @@
     (implies (blockp block)
              (equal (check-safe-block-option block vartab funtab)
                     (check-safe-block block vartab funtab)))
-    :enable (check-safe-block-option block-option-some->val)))
+    :enable block-option-some->val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
