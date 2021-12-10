@@ -356,7 +356,9 @@ the original namespace.</li>
   :returns (mv err (new-x svex-alist-p) (splittab svar-splittab-p))
   (b* ((x-vals (svex-alist-vals x))
        (vars (append (svex-alist-keys x) (svexlist-collect-vars x-vals)))
-       ((mv splittab bitcount) (cwtime (svex-compose-splittab x masks) :mintime 0))
+       ((mv splittab bitcount)
+        (acl2::with-fast-alist masks
+                               (cwtime (svex-compose-splittab x masks) :mintime 0)))
        (- (cw "Care bits remaining: ~x0~%" bitcount))
        ((unless splittab)
         (mv nil (svex-alist-fix x) splittab))
