@@ -35,11 +35,11 @@
     (xdoc::li
      "Named pieces of "
      (xdoc::seetopic "abnf::abstract-syntax" "ABNF abstract syntax")
-     " that occur internally to grammar rules.")
+     " that occur internally to Yul grammar rules.")
     (xdoc::li
-     "Parser generator control constants "
-     (xdoc::seetopic "abnf::grammar-parser" "(see parser-generators)")
-     " that are used to help generate the lexing functions:"
+     "Parser generator control constants (see "
+     (xdoc::seetopic "abnf::parser-generators" "parser-generators")
+     ") that are used to help generate the lexing functions:"
      (xdoc::ul
       (xdoc::li "a constant containing the ABNF abstract syntax form of the lexical grammar")
       (xdoc::li "a constant containing the prefix that is attached to an ABNF rule name to generate its lexing function name")
@@ -173,7 +173,7 @@
 ;; 6. ( dquote [ 2hex-digit *( [ "_" ] 2hex-digit ) ] dquote
 ;;    / squote [ 2hex-digit *( [ "_" ] 2hex-digit ) ] squote )
 (defval *lex-alternation-for-hex-string*
-  :short "The alternation after @('%s\"hex\")."
+  :short "The alternation after @('%s\"hex\"')."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -239,7 +239,7 @@
 ;;    call it "escape-sequence-body"
 
 (defval *lex-alternation-escape-sequence-single*
-  :short "The alternation ( squote / dquote / %s\"n\" / %s\"r\" / %s\"t\" / lf / cr )"
+  :short "The alternation @('( squote / dquote / %s\"n\" / %s\"r\" / %s\"t\" / lf / cr )')."
   (list
    ;; 7 concatenations, each with a single repetition
    ;; 1. squote
@@ -358,7 +358,7 @@
 
 ;; 1.
 (defval *lex-alternation-dquoted-or-escape*
-  :short "The group @('( double-quoted-printable / escape-sequence )."
+  :short "The group @('( double-quoted-printable / escape-sequence )')."
   (list
    ;; the alternation has two concatenations, each with a single repetition
    (list
@@ -388,7 +388,7 @@
 
 ;; 3.
 (defval *lex-alternation-squoted-or-escape*
-  :short "The group @('( single-quoted-printable / escape-sequence )."
+  :short "The group @('( single-quoted-printable / escape-sequence )')."
   (list
    ;; the alternation has two concatenations, each with a single repetition
    (list
