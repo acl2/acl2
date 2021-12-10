@@ -13,6 +13,9 @@
 (include-book "grammar-old")
 (include-book "grammar-new")
 
+(include-book "lexer")
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ concrete-syntax
@@ -21,7 +24,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of an ABNF grammar based on the grammar in [Yul].
+    "The concrete syntax is defined by an ABNF grammar based on the grammar in [Yul].
      We parse the ABNF grammar into an ACL2 representation.")
    (xdoc::p
     "More precisely, there are currently two published grammar of Yul:
