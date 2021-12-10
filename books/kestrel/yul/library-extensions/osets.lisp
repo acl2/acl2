@@ -49,3 +49,13 @@
                      (intersect a c)))
   :enable (double-containment
            pick-a-point-subset-strategy))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defruled subset-of-union-and-union
+  (implies (and (subset a b)
+                (subset c d))
+           (subset (union a c)
+                   (union b d)))
+  :enable (pick-a-point-subset-strategy
+           subset-in))
