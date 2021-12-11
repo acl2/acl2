@@ -148,4 +148,22 @@
 
   ///
 
-  (fty::deffixequiv-mutual statements/blocks/cases/fundefs-nofunp))
+  (fty::deffixequiv-mutual statements/blocks/cases/fundefs-nofunp)
+
+  (defrule block-option-nofunp-when-blockp
+    (implies (blockp block)
+             (equal (block-option-nofunp block)
+                    (block-nofunp block)))
+    :enable block-option-some->val))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule statements-to-fundefs-when-nofunp
+  :short "Theorem that @(tsee statements-to-fundefs) is @('nil')
+          under @(tsee statement-list-nofunp)."
+  (implies (statement-list-nofunp stmts)
+           (equal (statements-to-fundefs stmts)
+                  nil))
+  :enable (statement-nofunp
+           statement-list-nofunp
+           statements-to-fundefs))
