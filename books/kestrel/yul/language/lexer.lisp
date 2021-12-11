@@ -455,6 +455,32 @@
            :max (acl2::nati-infinity))))
 
 
+;; --------------------------------
+;; components for rule end-of-line-comment
+
+(defval *lex-repetition-*-not-lf-or-cr*
+  :short "The repetition @('*not-lf-or-cr')."
+  (abnf::make-repetition
+   :element (abnf::element-rulename
+             (abnf::rulename "not-lf-or-cr"))
+   :range (abnf::make-repeat-range
+           :min 0
+           :max (acl2::nati-infinity))))
+
+
+;; --------------------------------
+;; component for *lexeme
+
+(defval *lex-repetition-*-lexeme*
+  :short "The repetition @('*lexeme')."
+  (abnf::make-repetition
+   :element (abnf::element-rulename
+             (abnf::rulename "lexeme"))
+   :range (abnf::make-repeat-range
+           :min 0
+           :max (acl2::nati-infinity))))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -553,6 +579,10 @@
          'lex-repetition-*-identifier-rest)
    (cons *lex-repetition-*-whitespace-char*
          'lex-repetition-*-whitespace-char)
+   (cons *lex-repetition-*-not-lf-or-cr*
+         'lex-repetition-*-not-lf-or-cr)
+   (cons *lex-repetition-*-lexeme*
+         'lex-repetition-*-lexeme)
    )
   ///
   (assert-event (abnf::repetition-symbol-alistp abnf::*def-parse-repetition-fns*)))
@@ -625,7 +655,7 @@
         input-after-digit2))
   :hooks (:fix)
   ///
-  (defret len-of-lex-repetition-2-hex-digits-<=
+  (defret len-of-lex-repetition-2-hex-digits-<
     (implies (not (resulterrp trees))
              (< (len rest-input)
                 (len input)))
@@ -704,7 +734,7 @@
         input-after-digit4))
   :hooks (:fix)
   ///
-  (defret len-of-lex-repetition-4-hex-digits-<=
+  (defret len-of-lex-repetition-4-hex-digits-<
     (implies (not (resulterrp trees))
              (< (len rest-input)
                 (len input)))
@@ -775,7 +805,14 @@
     (mv (abnf::make-tree-nonleaf
          :rulename? (abnf::rulename "whitespace")
          :branches (list (cons tree-1char trees-restchars)))
-        input-after-restchars)))
+        input-after-restchars))
+  :hooks (:fix)
+  ///
+  (defret len-of-lex-whitespace-<
+    (implies (not (resulterrp tree))
+             (< (len rest-input)
+                (len input)))
+    :rule-classes :linear))
 
 
 ;; --------------------------------
@@ -925,3 +962,32 @@
                   (len input)))
       :rule-classes :linear
       :fn lex-rest-of-block-comment-after-star)))
+
+(abnf::def-parse-rulename "block-comment")
+
+;; --------------------------------
+;; end of line comments
+
+(abnf::def-parse-rulename "not-lf-or-cr")
+(abnf::def-parse-*-rulename "not-lf-or-cr")
+(abnf::def-parse-rulename "end-of-line-comment")
+;; and a rule that recognizes either a block comment or an end-of-line-comment
+(abnf::def-parse-rulename "comment")
+
+;; --------------------------------
+;; keywords, symbols, tokens, and lexemes
+
+(abnf::def-parse-rulename "keyword")
+(abnf::def-parse-rulename "symbol")
+(abnf::def-parse-rulename "token")
+(abnf::def-parse-rulename "lexeme")
+
+;; --------------------------------
+;; list of lexemes
+;; lex-repetition-*-lexeme cann be used to tokenize a file
+;; ( We do not define a rule "file-lexemes = *lexeme"
+;;   since (1) there is no need to construct a tree around the list, and
+;;   (2) the generator macro def-parse-rulename does not support nullable rules
+;;   since it generates a return theorem that the rest-input be shorter than the input.)
+
+(abnf::def-parse-*-rulename "lexeme")

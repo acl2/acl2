@@ -191,6 +191,8 @@ token = keyword
 
 lexeme = token / comment / whitespace
 
+;; A file can be tokenized with *lexeme
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
