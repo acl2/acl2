@@ -11,7 +11,10 @@
 (in-package "YUL")
 
 (include-book "dead-code-eliminator")
-(include-book "dead-code-eliminator-verification")
+(include-book "dead-code-eliminator-nofun")
+(include-book "dead-code-eliminator-noloopinit")
+(include-book "dead-code-eliminator-safety")
+(include-book "dead-code-eliminator-execution")
 
 (include-book "for-loop-init-rewriter")
 
