@@ -324,7 +324,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is the equivalence relation on expression outcomes
-     discussed in @(see dead-code-eliminator-verification)."))
+     discussed in @(see dead-code-eliminator-execution)."))
   (b* ((x (eoutcome-result-fix x))
        (y (eoutcome-result-fix y)))
     (cond ((resulterrp x) (resulterrp y))
@@ -343,7 +343,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is the equivalence relation on statement outcomes
-     discussed in @(see dead-code-eliminator-verification)."))
+     discussed in @(see dead-code-eliminator-execution)."))
   (b* ((x (soutcome-result-fix x))
        (y (soutcome-result-fix y)))
     (cond ((resulterrp x) (resulterrp y))
