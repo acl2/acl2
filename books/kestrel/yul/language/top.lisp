@@ -15,6 +15,7 @@
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
 (include-book "static-soundness")
+(include-book "errors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
