@@ -133,7 +133,8 @@
 
   (define fundef-nofunp ((fundef fundefp))
     :returns (yes/no booleanp)
-    :short "Check that a function definition has no function definitions."
+    :short "Check that a function definition
+            has no nested function definitions."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -155,6 +156,26 @@
              (equal (block-option-nofunp block)
                     (block-nofunp block)))
     :enable block-option-some->val))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist fundef-list-nofunp (x)
+  :guard (fundef-listp x)
+  :short "Check that a list of function definitions
+          has no nested function definitions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee fundef-nofunp) to lists.
+     Analogously to @(tsee fundef-nofunp),
+     the function definitions passed as argument to @('fundef-list-nofunp')
+     are okay, but we check that they do not contain function definitions."))
+  (fundef-nofunp x)
+  :true-listp nil
+  :elementp-of-nil t
+  ///
+  (fty::deffixequiv fundef-list-nofunp
+    :args ((x fundef-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
