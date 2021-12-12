@@ -64,7 +64,7 @@
                 )
            (equal (nth index data)
                   val))
-  :hints (("Goal" :in-theory (e/d (all-equal$ nth) ()))))
+  :hints (("Goal" :in-theory (enable all-equal$ nth))))
 
 (defthm nth-when-all-equal$
   (implies (and (all-equal$ val data)
@@ -76,5 +76,5 @@
                   (if (equal 0 (len data))
                       nil
                     val)))
-  :hints (("Goal" :use (:instance  nth-when-all-equal$-helper (index (nfix index)))
+  :hints (("Goal" :use (:instance nth-when-all-equal$-helper (index (nfix index)))
            :in-theory (disable nth-when-all-equal$-helper))))
