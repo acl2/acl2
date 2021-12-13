@@ -698,7 +698,7 @@
      is displayed if @(':verbose') is @('t').")
 
    (xdoc::p
-    "ATJ also generated a Java file that contains
+    "ATJ also generates a Java file that contains
      a single package-private class whose name is
      the name of the main class (described above) followed by @('Environment').
      This additional Java class contains code
