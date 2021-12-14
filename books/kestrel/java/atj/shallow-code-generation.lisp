@@ -59,7 +59,7 @@
    (xdoc::p
     "These are all static methods, which can therefore be referenced as
      @('<class>.<method>') in Java code,
-     not dissmilarly to @('<pkg>::<fn>') in ACL2.
+     not dissimilarly to @('<pkg>::<fn>') in ACL2.
      However, inside @('<class>'), it suffices to use @('<method>'),
      which is more readable.
      Furthermore, since we generate method synonyms under certain conditions,
@@ -74,7 +74,7 @@
     "The Java class name @('<class>') is looked up
      in the alist @('pkg-class-names'),
      and the Java method name @('<method>') is looked up
-      in the alist @('fn-method-names')."))
+     in the alist @('fn-method-names')."))
   (b* ((pkg (symbol-package-name fn))
        (class? (if (or (equal pkg curr-pkg)
                        (member-eq fn (pkg-imports curr-pkg)))
@@ -1807,7 +1807,10 @@
        (src-type (atj-type-list-to-type src-types))
        (dst-type (atj-type-list-to-type dst-types)))
     (mv (jblock-fix arg-block)
-        (atj-adapt-expr-to-type expr src-type dst-type t)))) ; GUARDS$
+        (atj-adapt-expr-to-type expr
+                                src-type
+                                dst-type
+                                t)))) ; GUARDS$
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

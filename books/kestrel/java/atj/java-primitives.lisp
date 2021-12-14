@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -53,7 +53,7 @@
      So ATJ recognizes those functions from the language formalization,
      and translates them to Java code that manipulates Java primitive values.")
    (xdoc::p
-    "Needless to say, here `primitive' refers to
+    "Note that here `primitive' refers to
      Java primitive types, values, and operations.
      It has nothing to do with the ACL2 primitive functions."))
   :order-subtopics t
