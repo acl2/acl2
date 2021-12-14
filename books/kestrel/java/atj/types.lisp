@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -72,7 +72,7 @@
      ACL2's tau system types,
      and our ACL2 model of Java types.")
    (xdoc::p
-    "With a table of the types of the involved ACL2 functions at hand
+    "With a table of the types of the involved ACL2 functions in hand
      (the table being constructed via calls of @(tsee atj-main-function-type)),
      ATJ performs a type analysis of the ACL2 terms in function bodies
      before translating them to Java;
