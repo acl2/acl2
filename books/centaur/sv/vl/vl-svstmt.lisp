@@ -1152,7 +1152,12 @@ because... (BOZO)</p>
                     :msg "Ignoring delay control on statment ~a0"
                     :args (list x))
               substmts))
-
+        :vl-assertstmt
+        (mv t
+            (warn :type :vl-assertstmt-unsupported
+                  :msg "Ignoring assert stmt: ~a0~%"
+                  :args (list x))
+            nil)
         :otherwise
         (fail (warn :type :vl-stmt-unsupported
                     :msg "Statement type not supported: ~a0"

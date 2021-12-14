@@ -113,6 +113,34 @@
     :hints(("Goal" :in-theory (enable base-fsm-eval-equiv)))))
 
 
+(local (defthm len-of-svexlist-normalize-concats
+         (equal (len (svexlist-normalize-concats x :verbosep verbosep))
+                (len x))
+         :hints(("Goal" :in-theory (enable svexlist-normalize-concats)))))
+
+(local (defthm svexlist-eval-equiv-of-svexlist-normalize-concats
+         (svexlist-eval-equiv (svexlist-normalize-concats x :verbosep verbosep)
+                              x)
+         :hints(("Goal" :in-theory (enable svexlist-eval-equiv)))))
+
+(define base-fsm-norm-concats ((fsm base-fsm-p)
+                               &key (verbosep 'nil))
+  :returns (new-fsm base-fsm-p)
+  (b* (((base-fsm fsm))
+       (svexes (append (svex-alist-vals fsm.values) (svex-alist-vals fsm.nextstate)))
+       (svexes-rw (svexlist-normalize-concats svexes :verbosep verbosep))
+       (values-keys (svex-alist-keys fsm.values))
+       (values-len (len values-keys))
+       (values-rw (pairlis$ values-keys (take values-len svexes-rw)))
+       (nextstate-keys (svex-alist-keys fsm.nextstate))
+       (nextstate-rw (pairlis$ nextstate-keys (nthcdr values-len svexes-rw))))
+    (make-base-fsm :values values-rw :nextstate nextstate-rw))
+  ///
+  (defret base-fsm-eval-equiv-of-<fn>
+    (base-fsm-eval-equiv new-fsm fsm)
+    :hints(("Goal" :in-theory (enable base-fsm-eval-equiv)))))
+
+
 
 
 (define svtv-data-rewrite-phase-fsm (svtv-data &key ((count natp) '4) (verbosep 'nil))
@@ -125,6 +153,25 @@
   (update-svtv-data->phase-fsm
    (base-fsm-rewrite (svtv-data->phase-fsm svtv-data)
                      :count count :verbosep verbosep)
+   svtv-data)
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :phase-fsm)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data)))))
+
+
+(define svtv-data-concatnorm-phase-fsm (svtv-data &key (verbosep 'nil))
+  :guard (or (svtv-data->phase-fsm-validp svtv-data)
+             (not (svtv-data->cycle-fsm-validp svtv-data)))
+  :guard-hints (("goal" :do-not-induct t)
+                (and stable-under-simplificationp
+                     '(:in-theory (enable svtv-data$ap))))
+  :returns new-svtv-data
+  (update-svtv-data->phase-fsm
+   (base-fsm-norm-concats (svtv-data->phase-fsm svtv-data)
+                          :verbosep verbosep)
    svtv-data)
   ///
   (defret svtv-data$c-get-of-<fn>
@@ -163,6 +210,26 @@
   (update-svtv-data->cycle-fsm
    (base-fsm-rewrite (svtv-data->cycle-fsm svtv-data)
                      :count count :verbosep verbosep)
+   svtv-data)
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :cycle-fsm)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data)))))
+
+
+(define svtv-data-concatnorm-cycle-fsm (svtv-data &key (verbosep 'nil))
+  :guard (or (svtv-data->cycle-fsm-validp svtv-data)
+             (not (svtv-data->pipeline-validp svtv-data)))
+  :guard-hints (("goal" :do-not-induct t)
+                (and stable-under-simplificationp
+                     '(:in-theory (enable svtv-data$ap)))
+                )
+  :returns new-svtv-data
+  (update-svtv-data->cycle-fsm
+   (base-fsm-norm-concats (svtv-data->cycle-fsm svtv-data)
+                          :verbosep verbosep)
    svtv-data)
   ///
   (defret svtv-data$c-get-of-<fn>
