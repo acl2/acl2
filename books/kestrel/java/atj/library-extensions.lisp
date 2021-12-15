@@ -17,6 +17,7 @@
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
+(include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/check-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
@@ -234,6 +235,56 @@
              (< (pseudo-term-count body-term)
                 (pseudo-term-count term)))
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fty-check-list-call ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (elements pseudo-term-listp))
+  (check-list-call (pseudo-term-fix term))
+  ///
+
+  (defrulel pseudo-term-count-of-check-list-call-weak
+    (implies (pseudo-termp term)
+             (b* (((mv okp elements) (check-list-call term)))
+               (implies okp
+                        (<= (pseudo-term-list-count elements)
+                            (pseudo-term-count term)))))
+    :enable (check-list-call
+             pseudo-term-count
+             pseudo-term-list-count
+             pseudo-term-call->args
+             pseudo-term-kind))
+
+  (defrulel pseudo-term-count-of-check-list-call
+    (implies (pseudo-termp term)
+             (b* (((mv okp elements) (check-list-call term)))
+               (implies (and okp
+                             (consp elements))
+                        (< (pseudo-term-list-count elements)
+                           (pseudo-term-count term)))))
+    :enable (check-list-call
+             pseudo-term-count
+             pseudo-term-list-count
+             pseudo-term-call->args
+             pseudo-term-kind))
+
+  (defret pseudo-term-count-of-fty-check-list-call-weak
+    (implies yes/no
+             (<= (pseudo-term-list-count elements)
+                 (pseudo-term-count term)))
+    :rule-classes :linear
+    :hints (("Goal" :use (:instance pseudo-term-count-of-check-list-call-weak
+                          (term (pseudo-term-fix term))))))
+
+  (defret pseudo-term-count-of-fty-check-list-call
+    (implies yes/no
+             (implies (consp elements)
+                      (< (pseudo-term-list-count elements)
+                         (pseudo-term-count term))))
+    :rule-classes :linear
+    :hints (("Goal" :use (:instance pseudo-term-count-of-check-list-call
+                          (term (pseudo-term-fix term)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
