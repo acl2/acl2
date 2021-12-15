@@ -279,7 +279,11 @@
        ((unless (set::empty overlap))
         (err (list :duplicate-functions overlap))))
     (ensure-funscope-disjoint funscope (cdr funenv)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule ensure-funscope-disjoint-of-empty-funscope-not-error
+    (not (resulterrp (ensure-funscope-disjoint nil funenv)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -302,7 +306,12 @@
   :prepwork
   ((local
     (in-theory
-     (enable funscopep-when-funscope-resultp-and-not-resulterrp)))))
+     (enable funscopep-when-funscope-resultp-and-not-resulterrp))))
+  ///
+
+  (defrule add-funs-of-no-fundefs
+    (equal (add-funs nil funenv)
+           (cons nil (funenv-fix funenv)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

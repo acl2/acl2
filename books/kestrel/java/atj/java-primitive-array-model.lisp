@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -108,7 +108,7 @@
       component-wise; these are the inverse conversions of
       those described just above."))
    (xdoc::p
-    "Note that the convertions between Java arrays and ACL2 lists
+    "Note that the conversions between Java arrays and ACL2 lists
      involve lists of ACL2 values, not of Java primitive values.
      The reason is that ACL2 lists of (our model of) Java primitive values
      do not really have a place in the generated Java code,

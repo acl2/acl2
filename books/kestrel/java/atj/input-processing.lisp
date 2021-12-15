@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -97,20 +97,20 @@
    but the other arguments must be checked to satisfy constraints as well.
    Thus, we use two worklists and two collected lists:
    one worklist and one collected list for the functions
-   for which Java code must be generated,
+   for which Java code must be generated;
    and one worklist and one collected list for the functions
    that must be only checked to satisfy the constraints.
-   At the end of the iteration,
+   At the end of the algorithm,
    the first collected list is used to generate Java code,
    while the second collected list is discarded;
-   however, this second collected list is used during the iteration,
+   however, this second collected list is used during the algorithm,
    to keep track of the functions already checked
    that do not appear in the worklists or in the first collected list.
    The function @('fn') is always taken from the first worklist,
    unless this worklist is empty, in which case it is taken from the second:
    in other words, the first worklist is processed first,
    and then the second one;
-   the iteration terminates when both worklists are empty.")
+   the algorithm terminates when both worklists are empty.")
  (xdoc::p
   "Yet another complication arises from
    calls of functions in
@@ -827,7 +827,7 @@
      we immediately return because such other forms are not supported.
      In this case, the third result of the function is set to @('t'),
      so that the caller can immediately recognize the situation
-     and cause the iteration to terminate.")
+     and cause the algorithm to terminate.")
    (xdoc::p
     "If we encounter a call of anything other than @(tsee return-last),
      we recursively process the arguments,
@@ -856,7 +856,7 @@
      so that the function is not processed again.
      We do not need to remove the function from @('collected-chk')
      because, when @('gen?') is @('t'), that collected list is always empty:
-     the reason is that the iteration
+     the reason is that the algorithm
      first processes @('worklist-gen') completely
      (during this processing @('gen?') is @('t')),
      keeping @('collected-chk') empty,

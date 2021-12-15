@@ -56,7 +56,7 @@
      :leave t
      :break t
      :continue t
-     :fundef (block-noloopinitp (fundef->body stmt.get)))
+     :fundef (fundef-noloopinitp stmt.get))
     :measure (statement-count stmt))
 
   (define statement-list-noloopinitp ((stmts statement-listp))

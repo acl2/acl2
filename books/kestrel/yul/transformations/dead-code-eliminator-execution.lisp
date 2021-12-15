@@ -11,21 +11,17 @@
 (in-package "YUL")
 
 (include-book "dead-code-eliminator")
-(include-book "../language/dynamic-semantics")
-
-(include-book "kestrel/std/util/defund-sk" :dir :system)
+(include-book "dead-code-eliminator-nofun")
+(include-book "no-function-definitions-dynamic")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ dead-code-eliminator-verification
+(defxdoc+ dead-code-eliminator-execution
   :parents (dead-code-eliminator)
-  :short "Formal verification of correctness of
-          the @('DeadCodeEliminator') transformation."
+  :short "Proof that the @('DeadCodeEliminator') transformation preserves
+          the execution behavior."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "We verify the correctness of the transformation
-     as formalized in ACL2 in @(see dead-code-eliminator).")
    (xdoc::p
     "We prove that the elimination of dead code performed by the transformation
      does not affect the dynamic semantics of the code,
@@ -128,7 +124,7 @@
      "Prove equivalence theorems for the execution functions."))
    (xdoc::p
     "Some theorems about the auxiliary semantic semantics
-     can be proved as equality rather than equivalences.")
+     can be proved as equalities rather than equivalences.")
    (xdoc::p
     "In the proofs, we generally enable
      functions @('...-result-dead') that transform result values.
@@ -190,7 +186,9 @@
   (b* ((funscope (funscope-fix funscope))
        ((when (omap::empty funscope)) nil)
        ((mv name info) (omap::head funscope)))
-    (omap::update name (funinfo-dead info) (funscope-dead (omap::tail funscope))))
+    (omap::update name
+                  (funinfo-dead info)
+                  (funscope-dead (omap::tail funscope))))
   :verify-guards :after-returns
   :hooks (:fix)
   ///
@@ -326,7 +324,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is the equivalence relation on expression outcomes
-     discussed in @(see dead-code-eliminator-verification)."))
+     discussed in @(see dead-code-eliminator-execution)."))
   (b* ((x (eoutcome-result-fix x))
        (y (eoutcome-result-fix y)))
     (cond ((resulterrp x) (resulterrp y))
@@ -345,7 +343,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is the equivalence relation on statement outcomes
-     discussed in @(see dead-code-eliminator-verification)."))
+     discussed in @(see dead-code-eliminator-execution)."))
   (b* ((x (soutcome-result-fix x))
        (y (soutcome-result-fix y)))
     (cond ((resulterrp x) (resulterrp y))
@@ -417,6 +415,11 @@
 
 (defrule add-funs-of-dead
   :short "Correctness theorem for @(tsee add-funs)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is relevant for the top-level block,
+     which has function definitions."))
   (equal (add-funs (fundef-list-dead fundefs) (funenv-dead funenv))
          (funenv-result-dead (add-funs fundefs funenv)))
   :use (:instance lemma
@@ -434,68 +437,14 @@
               funscopep-when-funscope-resultp-and-not-resulterrp
               not-resulterrp-when-funenvp))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule statements-to-fundefs-of-dead
-  :short "Correctness theorem for @(tsee statements-to-fundefs)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This proof is a bit more elaborate than others
-     because of the @('afterp') flag of @(tsee statement-list-dead).
-     To have a sufficiently strong induction hypothesis
-     we need that flag to be generic, not to have a specific value.
-     Thus, we introduce a predicate universally quantified over @('afterp'),
-     and we prove that it holds by induction.
-     There may be a way to avoid the explicit quantification,
-     particularly because we are only interested in two values of @('afterp'),
-     namely @('nil') and non-@('nil')."))
-  (equal (statements-to-fundefs (statement-list-dead stmts afterp))
-         (fundef-list-dead (statements-to-fundefs stmts)))
-  :use pred-holds
-  :enable pred-necc
-
-  :prep-lemmas
-
-  ((defund-sk pred (stmts)
-     (forall (afterp)
-             (equal (statements-to-fundefs (statement-list-dead stmts afterp))
-                    (fundef-list-dead (statements-to-fundefs stmts))))
-     :rewrite :direct)
-
-   (defruled pred-base
-     (implies (not (consp stmts))
-              (pred stmts))
-     :enable (pred
-              statements-to-fundefs
-              statement-list-dead))
-
-   (defruled pred-step
-     (implies (and (consp stmts)
-                   (pred (cdr stmts)))
-              (pred stmts))
-     :enable (pred
-              pred-necc
-              statements-to-fundefs
-              statement-list-dead))
-
-   (defruled pred-holds
-     (pred stmts)
-     :induct (len stmts)
-     :enable (pred-base pred-step))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Step 4: Prove equivalence theorems for the execution functions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(set-induction-depth-limit 1)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection exec-of-dead-computed-hints
-  :short "Computed hints to prove the execution theorems."
+(defsection exec-of-dead
+  :short "Correctness theorems of the execution functions."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -523,16 +472,6 @@
      Thus, limiting these @(':use') and @(':expand') hints to the needed cases
      seems to be the right thing at this moment.")
    (xdoc::p
-    "We also want to limit the enabling of certain functions
-     to certain cases of the induction proof.
-     We need to study this in more detail,
-     but initial experiments
-     (actually in an earlier, more complex version of this proof)
-     suggested that those enablements
-     may cause adverse effects in the cases in which they are not needed.
-     So, again, limiting the enablements to the needed proof cases
-     seems to be the right thing at this moment.")
-   (xdoc::p
     "To avoid the brittleness and unreadability of subgoal hints,
      we use computed hints to robustly and readably designate
      the proof cases to which specific hints must apply.
@@ -540,7 +479,18 @@
      which uses two macros for conciseness.
      The proof cases are denoted based on
      the flag value and possibly the kind of statement;
-     these are expressed in terms of occurrences of terms in the clauses."))
+     these are expressed in terms of occurrences of terms in the clauses.")
+   (xdoc::p
+    "We locally enable, for all subgoals,
+     the execution functions,
+     the transformation functions,
+     and the no-function-definition predicates.
+     We also enable the equivalence relations,
+     since we always want to expand them in the proofs.
+     And we enable some additional rules, motivated by the arising subgoals.
+     Note that, if we put these enablements into a goal hint,
+     they would not apply to subgoals where computed hints apply;
+     this is why we locally enable them instead."))
 
   (defmacro exec-of-dead-flag-is (flag)
     `(acl2::occur-lst '(acl2::flag-is ',flag) clause))
@@ -551,182 +501,199 @@
   (defun exec-of-dead-hints (id clause world)
     (declare (ignore id world))
     (cond
-     ((exec-of-dead-flag-is exec-expression)
-      '(:in-theory (enable exec-expression)))
-     ((exec-of-dead-flag-is exec-expression-list)
-      '(:in-theory (enable exec-expression-list)))
-     ((exec-of-dead-flag-is exec-funcall)
-      '(:in-theory (enable exec-funcall)))
-     ((exec-of-dead-flag-is exec-function)
-      '(:in-theory (enable exec-function)))
      ((exec-of-dead-flag-is exec-statement)
-      `(:in-theory (enable exec-statement
-                           statement-dead)
-        ,@(and (or (exec-of-dead-stmt-kind-is :if)
+      `(,@(and (or (exec-of-dead-stmt-kind-is :if)
                    (exec-of-dead-stmt-kind-is :for)
                    (exec-of-dead-stmt-kind-is :switch))
-               '(:expand (statement-dead stmt)))))
+               '(:expand ((exec-statement stmt cstate funenv limit)
+                          (statement-dead stmt))))))
      ((exec-of-dead-flag-is exec-statement-list)
-      '(:in-theory (e/d (exec-statement-list
-                         statement-list-dead)
-                        (statement-kind-when-mode-regular))
+      '(:in-theory (disable statement-kind-when-mode-regular)
         :use (:instance statement-kind-when-mode-regular
               (stmt (car stmts))
-              (limit (1- limit)))))
+              (limit (1- limit)))
+        :expand (exec-statement-list (statement-list-dead stmts)
+                                     cstate
+                                     (funenv-dead funenv)
+                                     limit)))
      ((exec-of-dead-flag-is exec-block)
-      '(:in-theory (enable exec-block
-                           block-dead)))
-     ((exec-of-dead-flag-is exec-for-iterations)
-      '(:in-theory (enable exec-for-iterations)))
+      '(:expand (exec-block block cstate funenv limit)))
      ((exec-of-dead-flag-is exec-switch-rest)
-      '(:in-theory (enable exec-switch-rest
-                           swcase-dead
-                           swcase-list-dead
-                           block-option-some->val)
-        :expand ((block-option-dead default)
+      '(:expand ((block-option-dead default)
+                 (block-option-nofunp default)
                  (exec-switch-rest cases
                                    default
                                    target
                                    cstate
                                    funenv
-                                   limit)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection exec-of-dead
-  :short "Correctness theorems of the execution functions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We locally enable the equivalence relations,
-     since we always want to expand them in the proofs.
-     Note that, if we put them into a goal hint,
-     they would not apply to subgoals where computed hints apply;
-     this is why we locally enable them instead."))
+                                   limit))))))
 
   (local (in-theory (enable eoutcome-result-okeq
                             soutcome-result-okeq
                             funenv-result-dead
-                            funinfo+funenv-result-dead)))
+                            funinfo+funenv-result-dead
+                            exec-expression
+                            exec-expression-list
+                            exec-funcall
+                            exec-function
+                            exec-statement
+                            exec-statement-list
+                            exec-block
+                            exec-for-iterations
+                            exec-switch-rest
+                            statement-dead
+                            statement-list-dead
+                            block-dead
+                            block-option-dead
+                            swcase-dead
+                            swcase-list-dead
+                            statement-nofunp
+                            statement-list-nofunp
+                            block-nofunp
+                            block-option-nofunp
+                            swcase-nofunp
+                            swcase-list-nofunp
+                            fundef-nofunp
+                            block-option-some->val
+                            block-nofunp-of-funinfo->body
+                            not-resulterrp-when-funenvp)))
+
+  (set-induction-depth-limit 1)
 
   (defthm-exec-flag
 
     (defthm exec-expression-of-dead
-      (eoutcome-result-okeq
-       (exec-expression expr
-                        cstate
-                        (funenv-dead funenv)
-                        limit)
-       (exec-expression expr
-                        cstate
-                        funenv
-                        limit))
+      (implies (funenv-nofunp funenv)
+               (eoutcome-result-okeq
+                (exec-expression expr
+                                 cstate
+                                 (funenv-dead funenv)
+                                 limit)
+                (exec-expression expr
+                                 cstate
+                                 funenv
+                                 limit)))
       :flag exec-expression)
 
     (defthm exec-expression-list-of-dead
-      (eoutcome-result-okeq
-       (exec-expression-list exprs
-                             cstate
-                             (funenv-dead funenv)
-                             limit)
-       (exec-expression-list exprs
-                             cstate
-                             funenv
-                             limit))
+      (implies (funenv-nofunp funenv)
+               (eoutcome-result-okeq
+                (exec-expression-list exprs
+                                      cstate
+                                      (funenv-dead funenv)
+                                      limit)
+                (exec-expression-list exprs
+                                      cstate
+                                      funenv
+                                      limit)))
       :flag exec-expression-list)
 
     (defthm exec-funcall-of-dead
-      (eoutcome-result-okeq
-       (exec-funcall call
-                     cstate
-                     (funenv-dead funenv)
-                     limit)
-       (exec-funcall call
-                     cstate
-                     funenv
-                     limit))
+      (implies (funenv-nofunp funenv)
+               (eoutcome-result-okeq
+                (exec-funcall call
+                              cstate
+                              (funenv-dead funenv)
+                              limit)
+                (exec-funcall call
+                              cstate
+                              funenv
+                              limit)))
       :flag exec-funcall)
 
     (defthm exec-function-of-dead
-      (eoutcome-result-okeq
-       (exec-function fun
-                      args
-                      cstate
-                      (funenv-dead funenv)
-                      limit)
-       (exec-function fun
-                      args
-                      cstate
-                      funenv
-                      limit))
+      (implies (funenv-nofunp funenv)
+               (eoutcome-result-okeq
+                (exec-function fun
+                               args
+                               cstate
+                               (funenv-dead funenv)
+                               limit)
+                (exec-function fun
+                               args
+                               cstate
+                               funenv
+                               limit)))
       :flag exec-function)
 
     (defthm exec-statement-of-dead
-      (soutcome-result-okeq
-       (exec-statement (statement-dead stmt)
-                       cstate
-                       (funenv-dead funenv)
-                       limit)
-       (exec-statement stmt
-                       cstate
-                       funenv
-                       limit))
+      (implies (and (statement-nofunp stmt)
+                    (funenv-nofunp funenv))
+               (soutcome-result-okeq
+                (exec-statement (statement-dead stmt)
+                                cstate
+                                (funenv-dead funenv)
+                                limit)
+                (exec-statement stmt
+                                cstate
+                                funenv
+                                limit)))
       :flag exec-statement)
 
     (defthm exec-statement-list-of-dead
-      (soutcome-result-okeq
-       (exec-statement-list (statement-list-dead stmts nil)
-                            cstate
-                            (funenv-dead funenv)
-                            limit)
-       (exec-statement-list stmts
-                            cstate
-                            funenv
-                            limit))
+      (implies (and (statement-list-nofunp stmts)
+                    (funenv-nofunp funenv))
+               (soutcome-result-okeq
+                (exec-statement-list (statement-list-dead stmts)
+                                     cstate
+                                     (funenv-dead funenv)
+                                     limit)
+                (exec-statement-list stmts
+                                     cstate
+                                     funenv
+                                     limit)))
       :flag exec-statement-list)
 
     (defthm exec-block-of-dead
-      (soutcome-result-okeq
-       (exec-block (block-dead block)
-                   cstate
-                   (funenv-dead funenv)
-                   limit)
-       (exec-block block
-                   cstate
-                   funenv
-                   limit))
-      :flag exec-block)
-
-    (defthm exec-for-iterations-of-dead
-      (soutcome-result-okeq
-       (exec-for-iterations test
-                            (block-dead update)
-                            (block-dead body)
+      (implies (and (block-nofunp block)
+                    (funenv-nofunp funenv))
+               (soutcome-result-okeq
+                (exec-block (block-dead block)
                             cstate
                             (funenv-dead funenv)
                             limit)
-       (exec-for-iterations test
-                            update
-                            body
+                (exec-block block
                             cstate
                             funenv
-                            limit))
+                            limit)))
+      :flag exec-block)
+
+    (defthm exec-for-iterations-of-dead
+      (implies (and (block-nofunp update)
+                    (block-nofunp body)
+                    (funenv-nofunp funenv))
+               (soutcome-result-okeq
+                (exec-for-iterations test
+                                     (block-dead update)
+                                     (block-dead body)
+                                     cstate
+                                     (funenv-dead funenv)
+                                     limit)
+                (exec-for-iterations test
+                                     update
+                                     body
+                                     cstate
+                                     funenv
+                                     limit)))
       :flag exec-for-iterations)
 
     (defthm exec-switch-rest-of-dead
-      (soutcome-result-okeq
-       (exec-switch-rest (swcase-list-dead cases)
-                         (block-option-dead default)
-                         target
-                         cstate
-                         (funenv-dead funenv)
-                         limit)
-       (exec-switch-rest cases
-                         default
-                         target
-                         cstate
-                         funenv
-                         limit))
+      (implies (and (swcase-list-nofunp cases)
+                    (block-option-nofunp default)
+                    (funenv-nofunp funenv))
+               (soutcome-result-okeq
+                (exec-switch-rest (swcase-list-dead cases)
+                                  (block-option-dead default)
+                                  target
+                                  cstate
+                                  (funenv-dead funenv)
+                                  limit)
+                (exec-switch-rest cases
+                                  default
+                                  target
+                                  cstate
+                                  funenv
+                                  limit)))
       :flag exec-switch-rest)
 
     :hints (exec-of-dead-hints)))

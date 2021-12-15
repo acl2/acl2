@@ -539,7 +539,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes objects
-  :short "Fixtypes of objects."
+  :short "Fixtypes of Yul objects and related entities."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -552,7 +552,7 @@
      We ``map'' from the old grammar to the new grammar as needed."))
 
   (fty::defprod object
-    :short "Fixtype of objects."
+    :short "Fixtype of Yul objects."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -571,14 +571,14 @@
     :measure (two-nats-measure (acl2-count x) 1))
 
   (fty::deftagsum object/data
-    :short "Fixtype of objects and data items."
+    :short "Fixtype of Yul objects and data items."
     (:object ((get object)))
     (:data ((get data-item)))
     :pred object/data-p
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::deflist object/data-list
-    :short "Fixtype of lists of objects and data items."
+    :short "Fixtype of lists of Yul objects and data items."
     :elt-type object/data
     :true-listp t
     :elementp-of-nil nil
