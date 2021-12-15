@@ -184,7 +184,10 @@
 
 (define vl-to-sv-main ((topmods string-listp)
                          (x vl-design-p)
-                         (config vl-simpconfig-p))
+                         (config vl-simpconfig-p)
+                         &key
+                         (allow-bad-topmods 'nil)
+                         (post-filter 't))
   :short "Turn a VL design into an SVEX hierarchical design, with a list of top modules."
   :guard-debug t
   :returns (mv err
@@ -210,7 +213,8 @@
        ((vl-design good) good)
        (bad-mods (difference (mergesort topmods)
                              (mergesort (vl-modulelist->names good.mods))))
-       ((when bad-mods)
+       ((when (and (not allow-bad-topmods)
+                   bad-mods))
         (cw "Reportcard for good mods:~%")
         (cw-unformatted (vl-reportcard-to-string (vl-design-reportcard good)))
         (cw "Reportcard for bad mods:~%")
@@ -226,14 +230,17 @@
                  (duplicated-members (vl-modulelist->names good.mods)))
             nil
             good bad))
-       (good1 (vl-remove-unnecessary-elements topmods
-                                              (change-vl-design good :mods good.mods)))
+       (good1 (if post-filter
+                  (vl-remove-unnecessary-elements topmods
+                                                  (change-vl-design good :mods
+                                                                    good.mods))
+                (change-vl-design good :mods good.mods)))
 
        ;; Translate the VL module hierarchy into an isomorphic SVEX module hierarchy.
        ((mv reportcard modalist) (vl::xf-cwtime (vl-design->svex-modalist good1 :config config)))
        ;; The reportcard can't have any warnings about bad, because it's only being
        ;; generated from a subset of good.  So, just apply it to good.
-       (good (vl-apply-reportcard good reportcard)))
+       (good (vl-apply-reportcard good1 reportcard)))
     (cw "~%")
     (cw-unformatted "--- VL->SV Translation Report -------------------------------------------------")
     (cw "~%")
@@ -241,8 +248,16 @@
     (and (vl-design->warnings good)
          (progn$ (cw "Warnings for the top-level design:~%")
                  (cw-unformatted (vl-warnings-to-string (vl-design->warnings good)))))
-    (cw-unformatted "-------------------------------------------------------------------------------")
+    (cw-unformatted
+     "-------------------------------------------------------------------------------")
     (cw "~%~%")
+    (and bad-mods
+         (progn$ (cw "Reportcard for bad mods:~%")
+                 (cw-unformatted (vl-reportcard-to-string (vl-design-reportcard
+                                                           bad)))
+                 (cw-unformatted
+                  "-------------------------------------------------------------------------------")
+                 (cw "~%~%")))
     (mv nil modalist good bad))
   ///
   (defret modalist-addr-p-of-vl-to-sv-main
@@ -253,8 +268,8 @@
 (add-macro-alias vl-to-svex-main vl-to-sv-main)
 
 (define vl-design->sv-design ((topmod stringp)
-                                (x vl-design-p)
-                                (config vl-simpconfig-p))
+                              (x vl-design-p)
+                              (config vl-simpconfig-p))
   :short "Turn a VL design into an SVEX hierarchical design."
   :guard-debug t
   :returns (mv err
@@ -275,3 +290,11 @@
 (defmacro vl-design->svex-design (&rest args)
   `(vl-design->sv-design . ,args))
 (add-macro-alias vl-design->svex-design vl-design->sv-design)
+
+
+
+
+
+
+
+

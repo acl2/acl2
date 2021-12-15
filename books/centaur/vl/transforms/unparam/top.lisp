@@ -2436,11 +2436,7 @@ scopestacks.</p>"
 (define vl-design-elaborate
   :short "Top-level @(see unparameterization) transform."
   ((x vl-design-p)
-   (config vl-simpconfig-p)
-   &key ((name-without-default-params
-          booleanp
-          "Omit default parameters when creating module names.")
-         'nil))
+   (config vl-simpconfig-p))
   :returns (new-x vl-design-p)
   :prepwork ((local (defthm string-listp-of-scopedef-alist-key
                       (implies (vl-scopedef-alist-p x)
@@ -2510,7 +2506,8 @@ scopestacks.</p>"
                           (vl-udplist->names (vl-design->udps x))))
        (ledger (make-vl-unparam-ledger
                 :ndb (vl-starting-namedb top-names)
-                :omit-default-params name-without-default-params))
+                :omit-default-params
+                (vl-simpconfig->name-without-default-params config)))
 
        ;; This is something Sol wanted for Samev.  The idea is to instance
        ;; every top-level module with its default parameters, so that we don't
