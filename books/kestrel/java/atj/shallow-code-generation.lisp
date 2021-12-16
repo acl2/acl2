@@ -1788,9 +1788,9 @@
      since when @(':guards') is @('t')
      ACL2 booleans are mapped to Java booleans,
      we apply Java's logical complement operator.
-     If instead the test has a different type,
+     If instead the argument has a different type,
      which must be an @(':acl2') type,
-     we negate the resulting expression to a Java boolean
+     we convert the resulting expression to a Java boolean
      by comparing it with @('nil') for equality:
      the result is a Java boolean, which is appropriate because
      when @(':guards') is @('t') we map ACL2 booleans to Java booleans.")
