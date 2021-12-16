@@ -26,7 +26,6 @@
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)
 (include-book "kestrel/std/system/pure-raw-p" :dir :system)
 (include-book "kestrel/std/system/rawp" :dir :system)
-(include-book "kestrel/std/system/ubody" :dir :system)
 (include-book "kestrel/std/system/unquote-term" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
@@ -168,7 +167,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-process-java-package ((java-package) ctx state)
+(define atj-process-no-aij-types (no-aij-types
+                                  (deep booleanp)
+                                  (guards booleanp)
+                                  ctx
+                                  state)
+  :returns (mv erp (nothing null) state)
+  :short "Process the @(':no-aij-types') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here we just check that it is a boolean
+     and that it is consistent with @(':deep') and @(':guards').
+     The actual checks on the functions to translate,
+     if @(':no-aij-types') is @('t'),
+     is performed elsewhere."))
+  (b* (((er &) (ensure-value-is-boolean$ no-aij-types
+                                         "The :NO-AIJ-TYPES input"
+                                         t
+                                         nil))
+       ((when (and no-aij-types
+                   deep))
+        (er-soft+ ctx t nil
+                  "The :NO-AIJ-TYPES input may be T ~
+                   only if :DEEP is NIL, but :DEEP is T instead."))
+       ((when (and no-aij-types
+                   (not guards)))
+        (er-soft+ ctx t nil
+                  "The :NO-AIJ-TYPES input may be T ~
+                   only if :GUARDS is T, but :GUARDS is NIL instead.")))
+    (value nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-process-java-package (java-package ctx state)
   :returns (mv erp (nothing null) state)
   :short "Process the @(':java-package') input."
   (b* (((er &) (ensure-string-or-nil$ java-package
@@ -1319,10 +1351,324 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-check-type-no-aij ((type atj-typep)
+                               (fn symbolp)
+                               (ctx ctxp)
+                               state)
+  :returns (mv erp (_ null) state)
+  :short "Check that an ATJ type is not mapped to an AIJ type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is part of the checks for the @(':no-aij-types') input.
+     See the user documentation.")
+   (xdoc::p
+    "The allowed ATJ types are
+     @(':aboolean'), @(':acharacter'), and the @(':j...') types;
+     see the user documentation."))
+  (b* ((pass (atj-type-case type
+                            :acl2 (or (atj-atype-case type.get :boolean)
+                                      (atj-atype-case type.get :character))
+                            :jprim t
+                            :jprimarr t)))
+    (if pass
+        (value nil)
+      (er-soft+ ctx t nil
+                "The function ~x0 has ~x1 among its input and output types, ~
+                 which violates the checks required by :NO-AIJ-TYPES T."
+                fn type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-check-type-list-no-aij ((types atj-type-listp)
+                                    (fn symbolp)
+                                    (ctx ctxp)
+                                    state)
+  :returns (mv erp (_ null) state)
+  :short "Lift @(tsee atj-check-type-no-aij) to lists."
+  (b* (((when (endp types)) (value nil))
+       ((er &) (atj-check-type-no-aij (car types) fn ctx state)))
+    (atj-check-type-list-no-aij (cdr types) fn ctx state))
+  :prepwork ((local (in-theory (disable null)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-check-function-type-no-aij ((fn symbolp)
+                                        (ctx ctxp)
+                                        state)
+  :returns (mv erp (_ null) state)
+  :short "Check that all the argument and result types of a function
+          are not mapped to AIJ types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is part of the checks for the @(':no-aij-types') input.
+     See the user documentation."))
+  (b* ((info (atj-get-function-type-info fn t (w state)))
+       (ftype (atj-function-type-info->main info))
+       ((er &) (atj-check-type-list-no-aij (atj-function-type->inputs ftype)
+                                           fn
+                                           ctx
+                                           state))
+       ((er &) (atj-check-type-list-no-aij (atj-function-type->outputs ftype)
+                                           fn
+                                           ctx
+                                           state)))
+    (value nil))
+  :prepwork ((local (in-theory (disable null)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atj-check-term-no-aij
+  :short "Check that a term does not use any AIJ types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is part of the checks for the @(':no-aij-types') input.
+     See the user documentation.")
+   (xdoc::p
+    "The check fails for all quoted constants except @('t') and @('nil'),
+     which are translated to Java booleans.
+     Other quoted constants are only allowed
+     as arguments of the functions in @(tsee *atj-jprim-constr-fns*),
+     and those calls are checked as a whole,
+     without recursively descending in their arguments.")
+   (xdoc::p
+    "The @('mv-okp') flag says whether the term
+     can be a translated @(tsee mv):
+     see the user documentation of @(':no-aij-types')."))
+
+  (define atj-check-term-no-aij ((term pseudo-termp)
+                                 (mv-okp booleanp)
+                                 (fns-to-translate symbol-listp)
+                                 (fn symbolp)
+                                 (ctx ctxp)
+                                 state)
+    :returns (mv erp (_ null) state)
+    (b* (((when (pseudo-term-case term :null))
+          (value (raise "Internal error: null term.")))
+         ((when (pseudo-term-case term :var)) (value nil))
+         ((when (pseudo-term-case term :quote))
+          (if (or (equal term acl2::*t*)
+                  (equal term acl2::*nil*))
+              (value nil)
+            (er-soft+ ctx t nil
+                      "The function ~x0 includes the quoted constant ~x1, ~
+                       which violates the checks required by :NO-AIJ-TYPES T."
+                      fn term)))
+         ((mv list-call-p elements) (fty-check-list-call term))
+         ((when (and list-call-p
+                     (consp elements)
+                     mv-okp))
+          (atj-check-term-list-no-aij elements fns-to-translate fn ctx state))
+         ((mv if-call-p test then else) (fty-check-if-call term))
+         ((when if-call-p)
+          (b* (((er &) (atj-check-term-no-aij test
+                                              nil
+                                              fns-to-translate
+                                              fn
+                                              ctx
+                                              state))
+               ((er &) (atj-check-term-no-aij then
+                                              mv-okp
+                                              fns-to-translate
+                                              fn
+                                              ctx
+                                              state))
+               ((er &) (atj-check-term-no-aij else
+                                              mv-okp
+                                              fns-to-translate
+                                              fn
+                                              ctx
+                                              state)))
+            (value nil)))
+         (args (pseudo-term-call->args term))
+         (fn/lambda (pseudo-term-call->fn term))
+         ((when (member-eq fn/lambda *atj-jprim-constr-fns*))
+          (b* (((unless (= (len args) 1))
+                (value (raise "Internal error: ~x0 has arguments ~x1."
+                              fn/lambda args))))
+            (if (pseudo-term-case (car args) :quote)
+                (value nil)
+              (er-soft+ ctx t nil
+                        "The function ~x0 calls ~x1 on a term ~x2, ~
+                         which violates the checks required by :NO-AIJ-TYPES T."
+                        fn fn/lambda (car args)))))
+         ((when (member-eq fn/lambda *atj-jprimarr-new-init-fns*))
+          (b* (((unless (= (len args) 1))
+                (value (raise "Internal error: ~x0 has arguments ~x1."
+                              fn/lambda args)))
+               ((mv okp terms) (fty-check-list-call (car args)))
+               ((unless okp)
+                (er-soft+ ctx t nil
+                          "The function ~x0 calls ~x1 on a term ~x2, ~
+                           which violates the checks ~
+                           required by :NO-AIJ-TYPES T."
+                          fn fn/lambda (car args))))
+            (atj-check-term-list-no-aij terms
+                                        fns-to-translate
+                                        fn
+                                        ctx
+                                        state)))
+         ((er &) (atj-check-term-list-no-aij args
+                                             fns-to-translate
+                                             fn
+                                             ctx
+                                             state))
+         ((when (pseudo-lambda-p fn/lambda))
+          (atj-check-term-no-aij (pseudo-lambda->body fn/lambda)
+                                 mv-okp
+                                 fns-to-translate
+                                 fn
+                                 ctx
+                                 state))
+         ((when (or (member-eq fn/lambda *atj-jprim-unop-fns*)
+                    (member-eq fn/lambda *atj-jprim-binop-fns*)
+                    (member-eq fn/lambda *atj-jprim-conv-fns*)
+                    (member-eq fn/lambda *atj-jprimarr-read-fns*)
+                    (member-eq fn/lambda *atj-jprimarr-length-fns*)
+                    (member-eq fn/lambda *atj-jprimarr-write-fns*)
+                    (member-eq fn/lambda *atj-jprimarr-new-len-fns*)
+                    (member-eq fn/lambda fns-to-translate)
+                    (member-eq fn/lambda '(equal if not))))
+          (value nil)))
+      (er-soft+ ctx t nil
+                "The function ~x0 calls the function ~x1, ~
+                 which violates the checks required by :NO-AIJ-TYPES T."
+                fn fn/lambda))
+    :measure (pseudo-term-count term))
+
+  (define atj-check-term-list-no-aij ((terms pseudo-term-listp)
+                                      (fns-to-translate symbol-listp)
+                                      (fn symbolp)
+                                      (ctx ctxp)
+                                      state)
+    :returns (mv erp (_ null) state)
+    (b* (((when (endp terms)) (value nil))
+         ((er &) (atj-check-term-no-aij (car terms)
+                                        nil
+                                        fns-to-translate
+                                        fn
+                                        ctx
+                                        state)))
+      (atj-check-term-list-no-aij (cdr terms)
+                                  fns-to-translate
+                                  fn
+                                  ctx
+                                  state))
+    :measure (pseudo-term-list-count terms))
+
+  :returns-hints (("Goal" :in-theory (disable null
+                                              member-equal
+                                              acl2::member-of-cons))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-check-fn-no-aij ((fn symbolp)
+                             (fns-to-translate symbol-listp)
+                             (ctx ctxp)
+                             state)
+  :returns (mv erp (_ null) state)
+  :short "Check that a function to translate to Java
+          does not use any AIJ types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is part of the checks for the @(':no-aij-types') input.
+     See the user documentation.")
+   (xdoc::p
+    "We check the argument and result types,
+     as well as the body.
+     However, we avoid checking
+     @(tsee equal), @(tsee if), @(tsee not), and @(tsee cons),
+     because these would fail the checks,
+     yet their use is allowed,
+     along with the other constraints we check.
+     We also avoid checking the functions that represent
+     Java primitive operations and primitive array operations,
+     which are currently returned among @('fns-to-translate')
+     (it may be better to change the worklist algorithm
+     to avoid adding those functions to @('fns-to-translate')
+     in the first place, at some point."))
+  (b* (((when (or (member-eq fn '(equal if not cons))
+                  (member-eq fn *atj-jprim-constr-fns*)
+                  (member-eq fn *atj-jprim-unop-fns*)
+                  (member-eq fn *atj-jprim-binop-fns*)
+                  (member-eq fn *atj-jprim-conv-fns*)
+                  (member-eq fn *atj-jprimarr-read-fns*)
+                  (member-eq fn *atj-jprimarr-length-fns*)
+                  (member-eq fn *atj-jprimarr-write-fns*)
+                  (member-eq fn *atj-jprimarr-new-init-fns*)
+                  (member-eq fn *atj-jprimarr-new-len-fns*)))
+        (value nil))
+       (body (atj-fn-body fn (w state)))
+       ((when (member-eq fn *stobjs-out-invalid*))
+        (value (raise "Internal error: checking function ~x0." fn)))
+       (nresults (number-of-results+ fn (w state)))
+       ((er &) (atj-check-function-type-no-aij fn ctx state))
+       (mv-okp (> nresults 1)))
+    (atj-check-term-no-aij body mv-okp fns-to-translate fn ctx state))
+  :prepwork ((local (in-theory (disable null)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-check-fn-list-no-aij ((fns symbol-listp)
+                                  (fns-to-translate symbol-listp)
+                                  (ctx ctxp)
+                                  state)
+  :returns (mv erp (_ null) state)
+  :short "Lift @(tsee atj-check-fn-no-aij) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is part of the checks for the @(':no-aij-types') input.
+     See the user documentation."))
+  (b* (((when (endp fns)) (value nil))
+       ((er &) (atj-check-fn-no-aij (car fns) fns-to-translate ctx state)))
+    (atj-check-fn-list-no-aij (cdr fns) fns-to-translate ctx state))
+  :prepwork ((local (in-theory (disable null)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-check-no-aij-types ((targets symbol-listp)
+                                (fns-to-translate symbol-listp)
+                                (ctx ctxp)
+                                state)
+  :returns (mv erp (_ null) state)
+  :short "Check that none of the functions translated to Java
+          makes use of AIJ types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is part of the checks for the @(':no-aij-types') input.
+     See the user documentation.")
+   (xdoc::p
+    "Besides checking all the functions translated to Java,
+     we ensure that the target functions
+     (i.e. the ones explicitly passed to ATJ),
+     do not include any of
+     @(tsee equal), @(tsee if), @(tsee not), and @(tsee cons).
+     The reason is that these are excepted from the checks performed
+     on the functions in the list @('fns-to-translate'),
+     and they may used indirectly by the target functions in restricted ways,
+     yet we do not allow them in their general form,
+     as they do use AIJ types in general."))
+  (b* ((overlap (intersection-eq targets '(equal if not cons)))
+       ((when overlap)
+        (er-soft+ ctx t nil
+                  "The target functions ~x0 include ~x1, ~
+                   which violates the checks required by :NO-AIJ-TYPES T."
+                  targets overlap)))
+    (atj-check-fn-list-no-aij fns-to-translate fns-to-translate ctx state))
+  :prepwork ((local (in-theory (disable null)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-allowed-options*
   :short "Keyword options accepted by @(tsee atj)."
   (list :deep
         :guards
+        :no-aij-types
         :java-package
         :java-class
         :output-dir
@@ -1393,6 +1739,7 @@
                  (if (consp pair?)
                      (cdr pair?)
                    t)))
+       (no-aij-types (cdr (assoc-eq :no-aij-types options)))
        (java-package (cdr (assoc-eq :java-package options)))
        (java-class (cdr (assoc-eq :java-class options)))
        (output-dir (or (cdr (assoc-eq :output-dir options)) "."))
@@ -1402,6 +1749,7 @@
        ((er &) (atj-process-targets targets deep guards ctx state))
        ((er &) (ensure-value-is-boolean$ deep "The :DEEP intput" t nil))
        ((er &) (ensure-value-is-boolean$ guards "The :GUARDS intput" t nil))
+       ((er &) (atj-process-no-aij-types no-aij-types deep guards ctx state))
        ((er &) (atj-process-java-package java-package ctx state))
        ((er java-class$) (atj-process-java-class java-class ctx state))
        ((er tests$) (atj-process-tests tests targets deep guards ctx state))
@@ -1415,7 +1763,10 @@
        ((er (list fns-to-translate call-graph))
         (atj-fns-to-translate
          targets deep guards ignore-whitelist verbose ctx state))
-       (pkgs (atj-pkgs-to-translate verbose state)))
+       (pkgs (atj-pkgs-to-translate verbose state))
+       ((er &) (if no-aij-types
+                   (atj-check-no-aij-types targets fns-to-translate ctx state)
+                 (value nil))))
     (value (list fns-to-translate
                  call-graph
                  pkgs
