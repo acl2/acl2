@@ -14,6 +14,7 @@
 (include-book "grammar-new")
 
 (include-book "lexer")
+(include-book "tokenizer")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
