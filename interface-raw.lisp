@@ -9382,7 +9382,7 @@
 ; raw Lisp definition of acl2::defconst.
 
             t)
-           (alist (and (hons-enabledp *the-live-state*)
+           (alist (and ; (hons-enabledp *the-live-state*) ; deprecated
                        (loop for pair in
                              (table-alist 'memoize-table (w *the-live-state*))
                              when (fboundp (car pair)) ; always true?
