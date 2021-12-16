@@ -218,7 +218,7 @@
      calls of @(tsee mv) determine when multiple results are produced.
      In translated terms,
      @(tsee mv) is expanded in the same way as @(tsee list),
-     and thus the information is somewhat.
+     and thus the information is somewhat lost.
      However, it can be almost completely recovered with a bit of effort;
      the `almost' means that in some very unlikely and contrived situations
      we may regard a translated term
@@ -2118,7 +2118,7 @@
      However, this analysis is best carried out
      between the type annotation pre-translation step
      and the variable reuse pre-translation step.
-     The reason why this analysis should be carried
+     The reason why this analysis should be carried out
      after the type annotation step
      is that we need the type annotations to determine where the arrays are,
      and subject them to the analysis.
