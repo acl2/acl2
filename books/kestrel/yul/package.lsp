@@ -24,6 +24,7 @@
                          value))
                       '(any
                         bool
+                        boolean-resultp
                         defund-sk
                         defxdoc+
                         nat
