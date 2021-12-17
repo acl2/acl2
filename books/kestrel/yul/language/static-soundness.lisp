@@ -692,7 +692,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define cstate-to-vartable ((cstate cstatep))
+(define cstate-to-vars ((cstate cstatep))
   :returns (vartab identifier-setp)
   :short "Turn a computation state into a variable table."
   :long
@@ -712,15 +712,15 @@
   :hooks (:fix)
   ///
 
-  (defruled cstate-to-vartable-fold-def
+  (defruled cstate-to-vars-fold-def
     (equal (omap::keys (cstate->local cstate))
-           (cstate-to-vartable cstate))
-    :enable cstate-to-vartable))
+           (cstate-to-vars cstate))
+    :enable cstate-to-vars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection theorems-about-cstate-to-vartable-and-execution
-  :short "Theorems about @(tsee cstate-to-vartable) and execution."
+(defsection theorems-about-cstate-to-vars-and-execution
+  :short "Theorems about @(tsee cstate-to-vars) and execution."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -744,133 +744,133 @@
      with the theorems reformulated
      (perhaps this may actually make the overall proof simpler).")
    (xdoc::p
-    "Note the use of the @('cstate-to-vartable-fold-def') rule
+    "Note the use of the @('cstate-to-vars-fold-def') rule
      in the mutual induction proof below.
      This rule, and its undesirability,
-     is discussed in @(tsee cstate-to-vartable).
+     is discussed in @(tsee cstate-to-vars).
      This might be actually related to the issue
      discussed in the paragraph just above."))
 
-  (defrule cstate-to-vartable-of-write-var-value
+  (defrule cstate-to-vars-of-write-var-value
     (b* ((cstate1 (write-var-value var val cstate)))
       (implies (not (resulterrp cstate1))
-               (equal (cstate-to-vartable cstate1)
-                      (cstate-to-vartable cstate))))
+               (equal (cstate-to-vars cstate1)
+                      (cstate-to-vars cstate))))
     :enable (write-var-value
-             cstate-to-vartable
+             cstate-to-vars
              omap::consp-of-omap-in-to-set-in-of-omap-keys))
 
-  (defrule cstate-to-vartable-of-write-vars-values
+  (defrule cstate-to-vars-of-write-vars-values
     (b* ((cstate1 (write-vars-values vars vals cstate)))
       (implies (not (resulterrp cstate1))
-               (equal (cstate-to-vartable cstate1)
-                      (cstate-to-vartable cstate))))
+               (equal (cstate-to-vars cstate1)
+                      (cstate-to-vars cstate))))
     :enable write-vars-values)
 
-  (defrule cstate-to-vartable-of-restrict-vars
-    (equal (cstate-to-vartable (restrict-vars vars cstate))
+  (defrule cstate-to-vars-of-restrict-vars
+    (equal (cstate-to-vars (restrict-vars vars cstate))
            (set::intersect (identifier-set-fix vars)
-                           (cstate-to-vartable cstate)))
-    :enable (cstate-to-vartable
+                           (cstate-to-vars cstate)))
+    :enable (cstate-to-vars
              restrict-vars))
 
-  (defrule cstate-to-vartable-of-add-var-value
+  (defrule cstate-to-vars-of-add-var-value
     (b* ((cstate1 (add-var-value var val cstate)))
       (implies (not (resulterrp cstate1))
-               (equal (cstate-to-vartable cstate1)
+               (equal (cstate-to-vars cstate1)
                       (set::insert (identifier-fix var)
-                                   (cstate-to-vartable cstate)))))
+                                   (cstate-to-vars cstate)))))
     :enable (add-var-value
-             cstate-to-vartable))
+             cstate-to-vars))
 
-  (defrule cstate-to-vartable-of-add-vars-values
+  (defrule cstate-to-vars-of-add-vars-values
     (b* ((cstate1 (add-vars-values vars vals cstate)))
       (implies (not (resulterrp cstate1))
-               (equal (cstate-to-vartable cstate1)
+               (equal (cstate-to-vars cstate1)
                       (set::list-insert (identifier-list-fix vars)
-                                        (cstate-to-vartable cstate)))))
+                                        (cstate-to-vars cstate)))))
     :enable (add-vars-values
              set::list-insert))
 
-  (defrule cstate-to-vartable-of-exec-literal
+  (defrule cstate-to-vars-of-exec-literal
     (b* ((outcome (exec-literal lit cstate)))
       (implies (not (resulterrp outcome))
-               (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                      (cstate-to-vartable cstate))))
+               (equal (cstate-to-vars (eoutcome->cstate outcome))
+                      (cstate-to-vars cstate))))
     :enable exec-literal)
 
-  (defrule cstate-to-vartable-of-exec-path
+  (defrule cstate-to-vars-of-exec-path
     (b* ((outcome (exec-path path cstate)))
       (implies (not (resulterrp outcome))
-               (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                      (cstate-to-vartable cstate))))
+               (equal (cstate-to-vars (eoutcome->cstate outcome))
+                      (cstate-to-vars cstate))))
     :enable exec-path)
 
   (defthm-exec-flag
 
-    (defthm cstate-to-vartable-of-exec-expression
+    (defthm cstate-to-vars-of-exec-expression
       (b* ((outcome (exec-expression expr cstate funenv limit)))
         (implies (not (resulterrp outcome))
-                 (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                        (cstate-to-vartable cstate))))
+                 (equal (cstate-to-vars (eoutcome->cstate outcome))
+                        (cstate-to-vars cstate))))
       :flag exec-expression)
 
-    (defthm cstate-to-vartable-of-exec-expression-list
+    (defthm cstate-to-vars-of-exec-expression-list
       (b* ((outcome (exec-expression-list exprs cstate funenv limit)))
         (implies (not (resulterrp outcome))
-                 (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                        (cstate-to-vartable cstate))))
+                 (equal (cstate-to-vars (eoutcome->cstate outcome))
+                        (cstate-to-vars cstate))))
       :flag exec-expression-list)
 
-    (defthm cstate-to-vartable-of-exec-funcall
+    (defthm cstate-to-vars-of-exec-funcall
       (b* ((outcome (exec-funcall call cstate funenv limit)))
         (implies (not (resulterrp outcome))
-                 (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                        (cstate-to-vartable cstate))))
+                 (equal (cstate-to-vars (eoutcome->cstate outcome))
+                        (cstate-to-vars cstate))))
       :flag exec-funcall)
 
-    (defthm cstate-to-vartable-of-exec-function
+    (defthm cstate-to-vars-of-exec-function
       (b* ((outcome (exec-function fun args cstate funenv limit)))
         (implies (not (resulterrp outcome))
-                 (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                        (cstate-to-vartable cstate))))
+                 (equal (cstate-to-vars (eoutcome->cstate outcome))
+                        (cstate-to-vars cstate))))
       :flag exec-function)
 
-    (defthm cstate-to-vartable-of-exec-statement
+    (defthm cstate-to-vars-of-exec-statement
       (b* ((outcome (exec-statement stmt cstate funenv limit)))
         (implies (not (resulterrp outcome))
-                 (set::subset (cstate-to-vartable cstate)
-                              (cstate-to-vartable
+                 (set::subset (cstate-to-vars cstate)
+                              (cstate-to-vars
                                (soutcome->cstate outcome)))))
       :flag exec-statement)
 
-    (defthm cstate-to-vartable-of-exec-statement-list
+    (defthm cstate-to-vars-of-exec-statement-list
       (b* ((outcome (exec-statement-list stmts cstate funenv limit)))
         (implies (not (resulterrp outcome))
-                 (set::subset (cstate-to-vartable cstate)
-                              (cstate-to-vartable
+                 (set::subset (cstate-to-vars cstate)
+                              (cstate-to-vars
                                (soutcome->cstate outcome)))))
       :flag exec-statement-list)
 
-    (defthm cstate-to-vartable-of-exec-block
+    (defthm cstate-to-vars-of-exec-block
       (b* ((outcome (exec-block block cstate funenv limit)))
         (implies (not (resulterrp outcome))
-                 (equal (cstate-to-vartable (soutcome->cstate outcome))
-                        (cstate-to-vartable cstate))))
+                 (equal (cstate-to-vars (soutcome->cstate outcome))
+                        (cstate-to-vars cstate))))
       :flag exec-block)
 
-    (defthm cstate-to-vartable-of-exec-for-iterations
+    (defthm cstate-to-vars-of-exec-for-iterations
       (b* ((outcome (exec-for-iterations test update body cstate funenv limit)))
         (implies (not (resulterrp outcome))
-                 (equal (cstate-to-vartable (soutcome->cstate outcome))
-                        (cstate-to-vartable cstate))))
+                 (equal (cstate-to-vars (soutcome->cstate outcome))
+                        (cstate-to-vars cstate))))
       :flag exec-for-iterations)
 
-    (defthm cstate-to-vartable-of-exec-switch-rest
+    (defthm cstate-to-vars-of-exec-switch-rest
       (b* ((outcome (exec-switch-rest cases default target cstate funenv limit)))
         (implies (not (resulterrp outcome))
-                 (equal (cstate-to-vartable (soutcome->cstate outcome))
-                        (cstate-to-vartable cstate))))
+                 (equal (cstate-to-vars (soutcome->cstate outcome))
+                        (cstate-to-vars cstate))))
       :flag exec-switch-rest)
 
     :hints (("Goal" :in-theory (enable exec-expression
@@ -883,7 +883,7 @@
                                        exec-for-iterations
                                        exec-switch-rest
                                        set::subset-transitive
-                                       cstate-to-vartable-fold-def
+                                       cstate-to-vars-fold-def
                                        set::intersect-with-subset-left)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -897,16 +897,16 @@
      also @(tsee read-var-value) and @(tsee read-vars-values) do."))
 
   (defruled read-var-value-when-check-var
-    (implies (check-var var (cstate-to-vartable cstate))
+    (implies (check-var var (cstate-to-vars cstate))
              (not (resulterrp (read-var-value var cstate))))
     :enable (check-var
              read-var-value
              not-resulterrp-when-valuep
-             cstate-to-vartable
+             cstate-to-vars
              omap::consp-of-omap-in-to-set-in-of-omap-keys))
 
   (defruled read-vars-values-when-check-var-list
-    (implies (check-var-list vars (cstate-to-vartable cstate))
+    (implies (check-var-list vars (cstate-to-vars cstate))
              (not (resulterrp (read-vars-values vars cstate))))
     :enable (check-var-list
              read-vars-values
@@ -927,24 +927,24 @@
      is the same returned by the safety checks."))
 
   (defrule add-var-value-when-add-var
-    (b* ((vartab1 (add-var var (cstate-to-vartable cstate)))
+    (b* ((vartab1 (add-var var (cstate-to-vars cstate)))
          (cstate1 (add-var-value var val cstate)))
       (implies (not (resulterrp vartab1))
                (and (not (resulterrp cstate1))
-                    (equal (cstate-to-vartable cstate1)
+                    (equal (cstate-to-vars cstate1)
                            vartab1))))
     :enable (add-var
              add-var-value
-             cstate-to-vartable
+             cstate-to-vars
              omap::consp-of-omap-in-to-set-in-of-omap-keys))
 
   (defrule add-vars-values-when-add-vars
-    (b* ((vartab1 (add-vars vars (cstate-to-vartable cstate)))
+    (b* ((vartab1 (add-vars vars (cstate-to-vars cstate)))
          (cstate1 (add-vars-values vars vals cstate)))
       (implies (and (not (resulterrp vartab1))
                     (equal (len vals) (len vars)))
                (and (not (resulterrp cstate1))
-                    (equal (cstate-to-vartable cstate1)
+                    (equal (cstate-to-vars cstate1)
                            vartab1))))
     :induct (add-vars-values vars vals cstate)
     :enable (add-vars
@@ -996,21 +996,21 @@
              paths-to-vars))
 
   (defrule write-var-value-when-check-var
-    (implies (check-var var (cstate-to-vartable cstate))
+    (implies (check-var var (cstate-to-vars cstate))
              (not (resulterrp (write-var-value var val cstate))))
     :enable (write-var-value
              check-var
-             cstate-to-vartable
+             cstate-to-vars
              omap::consp-of-omap-in-to-set-in-of-omap-keys))
 
   (defrule write-var-value-when-check-safe-path
     (implies (not (resulterrp
-                   (check-safe-path path (cstate-to-vartable cstate))))
+                   (check-safe-path path (cstate-to-vars cstate))))
              (not (resulterrp
                    (write-var-value (path-to-var path) val cstate)))))
 
   (defrule write-vars-values-when-check-var-list
-    (implies (and (check-var-list vars (cstate-to-vartable cstate))
+    (implies (and (check-var-list vars (cstate-to-vars cstate))
                   (equal (len vals) (len vars)))
              (not (resulterrp (write-vars-values vars vals cstate))))
     :enable (check-var-list
@@ -1019,7 +1019,7 @@
   (defrule write-vars-values-when-check-safe-path-list
     (implies (and (not (resulterrp
                         (check-safe-path-list paths
-                                              (cstate-to-vartable cstate))))
+                                              (cstate-to-vars cstate))))
                   (equal (len vals) (len paths)))
              (not (resulterrp
                    (write-vars-values (paths-to-vars paths) vals cstate))))))
@@ -1043,7 +1043,7 @@
     "We prove a theorem that characterizes the effect of @(tsee init-local)
      on the variable table of the computation state.
      This should belong to
-     the theorems in @(see theorems-about-cstate-to-vartable-and-execution),
+     the theorems in @(see theorems-about-cstate-to-vars-and-execution),
      and it can probably put there, but currently it needs some other theorems,
      but it may be possible to streamline and simplify its proof.")
    (xdoc::p
@@ -1071,10 +1071,10 @@
 
   (defruled error-add-var-value-iff-error-add-var
     (equal (resulterrp (add-var-value var val cstate))
-           (resulterrp (add-var var (cstate-to-vartable cstate))))
+           (resulterrp (add-var var (cstate-to-vars cstate))))
     :enable (add-var
              add-var-value
-             cstate-to-vartable
+             cstate-to-vars
              omap::consp-of-omap-in-to-set-in-of-omap-keys
              not-resulterrp-when-cstatep
              not-resulterrp-when-identifier-setp))
@@ -1082,18 +1082,18 @@
   (defruled error-add-vars-values-iff-error-add-vars
     (implies (equal (len vals) (len vars))
              (equal (resulterrp (add-vars-values vars vals cstate))
-                    (resulterrp (add-vars vars (cstate-to-vartable cstate)))))
+                    (resulterrp (add-vars vars (cstate-to-vars cstate)))))
     :enable (add-vars-values
              add-vars
              error-add-var-value-iff-error-add-var
              not-resulterrp-when-identifier-setp))
 
-  (defrule cstate-to-vartable-of-init-local
+  (defrule cstate-to-vars-of-init-local
     (implies (and (equal (len in-vals)
                          (len in-vars))
                   (not (resulterrp
                         (init-local in-vars in-vals out-vars cstate))))
-             (equal (cstate-to-vartable
+             (equal (cstate-to-vars
                      (init-local in-vars in-vals out-vars cstate))
                     (add-vars (append in-vars out-vars) nil)))
     :enable (init-local
@@ -1132,8 +1132,8 @@
                         (init-local in-vars in-vals out-vars cstate))))
              (not (resulterrp (add-vars (append in-vars out-vars) nil))))
     :enable not-resulterrp-when-identifier-setp
-    :disable cstate-to-vartable-of-init-local
-    :use cstate-to-vartable-of-init-local)
+    :disable cstate-to-vars-of-init-local
+    :use cstate-to-vars-of-init-local)
 
   (defruled init-local-not-error-when-add-vars-of-append-not-error
     (implies (and (equal (len in-vals) (len in-vars))
@@ -1238,7 +1238,7 @@
 
   (defrule exec-path-when-check-safe-path
     (implies (not (resulterrp
-                   (check-safe-path path (cstate-to-vartable cstate))))
+                   (check-safe-path path (cstate-to-vars cstate))))
              (b* ((outcome (exec-path path cstate)))
                (and (not (resulterrp outcome))
                     (equal (eoutcome->cstate outcome)
@@ -1286,7 +1286,7 @@
      @(see static-soundness-theorems-about-modes);
      we also need to disable theorems, generated by the fixtype definition,
      that would otherwise interfere with these theorems.
-     We enable the awkward @('cstate-to-vartable-fold-def'),
+     We enable the awkward @('cstate-to-vars-fold-def'),
      which is needed for the somewhat specific lemma below,
      which we also enable.
      We enable two @('<option-fixtype>-some->val') functions,
@@ -1302,7 +1302,7 @@
      We also remark the use of the @('...-extends-vartable') theorems
      that accompany the static safety checking formalization."))
 
-  (defruled exec-statement-list-cstate-to-vartable-lemma
+  (defruled exec-statement-list-cstate-to-vars-lemma
     (implies (and (not (resulterrp (add-funs (statements-to-fundefs stmts)
                                              funenv)))
                   (not (resulterrp (exec-statement-list
@@ -1312,8 +1312,8 @@
                                               funenv)
                                     limit))))
              (equal (intersect
-                     (cstate-to-vartable cstate)
-                     (cstate-to-vartable
+                     (cstate-to-vars cstate)
+                     (cstate-to-vars
                       (soutcome->cstate
                        (exec-statement-list stmts
                                             cstate
@@ -1321,8 +1321,8 @@
                                              (statements-to-fundefs stmts)
                                              funenv)
                                             limit))))
-                    (cstate-to-vartable cstate)))
-    :use (:instance cstate-to-vartable-of-exec-statement-list
+                    (cstate-to-vars cstate)))
+    :use (:instance cstate-to-vars-of-exec-statement-list
           (cstate (add-funs (statements-to-fundefs stmts) funenv)))
     :enable set::intersect-with-subset-left)
 
@@ -1330,45 +1330,45 @@
 
     (defthm exec-expression-static-soundness
       (b* ((results (check-safe-expression expr
-                                           (cstate-to-vartable cstate)
+                                           (cstate-to-vars cstate)
                                            (funenv-to-funtable funenv)))
            (outcome (exec-expression expr cstate funenv limit)))
         (implies (and (funenv-safep funenv)
                       (not (resulterrp results))
                       (not (resulterr-limitp outcome)))
                  (and (not (resulterrp outcome))
-                      (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                             (cstate-to-vartable cstate))
+                      (equal (cstate-to-vars (eoutcome->cstate outcome))
+                             (cstate-to-vars cstate))
                       (equal (len (eoutcome->values outcome))
                              results))))
       :flag exec-expression)
 
     (defthm exec-expression-list-static-soundness
       (b* ((results (check-safe-expression-list exprs
-                                                (cstate-to-vartable cstate)
+                                                (cstate-to-vars cstate)
                                                 (funenv-to-funtable funenv)))
            (outcome (exec-expression-list exprs cstate funenv limit)))
         (implies (and (funenv-safep funenv)
                       (not (resulterrp results))
                       (not (resulterr-limitp outcome)))
                  (and (not (resulterrp outcome))
-                      (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                             (cstate-to-vartable cstate))
+                      (equal (cstate-to-vars (eoutcome->cstate outcome))
+                             (cstate-to-vars cstate))
                       (equal (len (eoutcome->values outcome))
                              results))))
       :flag exec-expression-list)
 
     (defthm exec-funcall-static-soundness
       (b* ((results (check-safe-funcall call
-                                        (cstate-to-vartable cstate)
+                                        (cstate-to-vars cstate)
                                         (funenv-to-funtable funenv)))
            (outcome (exec-funcall call cstate funenv limit)))
         (implies (and (funenv-safep funenv)
                       (not (resulterrp results))
                       (not (resulterr-limitp outcome)))
                  (and (not (resulterrp outcome))
-                      (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                             (cstate-to-vartable cstate))
+                      (equal (cstate-to-vars (eoutcome->cstate outcome))
+                             (cstate-to-vars cstate))
                       (equal (len (eoutcome->values outcome))
                              results))))
       :flag exec-funcall)
@@ -1382,22 +1382,22 @@
                              (funtype->in ftype))
                       (not (resulterr-limitp outcome)))
                  (and (not (resulterrp outcome))
-                      (equal (cstate-to-vartable (eoutcome->cstate outcome))
-                             (cstate-to-vartable cstate))
+                      (equal (cstate-to-vars (eoutcome->cstate outcome))
+                             (cstate-to-vars cstate))
                       (equal (len (eoutcome->values outcome))
                              (funtype->out ftype)))))
       :flag exec-function)
 
     (defthm exec-statement-static-soundness
       (b* ((vartab-modes (check-safe-statement stmt
-                                               (cstate-to-vartable cstate)
+                                               (cstate-to-vars cstate)
                                                (funenv-to-funtable funenv)))
            (outcome (exec-statement stmt cstate funenv limit)))
         (implies (and (funenv-safep funenv)
                       (not (resulterrp vartab-modes))
                       (not (resulterr-limitp outcome)))
                  (and (not (resulterrp outcome))
-                      (equal (cstate-to-vartable (soutcome->cstate outcome))
+                      (equal (cstate-to-vars (soutcome->cstate outcome))
                              (vars+modes->vars vartab-modes))
                       (set::in (soutcome->mode outcome)
                                (vars+modes->modes vartab-modes)))))
@@ -1405,7 +1405,7 @@
 
     (defthm exec-statement-list-static-soundness
       (b* ((vartab-modes (check-safe-statement-list stmts
-                                                    (cstate-to-vartable cstate)
+                                                    (cstate-to-vars cstate)
                                                     (funenv-to-funtable funenv)))
            (outcome (exec-statement-list stmts cstate funenv limit)))
         (implies (and (funenv-safep funenv)
@@ -1414,9 +1414,9 @@
                  (and (not (resulterrp outcome))
                       (if (equal (soutcome->mode outcome)
                                  (mode-regular))
-                          (equal (cstate-to-vartable (soutcome->cstate outcome))
+                          (equal (cstate-to-vars (soutcome->cstate outcome))
                                  (vars+modes->vars vartab-modes))
-                        (set::subset (cstate-to-vartable (soutcome->cstate outcome))
+                        (set::subset (cstate-to-vars (soutcome->cstate outcome))
                                      (vars+modes->vars vartab-modes)))
                       (set::in (soutcome->mode outcome)
                                (vars+modes->modes vartab-modes)))))
@@ -1424,28 +1424,28 @@
 
     (defthm exec-block-static-soundness
       (b* ((modes (check-safe-block block
-                                    (cstate-to-vartable cstate)
+                                    (cstate-to-vars cstate)
                                     (funenv-to-funtable funenv)))
            (outcome (exec-block block cstate funenv limit)))
         (implies (and (funenv-safep funenv)
                       (not (resulterrp modes))
                       (not (resulterr-limitp outcome)))
                  (and (not (resulterrp outcome))
-                      (equal (cstate-to-vartable (soutcome->cstate outcome))
-                             (cstate-to-vartable cstate))
+                      (equal (cstate-to-vars (soutcome->cstate outcome))
+                             (cstate-to-vars cstate))
                       (set::in (soutcome->mode outcome)
                                modes))))
       :flag exec-block)
 
     (defthm exec-for-iterations-static-soundness
       (b* ((test-results (check-safe-expression test
-                                                (cstate-to-vartable cstate)
+                                                (cstate-to-vars cstate)
                                                 (funenv-to-funtable funenv)))
            (update-modes (check-safe-block update
-                                           (cstate-to-vartable cstate)
+                                           (cstate-to-vars cstate)
                                            (funenv-to-funtable funenv)))
            (body-modes (check-safe-block body
-                                         (cstate-to-vartable cstate)
+                                         (cstate-to-vars cstate)
                                          (funenv-to-funtable funenv)))
            (outcome (exec-for-iterations test update body cstate funenv limit)))
         (implies (and (funenv-safep funenv)
@@ -1457,8 +1457,8 @@
                       (not (resulterrp body-modes))
                       (not (resulterr-limitp outcome)))
                  (and (not (resulterrp outcome))
-                      (equal (cstate-to-vartable (soutcome->cstate outcome))
-                             (cstate-to-vartable cstate))
+                      (equal (cstate-to-vars (soutcome->cstate outcome))
+                             (cstate-to-vars cstate))
                       (set::in (soutcome->mode outcome)
                                (set::difference
                                 (set::insert (mode-regular)
@@ -1470,10 +1470,10 @@
 
     (defthm exec-switch-rest-static-soundness
       (b* ((cases-modes (check-safe-swcase-list cases
-                                                (cstate-to-vartable cstate)
+                                                (cstate-to-vars cstate)
                                                 (funenv-to-funtable funenv)))
            (default-modes (check-safe-block-option default
-                                                   (cstate-to-vartable cstate)
+                                                   (cstate-to-vars cstate)
                                                    (funenv-to-funtable funenv)))
            (outcome (exec-switch-rest cases default target cstate funenv limit)))
         (implies (and (funenv-safep funenv)
@@ -1481,8 +1481,8 @@
                       (not (resulterrp default-modes))
                       (not (resulterr-limitp outcome)))
                  (and (not (resulterrp outcome))
-                      (equal (cstate-to-vartable (soutcome->cstate outcome))
-                             (cstate-to-vartable cstate))
+                      (equal (cstate-to-vars (soutcome->cstate outcome))
+                             (cstate-to-vars cstate))
                       (set::in (soutcome->mode outcome)
                                (set::union cases-modes default-modes)))))
       :flag exec-switch-rest)
@@ -1523,8 +1523,8 @@
                mode-leave-not-continue
                mode-leave-not-break
                soutcome->mode-regular-lemma
-               cstate-to-vartable-fold-def
-               exec-statement-list-cstate-to-vartable-lemma
+               cstate-to-vars-fold-def
+               exec-statement-list-cstate-to-vars-lemma
                funcall-option-some->val
                expression-option-some->val
                check-safe-expression-list-to-len
@@ -1547,5 +1547,5 @@
                equal-of-mode-regular
                equal-of-mode-leave))
              :expand ((check-safe-statement stmt
-                                            (cstate-to-vartable cstate)
+                                            (cstate-to-vars cstate)
                                             (funenv-to-funtable funenv)))))))
