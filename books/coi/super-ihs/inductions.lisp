@@ -446,6 +446,26 @@
 
 (defun logmaskpr (x)
   (declare (xargs :hints (("goal" :in-theory (disable acl2-count)))))
+
+; Matt K. mod, withdrawn but explained here:
+; The following commented-out change is necessary for LispWorks 8.0.  However,
+; LispWorks has provided me a patch that presumably will be made publicly
+; available, so we leave the original code as is, as a way of testing LispWorks
+; in the future.
+#|
+; The LispWorks 8.0 compiler causes an error for the :logic version of this
+; defun body, which up till now was the entire body.  This use of mbe fixes the
+; problem.  Presumably the raw Lisp version of this function has never been
+; called.
+
+  (mbe :logic
+       (if (logendp x)
+           nil
+         (logcons nil (logmaskpr (logcdr x))))
+       :exec
+       nil)
+|#
+
   (if (logendp x)
       nil
     (logcons nil (logmaskpr (logcdr x)))))

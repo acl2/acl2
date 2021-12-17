@@ -348,7 +348,7 @@
    (value int-valuep :hyp (primitive-type-case type :int))
    (value long-valuep :hyp (primitive-type-case type :long))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-test-input-jprim-values
   ((inputs pseudo-term-listp)
@@ -377,7 +377,7 @@
    (values int-value-listp :hyp (primitive-type-case type :int))
    (values long-value-listp :hyp (primitive-type-case type :long))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-test-input ((input pseudo-termp)
                                 (type atj-typep)
@@ -485,7 +485,7 @@
       :float irrelevant
       :double irrelevant))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-test-inputs ((inputs pseudo-term-listp)
                                  (types atj-type-listp)
@@ -518,7 +518,7 @@
                                                   ctx state)))
     (value (cons test-input test-inputs))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-test (name
                           call
@@ -656,7 +656,7 @@
        (test-outputs (atj-test-values-of-types outputs out-types)))
     (value (atj-test name fn test-inputs test-outputs))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-tests (tests
                            (targets$ symbol-listp)
@@ -1096,7 +1096,7 @@
              :expand (pseudo-termp term)
              :in-theory (enable member-equal acl2::member-of-cons)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-worklist-iterate ((worklist-gen symbol-listp)
                               (worklist-chk symbol-listp)
@@ -1267,7 +1267,7 @@
                           verbose$
                           ctx state)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-fns-to-translate ((targets$ symbol-listp)
                               (deep$ booleanp)

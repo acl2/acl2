@@ -11,7 +11,7 @@
 (in-package "JAVA")
 
 (include-book "java-primitive-array-model")
-(include-book "java-types")
+(include-book "java-input-types")
 
 (include-book "kestrel/std/system/arity-plus" :dir :system)
 (include-book "kestrel/std/system/function-namep" :dir :system)

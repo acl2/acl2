@@ -2714,7 +2714,8 @@
        and generate a Java variable with the same name.
        Then we wrap it with a Java conversion, if needed.")
      (xdoc::p
-      "First we try to process the term as an @(tsee mv-let).
+      "First we try to process the term as an @(tsee mv-let),
+       via a separate code generation function.
        If this succeeds, we just return.
        Otherwise,
        we process the term by cases (variable, quoted constants, etc.),
@@ -2725,17 +2726,13 @@
        We wrap the resulting expression with a Java conversion, if needed.")
      (xdoc::p
       "If the ACL2 term is a named function call,
-       we first generate code to computer the actual arguments
+       we first generate code to compute the actual arguments
        and then we use a separate code generation function
        to handle the different kinds of named function calls.
        If instead the ACL2 term is a call of a lambda expression,
        we first generate code to compute the actual arguments,
        and then we use a separate code generation function
-       for the lambda expression.")
-     (xdoc::p
-      "Calls of @(tsee mv-let) are handled by
-       a separate code generation function,
-       which is tried before anything else."))
+       for the lambda expression."))
     (b* (((mv mv-let-p
               block
               expr

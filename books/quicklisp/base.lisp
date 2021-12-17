@@ -31,6 +31,8 @@
 (in-package "ACL2")
 (include-book "tools/include-raw" :dir :system)
 ; cert_param: (uses-quicklisp)
+; Matt K. mod, 12/16/2021 (see GitHub Issue #1332):
+; cert_param: (non-lispworks)
 
 (make-event
  (mv-let (err override-dir state)

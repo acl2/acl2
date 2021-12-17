@@ -102,7 +102,7 @@
     "ATJ also accepts the ACL2 function @(tsee return-last)
      (which has raw Lisp code and is not in the whitelist),
      but only when its first argument is
-     @('acl2::mbe-raw1') or @('acl2::progn').
+     @('\'acl2::mbe-raw1') or @('\'acl2::progn').
      Calls of the form @('(return-last 'acl2::mbe1-raw ...)')
      are translated representations of calls of @(tsee mbe);
      ATJ translates to Java
@@ -133,7 +133,7 @@
      does not mimic any of the side effects exhibited by ACL2 functions.
      In particular, calls of @(tsee prog2$) and @(tsee progn$) are accepted
      (as explained above about @(tsee return-last)
-     with first argument @('acl2::progn'))
+     with first argument @('\'acl2::progn'))
      only if their non-last arguments are free of side effects.
      Support for translating ACL2 functions with side effects
      to Java code that mimics those side effects
@@ -307,7 +307,7 @@
       under two possible conditions:")
     (xdoc::ul
      (xdoc::li
-      "The first argument of @(tsee return-last) is @('acl2::mbe-raw1'),
+      "The first argument of @(tsee return-last) is @('\'acl2::mbe-raw1'),
        i.e. the call results from the translation of @(tsee mbe).
        Even though Java code is generated
        for one of the second and third arguments but not for the other one
@@ -316,7 +316,7 @@
        and in particular the absence of side effects,
        are enforced on all the argument of the call.")
      (xdoc::li
-      "The first argument of @(tsee return-last) is @('acl2::progn'),
+      "The first argument of @(tsee return-last) is @('\'acl2::progn'),
        i.e. the call results from the translation of
        @(tsee prog2$) or @(tsee progn$).
        Even though Java code is generated
