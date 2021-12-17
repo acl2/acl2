@@ -22,6 +22,7 @@
 (include-book "no-function-definitions-dynamic")
 (include-book "no-loop-initializers")
 (include-book "unique-variables")
+(include-book "unique-functions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

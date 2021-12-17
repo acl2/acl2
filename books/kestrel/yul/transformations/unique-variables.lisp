@@ -27,7 +27,7 @@
    (xdoc::p
     "Here we capture this uniqueness property for variables;
      the uniqueness property for functions
-     is captured elsewhere.
+     is captured in @(see unique-functions).
      We formalize this property via ACL2 functions on statements, blocks, etc.
      that take as arguments the variable names encountered so far,
      check that the names of the variables
