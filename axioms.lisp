@@ -21940,8 +21940,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (save-def
 (defun-one-output bad-lisp-consp (x)
   (declare (type cons x))
-  (or (bad-lisp-objectp (car x))
-      (bad-lisp-objectp (cdr x))))
+; The body below was originally
+; (or (bad-lisp-objectp (car x))
+;     (bad-lisp-objectp (cdr x))))
+; but we have rewritten it to avoid an SBCL stack overflow in an example sent
+; by Eric Smith to the acl2-help list on 12/17/2021.
+  (loop for tail on x thereis (bad-lisp-objectp (car tail))
+        finally (return (bad-lisp-atomp tail))))
 )
 
 #-acl2-loop-only
