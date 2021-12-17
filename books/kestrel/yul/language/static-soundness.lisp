@@ -1389,37 +1389,37 @@
       :flag exec-function)
 
     (defthm exec-statement-static-soundness
-      (b* ((vartab-modes (check-safe-statement stmt
-                                               (cstate-to-vars cstate)
-                                               (funenv-to-funtable funenv)))
+      (b* ((varsmodes (check-safe-statement stmt
+                                            (cstate-to-vars cstate)
+                                            (funenv-to-funtable funenv)))
            (outcome (exec-statement stmt cstate funenv limit)))
         (implies (and (funenv-safep funenv)
-                      (not (resulterrp vartab-modes))
+                      (not (resulterrp varsmodes))
                       (not (resulterr-limitp outcome)))
                  (and (not (resulterrp outcome))
                       (equal (cstate-to-vars (soutcome->cstate outcome))
-                             (vars+modes->vars vartab-modes))
+                             (vars+modes->vars varsmodes))
                       (set::in (soutcome->mode outcome)
-                               (vars+modes->modes vartab-modes)))))
+                               (vars+modes->modes varsmodes)))))
       :flag exec-statement)
 
     (defthm exec-statement-list-static-soundness
-      (b* ((vartab-modes (check-safe-statement-list stmts
-                                                    (cstate-to-vars cstate)
-                                                    (funenv-to-funtable funenv)))
+      (b* ((varsmodes (check-safe-statement-list stmts
+                                                 (cstate-to-vars cstate)
+                                                 (funenv-to-funtable funenv)))
            (outcome (exec-statement-list stmts cstate funenv limit)))
         (implies (and (funenv-safep funenv)
-                      (not (resulterrp vartab-modes))
+                      (not (resulterrp varsmodes))
                       (not (resulterr-limitp outcome)))
                  (and (not (resulterrp outcome))
                       (if (equal (soutcome->mode outcome)
                                  (mode-regular))
                           (equal (cstate-to-vars (soutcome->cstate outcome))
-                                 (vars+modes->vars vartab-modes))
+                                 (vars+modes->vars varsmodes))
                         (set::subset (cstate-to-vars (soutcome->cstate outcome))
-                                     (vars+modes->vars vartab-modes)))
+                                     (vars+modes->vars varsmodes)))
                       (set::in (soutcome->mode outcome)
-                               (vars+modes->modes vartab-modes)))))
+                               (vars+modes->modes varsmodes)))))
       :flag exec-statement-list)
 
     (defthm exec-block-static-soundness

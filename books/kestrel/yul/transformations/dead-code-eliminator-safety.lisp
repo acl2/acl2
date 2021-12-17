@@ -28,35 +28,35 @@
     (defthm check-safe-statement-of-statement-dead
       (implies (and (statement-nofunp stmt)
                     (statement-noloopinitp stmt))
-               (b* ((vartab-modes (check-safe-statement stmt vartab funtab))
-                    (vartab-modes-dead
+               (b* ((varsmodes (check-safe-statement stmt vartab funtab))
+                    (varsmodes-dead
                      (check-safe-statement (statement-dead stmt)
                                            vartab
                                            funtab)))
-                 (implies (not (resulterrp vartab-modes))
-                          (and (not (resulterrp vartab-modes-dead))
+                 (implies (not (resulterrp varsmodes))
+                          (and (not (resulterrp varsmodes-dead))
                                (equal
-                                (vars+modes->vars vartab-modes-dead)
-                                (vars+modes->vars vartab-modes))
+                                (vars+modes->vars varsmodes-dead)
+                                (vars+modes->vars varsmodes))
                                (set::subset
-                                (vars+modes->modes vartab-modes-dead)
-                                (vars+modes->modes vartab-modes))))))
+                                (vars+modes->modes varsmodes-dead)
+                                (vars+modes->modes varsmodes))))))
       :flag check-safe-statement)
 
     (defthm check-safe-statement-list-of-statement-list-dead
       (implies (and (statement-list-nofunp stmts)
                     (statement-list-noloopinitp stmts))
-               (b* ((vartab-modes
+               (b* ((varsmodes
                      (check-safe-statement-list stmts vartab funtab))
-                    (vartab-modes-dead
+                    (varsmodes-dead
                      (check-safe-statement-list (statement-list-dead stmts)
                                                 vartab
                                                 funtab)))
-                 (implies (not (resulterrp vartab-modes))
-                          (and (not (resulterrp vartab-modes-dead))
+                 (implies (not (resulterrp varsmodes))
+                          (and (not (resulterrp varsmodes-dead))
                                (set::subset
-                                (vars+modes->modes vartab-modes-dead)
-                                (vars+modes->modes vartab-modes))))))
+                                (vars+modes->modes varsmodes-dead)
+                                (vars+modes->modes varsmodes))))))
       :flag check-safe-statement-list)
 
     (defthm check-safe-block-of-block-dead

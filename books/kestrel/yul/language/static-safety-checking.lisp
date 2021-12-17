@@ -571,7 +571,7 @@
   (define check-safe-statement ((stmt statementp)
                                 (vartab identifier-setp)
                                 (funtab funtablep))
-    :returns (vartab-modes vars+modes-resultp)
+    :returns (varsmodes vars+modes-resultp)
     :short "Check if a statement is safe."
     :long
     (xdoc::topstring
@@ -730,11 +730,9 @@
      :for
      (b* ((stmts (block->statements stmt.init))
           ((ok funtab) (add-funtypes (statements-to-fundefs stmts) funtab))
-          ((ok vartab-modes) (check-safe-statement-list stmts
-                                                        vartab
-                                                        funtab))
-          (vartab1 (vars+modes->vars vartab-modes))
-          (init-modes (vars+modes->modes vartab-modes))
+          ((ok varsmodes) (check-safe-statement-list stmts vartab funtab))
+          (vartab1 (vars+modes->vars varsmodes))
+          (init-modes (vars+modes->modes varsmodes))
           ((when (set::in (mode-break) init-modes))
            (err (list :break-in-loop-init stmt.init)))
           ((when (set::in (mode-continue) init-modes))
@@ -794,7 +792,7 @@
   (define check-safe-statement-list ((stmts statement-listp)
                                      (vartab identifier-setp)
                                      (funtab funtablep))
-    :returns (vartab-modes vars+modes-resultp)
+    :returns (varsmodes vars+modes-resultp)
     :short "Check if a list of statements is safe."
     :long
     (xdoc::topstring
@@ -815,16 +813,16 @@
     (b* (((when (endp stmts))
           (make-vars+modes :vars (identifier-set-fix vartab)
                            :modes (set::insert (mode-regular) nil)))
-         ((ok vartab-modes) (check-safe-statement (car stmts)
-                                                  vartab
-                                                  funtab))
-         (vartab (vars+modes->vars vartab-modes))
-         (first-modes (vars+modes->modes vartab-modes))
-         ((ok vartab-modes) (check-safe-statement-list (cdr stmts)
-                                                       vartab
-                                                       funtab))
-         (vartab (vars+modes->vars vartab-modes))
-         (rest-modes (vars+modes->modes vartab-modes))
+         ((ok varsmodes) (check-safe-statement (car stmts)
+                                               vartab
+                                               funtab))
+         (vartab (vars+modes->vars varsmodes))
+         (first-modes (vars+modes->modes varsmodes))
+         ((ok varsmodes) (check-safe-statement-list (cdr stmts)
+                                                    vartab
+                                                    funtab))
+         (vartab (vars+modes->vars varsmodes))
+         (rest-modes (vars+modes->modes varsmodes))
          (modes (if (set::in (mode-regular) first-modes)
                     (set::union first-modes rest-modes)
                   first-modes)))
@@ -851,10 +849,8 @@
        discarding the final variable table."))
     (b* ((stmts (block->statements block))
          ((ok funtab) (add-funtypes (statements-to-fundefs stmts) funtab))
-         ((ok vartab-modes) (check-safe-statement-list stmts
-                                                       vartab
-                                                       funtab)))
-      (vars+modes->modes vartab-modes))
+         ((ok varsmodes) (check-safe-statement-list stmts vartab funtab)))
+      (vars+modes->modes varsmodes))
     :measure (block-count block))
 
   (define check-safe-block-option ((block? block-optionp)
@@ -1121,19 +1117,19 @@
     (defthm check-safe-statement-extends-vars
       (implies
        (identifier-setp vartab)
-       (b* ((vartab-modes (check-safe-statement stmt vartab funtab)))
-         (implies (not (resulterrp vartab-modes))
+       (b* ((varsmodes (check-safe-statement stmt vartab funtab)))
+         (implies (not (resulterrp varsmodes))
                   (set::subset vartab
-                               (vars+modes->vars vartab-modes)))))
+                               (vars+modes->vars varsmodes)))))
       :flag check-safe-statement)
 
     (defthm check-safe-statement-list-extends-vars
       (implies
        (identifier-setp vartab)
-       (b* ((vartab-modes (check-safe-statement-list stmts vartab funtab)))
-         (implies (not (resulterrp vartab-modes))
+       (b* ((varsmodes (check-safe-statement-list stmts vartab funtab)))
+         (implies (not (resulterrp varsmodes))
                   (set::subset vartab
-                               (vars+modes->vars vartab-modes)))))
+                               (vars+modes->vars varsmodes)))))
       :flag check-safe-statement-list)
 
     (defthm check-safe-block-extends-vars
