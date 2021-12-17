@@ -1299,7 +1299,7 @@
     "As is often the case,
      the proof also makes implicit use of enabled-by-default rules.
      Some are theorems that relate static and dynamic counterparts.
-     We also remark the use of the @('...-extends-vars') theorems
+     We also remark the use of the @('...-extends-varset') theorems
      that accompany the static safety checking formalization."))
 
   (defruled exec-statement-list-cstate-to-vars-lemma

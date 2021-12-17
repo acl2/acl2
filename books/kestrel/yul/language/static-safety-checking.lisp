@@ -1066,7 +1066,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection check-safe-extends-vars
+(defsection check-safe-extends-varset
   :short "Theorems about the variable table being extended
           by the ACL2 safety checking functions."
   :long
@@ -1083,14 +1083,14 @@
      in the safety checking functions,
      and then we prove it on the safety checking functions by induction."))
 
-  (defrule add-var-extends-vars
+  (defrule add-var-extends-varset
     (implies (identifier-setp varset)
              (b* ((varset1 (add-var var varset)))
                (implies (not (resulterrp varset1))
                         (set::subset varset varset1))))
     :enable add-var)
 
-  (defrule add-vars-extends-vars
+  (defrule add-vars-extends-varset
     (implies (identifier-setp varset)
              (b* ((varset1 (add-vars vars varset)))
                (implies (not (resulterrp varset1))
@@ -1098,14 +1098,14 @@
     :enable (add-vars
              set::subset-transitive))
 
-  (defrule check-safe-variable-single-extends-vars
+  (defrule check-safe-variable-single-extends-varset
     (implies (identifier-setp varset)
              (b* ((varset1 (check-safe-variable-single name init varset funtab)))
                (implies (not (resulterrp varset1))
                         (set::subset varset varset1))))
     :enable check-safe-variable-single)
 
-  (defrule check-safe-variable-multi-extends-vars
+  (defrule check-safe-variable-multi-extends-varset
     (implies (identifier-setp varset)
              (b* ((varset1 (check-safe-variable-multi name init varset funtab)))
                (implies (not (resulterrp varset1))
@@ -1114,7 +1114,7 @@
 
   (defthm-check-safe-statements/blocks/cases/fundefs-flag
 
-    (defthm check-safe-statement-extends-vars
+    (defthm check-safe-statement-extends-varset
       (implies
        (identifier-setp varset)
        (b* ((varsmodes (check-safe-statement stmt varset funtab)))
@@ -1123,7 +1123,7 @@
                                (vars+modes->vars varsmodes)))))
       :flag check-safe-statement)
 
-    (defthm check-safe-statement-list-extends-vars
+    (defthm check-safe-statement-list-extends-varset
       (implies
        (identifier-setp varset)
        (b* ((varsmodes (check-safe-statement-list stmts varset funtab)))
@@ -1132,27 +1132,27 @@
                                (vars+modes->vars varsmodes)))))
       :flag check-safe-statement-list)
 
-    (defthm check-safe-block-extends-vars
+    (defthm check-safe-block-extends-varset
       t
       :rule-classes nil
       :flag check-safe-block)
 
-    (defthm check-safe-block-option-extends-vars
+    (defthm check-safe-block-option-extends-varset
       t
       :rule-classes nil
       :flag check-safe-block-option)
 
-    (defthm check-safe-swcase-extends-vars
+    (defthm check-safe-swcase-extends-varset
       t
       :rule-classes nil
       :flag check-safe-swcase)
 
-    (defthm check-safe-swcase-list-extends-vars
+    (defthm check-safe-swcase-list-extends-varset
       t
       :rule-classes nil
       :flag check-safe-swcase-list)
 
-    (defthm check-safe-fundef-extends-vars
+    (defthm check-safe-fundef-extends-varset
       t
       :rule-classes nil
       :flag check-safe-fundef)
