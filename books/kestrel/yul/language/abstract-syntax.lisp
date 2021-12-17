@@ -123,6 +123,13 @@
   :ok identifier-set
   :pred identifier-set-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-identifier-setp
+  (implies (identifier-setp x)
+           (not (resulterrp x)))
+  :enable (resulterrp identifier-setp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod path
