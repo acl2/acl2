@@ -36,11 +36,11 @@
                  (implies (not (resulterrp vartab-modes))
                           (and (not (resulterrp vartab-modes-dead))
                                (equal
-                                (vartable-modes->variables vartab-modes-dead)
-                                (vartable-modes->variables vartab-modes))
+                                (vars+modes->variables vartab-modes-dead)
+                                (vars+modes->variables vartab-modes))
                                (set::subset
-                                (vartable-modes->modes vartab-modes-dead)
-                                (vartable-modes->modes vartab-modes))))))
+                                (vars+modes->modes vartab-modes-dead)
+                                (vars+modes->modes vartab-modes))))))
       :flag check-safe-statement)
 
     (defthm check-safe-statement-list-of-statement-list-dead
@@ -55,8 +55,8 @@
                  (implies (not (resulterrp vartab-modes))
                           (and (not (resulterrp vartab-modes-dead))
                                (set::subset
-                                (vartable-modes->modes vartab-modes-dead)
-                                (vartable-modes->modes vartab-modes))))))
+                                (vars+modes->modes vartab-modes-dead)
+                                (vars+modes->modes vartab-modes))))))
       :flag check-safe-statement-list)
 
     (defthm check-safe-block-of-block-dead

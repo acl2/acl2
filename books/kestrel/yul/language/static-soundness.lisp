@@ -1398,9 +1398,9 @@
                       (not (resulterr-limitp outcome)))
                  (and (not (resulterrp outcome))
                       (equal (cstate-to-vartable (soutcome->cstate outcome))
-                             (vartable-modes->variables vartab-modes))
+                             (vars+modes->variables vartab-modes))
                       (set::in (soutcome->mode outcome)
-                               (vartable-modes->modes vartab-modes)))))
+                               (vars+modes->modes vartab-modes)))))
       :flag exec-statement)
 
     (defthm exec-statement-list-static-soundness
@@ -1415,11 +1415,11 @@
                       (if (equal (soutcome->mode outcome)
                                  (mode-regular))
                           (equal (cstate-to-vartable (soutcome->cstate outcome))
-                                 (vartable-modes->variables vartab-modes))
+                                 (vars+modes->variables vartab-modes))
                         (set::subset (cstate-to-vartable (soutcome->cstate outcome))
-                                     (vartable-modes->variables vartab-modes)))
+                                     (vars+modes->variables vartab-modes)))
                       (set::in (soutcome->mode outcome)
-                               (vartable-modes->modes vartab-modes)))))
+                               (vars+modes->modes vartab-modes)))))
       :flag exec-statement-list)
 
     (defthm exec-block-static-soundness
