@@ -14,6 +14,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist list-notin (x set)
+  :guard (and (true-listp x)
+              (setp set))
+  (not (in x set))
+  :true-listp nil
+  :elementp-of-nil :unknown
+  ///
+
+  (std::defrule list-notin-of-sfix-2
+    (equal (list-notin list (sfix set))
+           (list-notin list set))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::define list-insert ((l true-listp) (s setp))
   :returns (new-s setp)
   (cond ((endp l) (sfix s))
