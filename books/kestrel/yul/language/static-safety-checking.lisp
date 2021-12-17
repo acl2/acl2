@@ -34,7 +34,7 @@
      returning error values when the conditions are not satisfied.
      The static safety checks formalized here
      ensure that those error values are never returned by the dynamic semantics,
-     as we will formally prove soon."))
+     as proved in @(see static-soundness)."))
   :order-subtopics t
   :default-parent t)
 
