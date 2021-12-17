@@ -474,6 +474,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Enable Yul parser routines to return results or errors.
+
+(fty::defresult block-result
+  :short "Fixtype of errors and blocks."
+  :ok block
+  :pred block-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-blockp
+  (implies (blockp x)
+           (not (resulterrp x)))
+  :enable (blockp resulterrp))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult statement-result
+  :short "Fixtype of errors and statements."
+  :ok statement
+  :pred statement-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-statementp
+  (implies (statementp x)
+           (not (resulterrp x)))
+  :enable (statementp resulterrp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defprojection swcase-list->value-list ((x swcase-listp))
   :returns (lits literal-listp)
   :short "Lift @(tsee swcase->value) to lists."
