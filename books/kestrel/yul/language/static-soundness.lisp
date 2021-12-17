@@ -13,18 +13,8 @@
 (include-book "static-safety-checking")
 (include-book "dynamic-semantics")
 
-(include-book "../library-extensions/osets")
-
 (local (include-book "../library-extensions/lists"))
 (local (include-book "../library-extensions/omaps"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule identifier-setp-of-list-insert
-  (implies (and (identifier-listp list)
-                (identifier-setp set))
-           (identifier-setp (set::list-insert list set)))
-  :enable set::list-insert)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

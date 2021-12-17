@@ -10,6 +10,8 @@
 
 (in-package "YUL")
 
+(include-book "../library-extensions/osets")
+
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/hex-digit-char" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
@@ -84,6 +86,14 @@
            (equal (identifier-setp (set::mergesort x))
                   (identifier-listp x)))
   :enable set::mergesort)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule identifier-setp-of-list-insert
+  (implies (and (identifier-listp list)
+                (identifier-setp set))
+           (identifier-setp (set::list-insert list set)))
+  :enable set::list-insert)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

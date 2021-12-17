@@ -16,8 +16,6 @@
 
 (include-book "../language/static-safety-checking")
 
-(local (include-book "../library-extensions/osets"))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection dead-code-eliminator-static-safety
