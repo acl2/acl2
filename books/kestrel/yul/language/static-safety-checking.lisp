@@ -520,7 +520,7 @@
      The variable table captures the updated variable table.
      The set of modes captures the possible ways in which
      the statement may terminate."))
-  ((variables identifier-set)
+  ((vars identifier-set)
    (modes mode-set))
   :tag :vars+modes
   :pred vars+modes-p)
@@ -682,41 +682,41 @@
      stmt
      :block
      (b* (((ok modes) (check-safe-block stmt.get vartab funtab)))
-       (make-vars+modes :variables (identifier-set-fix vartab)
+       (make-vars+modes :vars (identifier-set-fix vartab)
                         :modes modes))
      :variable-single
      (b* (((ok vartab) (check-safe-variable-single stmt.name
                                                    stmt.init
                                                    vartab
                                                    funtab)))
-       (make-vars+modes :variables vartab
+       (make-vars+modes :vars vartab
                         :modes (set::insert (mode-regular) nil)))
      :variable-multi
      (b* (((ok vartab) (check-safe-variable-multi stmt.names
                                                   stmt.init
                                                   vartab
                                                   funtab)))
-       (make-vars+modes :variables vartab
+       (make-vars+modes :vars vartab
                         :modes (set::insert (mode-regular) nil)))
      :assign-single
      (b* (((ok &) (check-safe-assign-single stmt.target
                                             stmt.value
                                             vartab
                                             funtab)))
-       (make-vars+modes :variables (identifier-set-fix vartab)
+       (make-vars+modes :vars (identifier-set-fix vartab)
                         :modes (set::insert (mode-regular) nil)))
      :assign-multi
      (b* (((ok &) (check-safe-assign-multi stmt.targets
                                            stmt.value
                                            vartab
                                            funtab)))
-       (make-vars+modes :variables (identifier-set-fix vartab)
+       (make-vars+modes :vars (identifier-set-fix vartab)
                         :modes (set::insert (mode-regular) nil)))
      :funcall
      (b* (((ok results) (check-safe-funcall stmt.get vartab funtab))
           ((unless (= results 0))
            (err (list :discarded-values stmt.get))))
-       (make-vars+modes :variables (identifier-set-fix vartab)
+       (make-vars+modes :vars (identifier-set-fix vartab)
                         :modes (set::insert (mode-regular) nil)))
      :if
      (b* (((ok results) (check-safe-expression stmt.test vartab funtab))
@@ -725,7 +725,7 @@
           ((ok modes) (check-safe-block stmt.body
                                         vartab
                                         funtab)))
-       (make-vars+modes :variables (identifier-set-fix vartab)
+       (make-vars+modes :vars (identifier-set-fix vartab)
                         :modes (set::insert (mode-regular) modes)))
      :for
      (b* ((stmts (block->statements stmt.init))
@@ -733,7 +733,7 @@
           ((ok vartab-modes) (check-safe-statement-list stmts
                                                         vartab
                                                         funtab))
-          (vartab1 (vars+modes->variables vartab-modes))
+          (vartab1 (vars+modes->vars vartab-modes))
           (init-modes (vars+modes->modes vartab-modes))
           ((when (set::in (mode-break) init-modes))
            (err (list :break-in-loop-init stmt.init)))
@@ -757,7 +757,7 @@
                          (set::in (mode-leave) body-modes))
                      (set::insert (mode-leave) (set::insert (mode-regular) nil))
                    (set::insert (mode-regular) nil))))
-       (make-vars+modes :variables (identifier-set-fix vartab)
+       (make-vars+modes :vars (identifier-set-fix vartab)
                         :modes modes))
      :switch
      (b* (((ok results) (check-safe-expression stmt.target vartab funtab))
@@ -773,20 +773,20 @@
           ((ok default-modes) (check-safe-block-option stmt.default
                                                        vartab
                                                        funtab)))
-       (make-vars+modes :variables (identifier-set-fix vartab)
+       (make-vars+modes :vars (identifier-set-fix vartab)
                         :modes (set::union cases-modes default-modes)))
      :leave
-     (make-vars+modes :variables (identifier-set-fix vartab)
+     (make-vars+modes :vars (identifier-set-fix vartab)
                       :modes (set::insert (mode-leave) nil))
      :break
-     (make-vars+modes :variables (identifier-set-fix vartab)
+     (make-vars+modes :vars (identifier-set-fix vartab)
                       :modes (set::insert (mode-break) nil))
      :continue
-     (make-vars+modes :variables (identifier-set-fix vartab)
+     (make-vars+modes :vars (identifier-set-fix vartab)
                       :modes (set::insert (mode-continue) nil))
      :fundef
      (b* (((ok &) (check-safe-fundef stmt.get funtab)))
-       (make-vars+modes :variables (identifier-set-fix vartab)
+       (make-vars+modes :vars (identifier-set-fix vartab)
                         :modes (set::insert (mode-regular) nil))))
     :measure (statement-count stmt)
     :normalize nil) ; without this, MAKE-FLAG (generated by DEFINES) fails
@@ -813,22 +813,22 @@
        Note that we still check the safety of the remaining statements,
        even when they are not reachable."))
     (b* (((when (endp stmts))
-          (make-vars+modes :variables (identifier-set-fix vartab)
+          (make-vars+modes :vars (identifier-set-fix vartab)
                            :modes (set::insert (mode-regular) nil)))
          ((ok vartab-modes) (check-safe-statement (car stmts)
                                                   vartab
                                                   funtab))
-         (vartab (vars+modes->variables vartab-modes))
+         (vartab (vars+modes->vars vartab-modes))
          (first-modes (vars+modes->modes vartab-modes))
          ((ok vartab-modes) (check-safe-statement-list (cdr stmts)
                                                        vartab
                                                        funtab))
-         (vartab (vars+modes->variables vartab-modes))
+         (vartab (vars+modes->vars vartab-modes))
          (rest-modes (vars+modes->modes vartab-modes))
          (modes (if (set::in (mode-regular) first-modes)
                     (set::union first-modes rest-modes)
                   first-modes)))
-      (make-vars+modes :variables vartab
+      (make-vars+modes :vars vartab
                        :modes modes))
     :measure (statement-list-count stmts))
 
@@ -1124,7 +1124,7 @@
        (b* ((vartab-modes (check-safe-statement stmt vartab funtab)))
          (implies (not (resulterrp vartab-modes))
                   (set::subset vartab
-                               (vars+modes->variables vartab-modes)))))
+                               (vars+modes->vars vartab-modes)))))
       :flag check-safe-statement)
 
     (defthm check-safe-statement-list-extends-vartable
@@ -1133,7 +1133,7 @@
        (b* ((vartab-modes (check-safe-statement-list stmts vartab funtab)))
          (implies (not (resulterrp vartab-modes))
                   (set::subset vartab
-                               (vars+modes->variables vartab-modes)))))
+                               (vars+modes->vars vartab-modes)))))
       :flag check-safe-statement-list)
 
     (defthm check-safe-block-extends-vartable

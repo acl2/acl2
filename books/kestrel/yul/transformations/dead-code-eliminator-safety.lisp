@@ -36,8 +36,8 @@
                  (implies (not (resulterrp vartab-modes))
                           (and (not (resulterrp vartab-modes-dead))
                                (equal
-                                (vars+modes->variables vartab-modes-dead)
-                                (vars+modes->variables vartab-modes))
+                                (vars+modes->vars vartab-modes-dead)
+                                (vars+modes->vars vartab-modes))
                                (set::subset
                                 (vars+modes->modes vartab-modes-dead)
                                 (vars+modes->modes vartab-modes))))))
