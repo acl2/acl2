@@ -68,7 +68,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-var-list ((vars identifier-listp) (vartab vartablep))
+(define check-var-list ((vars identifier-listp) (vartab identifier-setp))
   :returns (yes/no booleanp)
   :short "Check if the variables in a list are all in a variable table."
   :long
@@ -95,7 +95,7 @@
 
   (defruled check-var-list-to-set-list-in
     (implies (and (identifier-listp vars)
-                  (vartablep vartab))
+                  (identifier-setp vartab))
              (equal (check-var-list vars vartab)
                     (set::list-in vars vartab)))
     :enable (check-var
@@ -125,7 +125,7 @@
       (implies (not (resulterrp vartab1))
                (equal vartab1
                       (set::insert (identifier-fix var)
-                                   (vartable-fix vartab)))))
+                                   (identifier-set-fix vartab)))))
     :enable add-var)
 
   (defruled add-vars-to-list-insert
@@ -133,7 +133,7 @@
       (implies (not (resulterrp vartab1))
                (equal vartab1
                       (set::list-insert (identifier-list-fix vars)
-                                        (vartable-fix vartab)))))
+                                        (identifier-set-fix vartab)))))
     :enable (add-vars
              set::list-insert
              add-var-to-insert))
@@ -693,7 +693,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cstate-to-vartable ((cstate cstatep))
-  :returns (vartab vartablep)
+  :returns (vartab identifier-setp)
   :short "Turn a computation state into a variable table."
   :long
   (xdoc::topstring
@@ -710,19 +710,12 @@
      we will look into avoiding it in some way."))
   (omap::keys (cstate->local cstate))
   :hooks (:fix)
-  :prepwork ((local (in-theory (enable vartablep-to-identifier-setp))))
   ///
 
   (defruled cstate-to-vartable-fold-def
     (equal (omap::keys (cstate->local cstate))
            (cstate-to-vartable cstate))
-    :enable cstate-to-vartable)
-
-  (defrule identifier-set-fix-of-cstate-to-vartable
-    (equal (identifier-set-fix (cstate-to-vartable cstate))
-           (cstate-to-vartable cstate))
-    :use (:instance vartablep-to-identifier-setp
-          (x (cstate-to-vartable cstate)))))
+    :enable cstate-to-vartable))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -910,7 +903,6 @@
              read-var-value
              not-resulterrp-when-valuep
              cstate-to-vartable
-             vartablep-to-identifier-setp
              omap::consp-of-omap-in-to-set-in-of-omap-keys))
 
   (defruled read-vars-values-when-check-var-list
@@ -944,7 +936,6 @@
     :enable (add-var
              add-var-value
              cstate-to-vartable
-             vartablep-to-identifier-setp
              omap::consp-of-omap-in-to-set-in-of-omap-keys))
 
   (defrule add-vars-values-when-add-vars
@@ -1010,7 +1001,6 @@
     :enable (write-var-value
              check-var
              cstate-to-vartable
-             vartablep-to-identifier-setp
              omap::consp-of-omap-in-to-set-in-of-omap-keys))
 
   (defrule write-var-value-when-check-safe-path
@@ -1087,8 +1077,7 @@
              cstate-to-vartable
              omap::consp-of-omap-in-to-set-in-of-omap-keys
              not-resulterrp-when-cstatep
-             not-resulterrp-when-vartablep
-             vartablep-to-identifier-setp))
+             not-resulterrp-when-identifier-setp))
 
   (defruled error-add-vars-values-iff-error-add-vars
     (implies (equal (len vals) (len vars))
@@ -1097,7 +1086,7 @@
     :enable (add-vars-values
              add-vars
              error-add-var-value-iff-error-add-var
-             not-resulterrp-when-vartablep))
+             not-resulterrp-when-identifier-setp))
 
   (defrule cstate-to-vartable-of-init-local
     (implies (and (equal (len in-vals)
@@ -1132,18 +1121,17 @@
   (defruled check-var-list-of-add-vars-of-append-not-error
     (implies (and (identifier-listp vars)
                   (identifier-listp vars1)
-                  (vartablep vartab)
+                  (identifier-setp vartab)
                   (not (resulterrp (add-vars (append vars1 vars) vartab))))
              (check-var-list vars (add-vars (append vars1 vars) vartab)))
     :enable (add-vars-to-list-insert
-             check-var-list-to-set-list-in
-             vartablep-to-identifier-setp))
+             check-var-list-to-set-list-in))
 
   (defruled add-vars-of-append-not-error-when-init-local-not-error
     (implies (and (not (resulterrp
                         (init-local in-vars in-vals out-vars cstate))))
              (not (resulterrp (add-vars (append in-vars out-vars) nil))))
-    :enable not-resulterrp-when-vartablep
+    :enable not-resulterrp-when-identifier-setp
     :disable cstate-to-vartable-of-init-local
     :use cstate-to-vartable-of-init-local)
 
@@ -1500,63 +1488,64 @@
       :flag exec-switch-rest)
 
     :hints (("Goal"
-             :in-theory (e/d
-                         (exec-expression
-                          exec-expression-list
-                          exec-funcall
-                          exec-function
-                          exec-statement
-                          exec-statement-list
-                          exec-block
-                          exec-for-iterations
-                          exec-switch-rest
-                          check-safe-expression
-                          check-safe-expression-list
-                          check-safe-funcall
-                          check-safe-statement
-                          check-safe-variable-single
-                          check-safe-variable-multi
-                          check-safe-assign-single
-                          check-safe-assign-multi
-                          check-safe-statement-list
-                          check-safe-block
-                          check-safe-block-option
-                          check-safe-swcase
-                          check-safe-swcase-list
-                          check-safe-literal
-                          resulterr-limitp
-                          equal-of-mode-kind-continue
-                          equal-of-mode-kind-break
-                          equal-of-mode-kind-leave
-                          equal-of-mode-kind-regular
-                          mode-regular-not-continue
-                          mode-regular-not-break
-                          mode-leave-not-continue
-                          mode-leave-not-break
-                          soutcome->mode-regular-lemma
-                          cstate-to-vartable-fold-def
-                          exec-statement-list-cstate-to-vartable-lemma
-                          funcall-option-some->val
-                          expression-option-some->val
-                          check-safe-expression-list-to-len
-                          check-safe-expression-list-not-error-when-rev
-                          error-add-funs-iff-error-add-funtypes
-                          check-safe-fundef-list-of-statements-to-fundefs
-                          error-add-funs-iff-error-add-funtypes
-                          mode-setp-when-mode-set-resultp-and-not-resulterrp
-                          mode-leave-if-not-regular/continue/break
-                          vartablep-when-vartable-resultp-and-not-resulterrp
-                          check-safe-block-when-funenv-safep
-                          len-of-funinfo->inputs
-                          len-of-funinfo->outputs
-                          read-vars-values-when-check-var-list
-                          check-var-list-of-add-vars-of-append-not-error
-                          resulterrp-of-init-local
-                          resulterrp-of-find-fun)
-                         (equal-of-mode-continue
-                          equal-of-mode-break
-                          equal-of-mode-regular
-                          equal-of-mode-leave))
+             :in-theory
+             (e/d
+              (exec-expression
+               exec-expression-list
+               exec-funcall
+               exec-function
+               exec-statement
+               exec-statement-list
+               exec-block
+               exec-for-iterations
+               exec-switch-rest
+               check-safe-expression
+               check-safe-expression-list
+               check-safe-funcall
+               check-safe-statement
+               check-safe-variable-single
+               check-safe-variable-multi
+               check-safe-assign-single
+               check-safe-assign-multi
+               check-safe-statement-list
+               check-safe-block
+               check-safe-block-option
+               check-safe-swcase
+               check-safe-swcase-list
+               check-safe-literal
+               resulterr-limitp
+               equal-of-mode-kind-continue
+               equal-of-mode-kind-break
+               equal-of-mode-kind-leave
+               equal-of-mode-kind-regular
+               mode-regular-not-continue
+               mode-regular-not-break
+               mode-leave-not-continue
+               mode-leave-not-break
+               soutcome->mode-regular-lemma
+               cstate-to-vartable-fold-def
+               exec-statement-list-cstate-to-vartable-lemma
+               funcall-option-some->val
+               expression-option-some->val
+               check-safe-expression-list-to-len
+               check-safe-expression-list-not-error-when-rev
+               error-add-funs-iff-error-add-funtypes
+               check-safe-fundef-list-of-statements-to-fundefs
+               error-add-funs-iff-error-add-funtypes
+               mode-setp-when-mode-set-resultp-and-not-resulterrp
+               mode-leave-if-not-regular/continue/break
+               identifier-setp-when-identifier-set-resultp-and-not-resulterrp
+               check-safe-block-when-funenv-safep
+               len-of-funinfo->inputs
+               len-of-funinfo->outputs
+               read-vars-values-when-check-var-list
+               check-var-list-of-add-vars-of-append-not-error
+               resulterrp-of-init-local
+               resulterrp-of-find-fun)
+              (equal-of-mode-continue
+               equal-of-mode-break
+               equal-of-mode-regular
+               equal-of-mode-leave))
              :expand ((check-safe-statement stmt
                                             (cstate-to-vartable cstate)
                                             (funenv-to-funtable funenv)))))))

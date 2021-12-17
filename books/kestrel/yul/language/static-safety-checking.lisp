@@ -34,7 +34,36 @@
      returning error values when the conditions are not satisfied.
      The static safety checks formalized here
      ensure that those error values are never returned by the dynamic semantics,
-     as proved in @(see static-soundness)."))
+     as proved in @(see static-soundness).")
+   (xdoc::p
+    "The static safety of the Yul constructs is checked with respect to
+     (i) a set of variable names (identifiers) and
+     (ii) an omap from function names (identifiers)
+     to function input/output information.
+     These are essentially symbol tables for variables and functions:
+     they describe the variables and functions in scope.")
+   (xdoc::p
+    "These symbol tables for varaibles consists of
+     the variables that are not only visible, but also accessible,
+     according to [Yul: Specification of Yul: Scoping Rules]:
+     a variable is visible in the rest of the block in which it is declared,
+     including sub-blocks,
+     but it is not accessible in
+     function definitions in the block or sub-blocks.
+     Variables that are visible but inaccessible
+     are not represented in these symbol tables for variables.")
+   (xdoc::p
+    "The Yul static semantics requires that
+     visible but inaccessible variables are not shadowed
+     [Yul: Specification of Yul: Scoping Rules].
+     However, this requirement is not needed for safety,
+     as evidenced by the fact that
+     the static soundness proof in @(see static-soundness)
+     does not make use of that requirement.
+     In fact, we do not include that requirement in the static safety checks
+     formalized here.
+     This requirement is separately formalized
+     in  @(see static-shadowing-checking)."))
   :order-subtopics t
   :default-parent t)
 
@@ -166,79 +195,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defset vartable
-  :short "Fixtype of variable tables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are symbol tables for variables.
-     For now a table is just a set of variable names (identifiers),
-     because there is no type information associated to variables
-     (cf. abstract syntax),
-     but we may extend this to an omap from variables to types in the future.
-     Currently this fixtype is equivalent to @(tsee identifier-set),
-     but we make it a separate fixtype to facilitate
-     the aforementioned extension in the future.")
-   (xdoc::p
-    "A variable table as defined here consists of the variables that are
-     not only visible, but also accessible,
-     according to [Yul: Specification of Yul: Scoping Rules]:
-     a variable is visible in the rest of the block in which it is declared,
-     including sub-blocks,
-     but it is not accessible in
-     function definitions in the block or sub-blocks.
-     Variables that are visible but inaccessible
-     are not represented in the variable tables defined here."))
-  :elt-type identifier
-  :elementp-of-nil nil
-  :pred vartablep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult vartable-result
-  :short "Fixtype of errors and variable tables."
-  :ok vartable
-  :pred vartable-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-vartablep
-  (implies (vartablep x)
-           (not (resulterrp x)))
-  :enable (vartablep resulterrp))
-
-;;;;;;;;;;;;;;;;;;;;
-
-; Occasionally useful when using set operations on variable tables.
-; It may be better to define variable tables as wrapped sets and avoid this.
-(defruled vartablep-to-identifier-setp
-  (equal (vartablep x)
-         (identifier-setp x))
-  :enable (vartablep identifier-setp))
-
-;;;;;;;;;;;;;;;;;;;;
-
-; Useful to get rid of the fixer when the variable table
-; is known to be a set of identifiers (e.g. due to using set operations).
-; It may be better to define variable tables as wrapped sets and avoid this.
-(defrule vartable-fix-when-identifier-setp
-  (implies (identifier-setp x)
-           (equal (vartable-fix x)
-                  x))
-  :enable vartablep-to-identifier-setp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-var ((var identifierp) (vartab vartablep))
+(define check-var ((var identifierp) (vartab identifier-setp))
   :returns (yes/no booleanp)
   :short "Check if a variable is in a variable table."
-  (set::in (identifier-fix var) (vartable-fix vartab))
+  (set::in (identifier-fix var) (identifier-set-fix vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-var ((var identifierp) (vartab vartablep))
-  :returns (vartab? vartable-resultp)
+(define add-var ((var identifierp) (vartab identifier-setp))
+  :returns (vartab? identifier-set-resultp)
   :short "Add a variable to a variable table."
   :long
   (xdoc::topstring
@@ -246,7 +212,7 @@
     "If a variable with the same name is already in the table,
      an error is returned."))
   (b* ((var (identifier-fix var))
-       (vartab (vartable-fix vartab)))
+       (vartab (identifier-set-fix vartab)))
     (if (set::in var vartab)
         (err (list :duplicate-variable var))
       (set::insert var vartab)))
@@ -255,8 +221,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-vars ((vars identifier-listp)
-                  (vartab vartablep))
-  :returns (vartab? vartable-resultp)
+                  (vartab identifier-setp))
+  :returns (vartab? identifier-set-resultp)
   :short "Add (a list of) variables to a variable table."
   :long
   (xdoc::topstring
@@ -265,14 +231,14 @@
      Duplicates in the list will cause an error.")
    (xdoc::p
     "This lifts @(tsee add-var) to lists."))
-  (b* (((when (endp vars)) (vartable-fix vartab))
+  (b* (((when (endp vars)) (identifier-set-fix vartab))
        ((ok vartab) (add-var (car vars) vartab)))
     (add-vars (cdr vars) vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-safe-path ((path pathp) (vartab vartablep))
+(define check-safe-path ((path pathp) (vartab identifier-setp))
   :returns (_ resulterr-optionp)
   :short "Check if a path is safe."
   :long
@@ -307,7 +273,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-safe-path-list ((paths path-listp) (vartab vartablep))
+(define check-safe-path-list ((paths path-listp) (vartab identifier-setp))
   :returns (_ resulterr-optionp)
   :short "Check if a list of paths is safe."
   (b* (((when (endp paths)) nil)
@@ -352,7 +318,7 @@
      a variable table and a function table."))
 
   (define check-safe-expression ((expr expressionp)
-                                 (vartab vartablep)
+                                 (vartab identifier-setp)
                                  (funtab funtablep))
     :returns (results? nat-resultp)
     :short "Check if an expression is safe."
@@ -376,7 +342,7 @@
     :measure (expression-count expr))
 
   (define check-safe-expression-list ((exprs expression-listp)
-                                      (vartab vartablep)
+                                      (vartab identifier-setp)
                                       (funtab funtablep))
     :returns (number? nat-resultp)
     :short "Check if a list of expressions is safe."
@@ -400,7 +366,7 @@
     :measure (expression-list-count exprs))
 
   (define check-safe-funcall ((call funcallp)
-                              (vartab vartablep)
+                              (vartab identifier-setp)
                               (funtab funtablep))
     :returns (results? nat-resultp)
     :short "Check if a function call is safe."
@@ -435,9 +401,9 @@
 
 (define check-safe-variable-single ((name identifierp)
                                     (init expression-optionp)
-                                    (vartab vartablep)
+                                    (vartab identifier-setp)
                                     (funtab funtablep))
-  :returns (vartab? vartable-resultp)
+  :returns (vartab? identifier-set-resultp)
   :short "Check if a single variable declaration is safe."
   :long
   (xdoc::topstring
@@ -463,9 +429,9 @@
 
 (define check-safe-variable-multi ((names identifier-listp)
                                    (init funcall-optionp)
-                                   (vartab vartablep)
+                                   (vartab identifier-setp)
                                    (funtab funtablep))
-  :returns (vartab? vartable-resultp)
+  :returns (vartab? identifier-set-resultp)
   :short "Check if a multiple variable declaration is safe."
   :long
   (xdoc::topstring
@@ -495,7 +461,7 @@
 
 (define check-safe-assign-single ((target pathp)
                                   (value expressionp)
-                                  (vartab vartablep)
+                                  (vartab identifier-setp)
                                   (funtab funtablep))
   :returns (_ resulterr-optionp)
   :short "Check if a single assignment is safe."
@@ -518,7 +484,7 @@
 
 (define check-safe-assign-multi ((targets path-listp)
                                  (value funcallp)
-                                 (vartab vartablep)
+                                 (vartab identifier-setp)
                                  (funtab funtablep))
   :returns (_ resulterr-optionp)
   :short "Check if a multiple assignment is safe."
@@ -554,7 +520,7 @@
      The variable table captures the updated variable table.
      The set of modes captures the possible ways in which
      the statement may terminate."))
-  ((variables vartable)
+  ((variables identifier-set)
    (modes mode-set))
   :tag :vartable-modes
   :pred vartable-modes-p)
@@ -603,7 +569,7 @@
      and show that they are equivalent to our formulation here."))
 
   (define check-safe-statement ((stmt statementp)
-                                (vartab vartablep)
+                                (vartab identifier-setp)
                                 (funtab funtablep))
     :returns (vartab-modes vartable-modes-resultp)
     :short "Check if a statement is safe."
@@ -716,7 +682,7 @@
      stmt
      :block
      (b* (((ok modes) (check-safe-block stmt.get vartab funtab)))
-       (make-vartable-modes :variables (vartable-fix vartab)
+       (make-vartable-modes :variables (identifier-set-fix vartab)
                             :modes modes))
      :variable-single
      (b* (((ok vartab) (check-safe-variable-single stmt.name
@@ -737,20 +703,20 @@
                                             stmt.value
                                             vartab
                                             funtab)))
-       (make-vartable-modes :variables (vartable-fix vartab)
+       (make-vartable-modes :variables (identifier-set-fix vartab)
                             :modes (set::insert (mode-regular) nil)))
      :assign-multi
      (b* (((ok &) (check-safe-assign-multi stmt.targets
                                            stmt.value
                                            vartab
                                            funtab)))
-       (make-vartable-modes :variables (vartable-fix vartab)
+       (make-vartable-modes :variables (identifier-set-fix vartab)
                             :modes (set::insert (mode-regular) nil)))
      :funcall
      (b* (((ok results) (check-safe-funcall stmt.get vartab funtab))
           ((unless (= results 0))
            (err (list :discarded-values stmt.get))))
-       (make-vartable-modes :variables (vartable-fix vartab)
+       (make-vartable-modes :variables (identifier-set-fix vartab)
                             :modes (set::insert (mode-regular) nil)))
      :if
      (b* (((ok results) (check-safe-expression stmt.test vartab funtab))
@@ -759,7 +725,7 @@
           ((ok modes) (check-safe-block stmt.body
                                         vartab
                                         funtab)))
-       (make-vartable-modes :variables (vartable-fix vartab)
+       (make-vartable-modes :variables (identifier-set-fix vartab)
                             :modes (set::insert (mode-regular) modes)))
      :for
      (b* ((stmts (block->statements stmt.init))
@@ -791,7 +757,7 @@
                          (set::in (mode-leave) body-modes))
                      (set::insert (mode-leave) (set::insert (mode-regular) nil))
                    (set::insert (mode-regular) nil))))
-       (make-vartable-modes :variables (vartable-fix vartab)
+       (make-vartable-modes :variables (identifier-set-fix vartab)
                             :modes modes))
      :switch
      (b* (((ok results) (check-safe-expression stmt.target vartab funtab))
@@ -807,26 +773,26 @@
           ((ok default-modes) (check-safe-block-option stmt.default
                                                        vartab
                                                        funtab)))
-       (make-vartable-modes :variables (vartable-fix vartab)
+       (make-vartable-modes :variables (identifier-set-fix vartab)
                             :modes (set::union cases-modes default-modes)))
      :leave
-     (make-vartable-modes :variables (vartable-fix vartab)
+     (make-vartable-modes :variables (identifier-set-fix vartab)
                           :modes (set::insert (mode-leave) nil))
      :break
-     (make-vartable-modes :variables (vartable-fix vartab)
+     (make-vartable-modes :variables (identifier-set-fix vartab)
                           :modes (set::insert (mode-break) nil))
      :continue
-     (make-vartable-modes :variables (vartable-fix vartab)
+     (make-vartable-modes :variables (identifier-set-fix vartab)
                           :modes (set::insert (mode-continue) nil))
      :fundef
      (b* (((ok &) (check-safe-fundef stmt.get funtab)))
-       (make-vartable-modes :variables (vartable-fix vartab)
+       (make-vartable-modes :variables (identifier-set-fix vartab)
                             :modes (set::insert (mode-regular) nil))))
     :measure (statement-count stmt)
     :normalize nil) ; without this, MAKE-FLAG (generated by DEFINES) fails
 
   (define check-safe-statement-list ((stmts statement-listp)
-                                     (vartab vartablep)
+                                     (vartab identifier-setp)
                                      (funtab funtablep))
     :returns (vartab-modes vartable-modes-resultp)
     :short "Check if a list of statements is safe."
@@ -847,7 +813,7 @@
        Note that we still check the safety of the remaining statements,
        even when they are not reachable."))
     (b* (((when (endp stmts))
-          (make-vartable-modes :variables (vartable-fix vartab)
+          (make-vartable-modes :variables (identifier-set-fix vartab)
                                :modes (set::insert (mode-regular) nil)))
          ((ok vartab-modes) (check-safe-statement (car stmts)
                                                   vartab
@@ -867,7 +833,7 @@
     :measure (statement-list-count stmts))
 
   (define check-safe-block ((block blockp)
-                            (vartab vartablep)
+                            (vartab identifier-setp)
                             (funtab funtablep))
     :returns (modes mode-set-resultp)
     :short "Check if a block is safe."
@@ -892,7 +858,7 @@
     :measure (block-count block))
 
   (define check-safe-block-option ((block? block-optionp)
-                                   (vartab vartablep)
+                                   (vartab identifier-setp)
                                    (funtab funtablep))
     :returns (modes mode-set-resultp)
     :short "Check if an optional block is safe."
@@ -911,7 +877,7 @@
     :measure (block-option-count block?))
 
   (define check-safe-swcase ((case swcasep)
-                             (vartab vartablep)
+                             (vartab identifier-setp)
                              (funtab funtablep))
     :returns (modes mode-set-resultp)
     :short "Check if a case is safe."
@@ -928,7 +894,7 @@
     :measure (swcase-count case))
 
   (define check-safe-swcase-list ((cases swcase-listp)
-                                  (vartab vartablep)
+                                  (vartab identifier-setp)
                                   (funtab funtablep))
     :returns (modes mode-set-resultp)
     :short "Check if a list of cases is safe."
@@ -1000,7 +966,7 @@
     :hints
     (("Goal"
       :in-theory
-      (enable vartablep-when-vartable-resultp-and-not-resulterrp))))
+      (enable identifier-setp-when-identifier-set-resultp-and-not-resulterrp))))
 
   (fty::deffixequiv-mutual check-safe-statements/blocks/cases/fundefs)
 
@@ -1122,14 +1088,14 @@
      and then we prove it on the safety checking functions by induction."))
 
   (defrule add-var-extends-vartable
-    (implies (vartablep vartab)
+    (implies (identifier-setp vartab)
              (b* ((vartab1 (add-var var vartab)))
                (implies (not (resulterrp vartab1))
                         (set::subset vartab vartab1))))
     :enable add-var)
 
   (defrule add-vars-extends-vartable
-    (implies (vartablep vartab)
+    (implies (identifier-setp vartab)
              (b* ((vartab1 (add-vars vars vartab)))
                (implies (not (resulterrp vartab1))
                         (set::subset vartab vartab1))))
@@ -1137,14 +1103,14 @@
              set::subset-transitive))
 
   (defrule check-safe-variable-single-extends-vartable
-    (implies (vartablep vartab)
+    (implies (identifier-setp vartab)
              (b* ((vartab1 (check-safe-variable-single name init vartab funtab)))
                (implies (not (resulterrp vartab1))
                         (set::subset vartab vartab1))))
     :enable check-safe-variable-single)
 
   (defrule check-safe-variable-multi-extends-vartable
-    (implies (vartablep vartab)
+    (implies (identifier-setp vartab)
              (b* ((vartab1 (check-safe-variable-multi name init vartab funtab)))
                (implies (not (resulterrp vartab1))
                         (set::subset vartab vartab1))))
@@ -1154,7 +1120,7 @@
 
     (defthm check-safe-statement-extends-vartable
       (implies
-       (vartablep vartab)
+       (identifier-setp vartab)
        (b* ((vartab-modes (check-safe-statement stmt vartab funtab)))
          (implies (not (resulterrp vartab-modes))
                   (set::subset vartab
@@ -1163,7 +1129,7 @@
 
     (defthm check-safe-statement-list-extends-vartable
       (implies
-       (vartablep vartab)
+       (identifier-setp vartab)
        (b* ((vartab-modes (check-safe-statement-list stmts vartab funtab)))
          (implies (not (resulterrp vartab-modes))
                   (set::subset vartab
@@ -1200,4 +1166,4 @@
              (enable check-safe-statement
                      check-safe-statement-list
                      set::subset-transitive
-                     vartablep-when-vartable-resultp-and-not-resulterrp)))))
+                     identifier-setp-when-identifier-set-resultp-and-not-resulterrp)))))
