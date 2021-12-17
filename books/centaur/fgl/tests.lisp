@@ -43,7 +43,7 @@
      (satlink::make-config :cmdline "glucose -model"
                            :verbose t
                            :mintime 1/2
-                           :remove-temps t))
+                           :remove-temps nil))
 
    (defattach fgl-satlink-config my-glucose-config)))
 
@@ -743,10 +743,10 @@
  (progn
    (defun glucose-config-10sec ()
      (declare (xargs :guard t))
-     (satlink::make-config :cmdline "glucose -cpu-lim=10"
+     (satlink::make-config :cmdline "glucose -cpu-lim=10 -model"
                            :verbose t
                            :mintime 1/2
-                           :remove-temps t))
+                           :remove-temps nil))
 
    (defattach fgl-satlink-config glucose-config-10sec)))
 
