@@ -68,7 +68,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-var-list ((vars identifier-listp) (vartab identifier-setp))
+(define check-var-list ((vars identifier-listp) (varset identifier-setp))
   :returns (yes/no booleanp)
   :short "Check if the variables in a list are all in a variable table."
   :long
@@ -88,16 +88,16 @@
      into the inclusion of the list of variable in the variable table,
      which is a set."))
   (or (endp vars)
-      (and (check-var (car vars) vartab)
-           (check-var-list (cdr vars) vartab)))
+      (and (check-var (car vars) varset)
+           (check-var-list (cdr vars) varset)))
   :hooks (:fix)
   ///
 
   (defruled check-var-list-to-set-list-in
     (implies (and (identifier-listp vars)
-                  (identifier-setp vartab))
-             (equal (check-var-list vars vartab)
-                    (set::list-in vars vartab)))
+                  (identifier-setp varset))
+             (equal (check-var-list vars varset)
+                    (set::list-in vars varset)))
     :enable (check-var
              set::list-in)))
 
@@ -121,39 +121,39 @@
      errors for @(tsee add-vars) of @(tsee append)."))
 
   (defruled add-var-to-insert
-    (b* ((vartab1 (add-var var vartab)))
-      (implies (not (resulterrp vartab1))
-               (equal vartab1
+    (b* ((varset1 (add-var var varset)))
+      (implies (not (resulterrp varset1))
+               (equal varset1
                       (set::insert (identifier-fix var)
-                                   (identifier-set-fix vartab)))))
+                                   (identifier-set-fix varset)))))
     :enable add-var)
 
   (defruled add-vars-to-list-insert
-    (b* ((vartab1 (add-vars vars vartab)))
-      (implies (not (resulterrp vartab1))
-               (equal vartab1
+    (b* ((varset1 (add-vars vars varset)))
+      (implies (not (resulterrp varset1))
+               (equal varset1
                       (set::list-insert (identifier-list-fix vars)
-                                        (identifier-set-fix vartab)))))
+                                        (identifier-set-fix varset)))))
     :enable (add-vars
              set::list-insert
              add-var-to-insert))
 
   (defruled add-vars-of-append
-    (implies (and (not (resulterrp (add-vars vars1 vartab)))
-                  (not (resulterrp (add-vars vars2 (add-vars vars1 vartab)))))
-             (equal (add-vars (append vars1 vars2) vartab)
-                    (add-vars vars2 (add-vars vars1 vartab))))
+    (implies (and (not (resulterrp (add-vars vars1 varset)))
+                  (not (resulterrp (add-vars vars2 (add-vars vars1 varset)))))
+             (equal (add-vars (append vars1 vars2) varset)
+                    (add-vars vars2 (add-vars vars1 varset))))
     :enable add-vars)
 
   (defruled add-vars-of-append-2
-    (implies (not (resulterrp (add-vars (append vars1 vars2) vartab)))
-             (equal (add-vars (append vars1 vars2) vartab)
-                    (add-vars vars2 (add-vars vars1 vartab))))
+    (implies (not (resulterrp (add-vars (append vars1 vars2) varset)))
+             (equal (add-vars (append vars1 vars2) varset)
+                    (add-vars vars2 (add-vars vars1 varset))))
     :enable add-vars)
 
   (defruled resulterrp-of-add-vars-of-append
-    (implies (resulterrp (add-vars vars vartab))
-             (resulterrp (add-vars (append vars vars1) vartab)))
+    (implies (resulterrp (add-vars vars varset))
+             (resulterrp (add-vars (append vars vars1) varset)))
     :enable add-vars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -378,9 +378,9 @@
      See @(tsee funscope-safep) and @(tsee funenv-safep)
      for more information."))
   (b* (((funinfo funinfo) funinfo)
-       (vartab (add-vars (append funinfo.inputs funinfo.outputs) nil))
-       ((when (resulterrp vartab)) nil)
-       (modes (check-safe-block funinfo.body vartab funtab))
+       (varset (add-vars (append funinfo.inputs funinfo.outputs) nil))
+       ((when (resulterrp varset)) nil)
+       (modes (check-safe-block funinfo.body varset funtab))
        ((when (resulterrp modes)) nil)
        ((when (set::in (mode-break) modes)) nil)
        ((when (set::in (mode-continue) modes)) nil))
@@ -472,14 +472,14 @@
                   (funscope-safep funscope funtab)
                   (consp (omap::in fun funscope)))
              (b* ((funinfo (cdr (omap::in fun funscope)))
-                  (vartab (add-vars
+                  (varset (add-vars
                            (append (funinfo->inputs funinfo)
                                    (funinfo->outputs funinfo))
                            nil))
                   (modes (check-safe-block (funinfo->body funinfo)
-                                           vartab
+                                           varset
                                            funtab)))
-               (and (not (resulterrp vartab))
+               (and (not (resulterrp varset))
                     (not (resulterrp modes))
                     (not (set::in (mode-break) modes))
                     (not (set::in (mode-continue) modes)))))
@@ -492,14 +492,14 @@
                     (not (resulterrp funinfoenv)))
                (b* ((funinfo (funinfo+funenv->info funinfoenv))
                     (funenv1 (funinfo+funenv->env funinfoenv))
-                    (vartab (add-vars
+                    (varset (add-vars
                              (append (funinfo->inputs funinfo)
                                      (funinfo->outputs funinfo))
                              nil))
                     (modes (check-safe-block (funinfo->body funinfo)
-                                             vartab
+                                             varset
                                              (funenv-to-funtable funenv1))))
-                 (and (not (resulterrp vartab))
+                 (and (not (resulterrp varset))
                       (not (resulterrp modes))
                       (not (set::in (mode-break) modes))
                       (not (set::in (mode-continue) modes))
@@ -693,7 +693,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cstate-to-vars ((cstate cstatep))
-  :returns (vartab identifier-setp)
+  :returns (varset identifier-setp)
   :short "Turn a computation state into a variable table."
   :long
   (xdoc::topstring
@@ -927,25 +927,25 @@
      is the same returned by the safety checks."))
 
   (defrule add-var-value-when-add-var
-    (b* ((vartab1 (add-var var (cstate-to-vars cstate)))
+    (b* ((varset1 (add-var var (cstate-to-vars cstate)))
          (cstate1 (add-var-value var val cstate)))
-      (implies (not (resulterrp vartab1))
+      (implies (not (resulterrp varset1))
                (and (not (resulterrp cstate1))
                     (equal (cstate-to-vars cstate1)
-                           vartab1))))
+                           varset1))))
     :enable (add-var
              add-var-value
              cstate-to-vars
              omap::consp-of-omap-in-to-set-in-of-omap-keys))
 
   (defrule add-vars-values-when-add-vars
-    (b* ((vartab1 (add-vars vars (cstate-to-vars cstate)))
+    (b* ((varset1 (add-vars vars (cstate-to-vars cstate)))
          (cstate1 (add-vars-values vars vals cstate)))
-      (implies (and (not (resulterrp vartab1))
+      (implies (and (not (resulterrp varset1))
                     (equal (len vals) (len vars)))
                (and (not (resulterrp cstate1))
                     (equal (cstate-to-vars cstate1)
-                           vartab1))))
+                           varset1))))
     :induct (add-vars-values vars vals cstate)
     :enable (add-vars
              add-vars-values
@@ -968,20 +968,20 @@
      and finally we put things together."))
 
   (defrule path-to-var-when-check-safe-path
-    (implies (not (resulterrp (check-safe-path path vartab)))
+    (implies (not (resulterrp (check-safe-path path varset)))
              (not (resulterrp (path-to-var path))))
     :enable (check-safe-path
              path-to-var
              not-resulterrp-when-identifierp))
 
   (defrule check-var-when-check-safe-path
-    (implies (not (resulterrp (check-safe-path path vartab)))
-             (check-var (path-to-var path) vartab))
+    (implies (not (resulterrp (check-safe-path path varset)))
+             (check-var (path-to-var path) varset))
     :enable (check-safe-path
              path-to-var))
 
   (defrule paths-to-vars-when-check-safe-path-list
-    (implies (not (resulterrp (check-safe-path-list paths vartab)))
+    (implies (not (resulterrp (check-safe-path-list paths varset)))
              (not (resulterrp (paths-to-vars paths))))
     :enable (check-safe-path-list
              paths-to-vars)
@@ -989,8 +989,8 @@
                               (paths-to-vars (cdr paths)))))
 
   (defrule check-var-list-when-check-safe-path-list
-    (implies (not (resulterrp (check-safe-path-list paths vartab)))
-             (check-var-list (paths-to-vars paths) vartab))
+    (implies (not (resulterrp (check-safe-path-list paths varset)))
+             (check-var-list (paths-to-vars paths) varset))
     :enable (check-safe-path-list
              check-var-list
              paths-to-vars))
@@ -1121,9 +1121,9 @@
   (defruled check-var-list-of-add-vars-of-append-not-error
     (implies (and (identifier-listp vars)
                   (identifier-listp vars1)
-                  (identifier-setp vartab)
-                  (not (resulterrp (add-vars (append vars1 vars) vartab))))
-             (check-var-list vars (add-vars (append vars1 vars) vartab)))
+                  (identifier-setp varset)
+                  (not (resulterrp (add-vars (append vars1 vars) varset))))
+             (check-var-list vars (add-vars (append vars1 vars) varset)))
     :enable (add-vars-to-list-insert
              check-var-list-to-set-list-in))
 
@@ -1145,7 +1145,7 @@
     :use (:instance add-vars-of-append-2
           (vars1 in-vars)
           (vars2 out-vars)
-          (vartab nil)))
+          (varset nil)))
 
   (defruled resulterrp-of-init-local
     (equal (resulterrp (init-local in-vars in-vals out-vars cstate))
@@ -1181,27 +1181,27 @@
 
   (defrule resulterrp-of-check-safe-expression-list-of-append
     (equal (resulterrp (check-safe-expression-list (append es es1)
-                                                   vartab
+                                                   varset
                                                    funtab))
-           (or (resulterrp (check-safe-expression-list es vartab funtab))
-               (resulterrp (check-safe-expression-list es1 vartab funtab))))
+           (or (resulterrp (check-safe-expression-list es varset funtab))
+               (resulterrp (check-safe-expression-list es1 varset funtab))))
     :enable check-safe-expression-list)
 
   (defrule resulterrp-of-check-safe-expression-list-of-rev
-    (equal (resulterrp (check-safe-expression-list (rev es) vartab funtab))
-           (resulterrp (check-safe-expression-list es vartab funtab)))
+    (equal (resulterrp (check-safe-expression-list (rev es) varset funtab))
+           (resulterrp (check-safe-expression-list es varset funtab)))
     :enable (check-safe-expression-list rev))
 
   (defruled check-safe-expression-list-to-len
-    (implies (not (resulterrp (check-safe-expression-list es vartab funtab)))
-             (equal (check-safe-expression-list es vartab funtab) (len es)))
+    (implies (not (resulterrp (check-safe-expression-list es varset funtab)))
+             (equal (check-safe-expression-list es varset funtab) (len es)))
     :enable check-safe-expression-list)
 
   (defruled check-safe-expression-list-not-error-when-rev
     (implies (not (resulterrp (check-safe-expression-list (rev es)
-                                                          vartab
+                                                          varset
                                                           funtab)))
-             (not (resulterrp (check-safe-expression-list es vartab funtab))))))
+             (not (resulterrp (check-safe-expression-list es varset funtab))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

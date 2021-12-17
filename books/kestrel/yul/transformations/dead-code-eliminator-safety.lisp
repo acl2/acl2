@@ -28,10 +28,10 @@
     (defthm check-safe-statement-of-statement-dead
       (implies (and (statement-nofunp stmt)
                     (statement-noloopinitp stmt))
-               (b* ((varsmodes (check-safe-statement stmt vartab funtab))
+               (b* ((varsmodes (check-safe-statement stmt varset funtab))
                     (varsmodes-dead
                      (check-safe-statement (statement-dead stmt)
-                                           vartab
+                                           varset
                                            funtab)))
                  (implies (not (resulterrp varsmodes))
                           (and (not (resulterrp varsmodes-dead))
@@ -47,10 +47,10 @@
       (implies (and (statement-list-nofunp stmts)
                     (statement-list-noloopinitp stmts))
                (b* ((varsmodes
-                     (check-safe-statement-list stmts vartab funtab))
+                     (check-safe-statement-list stmts varset funtab))
                     (varsmodes-dead
                      (check-safe-statement-list (statement-list-dead stmts)
-                                                vartab
+                                                varset
                                                 funtab)))
                  (implies (not (resulterrp varsmodes))
                           (and (not (resulterrp varsmodes-dead))
@@ -62,9 +62,9 @@
     (defthm check-safe-block-of-block-dead
       (implies (and (block-nofunp block)
                     (block-noloopinitp block))
-               (b* ((modes (check-safe-block block vartab funtab))
+               (b* ((modes (check-safe-block block varset funtab))
                     (modes-dead (check-safe-block (block-dead block)
-                                                  vartab
+                                                  varset
                                                   funtab)))
                  (implies (not (resulterrp modes))
                           (and (not (resulterrp modes-dead))
@@ -74,10 +74,10 @@
     (defthm check-safe-block-option-of-block-option-dead
       (implies (and (block-option-nofunp block?)
                     (block-option-noloopinitp block?))
-               (b* ((modes (check-safe-block-option block? vartab funtab))
+               (b* ((modes (check-safe-block-option block? varset funtab))
                     (modes-dead
                      (check-safe-block-option (block-option-dead block?)
-                                              vartab
+                                              varset
                                               funtab)))
                  (implies (not (resulterrp modes))
                           (and (not (resulterrp modes-dead))
@@ -87,9 +87,9 @@
     (defthm check-safe-swcase-of-swcase-dead
       (implies (and (swcase-nofunp case)
                     (swcase-noloopinitp case))
-               (b* ((modes (check-safe-swcase case vartab funtab))
+               (b* ((modes (check-safe-swcase case varset funtab))
                     (modes-dead (check-safe-swcase (swcase-dead case)
-                                                   vartab
+                                                   varset
                                                    funtab)))
                  (implies (not (resulterrp modes))
                           (and (not (resulterrp modes-dead))
@@ -99,9 +99,9 @@
     (defthm check-safe-swcase-list-of-swcase-list
       (implies (and (swcase-list-nofunp cases)
                     (swcase-list-noloopinitp cases))
-               (b* ((modes (check-safe-swcase-list cases vartab funtab))
+               (b* ((modes (check-safe-swcase-list cases varset funtab))
                     (modes-dead (check-safe-swcase-list (swcase-list-dead cases)
-                                                        vartab
+                                                        varset
                                                         funtab)))
                  (implies (not (resulterrp modes))
                           (and (not (resulterrp modes-dead))
@@ -152,4 +152,4 @@
                      set::subset-of-union-and-union
                      set::union-subset-x
                      set::subset-transitive)
-             :expand (check-safe-statement stmt vartab funtab)))))
+             :expand (check-safe-statement stmt varset funtab)))))
