@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nat-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -68,6 +68,11 @@
   (equal (nat-listp (cons a x))
          (and (natp a)
               (nat-listp x)))
+  :hints (("Goal" :in-theory (enable nat-listp))))
+
+(defthm nat-listp-of-cdr
+  (implies (nat-listp x)
+           (nat-listp (cdr x)))
   :hints (("Goal" :in-theory (enable nat-listp))))
 
 ;; The non-standard variable names here are to match STD
