@@ -127,6 +127,57 @@
            (character-listp (reverse-list l)))
   :hints (("Goal" :in-theory (enable character-listp reverse-list))))
 
+;just use repeat?
+;optimize?
+(defun n-close-parens (n acc)
+  (declare (xargs :guard (natp n)))
+  (if (zp n)
+      acc
+    (n-close-parens (+ -1 n) (cons ")" acc))))
+
+(defthm string-listp-of-n-close-parens
+  (equal (string-listp (n-close-parens n acc))
+         (string-listp acc)))
+
+(defthm true-listp-of-n-close-parens
+  (equal (true-listp (n-close-parens n acc))
+         (true-listp acc)))
+
+(defthm string-treep-of-n-close-parens
+  (implies (string-treep acc)
+           (string-treep (n-close-parens n acc))))
+
+
+
+(in-theory (disable (:e nat-to-string)))
+
+;; (defthm <-of-maxelem-of-cdr
+;;   (implies (and (all-< items x)
+;;                 (< 1 (len items)))
+;;            (< (maxelem (cdr items)) x))
+;;   :hints (("Goal" :in-theory (enable all-< maxelem))))
+
+;; (defthm <=-of-0-and-maxelem
+;;   (implies (and (nat-listp x)
+;;                 (<= 1 (len x)))
+;;            (<= 0 (maxelem x)))
+;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
+
+;; (defthm integerp-of-maxelem-when-nat-listp
+;;   (implies (and (nat-listp x)
+;;                 (<= 1 (len x)))
+;;            (integerp (maxelem x)))
+;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
+
+(defthmd integer-listp-when-nat-listp
+  (implies (nat-listp x)
+           (integer-listp x))
+  :hints (("Goal" :in-theory (enable integer-listp))))
+
+(defthm nat-listp-forward-to-all-integerp
+  (implies (nat-listp x)
+           (all-integerp x))
+  :rule-classes :forward-chaining)
 
 ;fixme are there other functions like this to deprecate?
 ;returns a type or nil (if we could not determine the type)
@@ -733,6 +784,11 @@
  (implies (constant-array-infop constant-array-info)
           (string-treep (mv-nth 0 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info))))
  :hints (("Goal" :in-theory (e/d (translate-equality-to-stp) (list-typep bv-array-typep bv-array-type-len BV-ARRAY-TYPE-ELEMENT-WIDTH)))))
+
+(defthm constant-array-infop-of-mv-nth-1-of-translate-equality-to-stp
+  (implies (constant-array-infop constant-array-info)
+           (constant-array-infop (mv-nth 1 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len nodenum-type-alist constant-array-info))))
+  :hints (("Goal" :in-theory (enable translate-equality-to-stp))))
 
 ;; Returns (mv array-name constant-array-info actual-element-width) where ARRAY-NAME is a string-tree that can be used to refer to the array
 (defund translate-array-arg (arg
@@ -1611,8 +1667,8 @@
          (if (= 2 (len (dargs expr)))
              (mv-let (translated-expr constant-array-info)
                (translate-equality-to-stp (darg1 expr)
-                                   (darg2 expr)
-                                   dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info)
+                                          (darg2 expr)
+                                          dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info)
                (mv (erp-nil)
                    translated-expr
                    constant-array-info))
@@ -1701,8 +1757,7 @@
                                                        cut-nodenum-type-alist))))
   :hints (("Goal" :in-theory (e/d (translate-dag-expr
                                    bounded-dag-exprp
-                                   car-becomes-nth-of-0
-                                   )
+                                   car-becomes-nth-of-0)
                                   ((:e nat-to-string-debug) ;problem!
                                    ;;for speed:
                                    nat-to-string-debug
@@ -1711,73 +1766,12 @@
                                    pad-with-zeros
                                    max)))))
 
-;just use repeat?
-;optimize?
-(defun n-close-parens (n acc)
-  (declare (xargs :guard (natp n)))
-  (if (zp n)
-      acc
-    (n-close-parens (+ -1 n) (cons ")" acc))))
-
-(defthm string-listp-of-n-close-parens
-  (equal (string-listp (n-close-parens n acc))
-         (string-listp acc)))
-
-(defthm true-listp-of-n-close-parens
-  (equal (true-listp (n-close-parens n acc))
-         (true-listp acc)))
-
-(defthm constant-array-infop-of-mv-nth-1-of-translate-equality-to-stp
-  (implies (and (constant-array-infop constant-array-info)
-;                (nat-listp (unquote data))
-  ;              (natp element-width)
-   ;             (natp element-count)
-    ;            (<= element-count (len (unquote data)))
-                )
-           (constant-array-infop (mv-nth 1 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len nodenum-type-alist constant-array-info))))
-  :hints (("Goal" :in-theory (enable translate-equality-to-stp))))
-
-(in-theory (disable (:e nat-to-string)))
-
 (defthm constant-array-infop-of-mv-nth-1-of-translate-dag-expr
   (implies (and (bounded-dag-exprp dag-len expr)
                 (constant-array-infop constant-array-info))
            (constant-array-infop (mv-nth 1 (translate-dag-expr expr dag-array-name dag-array dag-len constant-array-info cut-nodenum-type-alist))))
   :hints (("Goal" :in-theory (enable translate-dag-expr bounded-dag-exprp
                                      car-becomes-nth-of-0))))
-
-;; (defthm <-of-maxelem-of-cdr
-;;   (implies (and (all-< items x)
-;;                 (< 1 (len items)))
-;;            (< (maxelem (cdr items)) x))
-;;   :hints (("Goal" :in-theory (enable all-< maxelem))))
-
-;; (defthm <=-of-0-and-maxelem
-;;   (implies (and (nat-listp x)
-;;                 (<= 1 (len x)))
-;;            (<= 0 (maxelem x)))
-;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
-
-;; (defthm integerp-of-maxelem-when-nat-listp
-;;   (implies (and (nat-listp x)
-;;                 (<= 1 (len x)))
-;;            (integerp (maxelem x)))
-;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
-
-(defthm nat-listp-of-cdr
-  (implies (nat-listp x)
-           (nat-listp (cdr x)))
-  :hints (("Goal" :in-theory (enable nat-listp))))
-
-(defthmd integer-listp-when-nat-listp
-  (implies (nat-listp x)
-           (integer-listp x))
-  :hints (("Goal" :in-theory (enable integer-listp))))
-
-(defthm nat-listp-forward-to-all-integerp
-  (implies (nat-listp x)
-           (all-integerp x))
-  :rule-classes :forward-chaining)
 
 ;returns (mv translation constant-array-info opened-paren-count) where TRANSLATION is a string-tree
 ;handles nodes nodenum down through 0 (translates those which have been tagged for translation)
@@ -1824,6 +1818,46 @@
                                   (+ 1 opened-paren-count)
                                   cut-nodenum-type-alist))))))
 
+(defthm natp-of-mv-nth-2-of-translate-nodes-to-stp
+  (implies (natp opened-paren-count)
+           (natp
+            (mv-nth 2
+                    (translate-nodes-to-stp nodenums-to-translate dag-array-name
+                                            dag-array dag-len acc
+                                            constant-array-info
+                                            opened-paren-count cut-nodenum-type-alist))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable translate-nodes-to-stp))))
+
+(defthm string-treep-of-mv-nth-0-of-translate-nodes-to-stp
+  (implies (and (string-treep acc)
+                (constant-array-infop constant-array-info)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp nodenums-to-translate)
+                (all-< nodenums-to-translate dag-len))
+           (string-treep
+            (mv-nth 0
+                    (translate-nodes-to-stp nodenums-to-translate dag-array-name
+                                            dag-array dag-len acc
+                                            constant-array-info
+                                            opened-paren-count cut-nodenum-type-alist))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable translate-nodes-to-stp nat-listp))))
+
+(defthm constant-array-infop-of-mv-nth-1-of-translate-nodes-to-stp
+  (implies (and (constant-array-infop constant-array-info )
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp nodenums-to-translate)
+                (all-< nodenums-to-translate dag-len))
+           (constant-array-infop
+            (mv-nth 1
+                    (translate-nodes-to-stp nodenums-to-translate dag-array-name
+                                            dag-array dag-len acc
+                                            constant-array-info
+                                            opened-paren-count cut-nodenum-type-alist))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable translate-nodes-to-stp nat-listp))))
+
 ;todo
 ;; (thm
 ;;  (implies
@@ -1845,7 +1879,7 @@
 
 ;fffixme think about arrays whose lengths are not powers of 2...
 ;returns string-tree
-(defun make-stp-type-declarations (nodenum-type-alist)
+(defund make-stp-type-declarations (nodenum-type-alist)
   (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist) ;;TODO: This also allows :range types but axe-typep doesn't allow range types?
                   :guard-hints (("Goal" :expand (nodenum-type-alistp nodenum-type-alist)
                                  :in-theory (e/d (axe-typep empty-typep list-typep most-general-typep)
@@ -1896,7 +1930,11 @@
               ;todo: prove this doesn't happen:
               (er hard? 'make-stp-type-declarations "Unknown form for type: ~x0." type))))))))
 
-;; Returns string-tree.
+(defthm string-treep-of-make-stp-type-declarations
+  (string-treep (make-stp-type-declarations nodenum-type-alist))
+  :hints (("Goal" :in-theory (enable make-stp-type-declarations))))
+
+;; Returns a string-tree.
 (defun make-stp-range-assertions (nodenum-type-alist)
   (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist) ;;TODO: This also allows :range types but axe-typep doesn't allow range types?
                   :guard-hints (("Goal" :expand (nodenum-type-alistp nodenum-type-alist)
@@ -1933,6 +1971,10 @@
                 (er hard? 'make-stp-range-assertions "Unknown form for size: ~x0." type))))
         (make-stp-range-assertions (rest nodenum-type-alist))))))
 
+(defthm string-treep-of-make-stp-range-assertions
+  (string-treep (make-stp-range-assertions cut-nodenum-type-alist))
+  :hints (("Goal" :in-theory (enable make-stp-range-assertions))))
+
 ;; Returns a string-tree.
 ;make tail rec?
 (defun make-type-declarations-for-array-constants (constant-array-info)
@@ -1956,6 +1998,11 @@
              ");"
              (newline-string)
              (make-type-declarations-for-array-constants (rest constant-array-info))))))
+
+(defthm string-treep-of-make-type-declarations-for-array-constants
+  (implies (constant-array-infop constant-array-info)
+           (string-treep (make-type-declarations-for-array-constants constant-array-info)))
+  :hints (("Goal" :in-theory (enable make-type-declarations-for-array-constants constant-array-infop))))
 
 ; Returns a string-tree.
 ;fixme this used to generate too many asserts (which could contradict each other!) if the data is longer than would be expected for the index...  now it counts up to element-count
@@ -1990,6 +2037,12 @@
                                                      (newline-string)
                                                      acc))))
 
+(defthm string-treep-of-make-value-assertions-for-array-constant
+  (implies (and (string-treep acc)
+                (string-treep array-name))
+           (string-treep (make-value-assertions-for-array-constant array-data array-name elemnum element-count index-size element-size acc)))
+  :hints (("Goal" :in-theory (enable make-value-assertions-for-array-constant))))
+
 ;; Returns a string-tree.
 (defun make-value-assertions-for-array-constants (constant-array-info acc)
   (declare (xargs :guard (constant-array-infop constant-array-info)
@@ -2007,29 +2060,6 @@
        (rest constant-array-info)
        (make-value-assertions-for-array-constant constant-data array-name 0 element-count index-size element-width acc)))))
 
-(defthm string-treep-of-n-close-parens
-  (implies (string-treep acc)
-           (string-treep (n-close-parens n acc))))
-
-(defthm string-treep-of-make-stp-range-assertions
-  (string-treep (make-stp-range-assertions cut-nodenum-type-alist))
-  :hints (("Goal" :in-theory (enable make-stp-range-assertions))))
-
-(defthm string-treep-of-make-type-declarations-for-array-constants
-  (implies (constant-array-infop constant-array-info)
-           (string-treep (make-type-declarations-for-array-constants constant-array-info)))
-  :hints (("Goal" :in-theory (enable make-type-declarations-for-array-constants constant-array-infop))))
-
-(defthm string-treep-of-make-stp-type-declarations
-  (string-treep (make-stp-type-declarations nodenum-type-alist))
-  :hints (("Goal" :in-theory (enable make-stp-type-declarations))))
-
-(defthm string-treep-of-make-value-assertions-for-array-constant
-  (implies (and (string-treep acc)
-                (string-treep array-name))
-           (string-treep (make-value-assertions-for-array-constant array-data array-name elemnum element-count index-size element-size acc)))
-  :hints (("Goal" :in-theory (enable make-value-assertions-for-array-constant))))
-
 (defthm string-treep-of-make-value-assertions-for-array-constants
   (implies (and (string-treep acc)
                 (constant-array-infop constant-array-info))
@@ -2038,45 +2068,7 @@
                                      make-value-assertions-for-array-constant
                                      constant-array-infop))))
 
-(defthm natp-of-mv-nth-2-of-translate-nodes-to-stp
-  (implies (natp opened-paren-count)
-           (natp
-            (mv-nth 2
-                    (translate-nodes-to-stp nodenums-to-translate dag-array-name
-                                            dag-array dag-len acc
-                                            constant-array-info
-                                            opened-paren-count cut-nodenum-type-alist))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable translate-nodes-to-stp))))
 
-(defthm string-treep-of-mv-nth-0-of-translate-nodes-to-stp
-  (implies (and (string-treep acc)
-                (constant-array-infop constant-array-info)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (nat-listp nodenums-to-translate)
-                (all-< nodenums-to-translate dag-len))
-           (string-treep
-            (mv-nth 0
-                    (translate-nodes-to-stp nodenums-to-translate dag-array-name
-                                            dag-array dag-len acc
-                                            constant-array-info
-                                            opened-paren-count cut-nodenum-type-alist))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable translate-nodes-to-stp nat-listp))))
-
-(defthm constant-array-infop-of-mv-nth-1-of-translate-nodes-to-stp
-  (implies (and (constant-array-infop constant-array-info )
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (nat-listp nodenums-to-translate)
-                (all-< nodenums-to-translate dag-len))
-           (constant-array-infop
-            (mv-nth 1
-                    (translate-nodes-to-stp nodenums-to-translate dag-array-name
-                                            dag-array dag-len acc
-                                            constant-array-info
-                                            opened-paren-count cut-nodenum-type-alist))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable translate-nodes-to-stp nat-listp))))
 
 ;returns (mv erp state)
 ;translates the DAG to STP and writes the result to FILENAME
@@ -2442,25 +2434,24 @@
                                        max-conflicts ;a number of conflicts, or nil for no max
                                        counterexamplep
                                        state)
-  (declare (xargs :stobjs state
-                  :guard (and
-                          (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                          (or (myquotep lhs)
-                              (and (natp lhs)
-                                   (< lhs dag-len)))
-                        (or (myquotep rhs)
-                            (and (natp rhs)
-                                 (< rhs dag-len)))
-                        (booleanp counterexamplep)
-                        (stringp base-filename)
-                        (symbolp dag-array-name)
-                        (consp nodenums-to-translate) ;why?
-                        (nat-listp nodenums-to-translate)
-                        (all-< nodenums-to-translate dag-len)
-                        (natp max-conflicts)
-                        (nodenum-type-alistp cut-nodenum-type-alist)
-                        (all-< (strip-cars cut-nodenum-type-alist) dag-len)
-                        (string-treep extra-asserts))))
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (or (myquotep lhs)
+                                  (and (natp lhs)
+                                       (< lhs dag-len)))
+                              (or (myquotep rhs)
+                                  (and (natp rhs)
+                                       (< rhs dag-len)))
+                              (booleanp counterexamplep)
+                              (stringp base-filename)
+                              (symbolp dag-array-name)
+                              (consp nodenums-to-translate) ;why?
+                              (nat-listp nodenums-to-translate)
+                              (all-< nodenums-to-translate dag-len)
+                              (natp max-conflicts)
+                              (nodenum-type-alistp cut-nodenum-type-alist)
+                              (all-< (strip-cars cut-nodenum-type-alist) dag-len)
+                              (string-treep extra-asserts))
+                  :stobjs state))
   (mv-let (translated-expr constant-array-info)
     (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist nil)
     (prove-query-with-stp translated-expr
@@ -2614,7 +2605,7 @@
 ;returns a string-tree
 ;the input must have at least one element
 ;make tail rec with an acc?
-(defun translate-disjunction-aux (items)
+(defund translate-disjunction-aux (items)
   (declare (xargs :guard (and (consp items)
                               (possibly-negated-nodenumsp items))
                   :guard-hints (("Goal" ;:use (:instance consp-of-car-when-possibly-negated-nodenumsp-weaken-cheap)
@@ -2629,9 +2620,13 @@
             (cons " OR "
                   (translate-disjunction-aux (rest items)))))))
 
+(defthm string-treep-of-translate-disjunction-aux
+  (string-treep (translate-disjunction-aux items))
+  :hints (("Goal" :in-theory (enable translate-disjunction-aux))))
+
 ;; TODO: Handle constant disjunctions?
 ;returns a string-tree
-(defun translate-disjunction (items)
+(defund translate-disjunction (items)
   (declare (xargs :guard (possibly-negated-nodenumsp items)))
   (if (endp items)
       ;; the disjunction of no items is false
@@ -2644,4 +2639,5 @@
 ;;(flatten-string-tree (translate-disjunction '(2 3 (not 4) 5))) = "(NODE2 OR NODE3 OR (NOT(NODE4)) OR NODE5)"
 
 (defthm string-treep-of-translate-disjunction
-  (string-treep (translate-disjunction items)))
+  (string-treep (translate-disjunction items))
+  :hints (("Goal" :in-theory (enable translate-disjunction))))
