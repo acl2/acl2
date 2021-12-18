@@ -297,7 +297,7 @@
      if the type is @('char'), @('byte'), @('short'), or @('int'),
      while it is @('Acl2Integer.make(long)') if the type is @('long').")
    (xdoc::p
-    "If the type is @('float') and @('double'), an error occurs.
+    "If the type is @('float') or @('double'), an error occurs.
      These conversions are not supported yet,
      because we have only an abstract model of these two types for now."))
   (case (primitive-type-kind type)
@@ -320,7 +320,7 @@
 (define atj-convert-expr-to-jprimarr-method-name ((type primitive-typep))
   :returns (method-name stringp :hyp :guard)
   :short "Name of the method to convert
-          a Java expression from a Java primitive array type."
+          a Java expression to a Java primitive array type."
   :long
   (xdoc::topstring-p
    "See @(tsee atj-convert-expr-to-jprimarr-method).")
@@ -1416,7 +1416,7 @@
     "In the shallow embedding approach,
      ACL2 lambda expressions (i.e. @(tsee let)s)
      are handled by assigning the Java expressions
-     generated from the actual parameters of the lambda expression
+     generated from the actual parameters passed to the lambda expression
      to Java local variables corresponding to the formal parameters.
      This function generates these bindings,
      given the ACL2 variables that are the formal arguments
@@ -1425,8 +1425,8 @@
      generated for the corresponding actual argument of the lambda expression.")
    (xdoc::p
     "Prior to calling this function,
-     the variables of all the lambda expressiona have been marked
-     as `new' or `old' via @(tsee atj-mark-term).
+     the variables of all the lambda expressions have been marked
+     as either `new' or `old' via @(tsee atj-mark-term).
      We extract this mark and use it to generate
      either a variable declaration with initializer (for `new')
      or an assignment to an existing variable (for `old').")
@@ -2016,7 +2016,7 @@
         (atj-adapt-expr-to-type expr
                                 (atj-type-list-to-type src-types)
                                 (atj-type-list-to-type dst-types)
-                                t)))) ; guards$
+                                t)))) ; GUARDS$
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
