@@ -168,8 +168,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-no-aij-types (no-aij-types
-                                  (deep booleanp)
-                                  (guards booleanp)
+                                  (deep$ booleanp)
+                                  (guards$ booleanp)
                                   ctx
                                   state)
   :returns (mv erp (nothing null) state)
@@ -187,12 +187,12 @@
                                          t
                                          nil))
        ((when (and no-aij-types
-                   deep))
+                   deep$))
         (er-soft+ ctx t nil
                   "The :NO-AIJ-TYPES input may be T ~
                    only if :DEEP is NIL, but :DEEP is T instead."))
        ((when (and no-aij-types
-                   (not guards)))
+                   (not guards$)))
         (er-soft+ ctx t nil
                   "The :NO-AIJ-TYPES input may be T ~
                    only if :GUARDS is T, but :GUARDS is NIL instead.")))
