@@ -64,6 +64,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption identifier-option
+  identifier
+  :short "Fixtype of optional identifiers."
+  :pred identifier-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist identifier-list
   :short "Fixtype of lists of identifiers."
   :elt-type identifier
@@ -459,7 +466,7 @@
 
   (fty::defoption block-option
     block
-    :short "Fixtye of optional blocks."
+    :short "Fixtype of optional blocks."
     :pred block-optionp
     :measure (two-nats-measure (acl2-count x) 2))
 
@@ -488,6 +495,13 @@
     :tag :fundef
     :pred fundefp
     :measure (two-nats-measure (acl2-count x) 2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption statement-option
+  statement
+  :short "Fixtype of optional statements."
+  :pred statement-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
