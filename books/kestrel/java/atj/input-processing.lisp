@@ -1436,7 +1436,12 @@
    (xdoc::p
     "The @('mv-okp') flag says whether the term
      can be a translated @(tsee mv):
-     see the user documentation of @(':no-aij-types')."))
+     see the user documentation of @(':no-aij-types').")
+   (xdoc::p
+    "Note that we allow the deconstruction @(tsee boolean-value->bool).
+     The reason is that it is translated to a no-op in Java,
+     and it is needed to convert ACL2 terms that represent Java booleans
+     to actual ACL2 booleans (e.g. in @(tsee if) tests)."))
 
   (define atj-check-term-no-aij ((term pseudo-termp)
                                  (mv-okp booleanp)
@@ -1522,7 +1527,8 @@
                                  fn
                                  ctx
                                  state))
-         ((when (or (member-eq fn/lambda *atj-jprim-unop-fns*)
+         ((when (or (eq fn/lambda 'boolean-value->bool$inline)
+                    (member-eq fn/lambda *atj-jprim-unop-fns*)
                     (member-eq fn/lambda *atj-jprim-binop-fns*)
                     (member-eq fn/lambda *atj-jprim-conv-fns*)
                     (member-eq fn/lambda *atj-jprimarr-read-fns*)
@@ -1592,6 +1598,7 @@
      in the first place, at some point."))
   (b* (((when (or (member-eq fn '(equal if not cons))
                   (member-eq fn *atj-jprim-constr-fns*)
+                  (eq fn 'boolean-value->bool$inline)
                   (member-eq fn *atj-jprim-unop-fns*)
                   (member-eq fn *atj-jprim-binop-fns*)
                   (member-eq fn *atj-jprim-conv-fns*)

@@ -441,6 +441,8 @@
           "The functions in @(tsee *atj-jprim-constr-fns*),
            but only on quoted constants.")
          (xdoc::li
+          "The function @(tsee boolean-value->bool).")
+         (xdoc::li
           "The functions in @(tsee *atj-jprim-unop-fns*).")
          (xdoc::li
           "The functions in @(tsee *atj-jprim-binop-fns*).")
@@ -476,9 +478,7 @@
       ATJ also checks that the target functions @('fn1'), ..., @('fnp')
       do not include @(tsee equal), @(tsee if), @(tsee not), or @(tsee cons).
       These functions may only be called, directly or indirectly,
-      by the target functions,
-      because in that case they are only used in restricted ways,
-      according to the requirements above."))
+      by the target functions, but cannot be target functions."))
 
    (xdoc::desc
     "@(':java-package') &mdash; default @('nil')"
