@@ -2178,7 +2178,6 @@
                             )
                            (BVCHOP-1-BECOMES-GETBIT
                             SLICE-BECOMES-GETBIT
-                            LOGEXT-OF-PLUS
                             anti-slice
                             ;anti-bvplus
                             )))))
@@ -3057,7 +3056,7 @@
 (defthm sbvlt-of-bvminus-of-1-and-minus-1
   (implies (SBVLT 32 4294967295 I) ;todo: does this get rewritten to >= 0 ?
            (not (SBVLT 32 (BVMINUS 32 I 1) 4294967295)))
-  :hints (("Goal" :in-theory (enable sbvlt bvminus))))
+  :hints (("Goal" :in-theory (enable sbvlt bvminus logext-of-plus))))
 
 (defthm sbvlt-of-bvplus-of-minus-1-and-minus-1
   (implies (SBVLT 32 4294967295 I) ;todo: does this get rewritten to >= 0 ?
@@ -3068,12 +3067,12 @@
 (defthm sbvlt-of-bvminus-of-1
   (equal (sbvlt 32 (bvminus 32 i 1) i)
          (not (equal (expt 2 31) (bvchop 32 i))))
-  :hints (("Goal" :in-theory (enable sbvlt bvminus))))
+  :hints (("Goal" :in-theory (enable sbvlt bvminus logext-of-plus))))
 
 (defthm sbvlt-of-bvplus-of-minus-1-and-1
   (equal (sbvlt 32 (bvplus 32 4294967295 i) i)
          (not (equal (expt 2 31) (bvchop 32 i))))
-  :hints (("Goal" :in-theory (enable sbvlt bvminus bvplus))))
+  :hints (("Goal" :in-theory (enable sbvlt bvminus bvplus logext-of-plus))))
 
 (defthm not-bvlt-of-one-less-when-not-bvlt-and-not-zero
   (implies (and ;(integerp dx)

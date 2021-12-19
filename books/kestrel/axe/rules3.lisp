@@ -608,6 +608,7 @@
            :in-theory (e/d (sbvdiv bvplus bvchop-plus-minus-1-split-gen
                                    bvchop-identity
                                    <-of-logext-and-0
+                                   logext-of-plus
                                    truncate-becomes-floor-other
                                    truncate-becomes-floor
                                    mod-by-4-becomes-bvchop)
@@ -706,7 +707,7 @@
                   (if (sbvle 32 (+ 4 (- (expt 2 31))) x)
                       (sbvlt 32 x 4)
                     nil)))
-  :hints (("Goal" :in-theory (enable sbvlt))))
+  :hints (("Goal" :in-theory (enable sbvlt logext-of-plus))))
 
 ;gen!
 (defthm integerp-of-*-of-1/4-of-expt
@@ -1895,7 +1896,7 @@
   (implies (integerp x)
            (equal (sbvmoddown 32 (+ -4 x) 4)
                   (sbvmoddown 32 x 4)))
-  :hints (("Goal" :in-theory (enable sbvmoddown))))
+  :hints (("Goal" :in-theory (enable sbvmoddown logext-of-plus))))
 
 (defthm sbvle-of-minus-4
   (implies (and (sbvle 32 0 x) ;drop of move to conclusion?
@@ -2118,11 +2119,10 @@
                     )))
   :hints (("Goal" :in-theory (e/d (sbvdivdown bvplus bvlt
                                               logext
+                                              logext-of-plus
                                               slice-of-sum-cases
                                               bvchop-of-sum-cases
-                                              bvchop-contract-hack-gen
-
-                                              )
+                                              bvchop-contract-hack-gen)
                                   (BVCHOP-PLUS-1-SPLIT
                                    <-becomes-bvlt <-becomes-bvlt-alt
                                    anti-bvplus bvlt-of-plus-arg2 bvlt-of-plus-arg1)))))
@@ -2135,6 +2135,7 @@
                   (bvplus 32 3 (sbvdivdown 32 (bvplus 32 3 x) 4))))
   :hints (("Goal" :in-theory (e/d (sbvdivdown bvplus bvlt
                                               logext
+                                              logext-of-plus
                                               slice-of-sum-cases
                                               ;;bvchop-of-sum-cases
                                               bvchop-of-logtail-becomes-slice

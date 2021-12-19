@@ -43,7 +43,7 @@
                 (integerp x))
            (equal (logext 64 (+ k x))
                   (logext 64 (+ (logext 64 k) x))))
-  :hints (("Goal" :in-theory (enable logapp))))
+  :hints (("Goal" :in-theory (enable logapp logext-of-plus))))
 
 ;i've seen k be 2^65-24
 (defthm logext-of-sum-trim-constant-big
@@ -53,7 +53,7 @@
                 (integerp x))
            (equal (logext 64 (+ k x))
                   (logext 64 (+ (logext 64 k) x))))
-  :hints (("Goal" :in-theory (enable logapp))))
+  :hints (("Goal" :in-theory (enable logapp logext-of-plus))))
 
 (defthm plus-of-minus-subst-constant
   (implies (and (EQUAL x (+ k y)) ;k is a free var
@@ -677,8 +677,6 @@
            (equal (getbit 63 x)
                   0))
   :hints (("Goal" :in-theory (enable logext))))
-
-(in-theory (disable LOGEXT-OF-PLUS)) ;pretty aggressive
 
 (defthm mod-of-bvchop-and-2
   (equal (mod (bvchop 63 x) 2)
