@@ -76,7 +76,7 @@ double-quoted-printable = %x20-21 / %x23-5B / %x5D-7E ; anything but " or \
 single-quoted-printable = %x20-26 / %x28-5B / %x5D-7E ; anything but ' or \
 
 escape-sequence = "\"
-                  ( ( squote / dquote / %s"n" / %s"r" / %s"t" / lf / cr )
+                  ( ( squote / dquote / %s"\" / %s"n" / %s"r" / %s"t" / lf / cr )
                   / %s"u" 4hex-digit
                   / %s"x" 2hex-digit )
 
