@@ -356,11 +356,13 @@
   :short "Fixtype of optional literals."
   :pred literal-optionp)
 
-;; this doesn't work for now
-;(fty::defresult literal-result
-;  :short "Fixtype of errors and literals."
-;  :ok literal
-;  :pred literal-resultp)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult literal-result
+  :short "Fixtype of errors and literals."
+  :ok literal
+  :pred literal-resultp
+  :prepwork ((local (in-theory (enable literal-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
