@@ -553,6 +553,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection fundef-list->name-list ((x fundef-listp))
+  :returns (names identifier-listp)
+  :short "Lift @(tsee fundef->name) to lists."
+  (fundef->name x)
+  ///
+  (fty::deffixequiv fundef-list->name-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define statements-to-fundefs ((stmts statement-listp))
   :returns (fundefs fundef-listp)
   :short "Filter function definitions out of a list of statements."
