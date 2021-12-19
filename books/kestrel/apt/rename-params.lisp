@@ -149,7 +149,7 @@
   ;;                                                 ,@(alist-to-doublets param-renaming))))))
 
 ;; Returns an event.
-;; compare to maybe-verify-guards-for-defun
+;; Similar to verify-guards-for-defun, but this one takes a param-renaming.
 ;; This requires the 'becomes theorems' to already exist.
 (defun verify-guards-for-rename-params (old-fn new-fn param-renaming function-renaming)
   (declare (xargs :guard (and (symbolp old-fn)
