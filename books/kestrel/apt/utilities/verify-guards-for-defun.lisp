@@ -36,7 +36,7 @@
   (let ((new-fn (lookup-eq-safe fn function-renaming))
         (guard-hints (if (eq :auto guard-hints)
                          `(("Goal" :use (:instance (:guard-theorem ,fn
-                                                                   nil ; don't simplify
+                                                                   t ; confusingly, this matches the behavior of :guard-simplify nil below
                                                                    ))
                             :do-not '(generalize eliminate-destructors) ;;TODO; Turn off more stuff:
                             ;; we use the becomes lemma(s):
@@ -58,7 +58,7 @@
                        guard-hints)))
     `(verify-guards$ ,new-fn
                       :hints ,guard-hints
-                      :guard-simplify nil ;; matches the nil given to :guard-theorem above
+                      :guard-simplify nil ;; avoid simplification based on the current theory
                       :otf-flg t)))
 
 ;; Maybe generate a verify-guards form for FN.  Returns a (possibly empty) list

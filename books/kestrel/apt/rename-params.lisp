@@ -158,7 +158,7 @@
                               (function-renamingp function-renaming))))
   (let ((guard-hints ;;(if (eq :auto guard-hints)
          `(("Goal" :use (:instance (:guard-theorem ,old-fn
-                                                   nil ; don't simplify
+                                                   t ; confusingly, this matches the behavior of :guard-simplify nil below
                                                    )
                                    :extra-bindings-ok
                                    ;; account for the renaming:
@@ -178,7 +178,7 @@
          ))
     `(verify-guards$ ,new-fn
                      :hints ,guard-hints
-                     :guard-simplify nil ;; matches the nil given to :guard-theorem above
+                     :guard-simplify nil ;; avoid simplification based on the current theory
                      )))
 
 ;todo: combine with rename-params-event?
