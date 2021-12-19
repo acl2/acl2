@@ -252,6 +252,7 @@
      all the information from the concrete syntax."))
   (:single-quote ())
   (:double-quote ())
+  (:backslash ())
   (:letter-n ())
   (:letter-r ())
   (:letter-t ())
@@ -347,6 +348,21 @@
   (:plain-string ((get plain-string)))
   (:hex-string ((get hex-string)))
   :pred literalp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption literal-option
+  literal
+  :short "Fixtype of optional literals."
+  :pred literal-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult literal-result
+  :short "Fixtype of errors and literals."
+  :ok literal
+  :pred literal-resultp
+  :prepwork ((local (in-theory (enable literal-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -552,6 +568,15 @@
   :pred fundef-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection fundef-list->name-list ((x fundef-listp))
+  :returns (names identifier-listp)
+  :short "Lift @(tsee fundef->name) to lists."
+  (fundef->name x)
+  ///
+  (fty::deffixequiv fundef-list->name-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define statements-to-fundefs ((stmts statement-listp))
   :returns (fundefs fundef-listp)
