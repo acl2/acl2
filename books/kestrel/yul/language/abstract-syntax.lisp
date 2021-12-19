@@ -252,6 +252,7 @@
      all the information from the concrete syntax."))
   (:single-quote ())
   (:double-quote ())
+  (:backslash ())
   (:letter-n ())
   (:letter-r ())
   (:letter-t ())
@@ -347,6 +348,19 @@
   (:plain-string ((get plain-string)))
   (:hex-string ((get hex-string)))
   :pred literalp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption literal-option
+  literal
+  :short "Fixtype of optional literals."
+  :pred literal-optionp)
+
+;; this doesn't work for now
+;(fty::defresult literal-result
+;  :short "Fixtype of errors and literals."
+;  :ok literal
+;  :pred literal-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
