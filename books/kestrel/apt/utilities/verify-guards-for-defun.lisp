@@ -18,24 +18,23 @@
 (include-book "kestrel/clause-processors/simplify-after-using-conjunction" :dir :system)
 (include-book "kestrel/terms-light/drop-clearly-implied-conjuncts" :dir :system)
 
-;; Generate a verify-guards form for FN.  Returns an
-;; event.  The verify-guards form assumes the new function and "becomes"
-;; theorem have already been admitted.  TODO: What if the "becomes" theorem
-;; has assumptions?
-;; todo: rename to verify-guards-form-for-new-defun
-(defun verify-guards-for-defun (fn ;the old function
-                                function-renaming ;maps fn to new-fn, etc.
-                                guard-hints ;; :auto or a list of hints
+;; Generate a verify-guards form for the new version of FN.  Returns an event.
+;; The verify-guards form assumes the new function and the "becomes" theorem
+;; have already been admitted.  TODO: What if the "becomes" theorem has
+;; assumptions?  todo: rename to verify-guards-form-for-new-defun
+(defun verify-guards-for-defun (old-fn            ;the old function
+                                function-renaming ;maps old-fn to new-fn, etc.
+                                guard-hints       ;; :auto or a list of hints
                                 guard-enables ;; used when guard-hints is :auto
                                 )
-  (declare (xargs :guard (and (symbolp fn)
+  (declare (xargs :guard (and (symbolp old-fn)
                               (function-renamingp function-renaming)
                               (or (eq :auto guard-hints)
                                   (true-listp guard-hints))
                               (true-listp guard-enables))))
-  (let ((new-fn (lookup-eq-safe fn function-renaming))
+  (let ((new-fn (lookup-eq-safe old-fn function-renaming))
         (guard-hints (if (eq :auto guard-hints)
-                         `(("Goal" :use (:instance (:guard-theorem ,fn
+                         `(("Goal" :use (:instance (:guard-theorem ,old-fn
                                                                    t ; confusingly, this matches the behavior of :guard-simplify nil below
                                                                    ))
                             :do-not '(generalize eliminate-destructors) ;;TODO; Turn off more stuff:
@@ -57,29 +56,29 @@
                            ("goal'" :clause-processor (simplify-after-using-conjunction-clause-processor clause)))
                        guard-hints)))
     `(verify-guards$ ,new-fn
-                      :hints ,guard-hints
-                      :guard-simplify nil ;; avoid simplification based on the current theory
-                      :otf-flg t)))
+                     :hints ,guard-hints
+                     :guard-simplify nil ;; avoid simplification based on the current theory
+                     :otf-flg t)))
 
-;; Maybe generate a verify-guards form for FN.  Returns a (possibly empty) list
-;; of events.
-(defun maybe-verify-guards-for-defun (fn ;the old function
-                                      function-renaming ;maps fn to new-fn, etc.
-                                      verify-guards ;; t, nil, or :auto
+;; Maybe generate a verify-guards form for the new version of OLD-FN.  Returns a
+;; (possibly empty) list of events.
+(defun maybe-verify-guards-for-defun (old-fn            ;the old function
+                                      function-renaming ;maps old-fn to new-fn, etc.
+                                      verify-guards     ;; t, nil, or :auto
                                       guard-hints ;; :auto or a list of hints
                                       ;; guard-enables ;; used when guard-hints is :auto
                                       wrld)
-  (declare (xargs :guard (and (symbolp fn)
+  (declare (xargs :guard (and (symbolp old-fn)
                               (member-eq verify-guards '(t nil :auto))
                               (function-renamingp function-renaming)
                               (or (eq :auto guard-hints)
                                   (true-listp guard-hints))
                               (plist-worldp wrld))))
   (let* ((verify-guards (if (eq :auto verify-guards)
-                            (guard-verified-p fn wrld)
+                            (guard-verified-p old-fn wrld)
                           verify-guards)))
     (if (not verify-guards)
         nil ;; empty list of events
-      (list (verify-guards-for-defun fn function-renaming guard-hints
+      (list (verify-guards-for-defun old-fn function-renaming guard-hints
                                      nil ;;guard-enables
                                      )))))
