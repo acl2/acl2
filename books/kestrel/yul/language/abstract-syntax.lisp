@@ -104,6 +104,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defomap identifier-identifier-map
+  :short "Fixtype of omaps from identifiers to identifiers."
+  :key-type identifier
+  :val-type identifier
+  :pred identifier-identifier-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult identifier-result
   :short "Fixtype of errors and identifiers."
   :ok identifier
