@@ -511,7 +511,6 @@
   :hints (("Goal" :in-theory (e/d (bvmult bvcat)
                                   (bvchop-of-*-of-bvchop-arg2))
            :use (:instance bvchop-of-*-of-bvchop-arg2
-                           (n size)
                            (y (* (expt 2 lowsize) x))
                            (x k)))))
 
