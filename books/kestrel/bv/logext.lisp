@@ -519,14 +519,16 @@
 
 (defthm logext-of-+-of-logext-arg1
   (implies (and (integerp x)
-                (integerp y))
-           (equal (logext 8 (+ (logext 8 x) y))
-                  (logext 8 (+ x y))))
+                (integerp y)
+                (posp size))
+           (equal (logext size (+ (logext size x) y))
+                  (logext size (+ x y))))
   :hints (("Goal" :in-theory (e/d (equal-of-logext-and-logext) ()))))
 
 (defthm logext-of-+-of-logext-arg2
   (implies (and (integerp x)
-                (integerp y))
-           (equal (logext 8 (+ x (logext 8 y)))
-                  (logext 8 (+ x y))))
+                (integerp y)
+                (posp size))
+           (equal (logext size (+ x (logext size y)))
+                  (logext size (+ x y))))
   :hints (("Goal" :in-theory (e/d (equal-of-logext-and-logext) ()))))
