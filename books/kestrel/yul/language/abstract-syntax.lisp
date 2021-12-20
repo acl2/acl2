@@ -64,6 +64,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult identifier-result
+  :short "Fixtype of errors and identifiers."
+  :ok identifier
+  :pred identifier-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-identifierp
+  (implies (identifierp x)
+           (not (resulterrp x)))
+  :enable (identifierp resulterrp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defoption identifier-option
   identifier
   :short "Fixtype of optional identifiers."
@@ -77,6 +91,13 @@
   :true-listp t
   :elementp-of-nil nil
   :pred identifier-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult identifier-list-result
+  :short "Fixtype of errors and lists of identifiers."
+  :ok identifier-list
+  :pred identifier-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -104,35 +125,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap identifier-identifier-map
-  :short "Fixtype of omaps from identifiers to identifiers."
-  :key-type identifier
-  :val-type identifier
-  :pred identifier-identifier-mapp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult identifier-result
-  :short "Fixtype of errors and identifiers."
-  :ok identifier
-  :pred identifier-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-identifierp
-  (implies (identifierp x)
-           (not (resulterrp x)))
-  :enable (identifierp resulterrp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult identifier-list-result
-  :short "Fixtype of errors and lists of identifiers."
-  :ok identifier-list
-  :pred identifier-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defresult identifier-set-result
   :short "Fixtype of errors and osets of identifiers."
   :ok identifier-set
@@ -144,6 +136,14 @@
   (implies (identifier-setp x)
            (not (resulterrp x)))
   :enable (resulterrp identifier-setp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap identifier-identifier-map
+  :short "Fixtype of omaps from identifiers to identifiers."
+  :key-type identifier
+  :val-type identifier
+  :pred identifier-identifier-mapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
