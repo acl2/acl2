@@ -221,6 +221,13 @@
   :elementp-of-nil nil
   :pred hex-pair-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult hex-pair-list-result
+  :short "Fixtype of errors and lists of hex pairs."
+  :ok hex-pair-list
+  :pred hex-pair-list-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod hex-quad
