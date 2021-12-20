@@ -145,6 +145,13 @@
   :val-type identifier
   :pred identifier-identifier-mapp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult identifier-identifier-map-result
+  :short "Fixtype of errors and omaps from identifiers to identifiers."
+  :ok identifier-identifier-map
+  :pred identifier-identifier-map-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod path
