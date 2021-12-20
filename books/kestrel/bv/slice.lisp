@@ -220,6 +220,14 @@
 
 (theory-invariant (incompatible (:definition slice) (:rewrite logtail-of-bvchop-becomes-slice)))
 
+;; Puts the bvchop inside the logtail
+(defthmd slice-alt-def
+  (implies (and (natp low)
+                (natp high))
+           (equal (slice high low x)
+                  (logtail low (bvchop (+ 1 high) x))))
+  :hints (("Goal" :in-theory (enable logtail-of-bvchop-becomes-slice))))
+
 (defthm slice-of-logtail
   (implies (and (natp high)
                 (natp low)
