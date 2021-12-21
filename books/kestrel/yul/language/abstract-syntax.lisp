@@ -236,6 +236,13 @@
   :elementp-of-nil nil
   :pred hex-pair-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult hex-pair-list-result
+  :short "Fixtype of errors and lists of hex pairs."
+  :ok hex-pair-list
+  :pred hex-pair-list-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod hex-quad
@@ -279,6 +286,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult escape-result
+  :short "Fixtype of errors and escapes."
+  :ok escape
+  :pred escape-resultp
+  :prepwork ((local (in-theory (enable escape-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum string-element
   :short "Fixtype of string elements."
   :long
@@ -289,10 +304,19 @@
      these are the string elements we define here.
      We use ACL2 characters for the former,
      which can represent all the printable ASCII characters and more;
-     We migh restrict the range of characters at some point."))
+     We might restrict the range of characters at some point."))
   (:char ((get character)))
   (:escape ((get escape)))
   :pred string-elementp)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult string-element-result
+  :short "Fixtype of errors and string elements."
+  :ok string-element
+  :pred string-element-resultp
+  :prepwork ((local (in-theory (enable string-element-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -302,6 +326,13 @@
   :true-listp t
   :elementp-of-nil nil
   :pred string-element-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult string-element-list-result
+  :short "Fixtype of errors and lists of string elements."
+  :ok string-element-list
+  :pred string-element-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

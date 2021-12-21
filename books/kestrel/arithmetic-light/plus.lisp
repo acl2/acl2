@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation +.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -78,6 +78,8 @@
 ;;; cancellation rules for < (TODO: Make this more systematic)
 ;;;
 
+;; In the name, "1+" means x is the first argument and there are more, whereas
+;; "1" means x is the first and last argument.
 (defthm <-of-+-cancel-1+-1
   (equal (< (+ x y) x)
          (< y 0))
@@ -100,6 +102,10 @@
 
 (defthm <-of-+-cancel-1+-2
   (equal (< (+ x y) (+ z x))
+         (< y z)))
+
+(defthm <-of-+-cancel-2-1+
+  (equal (< (+ y x) (+ x z))
          (< y z)))
 
 (defthm <-of-+-cancel-2-1
