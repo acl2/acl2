@@ -105,42 +105,6 @@
             "Checking top-level event"
           (concatenate 'string loc " checking"))))))
 
-;; Recognize a triple of the form (symb prop . val).
-(defund world-triplep (trip)
-  (declare (xargs :guard t))
-  (and (consp trip)
-       (symbolp (car trip))
-       (consp (cdr trip))
-       (symbolp (cadr trip))))
-
-;; Returns (mv defun-names defthm-names).  In the result, older defuns/defthms come first.
-(defund defuns-and-defthms-in-world (world
-                                     triple-to-stop-at ; may be nil
-                                     whole-world defuns-acc defthms-acc)
-  (declare (xargs :guard (and (plist-worldp world)
-                              (plist-worldp whole-world)
-                              (or (null triple-to-stop-at)
-                                  (world-triplep triple-to-stop-at))
-                              (true-listp defuns-acc)
-                              (true-listp defthms-acc))))
-  (if (endp world)
-      (mv defuns-acc defthms-acc)
-    (let ((triple (first world)))
-      (if (equal triple triple-to-stop-at)
-          (mv defuns-acc defthms-acc)
-        (let ((symb (car triple))
-              (prop (cadr triple)))
-          (if (and (eq prop 'unnormalized-body)
-                   (let ((still-definedp (fgetprop symb 'unnormalized-body nil whole-world))) ;todo: hack: make sure the function is still defined (why does this sometimes fail?)
-                     (if (not still-definedp)
-                         (prog2$ (cw "Note: ~x0 seems to no longer be defined." symb)
-                                 nil)
-                       t)))
-              (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world (cons symb defuns-acc) defthms-acc)
-            (if (eq prop 'theorem)
-                (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world defuns-acc (cons symb defthms-acc))
-              (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world defuns-acc defthms-acc))))))))
-
 ;dup
 (defun enquote-list (items)
   (declare (xargs :guard t))
