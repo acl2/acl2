@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "pre-translation")
+(include-book "pre-translation/top")
 (include-book "post-translation")
 (include-book "java-primitives")
 (include-book "java-primitive-arrays")
