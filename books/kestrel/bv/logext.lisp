@@ -12,9 +12,9 @@
 (in-package "ACL2")
 
 (include-book "ihs/basic-definitions" :dir :system) ;for logext
-(local (include-book "ihs/logops-lemmas" :dir :system))
-(include-book "logapp")
 (include-book "getbit")
+(local (include-book "logapp"))
+(local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -170,22 +170,22 @@
                                   (slice-becomes-getbit
                                    bvchop-1-becomes-getbit)))))
 
-(defthm logext-of-*-of-logext-arg2
+(defthm logext-of-*-of-logext-arg1
   (implies (and (integerp x)
                 (integerp y)
                 (posp size))
-           (equal (logext size (* x (logext size y)))
+           (equal (logext size (* (logext size x) y))
                   (logext size (* x y))))
   :hints (("Goal" :in-theory (e/d (logext
                                    widen-logapp-when-top-bit-1
                                    widen-bvchop-when-top-bit-0)
                                   (bvchop-when-top-bit-not-1-fake-free)))))
 
-(defthm logext-of-*-of-logext-arg1
+(defthm logext-of-*-of-logext-arg2
   (implies (and (integerp x)
                 (integerp y)
                 (posp size))
-           (equal (logext size (* (logext size x) y))
+           (equal (logext size (* x (logext size y)))
                   (logext size (* x y))))
   :hints (("Goal" :in-theory (e/d (logext
                                    widen-logapp-when-top-bit-1
