@@ -139,3 +139,76 @@
   (verify-guards statement-unique-vars)
 
   (fty::deffixequiv-mutual statements/blocks/cases/fundefs-unique-vars))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection statements/blocks/cases/fundefs-unique-vars-extend
+  :short "The @('...-unique-vars') functions extend the set of variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, if they return a new set of variables (i.e. not an error),
+     the new set is a superset of (or equal to) the initial set."))
+
+  (defthm-statements/blocks/cases/fundefs-unique-vars-flag
+
+    (defthm statement-unique-vars-extend
+      (implies (identifier-setp vars)
+               (b* ((vars1 (statement-unique-vars stmt vars)))
+                 (implies (not (resulterrp vars1))
+                          (set::subset vars vars1))))
+      :flag statement-unique-vars)
+
+    (defthm statement-list-unique-vars-extend
+      (implies (identifier-setp vars)
+               (b* ((vars1 (statement-list-unique-vars stmts vars)))
+                 (implies (not (resulterrp vars1))
+                          (set::subset vars vars1))))
+      :flag statement-list-unique-vars)
+
+    (defthm block-unique-vars-extend
+      (implies (identifier-setp vars)
+               (b* ((vars1 (block-unique-vars block vars)))
+                 (implies (not (resulterrp vars1))
+                          (set::subset vars vars1))))
+      :flag block-unique-vars)
+
+    (defthm block-option-unique-vars-extend
+      (implies (identifier-setp vars)
+               (b* ((vars1 (block-option-unique-vars block? vars)))
+                 (implies (not (resulterrp vars1))
+                          (set::subset vars vars1))))
+      :flag block-option-unique-vars)
+
+    (defthm swcase-unique-vars-extend
+      (implies (identifier-setp vars)
+               (b* ((vars1 (swcase-unique-vars case vars)))
+                 (implies (not (resulterrp vars1))
+                          (set::subset vars vars1))))
+      :flag swcase-unique-vars)
+
+    (defthm swcase-list-unique-vars-extend
+      (implies (identifier-setp vars)
+               (b* ((vars1 (swcase-list-unique-vars cases vars)))
+                 (implies (not (resulterrp vars1))
+                          (set::subset vars vars1))))
+      :flag swcase-list-unique-vars)
+
+    (defthm fundef-unique-vars-extend
+      (implies (identifier-setp vars)
+               (b* ((vars1 (fundef-unique-vars fundef vars)))
+                 (implies (not (resulterrp vars1))
+                          (set::subset vars vars1))))
+      :flag fundef-unique-vars)
+
+    :hints (("Goal"
+             :in-theory (e/d (statement-unique-vars
+                              statement-list-unique-vars
+                              block-unique-vars
+                              block-option-unique-vars
+                              swcase-unique-vars
+                              swcase-list-unique-vars
+                              fundef-unique-vars
+                              set::subset-transitive
+                              (:forward-chaining set::subset-of-list-insert))
+                             ((:rewrite set::subset-of-list-insert)))))))
