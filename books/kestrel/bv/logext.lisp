@@ -94,17 +94,6 @@
            (equal (evenp x)
                   (equal 0 (mod x 2)))) :hints (("Goal" :in-theory (enable evenp))))
 
-;; (defthm int-lemma4a
-;;    (implies (and (integerp x)
-;;                  (integerp y))
-;;             (equal (acl2::logext 32 (* x (acl2::logext 32 y)))
-;;                    (acl2::logext 32 (* x y))))
-;;    :otf-flg t
-;;    :hints (("Goal" :do-not '(generalize eliminate-destructors)
-;;             :in-theory (e/d (ACL2::LOGEXT logapp bvchop logbitp
-;;                                           evenp-becomes-mod-fact)
-;;                             (evenp MOD-=-0)))))
-
 (defthm logbitp-of-31-of-*-of-bvchop
   (IMPLIES (AND (EVENP X)
                 (INTEGERP X)
@@ -115,8 +104,8 @@
                   (LOGBITP 31 (* X Y))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :cases ((evenp x))
-           :in-theory (e/d (ACL2::LOGEXT
-                            acl2::logapp logbitp
+           :in-theory (e/d (LOGEXT
+                            logapp logbitp
                             BVCHOP
                             mod
                             evenp
@@ -126,42 +115,82 @@
                            (LOGBITP-IFF-GETBIT
                             EQUAL-OF-*-2-OF-FLOOR-OF-2-SAME)))))
 
-(defthm bvchop-of-+-of-*-of-bvchop
-  (implies (and (integerp x)
+(defthm bvchop-of-*-of-logapp
+  (implies (and (<= size size2)
+                (integerp x)
                 (integerp y)
-                (integerp z))
-           (equal (bvchop 31 (+ x (* y (bvchop 31 z))))
-                  (bvchop 31 (+ x (* y z))))))
-
-(defthm bvchop-31-of-*-of-2147483648
-  (IMPLIES (INTEGERP X)
-           (EQUAL (BVCHOP 31 (* 2147483648 X))
-                  0))
-  :hints (("Goal" :in-theory (enable bvchop))))
-
-(defthm bvchop-31-of-*-of-logapp-31
-  (IMPLIES (AND (INTEGERP X)
-                (INTEGERP Y))
-           (EQUAL (BVCHOP 31 (* X (LOGAPP 31 Y -1)))
-                  (BVCHOP 31 (* X Y))))
+                (integerp z)
+                (natp size)
+                (natp size2))
+           (equal (bvchop size (* x (logapp size2 y z)))
+                  (bvchop size (* x y))))
   :hints (("Goal" :in-theory (enable logapp))))
 
-;FIXME first prove some more general theorems about logbitp and bvchop
-;FIXME gen the 32
-;FIXME rename
-(defthm int-lemma4a
+(defthmd widen-logapp-when-top-bit-1
+  (IMPLIES (AND (EQUAL 1 (GETBIT (+ -1 SIZE) X))
+                (INTEGERP X)
+                (INTEGERP SIZE)
+                (< 0 SIZE)
+                )
+           (equal (LOGAPP (+ -1 SIZE) X -1)
+                  (LOGAPP SIZE X -1))))
+
+(defthmd widen-bvchop-when-top-bit-0
+  (IMPLIES (AND (EQUAL 0 (GETBIT (+ -1 SIZE) X))
+                (INTEGERP X)
+                (posp SIZE))
+           (equal (bvchop (+ -1 SIZE) X)
+                  (bvchop SIZE X))))
+
+(theory-invariant (incompatible (:rewrite widen-bvchop-when-top-bit-0)
+                                (:rewrite bvchop-when-top-bit-not-1-fake-free)))
+
+(defthm getbit-of-*-of-logapp
+  (implies (and (< size size2)
+                (integerp x)
+                (integerp y)
+                (integerp z)
+                (natp size)
+                (natp size2))
+           (equal (getbit size (* x (logapp size2 y z)))
+                  (getbit size (* x y))))
+  :hints (("Goal" :in-theory (e/d (logapp getbit slice-alt-def)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit)))))
+
+(defthm getbit-of-*-of-bvchop
+  (implies (and (< size size2)
+                (integerp x)
+                (integerp y)
+                (natp size)
+                (natp size2))
+           (equal (getbit size (* x (bvchop size2 y)))
+                  (getbit size (* x y))))
+  :hints (("Goal" :in-theory (e/d (getbit slice-alt-def)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit)))))
+
+(defthm logext-of-*-of-logext-arg2
   (implies (and (integerp x)
-                (integerp y))
-           (equal (acl2::logext 32 (* x (acl2::logext 32 y)))
-                  (acl2::logext 32 (* x y))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :cases ((evenp x))
-           :in-theory (e/d (LOGEXT
-                            logapp logbitp
-                            BVCHOP
-                            mod
-                            oddp) (LOGBITP-IFF-GETBIT
-                            EQUAL-OF-*-2-OF-FLOOR-OF-2-SAME)))))
+                (integerp y)
+                (posp size))
+           (equal (logext size (* x (logext size y)))
+                  (logext size (* x y))))
+  :hints (("Goal" :in-theory (e/d (logext
+                                   widen-logapp-when-top-bit-1
+                                   widen-bvchop-when-top-bit-0)
+                                  (bvchop-when-top-bit-not-1-fake-free)))))
+
+(defthm logext-of-*-of-logext-arg1
+  (implies (and (integerp x)
+                (integerp y)
+                (posp size))
+           (equal (logext size (* (logext size x) y))
+                  (logext size (* x y))))
+  :hints (("Goal" :in-theory (e/d (logext
+                                   widen-logapp-when-top-bit-1
+                                   widen-bvchop-when-top-bit-0)
+                                  (bvchop-when-top-bit-not-1-fake-free)))))
 
 
 
@@ -519,14 +548,16 @@
 
 (defthm logext-of-+-of-logext-arg1
   (implies (and (integerp x)
-                (integerp y))
-           (equal (logext 8 (+ (logext 8 x) y))
-                  (logext 8 (+ x y))))
-  :hints (("Goal" :in-theory (e/d (equal-of-logext-and-logext) ()))))
+                (integerp y)
+                (posp size))
+           (equal (logext size (+ (logext size x) y))
+                  (logext size (+ x y))))
+  :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
 
 (defthm logext-of-+-of-logext-arg2
   (implies (and (integerp x)
-                (integerp y))
-           (equal (logext 8 (+ x (logext 8 y)))
-                  (logext 8 (+ x y))))
-  :hints (("Goal" :in-theory (e/d (equal-of-logext-and-logext) ()))))
+                (integerp y)
+                (posp size))
+           (equal (logext size (+ x (logext size y)))
+                  (logext size (+ x y))))
+  :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))

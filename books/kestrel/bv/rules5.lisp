@@ -80,6 +80,7 @@
                   (sbvlt size x y)))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
                                           logext-cases
+                                          logext-of-plus
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
                                           GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
@@ -118,6 +119,7 @@
            (not (sbvlt size (bvplus size k x) (bvplus size k y))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
                                           logext-cases
+                                          logext-of-plus
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
                                           GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
@@ -397,7 +399,7 @@
                   (bvplus 32 2147483648 k) ;must negative
                   x                        ;assumed to be non-negative
                   ))
-  :hints (("Goal" :in-theory (enable sbvlt bvplus bvchop-of-sum-cases))))
+  :hints (("Goal" :in-theory (enable sbvlt bvplus bvchop-of-sum-cases logext-of-plus))))
 
 ;gen the size
 (defthm getbit-when-bvchop-bound
