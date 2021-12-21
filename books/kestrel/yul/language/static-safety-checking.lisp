@@ -388,6 +388,8 @@
       (funtype->out funty))
     :measure (funcall-count call))
 
+  :flag-local nil
+
   :verify-guards nil ; done below
   ///
   (verify-guards check-safe-expression

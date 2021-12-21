@@ -35,7 +35,11 @@
   ///
 
   (std::defrule subset-of-list-insert
-    (subset s (list-insert l s)))
+    (subset s (list-insert l s))
+    :rule-classes (:rewrite
+                   (:forward-chaining :trigger-terms ((list-insert l s)))))
+
+  (in-theory (disable (:forward-chaining subset-of-list-insert)))
 
   (std::defrule in-of-list-insert
     (iff (in elem (list-insert list set))
