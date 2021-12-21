@@ -412,26 +412,26 @@
                   (bvxor n x y))))
 
 (defthm bvxor-of-bvchop-tighten-2
-   (implies (and (< size1 size2)
-                 (natp size1)
-                 (natp size2)
-                 (integerp y)
-                 (integerp x))
-            (equal (bvxor size1 x (bvchop size2 y))
-                   (bvxor size1 x (bvchop size1 y))))
-   :hints (("Goal" :in-theory (e/d (bvxor ;bvchop-bvchop
-                                    ) ()))))
+  (implies (and (< size1 size2)
+                (natp size1)
+                (natp size2)
+                (integerp y)
+                (integerp x))
+           (equal (bvxor size1 x (bvchop size2 y))
+                  (bvxor size1 x (bvchop size1 y))))
+  :hints (("Goal" :in-theory (enable bvxor ;bvchop-bvchop
+                                     ))))
 
 (defthm bvxor-of-bvchop-tighten-1
-   (implies (and (< size1 size2)
-                 (natp size1)
-                 (natp size2)
-                 (integerp y)
-                 (integerp x))
-            (equal (Bvxor size1 (BVCHOP size2 y) x)
-                   (Bvxor size1 (BVCHOP size1 y) x)))
-   :hints (("Goal" :in-theory (e/d (bvxor ;bvchop-bvchop
-                                    ) ()))))
+  (implies (and (< size1 size2)
+                (natp size1)
+                (natp size2)
+                (integerp y)
+                (integerp x))
+           (equal (Bvxor size1 (BVCHOP size2 y) x)
+                  (Bvxor size1 (BVCHOP size1 y) x)))
+  :hints (("Goal" :in-theory (enable bvxor ;bvchop-bvchop
+                                     ))))
 
 (defthm bitp-of-bvxor-of-1
   (bitp (bvxor 1 x y))
