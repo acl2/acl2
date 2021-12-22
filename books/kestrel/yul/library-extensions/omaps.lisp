@@ -71,3 +71,19 @@
              (in key map1)
            (in key map2)))
   :enable (update* in))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled in-keys-when-in
+  (implies (equal (in a m)
+                  (cons a b))
+           (set::in a (keys m)))
+  :enable keys)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled in-values-when-in
+  (implies (equal (in a m)
+                  (cons a b))
+           (set::in b (values m)))
+  :enable values)

@@ -145,6 +145,18 @@
   :val-type identifier
   :pred identifier-identifier-mapp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule identifier-setp-of-keys-when-identifier-identifier-mapp
+  (implies (identifier-identifier-mapp m)
+           (identifier-setp (omap::keys m)))
+  :enable omap::keys)
+
+(defrule identifier-setp-of-values-when-identifier-identifier-mapp
+  (implies (identifier-identifier-mapp m)
+           (identifier-setp (omap::values m)))
+  :enable omap::values)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult identifier-identifier-map-result
