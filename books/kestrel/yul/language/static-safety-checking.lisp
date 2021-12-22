@@ -210,13 +210,24 @@
   (xdoc::topstring
    (xdoc::p
     "If a variable with the same name is already in the table,
-     an error is returned."))
+     an error is returned.")
+   (xdoc::p
+    "If this function does not return an error,
+     it is equivalent to @(tsee set::insert)."))
   (b* ((var (identifier-fix var))
        (varset (identifier-set-fix varset)))
     (if (set::in var varset)
         (err (list :duplicate-variable var))
       (set::insert var varset)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defruled add-var-to-set-insert
+    (b* ((varset1 (add-var var varset)))
+      (implies (not (resulterrp varset1))
+               (equal varset1
+                      (set::insert (identifier-fix var)
+                                   (identifier-set-fix varset)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -230,11 +241,24 @@
     "The variables are added, one after the other.
      Duplicates in the list will cause an error.")
    (xdoc::p
-    "This lifts @(tsee add-var) to lists."))
+    "This lifts @(tsee add-var) to lists.")
+   (xdoc::p
+    "If this function does not return an error,
+     it is equivalent to @(tsee set::list-insert)."))
   (b* (((when (endp vars)) (identifier-set-fix varset))
        ((ok varset) (add-var (car vars) varset)))
     (add-vars (cdr vars) varset))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defruled add-vars-to-set-list-insert
+    (b* ((varset1 (add-vars vars varset)))
+      (implies (not (resulterrp varset1))
+               (equal varset1
+                      (set::list-insert (identifier-list-fix vars)
+                                        (identifier-set-fix varset)))))
+    :enable (set::list-insert
+             add-var-to-set-insert)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

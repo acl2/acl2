@@ -103,40 +103,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection theorems-about-add-var/vars
+(defsection theorems-about-add-vars-and-append
   :short "Theorems about @(tsee add-var) and @(tsee add-vars)
           for the static soundness proof."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "We prove two theorems to rephrase @(tsee add-var) and @(tsee add-vars)
-     as @(tsee set::insert) and @('set::list-insert').
-     The first is used to prove the second,
-     which is used in some other theorem (find it in hints).")
    (xdoc::p
     "We have two variants of @(tsee add-vars) applied to @(tsee append)
      that differ only in the exact hypotheses.
      This seems unfortunate, so we will try and consolidate them.
      We also have a theorem about
      errors for @(tsee add-vars) of @(tsee append)."))
-
-  (defruled add-var-to-insert
-    (b* ((varset1 (add-var var varset)))
-      (implies (not (resulterrp varset1))
-               (equal varset1
-                      (set::insert (identifier-fix var)
-                                   (identifier-set-fix varset)))))
-    :enable add-var)
-
-  (defruled add-vars-to-list-insert
-    (b* ((varset1 (add-vars vars varset)))
-      (implies (not (resulterrp varset1))
-               (equal varset1
-                      (set::list-insert (identifier-list-fix vars)
-                                        (identifier-set-fix varset)))))
-    :enable (add-vars
-             set::list-insert
-             add-var-to-insert))
 
   (defruled add-vars-of-append
     (implies (and (not (resulterrp (add-vars vars1 varset)))
@@ -1124,7 +1101,7 @@
                   (identifier-setp varset)
                   (not (resulterrp (add-vars (append vars1 vars) varset))))
              (check-var-list vars (add-vars (append vars1 vars) varset)))
-    :enable (add-vars-to-list-insert
+    :enable (add-vars-to-set-list-insert
              check-var-list-to-set-list-in))
 
   (defruled add-vars-of-append-not-error-when-init-local-not-error
