@@ -33,6 +33,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defrule subset-of-insert-same-when-subset
+  (implies (subset x y)
+           (subset (insert a x)
+                   (insert a y)))
+  :enable subset)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::deflist list-notin (x set)
   :guard (and (true-listp x)
               (setp set))
@@ -76,4 +84,9 @@
 
   (std::defrule list-insert-commutative
     (equal (list-insert list1 (list-insert list2 set))
-           (list-insert list2 (list-insert list1 set)))))
+           (list-insert list2 (list-insert list1 set))))
+
+  (std::defrule subset-of-list-insert-same-when-subset
+    (implies (subset x y)
+             (subset (list-insert l x)
+                     (list-insert l y)))))
