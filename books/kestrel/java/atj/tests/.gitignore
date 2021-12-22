@@ -108,3 +108,6 @@ BooleansShallowUnguardedTests.java
 BooleansShallowGuarded.java
 BooleansShallowGuardedEnvironment.java
 BooleansShallowGuardedTests.java
+
+NoAIJTypes.java
+NoAIJTypesEnvironment.java
