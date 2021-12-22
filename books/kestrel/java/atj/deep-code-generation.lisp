@@ -408,7 +408,7 @@
        ((mv formals body &)
         (atj-pre-translate fn formals body
                            in-types out-types out-arrays
-                           nil t guards$ wrld))
+                           nil t guards$ nil wrld))
        (fn-block (jblock-locvar *aij-type-named-fn*
                                 jvar-function
                                 (jexpr-smethod *aij-type-named-fn*

@@ -416,7 +416,11 @@
        The built-in functions @(tsee equal), @(tsee if), and @(tsee not)
        are expected from this requirement.")
      (xdoc::li
-      "The unnormalized body (or attachment, as explained earlier) of @('fn')
+      "The unnormalized body (or attachment, as explained earlier) of @('fn'),
+       after the pre-translation steps that remove code (i.e.
+       @(see atj-pre-translation-remove-return-last),
+       @(see atj-pre-translation-remove-dead-if-branches), and
+       @(see atj-pre-translation-unused-vars)),
        only uses, as an untranslated term:"
       (xdoc::ul
        (xdoc::li

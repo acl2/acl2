@@ -495,6 +495,7 @@
 
 (define atj-gen-main-file ((deep$ booleanp)
                            (guards$ booleanp)
+                           (no-aij-types$ booleanp)
                            (java-package$ maybe-stringp)
                            (java-class$ stringp)
                            (output-file$ stringp)
@@ -528,6 +529,7 @@
                 nil
                 nil)
           (atj-gen-shallow-main-cunit guards$
+                                      no-aij-types$
                                       java-package$
                                       java-class$
                                       pkgs
@@ -586,6 +588,7 @@
 
 (define atj-gen-everything ((deep$ booleanp)
                             (guards$ booleanp)
+                            (no-aij-types$ booleanp)
                             (java-package$ maybe-stringp)
                             (java-class$ stringp)
                             (output-file$ stringp)
@@ -623,6 +626,7 @@
              state)
          (atj-gen-main-file deep$
                             guards$
+                            no-aij-types$
                             java-package$
                             java-class$
                             output-file$

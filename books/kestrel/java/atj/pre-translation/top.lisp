@@ -15,6 +15,7 @@
 (include-book "unused-vars")
 (include-book "trivial-vars")
 (include-book "multiple-values")
+(include-book "no-aij-types-analysis")
 (include-book "type-annotation")
 (include-book "array-analysis")
 (include-book "var-reuse")
@@ -54,6 +55,10 @@
       in functions that return multiple results.
       See @(see atj-pre-translation-multiple-values).")
     (xdoc::li
+     "We check (on the ACL2 code translated to Java)
+      that the generated Java code does not use AIJ types.
+      See @(see atj-pre-translation-no-aij-types-analysis).")
+    (xdoc::li
      "We annotate terms with ATJ type information.
       See @(see atj-pre-translation-type-annotation).")
     (xdoc::li
@@ -78,7 +83,8 @@
      "We replace calls of the form @('(if a a b)')
       with calls of the form @('(or a b)').
       See @(see atj-pre-translation-disjunctions).")))
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,6 +97,7 @@
                            (mv-typess atj-type-list-listp)
                            (deep$ booleanp)
                            (guards$ booleanp)
+                           (no-aij-types$ booleanp)
                            (wrld plist-worldp))
   :guard (and (= (len formals) (len in-types))
               (consp out-types)
@@ -99,7 +106,6 @@
                (new-body pseudo-termp :hyp :guard)
                (new-mv-typess (and (atj-type-list-listp new-mv-typess)
                                    (cons-listp new-mv-typess))))
-  :parents (atj-pre-translation)
   :short "Pre-translate the formal parameters and body
           of an ACL2 function definition."
   :long
@@ -117,6 +123,10 @@
        ((when deep$) (mv formals body nil))
        (body (remove-trivial-vars body))
        (body (atj-restore-mv-calls-in-body body out-types wrld))
+       ((run-when no-aij-types$) (atj-check-no-aij-types+body in-types
+                                                              out-types
+                                                              body
+                                                              fn))
        ((mv formals body mv-typess)
         (atj-type-annotate-formals+body
          formals body in-types out-types mv-typess guards$ wrld))

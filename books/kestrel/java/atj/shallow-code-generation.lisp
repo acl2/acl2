@@ -3338,6 +3338,7 @@
                                       (curr-pkg stringp)
                                       (mv-typess atj-type-list-listp)
                                       (guards$ booleanp)
+                                      (no-aij-types$ booleanp)
                                       (wrld plist-worldp))
   :guard (and (not (aij-nativep fn))
               (not (equal curr-pkg ""))
@@ -3405,7 +3406,7 @@
        ((mv formals body mv-typess)
         (atj-pre-translate fn formals body
                            in-types out-types out-arrays
-                           mv-typess nil guards$ wrld))
+                           mv-typess nil guards$ no-aij-types$ wrld))
        (qconsts (atj-add-qconstants-in-term body qconsts))
        ((mv formals &) (atj-unmark-vars formals))
        (formals (atj-type-unannotate-vars formals))
@@ -3467,6 +3468,7 @@
                                        (curr-pkg stringp)
                                        (mv-typess atj-type-list-listp)
                                        (guards$ booleanp)
+                                       (no-aij-types$ booleanp)
                                        (wrld plist-worldp))
   :guard (and (not (aij-nativep fn))
               (not (equal curr-pkg ""))
@@ -3494,6 +3496,7 @@
                                       curr-pkg
                                       mv-typess
                                       guards$
+                                      no-aij-types$
                                       wrld))
        ((mv rest-methods
             qconsts
@@ -3510,6 +3513,7 @@
                                        curr-pkg
                                        mv-typess
                                        guards$
+                                       no-aij-types$
                                        wrld)))
     (mv (cons first-methods rest-methods) qconsts mv-typess)))
 
@@ -3523,6 +3527,7 @@
    (fn-method-names symbol-string-alistp)
    (mv-typess atj-type-list-listp)
    (guards$ booleanp)
+   (no-aij-types$ booleanp)
    (verbose$ booleanp)
    (wrld plist-worldp))
   :guard (and (not (aij-nativep fn))
@@ -3576,6 +3581,7 @@
                                    curr-pkg
                                    mv-typess
                                    guards$
+                                   no-aij-types$
                                    wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3587,6 +3593,7 @@
                                     (fn-method-names symbol-string-alistp)
                                     (mv-typess atj-type-list-listp)
                                     (guards$ booleanp)
+                                    (no-aij-types$ booleanp)
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
   :guard (cons-listp mv-typess)
@@ -3620,6 +3627,7 @@
                                        fn-method-names
                                        mv-typess
                                        guards$
+                                       no-aij-types$
                                        verbose$
                                        wrld)))
 
@@ -3632,6 +3640,7 @@
                                         (fn-method-names symbol-string-alistp)
                                         (mv-typess atj-type-list-listp)
                                         (guards$ booleanp)
+                                        (no-aij-types$ booleanp)
                                         (verbose$ booleanp)
                                         (wrld plist-worldp))
   :guard (cons-listp mv-typess)
@@ -3653,6 +3662,7 @@
                                     fn-method-names
                                     mv-typess
                                     guards$
+                                    no-aij-types$
                                     verbose$
                                     wrld))
        ((mv rest-methods
@@ -3665,6 +3675,7 @@
                                         fn-method-names
                                         mv-typess
                                         guards$
+                                        no-aij-types$
                                         verbose$
                                         wrld)))
     (mv (append first-methods rest-methods) qconsts mv-typess)))
@@ -3895,6 +3906,7 @@
                                      (fn-method-names symbol-string-alistp)
                                      (mv-typess atj-type-list-listp)
                                      (guards$ booleanp)
+                                     (no-aij-types$ booleanp)
                                      (verbose$ booleanp)
                                      (wrld plist-worldp))
   :guard (cons-listp mv-typess)
@@ -3945,6 +3957,7 @@
                                         fn-method-names
                                         mv-typess
                                         guards$
+                                        no-aij-types$
                                         verbose$
                                         wrld))
        (synonym-methods
@@ -3985,6 +3998,7 @@
                                          (fn-method-names symbol-string-alistp)
                                          (mv-typess atj-type-list-listp)
                                          (guards$ booleanp)
+                                         (no-aij-types$ booleanp)
                                          (verbose$ booleanp)
                                          (wrld plist-worldp))
   :guard (cons-listp mv-typess)
@@ -4020,6 +4034,7 @@
                                      fn-method-names
                                      mv-typess
                                      guards$
+                                     no-aij-types$
                                      verbose$
                                      wrld))
        ((mv rest-methods
@@ -4034,6 +4049,7 @@
                                          fn-method-names
                                          mv-typess
                                          guards$
+                                         no-aij-types$
                                          verbose$
                                          wrld)))
     (if (null first-methods)
@@ -4583,6 +4599,7 @@
                                     (fns-to-translate symbol-listp)
                                     (call-graph symbol-symbollist-alistp)
                                     (guards$ booleanp)
+                                    (no-aij-types$ booleanp)
                                     (java-class$ stringp)
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
@@ -4668,6 +4685,7 @@
                                          fn-method-names
                                          mv-typess
                                          guards$
+                                         no-aij-types$
                                          verbose$
                                          wrld))
        ((unless (atj-gen-shallow-mv-classes-guard mv-typess))
@@ -4741,6 +4759,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-main-cunit ((guards$ booleanp)
+                                    (no-aij-types$ booleanp)
                                     (java-package$ stringp)
                                     (java-class$ stringp)
                                     (pkgs string-listp)
@@ -4768,7 +4787,8 @@
      the Java test class."))
   (b* (((mv class pkg-class-names fn-method-names)
         (atj-gen-shallow-main-class
-         pkgs fns-to-translate call-graph guards$ java-class$ verbose$ wrld))
+         pkgs fns-to-translate call-graph guards$ no-aij-types$
+         java-class$ verbose$ wrld))
        ((run-when verbose$)
         (cw "~%Generate the main Java compilation unit.~%"))
        (cunit
