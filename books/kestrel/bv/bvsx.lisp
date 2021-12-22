@@ -122,8 +122,7 @@
 (defthm bvsx-of-0
   (equal (bvsx new-size old-size 0)
          0)
-  :hints (("Goal" :in-theory (e/d (bvsx bvcat)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvsx bvcat))))
 
 (defthm bvsx-when-sizes-match
   (implies (and (equal new-size old-size)
