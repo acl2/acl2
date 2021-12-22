@@ -25,7 +25,7 @@
 (defines expressions-induction2
   :short "Induction on two expressions simultaneously."
 
-  (define expression-induction2 ((old expressionp) (new expressionp))
+  (define expression-induct2 ((old expressionp) (new expressionp))
     (expression-case
      old
      :path (expression-case new
@@ -39,19 +39,19 @@
      :funcall (expression-case new
                                :path nil
                                :literal nil
-                               :funcall (funcall-induction2 old.get new.get)))
+                               :funcall (funcall-induct2 old.get new.get)))
     :measure (+ (expression-count old) (expression-count new)))
 
-  (define expression-list-induction2 ((old expression-listp)
+  (define expression-list-induct2 ((old expression-listp)
                                       (new expression-listp))
     (cond ((endp old) nil)
           ((endp new) nil)
-          (t (list (expression-induction2 (car old) (car new))
-                   (expression-list-induction2 (cdr old) (cdr new)))))
+          (t (list (expression-induct2 (car old) (car new))
+                   (expression-list-induct2 (cdr old) (cdr new)))))
     :measure (+ (expression-list-count old) (expression-list-count new)))
 
-  (define funcall-induction2 ((old funcallp) (new funcallp))
-    (expression-list-induction2 (funcall->args old) (funcall->args new))
+  (define funcall-induct2 ((old funcallp) (new funcallp))
+    (expression-list-induct2 (funcall->args old) (funcall->args new))
     :measure (+ (funcall-count old) (funcall-count new)))
 
   :flag-local nil)
