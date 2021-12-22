@@ -244,7 +244,7 @@
     "This lifts @(tsee add-var) to lists.")
    (xdoc::p
     "If this function does not return an error,
-     it is equivalent to @(tsee set::list-insert)."))
+     it is equivalent to @('set::list-insert')."))
   (b* (((when (endp vars)) (identifier-set-fix varset))
        ((ok varset) (add-var (car vars) varset)))
     (add-vars (cdr vars) varset))
