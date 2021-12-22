@@ -14,6 +14,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defruled intersect-of-union
+  (equal (intersect a (union b c))
+         (union (intersect a b)
+                     (intersect a c)))
+  :enable (double-containment
+           pick-a-point-subset-strategy))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defruled subset-of-union-and-union
+  (implies (and (subset a b)
+                (subset c d))
+           (subset (union a c)
+                   (union b d)))
+  :enable (pick-a-point-subset-strategy
+           subset-in))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::deflist list-notin (x set)
   :guard (and (true-listp x)
               (setp set))
@@ -58,22 +77,3 @@
   (std::defrule list-insert-commutative
     (equal (list-insert list1 (list-insert list2 set))
            (list-insert list2 (list-insert list1 set)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defruled intersect-of-union
-  (equal (intersect a (union b c))
-         (union (intersect a b)
-                     (intersect a c)))
-  :enable (double-containment
-           pick-a-point-subset-strategy))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defruled subset-of-union-and-union
-  (implies (and (subset a b)
-                (subset c d))
-           (subset (union a c)
-                   (union b d)))
-  :enable (pick-a-point-subset-strategy
-           subset-in))
