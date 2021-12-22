@@ -27,7 +27,7 @@
   :hints (("Goal" :in-theory (enable evenp expt))))
 
 (defthmd evenp-becomes-equal-of-0-and-mod
-  (implies (integerp x)
+  (implies (rationalp x)
            (equal (evenp x)
                   (equal 0 (mod x 2))))
   :hints (("Goal" :in-theory (enable evenp

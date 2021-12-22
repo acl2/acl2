@@ -203,7 +203,7 @@
                 (integerp j2))
            (equal (logbitp i (logxor j1 j2))
                   (xor (logbitp i j1) (logbitp i j2))))
-  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-MOD-FACT oddp)
+  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-EQUAL-OF-0-AND-MOD oddp)
                                   (LOGBITP-IFF-GETBIT ;fixme why?
                                    MOD-=-0 mod-cancel
                                    ;;for speed:
@@ -216,7 +216,7 @@
                 (integerp j2))
            (equal (logbitp i (logand j1 j2))
                   (and (logbitp i j1) (logbitp i j2))))
-  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-MOD-FACT oddp)
+  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-EQUAL-OF-0-AND-MOD oddp)
                                   (LOGBITP-IFF-GETBIT
                                    MOD-=-0 mod-cancel
                                    ;;for speed:
@@ -229,7 +229,7 @@
                 (integerp j2))
            (equal (logbitp i (logior j1 j2))
                   (or (logbitp i j1) (logbitp i j2))))
-  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-MOD-FACT oddp)
+  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-EQUAL-OF-0-AND-MOD oddp)
                                   (LOGBITP-IFF-GETBIT
                                    MOD-=-0 mod-cancel
 ;for speed:

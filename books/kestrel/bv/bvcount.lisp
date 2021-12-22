@@ -15,7 +15,6 @@
 (include-book "getbit")
 (include-book "bvplus")
 (include-book "bvcat-def")
-(local (include-book "logext")) ;for EVENP-BECOMES-MOD-FACT (move that)
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
@@ -25,6 +24,7 @@
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/nonnegative-integer-quotient" :dir :system))
+(local (include-book "kestrel/arithmetic-light/evenp" :dir :system))
 
 (local (in-theory (disable expt)))
 
@@ -83,7 +83,7 @@
   (implies (posp size)
            (equal (evenp (bvchop size x))
                   (equal 0 (getbit 0 x))))
-  :hints (("Goal" :in-theory (e/d (bvchop EVENP-BECOMES-MOD-FACT getbit)
+  :hints (("Goal" :in-theory (e/d (bvchop EVENP-BECOMES-EQUAL-OF-0-AND-MOD getbit)
                                   ( SLICE-BECOMES-GETBIT
                                     BVCHOP-1-BECOMES-GETBIT)))))
 
