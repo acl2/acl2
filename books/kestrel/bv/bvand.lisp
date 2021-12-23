@@ -1,7 +1,7 @@
 ; Bitwise and
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -201,6 +201,24 @@
          (bvchop size x))
   :hints (("Goal" :use (:instance bvand-with-mask-basic)
            :in-theory (disable bvand-with-mask-basic))))
+
+;lets the sizes differ
+(defthm bvand-with-mask-arg2-gen
+  (implies (and (<= size size2)
+                (natp size)
+                (natp size2))
+           (equal (bvand size2 (+ -1 (expt 2 size)) x)
+                  (bvchop size x)))
+  :hints (("Goal" :in-theory (enable bvand))))
+
+;lets the sizes differ
+(defthm bvand-with-mask-arg3-gen
+  (implies (and (<= size size2)
+                (natp size)
+                (natp size2))
+           (equal (bvand size2 x (+ -1 (expt 2 size)))
+                  (bvchop size x)))
+  :hints (("Goal" :in-theory (enable bvand))))
 
 ;requires the number of 1's in k to be size
 (defthm bvand-with-mask
