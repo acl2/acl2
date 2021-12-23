@@ -999,6 +999,7 @@
                   (bvand size1 z (bvxor size1 x y))))
   :hints (("Goal" :in-theory (enable bvxor bvand))))
 
+
 (defthm integerp-when-unsigned-byte-p-free
   (implies (unsigned-byte-p free x) ;FREE is a free var., so this rule should be cheap
            (integerp x)))
@@ -3985,6 +3986,8 @@
                   (bvxor size x (bvchop size y))))
   :hints (("Goal" :in-theory (enable bvxor))))
 
+
+
 ;bozo more like this?
 (defthm bvxor-with-smaller-arg-2
   (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize y) (newsize))
@@ -5802,6 +5805,30 @@
            (equal (bvxor oldsize x y)
                   (bvxor newsize x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvxor))))
+
+;move
+(DEFTHMd BVXOR-TIGHTEN-free
+  (IMPLIES (AND (UNSIGNED-BYTE-P NEWSIZE Y)
+                (< NEWSIZE OLDSIZE)
+                (UNSIGNED-BYTE-P NEWSIZE X)
+                (NATP OLDSIZE))
+           (EQUAL (BVXOR OLDSIZE X Y)
+                  (BVXOR NEWSIZE X Y)))
+  :hints (("Goal" :use (:instance BVXOR-TIGHTEN)
+           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (BVXOR-TIGHTEN)))))
+
+;move
+;; Seems pretty safe
+(defthmd equal-of-bvxor-and-bvxor-different-sizes
+  (implies (and (equal minsize (min size1 size2))
+                (unsigned-byte-p minsize y)
+                (unsigned-byte-p minsize x)
+                (natp size1)
+                (natp size2))
+           (equal (equal (bvxor size1 x y) (bvxor size2 x y))
+                  t))
+  :hints (("Goal" :cases ((< size2 size1))
+           :in-theory (enable bvxor-tighten-free))))
 
 (defthm unsigned-byte-p-of-+-of-minus
   (implies (and (integerp x)
