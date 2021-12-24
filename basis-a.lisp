@@ -7851,6 +7851,13 @@
 
 ; End of stobj support in raw lisp
 
+(defrec ld-history-entry
+; This form conceptually belongs with other forms pertaining to ld-history in
+; ld.lisp.  But we use this in initialize-state-globals below.
+  ((input error-flg)
+   stobjs-out/value . user-data)
+  nil)
+
 ; We need to have state globals bound for prin1$ etc. to work, because of calls
 ; of with-print-controls.  We may also need the dolist form below for tracing,
 ; which uses current-package for printing and current-acl2-world for
