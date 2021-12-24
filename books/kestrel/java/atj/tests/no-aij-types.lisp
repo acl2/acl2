@@ -60,8 +60,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *int-fact-tests*
+  '(("IntFact0" (int-fact (java::int-value 0)))
+    ("IntFact1" (int-fact (java::int-value 0)))
+    ("IntFact2" (int-fact (java::int-value 0)))
+    ("IntFact3" (int-fact (java::int-value 0)))
+    ("IntFact4" (int-fact (java::int-value 0)))
+    ("IntFact5" (int-fact (java::int-value 0)))
+    ("IntFact6" (int-fact (java::int-value 0)))
+    ("IntFact7" (int-fact (java::int-value 0)))
+    ("IntFact8" (int-fact (java::int-value 0)))
+    ("IntFact9" (int-fact (java::int-value 0)))
+    ("IntFact100" (int-fact (java::int-value 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (java::atj int-fact
            :deep nil
            :guards t
            :no-aij-types t
-           :java-class "NoAIJTypes")
+           :java-class "NoAIJTypes"
+           :tests *int-fact-tests*)

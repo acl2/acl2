@@ -1011,7 +1011,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-test-main-method ((tests$ atj-test-listp)
-                                  (java-class$ stringp))
+                                  (java-class$ stringp)
+                                  (no-aij-types$ booleanp))
   :returns (method jmethodp)
   :short "Generate the Java main method for the test Java class."
   :long
@@ -1022,6 +1023,10 @@
     "This method initializes the ACL2 environment
      and then calls each test method.
      It also prints a message saying whether all tests passed or not.")
+   (xdoc::p
+    "If @(':no-aij-types') is @('t'),
+     we do not generate the call to initialize the environment,
+     because there is no environment needed to run this kind of Java code.")
    (xdoc::p
     "If no argument is passed to this method
      (the argument normally comes from the command line,
@@ -1058,8 +1063,10 @@
                     (jblock-throw (jexpr-newclass
                                    (jtype-class "IllegalArgumentException")
                                    (list (jexpr-literal-string
-                                          "There must be 0 or 1 arguments.")))))
-         (jblock-smethod (jtype-class java-class$) "initialize" nil)
+                                          "There must be 0 or 1
+                                  arguments.")))))
+         (and (not no-aij-types$)
+              (jblock-smethod (jtype-class java-class$) "initialize" nil))
          (atj-gen-run-tests tests$)
          (jblock-ifelse (jexpr-name "failures")
                         (append
@@ -1094,7 +1101,8 @@
                   :result (jresult-void)
                   :name "main"
                   :params (list method-param)
-                  :throws (list *aij-class-undef-pkg-exc*)
+                  :throws (and (not no-aij-types$)
+                               (list *aij-class-undef-pkg-exc*))
                   :body method-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

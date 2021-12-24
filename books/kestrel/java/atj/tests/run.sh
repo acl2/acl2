@@ -76,6 +76,10 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G BooleansDeepGuard
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G BooleansShallowUnguardedTests
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G BooleansShallowGuardedTests
 
+# test the no-AIJ-type functions
+# (without timings because they are very fast, all print as 0.000):
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NoAIJTypesTests
+
 # printed only if all the tests succeed:
 echo "" # blank line
 echo "All the ATJ tests have succeeded."
