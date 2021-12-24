@@ -14591,9 +14591,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (iprint-soft-bound . ,*iprint-soft-bound-default*)
     (keep-tmp-files . nil)
     (last-event-data . nil)
-    (last-ld-result . nil)
     (last-make-event-expansion . nil)
     (last-step-limit . -1) ; any number should be OK
+    (ld-history . nil)
     (ld-level . 0)
     (ld-okp . :default) ; see :DOC calling-ld-in-bad-contexts
     (ld-redefinition-action . nil)
@@ -21619,6 +21619,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ld-error-action
     ld-query-control-alist
     ld-verbose
+
+    ld-history
+
     writes-okp
     program-fns-with-raw-code
     logic-fns-with-raw-code

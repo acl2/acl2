@@ -203,6 +203,16 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    ADJUST-LD-HISTORY
+    LD-HISTORY
+    LD-HISTORY-ENTRY-ERROR-FLG
+    LD-HISTORY-ENTRY-INPUT
+    LD-HISTORY-ENTRY-STOBJS-OUT
+    LD-HISTORY-ENTRY-STOBJS-OUT/VALUE
+    LD-HISTORY-ENTRY-USER-DATA
+    LD-HISTORY-ENTRY-VALUE
+    WEAK-LD-HISTORY-ENTRY-P
+
   ))
 
 (defconst *special-ops*

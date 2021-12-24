@@ -82,18 +82,23 @@ ACL2 !>
      (t
       :other-error))))
 
-(defun prepend-ld-result (x)
-  (case-match x
-    ((error stobjs-out
-            ((:ERROR-STACK . error-stack)
-             . er)
-            . rest)
-     `(,error ,stobjs-out
-              (,(error-stack-summary error-stack)
-               (:ERROR-STACK . ,error-stack)
-               . ,er)
-              . ,rest))
-    (& x)))
+(defun prepend-ld-result (ld-history)
+  (let* ((entry (car ld-history))
+         (error-flg (ld-history-entry-error-flg entry))
+         (stobjs-out/value (ld-history-entry-stobjs-out/value entry)))
+    (cond (error-flg (assert$ (eq stobjs-out/value nil)
+                              (cons error-flg stobjs-out/value)))
+          (t (case-match stobjs-out/value
+               ((stobjs-out
+                 ((:ERROR-STACK . error-stack)
+                  . er)
+                 . rest)
+                `(,stobjs-out
+                  (,(error-stack-summary error-stack)
+                   (:ERROR-STACK . ,error-stack)
+                   . ,er)
+                  . ,rest))
+               (& (cons error-flg stobjs-out/value)))))))
 
 (defmacro nld (form &rest args)
   (cond ((keyword-value-listp args)
@@ -107,7 +112,7 @@ ACL2 !>
                         (list* :ld-prompt nil args))))
            `(er-progn (ld (list ,form) ,@args)
                       (value (prepend-ld-result
-                              (f-get-global 'last-ld-result state))))))
+                              (ld-history state))))))
         (t (er hard 'nld
                "Bad call of nld, since this is not a keyword-value-listp:~&~s"
                args))))
