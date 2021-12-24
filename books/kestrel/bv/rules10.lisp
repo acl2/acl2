@@ -335,20 +335,7 @@
   :hints (("Goal" :in-theory (enable bvand))))
 
 ;move
-(defthm slice-of-ash
-  (implies (and (<= n low)
-                (integerp low)
-                (integerp high)
-                (<= low high)
-                (natp n))
-           (equal (slice high low (ash x n))
-                  (slice (- high n) (- low n) x)))
-  :hints (("Goal" :in-theory (e/d (ash slice logtail ;floor
-                                       ACL2::expt-of-+
-                                       )
-                                  (bvchop-of-logtail-becomes-slice
-                                   unsigned-byte-p-of-+-when-<-of-logtail-and-expt
-                                   slice-of-*)))))
+
 
 (defthm ash-becomes-bvcat
   (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x)) ;only works for constant size?
