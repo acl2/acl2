@@ -1109,6 +1109,7 @@ ACL2 from scratch.")
                      (compress1 'iprint-ar
                                 (f-get-global 'iprint-ar state))
                      state)
+       (f-put-global 'ld-history (list (make ld-history-entry)) state)
        (f-put-global 'compiler-enabled
 
 ; Either t, nil, or :books is fine here.  For example, it might be reasonable

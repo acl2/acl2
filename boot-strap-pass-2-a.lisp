@@ -1090,6 +1090,24 @@
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; verify-termination and guard verification:
+; ld-history and associated functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination-boot-strap ld-history) ; and guards
+(verify-termination-boot-strap ld-history-entry-input) ; and guards
+(verify-termination-boot-strap ld-history-entry-error-flg) ; and guards
+(verify-termination-boot-strap ld-history-entry-stobjs-out/value) ; and guards
+(verify-termination-boot-strap ld-history-entry-stobjs-out) ; and guards
+(verify-termination-boot-strap ld-history-entry-value) ; and guards
+(verify-termination-boot-strap ld-history-entry-user-data) ; and guards
+(verify-termination-boot-strap
+ set-ld-history-entry-user-data-default)
+
+(defattach set-ld-history-entry-user-data
+  set-ld-history-entry-user-data-default)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Theories
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
