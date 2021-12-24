@@ -16,6 +16,7 @@
 (local (include-book "logapp"))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "unsigned-byte-p"))
+(local (include-book "getbit-rules"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
@@ -555,3 +556,19 @@
            (equal (logext size (+ x (logext size y)))
                   (logext size (+ x y))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
+
+(defthm logext-of-+-of-constant
+  (implies (and (syntaxp (quotep k))
+                (not (signed-byte-p size k))
+                (integerp k)
+                (integerp x)
+                (posp size))
+           (equal (logext size (+ k x))
+                  (logext size (+ (logext size k) x)))))
+
+(defthm logext-of---of-bvchop
+  (implies (and (integerp x)
+                (posp size))
+           (equal (logext size (- (bvchop size x)))
+                  (logext size (- x))))
+  :hints (("Goal" :in-theory (enable logext-cases))))
