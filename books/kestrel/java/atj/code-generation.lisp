@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,7 +16,6 @@
 (include-book "aij-notions")
 (include-book "test-structures")
 (include-book "java-pretty-printer")
-(include-book "pre-translation")
 (include-book "post-translation")
 (include-book "name-translation")
 (include-book "deep-code-generation")
@@ -101,6 +100,7 @@
 (define atj-gen-test-method ((test$ atj-testp)
                              (deep$ booleanp)
                              (guards$ booleanp)
+                             (no-aij-types$ booleanp)
                              (java-class$ stringp)
                              (verbose$ booleanp)
                              (pkg-class-names string-string-alistp)
@@ -331,7 +331,8 @@
                   :params (list (make-jparam :final? nil
                                              :type (jtype-int)
                                              :name "n"))
-                  :throws (list *aij-class-undef-pkg-exc*)
+                  :throws (and (not no-aij-types$)
+                               (list *aij-class-undef-pkg-exc*))
                   :body method-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -339,6 +340,7 @@
 (define atj-gen-test-methods ((tests$ atj-test-listp)
                               (deep$ booleanp)
                               (guards$ booleanp)
+                              (no-aij-types$ booleanp)
                               (java-class$ stringp)
                               (verbose$ booleanp)
                               (pkg-class-names string-string-alistp)
@@ -356,6 +358,7 @@
           (atj-gen-test-method (car tests$)
                                deep$
                                guards$
+                               no-aij-types$
                                java-class$
                                verbose$
                                pkg-class-names
@@ -365,6 +368,7 @@
           (atj-gen-test-methods (cdr tests$)
                                 deep$
                                 guards$
+                                no-aij-types$
                                 java-class$
                                 verbose$
                                 pkg-class-names
@@ -377,6 +381,7 @@
 (define atj-gen-test-class ((tests$ atj-test-listp)
                             (deep$ booleanp)
                             (guards$ booleanp)
+                            (no-aij-types$ booleanp)
                             (java-class$ stringp)
                             (verbose$ booleanp)
                             (pkg-class-names string-string-alistp)
@@ -398,6 +403,7 @@
        (test-methods (atj-gen-test-methods tests$
                                            deep$
                                            guards$
+                                           no-aij-types$
                                            java-class$
                                            verbose$
                                            pkg-class-names
@@ -406,7 +412,7 @@
        ((run-when verbose$)
         (cw "~%Generate the test Java class.~%"))
        (failures-field (atj-gen-test-failures-field))
-       (main-method (atj-gen-test-main-method tests$ java-class$))
+       (main-method (atj-gen-test-main-method tests$ java-class$ no-aij-types$))
        (body-class (append (list (jcbody-element-member
                                   (jcmember-field failures-field)))
                            (jmethods-to-jcbody-elements test-methods)
@@ -426,6 +432,7 @@
 
 (define atj-gen-test-cunit ((deep$ booleanp)
                             (guards$ booleanp)
+                            (no-aij-types$ booleanp)
                             (java-package$ maybe-stringp)
                             (java-class$ stringp)
                             (tests$ atj-test-listp)
@@ -442,27 +449,34 @@
      since it needs to reference (at least some of) them.
      It also imports @('BigInteger'), used to build certain ACL2 value.
      It also imports @('Arrays'), whose @('equals()') method
-     is used to compare array results."))
+     is used to compare array results.
+     However, if the @(':no-aij-types') input is @('t'),
+     there are no imports."))
   (b* ((class (atj-gen-test-class tests$
                                   deep$
                                   guards$
+                                  no-aij-types$
                                   java-class$
                                   verbose$
                                   pkg-class-names
                                   fn-method-names
                                   wrld))
+       (imports (if no-aij-types$
+                    nil
+                  (list (jimport nil (str::cat *aij-package* ".*"))
+                        (jimport nil "java.math.BigInteger")
+                        (jimport nil "java.util.Arrays"))))
        ((run-when verbose$)
         (cw "~%Generate the test Java compilation unit.~%")))
     (make-jcunit :package? java-package$
-                 :imports (list (jimport nil (str::cat *aij-package* ".*"))
-                                (jimport nil "java.math.BigInteger")
-                                (jimport nil "java.util.Arrays"))
+                 :imports imports
                  :types (list class))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-test-file ((deep$ booleanp)
                            (guards$ booleanp)
+                           (no-aij-types$ booleanp)
                            (java-package$ maybe-stringp)
                            (java-class$ stringp)
                            (output-file-test$ stringp)
@@ -476,6 +490,7 @@
   :short "Generate the test Java file."
   (b* ((cunit (atj-gen-test-cunit deep$
                                   guards$
+                                  no-aij-types$
                                   java-package$
                                   java-class$
                                   tests$
@@ -496,6 +511,7 @@
 
 (define atj-gen-main-file ((deep$ booleanp)
                            (guards$ booleanp)
+                           (no-aij-types$ booleanp)
                            (java-package$ maybe-stringp)
                            (java-class$ stringp)
                            (output-file$ stringp)
@@ -529,6 +545,7 @@
                 nil
                 nil)
           (atj-gen-shallow-main-cunit guards$
+                                      no-aij-types$
                                       java-package$
                                       java-class$
                                       pkgs
@@ -587,6 +604,7 @@
 
 (define atj-gen-everything ((deep$ booleanp)
                             (guards$ booleanp)
+                            (no-aij-types$ booleanp)
                             (java-package$ maybe-stringp)
                             (java-class$ stringp)
                             (output-file$ stringp)
@@ -610,8 +628,10 @@
      to avoid line breaks in virtually all cases.
      Setting these margins to ``infinity'' is not supported.")
    (xdoc::p
-    "We always generate the main and environment-building Java files.
-     We generate the test Java file only if @(':tests') is not @('nil').")
+    "We always generate the main Java file.
+     We generate the environment-building Java file
+     if @(':no-aij-types') is @('nil').
+     We generate the test Java file if @(':tests') is not @('nil').")
    (xdoc::p
     "We pass the alist from ACL2 package names to Java class names
      from one file generation function to another.
@@ -624,6 +644,7 @@
              state)
          (atj-gen-main-file deep$
                             guards$
+                            no-aij-types$
                             java-package$
                             java-class$
                             output-file$
@@ -632,18 +653,21 @@
                             call-graph
                             verbose$
                             state))
-        (state (atj-gen-env-file deep$
-                                 guards$
-                                 java-package$
-                                 java-class$
-                                 output-file-env$
-                                 pkgs
-                                 fns-to-translate
-                                 verbose$
-                                 state))
+        (state (if no-aij-types$
+                   state
+                 (atj-gen-env-file deep$
+                                   guards$
+                                   java-package$
+                                   java-class$
+                                   output-file-env$
+                                   pkgs
+                                   fns-to-translate
+                                   verbose$
+                                   state)))
         (state (if tests$
                    (atj-gen-test-file deep$
                                       guards$
+                                      no-aij-types$
                                       java-package$
                                       java-class$
                                       output-file-test$

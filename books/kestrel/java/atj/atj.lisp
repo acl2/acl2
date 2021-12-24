@@ -180,6 +180,7 @@
                   pkgs
                   deep$
                   guards$
+                  no-aij-types$
                   java-package$
                   java-class
                   output-file$
@@ -190,6 +191,7 @@
         (atj-process-inputs args ctx state))
        ((er &) (atj-gen-everything deep$
                                    guards$
+                                   no-aij-types$
                                    java-package$
                                    java-class
                                    output-file$

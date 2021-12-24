@@ -3975,6 +3975,9 @@
         (t (cons `(,(car names) (f-get-global ',(car names) state))
                  (state-global-bindings (cdr names))))))
 
+(defconst *protected-system-state-global-bindings*
+  (state-global-bindings *protected-system-state-globals*))
+
 (defmacro protect-system-state-globals (form)
 
 ; Form must return an error triple.  This macro not only reverts built-in state
@@ -3984,7 +3987,7 @@
   `(state-global-let*
     ((writes-okp nil)
      (cert-data nil) ; avoid using global cert-data; see make-event-fn
-     ,@(state-global-bindings *protected-system-state-globals*))
+     ,@*protected-system-state-global-bindings*)
     ,form))
 
 (defun formal-value-triple (erp val)
@@ -13605,7 +13608,7 @@
 ; Typically, do-fn-var and fin-fn-var, which are the names of formal parameter
 ; of the do fn lambda and the finally fn lambda, are the same, namely the
 ; symbol ALIST.  Furthermore, the guards of the two functions are terms in that
-; formal.  
+; formal.
 
 ; (d) the initial alist satisfies the guard on do-fn.
 

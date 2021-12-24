@@ -10,6 +10,8 @@
 
 (in-package "YUL")
 
+(include-book "../library-extensions/osets")
+
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/hex-digit-char" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
@@ -62,12 +64,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult identifier-result
+  :short "Fixtype of errors and identifiers."
+  :ok identifier
+  :pred identifier-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-identifierp
+  (implies (identifierp x)
+           (not (resulterrp x)))
+  :enable (identifierp resulterrp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption identifier-option
+  identifier
+  :short "Fixtype of optional identifiers."
+  :pred identifier-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist identifier-list
   :short "Fixtype of lists of identifiers."
   :elt-type identifier
   :true-listp t
   :elementp-of-nil nil
   :pred identifier-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult identifier-list-result
+  :short "Fixtype of errors and lists of identifiers."
+  :ok identifier-list
+  :pred identifier-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -85,26 +115,13 @@
                   (identifier-listp x)))
   :enable set::mergesort)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult identifier-result
-  :short "Fixtype of errors and identifiers."
-  :ok identifier
-  :pred identifier-resultp)
-
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-resulterrp-when-identifierp
-  (implies (identifierp x)
-           (not (resulterrp x)))
-  :enable (identifierp resulterrp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult identifier-list-result
-  :short "Fixtype of errors and lists of identifiers."
-  :ok identifier-list
-  :pred identifier-list-resultp)
+(defrule identifier-setp-of-list-insert
+  (implies (and (identifier-listp list)
+                (identifier-setp set))
+           (identifier-setp (set::list-insert list set)))
+  :enable set::list-insert)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -112,6 +129,40 @@
   :short "Fixtype of errors and osets of identifiers."
   :ok identifier-set
   :pred identifier-set-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-identifier-setp
+  (implies (identifier-setp x)
+           (not (resulterrp x)))
+  :enable (resulterrp identifier-setp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap identifier-identifier-map
+  :short "Fixtype of omaps from identifiers to identifiers."
+  :key-type identifier
+  :val-type identifier
+  :pred identifier-identifier-mapp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule identifier-setp-of-keys-when-identifier-identifier-mapp
+  (implies (identifier-identifier-mapp m)
+           (identifier-setp (omap::keys m)))
+  :enable omap::keys)
+
+(defrule identifier-setp-of-values-when-identifier-identifier-mapp
+  (implies (identifier-identifier-mapp m)
+           (identifier-setp (omap::values m)))
+  :enable omap::values)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult identifier-identifier-map-result
+  :short "Fixtype of errors and omaps from identifiers to identifiers."
+  :ok identifier-identifier-map
+  :pred identifier-identifier-map-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -197,6 +248,13 @@
   :elementp-of-nil nil
   :pred hex-pair-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult hex-pair-list-result
+  :short "Fixtype of errors and lists of hex pairs."
+  :ok hex-pair-list
+  :pred hex-pair-list-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod hex-quad
@@ -228,6 +286,7 @@
      all the information from the concrete syntax."))
   (:single-quote ())
   (:double-quote ())
+  (:backslash ())
   (:letter-n ())
   (:letter-r ())
   (:letter-t ())
@@ -236,6 +295,14 @@
   (:x ((get hex-pair)))
   (:u ((get hex-quad)))
   :pred escapep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult escape-result
+  :short "Fixtype of errors and escapes."
+  :ok escape
+  :pred escape-resultp
+  :prepwork ((local (in-theory (enable escape-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -249,10 +316,19 @@
      these are the string elements we define here.
      We use ACL2 characters for the former,
      which can represent all the printable ASCII characters and more;
-     We migh restrict the range of characters at some point."))
+     We might restrict the range of characters at some point."))
   (:char ((get character)))
   (:escape ((get escape)))
   :pred string-elementp)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult string-element-result
+  :short "Fixtype of errors and string elements."
+  :ok string-element
+  :pred string-element-resultp
+  :prepwork ((local (in-theory (enable string-element-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -262,6 +338,13 @@
   :true-listp t
   :elementp-of-nil nil
   :pred string-element-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult string-element-list-result
+  :short "Fixtype of errors and lists of string elements."
+  :ok string-element-list
+  :pred string-element-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -323,6 +406,21 @@
   (:plain-string ((get plain-string)))
   (:hex-string ((get hex-string)))
   :pred literalp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption literal-option
+  literal
+  :short "Fixtype of optional literals."
+  :pred literal-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult literal-result
+  :short "Fixtype of errors and literals."
+  :ok literal
+  :pred literal-resultp
+  :prepwork ((local (in-theory (enable literal-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -442,7 +540,7 @@
 
   (fty::defoption block-option
     block
-    :short "Fixtye of optional blocks."
+    :short "Fixtype of optional blocks."
     :pred block-optionp
     :measure (two-nats-measure (acl2-count x) 2))
 
@@ -474,6 +572,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption statement-option
+  statement
+  :short "Fixtype of optional statements."
+  :pred statement-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Enable Yul parser routines to return results or errors.
+
+(fty::defresult block-result
+  :short "Fixtype of errors and blocks."
+  :ok block
+  :pred block-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-blockp
+  (implies (blockp x)
+           (not (resulterrp x)))
+  :enable (blockp resulterrp))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult statement-result
+  :short "Fixtype of errors and statements."
+  :ok statement
+  :pred statement-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-statementp
+  (implies (statementp x)
+           (not (resulterrp x)))
+  :enable (statementp resulterrp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defprojection swcase-list->value-list ((x swcase-listp))
   :returns (lits literal-listp)
   :short "Lift @(tsee swcase->value) to lists."
@@ -491,6 +626,15 @@
   :pred fundef-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection fundef-list->name-list ((x fundef-listp))
+  :returns (names identifier-listp)
+  :short "Lift @(tsee fundef->name) to lists."
+  (fundef->name x)
+  ///
+  (fty::deffixequiv fundef-list->name-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define statements-to-fundefs ((stmts statement-listp))
   :returns (fundefs fundef-listp)

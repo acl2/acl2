@@ -102,7 +102,7 @@
     "ATJ also accepts the ACL2 function @(tsee return-last)
      (which has raw Lisp code and is not in the whitelist),
      but only when its first argument is
-     @('acl2::mbe-raw1') or @('acl2::progn').
+     @('\'acl2::mbe-raw1') or @('\'acl2::progn').
      Calls of the form @('(return-last 'acl2::mbe1-raw ...)')
      are translated representations of calls of @(tsee mbe);
      ATJ translates to Java
@@ -133,7 +133,7 @@
      does not mimic any of the side effects exhibited by ACL2 functions.
      In particular, calls of @(tsee prog2$) and @(tsee progn$) are accepted
      (as explained above about @(tsee return-last)
-     with first argument @('acl2::progn'))
+     with first argument @('\'acl2::progn'))
      only if their non-last arguments are free of side effects.
      Support for translating ACL2 functions with side effects
      to Java code that mimics those side effects
@@ -270,6 +270,7 @@
     "(atj fn1 ... fnp"
     "     :deep             ..."
     "     :guards           ..."
+    "     :no-aij-types     ..."
     "     :java-package     ..."
     "     :java-class       ..."
     "     :output-dir       ..."
@@ -306,7 +307,7 @@
       under two possible conditions:")
     (xdoc::ul
      (xdoc::li
-      "The first argument of @(tsee return-last) is @('acl2::mbe-raw1'),
+      "The first argument of @(tsee return-last) is @('\'acl2::mbe-raw1'),
        i.e. the call results from the translation of @(tsee mbe).
        Even though Java code is generated
        for one of the second and third arguments but not for the other one
@@ -315,7 +316,7 @@
        and in particular the absence of side effects,
        are enforced on all the argument of the call.")
      (xdoc::li
-      "The first argument of @(tsee return-last) is @('acl2::progn'),
+      "The first argument of @(tsee return-last) is @('\'acl2::progn'),
        i.e. the call results from the translation of
        @(tsee prog2$) or @(tsee progn$).
        Even though Java code is generated
@@ -380,6 +381,108 @@
       should do so only with values that satisfy
       the guards of the called ACL2 functions, if this input is @('t').
       Otherwise, erroneous computations may occur."))
+
+   (xdoc::desc
+    "@(':no-aij-types') &mdash; deafult @('nil')"
+    (xdoc::p
+     "Specifies whether the generated code
+      should not make use of the AIJ types:")
+    (xdoc::ul
+     (xdoc::li
+      "@('t'), to require the code not to use any of the AIJ types,
+       which represent ACL2 values in Java.
+       In other words, the generated code can only use
+       the Java primitive types and the Java primitive array types;
+       this means that the code is generally more idiomatic Java,
+       as opposed to mimicking ACL2 code in Java.")
+     (xdoc::li
+      "@('nil'), to not require that."))
+    (xdoc::p
+     "This input can be @('t') only if
+      @(':deep') is @('nil') and @(':guards') is @('t'),
+      because that is the only situation in which the generated Java code
+      may use the Java primitive types and primitive array types.
+      If this input is @('t'), ATJ checks that
+      every function @('fn') translated to Java
+      satisfies the following requirements:")
+    (xdoc::ul
+     (xdoc::li
+      "The argument and return types of @('fn'),
+       specified via @(tsee atj-main-function-type),
+       are all @(':aboolean'), @(':acharacter'), and @(':j...').
+       Recall that ACL2 booleans and characters
+       are mapped to Java booleans and characters
+       when @(':deep') is @('nil') and @(':guards') is @('t').
+       The built-in functions @(tsee equal), @(tsee if), and @(tsee not)
+       are expected from this requirement.")
+     (xdoc::li
+      "The unnormalized body (or attachment, as explained earlier) of @('fn'),
+       after the pre-translation steps that remove code (i.e.
+       @(see atj-pre-translation-remove-return-last),
+       @(see atj-pre-translation-remove-dead-if-branches), and
+       @(see atj-pre-translation-unused-vars)),
+       only uses, as an untranslated term:"
+      (xdoc::ul
+       (xdoc::li
+        "Variables.")
+       (xdoc::li
+        "Quoted @('t') and @('nil'),
+         which ATJ maps to the corresponding Java boolean literals
+         when @(':deep') is @('nil') and @(':guards') is @('t').")
+       (xdoc::li
+        "Quoted boolean and integer constants
+         used as arguments of functions in @(tsee *atj-jprim-constr-fns*).")
+       (xdoc::li
+        "Lambda expressions (i.e. @(tsee let), including @(tsee mv-let)).")
+       (xdoc::li
+        "Calls of:"
+        (xdoc::ul
+         (xdoc::li
+          "The function @('fn') (as a recursive call).")
+         (xdoc::li
+          "The other functions translated to Java.")
+         (xdoc::li
+          "The functions in @(tsee *atj-jprim-constr-fns*),
+           but only on quoted constants.")
+         (xdoc::li
+          "The function @(tsee boolean-value->bool).")
+         (xdoc::li
+          "The functions in @(tsee *atj-jprim-unop-fns*).")
+         (xdoc::li
+          "The functions in @(tsee *atj-jprim-binop-fns*).")
+         (xdoc::li
+          "The functions in  @(tsee *atj-jprim-conv-fns*).")
+         (xdoc::li
+          "The functions in @(tsee *atj-jprimarr-read-fns*).")
+         (xdoc::li
+          "The functions in @(tsee *atj-jprimarr-length-fns*).")
+         (xdoc::li
+          "The functions in @(tsee *atj-jprimarr-write-fns*).")
+         (xdoc::li
+          "The functions in @(tsee *atj-jprimarr-new-len-fns*).")
+         (xdoc::li
+          "The functions in @(tsee *atj-jprimarr-new-init-fns*),
+           but only on arguments that are nested @(tsee cons)es
+           (i.e. translated @(tsee list) calls).")
+         (xdoc::li
+          "The function @(tsee equal).")
+         (xdoc::li
+          "The function @(tsee if).")
+         (xdoc::li
+          "The function @(tsee not).")
+         (xdoc::li
+          "The function @(tsee cons),
+           but only in translated @(tsee mv) calls
+           that are returned by @('fn'),
+           either at the top level of the function's body
+           or recursively in the `then' or `else' branches
+           of @(tsee if)s starting at the top level."))))))
+    (xdoc::p
+     "If @(':no-aij-types') is @('t'),
+      ATJ also checks that the target functions @('fn1'), ..., @('fnp')
+      do not include @(tsee equal), @(tsee if), @(tsee not), or @(tsee cons).
+      These functions may only be called, directly or indirectly,
+      by the target functions, but cannot be target functions."))
 
    (xdoc::desc
     "@(':java-package') &mdash; default @('nil')"

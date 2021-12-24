@@ -6697,11 +6697,11 @@
                   (integerp (* 1/2 x))))
   :hints (("Goal" :in-theory (e/d (expt) (expt-hack)))))
 
-(defthm LOGEXT-of-plus
+;; Disabled by default since this is pretty aggressive and splits into cases.
+(defthmd logext-of-plus
   (implies (and (integerp x)
                 (posp size)
-                (integerp y)
-                )
+                (integerp y))
            (equal (logext size (+ x y))
                   (if (>= (+ (logext size x) (logext size y))
                           (expt 2 (+ -1 size)))
@@ -6733,7 +6733,7 @@
            (equal (sbvlt 32 (bvplus 32 k x) 0)
                   (or (sbvle 32 (- (expt 2 31) k) x)
                       (sbvlt 32 x (- k)))))
-  :hints (("Goal" :in-theory (e/d (sbvlt bvplus LOGEXT-CASES BVUMINUS bvminus)
+  :hints (("Goal" :in-theory (e/d (sbvlt bvplus LOGEXT-CASES BVUMINUS bvminus logext-of-plus)
                                   (sbvlt-rewrite <-of-logext-and-0-alt BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 (defthm getbit-of+-of-4294967296
@@ -6777,7 +6777,7 @@
            (equal (sbvlt 32 0 (bvplus 32 k x))
                   (and (sbvlt 32 (- k) x)
                        (sbvlt 32 x (- (expt 2 31) k)))))
-  :hints (("Goal" :in-theory (e/d (sbvlt bvplus LOGEXT-CASES BVUMINUS bvminus)
+  :hints (("Goal" :in-theory (e/d (sbvlt bvplus LOGEXT-CASES BVUMINUS bvminus logext-of-plus)
                                   (sbvlt-rewrite <-of-logext-and-0-alt BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 ;trying enabled..

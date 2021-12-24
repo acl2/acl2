@@ -136,7 +136,9 @@
   (escape-case esc
                :single-quote (list (char-code #\'))
                :double-quote (list (char-code #\"))
+               :backslash (list (char-code #\\))
                :letter-n (list 10)
+
                :letter-r (list 13)
                :letter-t (list 9)
                :line-feed (list 10)

@@ -58,4 +58,4 @@
                       (bvcat amt (slice (+ -1 amt) 0 val)
                              (- width amt)
                              (slice (+ -1 width) amt val))))))
-  :hints (("Goal" :in-theory (e/d (rightrotate) ()))))
+  :hints (("Goal" :in-theory (enable rightrotate))))

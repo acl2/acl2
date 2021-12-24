@@ -144,6 +144,18 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "quicklisp" "Quicklisp Library"))
+
+   (xdoc::p
+    "The @(see quicklisp) library is now ignored for regressions of ACL2 built
+     on LispWorks, due to an asdf version incompatibility with the asdf.lisp
+     provided by LispWorks Version 8.0.  That problem may become a problem for
+     future versions of other host Lisps, as they too update their asdf
+     versions.  Perhaps this will be fixed by someone in the ACL2 community;
+     see GitHub Issue #1332.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p

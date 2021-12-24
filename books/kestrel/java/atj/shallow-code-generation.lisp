@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "pre-translation")
+(include-book "pre-translation/top")
 (include-book "post-translation")
 (include-book "java-primitives")
 (include-book "java-primitive-arrays")
@@ -297,7 +297,7 @@
      if the type is @('char'), @('byte'), @('short'), or @('int'),
      while it is @('Acl2Integer.make(long)') if the type is @('long').")
    (xdoc::p
-    "If the type is @('float') and @('double'), an error occurs.
+    "If the type is @('float') or @('double'), an error occurs.
      These conversions are not supported yet,
      because we have only an abstract model of these two types for now."))
   (case (primitive-type-kind type)
@@ -320,7 +320,7 @@
 (define atj-convert-expr-to-jprimarr-method-name ((type primitive-typep))
   :returns (method-name stringp :hyp :guard)
   :short "Name of the method to convert
-          a Java expression from a Java primitive array type."
+          a Java expression to a Java primitive array type."
   :long
   (xdoc::topstring-p
    "See @(tsee atj-convert-expr-to-jprimarr-method).")
@@ -1416,7 +1416,7 @@
     "In the shallow embedding approach,
      ACL2 lambda expressions (i.e. @(tsee let)s)
      are handled by assigning the Java expressions
-     generated from the actual parameters of the lambda expression
+     generated from the actual parameters passed to the lambda expression
      to Java local variables corresponding to the formal parameters.
      This function generates these bindings,
      given the ACL2 variables that are the formal arguments
@@ -1425,8 +1425,8 @@
      generated for the corresponding actual argument of the lambda expression.")
    (xdoc::p
     "Prior to calling this function,
-     the variables of all the lambda expressiona have been marked
-     as `new' or `old' via @(tsee atj-mark-term).
+     the variables of all the lambda expressions have been marked
+     as either `new' or `old' via @(tsee atj-mark-term).
      We extract this mark and use it to generate
      either a variable declaration with initializer (for `new')
      or an assignment to an existing variable (for `old').")
@@ -1788,9 +1788,9 @@
      since when @(':guards') is @('t')
      ACL2 booleans are mapped to Java booleans,
      we apply Java's logical complement operator.
-     If instead the test has a different type,
+     If instead the argument has a different type,
      which must be an @(':acl2') type,
-     we negate the resulting expression to a Java boolean
+     we convert the resulting expression to a Java boolean
      by comparing it with @('nil') for equality:
      the result is a Java boolean, which is appropriate because
      when @(':guards') is @('t') we map ACL2 booleans to Java booleans.")
@@ -2016,7 +2016,7 @@
         (atj-adapt-expr-to-type expr
                                 (atj-type-list-to-type src-types)
                                 (atj-type-list-to-type dst-types)
-                                t)))) ; guards$
+                                t)))) ; GUARDS$
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2714,7 +2714,8 @@
        and generate a Java variable with the same name.
        Then we wrap it with a Java conversion, if needed.")
      (xdoc::p
-      "First we try to process the term as an @(tsee mv-let).
+      "First we try to process the term as an @(tsee mv-let),
+       via a separate code generation function.
        If this succeeds, we just return.
        Otherwise,
        we process the term by cases (variable, quoted constants, etc.),
@@ -2725,17 +2726,13 @@
        We wrap the resulting expression with a Java conversion, if needed.")
      (xdoc::p
       "If the ACL2 term is a named function call,
-       we first generate code to computer the actual arguments
+       we first generate code to compute the actual arguments
        and then we use a separate code generation function
        to handle the different kinds of named function calls.
        If instead the ACL2 term is a call of a lambda expression,
        we first generate code to compute the actual arguments,
        and then we use a separate code generation function
-       for the lambda expression.")
-     (xdoc::p
-      "Calls of @(tsee mv-let) are handled by
-       a separate code generation function,
-       which is tried before anything else."))
+       for the lambda expression."))
     (b* (((mv mv-let-p
               block
               expr
@@ -3341,6 +3338,7 @@
                                       (curr-pkg stringp)
                                       (mv-typess atj-type-list-listp)
                                       (guards$ booleanp)
+                                      (no-aij-types$ booleanp)
                                       (wrld plist-worldp))
   :guard (and (not (aij-nativep fn))
               (not (equal curr-pkg ""))
@@ -3408,7 +3406,7 @@
        ((mv formals body mv-typess)
         (atj-pre-translate fn formals body
                            in-types out-types out-arrays
-                           mv-typess nil guards$ wrld))
+                           mv-typess nil guards$ no-aij-types$ wrld))
        (qconsts (atj-add-qconstants-in-term body qconsts))
        ((mv formals &) (atj-unmark-vars formals))
        (formals (atj-type-unannotate-vars formals))
@@ -3470,6 +3468,7 @@
                                        (curr-pkg stringp)
                                        (mv-typess atj-type-list-listp)
                                        (guards$ booleanp)
+                                       (no-aij-types$ booleanp)
                                        (wrld plist-worldp))
   :guard (and (not (aij-nativep fn))
               (not (equal curr-pkg ""))
@@ -3497,6 +3496,7 @@
                                       curr-pkg
                                       mv-typess
                                       guards$
+                                      no-aij-types$
                                       wrld))
        ((mv rest-methods
             qconsts
@@ -3513,6 +3513,7 @@
                                        curr-pkg
                                        mv-typess
                                        guards$
+                                       no-aij-types$
                                        wrld)))
     (mv (cons first-methods rest-methods) qconsts mv-typess)))
 
@@ -3526,6 +3527,7 @@
    (fn-method-names symbol-string-alistp)
    (mv-typess atj-type-list-listp)
    (guards$ booleanp)
+   (no-aij-types$ booleanp)
    (verbose$ booleanp)
    (wrld plist-worldp))
   :guard (and (not (aij-nativep fn))
@@ -3579,6 +3581,7 @@
                                    curr-pkg
                                    mv-typess
                                    guards$
+                                   no-aij-types$
                                    wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3590,6 +3593,7 @@
                                     (fn-method-names symbol-string-alistp)
                                     (mv-typess atj-type-list-listp)
                                     (guards$ booleanp)
+                                    (no-aij-types$ booleanp)
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
   :guard (cons-listp mv-typess)
@@ -3623,6 +3627,7 @@
                                        fn-method-names
                                        mv-typess
                                        guards$
+                                       no-aij-types$
                                        verbose$
                                        wrld)))
 
@@ -3635,6 +3640,7 @@
                                         (fn-method-names symbol-string-alistp)
                                         (mv-typess atj-type-list-listp)
                                         (guards$ booleanp)
+                                        (no-aij-types$ booleanp)
                                         (verbose$ booleanp)
                                         (wrld plist-worldp))
   :guard (cons-listp mv-typess)
@@ -3656,6 +3662,7 @@
                                     fn-method-names
                                     mv-typess
                                     guards$
+                                    no-aij-types$
                                     verbose$
                                     wrld))
        ((mv rest-methods
@@ -3668,6 +3675,7 @@
                                         fn-method-names
                                         mv-typess
                                         guards$
+                                        no-aij-types$
                                         verbose$
                                         wrld)))
     (mv (append first-methods rest-methods) qconsts mv-typess)))
@@ -3898,6 +3906,7 @@
                                      (fn-method-names symbol-string-alistp)
                                      (mv-typess atj-type-list-listp)
                                      (guards$ booleanp)
+                                     (no-aij-types$ booleanp)
                                      (verbose$ booleanp)
                                      (wrld plist-worldp))
   :guard (cons-listp mv-typess)
@@ -3948,6 +3957,7 @@
                                         fn-method-names
                                         mv-typess
                                         guards$
+                                        no-aij-types$
                                         verbose$
                                         wrld))
        (synonym-methods
@@ -3988,6 +3998,7 @@
                                          (fn-method-names symbol-string-alistp)
                                          (mv-typess atj-type-list-listp)
                                          (guards$ booleanp)
+                                         (no-aij-types$ booleanp)
                                          (verbose$ booleanp)
                                          (wrld plist-worldp))
   :guard (cons-listp mv-typess)
@@ -4023,6 +4034,7 @@
                                      fn-method-names
                                      mv-typess
                                      guards$
+                                     no-aij-types$
                                      verbose$
                                      wrld))
        ((mv rest-methods
@@ -4037,6 +4049,7 @@
                                          fn-method-names
                                          mv-typess
                                          guards$
+                                         no-aij-types$
                                          verbose$
                                          wrld)))
     (if (null first-methods)
@@ -4586,6 +4599,7 @@
                                     (fns-to-translate symbol-listp)
                                     (call-graph symbol-symbollist-alistp)
                                     (guards$ booleanp)
+                                    (no-aij-types$ booleanp)
                                     (java-class$ stringp)
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
@@ -4632,21 +4646,47 @@
      with @('t') and @('nil'),
      because their Java representations are sometimes generated
      even when these two symbols are not used in any of the ACL2 functions
-     that are translated to Java."))
+     that are translated to Java.")
+   (xdoc::p
+    "If the @(':no-aij-types') input is @('t'),
+     we remove the functions natively implemented in AIJ
+     from the functions to translate to Java.
+     Those functions are only allowed inside other functions
+     that do not manipulate AIJ types in this case,
+     but not in their full generality, which would involve AIJ types.")
+   (xdoc::p
+    "If the @(':no-aij-types') input is @('t'),
+     we do not generate
+     the array write methods
+     (these are actually never generated currently,
+     but there is stand-in code for generating them below,
+     so we condition it under @(':no-aij-types') being @('nil')),
+     the array conversion methods,
+     the fields for the constants,
+     the static initializer,
+     and the initialization methods.
+     All of these are AIJ-specific."))
   (b* (((unless (no-duplicatesp-eq fns-to-translate))
         (raise "Internal error: ~
                 the list ~x0 of function names has duplicates."
                fns-to-translate)
         (mv (ec-call (jclass-fix :irrelevant)) nil nil))
        (jprimarr-write-methods
-        nil) ; see ATJ-GEN-SHALLOW-PRIMARRAY-WRITE-METHODS
+        (if no-aij-types$
+            nil
+          nil)) ; see ATJ-GEN-SHALLOW-PRIMARRAY-WRITE-METHODS
        (jprimarr-conv-methods
-        (atj-gen-shallow-all-jprimarr-conv-methods fns-to-translate))
+        (if no-aij-types$
+            nil
+          (atj-gen-shallow-all-jprimarr-conv-methods fns-to-translate)))
        (fns (if guards$
                 (set-difference-eq fns-to-translate
                                    (union-eq *atj-jprim-fns*
                                              *atj-jprimarr-fns*))
               fns-to-translate))
+       (fns (if no-aij-types$
+                (set-difference-eq fns *aij-natives*)
+              fns))
        (mv-typess (atj-all-mv-output-types fns guards$ wrld))
        (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
        (fn-method-names (atj-fns-to-methods fns))
@@ -4671,6 +4711,7 @@
                                          fn-method-names
                                          mv-typess
                                          guards$
+                                         no-aij-types$
                                          verbose$
                                          wrld))
        ((unless (atj-gen-shallow-mv-classes-guard mv-typess))
@@ -4682,10 +4723,13 @@
        ((atj-qconstants qconsts) qconsts)
        (qsymbols qconsts.symbols)
        (qsymbols-by-pkg (organize-symbols-by-pkg qsymbols))
-       (fields-by-pkg (atj-gen-shallow-all-pkg-fields pkgs
-                                                      qsymbols
-                                                      qsymbols-by-pkg
-                                                      methods-by-pkg))
+       (fields-by-pkg
+        (if no-aij-types$
+            nil
+          (atj-gen-shallow-all-pkg-fields pkgs
+                                          qsymbols
+                                          qsymbols-by-pkg
+                                          methods-by-pkg)))
        ((run-when verbose$)
         (cw "~%Generate the Java classes for the ACL2 packages:~%"))
        (pkg-classes (atj-gen-shallow-pkg-classes pkgs
@@ -4708,12 +4752,16 @@
                                   qchar-fields
                                   qstring-fields
                                   qcons-fields))
-       (all-qconst-fields (mergesort-jfields all-qconst-fields))
+       (all-qconst-fields (if no-aij-types$
+                              nil
+                            (mergesort-jfields all-qconst-fields)))
        (static-init (atj-gen-static-initializer java-class$))
        (init-method (atj-gen-init-method))
-       (body-class (append (list (jcbody-element-init static-init))
-                           (list (jcbody-element-member
-                                  (jcmember-method init-method)))
+       (body-class (append (and (not no-aij-types$)
+                                (list (jcbody-element-init static-init)))
+                           (and (not no-aij-types$)
+                                (list (jcbody-element-member
+                                       (jcmember-method init-method))))
                            (jclasses-to-jcbody-elements pkg-classes)
                            (jfields-to-jcbody-elements all-qconst-fields)
                            (jclasses-to-jcbody-elements mv-classes)
@@ -4736,6 +4784,9 @@
   :prepwork
 
   ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
+   (local (include-book "std/lists/set-difference" :dir :system))
+
+   (local (in-theory (disable set-difference-equal))) ; for speed
 
    (defrulel verify-guards-lemma
      (implies (cons-pos-alistp alist)
@@ -4744,6 +4795,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-main-cunit ((guards$ booleanp)
+                                    (no-aij-types$ booleanp)
                                     (java-package$ stringp)
                                     (java-class$ stringp)
                                     (pkgs string-listp)
@@ -4763,7 +4815,9 @@
    (xdoc::p
     "The compilation unit imports all the AIJ public classes,
      since it needs to reference (at least some of) them.
-     It also imports @('BigInteger'), used to build certain quoted constants.")
+     It also imports @('BigInteger'), used to build certain quoted constants.
+     However, if the @(':no-aij-types') input is @('t'),
+     there are no imports.")
    (xdoc::p
     "We also return the alist from ACL2 package names to Java class names
      and the alist from ACL2 function symbols to Java method names,
@@ -4771,16 +4825,20 @@
      the Java test class."))
   (b* (((mv class pkg-class-names fn-method-names)
         (atj-gen-shallow-main-class
-         pkgs fns-to-translate call-graph guards$ java-class$ verbose$ wrld))
+         pkgs fns-to-translate call-graph guards$ no-aij-types$
+         java-class$ verbose$ wrld))
+       (imports (if no-aij-types$
+                    nil
+                  (list
+                   (make-jimport :static? nil
+                                 :target (str::cat *aij-package* ".*"))
+                   (make-jimport :static? nil :target "java.math.BigInteger"))))
        ((run-when verbose$)
         (cw "~%Generate the main Java compilation unit.~%"))
        (cunit
         (make-jcunit
          :package? java-package$
-         :imports (list
-                   (make-jimport :static? nil
-                                 :target (str::cat *aij-package* ".*"))
-                   (make-jimport :static? nil :target "java.math.BigInteger"))
+         :imports imports
          :types (list class))))
     (mv cunit pkg-class-names fn-method-names)))
 

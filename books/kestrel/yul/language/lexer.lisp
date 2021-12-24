@@ -239,9 +239,14 @@
 ;;    call it "escape-sequence-body"
 
 (defval *lex-alternation-escape-sequence-single*
-  :short "The alternation @('( squote / dquote / %s\"n\" / %s\"r\" / %s\"t\" / lf / cr )')."
+  :short "The alternation @('( squote / dquote / %s\"\\\" / %s\"n\" / %s\"r\" / %s\"t\" / lf / cr )')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Note that backslash does not escape characters in an ABNF grammar @('quoted-string'),
+     as you can see in the alternation."))
   (list
-   ;; 7 concatenations, each with a single repetition
+   ;; 8 concatenations, each with a single repetition
    ;; 1. squote
    (list
     (abnf::make-repetition
@@ -258,7 +263,15 @@
      :range (abnf::make-repeat-range
              :min 1
              :max (acl2::nati-finite 1))))
-   ;; 3. "n"
+   ;; 3. "\"
+   (list
+    (abnf::make-repetition
+     :element (abnf::element-char-val
+               (abnf::char-val-sensitive "\\"))
+     :range (abnf::make-repeat-range
+             :min 1
+             :max (acl2::nati-finite 1))))
+   ;; 4. "n"
    (list
     (abnf::make-repetition
      :element (abnf::element-char-val
@@ -266,7 +279,7 @@
      :range (abnf::make-repeat-range
              :min 1
              :max (acl2::nati-finite 1))))
-   ;; 4. "r"
+   ;; 5. "r"
    (list
     (abnf::make-repetition
      :element (abnf::element-char-val
@@ -274,7 +287,7 @@
      :range (abnf::make-repeat-range
              :min 1
              :max (acl2::nati-finite 1))))
-   ;; 5. "t"
+   ;; 6. "t"
    (list
     (abnf::make-repetition
      :element (abnf::element-char-val
@@ -282,7 +295,7 @@
      :range (abnf::make-repeat-range
              :min 1
              :max (acl2::nati-finite 1))))
-   ;; 6. lf
+   ;; 7. lf
    (list
     (abnf::make-repetition
      :element (abnf::element-rulename
@@ -290,7 +303,7 @@
      :range (abnf::make-repeat-range
              :min 1
              :max (acl2::nati-finite 1))))
-   ;; 7. cr
+   ;; 8. cr
    (list
     (abnf::make-repetition
      :element (abnf::element-rulename
@@ -768,10 +781,21 @@
 ;; the rule string-literal
 (abnf::def-parse-rulename "string-literal")
 
+;; --------------------------------
+
+;; The rule for literal looks like this, with alternative numbers added
+;; literal = decimal-number  1
+;;        / hex-number       2
+;;        / boolean          3
+;;        / string-literal   4
+;;        / hex-string       5
+
+;; We must try hex-number before decimal-number in our lexer,
+;; so that the initial 0 in 0x is not lexed as a decimal-number.
+(abnf::def-parse-rulename "literal" :order (2 1 3 4 5))
 
 ;; --------------------------------
 
-(abnf::def-parse-rulename "literal")
 (abnf::def-parse-rulename "lowercase-letter")
 (abnf::def-parse-rulename "uppercase-letter")
 (abnf::def-parse-rulename "identifier-start")

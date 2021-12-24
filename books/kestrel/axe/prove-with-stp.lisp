@@ -40,13 +40,6 @@
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 
 ;move
-(local
- (defthm <-of-+-and-+-cancel-arg2-arg1
-  (equal (< (+ z x) (+ x y))
-         (< z y))))
-
-
-;move
 (defthm nat-listp-of-reverse-list
   (equal (nat-listp (reverse-list x))
          (all-natp x))
@@ -193,8 +186,6 @@
                   x)))
 
 (defconst *default-stp-max-conflicts* 60000) ; this is the number of conflicts, not seconds
-
-(defttag translate-dag-to-stp)  ;reusing this ;due to the sys-call+?
 
 ;move
 ;make into an iff rule
@@ -2436,6 +2427,8 @@
                               (stringp base-filename))))
   (b* (((mv hyps conc) (term-hyps-and-conc term))) ;split term into hyps and conclusion
     (prove-implication-with-stp conc hyps counterexamplep max-conflicts print base-filename state)))
+
+(defttag translate-dag-to-stp) ;reusing this ;due to the suppress-invariant-risk
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 (suppress-invariant-risk
