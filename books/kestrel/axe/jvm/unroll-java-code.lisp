@@ -222,7 +222,7 @@
             state))
        ((when (not (subsetp-eq (strip-cars array-length-alist) parameter-names)))
         (mv t
-            (er hard? 'unroll-java-code-fn "Bad :array-length-alist: ~x0.  Should only mention params ~x1." array-length-alist parameter-names)
+            (er hard? 'unroll-java-code-fn "Bad :array-length-alist: ~x0.  Should only mention params ~x1.  Note that param names may depend on whether debugging info is present in the .class file." array-length-alist parameter-names)
             nil nil nil nil
             state))
        (- (and print (cw "(Parameter assumptions: ~x0.)~%" parameter-assumptions)))

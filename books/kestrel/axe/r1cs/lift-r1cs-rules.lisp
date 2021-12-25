@@ -30,6 +30,7 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/evenp" :dir :system))
 
 ;; Turn large constants into more readable negative constants
 (defthmd mul-normalize-constant-arg1
@@ -257,7 +258,7 @@
            (equal (acl2::slice 31 1 (+ 1 k))
                   (acl2::slice 31 1 k)))
   :hints (("Goal" :in-theory (e/d (acl2::slice-of-sum-cases
-                                   acl2::evenp-becomes-mod-fact
+                                   acl2::evenp-becomes-equal-of-0-and-mod
                                    acl2::bvchop)
                                   (acl2::slice-becomes-getbit
                                    acl2::bvchop-1-becomes-getbit)))))

@@ -18,6 +18,7 @@
 ;we expect (<= shift-amount width)
 ;left shift within a fixed range
 ;see bvshl-rewrite-with-bvchop for a version that puts a bvchop around x to help us simplify stuff
+;; TODO: Consider chopping the shift amount (but what if the width is not a power of 2)?
 (defund bvshl (width x shift-amount)
   (declare (type (integer 0 *) shift-amount)
            (type (integer 0 *) width)
