@@ -2964,15 +2964,7 @@
 ;(local (in-theory (disable x86isa::ash-monotone-2))) ;bad rule
 
 ;gen
-(defthm slice-of-ash-same
-  (implies (and (integerp x)
-                (natp high)
-                (natp low)
-;            (<= low high)
-                )
-           (equal (slice high low (ash x low))
-                  (bvchop (+ 1 (- high low)) x)))
-  :hints (("Goal" :cases ((<= low high)))))
+
 
 (defthm canonical-address-p$inline-of-n-minus-2 ;gen
   (implies (and (natp n)
