@@ -557,6 +557,7 @@
                   (logext size (+ x y))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
 
+;; Normalizes the constant
 (defthm logext-of-+-of-constant
   (implies (and (syntaxp (quotep k))
                 (not (signed-byte-p size k))
