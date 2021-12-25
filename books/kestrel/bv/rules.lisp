@@ -367,15 +367,6 @@
                   (LOGBITP 0 j)))
   :hints (("Goal" :in-theory (e/d (logbitp) (LOGBITP-IFF-GETBIT)))))
 
-;used to allow n=1 but untrue for that case?
-(defthm logext-shift
-  (implies (and (integerp x)
-                (natp n)
-                (< 1 n))
-           (equal (logext n (* 2 x))
-                  (* 2 (logext (+ -1 n) x))))
-  :hints (("Goal" :in-theory (e/d (logext) (LOGBITP-IFF-GETBIT)))))
-
 (defthm logext-of-logapp
   (implies (and (integerp x)
                 (natp k)
@@ -7163,11 +7154,6 @@
                                   (<-becomes-bvlt
                                    <-becomes-bvlt-alt
                                    <-BECOMES-BVLT-FREE)))))
-
-(defthm logext-of-expt-same
-  (implies (posp size)
-           (equal (logext size (expt 2 size))
-                  0)))
 
 (defthm sbvlt-of-0-arg2-polarity
   (implies (and (syntaxp (want-to-strengthen (sbvlt size x 0)))

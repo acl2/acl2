@@ -573,3 +573,28 @@
            (equal (logext size (- (bvchop size x)))
                   (logext size (- x))))
   :hints (("Goal" :in-theory (enable logext-cases))))
+
+;used to allow n=1 but untrue for that case?
+;renme
+(defthm logext-shift
+  (implies (and (integerp x)
+                (natp n)
+                (< 1 n))
+           (equal (logext n (* 2 x))
+                  (* 2 (logext (+ -1 n) x))))
+  :hints (("Goal" :in-theory (e/d (logext) ()))))
+
+(defthm logext-of-expt-of-one-less
+  (implies (posp size)
+           (equal (logext size (expt 2 (+ -1 size)))
+                  (- (expt 2 (+ -1 size)))))
+  :hints (("Goal" :in-theory (enable logext))))
+
+(defthm logext-of-*-of-expt-arg1
+  (implies (and (integerp x)
+                (integerp size)
+                (posp i)
+                (< i size))
+           (equal (logext size (* (expt 2 i) x))
+                  (* (expt 2 i) (logext (- size i) x))))
+  :hints (("Goal" :in-theory (e/d (logext) ()))))

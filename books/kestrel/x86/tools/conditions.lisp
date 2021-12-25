@@ -340,12 +340,6 @@
                                    acl2::bvchop-1-becomes-getbit
                                    acl2::bvchop-of-logtail-becomes-slice)))))
 
-(defthm logext-of-expt-of-one-less
-  (implies (posp size)
-           (equal (logext size (expt 2 (+ -1 size)))
-                  (- (expt 2 (+ -1 size)))))
-  :hints (("Goal" :in-theory (enable logext))))
-
 ;move
 (defthm *-of-expt-and-expt-of-minus
   (implies (and (integerp size)
