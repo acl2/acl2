@@ -190,6 +190,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult path-result
+  :short "Fixtype of errors and paths."
+  :ok path
+  :pred path-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-pathp
+  (implies (pathp x)
+           (not (resulterrp x)))
+  :enable (pathp resulterrp))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist path-list
   :short "Fixtype of lists of paths."
   :elt-type path
@@ -469,10 +484,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult expression-result
+  :short "Fixtype of errors and expressions."
+  :ok expression
+  :pred expression-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-expressionp
+  (implies (expressionp x)
+           (not (resulterrp x)))
+  :enable (expressionp resulterrp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defoption funcall-option
   funcall
   :short "Fixtype of optional function calls."
   :pred funcall-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult funcall-result
+  :short "Fixtype of errors and function calls."
+  :ok funcall
+  :pred funcall-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-funcallp
+  (implies (funcallp x)
+           (not (resulterrp x)))
+  :enable (funcallp resulterrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
