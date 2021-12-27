@@ -126,9 +126,9 @@
          ((unless (set::list-notin fundef.inputs (identifier-set-fix vars)))
           (err (list :duplicate-vars fundef.inputs)))
          (vars (set::list-insert fundef.inputs (identifier-set-fix vars)))
-         ((unless (set::list-notin fundef.outputs (identifier-set-fix vars)))
+         ((unless (set::list-notin fundef.outputs vars))
           (err (list :duplicate-vars fundef.outputs)))
-         (vars (set::list-insert fundef.outputs (identifier-set-fix vars))))
+         (vars (set::list-insert fundef.outputs vars)))
       (block-unique-vars fundef.body vars))
     :measure (fundef-count fundef))
 
