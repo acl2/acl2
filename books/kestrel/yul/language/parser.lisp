@@ -46,6 +46,19 @@
 ;; but if either (a) parsing is successful but doesn't build anything or
 ;; (b) parsing is not successful, then the built object returned is NIL.
 
+;; Some possible future improvements:
+;; * Regularize the return value structure so that each parse function returns
+;;   a single typed value rather than multiple values.
+;;   This would have the benefits of being easier to read and extend,
+;;   and it would make some jobs easier for the prover.
+;; * Improve error handling so that callers keep a stack of errors.
+;;   This would have the benefit that you can connect the top-level error
+;;   to an inner error that is closer to where a problem needs to be fixed.
+;;   Of course, many soft errors are expected, since parse rules are speculatively
+;;   applied, using errors to indicate a particular rule does not apply.
+;;   However, when a rule starts to apply and then fails in the middle,
+;;   that information is often interesting.
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; token type: symbol
@@ -947,8 +960,8 @@
           (mv nil nil))
          ((mv rest-exprs tokens-after-rest-exprs)
           (parse-*-comma-expression tokens-after-first-expr)))
-      (mv (cons first-expr rest-exprs) ;(expression-list-fix (cons first-expr rest-exprs))
-          tokens-after-rest-exprs))  ;(abnf::tree-list-fix tokens-after-rest-exprs)
+      (mv (cons first-expr rest-exprs)
+          tokens-after-rest-exprs))
     :measure (two-nats-measure (len tokens) 0))
 
   :verify-guards nil
@@ -1261,29 +1274,53 @@
 
          ;; block
          ((mv block-result tokens-after) (parse-block tokens))
-         ((unless (resulterrp block-result)) ;(when (statementp block-result))
-          (mv block-result tokens-after))
+         ((unless (resulterrp block-result))
+          (mv (make-statement-block :get block-result)
+              tokens-after))
 
-         ;; IN PROGRESS: continue to add statement alternatives untill all are handled
-         ;; variable-declaration
+         ;; variable declaration
+         ((mv decl-result tokens-after) (parse-variable-declaration tokens))
+         ((unless (resulterrp decl-result))
+          (mv decl-result tokens-after))
+
          ;; assignment
-         ;; function-call
-         ;; if-statement
-         ;; for-statement
-         ;; switch-statement
+         ((mv assignment-result tokens-after) (parse-assignment-statement tokens))
+         ((unless (resulterrp assignment-result))
+          (mv assignment-result tokens-after))
 
-;         ;; leave
-;         ((mv leave-result tokens-after) (parse-leave-statement tokens))
-;         ((unless (resulterrp block-result)) ;(when (statementp leave-result))
-;          (mv leave-result tokens-after))
-;         ;; break
-;         ((mv break-result tokens-after) (parse-break-statement tokens))
-;         ((unless (resulterrp block-result)) ;(when (statementp break-result))
-;          (mv break-result tokens-after))
-;         ;; continue
-;         ((mv continue-result tokens-after) (parse-continue-statement tokens))
-;         ((unless (resulterrp block-result)) ;(when (statementp continue-result))
-;          (mv continue-result tokens-after))
+         ;; function call
+         ((mv function-call-result tokens-after) (parse-function-call tokens))
+         ((unless (resulterrp function-call-result))
+          (mv (make-statement-funcall :get function-call-result)
+              tokens-after))
+
+         ;; if statement
+         ((mv if-result tokens-after) (parse-if-statement tokens))
+         ((unless (resulterrp if-result))
+          (mv if-result tokens-after))
+
+         ;; for statement
+         ((mv for-result tokens-after) (parse-for-statement tokens))
+         ((unless (resulterrp for-result))
+          (mv for-result tokens-after))
+
+         ;; switch statement
+         ((mv switch-result tokens-after) (parse-switch-statement tokens))
+         ((unless (resulterrp switch-result))
+          (mv switch-result tokens-after))
+
+         ;; leave
+         ((mv leave-result tokens-after) (parse-leave-statement tokens))
+         ((unless (resulterrp leave-result))
+          (mv leave-result tokens-after))
+         ;; break
+         ((mv break-result tokens-after) (parse-break-statement tokens))
+         ((unless (resulterrp break-result))
+          (mv break-result tokens-after))
+         ;; continue
+         ((mv continue-result tokens-after) (parse-continue-statement tokens))
+         ((unless (resulterrp continue-result))
+          (mv continue-result tokens-after))
 
         ;; IN PROGRESS: function-definition
 
@@ -1293,7 +1330,8 @@
     :measure (two-nats-measure (len tokens) 1))
 
   (define parse-block ((tokens abnf::tree-listp))
-    :returns (mv (result-ast statement-resultp) (tokens-after-block abnf::tree-listp))
+    :returns (mv (result-ast block-resultp) (tokens-after-block abnf::tree-listp))
+    :short "Eats a block (delimited by @('{ }')) and builds a @('block') AST node."
     (b* (((when (endp tokens))
           (mv (err "no block here") nil))
 
@@ -1305,35 +1343,246 @@
          ;; parse zero or more statements
          ((mv block-statements tokens-after-block-statements)
           (parse-*-statement tokens-after-open-brace-or-err))
-         ;; I think this can't happen (it will just parse zero statements),
-         ;; but we check for it anyway.
-         ((when (resulterrp block-statements))
-          (mv (err (cons block-statements tokens)) nil))
          ;; parse required symbol "}"
          (tokens-after-close-brace-or-err
           (parse-symbol "}" tokens-after-block-statements))
          ((when (resulterrp tokens-after-close-brace-or-err))
-          (mv (err (cons "no close brace for block" tokens)) nil)))
-      (mv (make-statement-block :get (make-block :statements block-statements))
-          tokens-after-close-brace-or-err))
+          (mv (err (cons "no close brace for block" tokens)) nil))
+         ((unless (mbt (< (len tokens-after-close-brace-or-err)
+                          (len tokens))))
+          (mv (err "logic error") nil)))
+      (mv (make-block :statements block-statements)
+          (abnf::tree-list-fix tokens-after-close-brace-or-err)))
     :measure (two-nats-measure (len tokens) 0))
+
+  ;; if-statement = %s"if" expression block
+  (define parse-if-statement ((tokens abnf::tree-listp))
+    :returns (mv (result-ast statement-resultp) (tokens-after-statement abnf::tree-listp))
+    :short "Eats an @('if') statement and builds a @('statement') AST node of kind @(':if')."
+    (b* (((when (endp tokens))
+          (mv (err "no if statement here") nil))
+         ;; parse required keyword "if"
+         ((mv ?if-ast-node tokens-after-if-or-resulterr)
+          (parse-keyword "if" tokens))
+         ((when (resulterrp tokens-after-if-or-resulterr))
+          (mv (err "no if statement here 2") nil))
+         ((mv expression-or-err tokens-after-if-expression)
+          (parse-expression tokens-after-if-or-resulterr))
+         ((when (resulterrp expression-or-err))
+          (mv (err "no expression after 'if'") nil))
+         ((mv block-or-err tokens-after-if-block)
+          (parse-block tokens-after-if-expression))
+         ((unless (blockp block-or-err))
+          (mv (err "no block after 'if' expression") nil)))
+      (mv (make-statement-if :test expression-or-err
+                             :body block-or-err)
+          (abnf::tree-list-fix tokens-after-if-block)))
+    :measure (two-nats-measure (len tokens) 0))
+
+  ;; for-statement = %s"for" block expression block block
+  (define parse-for-statement ((tokens abnf::tree-listp))
+    :returns (mv (result-ast statement-resultp) (tokens-after-statement abnf::tree-listp))
+    :short "Eats a @('for') statement and builds a @('statement') AST node of kind @(':for')."
+    (b* (((when (endp tokens))
+          (mv (err "no for statement here") nil))
+
+         ;; parse required keyword "for"
+         ((mv ?for-ast-node tokens-after-for-or-resulterr)
+          (parse-keyword "for" tokens))
+         ((when (resulterrp tokens-after-for-or-resulterr))
+          (mv (err "no for statement here 2") nil))
+
+         ;; parse init block
+         ((mv init-block tokens-after-init-block)
+          (parse-block tokens-after-for-or-resulterr))
+         ((when (resulterrp init-block))
+          (mv (err "no init block after 'for'") nil))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-init-block)
+                          (len tokens))))
+          (mv (err "logic error") nil))
+
+         ;; parse test expression
+         ((mv test-expression tokens-after-test-expression)
+          (parse-expression tokens-after-init-block))
+         ((when (resulterrp test-expression))
+          (mv (err "no test expression for 'for'") nil))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-test-expression)
+                          (len tokens))))
+          (mv (err "logic error") nil))
+
+         ;; parse update block
+         ((mv update-block tokens-after-update-block)
+          (parse-block tokens-after-test-expression))
+         ((when (resulterrp update-block))
+          (mv (err "no update block for 'for'") nil))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-update-block)
+                          (len tokens))))
+          (mv (err "logic error") nil))
+
+         ;; parse body block
+         ((mv body-block tokens-after-body-block)
+          (parse-block tokens-after-update-block))
+         ((when (resulterrp body-block))
+          (mv (err "no body block for 'for'") nil))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-body-block)
+                          (len tokens))))
+          (mv (err "logic error") nil)))
+
+      (mv (make-statement-for :init init-block
+                              :test test-expression
+                              :update update-block
+                              :body body-block)
+          (abnf::tree-list-fix tokens-after-body-block)))
+    :measure (two-nats-measure (len tokens) 0))
+
+  ;; switch-statement = %s"switch" expression
+  ;;                    ( 1*( %s"case" literal block ) [ %s"default" block ]
+  ;;                      / %s"default" block )
+  (define parse-switch-statement ((tokens abnf::tree-listp))
+    :returns (mv (result-ast statement-resultp) (tokens-after-statement abnf::tree-listp))
+    :short "Eats a @('switch') statement and builds a @('statement') AST node of kind @(':switch')."
+    (b* (((when (endp tokens))
+          (mv (err "no switch statement here") nil))
+
+         ;; parse required keyword "switch"
+         ((mv ?switch-ast-node tokens-after-switch-or-resulterr)
+          (parse-keyword "switch" tokens))
+         ((when (resulterrp tokens-after-switch-or-resulterr))
+          (mv (err "no switch statement here 2") nil))
+
+         ;; parse target expression
+         ((mv target-expression tokens-after-target-expression)
+          (parse-expression tokens-after-switch-or-resulterr))
+         ((when (resulterrp target-expression))
+          (mv (err "no target expression after 'switch'") nil))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-target-expression)
+                          (len tokens))))
+          (mv (err "logic error") nil))
+
+         ;; parse as many case clauses as we see (zero or more)
+         ;; This combines the two alternatives; we will sort them out later.
+         ((mv case-clauses tokens-after-case-clauses)
+          (parse-*-case-clause tokens-after-target-expression))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-case-clauses)
+                          (len tokens))))
+          (mv (err "logic error") nil))
+
+         ;; Parse an optional default clause.
+         ;; Although the "default" keyword is not used anywhere else,
+         ;; the most correct thing is if either the keyword or the block fails,
+         ;; the whole clause fails and the clause is omitted.
+         ((mv default-block-option tokens-after-block-option)
+          (b* (;; parse default block keyword
+               ((mv ?default-ast tokens-after-default-or-resulterr)
+                (parse-keyword "default" tokens-after-case-clauses))
+               ((when (resulterrp tokens-after-default-or-resulterr))
+                (mv nil tokens-after-case-clauses))
+               ;; parse default block
+               ((mv default-block tokens-after-default-block)
+                (parse-block tokens-after-default-or-resulterr))
+               ((when (resulterrp default-block))
+                (mv nil tokens-after-case-clauses)))
+            (mv default-block tokens-after-default-block)))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-block-option)
+                          (len tokens))))
+          (mv (err "logic error") nil)))
+
+      (if (and (null case-clauses) (null default-block-option))
+          (mv (err "switch default block is not optional if there are no case clauses")
+              nil)
+        (mv (make-statement-switch
+             :target target-expression
+             :cases case-clauses
+             :default default-block-option)
+            tokens-after-block-option)))
+    :measure (two-nats-measure (len tokens) 0))
+
+  (define parse-case-clause ((tokens abnf::tree-listp))
+    :returns (mv (result-ast swcase-resultp) (tokens-after-clause abnf::tree-listp))
+    :short "Eats a @('case') clause for a @('switch') statement and builds an @('swcase') AST node."
+    (b* (((when (endp tokens))
+          (mv (err "no case clause here") nil))
+
+         ;; parse required keyword "case"
+         ((mv ?case-ast-node tokens-after-case-or-resulterr)
+          (parse-keyword "case" tokens))
+         ((when (resulterrp tokens-after-case-or-resulterr))
+          (mv (err "no case clause here 2") nil))
+
+         ;; parse the case's value, a literal
+         ((mv value-literal? tokens-after-value-literal-or-resulterr)
+          (parse-literal tokens-after-case-or-resulterr))
+         ((unless (and (literalp value-literal?)
+                       (not (resulterrp tokens-after-value-literal-or-resulterr))))
+          (mv (err "can't parse case's value literal") nil))
+
+         ;; parse the case's body, a block
+         ((mv body-block tokens-after-body-block)
+          (parse-block tokens-after-value-literal-or-resulterr))
+         ((when (resulterrp body-block))
+          (mv (err "can't parse case's body block") nil)))
+
+      (mv (make-swcase :value value-literal?
+                   :body body-block)
+          tokens-after-body-block))
+    :measure (two-nats-measure (len tokens) 0))
+
+  (define parse-*-case-clause ((tokens abnf::tree-listp))
+    :returns (mv (result-asts swcase-listp) (tokens-after-clauses abnf::tree-listp))
+    :short "Eats as many case clauses and possible (zero or more)."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Although the syntax diagram for 'switch' shows one-or-more case clauses in the first alternative,
+       the second alternative shows zero case clauses, so we combine those into this
+       single function that parses zero-or-more clauses."))
+    (b* (((when (endp tokens)) (mv nil nil))
+         ((mv first-clause tokens-after-clause) (parse-case-clause tokens))
+         ((when (resulterrp first-clause))
+          ; found zero clauses here
+          (mv nil (abnf::tree-list-fix tokens)))
+         ;; We found first-clause, now look for more.
+         ;; But first, help out the measure proof.
+         ((unless (mbt (< (len tokens-after-clause) (len tokens))))
+          (mv nil nil))
+         ((mv rest-clauses rest-tokens)
+          (parse-*-case-clause tokens-after-clause)))
+      (mv (abnf::list-fix (cons first-clause rest-clauses))
+          (abnf::tree-list-fix rest-tokens)))
+    :measure (two-nats-measure (len tokens) 2))
 
   (define parse-*-statement ((tokens abnf::tree-listp))
     :returns (mv (result-asts statement-listp) (tokens-after-statements abnf::tree-listp))
+    :short "Eats as many statements as possible (zero or more)."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "In Yul, there is no statement separator.  There is enough syntax on each
+       statement rule to make it reasonably easy to disambiguate the statements."))
     (b* (((when (endp tokens)) (mv nil nil))
-         ((mv next-statement tokens-after-statement) (parse-statement tokens))
-         ((when (resulterrp next-statement))
+         ((mv first-statement tokens-after-statement) (parse-statement tokens))
+         ((when (resulterrp first-statement))
           ;; found zero statements here
           (mv nil (abnf::tree-list-fix tokens)))
-         ;; We found next-statement, now look for more and return those found.
+         ;; We found first-statement, now look for more and return those found.
          ;; But first, help out the measure proof.
          ((unless (mbt (< (len tokens-after-statement) (len tokens))))
           (mv nil nil))
          ((mv rest-statements rest-tokens)
           (parse-*-statement tokens-after-statement)))
-      (mv (abnf::list-fix (cons next-statement rest-statements))
+      (mv (abnf::list-fix (cons first-statement rest-statements))
           (abnf::tree-list-fix rest-tokens)))
     :measure (two-nats-measure (len tokens) 2))
+
+  :ruler-extenders :all  ; it is possible that some of the uses of mbt to prove
+    ; token length decrease are unnecessary after we added :ruler-extenders :all
 
   :verify-guards nil
   ///
@@ -1351,22 +1600,51 @@
                   (len tokens)))
       :rule-classes :linear
       :fn parse-block)
+    (defret len-of-parse-if-<
+      (implies (not (resulterrp result-ast))
+               (< (len tokens-after-statement)
+                  (len tokens)))
+      :rule-classes :linear
+      :fn parse-if-statement)
+    (defret len-of-parse-for-<
+      (implies (not (resulterrp result-ast))
+               (< (len tokens-after-statement)
+                  (len tokens)))
+      :rule-classes :linear
+      :fn parse-for-statement)
+    (defret len-of-parse-switch-<
+      (implies (not (resulterrp result-ast))
+               (< (len tokens-after-statement)
+                  (len tokens)))
+      :rule-classes :linear
+      :fn parse-switch-statement)
+    (defret len-of-parse-case-<
+      (implies (not (resulterrp result-ast))
+               (< (len tokens-after-clause)
+                  (len tokens)))
+      :rule-classes :linear
+      :fn parse-case-clause)
+    (defret len-of-parse-*-case-clause-<=
+      (<= (len tokens-after-clauses)
+          (len tokens))
+      :rule-classes :linear
+      :fn parse-*-case-clause)
     (defret len-of-parse-*-statement-<=
       (<= (len tokens-after-statements)
           (len tokens))
       :rule-classes :linear
       :fn parse-*-statement)
-    :hints (("Goal" :expand (parse-*-statement tokens)))
-    )
+    :hints (("Goal" :expand ((parse-*-statement tokens)
+                             (parse-*-case-clause tokens)))))
 
   (verify-guards parse-statement)
   )
 
 
 (define parse-yul ((yul-string stringp))
-  :returns (statement? statement-resultp)
+  :returns (block? block-resultp)
   :short "Parses the bytes of @('yul-string') into abstract syntax."
-  :long "Either returns a statement of kind block, or a resulterrp.
+  :long "Either returns a block, or a resulterrp.
          Yul objects are not supported at this time."
   (b* ((tokens (tokenize-yul yul-string))
        ((when (resulterrp tokens))

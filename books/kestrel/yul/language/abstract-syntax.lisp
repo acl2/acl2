@@ -622,8 +622,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Enable Yul parser routines to return results or errors.
-
 (fty::defresult block-result
   :short "Fixtype of errors and blocks."
   :ok block
@@ -636,7 +634,7 @@
            (not (resulterrp x)))
   :enable (blockp resulterrp))
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult statement-result
   :short "Fixtype of errors and statements."
@@ -652,6 +650,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult swcase-result
+  :short "Fixtype of errors and swcase clauses (for switch statements)."
+  :ok swcase
+  :pred swcase-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-swcasep
+  (implies (swcasep x)
+           (not (resulterrp x)))
+  :enable (swcasep resulterrp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (std::defprojection swcase-list->value-list ((x swcase-listp))
   :returns (lits literal-listp)
   :short "Lift @(tsee swcase->value) to lists."
