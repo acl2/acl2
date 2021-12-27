@@ -50,13 +50,13 @@ want to be on the bleeding edge should follow the github project to try to keep
 up to date.</p></box>
 
 
-<p><b>SV</b> is an ACL2 library for hardware verification, developed
-at <a href='http://www.centtech.com/'>Centaur Technology</a>, primarily by Sol
-Swords.  It is the latest in a long line of hardware description languages that
-are deeply embedded within ACL2: it replaces Centaur's @(see esim), which
-itself succeeded the E language of Hunt &amp; Boyer, which was a descendant of
-DE2 (Hunt &amp; Reeber), which followed from DUAL-EVAL (Hunt &amp; Brock).  For
-a brief comparison, see @(see sv-versus-esim).</p>
+<p><b>SV</b> is an ACL2 library for hardware verification, developed at Centaur
+Technology, primarily by Sol Swords.  It is the latest in a long line of
+hardware description languages that are deeply embedded within ACL2: it
+replaces Centaur's @(see esim), which itself succeeded the E language of Hunt
+&amp; Boyer, which was a descendant of DE2 (Hunt &amp; Reeber), which followed
+from DUAL-EVAL (Hunt &amp; Brock).  For a brief comparison, see @(see
+sv-versus-esim).</p>
 
 <p>SV combines and integrates several major components:</p>
 
