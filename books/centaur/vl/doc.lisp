@@ -47,8 +47,8 @@
   :short "The VL Verilog Toolkit is a large ACL2 library for working with <a
 href='http://en.wikipedia.org/wiki/SystemVerilog'>SystemVerilog</a> (and also
 regular <a href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a>) source
-code, developed at <a href='http://www.centtech.com/'>Centaur Technology</a> by
-Jared Davis and Sol Swords.  It serves as a frontend for many Verilog tools."
+code, developed at Centaur Technology by Jared Davis and Sol Swords.  It serves
+as a frontend for many Verilog tools."
 
   :long "<box><p><b><color rgb='#ff0000'>ALPHA VERSION</color></b>.  The new
 development version of VL is not yet ready for public use and may change in
@@ -70,8 +70,8 @@ started with evaluating it for use in your own projects."
 <p><b>VL</b> is an @(see acl2::acl2) library for working with <a
 href='http://en.wikipedia.org/wiki/SystemVerilog'>SystemVerilog</a> (and also
 regular <a href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a>) source
-code, developed at <a href='http://www.centtech.com/'>Centaur Technology</a> by
-Jared Davis and Sol Swords.  At a high level, VL includes:</p>
+code, developed at Centaur Technology by Jared Davis and Sol Swords.  At a high
+level, VL includes:</p>
 
 <ul>
  <li>An internal representation for Verilog @(see syntax),</li>
@@ -533,7 +533,7 @@ VCS J-2014.12-SP3-1:</p>
     Error-[IAP] Illegal assignment pattern
     test.sv, 5
     foo1, \"place:3\"
-      Assignment pattern is illegal due to: Assignment Pattern with named fields 
+      Assignment pattern is illegal due to: Assignment Pattern with named fields
       cannot be assigned to a non-structure target
 })
 

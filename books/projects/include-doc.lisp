@@ -702,8 +702,7 @@ through as it evolves.</li>
 <h3>Copyright Information</h3>
 
 <p>Record Like Stobjs<br/>
-Copyright (C) 2011-2012
-<a href=\"http://www.centtech.com\">Centaur Technology</a>.</p>
+Copyright (C) 2011-2012 Centaur Technology.</p>
 
 <p>Contact:</p>
 @({
