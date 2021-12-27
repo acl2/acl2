@@ -650,8 +650,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;
-
 (fty::defresult swcase-result
   :short "Fixtype of errors and swcase clauses (for switch statements)."
   :ok swcase
@@ -665,6 +663,7 @@
   :enable (swcasep resulterrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defprojection swcase-list->value-list ((x swcase-listp))
   :returns (lits literal-listp)
   :short "Lift @(tsee swcase->value) to lists."
