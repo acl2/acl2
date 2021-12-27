@@ -44,6 +44,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define var-unique-vars ((var identifierp) (allvars identifier-setp))
+  :returns (new-allvars identifier-set-resultp)
+  :short "Check that a variable is unique."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Check that it does not occur in the set of all variables found so far,
+     and add it to that set if successful.")
+   (xdoc::p
+    "This is very similar to @(tsee add-var),
+     but it has a different purpose."))
+  (if (set::in (identifier-fix var) (identifier-set-fix allvars))
+      (err (list :non-unique-var (identifier-fix var)))
+    (set::insert (identifier-fix var) (identifier-set-fix allvars)))
+  :hooks (:fix)
+  ///
+
+  (defruled var-unique-vars-to-set-insert
+    (b* ((allvars1 (var-unique-vars var allvars)))
+      (implies (not (resulterrp allvars1))
+               (equal allvars1
+                      (set::insert (identifier-fix var)
+                                   (identifier-set-fix allvars)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define var-list-unique-vars ((vars identifier-listp) (allvars identifier-setp))
+  :returns (new-allvars identifier-set-resultp)
+  :short "Check that all the variables in a list are unique."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee var-unique-vars) to lists.")
+   (xdoc::p
+    "This is very similar to @(tse add-vars),
+     but it has a different purpose."))
+  (b* (((when (endp vars)) (identifier-set-fix allvars))
+       ((ok allvars) (var-unique-vars (car vars) allvars)))
+    (var-list-unique-vars (cdr vars) allvars))
+  :hooks (:fix)
+  ///
+
+  (defruled var-list-unique-vars-to-set-list-insert
+    (b* ((allvars1 (var-list-unique-vars vars allvars)))
+      (implies (not (resulterrp allvars1))
+               (equal allvars1
+                      (set::list-insert (identifier-list-fix vars)
+                                        (identifier-set-fix allvars)))))
+    :enable (set::list-insert
+             var-unique-vars-to-set-insert)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines statements/blocks/cases/fundefs-unique-vars
   :short "Mutually recursive functions that check
           the uniqueness of variable names in
@@ -55,12 +108,8 @@
     (statement-case
      stmt
      :block (block-unique-vars stmt.get allvars)
-     :variable-single (if (not (set::in stmt.name (identifier-set-fix allvars)))
-                          (set::insert stmt.name (identifier-set-fix allvars))
-                        (err (list :duplicate-var stmt.name)))
-     :variable-multi (if (set::list-notin stmt.names (identifier-set-fix allvars))
-                         (set::list-insert stmt.names (identifier-set-fix allvars))
-                       (err (list :duplicate-vars stmt.names)))
+     :variable-single (var-unique-vars stmt.name allvars)
+     :variable-multi (var-list-unique-vars stmt.names allvars)
      :assign-single (identifier-set-fix allvars)
      :assign-multi (identifier-set-fix allvars)
      :funcall (identifier-set-fix allvars)
@@ -123,12 +172,9 @@
     :returns (new-allvars identifier-set-resultp)
     :short "Check that a function definition has unique variable names."
     (b* (((fundef fundef) fundef)
-         ((unless (set::list-notin fundef.inputs (identifier-set-fix allvars)))
-          (err (list :duplicate-vars fundef.inputs)))
-         (allvars (set::list-insert fundef.inputs (identifier-set-fix allvars)))
-         ((unless (set::list-notin fundef.outputs allvars))
-          (err (list :duplicate-vars fundef.outputs)))
-         (allvars (set::list-insert fundef.outputs allvars)))
+         ((ok allvars) (var-list-unique-vars (append fundef.inputs
+                                                     fundef.outputs)
+                                             allvars)))
       (block-unique-vars fundef.body allvars))
     :measure (fundef-count fundef))
 
@@ -210,5 +256,7 @@
                               swcase-list-unique-vars
                               fundef-unique-vars
                               set::subset-transitive
+                              var-unique-vars-to-set-insert
+                              var-list-unique-vars-to-set-list-insert
                               (:forward-chaining set::subset-of-list-insert))
                              ((:rewrite set::subset-of-list-insert)))))))
