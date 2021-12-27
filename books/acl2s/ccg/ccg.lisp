@@ -2032,7 +2032,16 @@
                     :skip;(initial-step-limit wrld state)
                     state)
                  (pprogn
-                  (erase-gag-state state)
+
+; Matt K. mod, 12/27/2021:  Formerly the following line was here.
+;                 (erase-gag-state state)
+; That function no longer exists.  Here is the body of the former definition of
+; that function.
+                  (pprogn (f-put-global 'gag-state-saved
+                                        (f-get-global 'gag-state state)
+                                        state)
+                          (f-put-global 'gag-state nil state))
+
                   (value nil)))
                (value (car pair))))))))
 
@@ -5978,7 +5987,7 @@ e2-e1+1.
 ; and the case where the user identified the exact justification in
 ; the world. I need to come back to this later to make sure I'm not
 ; missing something.
-               
+
              (if (or (null ccms-lst)
                      (and (consp ccms-lst)
                           (null (cdr ccms-lst))
@@ -6061,7 +6070,7 @@ e2-e1+1.
 ; there would have been an error or the new definitions would be
 ; reclassifications). Keep this in sync with the conditions for checking
 ; measures in redundant-or-reclassifying-defunsp.
-               
+
                (not (eq defun-mode :logic))
                ld-skip-proofsp)
            ans)

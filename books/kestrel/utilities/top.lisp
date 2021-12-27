@@ -17,6 +17,7 @@
 (include-book "bits-and-bytes-as-digits")
 (include-book "bits-and-ubyte11s-as-digits")
 (include-book "bytes-as-digits")
+(include-book "checkpoints")
 (include-book "copy-def")
 (include-book "defmacroq")
 (include-book "deftest")

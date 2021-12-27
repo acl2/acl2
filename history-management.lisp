@@ -2289,22 +2289,31 @@
    (t ; no checkpoints; proof never started
     state)))
 
-(defun erase-gag-state (state)
+(defun save-and-print-gag-state (state)
+  (let ((gag-state (f-get-global 'gag-state state)))
+    (pprogn
 
-; Avoid repeated printing of the gag state, e.g. for a theorem under several
-; levels of encapsulate or under certify-book.  We set 'gag-state here rather
-; than directly inside print-gag-state because gag-state is untouchable and
-; translate11 is called on in the process of running :psog.
+; Note that the state global gag-state is often nil at the top level, in
+; particular since it is bound by state-global-let* in
+; save-event-state-globals, which is wrapped around print-summary in
+; with-ctx-summarized.  Here, we save its value for use globally by other
+; utilities -- but only if it's non-nil!  Our purpose here is to record the
+; most recent proof failure in gag-state-saved.
 
-  (pprogn (f-put-global 'gag-state-saved (f-get-global 'gag-state state) state)
-          (f-put-global 'gag-state nil state)))
+     (if gag-state
+         (f-put-global 'gag-state-saved gag-state state)
+       state)
 
-(defun print-gag-state (state)
-  (io? error nil state
-       ()
-       (let ((gag-state (f-get-global 'gag-state state)))
-         (pprogn (erase-gag-state state)
-                 (print-gag-state1 gag-state state)))))
+; Next, avoid repeated printing of the gag-state, e.g. for a theorem under
+; several levels of encapsulate or under certify-book.
+
+     (f-put-global 'gag-state nil state)
+
+; Print checkpoints etc. if summary output is enabled.
+
+     (io? summary nil state
+          (gag-state)
+          (print-gag-state1 gag-state state)))))
 
 #+acl2-par
 (defun clause-id-is-top-level (cl-id)
@@ -2431,8 +2440,7 @@
 
 (defun print-failure (erp event-type ctx state)
   (pprogn
-   (io? summary nil state nil
-        (print-gag-state state))
+   (save-and-print-gag-state state)
    #+acl2-par
    (print-acl2p-checkpoints state)
    (cond ((not (member-eq event-type
@@ -3966,6 +3974,7 @@
 
             writes-okp
             cert-data
+            gag-state-saved
             ))))
     val))
 
