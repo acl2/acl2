@@ -622,8 +622,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Enable Yul parser routines to return results or errors.
-
 (fty::defresult block-result
   :short "Fixtype of errors and blocks."
   :ok block
@@ -636,7 +634,7 @@
            (not (resulterrp x)))
   :enable (blockp resulterrp))
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult statement-result
   :short "Fixtype of errors and statements."
