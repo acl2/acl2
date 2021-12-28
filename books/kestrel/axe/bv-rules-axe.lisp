@@ -2,7 +2,7 @@
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2020 Kestrel Institute
-; Copyright (C) 2016-2020 Kestrel Technology, LLC
+; Copyright (C) 2016-2021 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1971,3 +1971,12 @@
            (equal (logext size x)
                   (logext size (trim size x))))
   :hints (("Goal" :in-theory (e/d (trim) nil))))
+
+(defthmd logxor-becomes-bvxor-axe
+  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
+                (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
+                (unsigned-byte-p xsize x)
+                (unsigned-byte-p ysize y))
+           (equal (logxor x y)
+                  (acl2::bvxor (max xsize ysize) x y)))
+  :hints (("Goal" :in-theory (enable acl2::bvxor))))
