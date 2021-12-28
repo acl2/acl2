@@ -553,6 +553,8 @@ Summary
 Form:  ( THM ...)
 Rules: NIL
 
+*** Note: No checkpoints to print. ***
+
 ACL2 Error in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********

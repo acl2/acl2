@@ -27,7 +27,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is a simple parser for Yul code.
-     The main entry point is @('parse-yul')."))
+     The main entry point is @('parse-yul'), which takes a string containing a Yul block."))
   :order-subtopics t
   :default-parent t)
 
@@ -46,7 +46,7 @@
 ;; but if either (a) parsing is successful but doesn't build anything or
 ;; (b) parsing is not successful, then the built object returned is NIL.
 
-;; Some possible future improvements:
+;; Possible future work:
 ;; * Regularize the return value structure so that each parse function returns
 ;;   a single typed value rather than multiple values.
 ;;   This would have the benefits of being easier to read and extend,
@@ -58,6 +58,7 @@
 ;;   applied, using errors to indicate a particular rule does not apply.
 ;;   However, when a rule starts to apply and then fails in the middle,
 ;;   that information is often interesting.
+;; * Improve xdoc.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -296,7 +297,7 @@
     (b* ((fringe (abnf::tree->string (first tokens)))
          ((unless (acl2::unsigned-byte-listp 8 fringe))
           (prog2$ (er hard? 'top-level
-                      "unexpected type of leafterm nats when parsing idenntifier")
+                      "unexpected type of leafterm nats when parsing identifier")
                   (mv nil
                       (err (cons "cst structure error" tokens))))))
       (mv (make-identifier :get (acl2::nats=>string fringe))
@@ -306,8 +307,7 @@
     (implies (not (resulterrp tokens-after-identifier-or-resulterr))
              (< (len tokens-after-identifier-or-resulterr)
                 (len tokens)))
-    :rule-classes :linear)
-  )
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1027,7 +1027,7 @@
         tokens-after-rest-ids))
   :measure (len tokens)
   ///
-  (defret len-of-parse-*-comma-identifier-<
+  (defret len-of-parse-*-comma-identifier-<=
     (<= (len tokens-after-identifiers)
         (len tokens))
     :rule-classes :linear))
@@ -1322,7 +1322,11 @@
          ((unless (resulterrp continue-result))
           (mv continue-result tokens-after))
 
-        ;; IN PROGRESS: function-definition
+         ;; function definition
+         ((mv fundef-result tokens-after) (parse-fundef tokens))
+         ((unless (resulterrp fundef-result))
+          (mv (make-statement-fundef :get fundef-result)
+              tokens-after))
 
          )
       ;; if none of those
@@ -1501,7 +1505,7 @@
              :target target-expression
              :cases case-clauses
              :default default-block-option)
-            tokens-after-block-option)))
+            (abnf::tree-list-fix tokens-after-block-option))))
     :measure (two-nats-measure (len tokens) 0))
 
   (define parse-case-clause ((tokens abnf::tree-listp))
@@ -1557,6 +1561,120 @@
       (mv (abnf::list-fix (cons first-clause rest-clauses))
           (abnf::tree-list-fix rest-tokens)))
     :measure (two-nats-measure (len tokens) 2))
+
+  (define parse-fundef ((tokens abnf::tree-listp))
+    :returns (mv (result-ast fundef-resultp) (tokens-after-fundef abnf::tree-listp))
+    :short "Eats a function definition and builds a @('fundef') AST node."
+    (b* (((when (endp tokens))
+          (mv (err "no function definition here") nil))
+
+         ;; parse required keyword "function"
+         ((mv ?function-ast-node tokens-after-function-or-resulterr)
+          (parse-keyword "function" tokens))
+         ((when (resulterrp tokens-after-function-or-resulterr))
+          (mv (err "no function definition here 2") nil))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-function-or-resulterr)
+                          (len tokens))))
+          (mv (err "logic error") nil))
+
+         ;; parse the function's name, an identifier
+         ((mv id-or-null tokens-after-id-or-resulterr)
+          (parse-identifier tokens-after-function-or-resulterr))
+         ((when (null id-or-null))
+          (mv (err "missing function name") nil))
+         ((when (resulterrp tokens-after-id-or-resulterr))
+          (mv (err "missing function name") nil))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-id-or-resulterr)
+                          (len tokens))))
+            (mv (err "logic error") nil))
+
+         ;; parse the required "("
+         (tokens-after-open-paren (parse-symbol "(" tokens-after-id-or-resulterr))
+         ((when (resulterrp tokens-after-open-paren))
+          (mv (err "missing '(' in function definition") nil))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-open-paren)
+                          (len tokens))))
+          (mv (err "logic error") nil))
+
+         ;; Parse the function inputs, zero or more identifiers separated by commas.
+         ;; Zero identifiers is allowed, so we return (mv nil tokens-after-open-paren)
+         ;; in that case.
+         ((mv input-ids tokens-after-input-ids)
+          (b* (;; first identifier
+               ((mv first-id tokens-after-first-id)
+                (parse-identifier tokens-after-open-paren))
+               ((when (null first-id))
+                (mv nil tokens-after-open-paren))
+               ((when (resulterrp tokens-after-first-id))
+                (mv nil tokens-after-open-paren))
+               ;; remaining identifiers
+               ((mv rest-ids tokens-after-rest-ids)
+                (parse-*-comma-identifier tokens-after-first-id)))
+            (mv (cons first-id rest-ids) tokens-after-rest-ids)))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-input-ids)
+                          (len tokens))))
+          (mv (err "logic error") nil))
+
+         ;; parse the required ")"
+         (tokens-after-close-paren (parse-symbol ")" tokens-after-input-ids))
+         ((when (resulterrp tokens-after-close-paren))
+          (mv (err "missing ')' in function definition") nil))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-close-paren)
+                          (len tokens))))
+          (mv (err "logic error") nil))
+
+         ;; parse the required "->"
+         (tokens-after-arrow (parse-symbol "->" tokens-after-close-paren))
+         ((when (resulterrp tokens-after-arrow))
+          (mv (err "missing '->' in function definition") nil))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-arrow)
+                          (len tokens))))
+          (mv (err "logic error") nil))
+
+         ;; Parse the function outputs, one or more identifiers separated by commas.
+         ;; The first identifier is required.
+         ((mv first-output-id tokens-after-first-output-id)
+          (parse-identifier tokens-after-arrow))
+         ((when (null first-output-id))
+          (mv (err "missing output identifier in function definition") nil))
+         ((when (resulterrp tokens-after-first-output-id))
+          (mv (err "missing output identifier in function definition") nil))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-first-output-id)
+                          (len tokens))))
+          (mv (err "logic error") nil))
+
+         ;; remaining output identifiers
+         ((mv rest-output-ids tokens-after-rest-output-ids)
+          (parse-*-comma-identifier tokens-after-first-output-id))
+         (output-ids (cons first-output-id rest-output-ids))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-rest-output-ids)
+                          (len tokens))))
+          (mv (err "logic error") nil))
+
+         ;; parse the required function body block
+         ((mv body-block tokens-after-body-block)
+          (parse-block tokens-after-rest-output-ids))
+         ((when (resulterrp body-block))
+          (mv (err "no function definition body") nil))
+         ;; inform the measure proof of the intermediate decrease
+         ((unless (mbt (< (len tokens-after-body-block)
+                          (len tokens))))
+          (mv (err "logic error") nil)))
+
+      (mv (make-fundef :name id-or-null
+                       :inputs input-ids
+                       :outputs output-ids
+                       :body body-block)
+          tokens-after-body-block))
+    :measure (two-nats-measure (len tokens) 0))
 
   (define parse-*-statement ((tokens abnf::tree-listp))
     :returns (mv (result-asts statement-listp) (tokens-after-statements abnf::tree-listp))
@@ -1629,6 +1747,12 @@
           (len tokens))
       :rule-classes :linear
       :fn parse-*-case-clause)
+    (defret len-of-parse-fundef-<
+      (implies (not (resulterrp result-ast))
+               (< (len tokens-after-fundef)
+                  (len tokens)))
+      :rule-classes :linear
+      :fn parse-fundef)
     (defret len-of-parse-*-statement-<=
       (<= (len tokens-after-statements)
           (len tokens))
@@ -1644,7 +1768,7 @@
 (define parse-yul ((yul-string stringp))
   :returns (block? block-resultp)
   :short "Parses the bytes of @('yul-string') into abstract syntax."
-  :long "Either returns a block, or a resulterrp.
+  :long "Returns either a block or a resulterrp.
          Yul objects are not supported at this time."
   (b* ((tokens (tokenize-yul yul-string))
        ((when (resulterrp tokens))

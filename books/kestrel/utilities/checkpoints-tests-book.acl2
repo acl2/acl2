@@ -1,0 +1,10 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "checkpoints-tests")
+
+; Help dependency scanner.
+#||
+(include-book "checkpoints")
+(depends-on "checkpoints-tests-input.lsp")
+(depends-on "checkpoints-tests-log.txt")
+||#
+
