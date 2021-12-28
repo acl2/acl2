@@ -78,7 +78,7 @@
    (xdoc::p
     "This lifts @(tsee var-unique-vars) to lists.")
    (xdoc::p
-    "This is very similar to @(tse add-vars),
+    "This is very similar to @(tsee add-vars),
      but it has a different purpose."))
   (b* (((when (endp vars)) (identifier-set-fix allvars))
        ((ok allvars) (var-unique-vars (car vars) allvars)))
