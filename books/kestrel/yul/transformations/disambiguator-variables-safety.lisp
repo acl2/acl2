@@ -551,7 +551,7 @@
      are related by variable renaming,
      their corresponding function tables are the same.")
    (xdoc::p
-    "That implies that @(tsee add-funtype) yields the same result,
+    "That implies that @(tsee add-funtypes) yields the same result,
      starting with the same function table,
      for lists of function definitions related by variable renaming."))
 
