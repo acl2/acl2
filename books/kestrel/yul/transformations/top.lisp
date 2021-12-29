@@ -10,19 +10,21 @@
 
 (in-package "YUL")
 
+(include-book "disambiguator")
+(include-book "disambiguator-variables-safety")
+
+(include-book "for-loop-init-rewriter")
+
+(include-book "no-loop-initializers")
+
+(include-book "no-function-definitions")
+(include-book "no-function-definitions-dynamic")
+
 (include-book "dead-code-eliminator")
 (include-book "dead-code-eliminator-nofun")
 (include-book "dead-code-eliminator-noloopinit")
 (include-book "dead-code-eliminator-safety")
 (include-book "dead-code-eliminator-execution")
-
-(include-book "for-loop-init-rewriter")
-
-(include-book "no-function-definitions")
-(include-book "no-function-definitions-dynamic")
-(include-book "no-loop-initializers")
-(include-book "unique-variables")
-(include-book "unique-functions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
