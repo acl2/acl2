@@ -462,7 +462,7 @@
                                   fn-method-names
                                   wrld))
        (imports (if no-aij-types$
-                    nil
+                    (list (jimport nil "java.util.Arrays"))
                   (list (jimport nil (str::cat *aij-package* ".*"))
                         (jimport nil "java.math.BigInteger")
                         (jimport nil "java.util.Arrays"))))
