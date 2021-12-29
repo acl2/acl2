@@ -87,3 +87,19 @@
                   (cons a b))
            (set::in b (values m)))
   :enable values)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun omap-induction (map)
+  (cond ((empty map) nil)
+        (t (omap-induction (tail map)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule value-of-update-when-not-in
+  (implies (not (consp (in key map)))
+           (equal (values (update key val map))
+                  (set::insert val (values map))))
+  :induct (omap-induction map)
+  :enable values
+  :expand (values (update key val map)))
