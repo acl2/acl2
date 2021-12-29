@@ -3791,6 +3791,7 @@
                     ullongp-of-ullong-oct-const
                     ullongp-of-ullong-hex-const
                     sintp-of-sint-from-boolean
+                    condexpr
                     declar
                     assign
                     mv-nth-of-cons
