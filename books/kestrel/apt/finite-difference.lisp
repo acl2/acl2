@@ -273,7 +273,7 @@ T(x), thus establishing the invariant.</li>
        ((mv wrapper-fn-not-normalized-event wrapper-fn-not-normalized &) (install-not-normalized-event wrapper-fn nil nil wrld))
 
        ;; the new param:
-       (v (or new-param-name (make-fresh-name 'v formals))) ;TODO: also avoid any lambda-bound vars (if any)
+       (v (or new-param-name (fresh-symbol 'v formals))) ;TODO: also avoid any lambda-bound vars (if any)
        ;; build the body of the -pre function:
        (new-fn-pre-body (add-param-to-calls-in-term body fn formals term-to-replace))
        (new-fn-pre-body (rename-fn fn new-fn-pre-name new-fn-pre-body))

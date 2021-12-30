@@ -5862,7 +5862,7 @@
 ;;       (reverse acc)
 ;;     (let* ((component (car components))
 ;;            (desired-name (pack$ 'old- (make-var-name-from-term component)))
-;;            (name (make-fresh-name desired-name names-to-avoid)))
+;;            (name (fresh-symbol desired-name names-to-avoid)))
 ;;       (make-old-var-names (cdr components)
 ;;                           (cons name acc)
 ;;                           (cons name names-to-avoid)))))
@@ -5873,7 +5873,7 @@
       (reverse acc)
     (let* ((formal-inside-old (first formals))
            (desired-name (pack$ 'old- formal-inside-old))
-           (name (make-fresh-name desired-name names-to-avoid)))
+           (name (fresh-symbol desired-name names-to-avoid)))
       (make-old-var-names-aux (rest formals)
                               (cons name acc)
                               (cons name names-to-avoid)))))
@@ -7334,7 +7334,7 @@
   (declare (xargs :mode :program :stobjs state))
   (let* ((formals (fn-formals fn (w state)))
          (arity (len formals))
-         (reps-formal (make-fresh-name 'reps formals))
+         (reps-formal (fresh-symbol 'reps formals))
          (is-a-nice-tail-function-result (is-a-nice-tail-function fn state))
 ;         (nice-tail-recp (first is-a-nice-tail-function-result)) ;fixme check that this is t?!
          (exit-test-expr (second is-a-nice-tail-function-result))
@@ -7380,7 +7380,7 @@
   (declare (xargs :mode :program :stobjs state))
   (let* ((formals (fn-formals fn (w state)))
          (arity (len formals))
-         (reps-formal (make-fresh-name 'reps formals))
+         (reps-formal (fresh-symbol 'reps formals))
          (is-a-nice-tail-function-result (is-a-nice-tail-function fn state))
 ;         (nice-tail-recp (first is-a-nice-tail-function-result)) ;fixme check that this is t?!
          (exit-test-expr (second is-a-nice-tail-function-result))
@@ -7571,7 +7571,7 @@
                   :stobjs state))
   (progn$ (cw "(Making opener for one last step for ~x0 to expose its exit test.~%" fn)
           (let* ((formals (fn-formals fn (w state)))
-;                 (reps-formal (make-fresh-name 'reps formals))
+;                 (reps-formal (fresh-symbol 'reps formals))
 ;                 (arity (len formals))
                  (is-a-nice-tail-function-result (is-a-nice-tail-function fn state))
 ;         (nice-tail-recp (first is-a-nice-tail-function-result)) ;check this?!
@@ -9036,7 +9036,7 @@
          (args-to-f (get-function-args-allows-lambdas fn arity call-to-f)) ;maybe lambda-wrapped
 
          (new-fn (packnew fn '-tail))
-         (acc-formal (make-fresh-name 'acc formals))
+         (acc-formal (fresh-symbol 'acc formals))
          (new-formals (append formals (list acc-formal)))
          (new-defun `(skip-proofs ;fixme reuse the measure for the old function!
                       (defun ,new-fn (,@new-formals)
@@ -9443,7 +9443,7 @@
          (base-case-expr (third is-a-nice-tail-function-result))
          (update-expr-list (fourth is-a-nice-tail-function-result))
 
-         (numcdrs-formal (make-fresh-name 'numcdrs formals))
+         (numcdrs-formal (fresh-symbol 'numcdrs formals))
          (new-formals (cons numcdrs-formal formals))
          (new-fn (packnew fn '-uncdred))
 
@@ -10612,8 +10612,8 @@
         (mv (erp-nil) nil nil state result-array-stobj)
       ;;otherwise, at least one of the formals needs to be duplicated (for simplicity we'll duplicate them both? - fixme improve that):
 ;ffixme test this branch:
-      (b* ((duplicate-numcdrs-formal (make-fresh-name (pack$ 'duplicate- numcdrs-formal) formals))
-;             (duplicate-lst-formal (make-fresh-name (pack$ 'duplicate- lst-formal) (cons duplicate-numcdrs-formal formals)))
+      (b* ((duplicate-numcdrs-formal (fresh-symbol (pack$ 'duplicate- numcdrs-formal) formals))
+;             (duplicate-lst-formal (fresh-symbol (pack$ 'duplicate- lst-formal) (cons duplicate-numcdrs-formal formals)))
            (new-formals (cons duplicate-numcdrs-formal ;(cons duplicate-lst-formal
                               formals))                ;)
            ;;now we have to transform the various exprs to use the duplicate formals in the appropriate places

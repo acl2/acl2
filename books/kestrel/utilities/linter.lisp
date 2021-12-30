@@ -989,7 +989,7 @@
        (subterms (non-variable-subterms-list conclusions))
        (vars-to-avoid (append (free-vars-in-term body)
                               (bound-vars-in-term body)))
-       (new-var (make-fresh-name 'new-var vars-to-avoid)))
+       (new-var (fresh-symbol 'new-var vars-to-avoid)))
     (try-replacing-each-subterm ctx subterms body new-var step-limit state)))
 
 ;; Returns state.

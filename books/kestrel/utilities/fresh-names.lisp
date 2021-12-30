@@ -19,101 +19,126 @@
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 ;(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
-;rename fresh-symbol-aux ?
-(defund fresh-var-name (base-name current-num syms-to-avoid)
-  (declare (type (integer 0 *) current-num)
-           (xargs :measure (len syms-to-avoid)
-                  :guard (true-listp syms-to-avoid)))
-  (let ((candidate (pack$ base-name current-num)))
+;;;
+;;; fresh-symbol-aux
+;;;
+
+;; Keeps trying numeric suffixes, starting with CURRENT-NUM, adding each one to
+;; BASE-SYM until a symbol not in SYMS-TO-AVOID is found.
+(defund fresh-symbol-aux (base-sym current-num syms-to-avoid)
+  (declare (xargs :guard (and (symbolp base-sym)
+                              (natp current-num)
+                              (symbol-listp syms-to-avoid))
+                  :split-types t
+                  :measure (len syms-to-avoid))
+           (type (integer 0 *) current-num))
+  (let ((candidate (pack$ base-sym current-num)))
     (if (not (member-eq candidate syms-to-avoid))
         candidate
-      (fresh-var-name base-name
+      (fresh-symbol-aux base-sym
                       (+ 1 current-num)
                       (remove-eq candidate
                                  syms-to-avoid)))))
 
 (local
- (defthm fresh-var-name-of-remove-equal-irrel
+ (defthm fresh-symbol-aux-of-remove-equal-irrel
    (implies (and (< current-num current-num+)
                  (natp current-num)
                  (natp current-num+))
-            (equal (FRESH-VAR-NAME BASE-NAME
+            (equal (FRESH-SYMBOL-AUX BASE-SYM
                                    CURRENT-NUM+
                                    (REMOVE-EQUAL
-                                    (pack$ base-name current-num)
+                                    (pack$ base-sym current-num)
                                     SYMS-TO-AVOID))
-                   (FRESH-VAR-NAME BASE-NAME
+                   (FRESH-SYMBOL-AUX BASE-SYM
                                    CURRENT-NUM+
                                    SYMS-TO-AVOID)))
-   :hints (("Goal" :induct (FRESH-VAR-NAME BASE-NAME CURRENT-NUM+ SYMS-TO-AVOID)
-            :expand (FRESH-VAR-NAME
-                     BASE-NAME CURRENT-NUM+
+   :hints (("Goal" :induct (FRESH-SYMBOL-AUX BASE-SYM CURRENT-NUM+ SYMS-TO-AVOID)
+            :expand (FRESH-SYMBOL-AUX
+                     BASE-SYM CURRENT-NUM+
                      (REMOVE-EQUAL
-                      (INTERN-IN-PACKAGE-OF-SYMBOL (BINARY-PACK BASE-NAME CURRENT-NUM)
+                      (INTERN-IN-PACKAGE-OF-SYMBOL (BINARY-PACK BASE-SYM CURRENT-NUM)
                                                    'REWRITE)
                       SYMS-TO-AVOID))
-            :in-theory (enable FRESH-VAR-NAME to-string)))))
+            :in-theory (enable FRESH-SYMBOL-AUX to-string)))))
 
 
 (local
- (defthm not-equal-of-fresh-var-name-and-pack$-lower-num
+ (defthm not-equal-of-fresh-symbol-aux-and-pack$-lower-num
    (implies (and (< current-num current-num+)
                  (natp current-num)
                  (natp current-num+))
-            (not (equal (fresh-var-name base-name current-num+ syms-to-avoid)
-                        (pack$ base-name current-num))))
-   :hints (("Goal" :in-theory (enable fresh-var-name)))))
+            (not (equal (fresh-symbol-aux base-sym current-num+ syms-to-avoid)
+                        (pack$ base-sym current-num))))
+   :hints (("Goal" :in-theory (enable fresh-symbol-aux)))))
 
-(defthm not-member-equal-of-fresh-var-name-same
+(defthm not-member-equal-of-fresh-symbol-aux-same
   (implies (natp current-num)
-           (not (member-equal (fresh-var-name base-name current-num syms-to-avoid)
+           (not (member-equal (fresh-symbol-aux base-sym current-num syms-to-avoid)
                               syms-to-avoid)))
-  :hints (("Goal" :in-theory (enable fresh-var-name))))
+  :hints (("Goal" :in-theory (enable fresh-symbol-aux))))
 
-(defthm not-member-equal-of-fresh-var-name
+(defthm not-member-equal-of-fresh-symbol-aux
   (implies (and (subsetp-equal syms syms-to-avoid)
                 (natp current-num))
-           (not (member-equal (fresh-var-name base-name current-num syms-to-avoid)
+           (not (member-equal (fresh-symbol-aux base-sym current-num syms-to-avoid)
                               syms)))
-  :hints (("Goal" :use (:instance not-member-equal-of-fresh-var-name-same)
-           :in-theory (disable not-member-equal-of-fresh-var-name-same))))
+  :hints (("Goal" :use (:instance not-member-equal-of-fresh-symbol-aux-same)
+           :in-theory (disable not-member-equal-of-fresh-symbol-aux-same))))
 
-;rename fresh-symbol ?
-;example: (make-fresh-name 'x '(x x1 x2 x3 x5)) = x4
-(defund make-fresh-name (desired-name names-to-avoid)
-  (declare (xargs :guard (and (symbolp desired-name)
-                              (symbol-listp names-to-avoid))))
-  (if (not (member-eq desired-name names-to-avoid))
-      desired-name
-    (fresh-var-name desired-name 1 names-to-avoid)))
+;;;
+;;; fresh-symbol
+;;;
+
+;; Returns DESIRED-SYM unless it is in SYMS-TO-AVOID, in which case this
+;; tries adding numeric suffixes, starting with 1, until a symbol not in
+;; SYMS-TO-AVOID is found.
+;; Example: (fresh-symbol 'x '(x x1 x2 x3 x5)) = x4
+(defund fresh-symbol (desired-sym syms-to-avoid)
+  (declare (xargs :guard (and (symbolp desired-sym)
+                              (symbol-listp syms-to-avoid))))
+  (if (not (member-eq desired-sym syms-to-avoid))
+      desired-sym
+    (fresh-symbol-aux desired-sym 1 syms-to-avoid)))
+
+(defthm not-member-equal-of-fresh-symbol-same
+  (implies (natp current-num)
+           (not (member-equal (fresh-symbol desired-sym syms-to-avoid)
+                              syms-to-avoid)))
+  :hints (("Goal" :in-theory (enable fresh-symbol))))
 
 ;; ;type-prescription already knows this?
-;; (defthm symbolp-of-make-fresh-name
-;;   (implies (symbolp desired-name)
-;;            (symbolp (make-fresh-name desired-name names-to-avoid)))
+;; (defthm symbolp-of-fresh-symbol
+;;   (implies (symbolp desired-sym)
+;;            (symbolp (fresh-symbol desired-sym syms-to-avoid)))
 ;;   :rule-classes :type-prescription)
 
-(defun fresh-var-names (num starting-name vars-to-avoid)
-  (declare (type (integer 0 *) num)
-           (xargs :guard (true-listp vars-to-avoid)))
+(defund fresh-var-names (num base-sym syms-to-avoid)
+  (declare (xargs :guard (and (natp num)
+                              (symbolp base-sym)
+                              (symbol-listp syms-to-avoid))
+                  :split-types t)
+           (type (integer 0 *) num))
   (if (zp num)
       nil
-    (let ((fresh-name (fresh-var-name starting-name 0 vars-to-avoid))) ;should this return a new starting-num?
-      (cons fresh-name (fresh-var-names (+ -1 num) starting-name (cons fresh-name vars-to-avoid))))))
+    (let ((fresh-name (fresh-symbol-aux base-sym 0 syms-to-avoid))) ;should this return a new starting-num?
+      (cons fresh-name (fresh-var-names (+ -1 num) base-sym (cons fresh-name syms-to-avoid))))))
 
 ;; TODO: Make later names avoid earlier names?
-(defun make-fresh-names (desired-names names-to-avoid)
+(defund make-fresh-names (desired-names names-to-avoid)
   (declare (xargs :guard (and (symbol-listp desired-names)
                               (symbol-listp names-to-avoid))))
   (if (endp desired-names)
       nil
-    (cons (make-fresh-name (first desired-names) names-to-avoid)
+    (cons (fresh-symbol (first desired-names) names-to-avoid)
           (make-fresh-names (rest desired-names) (rest names-to-avoid)))))
 
 (defthm symbol-listp-of-make-fresh-names
   (implies (symbol-listp desired-names)
-           (symbol-listp (make-fresh-names desired-names names-to-avoid))))
+           (symbol-listp (make-fresh-names desired-names names-to-avoid)))
+  :hints (("Goal" :in-theory (enable make-fresh-names))))
 
 (defthm len-of-make-fresh-names
   (equal (len (make-fresh-names desired-names names-to-avoid))
-         (len desired-names)))
+         (len desired-names))
+  :hints (("Goal" :in-theory (enable make-fresh-names))))
