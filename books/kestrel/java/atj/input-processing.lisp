@@ -141,12 +141,14 @@
                               "At least one target function must be supplied."))
                  (1 (ensure-value-is-function-name$
                      (car targets)
-                     (msg "The ~x0 input" (car targets))
+                     (msg "The target function input ~x0" (car targets))
                      t
                      nil))
-                 (t (ensure-list-functions$ targets
-                                            (msg "The ~&0 inputs" targets)
-                                            t nil))))
+                 (t (ensure-list-functions$
+                     targets
+                     (msg "The target function inputs ~&0" targets)
+                     t
+                     nil))))
        ((er &) (ensure-list-has-no-duplicates$ targets
                                                (msg "The target functions ~&0"
                                                     targets)
