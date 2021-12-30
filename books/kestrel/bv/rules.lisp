@@ -5777,6 +5777,17 @@
                   (bvxor newsize x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvxor))))
 
+(defthm bvor-tighten
+  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+                (< newsize oldsize)
+                (unsigned-byte-p-forced newsize x)
+                (unsigned-byte-p newsize y)
+                (natp newsize)
+                (natp oldsize))
+           (equal (bvor oldsize x y)
+                  (bvor newsize x y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvor))))
+
 ;move
 (DEFTHMd BVXOR-TIGHTEN-free
   (IMPLIES (AND (UNSIGNED-BYTE-P NEWSIZE Y)
@@ -5787,6 +5798,16 @@
                   (BVXOR NEWSIZE X Y)))
   :hints (("Goal" :use (:instance BVXOR-TIGHTEN)
            :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (BVXOR-TIGHTEN)))))
+
+(DEFTHMd BVOR-TIGHTEN-free
+  (IMPLIES (AND (UNSIGNED-BYTE-P NEWSIZE Y)
+                (< NEWSIZE OLDSIZE)
+                (UNSIGNED-BYTE-P NEWSIZE X)
+                (NATP OLDSIZE))
+           (EQUAL (BVOR OLDSIZE X Y)
+                  (BVOR NEWSIZE X Y)))
+  :hints (("Goal" :use (:instance BVOR-TIGHTEN)
+           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (BVOR-TIGHTEN)))))
 
 ;move
 ;; Seems pretty safe
@@ -8168,3 +8189,10 @@
   :hints (("Goal" :in-theory (e/d (bitxor bvxor getbit) (BVXOR-1-BECOMES-BITXOR
                                                          SLICE-BECOMES-GETBIT
                                    BVCHOP-1-BECOMES-GETBIT)))))
+
+
+;move
+(defthm equal-of-0-and-bvchop-of-logext
+  (implies (integerp x)
+           (equal (equal 0 (bvchop 32 (logext 8 x)))
+                  (equal 0 (bvchop 8 x)))))

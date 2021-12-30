@@ -35,26 +35,6 @@
   (signed-byte-p 64 (bvchop 32 x))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
 
-;seems to cause problems (was missing a call to quotep -- still problems or no?)
-(defthmd logext-of-sum-trim-constant
-  (implies (and (syntaxp (quotep k))
-                (not (signed-byte-p 64 k))
-                (integerp k)
-                (integerp x))
-           (equal (logext 64 (+ k x))
-                  (logext 64 (+ (logext 64 k) x))))
-  :hints (("Goal" :in-theory (enable logapp logext-of-plus))))
-
-;i've seen k be 2^65-24
-(defthm logext-of-sum-trim-constant-big
-  (implies (and (syntaxp (quotep k))
-                (not (signed-byte-p 65 k))
-                (integerp k)
-                (integerp x))
-           (equal (logext 64 (+ k x))
-                  (logext 64 (+ (logext 64 k) x))))
-  :hints (("Goal" :in-theory (enable logapp logext-of-plus))))
-
 (defthm plus-of-minus-subst-constant
   (implies (and (EQUAL x (+ k y)) ;k is a free var
                 (syntaxp (quotep k))
