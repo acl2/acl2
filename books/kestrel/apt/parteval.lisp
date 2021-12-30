@@ -735,7 +735,7 @@
                  :use ,(cons guard-thm-instance old-to-new-instances?)))))
     `(local (verify-guards ,new-name$
               :hints ,hints
-              :guard-simplify nil))))
+              :guard-simplify :limited))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
