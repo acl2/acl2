@@ -157,9 +157,7 @@
                               (symbol-alistp param-renaming)
                               (function-renamingp function-renaming))))
   (let ((guard-hints ;;(if (eq :auto guard-hints)
-         `(("Goal" :use (:instance (:guard-theorem ,old-fn
-                                                   t ; confusingly, this matches the behavior of :guard-simplify nil below
-                                                   )
+         `(("Goal" :use (:instance (:guard-theorem ,old-fn :limited)
                                    :extra-bindings-ok
                                    ;; account for the renaming:
                                    ,@(alist-to-doublets param-renaming))
@@ -178,7 +176,7 @@
          ))
     `(verify-guards$ ,new-fn
                      :hints ,guard-hints
-                     :guard-simplify nil ;; avoid simplification based on the current theory
+                     :guard-simplify :limited ;; avoid simplification based on the current theory
                      )))
 
 ;todo: combine with rename-params-event?

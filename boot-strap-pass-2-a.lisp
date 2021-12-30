@@ -85,6 +85,7 @@
 
 ; miscellaneous
 
+(verify-termination-boot-strap guard-theorem-simplify-msg) ; and guards
 (verify-termination-boot-strap guard-or-termination-theorem-msg) ; and guards
 (verify-termination-boot-strap alist-keys-subsetp) ; and guards
 (verify-termination-boot-strap keyword-listp) ; and guards

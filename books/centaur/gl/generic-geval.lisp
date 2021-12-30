@@ -266,7 +266,9 @@
        (wrld (w state))
        (ctx 'get-guard-verification-theorem)
        ((er names) (acl2::chk-acceptable-verify-guards
-                    name t ctx wrld state))
+                    name t
+                    t ; Matt K. mod 12/29/2021: new guard-simplify argument
+                    ctx wrld state))
        (ens (acl2::ens state))
        ((mv clauses &)
         (acl2::guard-obligation-clauses

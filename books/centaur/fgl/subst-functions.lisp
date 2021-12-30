@@ -30,7 +30,7 @@
 
 (in-package "FGL")
 
-    
+
 ;; (defun translate-defs-bodies (defs-lst wrld)
 ;;   (Declare (Xargs :mode :program))
 ;;   (if (atom defs-lst)
@@ -68,7 +68,7 @@
       acc
     (b* ((body (getpropc (car fns) 'unnormalized-body nil wrld)))
       (function-deps-lst (cdr fns) wrld (acl2::all-fnnames1 nil body acc)))))
-       
+
 
 
 (mutual-recursion
@@ -131,7 +131,7 @@
        (car x))
      (remove-xargs-from-declares (cdr x) xarg-types)
      x)))
-  
+
 
 (defun remove-xargs-from-decls/body (x xarg-types)
   (if (or (atom x)
@@ -143,7 +143,7 @@
                                     (car x))
                     (remove-xargs-from-decls/body (cdr x) xarg-types)
                     x)))
-    
+
 
 
 (defun remove-xargs-from-defun-cdr (x xarg-types)
@@ -224,8 +224,8 @@
                       ;; :do-not '(preprocess simplify)
                       )
               :verify-guards t
-              :guard-simplify nil
-              :guard-hints (("Goal" :by (:functional-instance (:guard-theorem ,(car fns) t)
+              :guard-simplify :limited
+              :guard-hints (("Goal" :by (:functional-instance (:guard-theorem ,(car fns) :limited)
                                          . ,new-instance-subst)
                              ;; :in-theory '((:definition eq)
                              ;;              (:definition eql)
@@ -262,8 +262,8 @@
          (new-instance-subst (append (instance-subst-from-full-subst fns full-subst) instance-subst))
          ;; (expands (sublis full-subst (fns->expands fns wrld)))
          (guard-xargs `(:verify-guards t
-                        :guard-simplify nil
-                        :guard-hints (("Goal" :by (:functional-instance (:guard-theorem ,(car fns) t)
+                        :guard-simplify :limited
+                        :guard-hints (("Goal" :by (:functional-instance (:guard-theorem ,(car fns) :limited)
                                                    . ,new-instance-subst)
                                        ;; :in-theory '((:definition eq)
                                        ;;              (:definition eql)
@@ -312,8 +312,8 @@
        ((mv first instance-subst) (modify-event-and-update-functional-subst (car x) full-subst instance-subst wrld))
        ((mv rest instance-subst) (modify-events-and-update-functional-substs (cdr x) full-subst instance-subst wrld)))
     (mv (cons first rest) instance-subst)))
-    
-    
+
+
 
 
 (defun collect-events-for-absolute-event-nums (event-nums wrld)
@@ -654,7 +654,7 @@
 ;; (in-theory '((:definition eq)
 ;;              (:definition eql)
 ;;              (:definition =)))
-    
+
 
 ;; (set-case-split-limitations '(0 1000))
 
