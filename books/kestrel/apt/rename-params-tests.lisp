@@ -412,4 +412,4 @@
                    PSEUDO-TERM-LISTP-BECOMES-NEW-PSEUDO-TERM-LISTP
                    (:E EQLABLEP)
                    (:E EQLABLE-LISTP))))
-    :GUARD-SIMPLIFY NIL)))
+    :GUARD-SIMPLIFY :LIMITED)))

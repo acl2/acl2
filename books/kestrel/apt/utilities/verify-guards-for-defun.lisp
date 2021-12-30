@@ -34,9 +34,7 @@
                               (true-listp guard-enables))))
   (let ((new-fn (lookup-eq-safe old-fn function-renaming))
         (guard-hints (if (eq :auto guard-hints)
-                         `(("Goal" :use (:instance (:guard-theorem ,old-fn
-                                                                   t ; confusingly, this matches the behavior of :guard-simplify nil below
-                                                                   ))
+                         `(("Goal" :use (:instance (:guard-theorem ,old-fn :limited))
                             :do-not '(generalize eliminate-destructors) ;;TODO; Turn off more stuff:
                             ;; we use the becomes lemma(s):
                             :in-theory '(,@(becomes-theorem-names function-renaming)
@@ -57,7 +55,7 @@
                        guard-hints)))
     `(verify-guards$ ,new-fn
                      :hints ,guard-hints
-                     :guard-simplify nil ;; avoid simplification based on the current theory
+                     :guard-simplify :limited ;; avoid simplification based on the current theory
                      :otf-flg t)))
 
 ;; Maybe generate a verify-guards form for the new version of OLD-FN.  Returns a

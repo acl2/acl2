@@ -2525,7 +2525,8 @@
 ; a symbolic name denoting an event;
 ; a theorem; or
 ; of the form (:kwd name), where :kwd is :termination-theorem or
-;    :guard-theorem, and name is a symbolic name denoting an event.
+;    :guard-theorem (in which case a third element of the list is legal if it
+;    is :limited or nil), and name is a symbolic name denoting an event.
 
 ; Depending on flg we return the following.
 
@@ -6660,8 +6661,8 @@
                                   (pe ,logical-name)))))
                   (value '(value-triple :invisible))))))
 
-(defmacro gthm (fn &optional (simp-p 't) guard-debug)
-  `(untranslate (guard-theorem ,fn ,simp-p ,guard-debug (w state) state)
+(defmacro gthm (fn &optional (simplify ':limited) guard-debug)
+  `(untranslate (guard-theorem ,fn ,simplify ,guard-debug (w state) state)
                 t
                 (w state)))
 
@@ -14734,7 +14735,23 @@
           (merge-sort-length cl-set) nil nil))
         ens (match-free-override wrld) wrld state ttree)))))
 
-(defun guard-theorem (fn simp-p guard-debug wrld state)
+(defun guard-theorem-simplify-msg (caller x period-p)
+
+; Caller is a message indicating the utility that is causing the error, e.g.:
+
+; - (msg "The simplification argument of ~x0" 'guard-theorem)
+; - (msg "the simplification argument of ~x0" :guard-theorem)
+; - (msg "The simplification argument of ~v0" '(:guard-theorem :gthm))
+
+  (declare (xargs :guard t))
+  (msg "~@0 must be ~x1 or ~x2, hence the supplied value ~x3 is ~@4"
+       caller :limited nil x
+       (msg (if period-p "illegal~@0." "illegal~@0")
+            (cond ((eq x t)
+                   (msg " (consider using :LIMITED in place of ~x0)" t))
+                  (t "")))))
+
+(defun guard-theorem (fn simplify guard-debug wrld state)
 
 ; Warning: If you change the formals of this function, consider making a
 ; corresponding change to guard-or-termination-theorem-msg.
@@ -14742,6 +14759,7 @@
   (declare (xargs :stobjs state
                   :guard (and (plist-worldp wrld)
                               (symbolp fn)
+                              (member-eq simplify '(:limited nil))
                               (function-symbolp fn wrld)
 
 ; We can call guard-theorem for any :logic mode function, since it is perfectly
@@ -14753,6 +14771,13 @@
   (cond
    ((not (getpropc fn 'unnormalized-body nil wrld))
     *t*)
+   ((not (member-eq simplify '(:limited nil)))
+    (er hard 'guard-theorem
+        "~@0"
+        (guard-theorem-simplify-msg (msg "The simplification argument of ~x0"
+                                         'guard-theorem)
+                                    simplify
+                                    t)))
    (t
     (let ((names (or (getpropc fn 'recursivep nil wrld)
                      (list fn))))
@@ -14766,7 +14791,7 @@
                                   nil)
 ; Note that ttree is assumption-free; see guard-clauses-for-clique.
         (let ((cl-set
-               (cond (simp-p
+               (cond (simplify ; :limited
                       (mv-let (cl-set ttree)
                         (clean-up-clause-set cl-set nil wrld ttree state)
                         (declare (ignore ttree)) ; assumption-free
@@ -14786,21 +14811,30 @@
          (mv (er hard! 'guard-or-termination-theorem-msg
                  "Implementation error!")
              nil)))
-      (if (plist-worldp wrld)
-          (msg "A call of ~x0 (or ~x1) can only be made on a :logic mode ~
+      (cond
+       ((not (plist-worldp wrld))
+        (msg "The second argument of the call ~x0 is not a valid logical ~
+              world."
+             (cons called-fn args)))
+       ((and (eq kwd :gthm)
+             (not (member-eq (nth 1 args) '(:limited nil))))
+        (guard-theorem-simplify-msg
+         (msg "The simplification argument of ~v0" '(:guard-theorem :gthm))
+         (nth 1 args)
+         t))
+       (t
+        (msg "A call of ~x0 (or ~x1) can only be made on a :logic mode ~
               function symbol, but ~x2 is ~@3.~@4"
-               kwd
-               called-fn
-               fn
-               (cond ((not (symbolp fn))
-                      "not a symbol")
-                     ((not (function-symbolp fn wrld))
-                      "not a function symbol in the current world")
-                     (t ; (programp fn wrld)
-                      "a :program mode function symbol"))
-               coda)
-        (msg "The second argument of the call ~x0 is not a valid logical world."
-             (cons called-fn args))))))
+             kwd
+             called-fn
+             fn
+             (cond ((not (symbolp fn))
+                    "not a symbol")
+                   ((not (function-symbolp fn wrld))
+                    "not a function symbol in the current world")
+                   (t ; (programp fn wrld)
+                    "a :program mode function symbol"))
+             coda))))))
 
 (set-guard-msg guard-theorem
                (guard-or-termination-theorem-msg :gthm args coda))
@@ -14886,8 +14920,9 @@
 ; (3) (:theorem formula),
 ; (4) (:instance lmi . substn),
 ; (5) (:functional-instance lmi . substn),
-; (6) (:guard-theorem fn-symb) or (:guard-theorem fn-symb clean-up-flg)
-;     for fn-symb a guard-verified function symbol, or
+; (6) (:guard-theorem fn-symb) or (:guard-theorem fn-symb simplify)
+;     for fn-symb a guard-verified function symbol, where simplify is :limited
+;     or nil, or
 ; (7) (:termination-theorem fn-symb) or (:termination-theorem! fn-symb)
 ;     for fn-symb a :logic mode function symbol,
 
@@ -14984,10 +15019,17 @@
                  (msg "~x0 is not a guard-verified function symbol in the ~
                        current ACL2 logical world"
                       fn)))
+              ((and (= (length lmi) 3)
+                    (not (member-eq (caddr lmi) '(:limited nil))))
+               (er@par soft ctx str lmi
+                 (guard-theorem-simplify-msg
+                  (msg "the simplification argument of ~x0" :guard-theorem)
+                  (caddr lmi)
+                  nil)))
               (t
                (let ((term (guard-theorem fn
                                           (if (= (length lmi) 2)
-                                              t
+                                              :limited
                                             (caddr lmi))
                                           nil wrld state)))
                  (value@par (list term nil nil nil)))))))

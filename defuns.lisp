@@ -5123,7 +5123,33 @@
         wrld "formula" ctx)
       (value-cmp (cons :term term)))))))
 
-(defun chk-acceptable-verify-guards-cmp (name rrp ctx wrld state-vars)
+(defun guard-simplify-msg (x)
+  (msg "The only legal values for :GUARD-SIMPIFY are ~x0 and ~x1.  The value ~
+        ~x2 is thus illegal.~@3"
+       t :limited x
+       (if (eq x nil)
+           (msg "  (Consider using :LIMITED in place of ~x0.)"
+                nil)
+         "")))
+
+(defun guard-simplify-p (x ctx)
+
+; In the ACL2 source code, a guard-simplify parameter has value t or :limited.
+; This function checks that (though we should already have checked for that
+; before calls of this function), and it returns nil when x is :limited.
+
+; Keep this in sync with the second (final) binding of guard-simplify in
+; chk-acceptable-defuns1 and a similar binding in
+; chk-acceptable-verify-guards-cmp.
+
+  (declare (xargs :guard (member-eq x '(t :limited))))
+  (cond ((eq x t) t)
+        ((eq x :limited) nil)
+        (t
+         (er hard ctx "~@0" (guard-simplify-msg x)))))
+
+(defun chk-acceptable-verify-guards-cmp (name rrp guard-simplify ctx wrld
+                                              state-vars)
 
 ; We check that name is acceptable input for verify-guards and either cause an
 ; error or return the list of objects from which guard clauses should be
@@ -5190,7 +5216,16 @@
 ; redefinition, now has a :program mode function in it.
 
   (er-let*-cmp
-   ((name
+   ((ignore
+     (cond
+
+; Keep this in sync with guard-simplify-p and a similar check in
+; chk-acceptable-defuns1.
+
+      ((member-eq guard-simplify '(t :limited))
+       (value-cmp nil))
+      (t (er-cmp ctx "~@0" (guard-simplify-msg guard-simplify)))))
+    (name
      (cond
       ((symbolp name)
        (value-cmp name))
@@ -5363,9 +5398,9 @@
                                   macro-aliases-table."
                                  name fn))))))))))
 
-(defun chk-acceptable-verify-guards (name rrp ctx wrld state)
+(defun chk-acceptable-verify-guards (name rrp guard-simplify ctx wrld state)
   (cmp-to-error-triple
-   (chk-acceptable-verify-guards-cmp name rrp ctx wrld
+   (chk-acceptable-verify-guards-cmp name rrp guard-simplify ctx wrld
                                      (default-state-vars t))))
 
 (defun guard-obligation-clauses (x guard-debug ens wrld state)
@@ -5460,24 +5495,24 @@
     (er-let*-cmp
      ((y
        (cond (namep (chk-acceptable-verify-guards-cmp
-                     x rrp ctx wrld (default-state-vars t)))
+                     x rrp guard-simplify ctx wrld (default-state-vars t)))
              (t (chk-acceptable-verify-guards-formula-cmp
                  nil x ctx wrld (default-state-vars t))))))
      (cond
       ((and namep (eq y 'redundant))
        (value-cmp :redundant))
       (t (mv-let (cl-set cl-set-ttree)
-                 (guard-obligation-clauses y guard-debug
-                                           (if guard-simplify
-                                               (ens state)
-                                             :do-not-simplify)
-                                           wrld
-                                           state)
+                 (guard-obligation-clauses
+                  y guard-debug
+                  (if (guard-simplify-p guard-simplify ctx)
+                      (ens state)
+                    :do-not-simplify)
+                  wrld state)
                  (value-cmp (list* y cl-set cl-set-ttree))))))))
 
 (defun prove-guard-clauses-msg (names cl-set cl-set-ttree displayed-goal
                                       verify-guards-formula-p
-                                      guard-simplify state)
+                                      guard-simplify ctx state)
   (let ((simp-phrase (tilde-*-simp-phrase cl-set-ttree)))
     (cond
      ((null cl-set)
@@ -5496,13 +5531,13 @@
            nil))
      (t
       (pprogn
-       (fms "The ~s0 guard conjecture for ~#1~[this ~
-             lambda expression~/~&2~/the given term~]~#3~[~/, given ~*4,~] ~
-             is~%~%Goal~%~Q56."
+       (fms "The ~@0 for ~#1~[this lambda expression~/~&2~/the given ~
+             term~]~#3~[~/, given ~*4,~] is~%~%Goal~%~Q56."
             (list (cons #\0
-                        (if guard-simplify
-                            "non-trivial part of the"
-                          "unsimplified"))
+                        (if (guard-simplify-p guard-simplify ctx)
+                            "non-trivial part of the guard conjecture"
+                          "guard conjecture (with only :limited ~
+                           simplification)"))
                   (cons #\1 (if names
                                 (if (consp (car names))
                                     0 1)
@@ -5524,7 +5559,7 @@
        (mv 0 ; don't care
            state))))))
 
-(defun verify-guards-formula-fn (x rrp guard-debug guard-simplify state)
+(defun verify-guards-formula-fn (x rrp guard-debug guard-simplify ctx state)
   (er-let* ((tuple (cmp-to-error-triple
                     (guard-obligation x rrp guard-debug guard-simplify
                                       'verify-guards-formula
@@ -5544,13 +5579,15 @@
                                             nil
                                           names)
                                         (cadr tuple) cl-set-ttree
-                                        displayed-goal t guard-simplify state)
+                                        displayed-goal t guard-simplify ctx
+                                        state)
                (declare (ignore col))
                (value :invisible)))))))
 
 (defmacro verify-guards-formula (x &key rrp guard-debug (guard-simplify 't)
                                    &allow-other-keys)
-  `(verify-guards-formula-fn ',x ',rrp ',guard-debug ',guard-simplify state))
+  `(verify-guards-formula-fn ',x ',rrp ',guard-debug ',guard-simplify
+                             'verify-guards-formula state))
 
 (defun prove-guard-clauses (names hints otf-flg guard-debug guard-simplify
                                   ctx ens wrld state)
@@ -5581,11 +5618,12 @@
                         state
                         nil))
               (mv-let (cl-set cl-set-ttree)
-                (guard-obligation-clauses names guard-debug
-                                          (if guard-simplify
-                                              ens
-                                            :do-not-simplify)
-                                          wrld state)
+                (guard-obligation-clauses
+                 names guard-debug
+                 (if (guard-simplify-p guard-simplify ctx)
+                     ens
+                   :do-not-simplify)
+                 wrld state)
                 (mv cl-set cl-set-ttree state)))
 
 ; Cl-set-ttree is 'assumption-free.
@@ -5598,9 +5636,10 @@
          (mv-let
            (col state)
            (io? event nil (mv col state)
-                (names cl-set cl-set-ttree displayed-goal guard-simplify)
+                (names cl-set cl-set-ttree displayed-goal guard-simplify ctx)
                 (prove-guard-clauses-msg names cl-set cl-set-ttree
-                                         displayed-goal nil guard-simplify state)
+                                         displayed-goal nil guard-simplify ctx
+                                         state)
                 :default-bindings ((col 0)))
            (pprogn
             (increment-timer 'print-time state)
@@ -6481,7 +6520,8 @@
           (assumep (or (eq (ld-skip-proofsp state) 'include-book)
                        (eq (ld-skip-proofsp state) 'include-book-with-locals)
                        (eq (ld-skip-proofsp state) 'initialize-acl2))))
-      (er-let* ((names (chk-acceptable-verify-guards name t ctx wrld state)))
+      (er-let* ((names (chk-acceptable-verify-guards name t guard-simplify ctx
+                                                     wrld state)))
         (cond
          ((eq names 'redundant)
           (stop-redundant-event ctx state))
@@ -9670,7 +9710,7 @@
          `(mv-list ,(fargn term 1)
                    ,(logic-code-to-runnable-code t (fargn term 2) wrld)))
         (t (let* ((fn (ffn-symb term))
-                  (stobjs-out (stobjs-out fn wrld)) 
+                  (stobjs-out (stobjs-out fn wrld))
                   (pair (assoc-eq fn *primitive-untranslate-alist*))
                   (ec-call-p
 
@@ -11024,6 +11064,18 @@
                                                  fives
                                                  t ; guard-simplify default
                                                  ctx state))
+      (guard-simplify
+
+; Keep this in sync with guard-simplify-p and a similar check in
+; chk-acceptable-verify-guards-cmp.  Unlike that function, here we return
+; guard-simplify unchanged.  That will require us to call guard-simplify-p in
+; out utilities to convert :limited to nil, but that's a cheap thing to do and
+; it maintains the use of the symbol GUARD-SIMPLIFY to denote a legal value for
+; :guard-simplify.
+
+       (cond ((member-eq guard-simplify '(t :limited))
+              (value guard-simplify))
+             (t (er soft ctx "~@0" (guard-simplify-msg guard-simplify)))))
       (split-types-lst (get-boolean-unambiguous-xargs-flg-lst
                         :SPLIT-TYPES fives nil ctx state))
       (normalizeps (get-boolean-unambiguous-xargs-flg-lst
@@ -11424,7 +11476,8 @@
 ;; I modified the function below to check for recursive
 ;; definitions using non-classical predicates.
 
-(defun chk-acceptable-defuns (lst ctx wrld state #+:non-standard-analysis std-p)
+(defun chk-acceptable-defuns (lst ctx wrld state
+                                  #+:non-standard-analysis std-p)
 
 ; WARNING: This function installs a world, hence should only be called when
 ; protected by a revert-world-on-error.
@@ -11490,8 +11543,8 @@
 ;                translations of lambda$ and loop$ forms encountered.
 
 ;    guard-simplify
-;               - t or nil, determining whether to simplify while generating
-;                 the guard conjectures
+;               - t or :limited, determining whether to simplify fully while
+;                 generating the guard conjectures
 
 ;    type-prescription-lst
 ;               - collect all values of :type-prescription xargs, where each
@@ -11721,10 +11774,9 @@
      (t wrld))))
 
 (defun defuns-fn1 (tuple ens big-mutrec names arglists docs pairs guards
-                         guard-hints std-hints otf-flg guard-debug guard-simplify
-                         bodies symbol-class normalizeps split-types-terms
-                         lambda-info
-                         non-executablep
+                         guard-hints std-hints otf-flg guard-debug
+                         guard-simplify bodies symbol-class normalizeps
+                         split-types-terms lambda-info non-executablep
                          type-prescription-lst
                          #+:non-standard-analysis std-p
                          ctx state)
@@ -11889,8 +11941,8 @@
                                            ctx wrld12 state)
                                         (value nil)))
                          (pair (verify-guards-fn1 names guard-hints otf-flg
-                                                  guard-debug guard-simplify ctx
-                                                  state)))
+                                                  guard-debug guard-simplify
+                                                  ctx state)))
 
 ; Pair is of the form (wrld . ttree3) and we return a pair of the same
 ; form, but we must combine this ttree with the ones produced by the

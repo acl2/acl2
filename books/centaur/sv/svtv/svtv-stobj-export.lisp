@@ -39,7 +39,7 @@
 
 ;; (local (in-theory (disable omap::alistp-when-mapp
 ;;                            alistp)))
-                           
+
 
 (defsection svtv-data-obj
   (local (defun svtv-data-obj-fields-from-decls (decls)
@@ -194,7 +194,7 @@
         :hints(("Goal" :in-theory (enable svtv-data-expequiv))))
       . ,(svtv-data-equiv-congruences-from-decls 0 'svtv-data-equiv '((moddb) (aliases))))))
 
-  
+
   (defcong svtv-data-equiv equal (svtv-data$c-flatten-okp svtv-data flatten) 1
     :hints(("Goal" :in-theory (enable svtv-data$c-flatten-okp))))
 
@@ -242,7 +242,7 @@
         (declare (xargs :guard t))
         ',(svtv-data-to-obj svtv-data))
      state svtv-data))
-     
+
 (defevaluator svtv-data-obj-ev svtv-data-obj-ev-lst
   ((svtv-data$ap x)
    (svtv-data-obj-to-stobj-logic x)
@@ -316,7 +316,7 @@
 
   (local (acl2::def-join-thms  svtv-data-obj-ev))
   (local (acl2::def-ev-pseudo-term-fty-support svtv-data-obj-ev svtv-data-obj-ev-lst))
-          
+
 
   (defthm svtv-data-to-obj-cp-correct
     (implies (and (pseudo-term-listp clause)
@@ -332,7 +332,7 @@
              ))
     :otf-flg t
     :rule-classes :clause-processor))
-  
+
 
 
 
@@ -408,7 +408,7 @@
                (and (not err)
                     (equal x.flatten res))))
     :hints(("Goal" :in-theory (enable svtv-data$ap svtv-data$c-flatten-okp))))
-  
+
 
   (defthm flatnorm-of-svtv-data-obj
     (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
@@ -500,7 +500,7 @@
 (defconst *svtv-data-import-template*
   '(define svtv-data-import-<obj-fn> (svtv-data)
      :guard-hints <hints>
-     :guard-simplify nil
+     :guard-simplify :limited
      (b* (((svtv-data-obj obj) (<obj-fn>))
           (svtv-data (svtv-data-invalidate svtv-data))
 
