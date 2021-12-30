@@ -1,6 +1,6 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -822,14 +822,24 @@
      (the references the local theorem name of the applicability condition;
      this name generally differs from
      the theorem name determined by @(':thm-names')),
-     and in non-local, redundant form without hints."))
+     and in non-local, redundant form without hints.")
+   (xdoc::p
+    "As explained in the user documentation,
+     the @('...-guard') theorems are disabled,
+     while the other theorems are enabled."))
   (b* (((evmac-appcond appcond) appcond)
        (thm-name (cdr (assoc-eq appcond.name thm-names$)))
        (thm-formula (untranslate appcond.formula t wrld))
        (thm-hints
         `(("Goal" :by ,(cdr (assoc-eq appcond.name appcond-thm-names)))))
-       (local-event `(local (defthmr ,thm-name ,thm-formula :hints ,thm-hints)))
-       (exported-event `(defthmr ,thm-name ,thm-formula)))
+       (macro (if (member-eq appcond.name '(:doma-guard
+                                            :domb-guard
+                                            :alpha-guard
+                                            :beta-guard))
+                  'defthmdr
+                'defthmr))
+       (local-event `(local (,macro ,thm-name ,thm-formula :hints ,thm-hints)))
+       (exported-event `(,macro ,thm-name ,thm-formula)))
     (mv local-event exported-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
