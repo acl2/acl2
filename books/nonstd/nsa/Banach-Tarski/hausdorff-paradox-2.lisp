@@ -1,7 +1,7 @@
 ; Banach-Tarski theorem
 ;
-; Proof of Hausdorff paradox.
-; Book contains the proof that the set D is countable
+; Proof of the Hausdorff paradox (part 2).
+; Book contains the proof that the set D is countable.
 ;
 ;
 ; Copyright (C) 2021 University of Wyoming
@@ -12,6 +12,7 @@
 ;
 ; Contributing Authors:
 ;   Ruben Gamboa (ruben@uwyo.edu)
+;   John R. Cowles (cowles@uwyo.edu)
 
 (in-package "ACL2")
 
