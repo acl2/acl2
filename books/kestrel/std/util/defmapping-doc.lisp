@@ -88,6 +88,7 @@
      "            :guard-thms ..."
      "            :unconditional ..."
      "            :thm-names ..."
+     "            :thm-enable ..."
      "            :hints ..."
      "            :print ..."
      "            :show-only ..."
@@ -201,6 +202,49 @@
        where each @('thmk') is a keyword
        that identifies one of the generated theorems below,
        and each @('namek') is a valid fresh theorem name."))
+
+    (xdoc::desc
+     "@(':thm-enable') &mdash; default @('nil')"
+     (xdoc::p
+      "Determines which of the generated theorems must be enabled.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@('nil'), to enable none of them.")
+      (xdoc::li
+       "@(':all'), to enable all of them.")
+      (xdoc::li
+       "@(':all-nonguard'), to enable all of them
+        except for the @('...-guard') theorems.")
+      (xdoc::li
+       "A non-empty list @('(thm1 ... thmp)'),
+        where each @('thmk') is a keyword
+        that identifies one of the generated theorems below,
+        to enable the theorems identified by the keywords.
+        Only keywords for theorems that are generated
+        (based on the @(':beta-of-alpha-thm'), @(':alpha-of-beta-thm'), and
+        @(':guard-thms') inputs)
+        may be in this list."))
+     (xdoc::p
+      "As explained under `" xdoc::*evmac-section-generated-title* "',
+       the theorems are generated as rewrite rules,
+       if they are valid rewrite rules.
+       The enablement specified by @(':thm-enable') applies
+       only to those theorems that are rewrite rules;
+       it is ignored for theorems that are not rewrite rules.")
+     (xdoc::p
+      "Note that the first and last option could be described as a single one,
+       namely as a possibly empty list of theorem keywords,
+       where the empty list @('nil') enables no theorem.
+       The @(':all') option is provided for completeness,
+       but the @(':all-nonguard') may be more useful:
+       in general, the @('...-guard') theorems
+       do not look like useful rewrite rules,
+       while the other theorems generally do.")
+     (xdoc::p
+      "If @(':guard-thms') is ('nil'),
+       then the @(':all') and @(':all-nonguard') options are equivalent."))
 
     (xdoc::evmac-input-hints)
 
@@ -483,14 +527,6 @@
      "The theorems are generated as rewrite rules
       if they are valid rewrite rules;
       otherwise, they are generated with no rule classes.
-      The @('...-guard') theorems, if they are rewrite rules, are disabled.
-      The other theorems, if they are rewrite rules, are enabled.
-      This difference in enablement is motivated by the fact that, in general,
-      the @('...-guard') theorems do not look like useful rewrite rules,
-      while the other theorems do;
-      this choice may be revisited in the future.
-      (It is always possible to enable or disable the generated rules
-      after the call of @('defmapping'), as with any other rules.)
       The macros @(tsee defthmr) and @('defthmdr')
       are used to generate the theorems.")
 

@@ -104,6 +104,7 @@
 
 (defiso int10-iso-int18
   int10 int18 int10-to-int18 int18-to-int10
+  :thm-enable :all-nonguard
   :hints (:beta-of-alpha (("Goal" :in-theory (enable int10-to-int18 int18-to-int10 int10 int18)))
           :alpha-of-beta (("Goal" :in-theory (enable int10-to-int18 int18-to-int10 int10 int18)))
           :alpha-image (("Goal" :in-theory (enable int10-to-int18 int10 int18)))
@@ -119,6 +120,7 @@
 
 (defiso int10-list-p-iso-int18-list-p0
   int10-list-p int18-list-p int10-list-p-to-int18-list-p0 int18-list-p-to-int10-list-p0
+  :thm-enable :all-nonguard
   :hints (:beta-of-alpha (("Goal" :in-theory (enable int10-list-p int18-list-p)))
           :alpha-of-beta (("Goal" :in-theory (enable int10-list-p int18-list-p)))
           :alpha-image (("Goal" :in-theory (enable int10-list-p int18-list-p)))
@@ -138,6 +140,7 @@
 
 (defiso int10-list-p-iso-int18-list-p
   int10-list-p int18-list-p int10-list-p-to-int18-list-p int18-list-p-to-int10-list-p
+  :thm-enable :all-nonguard
   :hints (:beta-of-alpha (("Goal" :in-theory (enable int10-list-p int18-list-p)))
           :alpha-of-beta (("Goal" :in-theory (enable int10-list-p int18-list-p)))
           :alpha-image (("Goal" :in-theory (enable int10-list-p int18-list-p)))
@@ -361,19 +364,20 @@
    int10-list-p-alias int18-list-p-alias
    int10-list-p-to-int18-list-p
    int18-list-p-to-int10-list-p
+   :thm-enable :all-nonguard
    :hints (:beta-of-alpha (("Goal" :in-theory (enable int10-list-p-alias int18-list-p-alias
                                                       int10-list-p-to-int18-list-p
                                                       int18-list-p-to-int10-list-p)))
-                          :alpha-of-beta (("Goal" :in-theory (enable int10-list-p-alias int18-list-p-alias
-                                                                     int10-list-p-to-int18-list-p
-                                                                     int18-list-p-to-int10-list-p)))
-                          :alpha-image (("Goal" :in-theory (enable int10-list-p-alias int18-list-p-alias
-                                                                   int10-list-p-to-int18-list-p)))
-                          :beta-image (("Goal" :in-theory (enable int10-list-p-alias int18-list-p-alias
-                                                                  int18-list-p-to-int10-list-p)))
-                          :alpha-guard (("Goal" :in-theory (enable int10-list-p-alias int18-list-p-alias)))
-                          :beta-guard (("Goal" :in-theory (enable int10-list-p-alias
-                                                                  int18-list-p-alias)))))
+           :alpha-of-beta (("Goal" :in-theory (enable int10-list-p-alias int18-list-p-alias
+                                                      int10-list-p-to-int18-list-p
+                                                      int18-list-p-to-int10-list-p)))
+           :alpha-image (("Goal" :in-theory (enable int10-list-p-alias int18-list-p-alias
+                                                    int10-list-p-to-int18-list-p)))
+           :beta-image (("Goal" :in-theory (enable int10-list-p-alias int18-list-p-alias
+                                                   int18-list-p-to-int10-list-p)))
+           :alpha-guard (("Goal" :in-theory (enable int10-list-p-alias int18-list-p-alias)))
+           :beta-guard (("Goal" :in-theory (enable int10-list-p-alias
+                                                   int18-list-p-alias)))))
  (defthm int10-list-p-alias-int10-list-p-to-int18-list-p-int18-list-p
    (implies (and (int10-list-p-alias l))
             (int18-list-p (int10-list-p-to-int18-list-p l))))

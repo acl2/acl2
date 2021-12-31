@@ -201,6 +201,7 @@
 
 (defiso int10-iso-int20
   int10 int20 int10-to-int20 int20-to-int10
+  :thm-enable :all-nonguard
   :hints (:beta-of-alpha (("Goal" :in-theory (enable int10-to-int20 int20-to-int10 int10 int20)))
           :alpha-of-beta (("Goal" :in-theory (enable int10-to-int20 int20-to-int10 int10 int20)))
           :alpha-image (("Goal" :in-theory (enable int10-to-int20 int10 int20)))
@@ -283,6 +284,7 @@
    int10-list-p int20-list-p
    int10-list-p-->-int20-list-p
    int20-list-p-->-int10-list-p
+   :thm-enable :all-nonguard
    :hints (:beta-of-alpha (("Goal" :in-theory (enable int10-list-p int20-list-p
                                                       int10-list-p-->-int20-list-p
                                                       int20-list-p-->-int10-list-p)))
@@ -481,6 +483,7 @@
  (defun int20*-->-int10* (x) (declare (xargs :guard (int20* x))) (if (null x) nil (int20-to-int10 x)))
  (defiso int10*-iso-int20* int10*
    int20* int10*-->-int20* int20*-->-int10*
+   :thm-enable :all-nonguard
    :hints (:beta-of-alpha (("Goal" :in-theory (enable int10* int20*
                                                       int10*-->-int20* int20*-->-int10*)))
                           :alpha-of-beta (("Goal" :in-theory (enable int10* int20*
@@ -503,6 +506,7 @@
    pair-int10-bool-p pair-int20-bool-p
    pair-int10-bool-p-->-pair-int20-bool-p
    pair-int20-bool-p-->-pair-int10-bool-p
+   :thm-enable :all-nonguard
    :hints (:beta-of-alpha (("Goal" :in-theory (enable pair-int10-bool-p pair-int20-bool-p
                                                       pair-int10-bool-p-->-pair-int20-bool-p
                                                       pair-int20-bool-p-->-pair-int10-bool-p)))
@@ -593,6 +597,7 @@
    pair-int20-bool-listp
    pair-int10-bool-listp-->-pair-int20-bool-listp
    pair-int20-bool-listp-->-pair-int10-bool-listp
+   :thm-enable :all-nonguard
    :hints (:beta-of-alpha (("Goal" :in-theory (enable pair-int10-bool-listp
                                                       pair-int20-bool-listp
                                                       pair-int10-bool-listp-->-pair-int20-bool-listp
@@ -794,6 +799,7 @@
  (defiso int10-map-p-iso-int20-map-p int10-map-p
    int20-map-p int10-map-p-->-int20-map-p
    int20-map-p-->-int10-map-p
+   :thm-enable :all-nonguard
    :hints (:beta-of-alpha (("Goal" :in-theory (enable int10-map-p
                                                       int20-map-p int10-map-p-->-int20-map-p
                                                       int20-map-p-->-int10-map-p)))
@@ -890,6 +896,7 @@
    int10-map2-p
    int20-map2-p int10-map-p-->-int20-map-p
    int20-map-p-->-int10-map-p
+   :thm-enable :all-nonguard
    :hints (:beta-of-alpha (("Goal" :in-theory (enable int10-map2-p
                                                       int20-map2-p int10-map-p-->-int20-map-p
                                                       int20-map-p-->-int10-map-p)))

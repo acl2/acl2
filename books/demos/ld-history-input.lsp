@@ -8,6 +8,7 @@
 
 (cw "Next we'll see how to get the components of a ld-history entry.~|")
 
+(with-output :off event ; avoid discrepant output between ACL2 and ACL2(r)
 (defun show-ld-history-entry (n state)
 ; Display the top ld-history entry by returning a user-friendly list.
   (declare (xargs :stobjs state
@@ -24,6 +25,7 @@
                   (list :stobjs-out (ld-history-entry-stobjs-out entry))
                   (list :value (ld-history-entry-value entry))
                   (list :user-data (ld-history-entry-user-data entry))))))))
+)
 
 (* 4 5)
 
