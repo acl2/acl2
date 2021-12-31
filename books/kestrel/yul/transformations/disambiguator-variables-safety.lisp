@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ disambiguator-variables-safety
-  :parents (transformations)
+  :parents (disambiguator)
   :short "Proof that
           the part of the @('Disambiguator') transformation for variables
           preserves the static safety checks."
