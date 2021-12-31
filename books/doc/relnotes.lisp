@@ -203,6 +203,10 @@
 
    (xdoc::h3 "Miscellaneous")
 
+   (xdoc::p
+    "A new keyword option @(':ignore-ok') is now available for @(tsee
+     prove$).")
+
    ))
 
 (defxdoc note-8-4-books
