@@ -1,6 +1,6 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -480,10 +480,19 @@
       followed by the identifying keyword (without @(':')) below.")
 
     (xdoc::p
-     "The theorems are generated as enabled rewrite rules
+     "The theorems are generated as rewrite rules
       if they are valid rewrite rules;
       otherwise, they are generated with no rule classes.
-      This is done via @(tsee defthmr).")
+      The @('...-guard') theorems, if they are rewrite rules, are disabled.
+      The other theorems, if they are rewrite rules, are enabled.
+      This difference in enablement is motivated by the fact that, in general,
+      the @('...-guard') theorems do not look like useful rewrite rules,
+      while the other theorems do;
+      this choice may be revisited in the future.
+      (It is always possible to enable or disable the generated rules
+      after the call of @('defmapping'), as with any other rules.)
+      The macros @(tsee defthmr) and @('defthmdr')
+      are used to generate the theorems.")
 
     (xdoc::desc
      (list

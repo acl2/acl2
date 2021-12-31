@@ -1043,7 +1043,27 @@
       "          (mv-nth \'1 mv)"
       "          ..."
       "          (mv-nth \'n-1 mv)))"
-      " term)")))
+      " term)")
+
+     (xdoc::p
+      "Since ATC operates on translated terms,
+       there is no direct restriction
+       on the untranslated bodies of the functions,
+       which in particular may use any macro or any named constant,
+       so long as their translated form
+       satisfies all the requirements stated in this ATC documentation;
+       the restrictions on the translated bodies thus impose
+       indirect restrictions on the untranslated bodies.
+       Note also that ATC treats, for instance,
+       a translated term of the form @('(if a b \'nil)')
+       as if it were the translation of @('(and a b)')
+       in an untranslated function body,
+       even though that untranslated function body
+       may include @('(if a b \'nil)') directly,
+       or some other macro that expands to that:
+       this does not cause any problem of course,
+       because if two untranslated terms become the same translated term,
+       then they are equivalent for ATC's purposes.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

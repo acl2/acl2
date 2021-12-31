@@ -24,11 +24,11 @@
    (xdoc::p
     "Here we characterize, relationally, the renaming of variables.
      The predicate mentioned in @(see disambiguator),
-     i.e. the one that related original and transformed code,
+     i.e. the one that relates original and transformed code,
      is actually a function that returns success or failure.
      More precisely, as with other aspects of Yul,
      it is a family of functions,
-     with a member of each kind of Yul syntactic entity
+     with a member for each kind of Yul syntactic entity
      (expression, statement, etc.);
      however, for simplicity below we refer to this family as just a function.")
    (xdoc::p
@@ -54,7 +54,17 @@
      These facts are formally explicated and proved as part of the "
     (xdoc::seetopic "disambiguator-variables-safety"
                     "the proof of static safety preservation")
-    "."))
+    ".")
+   (xdoc::p
+    "The renaming omap is injective.
+     This is a natural property,
+     because just like the variables in scope in the old code
+     do not shadow each other,
+     in the same way the variables in scope in the new code
+     do not shadow each other.
+     Thus, as we encounter new variables in the old and new code,
+     the former must not be keys in the omap
+     and the latter must not be values in the omap."))
   :order-subtopics t
   :default-parent t)
 
@@ -312,13 +322,22 @@
      only variables not in scope are added to the scope.")
    (xdoc::p
     "We could consider omitting this check here,
-     but having it facilitates some proofs."))
+     but having it facilitates some proofs.")
+   (xdoc::p
+    "We also check that the new variable is not already a value in the map.
+     This is also always the case when processing statically safe code.
+     In fact, by checking this, we are checking that the new code
+     does not shadow variables, which is part of its safety checks.
+     This means that the omap is injective,
+     which we plan to formally prove."))
   (b* ((old (identifier-fix old))
        (new (identifier-fix new))
        (ren (identifier-identifier-map-fix ren)))
     (if (consp (omap::in old ren))
-        (err (list :var-already-in-scope old new ren))
-      (omap::update old new ren)))
+        (err (list :old-var-already-in-scope old new ren))
+      (if (set::in new (omap::values ren))
+          (omap::update old new ren)
+        (err (list :new-var-already-in-scope old new ren)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
