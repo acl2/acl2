@@ -84,7 +84,7 @@
      we remove from @('uncalled-fns') all the functions called by @('fn').
      If @('fn') is recursive, we add it to @('uncalled-fns').
      We return the updated list of uncalled functions."))
-  (b* ((desc (msg "The target ~x0 input" fn))
+  (b* ((desc (msg "The target function input ~x0" fn))
        ((er &) (ensure-value-is-function-name$ fn desc t nil))
        (desc (msg "The target function ~x0" fn))
        ((er &) (ensure-function-is-logic-mode$ fn desc t nil))
