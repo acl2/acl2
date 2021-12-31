@@ -53,7 +53,7 @@
          (dr-state-ext0->path-taken (double-rewrite drn-st))))
 ) ; from-dr-state-ext
 
-;; Define dr-state-ext-p to be isomorphic to dr-state 
+;; Define dr-state-ext-p to be isomorphic to dr-state
 (define dr-state-ext-p (drn-st)
   :returns (b booleanp)
   (and (dr-state-ext0-p drn-st)
@@ -180,6 +180,7 @@
 
 (defiso dr-state-p-to-dr-state-ext-p
   dr-state-p dr-state-ext-p to-dr-state-ext from-dr-state-ext
+  :thm-enable :all-nonguard
   :hints (:beta-of-alpha (("Goal" :in-theory (enable from-dr-state-ext to-dr-state-ext)))
           :alpha-of-beta (("Goal" :in-theory (enable from-dr-state-ext to-dr-state-ext)))))
 

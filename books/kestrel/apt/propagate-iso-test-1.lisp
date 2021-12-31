@@ -77,6 +77,7 @@
 
 (defiso int10-iso-int20
   int10 int20 int10-to-int20 int20-to-int10
+  :thm-enable :all-nonguard
   :hints (:beta-of-alpha (("Goal" :in-theory (enable int10-to-int20 int20-to-int10 int10 int20)))
           :alpha-of-beta (("Goal" :in-theory (enable int10-to-int20 int20-to-int10 int10 int20)))
           :alpha-image (("Goal" :in-theory (enable int10-to-int20 int10 int20)))
@@ -91,6 +92,7 @@
 
 (defiso int10-list-p-iso-int20-list-p
   int10-list-p int20-list-p int10-list-p-to-int20-list-p int20-list-p-to-int10-list-p
+  :thm-enable :all-nonguard
   :hints (:beta-of-alpha (("Goal" :in-theory (enable int10-list-p int20-list-p)))
           :alpha-of-beta (("Goal" :in-theory (enable int10-list-p int20-list-p)))
           :alpha-image (("Goal" :in-theory (enable int10-list-p int20-list-p)))

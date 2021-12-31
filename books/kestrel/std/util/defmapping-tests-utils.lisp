@@ -1,6 +1,6 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -76,6 +76,15 @@
 (defmacro must-not-be-theorems (&rest names)
   (declare (xargs :guard (symbol-listp names)))
   `(progn ,@(must-not-be-theorems-fn names)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; test that some rewrite rule is enabled or disabled:
+
+(defmacro must-be-enabled-rewrite-rule (name yes/no)
+  (if yes/no
+      `(assert! (rune-enabledp '(:rewrite ,name) state))
+    `(assert! (rune-disabledp '(:rewrite ,name) state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -249,6 +258,16 @@
           (domb-guard 'map.domb-guard)
           (alpha-guard 'map.alpha-guard)
           (beta-guard 'map.beta-guard)
+          (alpha-image-enable 'nil)
+          (beta-image-enable 'nil)
+          (beta-of-alpha-enable 'nil)
+          (alpha-of-beta-enable 'nil)
+          (alpha-injective-enable 'nil)
+          (beta-injective-enable 'nil)
+          (doma-guard-enable 'nil)
+          (domb-guard-enable 'nil)
+          (alpha-guard-enable 'nil)
+          (beta-guard-enable 'nil)
           (g-doma 'g-doma)
           (g-domb 'g-domb)
           (g-alpha 'g-alpha)
@@ -328,4 +347,30 @@
                            ,@(and (not guard-thms)
                                   (list alpha-guard))
                            ,@(and (not guard-thms)
-                                  (list beta-guard)))))
+                                  (list beta-guard)))
+     (must-be-enabled-rewrite-rule ,alpha-image ,alpha-image-enable)
+     (must-be-enabled-rewrite-rule ,beta-image ,beta-image-enable)
+     ,@(and beta-of-alpha-thm
+            `((must-be-enabled-rewrite-rule ,beta-of-alpha
+                                            ,beta-of-alpha-enable)))
+     ,@(and alpha-of-beta-thm
+            `((must-be-enabled-rewrite-rule ,alpha-of-beta
+                                            ,alpha-of-beta-enable)))
+     ,@(and beta-of-alpha-thm
+            `((must-be-enabled-rewrite-rule ,alpha-injective
+                                            ,alpha-injective-enable)))
+     ,@(and alpha-of-beta-thm
+            `((must-be-enabled-rewrite-rule ,beta-injective
+                                            ,beta-injective-enable)))
+     ,@(and guard-thms
+            `((must-be-enabled-rewrite-rule ,doma-guard
+                                            ,doma-guard-enable)))
+     ,@(and guard-thms
+            `((must-be-enabled-rewrite-rule ,domb-guard
+                                            ,domb-guard-enable)))
+     ,@(and guard-thms
+            `((must-be-enabled-rewrite-rule ,alpha-guard
+                                            ,alpha-guard-enable)))
+     ,@(and guard-thms
+            `((must-be-enabled-rewrite-rule ,beta-guard
+                                            ,beta-guard-enable)))))
