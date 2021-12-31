@@ -15,70 +15,31 @@ ACL2 !>>(LD-HISTORY STATE)
 ACL2 !>>(CW
          "Next we'll see how to get the components of a ld-history entry.~|")
 NIL
-ACL2 !>>(DEFUN
-         SHOW-LD-HISTORY-ENTRY (N STATE)
-         (DECLARE (XARGS :STOBJS STATE
-                         :GUARD (AND (NATP N)
-                                     (F-BOUNDP-GLOBAL 'LD-HISTORY STATE))))
-         (LET
-          ((LD-HISTORY (@ LD-HISTORY)))
-          (AND
-           (TRUE-LISTP LD-HISTORY)
-           (< N (LEN LD-HISTORY))
-           (LET
-            ((ENTRY (NTH N (LD-HISTORY STATE))))
-            (AND
-             (WEAK-LD-HISTORY-ENTRY-P ENTRY)
-             (LIST (LIST :INPUT (LD-HISTORY-ENTRY-INPUT ENTRY))
-                   (LIST :ERROR-FLG (LD-HISTORY-ENTRY-ERROR-FLG ENTRY))
-                   (LIST :STOBJS-OUT (LD-HISTORY-ENTRY-STOBJS-OUT ENTRY))
-                   (LIST :VALUE (LD-HISTORY-ENTRY-VALUE ENTRY))
-                   (LIST :USER-DATA (LD-HISTORY-ENTRY-USER-DATA ENTRY))))))))
-
-Since SHOW-LD-HISTORY-ENTRY is non-recursive, its admission is trivial.
-We observe that the type of SHOW-LD-HISTORY-ENTRY is described by the
-theorem (TRUE-LISTP (SHOW-LD-HISTORY-ENTRY N STATE)).  We used primitive
-type reasoning.
-
-(SHOW-LD-HISTORY-ENTRY * STATE) => *.
-
-Computing the guard conjecture for SHOW-LD-HISTORY-ENTRY....
-
-The non-trivial part of the guard conjecture for SHOW-LD-HISTORY-ENTRY,
-given the :forward-chaining rule STATE-P-IMPLIES-AND-FORWARD-TO-STATE-P1
-and the :type-prescription rule STATE-P, is
-
-Goal
-(AND (IMPLIES (AND (BOUNDP-GLOBAL 'LD-HISTORY STATE)
-                   (NATP N)
-                   (STATE-P STATE))
-              (BOUNDP-GLOBAL1 'LD-HISTORY STATE))
-     (IMPLIES (AND (BOUNDP-GLOBAL 'LD-HISTORY STATE)
-                   (NATP N)
-                   (STATE-P STATE))
-              (LET ((LD-HISTORY (GET-GLOBAL 'LD-HISTORY STATE)))
-                   (AND (OR (NOT (TRUE-LISTP LD-HISTORY))
-                            (RATIONALP N))
-                        (OR (NOT (TRUE-LISTP LD-HISTORY))
-                            (RATIONALP (LEN LD-HISTORY)))
-                        (OR (NOT (TRUE-LISTP LD-HISTORY))
-                            (<= (LEN LD-HISTORY) N)
-                            (BOUNDP-GLOBAL 'LD-HISTORY STATE))
-                        (OR (NOT (TRUE-LISTP LD-HISTORY))
-                            (<= (LEN LD-HISTORY) N)
-                            (INTEGERP N))
-                        (OR (NOT (TRUE-LISTP LD-HISTORY))
-                            (<= (LEN LD-HISTORY) N)
-                            (TRUE-LISTP (LD-HISTORY STATE)))
-                        (OR (NOT (TRUE-LISTP LD-HISTORY))
-                            (<= (LEN LD-HISTORY) N)
-                            (<= 0 N)))))).
+ACL2 !>>(WITH-OUTPUT
+         :OFF EVENT
+         (DEFUN
+          SHOW-LD-HISTORY-ENTRY (N STATE)
+          (DECLARE (XARGS :STOBJS STATE
+                          :GUARD (AND (NATP N)
+                                      (F-BOUNDP-GLOBAL 'LD-HISTORY STATE))))
+          (LET
+           ((LD-HISTORY (@ LD-HISTORY)))
+           (AND
+            (TRUE-LISTP LD-HISTORY)
+            (< N (LEN LD-HISTORY))
+            (LET
+             ((ENTRY (NTH N (LD-HISTORY STATE))))
+             (AND
+              (WEAK-LD-HISTORY-ENTRY-P ENTRY)
+              (LIST
+                  (LIST :INPUT (LD-HISTORY-ENTRY-INPUT ENTRY))
+                  (LIST :ERROR-FLG (LD-HISTORY-ENTRY-ERROR-FLG ENTRY))
+                  (LIST :STOBJS-OUT (LD-HISTORY-ENTRY-STOBJS-OUT ENTRY))
+                  (LIST :VALUE (LD-HISTORY-ENTRY-VALUE ENTRY))
+                  (LIST :USER-DATA (LD-HISTORY-ENTRY-USER-DATA ENTRY)))))))))
 Goal'
 
 Q.E.D.
-
-That completes the proof of the guard theorem for SHOW-LD-HISTORY-ENTRY.
-SHOW-LD-HISTORY-ENTRY is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN SHOW-LD-HISTORY-ENTRY ...)
