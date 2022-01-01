@@ -157,7 +157,7 @@
                               (symbol-alistp param-renaming)
                               (function-renamingp function-renaming))))
   (let ((guard-hints ;;(if (eq :auto guard-hints)
-         `(("Goal" :use (:instance (:guard-theorem ,old-fn :limited)
+         `(("Goal" :use (:instance (:guard-theorem ,old-fn :limited) ; matches the :guard-simplify :limited below
                                    :extra-bindings-ok
                                    ;; account for the renaming:
                                    ,@(alist-to-doublets param-renaming))
