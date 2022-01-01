@@ -1,6 +1,6 @@
 ; A helper that can generate simple proof hints
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -43,12 +43,15 @@
       (mv nil nil nil state)
     (b* ((fn (first body-fns))
          (hints-to-try `(("Goal" :in-theory (enable ,fn))))
+         (- (cw "(Trying :hints ~x0..." hints-to-try))
          ((mv erp provedp state)
           (prove$ body :hints hints-to-try :ignore-ok t :step-limit 10000))
          ((when erp) (mv erp nil nil state)))
       (if provedp
-          (mv nil t hints-to-try state)
-        (try-enabling-functions (rest body-fns) body state)))))
+          (prog2$ (- (cw "Success!)~%" hints-to-try))
+                  (mv nil t hints-to-try state))
+        (prog2$ (- (cw "Failed.)~%" hints-to-try))
+                (try-enabling-functions (rest body-fns) body state))))))
 
 ;; Returns (mv erp provedp hints state) where if HINTS is nil, then no hints were found.
 (defun try-to-find-hints-for-claim (body state)
@@ -105,8 +108,10 @@
     (if provedp
         (prog2$ (cw "~%To prove ~s0, try:~%~%:hints ~x1~%~%" name hints-found)
                 (mv nil '(value-triple :invisible) state))
-      ;; Error (no hints found):
-      (mv t nil state))))
+      ;; Failed (no hints found):
+      (mv nil ; not an error, just failed to find hints
+          `(value-triple (cw "No hints found for ~s0.~%" ',name) :on-skip-proofs :interactive) ; see cw-event
+          state))))
 
 ;; To invoke the helper tool (to try to produce hints sufficient to prove the
 ;; last theorem entered by the user, just do ":h").
