@@ -1294,9 +1294,12 @@
 ;; Repeatedly get rid of sets of vars by substitution.
 ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;; Doesn't change any nodes if prover-depth > 0.
-(defund substitute-vars2 (literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth
-                                           initial-dag-len ;; only used for deciding when to crunch
-                                           changep-acc)
+(defund substitute-vars2 (literal-nodenums
+                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                          print
+                          prover-depth
+                          initial-dag-len ;; only used for deciding when to crunch
+                          changep-acc)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (nat-listp literal-nodenums)
                               (all-< literal-nodenums dag-len)
@@ -1313,7 +1316,7 @@
         (maybe-crunch-dag-array2 crunchp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        ((when erp)
         (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-       ;; Try to subst a var.  TODO: Allow this to evaluate ground terms that arise when substituting.
+       ;; Try to substitute for a set of vars.  TODO: Allow this to evaluate ground terms that arise when substituting.
        ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
         (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
        ((when erp) (mv erp nil changep-acc literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
@@ -1321,34 +1324,36 @@
     (if (or (not changep)
             (endp literal-nodenums) ;todo: think about this
             )
-        ;; No more vars to susbt:
+        ;; No more vars to subst (no need to crunch because we crunched above):
         (mv (erp-nil)
             nil
             changep-acc
             literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-      (b* (((mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-            (if (and (= 0 prover-depth)
-                     t ;; (> (/ dag-len initial-dag-len)
-                     ;;  ;; todo: what is the best threshold ratio to use here?:
-                     ;;  10)
-                     ) ;; OLD: crunching is less important now that we substitute first with lits that were just rebuilt
-                ;; Crunch the dag:
-                (b* ((- (cw " (Crunching: ...")) ;paren closed below
-                     ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
-                      (crunch-dag-array2-with-indices 'dag-array dag-array dag-len 'dag-parent-array literal-nodenums))
-                     ;; TODO: Prove that this can't happen.  Need to know that
-                     ;; build-reduced-nodes maps all of the literal-nodenums to
-                     ;; nodenums (not constants -- currently)
-                     ((when (not (and (rational-listp literal-nodenums) ;todo: using nat-listp here didn't work
-                                      (all-< literal-nodenums dag-len))))
-                      (er hard? 'substitute-vars2 "Bad nodenum after crunching.")
-                      (mv (erp-t) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                     (- (cw "Done (new dag-len: ~x0).)~%" dag-len)))
-                  (mv (erp-nil) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-              ;; No change:
-              (mv (erp-nil) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
-           ((when erp) (mv erp nil changep-acc literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
-        ;; At least one var was substituted away, so keep going
+      (b* (;; ;; Maybe crunch:
+           ;; ((mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+           ;;  (if (and (= 0 prover-depth)
+           ;;           t ;; (> (/ dag-len initial-dag-len)
+           ;;           ;;  ;; todo: what is the best threshold ratio to use here?:
+           ;;           ;;  10)
+           ;;           ) ;; OLD: crunching is less important now that we substitute first with lits that were just rebuilt
+           ;;      ;; Crunch the dag:
+           ;;      (b* ((- (cw " (Crunching: ...")) ;paren closed below
+           ;;           ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
+           ;;            (crunch-dag-array2-with-indices 'dag-array dag-array dag-len 'dag-parent-array literal-nodenums))
+           ;;           ;; TODO: Prove that this can't happen.  Need to know that
+           ;;           ;; build-reduced-nodes maps all of the literal-nodenums to
+           ;;           ;; nodenums (not constants -- currently)
+           ;;           ((when (not (and (rational-listp literal-nodenums) ;todo: using nat-listp here didn't work
+           ;;                            (all-< literal-nodenums dag-len))))
+           ;;            (er hard? 'substitute-vars2 "Bad nodenum after crunching.")
+           ;;            (mv (erp-t) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+           ;;           (- (cw "Done (new dag-len: ~x0).)~%" dag-len)))
+           ;;        (mv (erp-nil) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+           ;;    ;; No change:
+           ;;    (mv (erp-nil) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+           ;; ((when erp) (mv erp nil changep-acc literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+           )
+        ;; At least one var was substituted away, so keep going:
         (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len t)))))
 
 (defthm substitute-vars2-return-type
