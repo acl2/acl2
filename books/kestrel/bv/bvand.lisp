@@ -1,7 +1,7 @@
 ; Bitwise and
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -364,3 +364,15 @@
                   (bvand newsize x y)))
   :hints (("Goal" :in-theory (enable bvand
                                      logand-of-bvchop))))
+
+(defthm <=-of-bvand-arg1-linear
+  (implies (natp x)
+           (<= (bvand size x y) x))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable bvand))))
+
+(defthm <=-of-bvand-arg2-linear
+  (implies (natp y)
+           (<= (bvand size x y) y))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable bvand))))
