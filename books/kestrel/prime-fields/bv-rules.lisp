@@ -547,6 +547,7 @@
                               mul
                               neg))))
 
+;; Special case for lowsize=1, where we asssume bitp
 ;todo: think about bitp vs unsigned-byte-p 1
 (defthmd add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special
   (implies (and (bitp lowval)

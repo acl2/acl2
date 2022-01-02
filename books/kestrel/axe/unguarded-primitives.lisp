@@ -71,7 +71,9 @@
 
 (defund unary---unguarded (x)
   (declare (xargs :guard t))
-  (unary-- (fix x)))
+  ;; (unary-- (fix x))
+  (if (acl2-numberp x) (- x) 0)
+  )
 
 (defthm unary---unguarded-correct
   (equal (unary---unguarded x)

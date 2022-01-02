@@ -34,7 +34,7 @@
                               (true-listp guard-enables))))
   (let ((new-fn (lookup-eq-safe old-fn function-renaming))
         (guard-hints (if (eq :auto guard-hints)
-                         `(("Goal" :use (:instance (:guard-theorem ,old-fn :limited))
+                         `(("Goal" :use (:instance (:guard-theorem ,old-fn :limited))  ; matches the :guard-simplify :limited below
                             :do-not '(generalize eliminate-destructors) ;;TODO; Turn off more stuff:
                             ;; we use the becomes lemma(s):
                             :in-theory '(,@(becomes-theorem-names function-renaming)
