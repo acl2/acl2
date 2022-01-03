@@ -1,7 +1,7 @@
 ; New tools for substituting equated vars in DAGS
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -579,9 +579,9 @@
                                      ))))
 
 
-;; Maps each node of a candidate var to the sorted lis of the nodenums of the
+;; Maps each nodenum of a candidate var to the sorted list of the nodenums of the
 ;; candidates on which it depends.  We say a candidate var X depends on another
-;; candidate var Y when the expression to be put in for to X (according to a
+;; candidate var Y when the expression to be put in for X (according to a
 ;; literal that equates it to X) mentions Y.
 (def-typed-acl2-array2 candidate-deps-arrayp
   (and (nat-listp val)
@@ -1122,7 +1122,7 @@
                                                          ;;cons-nth-0-nth-1 cons-of-nth-and-nth-plus-1 ;todo: why do these cause mv-nths to show up in appropriate places?
                                                          dargp-less-than
                                                          dargp-less-than-when-not-consp-cheap))))))
-  (let ((subst-candidates (subst-candidates literal-nodenums dag-array dag-len 300 nil))) ;; limit for now -- todo: what if all of the 500 have self loops?
+  (let ((subst-candidates (subst-candidates literal-nodenums dag-array dag-len 300 nil))) ;; limit for now -- todo: what if all of the 300 have self loops?
     (if (not subst-candidates)
         ;; No change:
         (mv (erp-nil) nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
