@@ -38,7 +38,6 @@
 (include-book "bv-list-rules-axe")
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")
-(include-book "bv-rules")
 (include-book "check-equivs")
 (include-book "concretize-with-contexts")
 (include-book "conjoin-term-with-dag")
