@@ -1,6 +1,6 @@
 ; A generator for equality-preserving transformations
 ;
-; Copyright (C) 2016-2021 Kestrel Institute
+; Copyright (C) 2016-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -58,7 +58,7 @@
 
 ;; Returns an event
 (defun def-equality-transformation-fn (name
-                                       function-body-transformer ; args should be the function name, its untranslated body, wrld, and then the transform-specific-args
+                                       function-body-transformer ; args must be exactly: fn, untranslated-body, wrld, and then the transform-specific-args
                                        transform-specific-required-args ;arguments to function-body-transformer
                                        transform-specific-keyword-args-and-defaults ;arguments to function-body-transformer
                                        enables ; used for each function (currently)
@@ -71,6 +71,7 @@
                                        short ; a form that evaluates to a string or to nil?
                                        transform-specific-arg-descriptions
                                        description ; a form that evaluates to a string or to nil?
+                                       wrld
                                        )
   (declare (xargs :guard (and (symbolp name)
                               (symbolp function-body-transformer)
@@ -83,12 +84,24 @@
                               (symbol-listp make-becomes-theorem-extra-args)
                               (no-duplicatesp make-becomes-theorem-extra-args)
                               (symbol-listp parents)
-                              (macro-arg-descriptionsp transform-specific-arg-descriptions))))
-  (b* ((apply-to-defun-name (pack$ name '-in-defun))
-       (apply-to-defuns-name (pack$ name '-in-defuns))
-       (event-generator-name (pack$ name '-event))
+                              (macro-arg-descriptionsp transform-specific-arg-descriptions)
+                              (plist-worldp wrld))))
+  (b* (((when (not (fn-definedp function-body-transformer wrld)))
+        (er hard? 'def-equality-transformation-fn "The function body transformer, ~x0, is not a defined function." function-body-transformer))
        (transform-specific-arg-names (append transform-specific-required-args
                                              (strip-cars transform-specific-keyword-args-and-defaults)))
+       (function-body-transformer-formals (fn-formals function-body-transformer wrld))
+       (expected-function-body-transformer-formals (append '(fn untranslated-body wrld) transform-specific-arg-names))
+       ((when (not (equal function-body-transformer-formals
+                          expected-function-body-transformer-formals)))
+        (er hard? 'def-equality-transformation-fn "The function body transformer, ~x0, has formals ~x1 but it must have formals ~x2."
+            function-body-transformer
+            function-body-transformer-formals
+            expected-function-body-transformer-formals))
+       (apply-to-defun-name (pack$ name '-in-defun))
+       (apply-to-defuns-name (pack$ name '-in-defuns))
+       (event-generator-name (pack$ name '-event))
+
        ((when (not (subsetp-eq make-becomes-theorem-extra-args transform-specific-arg-names)))
         (er hard? 'def-equality-transformation-fn "make-becomes-theorem-extra-args, ~x0, are not a subset of the transform-specific-arg-names, ~x1."
             make-becomes-theorem-extra-args
@@ -488,7 +501,8 @@
                  ',parents
                  ,short
                  ',transform-specific-arg-descriptions
-                 ,description)))
+                 ,description
+                 (w state))))
 
 ;;;
 ;;; copy-function (defined here because copy-function-in-defun is used above)
@@ -497,8 +511,8 @@
 ;; The core function for copy-function (does nothing).
 ;; Such functions always take: fn, untranslated-body, wrld, and then transformation-specific args (none for copy-function).
 (defun copy-function-function-body-transformer (fn
-                                    untranslated-body
-                                    wrld)
+                                                untranslated-body
+                                                wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (plist-worldp wrld)))
            (ignore fn wrld))
