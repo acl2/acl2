@@ -15,7 +15,10 @@
 ;; TODO: Move this book to the bv library
 
 (include-book "kestrel/bv/rules6" :dir :system)
-(local (include-book "kestrel/library-wrappers/arithmetic-top-with-meta" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/less-than-or-equal" :dir :system))
 
 (local (in-theory (disable expt)))
 
@@ -274,7 +277,7 @@
            (equal (SLICE high low (+ x (LOGEXT size y)))
                   (SLICE high low (+ x y))
                   ))
-  :hints (("Goal" :in-theory (e/d (SLICE bvchop-of-logtail)
+  :hints (("Goal" :in-theory (e/d (SLICE bvchop-of-logtail expt-of-+)
                                   (anti-slice LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE LOGTAIL-OF-LOGEXT)))))
 
 ;todo: (theory-invariant (incompatible (:rewrite LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE) (:rewrite slice)))
@@ -368,7 +371,7 @@
                       free
                     (+ (- (expt 2 31))
                        free))))
-  :hints (("Goal" :in-theory (enable logext))))
+  :hints (("Goal" :in-theory (enable logext logapp))))
 
 (defthm logext-negative-linear-cheap
   (implies (equal (getbit 31 x) 1)
