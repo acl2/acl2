@@ -151,30 +151,6 @@
                         (:instance bvchop-of-*-of-bvchop (size 32) (x free) (y z)))
            :in-theory (disable bvchop-of-*-of-bvchop))))
 
-(defthmd apply-logext-32-to-both-sides
-  (implies (and (equal x y)
-                (equal a (logext 32 x))
-                (equal b (logext 32 y)))
-           (equal (equal a b)
-                  t)))
-
-(defthmd apply-logext-32-to-both-sides-alt
-  (implies (and (equal y x)
-                (equal b (logext 32 x))
-                (equal a (logext 32 y)))
-           (equal (equal a b)
-                  t)))
-
-;yikes, don't we want to go the other way?
-(defthm bvchop-of-sbp-equal-constant
-  (implies (and (syntaxp (quotep k))
-                (signed-byte-p 32 x) ;backchain limit?
-                )
-           (equal (equal k (bvchop 32 x))
-                  (and (unsigned-byte-p 32 k)
-                       (equal (logext 32 k) x))))
-  :hints (("Goal" :in-theory (enable apply-logext-32-to-both-sides-alt apply-logext-32-to-both-sides))))
-
 ;for example, we prefer
 ;(EQUAL '0 (BVCAT '1 x '7 '0))
 ;to:
@@ -262,8 +238,6 @@
            (equal (LOGEXT smallsize (+ (LOGEXT bigsize y) x))
                   (LOGEXT smallsize (+ x y))))
   :hints (("Goal" :in-theory (e/d (ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4) (logext)))))
-
-
 
 ;slow?
 (defthm slice-of-plus-of-logext-gen
@@ -362,19 +336,3 @@
                       2147483648
                     (bvchop 31 x))))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
-
-(defthm logext-when-low-bits-known
-  (implies (and (equal (bvchop 31 x) free)
-                (syntaxp (quotep free)))
-           (equal (logext 32 x)
-                  (if (equal 0 (getbit 31 x))
-                      free
-                    (+ (- (expt 2 31))
-                       free))))
-  :hints (("Goal" :in-theory (enable logext logapp))))
-
-(defthm logext-negative-linear-cheap
-  (implies (equal (getbit 31 x) 1)
-           (< (logext 32 x) 0))
-  :rule-classes ((:linear :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable logext))))
