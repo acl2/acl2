@@ -203,7 +203,7 @@
                 (integerp j2))
            (equal (logbitp i (logxor j1 j2))
                   (xor (logbitp i j1) (logbitp i j2))))
-  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-MOD-FACT oddp)
+  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-EQUAL-OF-0-AND-MOD oddp)
                                   (LOGBITP-IFF-GETBIT ;fixme why?
                                    MOD-=-0 mod-cancel
                                    ;;for speed:
@@ -216,7 +216,7 @@
                 (integerp j2))
            (equal (logbitp i (logand j1 j2))
                   (and (logbitp i j1) (logbitp i j2))))
-  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-MOD-FACT oddp)
+  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-EQUAL-OF-0-AND-MOD oddp)
                                   (LOGBITP-IFF-GETBIT
                                    MOD-=-0 mod-cancel
                                    ;;for speed:
@@ -229,7 +229,7 @@
                 (integerp j2))
            (equal (logbitp i (logior j1 j2))
                   (or (logbitp i j1) (logbitp i j2))))
-  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-MOD-FACT oddp)
+  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-EQUAL-OF-0-AND-MOD oddp)
                                   (LOGBITP-IFF-GETBIT
                                    MOD-=-0 mod-cancel
 ;for speed:
@@ -366,15 +366,6 @@
            (equal (LOGBITP i j)
                   (LOGBITP 0 j)))
   :hints (("Goal" :in-theory (e/d (logbitp) (LOGBITP-IFF-GETBIT)))))
-
-;used to allow n=1 but untrue for that case?
-(defthm logext-shift
-  (implies (and (integerp x)
-                (natp n)
-                (< 1 n))
-           (equal (logext n (* 2 x))
-                  (* 2 (logext (+ -1 n) x))))
-  :hints (("Goal" :in-theory (e/d (logext) (LOGBITP-IFF-GETBIT)))))
 
 (defthm logext-of-logapp
   (implies (and (integerp x)
@@ -998,6 +989,7 @@
            (equal (bvand size1 z (bvxor size2 x y))
                   (bvand size1 z (bvxor size1 x y))))
   :hints (("Goal" :in-theory (enable bvxor bvand))))
+
 
 (defthm integerp-when-unsigned-byte-p-free
   (implies (unsigned-byte-p free x) ;FREE is a free var., so this rule should be cheap
@@ -3985,6 +3977,8 @@
                   (bvxor size x (bvchop size y))))
   :hints (("Goal" :in-theory (enable bvxor))))
 
+
+
 ;bozo more like this?
 (defthm bvxor-with-smaller-arg-2
   (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize y) (newsize))
@@ -4384,27 +4378,7 @@
          (bvif size test y (bvuminus size x)))
   :hints (("Goal" :in-theory (e/d (bvif bvuminus bvminus) (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
-(defthm slice-of-times-of-expt
-  (implies (and (<= j n) ;drop?
-                (integerp x) ;drop?
-                (natp n)
-                (natp j)
-                (natp m))
-           (equal (slice m n (* (expt 2 j) x))
-                  (slice (- m j) (- n j) x)))
-  :hints (("Goal" :in-theory (e/d (slice logtail) (anti-slice
-                                                   bvchop-of-*)))))
 
-(defthm slice-of-times-of-expt-alt
-  (implies (and (<= j n) ;drop?
-                (integerp x) ;drop?
-                (natp n)
-                (natp j)
-                (natp m))
-           (equal (slice m n (* x (expt 2 j)))
-                  (slice (- m j) (- n j) x)))
-  :hints (("Goal" :use (:instance slice-of-times-of-expt)
-           :in-theory (disable slice-of-times-of-expt))))
 
 (defthm slice-of-times-of-expt-constant-version
   (implies (and (syntaxp (quotep k))
@@ -5803,6 +5777,51 @@
                   (bvxor newsize x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvxor))))
 
+(defthm bvor-tighten
+  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+                (< newsize oldsize)
+                (unsigned-byte-p-forced newsize x)
+                (unsigned-byte-p newsize y)
+                (natp newsize)
+                (natp oldsize))
+           (equal (bvor oldsize x y)
+                  (bvor newsize x y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvor))))
+
+;move
+(DEFTHMd BVXOR-TIGHTEN-free
+  (IMPLIES (AND (UNSIGNED-BYTE-P NEWSIZE Y)
+                (< NEWSIZE OLDSIZE)
+                (UNSIGNED-BYTE-P NEWSIZE X)
+                (NATP OLDSIZE))
+           (EQUAL (BVXOR OLDSIZE X Y)
+                  (BVXOR NEWSIZE X Y)))
+  :hints (("Goal" :use (:instance BVXOR-TIGHTEN)
+           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (BVXOR-TIGHTEN)))))
+
+(DEFTHMd BVOR-TIGHTEN-free
+  (IMPLIES (AND (UNSIGNED-BYTE-P NEWSIZE Y)
+                (< NEWSIZE OLDSIZE)
+                (UNSIGNED-BYTE-P NEWSIZE X)
+                (NATP OLDSIZE))
+           (EQUAL (BVOR OLDSIZE X Y)
+                  (BVOR NEWSIZE X Y)))
+  :hints (("Goal" :use (:instance BVOR-TIGHTEN)
+           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (BVOR-TIGHTEN)))))
+
+;move
+;; Seems pretty safe
+(defthmd equal-of-bvxor-and-bvxor-different-sizes
+  (implies (and (equal minsize (min size1 size2))
+                (unsigned-byte-p minsize y)
+                (unsigned-byte-p minsize x)
+                (natp size1)
+                (natp size2))
+           (equal (equal (bvxor size1 x y) (bvxor size2 x y))
+                  t))
+  :hints (("Goal" :cases ((< size2 size1))
+           :in-theory (enable bvxor-tighten-free))))
+
 (defthm unsigned-byte-p-of-+-of-minus
   (implies (and (integerp x)
                 (natp n)
@@ -7137,11 +7156,6 @@
                                    <-becomes-bvlt-alt
                                    <-BECOMES-BVLT-FREE)))))
 
-(defthm logext-of-expt-same
-  (implies (posp size)
-           (equal (logext size (expt 2 size))
-                  0)))
-
 (defthm sbvlt-of-0-arg2-polarity
   (implies (and (syntaxp (want-to-strengthen (sbvlt size x 0)))
                 (posp size))
@@ -8175,3 +8189,10 @@
   :hints (("Goal" :in-theory (e/d (bitxor bvxor getbit) (BVXOR-1-BECOMES-BITXOR
                                                          SLICE-BECOMES-GETBIT
                                    BVCHOP-1-BECOMES-GETBIT)))))
+
+
+;move
+(defthm equal-of-0-and-bvchop-of-logext
+  (implies (integerp x)
+           (equal (equal 0 (bvchop 32 (logext 8 x)))
+                  (equal 0 (bvchop 8 x)))))

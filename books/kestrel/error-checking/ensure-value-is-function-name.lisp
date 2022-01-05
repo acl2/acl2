@@ -20,4 +20,4 @@
   :parents (error-checking)
   :short "Cause an error if a value is not the name of an existing function."
   :body (((function-namep x (w state))
-          "~@0, ~x1, is not an existing function." description x)))
+          "~@0 is not the name of an existing function." description x)))

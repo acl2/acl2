@@ -60,11 +60,11 @@
   :hints (("Goal" :in-theory (enable bvsx))))
 
 ;gen
+;rename to bvsx-alt-def
 (defthmd bvsx-rewrite
-  (implies (and (posp n)
-;                (equal n 8)
-                (natp m)
-                (<= n m))
+  (implies (and (<= n m)
+                (posp n)
+                (natp m))
            (equal (bvsx m n x)
                   (bvchop m (logext n x))))
   :hints (("Goal"  :in-theory (e/d (bvsx logext posp repeatbit ;bvplus

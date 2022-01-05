@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; November 2021
+;; January 2022
 
 ;; Direct reasoning about complex functions is often unachievable in most
 ;; existing verification tools.  Decomposition is a common technique for
@@ -622,7 +622,8 @@
   (if (atom term)
       acc
     (let* ((keys (strip-cars alist))
-           (syms (cons '*** (symbols-extract term)))
+           (syms (cons '*** ;; LOOP-FNS-GEN needs this symbol.
+                       (symbols-extract term)))
            (common-syms (intersection$ keys syms)))
       (used-syms-extract (assocs-vals common-syms alist)
                          (remove-assocs-equal common-syms alist)
@@ -698,6 +699,7 @@
                           &key
                           (optimized 't)
                           (sub-pairs 'nil)
+                          (body-sub 'nil)
                           (preserved-vars 'nil)
                           (excluded-vars 'nil)
                           (rules 'nil)
@@ -713,9 +715,6 @@
 
   ;; 'sub-pairs' contains pairs of terms (mostly variables) that are used in
   ;; substitutions performed by function REPLACE-LIST-ALL.
-
-  ;; 'preserved-vars': a list of variables that are preserved in the bindings
-  ;; occurring in the definition of 'fn'.
 
   ;; 'excluded-vars': a list of bounded variables that are excluded from
   ;; generating their corresponding constant functions.
@@ -759,7 +758,7 @@
                                     nil)))
        ;; Extract variables that are not used in 'new-fn'
        (redundant-vars
-        (remove-all (used-syms-extract (list shrunk-body)
+        (remove-all (used-syms-extract (list preserved-vars shrunk-body)
                                        simplified-alist
                                        nil)
                     renamed-vars))
@@ -830,7 +829,8 @@
                   (append elim-bindings
                           (pairlis$ excluded-vars
                                     (strip-cdrs substd-bindings))
-                          sub-pairs)
+                          sub-pairs
+                          body-sub)
                   shrunk-body))
        (new-body (if (and (atom new-body) new-body)
                      (list new-body)
@@ -1110,9 +1110,6 @@
   ;; 'sub-pairs' contains pairs of terms (mostly variables) that are used in
   ;; substitutions performed by function REPLACE-LIST-ALL.
 
-  ;; 'preserved-vars': a list of variables that are preserved in the bindings
-  ;; occurring in the definition of 'fn'.
-
   ;; 'excluded-vars': a list of bounded variables that are excluded from
   ;; generating their corresponding mutually recursive functions.
 
@@ -1147,7 +1144,7 @@
                                     nil)))
        ;; Extract variables that are not used in 'fn'
        (redundant-vars
-        (remove-all (used-syms-extract (list shrunk-body)
+        (remove-all (used-syms-extract (list preserved-vars shrunk-body)
                                        simplified-alist
                                        nil)
                     renamed-vars))

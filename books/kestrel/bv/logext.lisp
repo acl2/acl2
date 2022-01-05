@@ -15,8 +15,8 @@
 (include-book "getbit")
 (local (include-book "logapp"))
 (local (include-book "ihs/logops-lemmas" :dir :system))
-(local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
 (local (include-book "unsigned-byte-p"))
+(local (include-book "getbit-rules"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
@@ -27,6 +27,8 @@
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/evenp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
 (local (include-book "bvcat")) ;for BVCHOP-OF-LOGAPP-BIGGER
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, for floor-type-4
 
@@ -87,33 +89,26 @@
 ;;  :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;           :in-theory (e/d (logbitp bvchop) (evenp)))))
 
-
-;gross proof
-(defthmd evenp-becomes-mod-fact
-  (implies (rationalp x)
-           (equal (evenp x)
-                  (equal 0 (mod x 2)))) :hints (("Goal" :in-theory (enable evenp))))
-
-(defthm logbitp-of-31-of-*-of-bvchop
-  (IMPLIES (AND (EVENP X)
-                (INTEGERP X)
-                (INTEGERP Y)
-                (NOT (LOGBITP 31 Y))
-                (NOT (LOGBITP 31 (* X Y))))
-           (equal (LOGBITP 31 (* X (BVCHOP 31 Y)))
-                  (LOGBITP 31 (* X Y))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :cases ((evenp x))
-           :in-theory (e/d (LOGEXT
-                            logapp logbitp
-                            BVCHOP
-                            mod
-                            evenp
-                            oddp
-                            INTEGERP-OF-*-OF-/-BECOMES-EQUAL-OF-0-AND-MOD
-                            )
-                           (LOGBITP-IFF-GETBIT
-                            EQUAL-OF-*-2-OF-FLOOR-OF-2-SAME)))))
+;; (defthm logbitp-of-31-of-*-of-bvchop
+;;   (IMPLIES (AND (EVENP X)
+;;                 (INTEGERP X)
+;;                 (INTEGERP Y)
+;;                 (NOT (LOGBITP 31 Y))
+;;                 (NOT (LOGBITP 31 (* X Y))))
+;;            (equal (LOGBITP 31 (* X (BVCHOP 31 Y)))
+;;                   (LOGBITP 31 (* X Y))))
+;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+;;            :cases ((evenp x))
+;;            :in-theory (e/d (LOGEXT
+;;                             logapp logbitp
+;;                             BVCHOP
+;;                             mod
+;;                             evenp
+;;                             oddp
+;;                             INTEGERP-OF-*-OF-/-BECOMES-EQUAL-OF-0-AND-MOD
+;;                             )
+;;                            (LOGBITP-IFF-GETBIT
+;;                             EQUAL-OF-*-2-OF-FLOOR-OF-2-SAME)))))
 
 (defthm bvchop-of-*-of-logapp
   (implies (and (<= size size2)
@@ -223,7 +218,7 @@
          (if (not (posp n))
              nil
            (ODDP (ifix X))))
-  :hints (("Goal" :in-theory (enable bvchop ODDP  EVENP-BECOMES-MOD-FACT))))
+  :hints (("Goal" :in-theory (enable bvchop ODDP EVENP-BECOMES-EQUAL-OF-0-AND-MOD))))
 
 (defthm logext-of-logext
   (implies (and (<= m n)
@@ -531,9 +526,7 @@
                   (+ -1 (expt 2 (+ -1 size))))))
 
 (defthmd equal-of-logext-and-logext
-  (implies (and ;(integerp x)
-                ;(integerp y)
-                (posp size))
+  (implies (posp size)
            (equal (equal (logext size x) (logext size y))
                   (equal (bvchop size x) (bvchop size y))))
   :hints (("Goal" :use ((:instance bvchop-of-logext-same (x x))
@@ -561,3 +554,105 @@
            (equal (logext size (+ x (logext size y)))
                   (logext size (+ x y))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
+
+;; Normalizes the constant
+(defthm logext-of-+-of-constant
+  (implies (and (syntaxp (quotep k))
+                (not (signed-byte-p size k))
+                (integerp k)
+                (integerp x)
+                (posp size))
+           (equal (logext size (+ k x))
+                  (logext size (+ (logext size k) x)))))
+
+(defthm logext-of---of-bvchop
+  (implies (and (integerp x)
+                (posp size))
+           (equal (logext size (- (bvchop size x)))
+                  (logext size (- x))))
+  :hints (("Goal" :in-theory (enable logext-cases))))
+
+;used to allow n=1 but untrue for that case?
+;renme
+(defthm logext-shift
+  (implies (and (integerp x)
+                (natp n)
+                (< 1 n))
+           (equal (logext n (* 2 x))
+                  (* 2 (logext (+ -1 n) x))))
+  :hints (("Goal" :in-theory (e/d (logext) ()))))
+
+(defthm logext-of-expt-of-one-less
+  (implies (posp size)
+           (equal (logext size (expt 2 (+ -1 size)))
+                  (- (expt 2 (+ -1 size)))))
+  :hints (("Goal" :in-theory (enable logext))))
+
+(defthm logext-of-*-of-expt-arg1
+  (implies (and (integerp x)
+                (integerp size)
+                (posp i)
+                (< i size))
+           (equal (logext size (* (expt 2 i) x))
+                  (* (expt 2 i) (logext (- size i) x))))
+  :hints (("Goal" :in-theory (e/d (logext) ()))))
+
+(defthm logext-when-low-bits-known
+  (implies (and (equal (bvchop 31 x) free)
+                (syntaxp (quotep free)))
+           (equal (logext 32 x)
+                  (if (equal 0 (getbit 31 x))
+                      free
+                    (+ (- (expt 2 31))
+                       free))))
+  :hints (("Goal" :in-theory (enable logext logapp))))
+
+(defthm logext-negative-linear-cheap
+  (implies (equal (getbit 31 x) 1)
+           (< (logext 32 x) 0))
+  :rule-classes ((:linear :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable logext))))
+
+(defthmd apply-logext-32-to-both-sides
+  (implies (and (equal x y)
+                (equal a (logext 32 x))
+                (equal b (logext 32 y)))
+           (equal (equal a b)
+                  t)))
+
+(defthmd apply-logext-32-to-both-sides-alt
+  (implies (and (equal y x)
+                (equal b (logext 32 x))
+                (equal a (logext 32 y)))
+           (equal (equal a b)
+                  t)))
+
+;yikes, don't we want to go the other way?
+(defthmd bvchop-of-sbp-equal-constant
+  (implies (and (syntaxp (quotep k))
+                (signed-byte-p 32 x) ;backchain limit?
+                )
+           (equal (equal k (bvchop 32 x))
+                  (and (unsigned-byte-p 32 k)
+                       (equal (logext 32 k) x))))
+  :hints (("Goal" :in-theory (enable apply-logext-32-to-both-sides-alt apply-logext-32-to-both-sides))))
+
+(defthm logext-of-plus-of-logext
+  (implies (and (<= smallsize bigsize)
+                (integerp smallsize)
+                (integerp bigsize)
+                (< 0 smallsize)
+                (force (integerp x))
+                (force (integerp y)))
+           (equal (LOGEXT smallsize (+ x (LOGEXT bigsize y)))
+                  (LOGEXT smallsize (+ x y)))))
+
+(defthm logext-of-plus-of-logext-alt
+  (implies (and (<= smallsize bigsize)
+                (integerp smallsize)
+                (integerp bigsize)
+                (< 0 smallsize)
+                (force (integerp x))
+                (force (integerp y)))
+           (equal (LOGEXT smallsize (+ (LOGEXT bigsize y) x))
+                  (LOGEXT smallsize (+ x y)))))

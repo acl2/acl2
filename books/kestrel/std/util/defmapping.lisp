@@ -1,6 +1,6 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -53,6 +53,7 @@
    @('guard-thms'),
    @('unconditional'),
    @('thm-names'),
+   @('thm-enable'),
    @('hints'),
    @('print'), and
    @('show-only')
@@ -70,6 +71,7 @@
    @('guard-thms$'),
    @('unconditional$'),
    @('thm-name$'),
+   @('thm-enable$'),
    @('hints$'),
    @('print$'), and
    @('show-only$')
@@ -352,7 +354,7 @@
 (define defmapping-thm-keywords ((beta-of-alpha-thm$ booleanp)
                                  (alpha-of-beta-thm$ booleanp)
                                  (guard-thms$ booleanp))
-  :returns (thm-keywords symbol-listp)
+  :returns (thm-keywords keyword-listp)
   :short "Keywords that identify all the theorems to generate."
   (append (list :alpha-image
                 :beta-image)
@@ -460,6 +462,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defmapping-process-thm-enable (thm-enable
+                                       (beta-of-alpha-thm$ booleanp)
+                                       (alpha-of-beta-thm$ booleanp)
+                                       (guard-thms$ booleanp)
+                                       ctx
+                                       state)
+  :returns (mv erp
+               (thm-enable$ keyword-listp)
+               state)
+  :short "Process the @(':thm-enable') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the processing is successful,
+     we return a normalized version of this input,
+     namely a list of keywords that specifies which theorems must be enabled,
+     among the ones that are generated."))
+  (b* (((when (eq thm-enable :all))
+        (value (defmapping-thm-keywords
+                 beta-of-alpha-thm$ alpha-of-beta-thm$ guard-thms$)))
+       ((when (eq thm-enable :all-nonguard))
+        (value (set-difference-eq
+                (defmapping-thm-keywords
+                  beta-of-alpha-thm$ alpha-of-beta-thm$ guard-thms$)
+                '(:doma-guard :domb-guard :alpha-guard :beta-guard))))
+       ((unless (keyword-listp thm-enable))
+        (er-soft+ ctx t nil
+                  "The :THM-ENABLE input, ~x0, is not ~
+                   :ALL, :ALL-NOGUARD, or a list of keywords."
+                  thm-enable))
+       ((er &) (ensure-list-has-no-duplicates$
+                thm-enable
+                (msg "The :THM-ENABLE list, ~x0," thm-enable)
+                t
+                nil))
+       (thms (defmapping-thm-keywords
+               beta-of-alpha-thm$ alpha-of-beta-thm$ guard-thms$))
+       ((unless (subsetp-eq thm-enable thms))
+        (er-soft+ ctx t nil
+                  "The :THM-ENABLE input, ~x0, is not a subset of ~
+                   the keywords ~x1 for the generated theorems."
+                  thm-enable
+                  thms)))
+    (value thm-enable))
+
+  :prepwork
+
+  ((defrulel returns-lemma
+     (implies (keyword-listp x)
+              (keyword-listp (set-difference-equal x y))))
+
+   (defrulel verify-guards-lemma1
+     (implies (keyword-listp x)
+              (true-listp x)))
+
+   (defrulel verify-guards-lemma2
+     (implies (keyword-listp x)
+              (symbol-listp x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defmapping-process-inputs (name
                                    doma
                                    domb
@@ -470,6 +533,7 @@
                                    guard-thms
                                    unconditional
                                    thm-names
+                                   thm-enable
                                    hints
                                    print
                                    show-only
@@ -481,6 +545,7 @@
                                     alpha$
                                     beta$
                                     thm-names$
+                                    thm-enable$
                                     hints$)')
                         satisfying
                         @('(typed-tuplep pseudo-termfnp
@@ -488,6 +553,7 @@
                                          pseudo-termfnp
                                          pseudo-termfnp
                                          symbol-symbol-alistp
+                                         keyword-listp
                                          symbol-truelist-alistp
                                          result)').")
                state)
@@ -524,6 +590,13 @@
                           guard-thms
                           ctx
                           state))
+       ((er thm-enable$) (defmapping-process-thm-enable
+                           thm-enable
+                           beta-of-alpha-thm
+                           alpha-of-beta-thm
+                           guard-thms
+                           ctx
+                           state))
        ((er hints$) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
@@ -532,6 +605,7 @@
                  alpha$
                  beta$
                  thm-names$
+                 thm-enable$
                  hints$))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -806,6 +880,7 @@
 (define defmapping-gen-appcond-thm ((appcond evmac-appcondp)
                                     (appcond-thm-names symbol-symbol-alistp)
                                     (thm-names$ symbol-symbol-alistp)
+                                    (thm-enable$ keyword-listp)
                                     (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
                (exported-event "A @(tsee pseudo-event-formp)."))
@@ -828,8 +903,13 @@
        (thm-formula (untranslate appcond.formula t wrld))
        (thm-hints
         `(("Goal" :by ,(cdr (assoc-eq appcond.name appcond-thm-names)))))
-       (local-event `(local (defthmr ,thm-name ,thm-formula :hints ,thm-hints)))
-       (exported-event `(defthmr ,thm-name ,thm-formula)))
+       (defthmr/defthmdr (if (member-eq appcond.name thm-enable$)
+                             'defthmr
+                           'defthmdr))
+       (local-event `(local (,defthmr/defthmdr ,thm-name
+                              ,thm-formula
+                              :hints ,thm-hints)))
+       (exported-event `(,defthmr/defthmdr ,thm-name ,thm-formula)))
     (mv local-event exported-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -837,6 +917,7 @@
 (define defmapping-gen-appcond-thms ((appconds evmac-appcond-listp)
                                      (appcond-thm-names symbol-symbol-alistp)
                                      (thm-names$ symbol-symbol-alistp)
+                                     (thm-enable$ keyword-listp)
                                      (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (exported-events "A @(tsee pseudo-event-form-listp)."))
@@ -848,11 +929,13 @@
                                           (car appconds)
                                           appcond-thm-names
                                           thm-names$
+                                          thm-enable$
                                           wrld))
        ((mv local-events exported-events) (defmapping-gen-appcond-thms
                                             (cdr appconds)
                                             appcond-thm-names
                                             thm-names$
+                                            thm-enable$
                                             wrld)))
     (mv (cons local-event local-events)
         (cons exported-event exported-events))))
@@ -866,6 +949,7 @@
                                         (b1...bm symbol-listp)
                                         (unconditional$ booleanp)
                                         (thm-names$ symbol-symbol-alistp)
+                                        (thm-enable$ keyword-listp)
                                         (appcond-thm-names symbol-symbol-alistp)
                                         (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
@@ -920,12 +1004,15 @@
              :in-theory nil
              :cases (,cases-hints-formula)
              :use (,beta-of-alpha ,beta-of-alpha-instance)))))
+       (defthmr/defthmdr (if (member-eq :alpha-injective thm-enable$)
+                             'defthmr
+                           'defthmdr))
        (local-event
-        `(local (defthmr ,name
+        `(local (,defthmr/defthmdr ,name
                   ,formula
                   :hints ,hints)))
        (exported-event
-        `(defthmr ,name
+        `(,defthmr/defthmdr ,name
            ,formula)))
     (mv local-event exported-event)))
 
@@ -938,6 +1025,7 @@
                                        (b1...bm symbol-listp)
                                        (unconditional$ booleanp)
                                        (thm-names$ symbol-symbol-alistp)
+                                       (thm-enable$ keyword-listp)
                                        (appcond-thm-names symbol-symbol-alistp)
                                        (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
@@ -992,12 +1080,15 @@
              :in-theory nil
              :cases (,cases-hints-formula)
              :use (,alpha-of-beta ,alpha-of-beta-instance)))))
+       (defthmr/defthmdr (if (member-eq :beta-injective thm-enable$)
+                             'defthmr
+                           'defthmdr))
        (local-event
-        `(local (defthmr ,name
+        `(local (,defthmr/defthmdr ,name
                   ,formula
                   :hints ,hints)))
        (exported-event
-        `(defthmr ,name
+        `(,defthmr/defthmdr ,name
            ,formula)))
     (mv local-event exported-event)))
 
@@ -1013,6 +1104,7 @@
                                         (alpha-of-beta-thm$ booleanp)
                                         (unconditional$ booleanp)
                                         (thm-names$ symbol-symbol-alistp)
+                                        (thm-enable$ keyword-listp)
                                         (appcond-thm-names symbol-symbol-alistp)
                                         (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
@@ -1036,6 +1128,7 @@
                     b1...bm
                     unconditional$
                     thm-names$
+                    thm-enable$
                     appcond-thm-names
                     wrld)))
               (mv (list local-event) (list exported-event)))
@@ -1052,6 +1145,7 @@
                     b1...bm
                     unconditional$
                     thm-names$
+                    thm-enable$
                     appcond-thm-names
                     wrld)))
               (mv (list local-event) (list exported-event)))
@@ -1073,6 +1167,7 @@
                              (alpha-of-beta-thm$ booleanp)
                              (unconditional$ booleanp)
                              (thm-names$ symbol-symbol-alistp)
+                             (thm-enable$ keyword-listp)
                              (appconds evmac-appcond-listp)
                              (appcond-thm-names symbol-symbol-alistp)
                              (wrld plist-worldp))
@@ -1085,6 +1180,7 @@
           appconds
           appcond-thm-names
           thm-names$
+          thm-enable$
           wrld))
        ((mv nonappcond-local-events nonappcond-exporte-events)
         (defmapping-gen-nonappcond-thms
@@ -1098,6 +1194,7 @@
           alpha-of-beta-thm$
           unconditional$
           thm-names$
+          thm-enable$
           appcond-thm-names
           wrld)))
     (mv (append appcond-local-events nonappcond-local-events)
@@ -1174,6 +1271,7 @@
                                    (guard-thms$ booleanp)
                                    (unconditional$ booleanp)
                                    (thm-names$ symbol-symbol-alistp)
+                                   (thm-enable$ keyword-listp)
                                    (hints$ symbol-truelist-alistp)
                                    (print$ evmac-input-print-p)
                                    (show-only$ booleanp)
@@ -1250,6 +1348,7 @@
           alpha-of-beta-thm$
           unconditional$
           thm-names$
+          thm-enable$
           appconds
           appcond-thm-names
           wrld))
@@ -1353,6 +1452,7 @@
                        guard-thms
                        unconditional
                        thm-names
+                       thm-enable
                        hints
                        print
                        show-only
@@ -1375,6 +1475,7 @@
                   alpha$
                   beta$
                   thm-names$
+                  thm-enable$
                   hints$))
         (defmapping-process-inputs
           name
@@ -1387,6 +1488,7 @@
           guard-thms
           unconditional
           thm-names
+          thm-enable
           hints
           print
           show-only
@@ -1403,6 +1505,7 @@
       guard-thms
       unconditional
       thm-names$
+      thm-enable$
       hints$
       print
       show-only
@@ -1435,6 +1538,7 @@
                         (guard-thms 't)
                         (unconditional 'nil)
                         (thm-names 'nil)
+                        (thm-enable 'nil)
                         (hints 'nil)
                         (print ':result)
                         (show-only 'nil))
@@ -1449,6 +1553,7 @@
                          ',guard-thms
                          ',unconditional
                          ',thm-names
+                         ',thm-enable
                          ',hints
                          ',print
                          ',show-only

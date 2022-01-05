@@ -104,3 +104,12 @@
            (all-unsigned-byte-p size x))
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p
                                      unsigned-byte-listp))))
+
+;todo: compare to the one in std
+(defthm unsigned-byte-p-of-nth-when-unsigned-byte-listp-2
+  (implies (and (unsigned-byte-listp size list)
+                (natp n) ;drop?
+                )
+           (equal (unsigned-byte-p size (nth n list))
+                  (< n (len list))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))

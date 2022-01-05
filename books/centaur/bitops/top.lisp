@@ -52,8 +52,8 @@
 
 (defxdoc bitops
   :parents (acl2::bit-vectors)
-  :short "Bitops is <a href='http://www.centtech.com/'>Centaur Technology</a>'s
-library for reasoning about bit-vector arithmetic.  It grew out of an extension
+  :short "Bitops is a library originally developed at Centaur Technology
+for reasoning about bit-vector arithmetic.  It grew out of an extension
 to the venerable @(see acl2::ihs) library, and is now fairly comprehensive."
 
   :long "<h3>Introduction</h3>

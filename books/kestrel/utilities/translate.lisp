@@ -1,6 +1,6 @@
-; A simple utility to translate a term
+; Utilities that translate terms
 ;
-; Copyright (C) 2014-2020 Kestrel Institute
+; Copyright (C) 2014-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,8 @@
 (in-package "ACL2")
 
 ;; STATUS: IN-PROGRESS
+
+(include-book "tables")
 
 ;; Returns (mv ctx msg-or-val), a context-message-pair.  When CTX is nil,
 ;; translation succeeded and msg-or-val is the result.  When CTX is non-nil,
@@ -59,3 +61,11 @@
     (declare (ignore msg-or-val)) ; ignore the translation
     (not ctx) ; ctx means an error occurred
     ))
+
+;; Returns the translation of TERM (or throws an error)
+(defun translate-term-allowing-ignored-vars (term ctx wrld)
+  (declare (xargs :mode :program
+                  ;; xb:guard (plist-worldp wrld)
+                  ))
+  (let ((wrld (table-programmatic 'acl2-defaults-table :ignore-ok t wrld)))
+    (translate-term term ctx wrld)))

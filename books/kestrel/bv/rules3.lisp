@@ -2193,7 +2193,6 @@
   :hints (("Goal"
            :use (:instance logext-of-+-of-bvchop)
            :in-theory (disable
-                       ;;LOGEXT-EQUAL-LOGEXT-REWRITE
                        logext-of-+-of-bvchop
                        BVCHOP-1-BECOMES-GETBIT
                        SLICE-BECOMES-GETBIT

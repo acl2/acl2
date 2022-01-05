@@ -1,5 +1,5 @@
 ; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2021, Regents of the University of Texas
+; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -4786,34 +4786,23 @@
                              nil
                              channel state nil)
                         (value :invisible))))
-     (t (let ((old-gag-state (f-get-global 'gag-state state)))
-          (state-global-let*
-           ((saved-output-reversed nil) ; preserve this (value doesn't matter)
-            (inhibit-output-lst inhibit-output-lst)
-            (gag-mode gag-mode)
-            (gag-state-saved (f-get-global 'gag-state-saved state)))
-           (pprogn (initialize-summary-accumulators state)
-                   (save-event-state-globals
+     (t (state-global-let*
+         ((saved-output-reversed nil) ; preserve this (value doesn't matter)
+          (inhibit-output-lst inhibit-output-lst)
+          (gag-mode gag-mode)
+          (gag-state-saved (f-get-global 'gag-state-saved state)))
+         (pprogn (initialize-summary-accumulators state)
+                 (save-event-state-globals
+                  (revert-world
+                   (state-global-let*
+                    ((saved-output-p nil)
+                     (acl2-world-alist (f-get-global 'acl2-world-alist
+                                                     state)))
                     (pprogn
-                     (if old-gag-state
-                         state
-
-; Otherwise we set gag-state to nil after saving the gag-state in
-; gag-state-saved.
-
-                       (f-put-global 'gag-state
-                                     (f-get-global 'gag-state-saved state)
-                                     state))
-                     (revert-world
-                      (state-global-let*
-                       ((saved-output-p nil)
-                        (acl2-world-alist (f-get-global 'acl2-world-alist
-                                                        state)))
-                       (pprogn
-                        (pop-current-acl2-world 'saved-output-reversed state)
-                        (print-saved-output-lst saved-output io-markers
-                                                stop-markers ctx
-                                                state)))))))))))))
+                     (pop-current-acl2-world 'saved-output-reversed state)
+                     (print-saved-output-lst saved-output io-markers
+                                             stop-markers ctx
+                                             state)))))))))))
 
 (defun convert-io-markers-lst (io-markers acc)
   (cond ((endp io-markers) acc)

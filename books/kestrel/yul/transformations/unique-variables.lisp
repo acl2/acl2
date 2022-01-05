@@ -44,92 +44,138 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define var-unique-vars ((var identifierp) (allvars identifier-setp))
+  :returns (new-allvars identifier-set-resultp)
+  :short "Check that a variable is unique."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Check that it does not occur in the set of all variables found so far,
+     and add it to that set if successful.")
+   (xdoc::p
+    "This is very similar to @(tsee add-var),
+     but it has a different purpose."))
+  (if (set::in (identifier-fix var) (identifier-set-fix allvars))
+      (err (list :non-unique-var (identifier-fix var)))
+    (set::insert (identifier-fix var) (identifier-set-fix allvars)))
+  :hooks (:fix)
+  ///
+
+  (defruled var-unique-vars-to-set-insert
+    (b* ((allvars1 (var-unique-vars var allvars)))
+      (implies (not (resulterrp allvars1))
+               (equal allvars1
+                      (set::insert (identifier-fix var)
+                                   (identifier-set-fix allvars)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define var-list-unique-vars ((vars identifier-listp) (allvars identifier-setp))
+  :returns (new-allvars identifier-set-resultp)
+  :short "Check that all the variables in a list are unique."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee var-unique-vars) to lists.")
+   (xdoc::p
+    "This is very similar to @(tsee add-vars),
+     but it has a different purpose."))
+  (b* (((when (endp vars)) (identifier-set-fix allvars))
+       ((ok allvars) (var-unique-vars (car vars) allvars)))
+    (var-list-unique-vars (cdr vars) allvars))
+  :hooks (:fix)
+  ///
+
+  (defruled var-list-unique-vars-to-set-list-insert
+    (b* ((allvars1 (var-list-unique-vars vars allvars)))
+      (implies (not (resulterrp allvars1))
+               (equal allvars1
+                      (set::list-insert (identifier-list-fix vars)
+                                        (identifier-set-fix allvars)))))
+    :enable (set::list-insert
+             var-unique-vars-to-set-insert)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines statements/blocks/cases/fundefs-unique-vars
   :short "Mutually recursive functions that check
           the uniqueness of variable names in
           statements, blocks, cases, and function definitions."
 
-  (define statement-unique-vars ((stmt statementp) (vars identifier-setp))
-    :returns (new-vars identifier-set-resultp)
+  (define statement-unique-vars ((stmt statementp) (allvars identifier-setp))
+    :returns (new-allvars identifier-set-resultp)
     :short "Check that a statement has unique variable names."
     (statement-case
      stmt
-     :block (block-unique-vars stmt.get vars)
-     :variable-single (if (not (set::in stmt.name (identifier-set-fix vars)))
-                          (set::insert stmt.name (identifier-set-fix vars))
-                        (err (list :duplicate-var stmt.name)))
-     :variable-multi (if (set::list-notin stmt.names (identifier-set-fix vars))
-                         (set::list-insert stmt.names (identifier-set-fix vars))
-                       (err (list :duplicate-vars stmt.names)))
-     :assign-single (identifier-set-fix vars)
-     :assign-multi (identifier-set-fix vars)
-     :funcall (identifier-set-fix vars)
-     :if (block-unique-vars stmt.body vars)
-     :for (b* (((ok vars) (block-unique-vars stmt.init vars))
-               ((ok vars) (block-unique-vars stmt.update vars))
-               ((ok vars) (block-unique-vars stmt.body vars)))
-            vars)
-     :switch (b* (((ok vars) (swcase-list-unique-vars stmt.cases vars))
-                  ((ok vars) (block-option-unique-vars stmt.default vars)))
-               vars)
-     :leave (identifier-set-fix vars)
-     :break (identifier-set-fix vars)
-     :continue (identifier-set-fix vars)
-     :fundef (fundef-unique-vars stmt.get vars))
+     :block (block-unique-vars stmt.get allvars)
+     :variable-single (var-unique-vars stmt.name allvars)
+     :variable-multi (var-list-unique-vars stmt.names allvars)
+     :assign-single (identifier-set-fix allvars)
+     :assign-multi (identifier-set-fix allvars)
+     :funcall (identifier-set-fix allvars)
+     :if (block-unique-vars stmt.body allvars)
+     :for (b* (((ok allvars) (block-unique-vars stmt.init allvars))
+               ((ok allvars) (block-unique-vars stmt.update allvars))
+               ((ok allvars) (block-unique-vars stmt.body allvars)))
+            allvars)
+     :switch (b* (((ok allvars) (swcase-list-unique-vars stmt.cases allvars))
+                  ((ok allvars) (block-option-unique-vars stmt.default allvars)))
+               allvars)
+     :leave (identifier-set-fix allvars)
+     :break (identifier-set-fix allvars)
+     :continue (identifier-set-fix allvars)
+     :fundef (fundef-unique-vars stmt.get allvars))
     :measure (statement-count stmt))
 
   (define statement-list-unique-vars ((stmts statement-listp)
-                                      (vars identifier-setp))
-    :returns (new-vars identifier-set-resultp)
+                                      (allvars identifier-setp))
+    :returns (new-allvars identifier-set-resultp)
     :short "Check that a list of statements has unique variable names."
-    (b* (((when (endp stmts)) (identifier-set-fix vars))
-         ((ok vars) (statement-unique-vars (car stmts) vars))
-         ((ok vars) (statement-list-unique-vars (cdr stmts) vars)))
-      vars)
+    (b* (((when (endp stmts)) (identifier-set-fix allvars))
+         ((ok allvars) (statement-unique-vars (car stmts) allvars))
+         ((ok allvars) (statement-list-unique-vars (cdr stmts) allvars)))
+      allvars)
     :measure (statement-list-count stmts))
 
-  (define block-unique-vars ((block blockp) (vars identifier-setp))
-    :returns (new-vars identifier-set-resultp)
+  (define block-unique-vars ((block blockp) (allvars identifier-setp))
+    :returns (new-allvars identifier-set-resultp)
     :short "Check that a block has unique variable names."
-    (statement-list-unique-vars (block->statements block) vars)
+    (statement-list-unique-vars (block->statements block) allvars)
     :measure (block-count block))
 
   (define block-option-unique-vars ((block? block-optionp)
-                                    (vars identifier-setp))
-    :returns (new-vars identifier-set-resultp)
+                                    (allvars identifier-setp))
+    :returns (new-allvars identifier-set-resultp)
     :short "Check that an optional block has unique variable names."
     (block-option-case block?
                        :some (block-unique-vars (block-option-some->val block?)
-                                                vars)
-                       :none (identifier-set-fix vars))
+                                                allvars)
+                       :none (identifier-set-fix allvars))
     :measure (block-option-count block?))
 
-  (define swcase-unique-vars ((case swcasep) (vars identifier-setp))
-    :returns (new-vars identifier-set-resultp)
+  (define swcase-unique-vars ((case swcasep) (allvars identifier-setp))
+    :returns (new-allvars identifier-set-resultp)
     :short "Check that a switch case has unique variable names."
-    (block-unique-vars (swcase->body case) vars)
+    (block-unique-vars (swcase->body case) allvars)
     :measure (swcase-count case))
 
-  (define swcase-list-unique-vars ((cases swcase-listp) (vars identifier-setp))
-    :returns (new-vars identifier-set-resultp)
+  (define swcase-list-unique-vars ((cases swcase-listp) (allvars identifier-setp))
+    :returns (new-allvars identifier-set-resultp)
     :short "Check that a list of switch cases has unique variable names."
-    (b* (((when (endp cases)) (identifier-set-fix vars))
-         ((ok vars) (swcase-unique-vars (car cases) vars))
-         ((ok vars) (swcase-list-unique-vars (cdr cases) vars)))
-      vars)
+    (b* (((when (endp cases)) (identifier-set-fix allvars))
+         ((ok allvars) (swcase-unique-vars (car cases) allvars))
+         ((ok allvars) (swcase-list-unique-vars (cdr cases) allvars)))
+      allvars)
     :measure (swcase-list-count cases))
 
-  (define fundef-unique-vars ((fundef fundefp) (vars identifier-setp))
-    :returns (new-vars identifier-set-resultp)
+  (define fundef-unique-vars ((fundef fundefp) (allvars identifier-setp))
+    :returns (new-allvars identifier-set-resultp)
     :short "Check that a function definition has unique variable names."
     (b* (((fundef fundef) fundef)
-         ((unless (set::list-notin fundef.inputs (identifier-set-fix vars)))
-          (err (list :duplicate-vars fundef.inputs)))
-         (vars (set::list-insert fundef.inputs (identifier-set-fix vars)))
-         ((unless (set::list-notin fundef.outputs (identifier-set-fix vars)))
-          (err (list :duplicate-vars fundef.outputs)))
-         (vars (set::list-insert fundef.outputs (identifier-set-fix vars))))
-      (block-unique-vars fundef.body vars))
+         ((ok allvars) (var-list-unique-vars (append fundef.inputs
+                                                     fundef.outputs)
+                                             allvars)))
+      (block-unique-vars fundef.body allvars))
     :measure (fundef-count fundef))
 
   :flag-local nil
@@ -153,52 +199,52 @@
   (defthm-statements/blocks/cases/fundefs-unique-vars-flag
 
     (defthm statement-unique-vars-extend
-      (implies (identifier-setp vars)
-               (b* ((vars1 (statement-unique-vars stmt vars)))
-                 (implies (not (resulterrp vars1))
-                          (set::subset vars vars1))))
+      (implies (identifier-setp allvars)
+               (b* ((allvars1 (statement-unique-vars stmt allvars)))
+                 (implies (not (resulterrp allvars1))
+                          (set::subset allvars allvars1))))
       :flag statement-unique-vars)
 
     (defthm statement-list-unique-vars-extend
-      (implies (identifier-setp vars)
-               (b* ((vars1 (statement-list-unique-vars stmts vars)))
-                 (implies (not (resulterrp vars1))
-                          (set::subset vars vars1))))
+      (implies (identifier-setp allvars)
+               (b* ((allvars1 (statement-list-unique-vars stmts allvars)))
+                 (implies (not (resulterrp allvars1))
+                          (set::subset allvars allvars1))))
       :flag statement-list-unique-vars)
 
     (defthm block-unique-vars-extend
-      (implies (identifier-setp vars)
-               (b* ((vars1 (block-unique-vars block vars)))
-                 (implies (not (resulterrp vars1))
-                          (set::subset vars vars1))))
+      (implies (identifier-setp allvars)
+               (b* ((allvars1 (block-unique-vars block allvars)))
+                 (implies (not (resulterrp allvars1))
+                          (set::subset allvars allvars1))))
       :flag block-unique-vars)
 
     (defthm block-option-unique-vars-extend
-      (implies (identifier-setp vars)
-               (b* ((vars1 (block-option-unique-vars block? vars)))
-                 (implies (not (resulterrp vars1))
-                          (set::subset vars vars1))))
+      (implies (identifier-setp allvars)
+               (b* ((allvars1 (block-option-unique-vars block? allvars)))
+                 (implies (not (resulterrp allvars1))
+                          (set::subset allvars allvars1))))
       :flag block-option-unique-vars)
 
     (defthm swcase-unique-vars-extend
-      (implies (identifier-setp vars)
-               (b* ((vars1 (swcase-unique-vars case vars)))
-                 (implies (not (resulterrp vars1))
-                          (set::subset vars vars1))))
+      (implies (identifier-setp allvars)
+               (b* ((allvars1 (swcase-unique-vars case allvars)))
+                 (implies (not (resulterrp allvars1))
+                          (set::subset allvars allvars1))))
       :flag swcase-unique-vars)
 
     (defthm swcase-list-unique-vars-extend
-      (implies (identifier-setp vars)
-               (b* ((vars1 (swcase-list-unique-vars cases vars)))
-                 (implies (not (resulterrp vars1))
-                          (set::subset vars vars1))))
+      (implies (identifier-setp allvars)
+               (b* ((allvars1 (swcase-list-unique-vars cases allvars)))
+                 (implies (not (resulterrp allvars1))
+                          (set::subset allvars allvars1))))
       :flag swcase-list-unique-vars)
 
     (defthm fundef-unique-vars-extend
-      (implies (identifier-setp vars)
-               (b* ((vars1 (fundef-unique-vars fundef vars)))
-                 (implies (not (resulterrp vars1))
-                          (set::subset vars vars1))))
+      (implies (identifier-setp allvars)
+               (b* ((allvars1 (fundef-unique-vars fundef allvars)))
+                 (implies (not (resulterrp allvars1))
+                          (set::subset allvars allvars1))))
       :flag fundef-unique-vars)
 
     :hints (("Goal"
@@ -210,5 +256,7 @@
                               swcase-list-unique-vars
                               fundef-unique-vars
                               set::subset-transitive
+                              var-unique-vars-to-set-insert
+                              var-list-unique-vars-to-set-list-insert
                               (:forward-chaining set::subset-of-list-insert))
                              ((:rewrite set::subset-of-list-insert)))))))

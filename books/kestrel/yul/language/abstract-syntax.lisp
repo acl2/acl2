@@ -190,6 +190,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult path-result
+  :short "Fixtype of errors and paths."
+  :ok path
+  :pred path-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-pathp
+  (implies (pathp x)
+           (not (resulterrp x)))
+  :enable (pathp resulterrp))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist path-list
   :short "Fixtype of lists of paths."
   :elt-type path
@@ -320,7 +335,6 @@
   (:char ((get character)))
   (:escape ((get escape)))
   :pred string-elementp)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -469,10 +483,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult expression-result
+  :short "Fixtype of errors and expressions."
+  :ok expression
+  :pred expression-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-expressionp
+  (implies (expressionp x)
+           (not (resulterrp x)))
+  :enable (expressionp resulterrp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defoption funcall-option
   funcall
   :short "Fixtype of optional function calls."
   :pred funcall-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult funcall-result
+  :short "Fixtype of errors and function calls."
+  :ok funcall
+  :pred funcall-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-funcallp
+  (implies (funcallp x)
+           (not (resulterrp x)))
+  :enable (funcallp resulterrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -579,8 +621,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Enable Yul parser routines to return results or errors.
-
 (fty::defresult block-result
   :short "Fixtype of errors and blocks."
   :ok block
@@ -593,7 +633,7 @@
            (not (resulterrp x)))
   :enable (blockp resulterrp))
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult statement-result
   :short "Fixtype of errors and statements."
@@ -606,6 +646,34 @@
   (implies (statementp x)
            (not (resulterrp x)))
   :enable (statementp resulterrp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult fundef-result
+  :short "Fixtype of errors and function definitions."
+  :ok fundef
+  :pred fundef-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-fundefp
+  (implies (fundefp x)
+           (not (resulterrp x)))
+  :enable (fundefp resulterrp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult swcase-result
+  :short "Fixtype of errors and swcase clauses (for switch statements)."
+  :ok swcase
+  :pred swcase-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-swcasep
+  (implies (swcasep x)
+           (not (resulterrp x)))
+  :enable (swcasep resulterrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

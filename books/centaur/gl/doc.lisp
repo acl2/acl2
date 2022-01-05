@@ -47,9 +47,9 @@ solver</a>."
   :long "<h3>Overview</h3>
 
 <p>GL is a convenient and efficient tool for solving many finite ACL2 theorems
-that arise in @(see acl2::hardware-verification) and other contexts.  It plays
-an important role in the verification of arithmetic units and microcode
-routines at <a href='http://www.centtech.com/'>Centaur Technology</a>.</p>
+that arise in @(see acl2::hardware-verification) and other contexts.  It has
+played an important role in the verification of arithmetic units and microcode
+routines at Centaur Technology.</p>
 
 <p>GL makes extensive use of @(see acl2::hons-and-memoization).  Some
 optional parts of GL also require <see topic='@(url defttag)'>trust
@@ -186,11 +186,10 @@ is used as the engine for @(see gl-aig-bddify-mode).</dd>
 
 <h4>GL Applications</h4>
 
-<p>GL has been used at <a href='http://www.centtech.com/'>Centaur
-Technology</a> to verify RTL implementations of floating-point addition,
-multiplication, and conversion operations, as well as hundreds of bitwise and
-arithmetic operations on scalar and packed integers.  Some papers describing
-some of this work include:</p>
+<p>GL has been used at Centaur Technology to verify RTL implementations of
+floating-point addition, multiplication, and conversion operations, as well as
+hundreds of bitwise and arithmetic operations on scalar and packed integers.
+Some papers describing some of this work include:</p>
 
 <ul>
 

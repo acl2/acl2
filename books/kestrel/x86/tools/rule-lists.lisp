@@ -947,8 +947,7 @@
 ;                    canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
             ;;signed-byte-p-of-+-between
 
-            acl2::logext-of-sum-trim-constant-big
-            acl2::logext-of-sum-trim-constant
+            acl2::logext-of-+-of-constant
 ;            x86isa::alignment-checking-enabled-p-and-set-flag
             x86isa::unsigned-byte-p-of-bool->bit
 ;            x86isa::set-flag-of-set-flag-undefined-different-concrete-indices ;drop?

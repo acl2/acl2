@@ -225,3 +225,22 @@
                   (cons (nth 0 lst)
                         (take (+ -1 n) (cdr lst)))))
   :hints (("Goal" :in-theory (enable take))))
+
+(defthmd take-of-+-of-1
+  (implies (and (syntaxp (not (quotep n))) ;defeat ACL2 matching (+ 1 n) with a constant
+                (natp n))
+           (equal (take (+ 1 n) x)
+                  (cons (car x)
+                        (take n (cdr x)))))
+  :hints (("Goal" :in-theory (enable take append))))
+
+(defthmd take-of-+-of-1-alt
+  (implies (and (syntaxp (not (quotep n))) ;defeat ACL2 matching (+ 1 n) with a constant
+                (< n (len x)) ;drop?
+                (natp n))
+           (equal (take (+ 1 n) x)
+                  (append (take n x)
+                          (list (nth n x)))))
+  :hints (("Goal" :in-theory (enable take append))))
+
+;; Would like to include take of nil, but that requires repeat to state.

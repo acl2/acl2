@@ -142,6 +142,12 @@
      removed, as it is no longer necessary or appropriate because of the change
      to the @(tsee apt::simplify) transformation for @(tsee mbt) noted above.")
 
+   (xdoc::p
+    "The new utilities @(tsee checkpoint-list) and @(tsee
+     checkpoint-list-pretty) and related (perhaps less useful) new utilities
+     @(tsee checkpoint-info-list) and @(tsee show-checkpoint-list) provide
+     programmatic interfaces to key checkpoint information.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "quicklisp" "Quicklisp Library"))
@@ -196,6 +202,10 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Miscellaneous")
+
+   (xdoc::p
+    "A new keyword option @(':ignore-ok') is now available for @(tsee
+     prove$).")
 
    ))
 
