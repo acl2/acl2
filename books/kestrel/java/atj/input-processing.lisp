@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -732,13 +732,33 @@
                         of the generated test Java file.")
                state)
   :short "Process the @(':output-dir') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If successful, return the paths for the generated
+     main, environment, and test Java files,
+     or @('nil') for files not generated."))
   (b* (((er &)
         (ensure-value-is-string$ output-dir "The :OUTPUT-DIR input" t nil))
-       ((mv err/msg kind state) (oslib::file-kind output-dir))
-       ((when (or err/msg
-                  (not (eq kind :directory))))
+       ((mv err-msg exists state) (oslib::path-exists-p output-dir))
+       ((when err-msg)
         (er-soft+ ctx t nil
-                  "The output directory ~x0 is invalid."
+                  "The existence of the output directory path ~x0 ~
+                   cannot be tested.  ~@1"
+                  output-dir err-msg))
+       ((when (not exists))
+        (er-soft+ ctx t nil
+                  "The output directory path ~x0 does not exist." output-dir))
+       ((mv err-msg kind state) (oslib::file-kind output-dir))
+       ((when err-msg)
+        (er-soft+ ctx t nil
+                  "The kind of the output directory path ~x0 ~
+                   cannot be tested.  ~@1"
+                  output-dir err-msg))
+       ((unless (eq kind :directory))
+        (er-soft+ ctx t nil
+                  "The output directory path ~x0 ~
+                   exists but is not a directory."
                   output-dir))
        (file (oslib::catpath output-dir
                              (concatenate 'string java-class$ ".java")))
