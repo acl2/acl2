@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -528,14 +528,37 @@
       the generated Java files are created.")
     (xdoc::p
      "It must be an ACL2 string that is
-      a valid path to a directory in the file system;
+      a valid path to an existing directory in the file system;
       the path may be absolute,
       or relative to
       the " (xdoc::seetopic "cbd" "current working directory") ".")
     (xdoc::p
+     "If the @(':java-package') input specifies an unnamed package,
+      the generated Java files are written in that directory.
+      If the @(':java-package') input specifies a named package,
+      subdirectories are created in that directory
+      that correspond to the dot-separated identifiers of the package name,
+      and the generated Java files are written in the innermost subdirectory.
+      This directory structure matches
+      the typical organization of Java source files.
+      If the subdirectories do not exist, they are created;
+      if they exist, they are used as they are,
+      without regard to whether they may contain
+      additional files and directories
+      (however, it is recommended that the subdirectories do not contain
+      any such additional files and directories.")
+    (xdoc::p
      "One file per class is generated:
-      two files if the @(':tests') input is @('nil'),
-      three files otherwise.
+      one file if
+      the @(':no-aij-types') input is @('t')
+      and the @(':tests') input is @('nil');
+      two files if
+      either the @(':no-aij-types') input is @('nil')
+      and the @(':tests') input is @('nil'),
+      or the @(':no-aij-types') input is @('t')
+      and the @(':tests') input is @('t');
+      and three files if the @(':no-aij-types') input is @('nil')
+      and the @(':tests') input is @('t').
       The name of each generated file
       is the name of the corresponding class followed by @('.java').
       If the file already exists, it is overwritten."))

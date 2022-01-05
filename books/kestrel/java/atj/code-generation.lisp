@@ -21,6 +21,9 @@
 (include-book "deep-code-generation")
 (include-book "shallow-code-generation")
 
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "oslib/mkdir" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atj-code-generation
@@ -602,11 +605,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-output-subdir ((output-subdir stringp)
+                               (java-package$ maybe-stringp)
+                               (ctx ctxp)
+                               state)
+  :returns (mv erp (_ null) state)
+  :short "Generate the output subdirectory where the Java files go, if needed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the subdirectory is the same as @(':output-dir'),
+     which happens when there is no named Java package,
+     no subdirectories need to be generated."))
+  (b* (((when (not java-package$)) (value nil))
+       ((mv successp state) (oslib::mkdir output-subdir))
+       ((unless successp)
+        (er-soft+ ctx t nil
+                  "The creation of the output subdirectory ~x0 failed."
+                  output-subdir)))
+    (value nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-everything ((deep$ booleanp)
                             (guards$ booleanp)
                             (no-aij-types$ booleanp)
                             (java-package$ maybe-stringp)
                             (java-class$ stringp)
+                            (output-subdir stringp)
                             (output-file$ stringp)
                             (output-file-env$ stringp)
                             (output-file-test$ maybe-stringp)
@@ -615,6 +641,7 @@
                             (fns-to-translate symbol-listp)
                             (call-graph symbol-symbollist-alistp)
                             (verbose$ booleanp)
+                            (ctx ctxp)
                             state)
   :returns (mv erp val state)
   :mode :program ; because of ATJ-GEN-MAIN/ENV/TEST-FILE
@@ -639,7 +666,8 @@
   (state-global-let*
    ((fmt-soft-right-margin 1000000 set-fmt-soft-right-margin)
     (fmt-hard-right-margin 1000000 set-fmt-hard-right-margin))
-   (b* (((mv pkg-class-names
+   (b* (((er &) (atj-gen-output-subdir output-subdir java-package$ ctx state))
+        ((mv pkg-class-names
              fn-method-names
              state)
          (atj-gen-main-file deep$

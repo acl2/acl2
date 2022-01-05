@@ -717,14 +717,95 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-process-output-subdir ((current-subdir stringp)
+                                   (current-exists booleanp)
+                                   (next-subdirs string-listp)
+                                   (ctx ctxp)
+                                   state)
+  :returns (mv erp (final-dir stringp) state)
+  :short "Process the subdirectories specified by
+          the @(':output-dir') and @(':java-package') inputs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is part of the processing of @(':output-dir').
+     As explained in the user documentation,
+     if @(':java-package') is not @('nil'),
+     the Java files are generated in a subdirectory
+     of the directory specified by @(':output-dir'),
+     corresponding to the identifiers that form the Java package name.")
+   (xdoc::p
+    "Here we ensure that the subdirectories in the sequence
+     either exists and are directories, or do not exist.
+     It is allowed for no subdirectory to exist,
+     or for some initial prefix to exist,
+     or for all of them to exist;
+     any non-existing subdirectories will be created
+     just before generating the Java files.")
+   (xdoc::p
+    "This ACL2 function recursively checks the subdirectories.
+     The @('current-subdir') parameter is the path consisting of
+     the @(':output-dir') directory plus the subdirectories examined so far;
+     its initial value is @(':output-dir').
+     The @('current-exists') parameter says whether
+     the @('current-subdir') exists or not;
+     its initial value is @('t').
+     The @('next-subdirs') parameter contains
+     the remaining subdirectories to examine;
+     its initial value is the list of identifiers
+     that form the Java package name.
+     As soon as a subdirectory is encountered that does not exist,
+     the @('current-exists') is set to @('nil'), and it stays that way.
+     In any case eventually the final subdirectory path,
+     starting with @(':output-dir'), is returned."))
+  (b* (((when (endp next-subdirs))
+        (value (mbe :logic (str-fix current-subdir) :exec current-subdir)))
+       (current-subdir (oslib::catpath current-subdir (car next-subdirs)))
+       ((when current-exists) (atj-process-output-subdir current-subdir
+                                                         current-exists
+                                                         (cdr next-subdirs)
+                                                         ctx state))
+       ((mv err-msg exists state) (oslib::path-exists-p current-subdir))
+       ((when err-msg)
+        (er-soft+ ctx t ""
+                  "The existence of the output subdirectory path ~x0 ~
+                   cannot be tested.  ~@1"
+                  current-subdir err-msg))
+       ((when (not exists))
+        (atj-process-output-subdir current-subdir
+                                   t
+                                   (cdr next-subdirs)
+                                   ctx
+                                   state))
+       ((mv err-msg kind state) (oslib::file-kind current-subdir))
+       ((when err-msg)
+        (er-soft+ ctx t ""
+                  "The kind of the output subdirectory path ~x0 ~
+                   cannot be tested.  ~@1."
+                  current-subdir err-msg))
+       ((unless (eq kind :directory))
+        (er-soft+ ctx t ""
+                  "The output subdirectory path ~x0 ~
+                   exists but is not a directory."
+                  current-subdir)))
+    (atj-process-output-subdir current-subdir
+                               nil
+                               (cdr next-subdirs)
+                               ctx
+                               state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-process-output-dir (output-dir
                                 (no-aij-types$ booleanp)
+                                (java-package$ maybe-stringp)
                                 (java-class$ stringp)
                                 (tests$ atj-test-listp)
                                 (ctx ctxp)
                                 state)
   :returns (mv erp
-               (val (tuple (output-file$ stringp)
+               (val (tuple (output-subdir stringp)
+                           (output-file$ stringp)
                            (output-file-env$ maybe-stringp)
                            (output-file-test$ maybe-stringp)
                            val))
@@ -733,13 +814,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If successful, return the paths for the generated
-     main, environment, and test Java files,
+    "If successful, return the paths for
+     the (sub)directory where the generated files must go,
+     and for the generated main, environment, and test Java files,
      or @('nil') for files not generated."))
-  (b* ((irrelevant (list "" nil nil))
+  (b* ((irrelevant (list "" "" nil nil))
        ((mv erp & state)
         (ensure-value-is-string$ output-dir "The :OUTPUT-DIR input" t nil))
-       ((when erp) (mv erp (list "" nil nil) state))
+       ((when erp) (mv erp irrelevant state))
        ((mv err-msg exists state) (oslib::path-exists-p output-dir))
        ((when err-msg)
         (er-soft+ ctx t irrelevant
@@ -760,7 +842,16 @@
                   "The output directory path ~x0 ~
                    exists but is not a directory."
                   output-dir))
-       (file (oslib::catpath output-dir
+       ((mv erp output-subdir state)
+        (if java-package$
+            (atj-process-output-subdir output-dir
+                                       t
+                                       (str::strtok! java-package$ (list #\.))
+                                       ctx
+                                       state)
+          (value (mbe :logic (str-fix output-dir) :exec output-dir))))
+       ((when erp) (mv erp irrelevant state))
+       (file (oslib::catpath output-subdir
                              (concatenate 'string java-class$ ".java")))
        ((er &) (b* (((mv err-msg exists state) (oslib::path-exists-p file))
                     ((when err-msg)
@@ -783,7 +874,7 @@
                  (value :this-is-irrelevant)))
        (file-env (if no-aij-types$
                      nil
-                   (oslib::catpath output-dir
+                   (oslib::catpath output-subdir
                                    (concatenate 'string
                                                 java-class$
                                                 "Environment.java"))))
@@ -808,7 +899,7 @@
                                file-env)))
                  (value :this-is-irrelevant)))
        (file-test (if tests$
-                      (oslib::catpath output-dir
+                      (oslib::catpath output-subdir
                                       (concatenate 'string
                                                    java-class$
                                                    "Tests.java"))
@@ -833,7 +924,7 @@
                                 exists but is not a regular file."
                                file-test)))
                  (value :this-is-irrelevant))))
-    (value (list file file-env file-test)))
+    (value (list output-subdir file file-env file-test)))
   :prepwork
   ((local (in-theory (enable acl2::ensure-value-is-string)))))
 
@@ -1413,6 +1504,7 @@
                                     no-aij-types$
                                     java-package$
                                     java-class$
+                                    output-subdir
                                     output-file$
                                     output-file-env$
                                     output-file-test$
@@ -1429,6 +1521,7 @@
                                          stringp
                                          stringp
                                          stringp
+                                         maybe-stringp
                                          maybe-stringp
                                          atj-test-listp
                                          booleanp
@@ -1472,11 +1565,13 @@
        ((er &) (atj-process-java-package java-package ctx state))
        ((er java-class$) (atj-process-java-class java-class ctx state))
        ((er tests$) (atj-process-tests tests targets deep guards ctx state))
-       ((er (list output-file$
+       ((er (list output-subdir
+                  output-file$
                   output-file-env$
                   output-file-test$))
         (atj-process-output-dir output-dir
                                 no-aij-types
+                                java-package
                                 java-class$
                                 tests$
                                 ctx
@@ -1496,6 +1591,7 @@
                  no-aij-types
                  java-package
                  java-class$
+                 output-subdir
                  output-file$
                  output-file-env$
                  output-file-test$
