@@ -4,7 +4,7 @@
 
 # Java Library
 #
-# Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+# Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 #
 # License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 #
@@ -25,4 +25,8 @@
 set -e
 
 # generate class files:
-javac -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar *.java
+javac -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar \
+      *.java \
+      packages1/*.java \
+      packages2/p/*.java \
+      packages3/edu/kestrel/*.java
