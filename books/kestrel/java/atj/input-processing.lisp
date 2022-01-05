@@ -126,7 +126,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-process-targets ((targets true-listp) deep guards ctx state)
+(define atj-process-targets ((targets true-listp)
+                             deep
+                             guards
+                             (ctx ctxp)
+                             state)
   :returns (mv erp (result null) state)
   :short "Process the @('fn1'), ..., @('fnp') inputs."
   :long
@@ -172,7 +176,7 @@
 (define atj-process-no-aij-types (no-aij-types
                                   (deep$ booleanp)
                                   (guards$ booleanp)
-                                  ctx
+                                  (ctx ctxp)
                                   state)
   :returns (mv erp (nothing null) state)
   :short "Process the @(':no-aij-types') input."
@@ -202,7 +206,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-process-java-package (java-package ctx state)
+(define atj-process-java-package (java-package (ctx ctxp) state)
   :returns (mv erp (nothing null) state)
   :short "Process the @(':java-package') input."
   (b* (((er &) (ensure-string-or-nil$ java-package
@@ -233,7 +237,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-process-java-class (java-class ctx state)
+(define atj-process-java-class (java-class (ctx ctxp) state)
   :returns (mv erp
                (java-class$ (implies (not erp) (stringp java-class$)))
                state)
@@ -259,7 +263,7 @@
    (type primitive-typep)
    (fn symbolp "Just for error messages.")
    (call pseudo-termp "Just for error messages.")
-   ctx
+   (ctx ctxp)
    state)
   :returns (mv erp value state)
   :short "Process a Java primitive input, or part of an input,
@@ -357,7 +361,7 @@
    (type primitive-typep)
    (fn symbolp "Just for error messages.")
    (call pseudo-termp "Just for error messages.")
-   ctx
+   (ctx ctxp)
    state)
   :returns (mv erp values state)
   :short "Lift @(tsee atj-process-test-input-jprim-value) to lists."
@@ -387,7 +391,7 @@
                                 (call pseudo-termp "Just for error messages.")
                                 (deep$ booleanp)
                                 (guards$ booleanp)
-                                ctx
+                                (ctx ctxp)
                                 state)
   :returns (mv erp
                (test-input atj-test-valuep)
@@ -495,7 +499,7 @@
                                  (call pseudo-termp "Just for error messages.")
                                  (deep$ booleanp)
                                  (guards$ booleanp)
-                                 ctx
+                                 (ctx ctxp)
                                  state)
   :guard (= (len types) (len inputs))
   :returns (mv erp
@@ -527,7 +531,7 @@
                           (targets$ symbol-listp)
                           (deep$ booleanp)
                           (guards$ booleanp)
-                          ctx
+                          (ctx ctxp)
                           state)
   :returns (mv erp
                (test$ "An @(tsee atj-testp).")
@@ -664,7 +668,7 @@
                            (targets$ symbol-listp)
                            (deep$ booleanp)
                            (guards$ booleanp)
-                           ctx
+                           (ctx ctxp)
                            state)
   :returns (mv erp
                (tests$ "An @(tsee atj-test-listp).")
@@ -694,7 +698,7 @@
                                   (targets$ symbol-listp)
                                   (deep$ booleanp)
                                   (guards$ booleanp)
-                                  ctx
+                                  (ctx ctxp)
                                   state)
      :returns (mv erp
                   tests$ ; ATJ-TEST-LISTP
@@ -716,7 +720,7 @@
                                 (no-aij-types$ booleanp)
                                 (java-class$ stringp)
                                 (tests$ atj-test-listp)
-                                ctx
+                                (ctx ctxp)
                                 state)
   :returns (mv erp
                (result
@@ -1135,7 +1139,7 @@
                               (guards$ booleanp)
                               (ignore-whitelist$ booleanp)
                               (verbose$ booleanp)
-                              ctx
+                              (ctx ctxp)
                               state)
   :returns (mv erp
                (result "A tuple @('(fns new-call-graph)') satisfying
@@ -1302,7 +1306,7 @@
                               (guards$ booleanp)
                               (ignore-whitelist$ booleanp)
                               (verbose$ booleanp)
-                              ctx
+                              (ctx ctxp)
                               state)
   :returns (mv erp
                (result "A tuple @('(fns-to-translate call-graph')) satisfying
