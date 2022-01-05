@@ -713,23 +713,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-output-dir (output-dir
+                                (no-aij-types$ booleanp)
                                 (java-class$ stringp)
                                 (tests$ atj-test-listp)
                                 ctx
                                 state)
   :returns (mv erp
-               (result "A tuple
-                        @('(output-file$ output-file-env$ output-file-test$)')
-                        satisfying
-                        @('(typed-tuplep stringp stringp maybe-stringp)'),
-                        where @('output-file$') is the path
-                        of the generated main Java file,
-                        @('output-file-env$') is the path
-                        of the generated environment-building Java file,
-                        and @('output-file-test$') is
-                        @('nil') if the @(':tests') input is @('nil'),
-                        otherwise it is the path
-                        of the generated test Java file.")
+               (result
+                "A tuple
+                 @('(output-file$ output-file-env$ output-file-test$)')
+                 satisfying
+                 @('(typed-tuplep stringp maybe-stringp maybe-stringp)')")
                state)
   :short "Process the @(':output-dir') input."
   :long
@@ -781,11 +775,14 @@
                                 exists but is not a regular file."
                                file)))
                  (value :this-is-irrelevant)))
-       (file-env (oslib::catpath output-dir
-                                 (concatenate 'string
-                                              java-class$
-                                              "Environment.java")))
-       ((er &) (b* (((mv err-msg exists state) (oslib::path-exists-p file-env))
+       (file-env (if no-aij-types$
+                     nil
+                   (oslib::catpath output-dir
+                                   (concatenate 'string
+                                                java-class$
+                                                "Environment.java"))))
+       ((er &) (b* (((when (null file-env)) (value :this-is-irrelevant))
+                    ((mv err-msg exists state) (oslib::path-exists-p file-env))
                     ((when err-msg)
                      (er-soft+ ctx t nil
                                "The existence of the output file path ~x0 ~
@@ -1476,7 +1473,12 @@
        ((er (list output-file$
                   output-file-env$
                   output-file-test$))
-        (atj-process-output-dir output-dir java-class$ tests$ ctx state))
+        (atj-process-output-dir output-dir
+                                no-aij-types
+                                java-class$
+                                tests$
+                                ctx
+                                state))
        ((er &) (ensure-value-is-boolean$ ignore-whitelist
                                          "The :IGNORE-WHITELIST input" t nil))
        ((er &) (ensure-value-is-boolean$ verbose "The :VERBOSE input" t nil))
