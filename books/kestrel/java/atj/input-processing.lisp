@@ -762,41 +762,47 @@
                   output-dir))
        (file (oslib::catpath output-dir
                              (concatenate 'string java-class$ ".java")))
-       ((er &) (b* (((mv err/msg exists state) (oslib::path-exists-p file))
-                    ((when err/msg)
+       ((er &) (b* (((mv err-msg exists state) (oslib::path-exists-p file))
+                    ((when err-msg)
                      (er-soft+ ctx t nil
-                               "The existence of the output path ~x0 ~
-                                cannot be tested." file))
+                               "The existence of the output file path ~x0 ~
+                                cannot be tested.  ~@1"
+                               file err-msg))
                     ((when (not exists)) (value :this-is-irrelevant))
-                    ((mv err/msg kind state) (oslib::file-kind file))
-                    ((when err/msg)
+                    ((mv err-msg kind state) (oslib::file-kind file))
+                    ((when err-msg)
                      (er-soft+ ctx t nil
-                               "The kind of the output path ~x0 ~
-                                cannot be tested." file))
+                               "The kind of the output file path ~x0 ~
+                                cannot be tested.  ~@1"
+                               file err-msg))
                     ((when (not (eq kind :regular-file)))
                      (er-soft+ ctx t nil
-                               "The output path ~x0 ~
-                                exists but is not a regular file." file)))
+                               "The output file path ~x0 ~
+                                exists but is not a regular file."
+                               file)))
                  (value :this-is-irrelevant)))
        (file-env (oslib::catpath output-dir
                                  (concatenate 'string
                                               java-class$
                                               "Environment.java")))
-       ((er &) (b* (((mv err/msg exists state) (oslib::path-exists-p file-env))
-                    ((when err/msg)
+       ((er &) (b* (((mv err-msg exists state) (oslib::path-exists-p file-env))
+                    ((when err-msg)
                      (er-soft+ ctx t nil
-                               "The existence of the output path ~x0 ~
-                                cannot be tested." file-env))
+                               "The existence of the output file path ~x0 ~
+                                cannot be tested.  ~@1"
+                               file-env err-msg))
                     ((when (not exists)) (value :this-is-irrelevant))
-                    ((mv err/msg kind state) (oslib::file-kind file-env))
-                    ((when err/msg)
+                    ((mv err-msg kind state) (oslib::file-kind file-env))
+                    ((when err-msg)
                      (er-soft+ ctx t nil
-                               "The kind of the output path ~x0 ~
-                                cannot be tested." file-env))
+                               "The kind of the output file path ~x0 ~
+                                cannot be tested.  ~@1"
+                               file-env err-msg))
                     ((when (not (eq kind :regular-file)))
                      (er-soft+ ctx t nil
-                               "The output path ~x0 ~
-                                exists but is not a regular file." file-env)))
+                               "The output file path ~x0 ~
+                                exists but is not a regular file."
+                               file-env)))
                  (value :this-is-irrelevant)))
        (file-test (if tests$
                       (oslib::catpath output-dir
@@ -805,21 +811,24 @@
                                                    "Tests.java"))
                     nil))
        ((er &) (b* (((when (null file-test)) (value :this-is-irrelevant))
-                    ((mv err/msg exists state) (oslib::path-exists-p file-test))
-                    ((when err/msg)
+                    ((mv err-msg exists state) (oslib::path-exists-p file-test))
+                    ((when err-msg)
                      (er-soft+ ctx t nil
-                               "The existence of the output path ~x0 ~
-                                cannot be tested." file-test))
+                               "The existence of the output file path ~x0 ~
+                                cannot be tested.  ~@1"
+                               file-test err-msg))
                     ((when (not exists)) (value :this-is-irrelevant))
-                    ((mv err/msg kind state) (oslib::file-kind file-test))
-                    ((when err/msg)
+                    ((mv err-msg kind state) (oslib::file-kind file-test))
+                    ((when err-msg)
                      (er-soft+ ctx t nil
-                               "The kind of the output path ~x0 ~
-                                cannot be tested." file-test))
+                               "The kind of the output file path ~x0 ~
+                                cannot be tested.  ~@1"
+                               file-test err-msg))
                     ((when (not (eq kind :regular-file)))
                      (er-soft+ ctx t nil
-                               "The output path ~x0 ~
-                                exists but is not a regular file." file-test)))
+                               "The output file path ~x0 ~
+                                exists but is not a regular file."
+                               file-test)))
                  (value :this-is-irrelevant))))
     (value (list file file-env file-test)))
   :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
