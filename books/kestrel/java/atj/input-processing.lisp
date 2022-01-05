@@ -27,6 +27,7 @@
 (include-book "kestrel/std/system/pure-raw-p" :dir :system)
 (include-book "kestrel/std/system/rawp" :dir :system)
 (include-book "kestrel/std/system/unquote-term" :dir :system)
+(include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
@@ -723,11 +724,10 @@
                                 (ctx ctxp)
                                 state)
   :returns (mv erp
-               (result
-                "A tuple
-                 @('(output-file$ output-file-env$ output-file-test$)')
-                 satisfying
-                 @('(typed-tuplep stringp maybe-stringp maybe-stringp)')")
+               (val (tuple (output-file$ stringp)
+                           (output-file-env$ maybe-stringp)
+                           (output-file-test$ maybe-stringp)
+                           val))
                state)
   :short "Process the @(':output-dir') input."
   :long
@@ -736,25 +736,27 @@
     "If successful, return the paths for the generated
      main, environment, and test Java files,
      or @('nil') for files not generated."))
-  (b* (((er &)
+  (b* ((irrelevant (list "" nil nil))
+       ((mv erp & state)
         (ensure-value-is-string$ output-dir "The :OUTPUT-DIR input" t nil))
+       ((when erp) (mv erp (list "" nil nil) state))
        ((mv err-msg exists state) (oslib::path-exists-p output-dir))
        ((when err-msg)
-        (er-soft+ ctx t nil
+        (er-soft+ ctx t irrelevant
                   "The existence of the output directory path ~x0 ~
                    cannot be tested.  ~@1"
                   output-dir err-msg))
        ((when (not exists))
-        (er-soft+ ctx t nil
+        (er-soft+ ctx t irrelevant
                   "The output directory path ~x0 does not exist." output-dir))
        ((mv err-msg kind state) (oslib::file-kind output-dir))
        ((when err-msg)
-        (er-soft+ ctx t nil
+        (er-soft+ ctx t irrelevant
                   "The kind of the output directory path ~x0 ~
                    cannot be tested.  ~@1"
                   output-dir err-msg))
        ((unless (eq kind :directory))
-        (er-soft+ ctx t nil
+        (er-soft+ ctx t irrelevant
                   "The output directory path ~x0 ~
                    exists but is not a directory."
                   output-dir))
@@ -762,19 +764,19 @@
                              (concatenate 'string java-class$ ".java")))
        ((er &) (b* (((mv err-msg exists state) (oslib::path-exists-p file))
                     ((when err-msg)
-                     (er-soft+ ctx t nil
+                     (er-soft+ ctx t irrelevant
                                "The existence of the output file path ~x0 ~
                                 cannot be tested.  ~@1"
                                file err-msg))
                     ((when (not exists)) (value :this-is-irrelevant))
                     ((mv err-msg kind state) (oslib::file-kind file))
                     ((when err-msg)
-                     (er-soft+ ctx t nil
+                     (er-soft+ ctx t irrelevant
                                "The kind of the output file path ~x0 ~
                                 cannot be tested.  ~@1"
                                file err-msg))
                     ((when (not (eq kind :regular-file)))
-                     (er-soft+ ctx t nil
+                     (er-soft+ ctx t irrelevant
                                "The output file path ~x0 ~
                                 exists but is not a regular file."
                                file)))
@@ -788,19 +790,19 @@
        ((er &) (b* (((when (null file-env)) (value :this-is-irrelevant))
                     ((mv err-msg exists state) (oslib::path-exists-p file-env))
                     ((when err-msg)
-                     (er-soft+ ctx t nil
+                     (er-soft+ ctx t irrelevant
                                "The existence of the output file path ~x0 ~
                                 cannot be tested.  ~@1"
                                file-env err-msg))
                     ((when (not exists)) (value :this-is-irrelevant))
                     ((mv err-msg kind state) (oslib::file-kind file-env))
                     ((when err-msg)
-                     (er-soft+ ctx t nil
+                     (er-soft+ ctx t irrelevant
                                "The kind of the output file path ~x0 ~
                                 cannot be tested.  ~@1"
                                file-env err-msg))
                     ((when (not (eq kind :regular-file)))
-                     (er-soft+ ctx t nil
+                     (er-soft+ ctx t irrelevant
                                "The output file path ~x0 ~
                                 exists but is not a regular file."
                                file-env)))
@@ -814,25 +816,26 @@
        ((er &) (b* (((when (null file-test)) (value :this-is-irrelevant))
                     ((mv err-msg exists state) (oslib::path-exists-p file-test))
                     ((when err-msg)
-                     (er-soft+ ctx t nil
+                     (er-soft+ ctx t irrelevant
                                "The existence of the output file path ~x0 ~
                                 cannot be tested.  ~@1"
                                file-test err-msg))
                     ((when (not exists)) (value :this-is-irrelevant))
                     ((mv err-msg kind state) (oslib::file-kind file-test))
                     ((when err-msg)
-                     (er-soft+ ctx t nil
+                     (er-soft+ ctx t irrelevant
                                "The kind of the output file path ~x0 ~
                                 cannot be tested.  ~@1"
                                file-test err-msg))
                     ((when (not (eq kind :regular-file)))
-                     (er-soft+ ctx t nil
+                     (er-soft+ ctx t irrelevant
                                "The output file path ~x0 ~
                                 exists but is not a regular file."
                                file-test)))
                  (value :this-is-irrelevant))))
     (value (list file file-env file-test)))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
+  :prepwork
+  ((local (in-theory (enable acl2::ensure-value-is-string)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
