@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -204,7 +204,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection renaming-variables-static-safety
+(defsection renaming-variables-expression-safety
   :short "Proof that variable renaming preserves the safety of expressions."
   :long
   (xdoc::topstring
@@ -584,8 +584,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection renaming-statements/blocks/cases/fundefs-static-safety
-  :short "Proof that variable renaming preserves the safety of
+(defsection disambiguator-variables-statements/blocks/cases/fundefs-safety
+  :short "Proof that variable disambiguation preserves the safety of
           statements, blocks, and related entities."
   :long
   (xdoc::topstring
