@@ -18,7 +18,7 @@
 (include-book "kestrel/arithmetic-light/mod2" :dir :system)
 (include-book "basic-rules")
 (include-book "boolean-rules-axe")
-(include-book "bv-rules")
+(include-book "../bv/rules12")
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe") ;bring in theorems like LEFTROTATE32-OF-BVCHOP-5
 (include-book "bv-list-rules-axe")

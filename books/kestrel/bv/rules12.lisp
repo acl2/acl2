@@ -1,7 +1,7 @@
 ; Bit-vector rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,15 +12,13 @@
 
 (in-package "ACL2")
 
-;; TODO: Move this book to the bv library
-
 (include-book "kestrel/bv/rules6" :dir :system)
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/less-than-or-equal" :dir :system))
 
-(local (in-theory (disable expt)))
+;(local (in-theory (disable expt)))
 
 ;yuck?
 (defthm bvcat-bvxor-neighbors-hack3
@@ -151,35 +149,12 @@
                         (:instance bvchop-of-*-of-bvchop (size 32) (x free) (y z)))
            :in-theory (disable bvchop-of-*-of-bvchop))))
 
-(defthmd apply-logext-32-to-both-sides
-  (implies (and (equal x y)
-                (equal a (logext 32 x))
-                (equal b (logext 32 y)))
-           (equal (equal a b)
-                  t)))
-
-(defthmd apply-logext-32-to-both-sides-alt
-  (implies (and (equal y x)
-                (equal b (logext 32 x))
-                (equal a (logext 32 y)))
-           (equal (equal a b)
-                  t)))
-
-;yikes, don't we want to go the other way?
-(defthm bvchop-of-sbp-equal-constant
-  (implies (and (syntaxp (quotep k))
-                (signed-byte-p 32 x) ;backchain limit?
-                )
-           (equal (equal k (bvchop 32 x))
-                  (and (unsigned-byte-p 32 k)
-                       (equal (logext 32 k) x))))
-  :hints (("Goal" :in-theory (enable apply-logext-32-to-both-sides-alt apply-logext-32-to-both-sides))))
-
 ;for example, we prefer
 ;(EQUAL '0 (BVCAT '1 x '7 '0))
 ;to:
 ;(EQUAL '0 (LOGEXT '8 (BVCAT '1 x '7 '0)))
 ;is this one okay?
+;disable?
 (defthm add-bvchops-to-equality-of-sbps-5
   (implies (and (syntaxp (and (quotep y)
                               (consp x)
@@ -195,14 +170,6 @@
   :hints (("Goal"
            :cases ((integerp x))
            :use (:instance add-bvchops-to-equality-of-sbps-4))))
-
-(defthm logext-equal-logext-rewrite
-  (implies (and (integerp x)
-                (integerp size)
-                (< 0 size))
-           (equal (EQUAL (LOGEXT size x) (LOGEXT size y))
-                  (equal (bvchop size x) (bvchop size y))))
-  :hints (("Goal" :in-theory (enable ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4))))
 
 (DEFTHM GETBIT-0-OF-TIMES-constant
   (IMPLIES (AND (syntaxp (and (quotep x)
@@ -239,31 +206,6 @@
 (theory-invariant (incompatible (:rewrite FLOOR-BY-4) (:DEFINITION LOGTAIL)))
 
 (theory-invariant (incompatible (:rewrite logapp-0) (:rewrite times-4-becomes-logapp)))
-
-(defthm logext-of-plus-of-logext
-  (implies (and (<= smallsize bigsize)
-                (integerp smallsize)
-                (integerp bigsize)
-                (< 0 smallsize)
-                (force (integerp x))
-                (force (integerp y)))
-           (equal (LOGEXT smallsize (+ x (LOGEXT bigsize y)))
-                  (LOGEXT smallsize (+ x y))))
-  :hints (("Goal" :in-theory (e/d (ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4) (;BVPLUS-RECOLLAPSE
-                                                                       )))))
-
-(defthm logext-of-plus-of-logext-alt
-  (implies (and (<= smallsize bigsize)
-                (integerp smallsize)
-                (integerp bigsize)
-                (< 0 smallsize)
-                (force (integerp x))
-                (force (integerp y)))
-           (equal (LOGEXT smallsize (+ (LOGEXT bigsize y) x))
-                  (LOGEXT smallsize (+ x y))))
-  :hints (("Goal" :in-theory (e/d (ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4) (logext)))))
-
-
 
 ;slow?
 (defthm slice-of-plus-of-logext-gen
@@ -321,13 +263,6 @@
 ;trying this and the above...
 (in-theory (disable bvxor-of-slice-tighten-1 bvxor-of-slice-tighten-2 bvxor-of-slice-tighten-alt bvxor-of-slice-tighten))
 
-;drop?
-;bozo gen (or match usb claims in rhs?)
-(defthmd bvplus-bound
-  (< (bvplus 2 x y) 4)
-  :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
-                                            )))))
-
 (defthm logext-of-bv-plus-equal-plus-rewrite
   (implies (and (integerp x) ;hyps are new
                 (integerp y))
@@ -362,19 +297,3 @@
                       2147483648
                     (bvchop 31 x))))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
-
-(defthm logext-when-low-bits-known
-  (implies (and (equal (bvchop 31 x) free)
-                (syntaxp (quotep free)))
-           (equal (logext 32 x)
-                  (if (equal 0 (getbit 31 x))
-                      free
-                    (+ (- (expt 2 31))
-                       free))))
-  :hints (("Goal" :in-theory (enable logext logapp))))
-
-(defthm logext-negative-linear-cheap
-  (implies (equal (getbit 31 x) 1)
-           (< (logext 32 x) 0))
-  :rule-classes ((:linear :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable logext))))
