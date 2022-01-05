@@ -1432,14 +1432,9 @@
                                          result)').")
                state)
   :mode :program ; because of ATJ-FNS-TO-TRANSLATE and ATJ-PROCESS-TESTS
-  :short "Ensure that the inputs to @(tsee atj) are valid."
+  :short "Process the inputs to @(tsee atj)."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "We process the inputs in order,
-     except that @(':output-dir') is processed after @(':tests')
-     because the result of processing the latter
-     is used in processing the former.")
    (xdoc::p
     "We also collect, check, and return the functions
      for which code must be generated.
