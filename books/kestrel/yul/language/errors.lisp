@@ -54,3 +54,17 @@
        (b* ((info (fty::resulterr->info x)))
          (and (consp info)
               (eq (car info) :limit)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define resulterr-nonlimitp (x)
+  :returns (yes/no booleanp)
+  :short "Recognize non-limit errors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This recognizes all the errors
+     that are not recognized by @(tsee resulterr-limitp).
+     See that recognizer's documentation."))
+  (and (resulterrp x)
+       (not (resulterr-limitp x))))
