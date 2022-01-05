@@ -336,7 +336,6 @@
   (:escape ((get escape)))
   :pred string-elementp)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult string-element-result
