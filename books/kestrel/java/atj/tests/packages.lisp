@@ -10,27 +10,28 @@
 
 (in-package "ACL2")
 
-(include-book "fibonacci")
-
 (include-book "../atj" :ttags ((:open-output-channel!) (:oslib) (:quicklisp) :quicklisp.osicat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Specialize the input and output types of the Fibonacci function.
-
-(java::atj-main-function-type fib (:ainteger) :ainteger)
-
-(java::atj-main-function-type fib-tail
-                              (:ainteger :ainteger :ainteger)
-                              :ainteger)
+; Test the generation of Java files
+; in subdirectories derived from the Java package names.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate Java code for the Fibonacci function, with testing code.
+(defun f (x)
+  (declare (xargs :guard (java::int-valuep x)))
+  x)
 
-(java::atj fib
-           fib-tail
-           :deep nil
-           :guards t
-           :java-class "FibonacciShallowGuarded"
-           :tests *fib-tests*)
+(java::atj-main-function-type f (:jint) :jint)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(java::atj f :deep nil :guards t :no-aij-types t
+           :java-package "packages1")
+
+(java::atj f :deep nil :guards t :no-aij-types t
+           :java-package "packages2.p")
+
+(java::atj f :deep nil :guards t :no-aij-types t
+           :java-package "packages3.edu.kestrel")
