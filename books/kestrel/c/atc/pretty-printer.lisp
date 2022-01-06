@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -359,7 +359,7 @@
    (xdoc::p
     "We define `grades' of expressions
      that correspond to certain nonterminals of the C grammar,
-     such as a the grade of additive expressions
+     such as a grade of additive expressions
      corresponding to the nonterminal <i>additive-expression</i>.
      We define a mapping from the expressions of our abstract syntax
      to their grades,
