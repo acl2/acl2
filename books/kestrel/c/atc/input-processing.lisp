@@ -284,11 +284,11 @@
   :returns (mv erp (options pprint-options-p) state)
   :short "Process the @(':pretty-printing') input."
   (b* ((irrelevant (make-pprint-options))
-       ((er &) (acl2::ensure-keyword-value-list$ pretty-printing
-                                                 "The :PRETTY-PRINTING input"
-                                                 t
-                                                 irrelevant))
-       (alist (acl2::keyword-value-list-to-alist pretty-printing))
+       ((er &) (ensure-keyword-value-list$ pretty-printing
+                                           "The :PRETTY-PRINTING input"
+                                           t
+                                           irrelevant))
+       (alist (keyword-value-list-to-alist pretty-printing))
        (keywords (strip-cars alist))
        (desc (msg "The list of keywords in the :PRETTY-PRINTING input ~x0"
                   keywords))
@@ -296,11 +296,11 @@
                                                desc
                                                t
                                                irrelevant))
-       ((er &) (acl2::ensure-list-subset$ keywords
-                                          *atc-allowed-pretty-printing-options*
-                                          desc
-                                          t
-                                          irrelevant))
+       ((er &) (ensure-list-subset$ keywords
+                                    *atc-allowed-pretty-printing-options*
+                                    desc
+                                    t
+                                    irrelevant))
        (parenthesize-nested-conditionals
         (cdr (assoc-eq :parenthesize-nested-conditionals alist)))
        ((er &) (ensure-value-is-boolean$
