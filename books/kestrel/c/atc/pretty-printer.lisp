@@ -697,7 +697,7 @@
      slightly differently based on the pretty-printing option
      about parenthesizing nested conditional expressions.
      The difference is in the expected grades
-     used for the `then' and `else' sub-expressions.
+     used for the `then' and `else' subexpressions.
      If that flag is not set,
      we print things with minimal parentheses,
      and therefore we use
