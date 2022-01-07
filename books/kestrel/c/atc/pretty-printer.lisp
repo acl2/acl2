@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "abstract-syntax")
+(include-book "pretty-printing-options")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
@@ -67,7 +68,13 @@
      translation units and preprocessing translation units.
      However, it is the latter, not the former,
      that must be pretty-printed to files
-     [C:5.1.1.2]."))
+     [C:5.1.1.2].")
+   (xdoc::p
+    "We use some "
+    (xdoc::seetopic "atc-pretty-printing-options" "pretty-printing options")
+    " that influence some aspects of the pretty-printing.
+     For now only a simple option is supported,
+     but more options may be supported."))
   :order-subtopics t
   :default-parent t)
 
@@ -80,7 +87,10 @@
   (xdoc::topstring-p
    "The non-blank content of each line is indented at a certain level.
     The level is passed as argument here.
-    We indent by increments of 4 spaces.
+    We indent by increments of 4 spaces;
+    this could be an "
+   (xdoc::seetopic "atc-pretty-printing-options" "option")
+   " in the future.
     Thus, we return a string (which is also a message)
     consisting of a number of spaces equal to 4 times the level.")
   (implode (repeat (* 4 (lnfix level)) #\Space))
@@ -681,9 +691,30 @@
      two nested @('+') expressions ad @('++'),
      otherwise they are interpreted as predecrement or postincrement
      by the C compiler.
-     Thus, we interpose a space when these two situations occur."))
+     Thus, we interpose a space when these two situations occur.")
+   (xdoc::p
+    "We treat the pretty-printing of conditional expressions
+     slightly differently based on the pretty-printing option
+     about parenthesizing nested conditional expressions.
+     The difference is in the expected grades
+     used for the `then' and `else' sub-expressions.
+     If that flag is not set,
+     we print things with minimal parentheses,
+     and therefore we use
+     the top grade for `then' and the conditional grade for `else',
+     consistently with the grammar rule for conditional expressions.
+     This means that if the `then' and/or `else' is a conditional expression,
+     it is not parenthesized.
+     If instead the flag is set,
+     then we use a lower grade for both `then' and `else',
+     precisely the grade just one lower than conditional expressions,
+     namely the grade of logical disjunction.
+     This means that if the `then' and/or `else' is a conditional expression,
+     it is parenthesized, in order to lower its grade."))
 
-  (define pprint-expr ((expr exprp) (expected-grade expr-gradep))
+  (define pprint-expr ((expr exprp)
+                       (expected-grade expr-gradep)
+                       (options pprint-options-p))
     :returns (part msgp)
     (b* ((actual-grade (expr->grade expr))
          (part (expr-case
@@ -691,26 +722,39 @@
                 :ident (pprint-ident expr.get)
                 :const (pprint-const expr.get)
                 :arrsub (msg "~@0[~@1]"
-                             (pprint-expr expr.arr (expr-grade-postfix))
-                             (pprint-expr expr.sub (expr-grade-top)))
+                             (pprint-expr expr.arr (expr-grade-postfix) options)
+                             (pprint-expr expr.sub (expr-grade-top) options))
                 :call (msg "~@0(~@1)"
                            (pprint-ident expr.fun)
-                           (pprint-comma-sep
-                            (pprint-expr-list expr.args (expr-grade-top))))
+                           (pprint-comma-sep (pprint-expr-list expr.args
+                                                               (expr-grade-top)
+                                                               options)))
                 :member (msg "~@0.~@1"
-                             (pprint-expr expr.target (expr-grade-postfix))
+                             (pprint-expr expr.target
+                                          (expr-grade-postfix)
+                                          options)
                              (pprint-ident expr.name))
                 :memberp (msg "~@0->~@1"
-                              (pprint-expr expr.target (expr-grade-postfix))
+                              (pprint-expr expr.target
+                                           (expr-grade-postfix)
+                                           options)
                               (pprint-ident expr.name))
                 :postinc (msg "~@0++"
-                              (pprint-expr expr.arg (expr-grade-postfix)))
+                              (pprint-expr expr.arg
+                                           (expr-grade-postfix)
+                                           options))
                 :postdec (msg "~@0--"
-                              (pprint-expr expr.arg (expr-grade-postfix)))
+                              (pprint-expr expr.arg
+                                           (expr-grade-postfix)
+                                           options))
                 :preinc (msg "++~@0"
-                             (pprint-expr expr.arg (expr-grade-unary)))
+                             (pprint-expr expr.arg
+                                          (expr-grade-unary)
+                                          options))
                 :predec (msg "--~@0)"
-                             (pprint-expr expr.arg (expr-grade-unary)))
+                             (pprint-expr expr.arg
+                                          (expr-grade-unary)
+                                          options))
                 :unary (msg "~@0~s1~@2"
                             (pprint-unop expr.op)
                             (if (or (and (unop-case expr.op :minus)
@@ -723,30 +767,47 @@
                                                     :plus)))
                                 " "
                               "")
-                            (pprint-expr expr.arg (expr-grade-cast)))
+                            (pprint-expr expr.arg (expr-grade-cast) options))
                 :cast (msg "(~@0) ~@1"
                            (pprint-tyname expr.type)
-                           (pprint-expr expr.arg (expr-grade-cast)))
+                           (pprint-expr expr.arg (expr-grade-cast) options))
                 :binary (b* (((mv left-grade right-grade)
                               (binop-expected-grades expr.op)))
                           (msg "~@0 ~@1 ~@2"
-                               (pprint-expr expr.arg1 left-grade)
+                               (pprint-expr expr.arg1 left-grade options)
                                (pprint-binop expr.op)
-                               (pprint-expr expr.arg2 right-grade)))
-                :cond (msg "~@0 ? ~@1 : ~@2"
-                           (pprint-expr expr.test (expr-grade-logical-or))
-                           (pprint-expr expr.then (expr-grade-top))
-                           (pprint-expr expr.else (expr-grade-conditional))))))
+                               (pprint-expr expr.arg2 right-grade options)))
+                :cond (b* ((lower
+                            (pprint-options->parenthesize-nested-conditionals
+                             options))
+                           (then-grade (if lower
+                                           (expr-grade-logical-or)
+                                         (expr-grade-top)))
+                           (else-grade (if lower
+                                           (expr-grade-logical-or)
+                                         (expr-grade-conditional))))
+                        (msg "~@0 ? ~@1 : ~@2"
+                             (pprint-expr expr.test
+                                          (expr-grade-logical-or)
+                                          options)
+                             (pprint-expr expr.then
+                                          then-grade
+                                          options)
+                             (pprint-expr expr.else
+                                          else-grade
+                                          options))))))
       (if (expr-grade-<= actual-grade expected-grade)
           part
         (msg "(~@0)" part)))
     :measure (expr-count expr))
 
-  (define pprint-expr-list ((exprs expr-listp) (expected-grade expr-gradep))
+  (define pprint-expr-list ((exprs expr-listp)
+                            (expected-grade expr-gradep)
+                            (options pprint-options-p))
     :returns (parts msg-listp)
     (cond ((endp exprs) nil)
-          (t (cons (pprint-expr (car exprs) expected-grade)
-                   (pprint-expr-list (cdr exprs) expected-grade))))
+          (t (cons (pprint-expr (car exprs) expected-grade options)
+                   (pprint-expr-list (cdr exprs) expected-grade options))))
     :measure (expr-list-count exprs))
 
   :ruler-extenders :all
@@ -811,7 +872,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-declon ((declon declonp) (level natp))
+(define pprint-declon ((declon declonp) (level natp) (options pprint-options-p))
   :returns (lines msg-listp)
   :short "Pretty-print a declaration."
   (declon-case
@@ -820,7 +881,7 @@
    (list (pprint-line (msg "~@0 ~@1 = ~@2;"
                            (pprint-tyspecseq declon.type)
                            (pprint-declor declon.declor)
-                           (pprint-expr declon.init (expr-grade-top)))
+                           (pprint-expr declon.init (expr-grade-top) options))
                       (lnfix level)))
    :struct
    (append (list (pprint-line (msg "struct ~@0 {"
@@ -862,7 +923,9 @@
      we always print curly braces around certain sub-statements
      (e.g. of @('if'))."))
 
-  (define pprint-stmt ((stmt stmtp) (level natp))
+  (define pprint-stmt ((stmt stmtp)
+                       (level natp)
+                       (options pprint-options-p))
     :returns (lines msg-listp)
     (stmt-case
      stmt
@@ -870,59 +933,75 @@
                        (pprint-line (msg "~@0 {"
                                          (pprint-label stmt.label))
                                     level))
-                      (pprint-stmt stmt.body (1+ level))
+                      (pprint-stmt stmt.body (1+ level) options)
                       (list (pprint-line "}" level)))
-     :compound (pprint-block-item-list stmt.items level)
+     :compound (pprint-block-item-list stmt.items level options)
      :expr (list
             (pprint-line (msg "~@0;"
-                              (pprint-expr stmt.get (expr-grade-top)))
+                              (pprint-expr stmt.get (expr-grade-top) options))
                          level))
      :null (list (pprint-line ";" level))
      :if (append (list
                   (pprint-line (msg "if (~@0) {"
-                                    (pprint-expr stmt.test (expr-grade-top)))
+                                    (pprint-expr stmt.test
+                                                 (expr-grade-top)
+                                                 options))
                                level))
-                 (pprint-stmt stmt.then (1+ level))
+                 (pprint-stmt stmt.then (1+ level) options)
                  (list (pprint-line "}" level)))
      :ifelse (append (list
                       (pprint-line (msg "if (~@0) {"
-                                        (pprint-expr stmt.test (expr-grade-top)))
+                                        (pprint-expr stmt.test
+                                                     (expr-grade-top)
+                                                     options))
                                    level))
-                     (pprint-stmt stmt.then (1+ level))
+                     (pprint-stmt stmt.then (1+ level) options)
                      (list (pprint-line "} else {" level))
-                     (pprint-stmt stmt.else (1+ level))
+                     (pprint-stmt stmt.else (1+ level) options)
                      (list (pprint-line "}" level)))
      :switch (append (list
                       (pprint-line (msg "switch (~@0) {"
-                                        (pprint-expr stmt.ctrl (expr-grade-top)))
+                                        (pprint-expr stmt.ctrl
+                                                     (expr-grade-top)
+                                                     options))
                                    level))
-                     (pprint-stmt stmt.body (1+ level))
+                     (pprint-stmt stmt.body (1+ level) options)
                      (list (pprint-line "}" level)))
      :while (append (list
                      (pprint-line (msg "while (~@0) {"
-                                       (pprint-expr stmt.test (expr-grade-top)))
+                                       (pprint-expr stmt.test
+                                                    (expr-grade-top)
+                                                    options))
                                   level))
-                    (pprint-stmt stmt.body (1+ level))
+                    (pprint-stmt stmt.body (1+ level) options)
                     (list (pprint-line "}" level)))
      :dowhile (append (list (pprint-line "do {" level))
-                      (pprint-stmt stmt.body (1+ level))
+                      (pprint-stmt stmt.body (1+ level) options)
                       (list
                        (pprint-line (msg "} while (~@0);"
-                                         (pprint-expr stmt.test (expr-grade-top)))
+                                         (pprint-expr stmt.test
+                                                      (expr-grade-top)
+                                                      options))
                                     level)))
      :for (append (list
                    (pprint-line (msg "for (~@0; ~@1; ~@2) {"
                                      (if stmt.init
-                                         (pprint-expr stmt.init (expr-grade-top))
+                                         (pprint-expr stmt.init
+                                                      (expr-grade-top)
+                                                      options)
                                        "")
                                      (if stmt.test
-                                         (pprint-expr stmt.test (expr-grade-top))
+                                         (pprint-expr stmt.test
+                                                      (expr-grade-top)
+                                                      options)
                                        "")
                                      (if stmt.next
-                                         (pprint-expr stmt.next (expr-grade-top))
+                                         (pprint-expr stmt.next
+                                                      (expr-grade-top)
+                                                      options)
                                        ""))
                                 level))
-                  (pprint-stmt stmt.body (1+ level))
+                  (pprint-stmt stmt.body (1+ level) options)
                   (list (pprint-line "}" level)))
      :goto (list (pprint-line (msg "goto ~@0;"
                                    (pprint-ident stmt.target))
@@ -932,23 +1011,28 @@
      :return (list (if stmt.value
                        (pprint-line (msg "return ~@0;"
                                          (pprint-expr stmt.value
-                                                      (expr-grade-top)))
+                                                      (expr-grade-top)
+                                                      options))
                                     level)
                      (pprint-line "return;" level))))
     :measure (stmt-count stmt))
 
-  (define pprint-block-item ((item block-itemp) (level natp))
+  (define pprint-block-item ((item block-itemp)
+                             (level natp)
+                             (options pprint-options-p))
     :returns (lines msg-listp)
     (block-item-case item
-                     :declon (pprint-declon item.get level)
-                     :stmt (pprint-stmt item.get level))
+                     :declon (pprint-declon item.get level options)
+                     :stmt (pprint-stmt item.get level options))
     :measure (block-item-count item))
 
-  (define pprint-block-item-list ((items block-item-listp) (level natp))
+  (define pprint-block-item-list ((items block-item-listp)
+                                  (level natp)
+                                  (options pprint-options-p))
     :returns (lines msg-listp)
     (cond ((endp items) nil)
-          (t (append (pprint-block-item (car items) level)
-                     (pprint-block-item-list (cdr items) level))))
+          (t (append (pprint-block-item (car items) level options)
+                     (pprint-block-item-list (cdr items) level options))))
     :measure (block-item-list-count items)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -974,7 +1058,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-fundef ((fdef fundefp))
+(define pprint-fundef ((fdef fundefp) (options pprint-options-p))
   :returns (lines msg-listp)
   :short "Pretty-print a function definition."
   :long
@@ -988,21 +1072,22 @@
                                     (pprint-comma-sep
                                      (pprint-param-declon-list fdef.params)))
                                0))
-            (pprint-block-item-list fdef.body 1)
+            (pprint-block-item-list fdef.body 1 options)
             (list (pprint-line "}" 0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-ext-declon ((ext ext-declonp))
+(define pprint-ext-declon ((ext ext-declonp) (options pprint-options-p))
   :returns (lines msg-listp)
   :short "Pretty-print an external declaration."
   (ext-declon-case ext
-                   :fundef (pprint-fundef ext.get)
-                   :declon (pprint-declon ext.get 0)))
+                   :fundef (pprint-fundef ext.get options)
+                   :declon (pprint-declon ext.get 0 options)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-ext-declon-list ((exts ext-declon-listp))
+(define pprint-ext-declon-list ((exts ext-declon-listp)
+                                (options pprint-options-p))
   :returns (lines msg-listp)
   :short "Pretty-print a list of external declarations."
   :long
@@ -1010,16 +1095,16 @@
    "We print a blank line before each one.")
   (cond ((endp exts) nil)
         (t (append (list (pprint-line-blank))
-                   (pprint-ext-declon (car exts))
-                   (pprint-ext-declon-list (cdr exts))))))
+                   (pprint-ext-declon (car exts) options)
+                   (pprint-ext-declon-list (cdr exts) options)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-transunit ((tunit transunitp))
+(define pprint-transunit ((tunit transunitp) (options pprint-options-p))
   :returns (lines msg-listp)
   :short "Pretty-print a translation units."
   (b* (((transunit tunit) tunit))
-    (pprint-ext-declon-list tunit.declons)))
+    (pprint-ext-declon-list tunit.declons options)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

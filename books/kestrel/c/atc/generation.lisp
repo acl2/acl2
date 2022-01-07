@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -5957,18 +5957,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-file ((tunit transunitp) (output-file stringp) state)
+(define atc-gen-file ((tunit transunitp)
+                      (output-file stringp)
+                      (pretty-printing pprint-options-p)
+                      state)
   :returns (mv erp val state)
   :mode :program
   :short "Pretty-print the generated C code (i.e. translation unit)
           to the output file."
-  (b* ((lines (pprint-transunit tunit)))
+  (b* ((lines (pprint-transunit tunit pretty-printing)))
     (pprinted-lines-to-file lines output-file state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-file-event ((tunit transunitp)
                             (output-file stringp)
+                            (pretty-printing pprint-options-p)
                             (print evmac-input-print-p)
                             state)
   :returns (mv erp
@@ -6014,7 +6018,10 @@
                            `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
-          (b* (((er &) (atc-gen-file ',tunit ,output-file state)))
+          (b* (((er &) (atc-gen-file ',tunit
+                                     ,output-file
+                                     ',pretty-printing
+                                     state)))
             (acl2::value '(value-triple :invisible))))))
     (acl2::value `(progn ,@progress-start?
                          ,file-gen-event
@@ -6043,6 +6050,7 @@
 
 (define atc-gen-everything ((fn1...fnp symbol-listp)
                             (output-file stringp)
+                            (pretty-printing pprint-options-p)
                             (proofs booleanp)
                             (prog-const symbolp)
                             (wf-thm symbolp)
@@ -6076,7 +6084,11 @@
        ((er (list tunit local-events exported-events &))
         (atc-gen-transunit fn1...fnp proofs prog-const wf-thm fn-thms
                            print names-to-avoid ctx state))
-       ((er file-gen-event) (atc-gen-file-event tunit output-file print state))
+       ((er file-gen-event) (atc-gen-file-event tunit
+                                                output-file
+                                                pretty-printing
+                                                print
+                                                state))
        (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events output-file)))
        (encapsulate
