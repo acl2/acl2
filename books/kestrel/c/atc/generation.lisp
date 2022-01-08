@@ -1776,7 +1776,16 @@
                 fn term))
     :measure (pseudo-term-count term))
 
-  :prepwork ((set-state-ok t))
+  :prepwork ((set-state-ok t)
+             ;; for speed:
+             (local
+              (in-theory (disable default-car
+                                  default-cdr
+                                  acl2::apply$-badgep-properties
+                                  type-optionp-of-car-when-type-option-listp
+                                  typep-of-car-when-type-listp
+                                  symbol-listp
+                                  type-listp-when-not-consp))))
 
   :verify-guards nil ; done below
 
@@ -2072,7 +2081,7 @@
                            (type typep)
                            (limit pseudo-termp)
                            val)
-                    :hints nil)
+                    :hints nil) ; for speed
                state)
   :short "Generate a C statement from an ACL2 term."
   :long
@@ -3140,7 +3149,16 @@
                            (limit-body pseudo-termp)
                            (limit-all pseudo-termp)
                            val)
-                    :hints (("Goal" :in-theory (disable member-equal))))
+                    ;; for speed:
+                    :hints (("Goal" :induct (atc-gen-loop-stmt term
+                                                               inscope
+                                                               fn
+                                                               measure-for-fn
+                                                               measure-formals
+                                                               prec-fns
+                                                               proofs
+                                                               ctx
+                                                               state))))
                state)
   :short "Generate a C loop statement from an ACL2 term."
   :long
@@ -3199,6 +3217,7 @@
      we also return @('limit-body'), which is just for the loop body;
      this is in support for more modular proofs. "))
   (b* (((acl2::fun (irr)) (list (irr-stmt) nil nil nil nil nil))
+       (wrld (w state))
        ((mv okp test then else) (fty-check-if-call term))
        ((unless okp)
         (er-soft+ ctx t (irr)
@@ -3233,13 +3252,9 @@
                                                     ctx
                                                     state))
        ((when erp) (mv erp (irr) state))
-       (wrld (w state))
-       ((unless (plist-worldp wrld))
-        (prog2$ (raise "Internal error: world does not satisfy PLIST-WORLDP.")
-                (acl2::value (irr))))
        (formals (formals+ fn wrld))
        ((mv okp affect)
-        (b* (((when (member-equal else formals)) (mv t (list else)))
+        (b* (((when (member-eq else formals)) (mv t (list else)))
              ((mv okp terms) (fty-check-list-call else))
              ((when (and okp
                          (subsetp-eq terms formals)))
@@ -3270,20 +3285,14 @@
         (acl2::value (irr)))
        (body-stmt (make-stmt-compound :items body-items))
        (stmt (make-stmt-while :test test-expr :body body-stmt))
-       ((unless (symbol-listp affect))
-        (raise "Internal error: ~x0 is not a list of symbols." affect)
+       ((when (eq measure-for-fn 'quote))
+        (raise "Internal error: the measure function is QUOTE.")
         (acl2::value (irr)))
-       (wrld (w state))
-       ((unless (plist-worldp wrld))
-        (raise "Internal error: malformed world.")
-        (acl2::value (irr)))
-       (measure-call `(,measure-for-fn ,@measure-formals))
-       ((unless (pseudo-termp measure-call))
-        (raise "Internal error.")
-        (acl2::value (irr)))
+       (measure-call (pseudo-term-fncall measure-for-fn measure-formals))
        (limit `(binary-+ '1 (binary-+ ,body-limit ,measure-call))))
     (acl2::value (list stmt test then affect body-limit limit)))
   :measure (pseudo-term-count term)
+  :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p)))
   :prepwork
   ((local (include-book "std/typed-lists/symbol-listp" :dir :system)))
   ///
@@ -3293,7 +3302,16 @@
              (true-listp val))
         :name cons-true-listp-of-atc-gen-loop-stmt-val
         :rule-classes :type-prescription
-        :hints (("Goal" :in-theory (disable member-equal))))))
+        ;;  for speed:
+        :hints (("Goal" :induct (atc-gen-loop-stmt term
+                                                   inscope
+                                                   fn
+                                                   measure-for-fn
+                                                   measure-formals
+                                                   prec-fns
+                                                   proofs
+                                                   ctx
+                                                   state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3522,7 +3540,16 @@
                :type (atc-gen-tyspecseq ref-type)))
        ((er params)
         (atc-gen-param-declon-list (cdr typed-formals) fn ctx state)))
-    (acl2::value (cons param params))))
+    (acl2::value (cons param params)))
+  :prepwork ((local (include-book "std/alists/top" :dir :system))
+             (local
+              (in-theory
+               (e/d
+                (symbol-listp-of-strip-cars-when-atc-symbol-type-alistp)
+                ;; for speed:
+                (always$
+                 member-equal
+                 symbol-name-lst))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
