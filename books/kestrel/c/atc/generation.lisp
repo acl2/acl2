@@ -3297,6 +3297,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-recognizer-to-type ((recognizer symbolp))
+  :returns (type type-optionp)
+  :short "C integer type or integer array type
+          corresponding to a recognizer name, if any."
+  (case recognizer
+    (scharp (type-schar))
+    (ucharp (type-uchar))
+    (sshortp (type-sshort))
+    (ushortp (type-ushort))
+    (sintp (type-sint))
+    (uintp (type-uint))
+    (slongp (type-slong))
+    (ulongp (type-ulong))
+    (sllongp (type-sllong))
+    (ullongp (type-ullong))
+    (schar-arrayp (type-pointer (type-schar)))
+    (uchar-arrayp (type-pointer (type-uchar)))
+    (sshort-arrayp (type-pointer (type-sshort)))
+    (ushort-arrayp (type-pointer (type-ushort)))
+    (sint-arrayp (type-pointer (type-sint)))
+    (uint-arrayp (type-pointer (type-uint)))
+    (slong-arrayp (type-pointer (type-slong)))
+    (ulong-arrayp (type-pointer (type-ulong)))
+    (sllong-arrayp (type-pointer (type-sllong)))
+    (ullong-arrayp (type-pointer (type-ullong)))
+    (t nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-typed-formals ((fn symbolp) (ctx ctxp) state)
   :returns (mv erp
                (typed-formals atc-symbol-type-alistp)
@@ -3369,28 +3398,7 @@
                                            ctx
                                            state))
           (type-fn (ffn-symb conjunct))
-          (type (case type-fn
-                  (scharp (type-schar))
-                  (ucharp (type-uchar))
-                  (sshortp (type-sshort))
-                  (ushortp (type-ushort))
-                  (sintp (type-sint))
-                  (uintp (type-uint))
-                  (slongp (type-slong))
-                  (ulongp (type-ulong))
-                  (sllongp (type-sllong))
-                  (ullongp (type-ullong))
-                  (schar-arrayp (type-pointer (type-schar)))
-                  (uchar-arrayp (type-pointer (type-uchar)))
-                  (sshort-arrayp (type-pointer (type-sshort)))
-                  (ushort-arrayp (type-pointer (type-ushort)))
-                  (sint-arrayp (type-pointer (type-sint)))
-                  (uint-arrayp (type-pointer (type-uint)))
-                  (slong-arrayp (type-pointer (type-slong)))
-                  (ulong-arrayp (type-pointer (type-ulong)))
-                  (sllong-arrayp (type-pointer (type-sllong)))
-                  (ullong-arrayp (type-pointer (type-ullong)))
-                  (t nil)))
+          (type (atc-recognizer-to-type type-fn))
           ((when (not type))
            (atc-typed-formals-prelim-alist fn
                                            formals
