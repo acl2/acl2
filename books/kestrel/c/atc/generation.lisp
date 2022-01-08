@@ -1425,7 +1425,7 @@
     (mv t (car vars) (cdr vars) indices wrapped body wrapper))
 
   :prepwork
-  ((defrule verify-guards-lemma
+  ((defrulel verify-guards-lemma
      (implies (symbol-listp x)
               (iff (consp x) x))))
 
@@ -1828,12 +1828,14 @@
                                                              state)))
     (acl2::value (list (cons expr exprs)
                        (cons type types))))
+  :verify-guards nil ; done below
   ///
   (more-returns
    (val (and (consp val)
              (true-listp val))
         :name typeset-of-atc-gen-expr-cval-pure-list
-        :rule-classes :type-prescription)))
+        :rule-classes :type-prescription))
+  (verify-guards atc-gen-expr-cval-pure-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
