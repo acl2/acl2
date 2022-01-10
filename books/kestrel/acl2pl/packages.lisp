@@ -10,6 +10,10 @@
 
 (in-package "ACL2PL")
 
+; Matt K. mod: Avoid repeated ACL2(p) failures with waterfall-parallelism (no
+; apparent reason, just incomplete)
+(set-waterfall-parallelism nil)
+
 (include-book "values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
