@@ -1,0 +1,10 @@
+
+ {
+     { let a, b }
+     {
+         function eq(x, y) -> z
+         { }
+         for { let a_1 } eq(a_1, a_1) { a_1 := a_1 }
+         { let b_2 := a_1 }
+     }
+ }

@@ -1,0 +1,11 @@
+
+ {
+     { let a }
+     function f()
+     {
+         let b
+         function g()
+         { let c }
+         let d
+     }
+ }
