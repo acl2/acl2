@@ -171,6 +171,29 @@
                 (mv t trees))))
     (mv nil trees)))
 
+;; A variation on lexemize-yul that takes a list of bytes
+(define lexemeize-yul-bytes ((yul-bytes nat-listp))
+  :returns (mv (erp booleanp) (yul-lexemes abnf::tree-listp))
+  (b* (((mv trees rest-input)
+        (lex-repetition-*-lexeme yul-bytes))
+       ;; It is probably impossible for trees to be resulterrp, since
+       ;; this call would instead just return the input that was not lexed.
+       ;; However, check error trees for completeness.
+       ((when (resulterrp trees))
+        (prog2$ (cw "tokenize-yul: resulterrp should not happen here")
+                (mv t nil)))
+       ;; If the input ends in the middle of a token,
+       ;; e.g., in a string without a closing quote,
+       ;; then there will be remaining input.
+       ;; Since this function starts with a presumably complete program,
+       ;; we consider this an error.
+       ;; Another useful function could be one that tokenizes from an input stream
+       ;; and returns incomplete tokens as the rest of the stream.
+       ((unless (null rest-input))
+        (prog2$ (cw "tokenize-yul: bytes given cannot be fully tokenized; returning list of abnf trees found so far")
+                (mv t trees))))
+    (mv nil trees)))
+
 (define tokenize-yul ((yul-string stringp))
   :returns (yul-lexemes abnf::tree-list-resultp)
   :short "Lexes the bytes of @('yul-string') into a list of ABNF trees."
@@ -183,6 +206,24 @@
      If the input string ends in the middle of a token, returns resulterrp."))
   (b* (((mv erp lexeme-trees) (lexemeize-yul yul-string))
        ((when erp) (err "problem lexing yul-string"))
+       (subtoken-trees (filter-and-reduce-lexeme-tree-to-subtoken-trees lexeme-trees))
+       ((when (resulterrp subtoken-trees))
+        (err "problem with structure of lexeme tree")))
+    subtoken-trees))
+
+;; A variation on tokenize-yul that takes a list of bytes
+(define tokenize-yul-bytes ((yul-bytes nat-listp))
+  :returns (yul-lexemes abnf::tree-list-resultp)
+  :short "Lexes the bytes of a Yul source program into a list of ABNF trees."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The returned trees are for rulenames keyword, literal, identifier, or symbol.
+     Discards comments and whitespace.  If the input structure from any lexeme
+     down to the specific token type is incorrect, returns resulterrp.
+     If the input bytes end in the middle of a token, returns resulterrp."))
+  (b* (((mv erp lexeme-trees) (lexemeize-yul-bytes yul-bytes))
+       ((when erp) (err "problem lexing yul-bytes"))
        (subtoken-trees (filter-and-reduce-lexeme-tree-to-subtoken-trees lexeme-trees))
        ((when (resulterrp subtoken-trees))
         (err "problem with structure of lexeme tree")))
