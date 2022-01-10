@@ -1,0 +1,10 @@
+
+ {
+     let a
+     let c
+     let e
+     function f()
+     { let b }
+     function g()
+     { let d }
+ }
