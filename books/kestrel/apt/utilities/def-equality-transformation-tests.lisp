@@ -23,6 +23,7 @@
                                 function-disabled ; whether to disable the new function
                                 measure ; either :auto or an (untranslated) term
                                 measure-hints ; either :auto or a list of hints like (("Goal" :in-theory (enable car-cons)))
+                                normalize
                                 state ; todo: can we avoid taking state?
                                 )
    (declare (xargs :stobjs state
@@ -32,7 +33,8 @@
                                (member-eq rec '(nil :single :mutual))
                                (t/nil/auto-p function-disabled)
                                ;; TODO: Guards for guard-hints, measure, and measure-hints
-                               (fn-definedp fn (w state)))
+                               (fn-definedp fn (w state))
+                               (booleanp normalize))
                    :mode :program ; because we call rename-functions-in-untranslated-term
                    ))
    (let* ((body (get-body-from-event fn fn-event)) ; untranslated
@@ -45,6 +47,9 @@
           (declares (get-declares-from-event fn fn-event)) ;TODO: Think about all the kinds of declares that get passed through.
           ;; Handle the :normalize xarg (we don't need :normalize nil because install-not-normalized solves that issue (TODO: But should we pass it through anyway?)
           (declares (remove-xarg-in-declares :normalize declares))
+          (declares (if (not normalize)
+                        (add-xarg-in-declares :normalize nil declares)
+                      declares))
           ;; Handle the :mode xarg:
           (declares (remove-xarg-in-declares :mode declares)) ;todo: handle this better.  this is needed because the event might have :mode :program even if the function was later lifted to logic.  Obviously we shouldn't do this once we support transforming :program mode functions.
           ;; Deal with the :verify-guards xarg.  We always do :verify-guards nil and then
@@ -129,6 +134,7 @@
                                  function-disabled ; whether to disable all the new functions
                                  measure-alist ; maps each old function name to the measure/:auto to use for its new version
                                  measure-hints ; will be attached to the first function in the clique
+                                 normalize
                                  firstp ;whether this is the first function in the clique
                                  state)
    (declare (xargs :stobjs state
@@ -137,7 +143,8 @@
                                (all-fn-definedp fns (w state))
                                (function-renamingp function-renaming)
                                (t/nil/auto-p function-disabled)
-                               (symbol-alistp measure-alist))
+                               (symbol-alistp measure-alist)
+                               (booleanp normalize))
                    :mode :program))
    (if (endp fns)
        nil
@@ -147,15 +154,18 @@
                  (copy-function-in-defun fn fn-event function-renaming :mutual function-disabled
                                          (lookup-eq fn measure-alist)
                                          (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                         normalize
                                          state)
                ;; Just copy the function and update rec calls:
                ;; (For copy-function only, this happens to be the same as the branch above.)
                (copy-function-in-defun fn fn-event function-renaming :mutual function-disabled
                                        (lookup-eq fn measure-alist)
                                        (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                       normalize
                                        state))
              (copy-function-in-defuns (rest fns) target-fns fn-event function-renaming function-disabled
                                       measure-alist measure-hints
+                                      normalize
                                       nil ;no longer the first function
                                       state)))))
 
@@ -171,6 +181,7 @@
                              guard-hints
                              measure ; may be a call of :map if mut-rec
                              measure-hints
+                             normalize
                              verbose ;for now, this is a boolean (corresponding to whether the :print option was :info or higher), but we could support passing in richer information
                              ctx
                              state)
@@ -207,6 +218,7 @@
                                                    function-disabled
                                                    measure
                                                    measure-hints
+                                                   normalize
                                                    state))
                 ;;extra enables needed for the proof (TODO: This is a bit brittle because the original definition also gets enabled):
                 (enables (append (list (install-not-normalized-name fn)
@@ -238,6 +250,7 @@
                                                      function-disabled
                                                      measure
                                                      measure-hints
+                                                     normalize
                                                      state))
                   (enables (append (list (install-not-normalized-name fn)
                                          (install-not-normalized-name new-fn))
@@ -278,6 +291,7 @@
                                                    function-disabled ;TODO: Add :map support
                                                    measure-alist
                                                    measure-hints
+                                                   normalize
                                                    t ; first function in the clique
                                                    state))
               (mutual-recursion `(mutual-recursion ,@new-defuns))
@@ -345,6 +359,7 @@
     (verify-guards ':auto)
     (guard-hints ':auto)
     (measure ':auto)
-    (measure-hints ':auto))
+    (measure-hints ':auto)
+    (normalize 't))
    :pass-print t
    :pass-context t))
