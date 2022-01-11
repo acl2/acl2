@@ -13,6 +13,7 @@
 (include-book "language/top")
 (include-book "json/top")
 (include-book "transformations/top")
+(include-book "test/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

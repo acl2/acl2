@@ -19,6 +19,11 @@
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
 
+; Matt K. addition: Turn off waterfall-parallelism in ACL2(p), as I had five
+; consecutive certification failures in ACL2(p) regressions.  All were
+; mysterious: no error, just quit.
+(set-waterfall-parallelism nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax

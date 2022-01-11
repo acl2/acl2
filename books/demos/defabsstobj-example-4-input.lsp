@@ -175,7 +175,7 @@
 
 (continue-from-illegal-state)
 
-(with-output :off error ; avoid discrepancy between ACL2 and ACL2(p)
+(with-output :off (error summary) ; avoid discrepancy between ACL2 and ACL2(p)
   (thm (equal x x)
        :hints (("Goal"
                 :instructions ((cl-proc :function simple-cl-proc :hint nil))))))

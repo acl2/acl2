@@ -1628,40 +1628,51 @@
                           (len tokens))))
           (mv (err "logic error") nil))
 
-         ;; parse the required "->"
-         (tokens-after-arrow (parse-symbol "->" tokens-after-close-paren))
-         ((when (resulterrp tokens-after-arrow))
-          (mv (err "missing '->' in function definition") nil))
-         ;; inform the measure proof of the intermediate decrease
-         ((unless (mbt (< (len tokens-after-arrow)
-                          (len tokens))))
-          (mv (err "logic error") nil))
+         ;; the "->" is optional
+         ((mv output-ids tokens-after-output-ids)
+          (b* ((tokens-after-arrow (parse-symbol "->" tokens-after-close-paren))
+               ((when (resulterrp tokens-after-arrow))
+                (mv nil tokens-after-close-paren))
 
-         ;; Parse the function outputs, one or more identifiers separated by commas.
-         ;; The first identifier is required.
-         ((mv first-output-id tokens-after-first-output-id)
-          (parse-identifier tokens-after-arrow))
-         ((when (null first-output-id))
-          (mv (err "missing output identifier in function definition") nil))
-         ((when (resulterrp tokens-after-first-output-id))
-          (mv (err "missing output identifier in function definition") nil))
-         ;; inform the measure proof of the intermediate decrease
-         ((unless (mbt (< (len tokens-after-first-output-id)
-                          (len tokens))))
-          (mv (err "logic error") nil))
+               ;; inform the measure proof of the intermediate decrease
+               ((unless (mbt (< (len tokens-after-arrow)
+                                (len tokens))))
+                (mv (err "logic error") nil))
 
-         ;; remaining output identifiers
-         ((mv rest-output-ids tokens-after-rest-output-ids)
-          (parse-*-comma-identifier tokens-after-first-output-id))
-         (output-ids (cons first-output-id rest-output-ids))
+               ;; Parse the function outputs, one or more identifiers separated by commas.
+               ;; The first identifier is required since we already saw a "->"
+               ((mv first-output-id tokens-after-first-output-id)
+                (parse-identifier tokens-after-arrow))
+               ((when (null first-output-id))
+                (mv (err "missing output identifier in function definition") nil))
+               ((when (resulterrp tokens-after-first-output-id))
+                (mv (err "missing output identifier in function definition") nil))
+
+               ;; inform the measure proof of the intermediate decrease
+               ((unless (mbt (< (len tokens-after-first-output-id)
+                                (len tokens))))
+                (mv (err "logic error") nil))
+
+               ;; remaining output identifiers
+               ((mv rest-output-ids tokens-after-rest-output-ids)
+                (parse-*-comma-identifier tokens-after-first-output-id))
+
+               ;; inform the measure proof of the intermediate decrease
+               ((unless (mbt (< (len tokens-after-rest-output-ids)
+                                (len tokens))))
+                (mv (err "logic error") nil)))
+            (mv (cons first-output-id rest-output-ids)
+                tokens-after-rest-output-ids)))
+         ((when (resulterrp output-ids))
+          (mv (err (cons "parse error in output ids" output-ids)) nil))
          ;; inform the measure proof of the intermediate decrease
-         ((unless (mbt (< (len tokens-after-rest-output-ids)
+         ((unless (mbt (< (len tokens-after-output-ids)
                           (len tokens))))
           (mv (err "logic error") nil))
 
          ;; parse the required function body block
          ((mv body-block tokens-after-body-block)
-          (parse-block tokens-after-rest-output-ids))
+          (parse-block tokens-after-output-ids))
          ((when (resulterrp body-block))
           (mv (err "no function definition body") nil))
          ;; inform the measure proof of the intermediate decrease
@@ -1771,6 +1782,25 @@
   :long "Returns either a block or a resulterrp.
          Yul objects are not supported at this time."
   (b* ((tokens (tokenize-yul yul-string))
+       ((when (resulterrp tokens))
+        tokens)
+       ((mv top-block tokens-after-ast) (parse-block tokens))
+       ((when (resulterrp top-block))
+        top-block)
+       ;; We may want to relax this next restriction if we want multiple things
+       ;; at the top level.
+       ((unless (null tokens-after-ast))
+        (err "after parsing top-level yul block, there should be no more tokens")))
+    top-block))
+
+
+;; variation on parse-yul that takes a list of bytes
+(define parse-yul-bytes ((yul-bytes nat-listp))
+  :returns (block? block-resultp)
+  :short "Parses the Yul source program bytes into abstract syntax."
+  :long "Returns either a block or a resulterrp.
+         Yul objects are not supported at this time."
+  (b* ((tokens (tokenize-yul-bytes yul-bytes))
        ((when (resulterrp tokens))
         tokens)
        ((mv top-block tokens-after-ast) (parse-block tokens))
