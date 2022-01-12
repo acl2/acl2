@@ -833,7 +833,7 @@
                     (quoted-posp (second args))
                     (eql nodenum (third args)) ;skip this check (and others like it) if the expr is guaranteed to be a parent expr?
                     )
-               (make-bv-type (unquote (first args)))
+               (make-bv-type (unquote (second args)))
              nil))
           ;; TTTODO: What if nodenum is the test and a branch?
           ((eq 'bvif fn) ;(bvif size test then else)
@@ -1171,6 +1171,7 @@
     (bvsx (and (= 3 (len args))
                (quoted-posp (first args))
                (quoted-posp (second args))
+               ;; todo: disallow = ?
                (<= (unquote (second args))
                    (unquote (first args)))))
     (otherwise nil)))
