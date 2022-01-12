@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -257,6 +257,15 @@
      and we check if the result is empty:
      in this case, this is the only variable with that name.")
    (xdoc::p
+    "The reason why we use a double @('$$') instead of a single @('$'),
+     to separate @('<pname>') from @('<name>'),
+     is to avoid a possible name conflict
+     in case @('<name>') happens to be
+     one of the escape descriptions discussed in @(tsee atj-char-to-jchars-id):
+     a variable @('|p!X|') in the current package
+     and a variable @('P::bangX') in a different package
+     would both be turned into @('P$BANGx').")
+   (xdoc::p
     "We call @(tsee atj-chars-to-jchars-id) to create
      @('<pname>') and @('<name>') from @('pname') and @('name').
      If there is a package prefix, the @('startp') flag is @('t')
@@ -266,8 +275,11 @@
      if there is no package prefix.")
    (xdoc::p
     "The variable @('var') passed to this function
-     is without markings or annotations.
-     The called removes them before calling this function."))
+     is without "
+    (xdoc::seetopic "atj-pre-translation-var-reuse" "markings")
+    " or "
+    (xdoc::seetopic "atj-pre-translation-type-annotation" "annotations")
+    ". The caller removes them before calling this function."))
   (b* ((pname (symbol-package-name var))
        (name (symbol-name var))
        (omit-pname? (or (equal pname curr-pkg)
