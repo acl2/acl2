@@ -313,12 +313,18 @@
                                                        measure-hints ;todo: not appropriate to pass since non-recursive?
                                                        state))
                       ;;extra enables needed for the proof (TODO: This is a bit brittle because the original definition also gets enabled):
-                      (enables (append (list (install-not-normalized-name fn)
-                                             (install-not-normalized-name new-fn))
+                      (enables (append (list ;; (install-not-normalized-name fn)
+                                        ;; (install-not-normalized-name new-fn)
+                                        )
                                        ',enables))
                       ;; Drop the :verify-guards nil if needed, and add :verify-guards t if appropriate:
                       (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
-                      (becomes-theorem (,make-becomes-theorem-name fn new-fn nil (not theorem-disabled) enables '(theory 'minimal-theory) ,@make-becomes-theorem-extra-args state))
+                      (becomes-theorem (,make-becomes-theorem-name fn new-fn nil (not theorem-disabled) enables
+                                                                   '(theory 'minimal-theory)
+                                                                   ;; TODO: Why can't I use t here (and below)?:
+                                                                   t ; use not-normalized definition rules
+                                                                   ,@make-becomes-theorem-extra-args
+                                                                   state))
                       ;; Remove :hints from the theorem before exporting it (:guard-hints have already been removed since the verify-guards is now separate):
                       (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
                  (mv nil
@@ -345,13 +351,17 @@
                                                          measure
                                                          measure-hints
                                                          state))
-                        (enables (append (list (install-not-normalized-name fn)
-                                               (install-not-normalized-name new-fn))
+                        (enables (append (list ;; (install-not-normalized-name fn)
+                                          ;; (install-not-normalized-name new-fn)
+                                          )
                                          ',enables))
                         (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                         (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
-                        (becomes-theorem (,make-becomes-theorem-name fn new-fn :single (not theorem-disabled) enables '(theory 'minimal-theory)
-                                                                      ,@make-becomes-theorem-extra-args state))
+                        (becomes-theorem (,make-becomes-theorem-name fn new-fn :single (not theorem-disabled)
+                                                                     enables '(theory 'minimal-theory)
+                                                                     t ; use not-normalized definition rules
+                                                                     ,@make-becomes-theorem-extra-args
+                                                                     state))
                         ;; Remove :hints from the theorem before exporting it:
                         (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
                    (mv nil ; no error
@@ -411,6 +421,7 @@
                     (becomes-theorems (,make-becomes-theorems-name fns
                                                                    function-renaming
                                                                    (not theorem-disabled)
+                                                                   t ; use not-normalized definition rules
                                                                    ,@make-becomes-theorem-extra-args
                                                                    state))
                     (becomes-defthm-flag (make-becomes-defthm-flag flag-function-name

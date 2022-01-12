@@ -209,11 +209,14 @@
                                                    measure-hints
                                                    state))
                 ;;extra enables needed for the proof (TODO: This is a bit brittle because the original definition also gets enabled):
-                (enables (append (list (install-not-normalized-name fn)
-                                       (install-not-normalized-name new-fn))
+                (enables (append (list ;; (install-not-normalized-name fn)
+                                  ;; (install-not-normalized-name new-fn)
+                                  )
                                  'nil))
                 (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
-                (becomes-theorem (make-becomes-theorem fn new-fn nil (not theorem-disabled) enables '(theory 'minimal-theory) state))
+                (becomes-theorem (make-becomes-theorem fn new-fn nil (not theorem-disabled) enables '(theory 'minimal-theory)
+                                                       t
+                                                       state))
                 ;; Remove :hints from the theorem before exporting it:
                 (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
            (mv nil
@@ -239,12 +242,15 @@
                                                      measure
                                                      measure-hints
                                                      state))
-                  (enables (append (list (install-not-normalized-name fn)
-                                         (install-not-normalized-name new-fn))
+                  (enables (append (list ;; (install-not-normalized-name fn)
+                                    ;;(install-not-normalized-name new-fn)
+                                    )
                                    'nil))
                   (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                   (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
-                  (becomes-theorem (make-becomes-theorem fn new-fn :single (not theorem-disabled) enables '(theory 'minimal-theory) state))
+                  (becomes-theorem (make-becomes-theorem fn new-fn :single (not theorem-disabled) enables '(theory 'minimal-theory)
+                                                         t
+                                                         state))
                   ;; Remove :hints from the theorem before exporting it:
                   (becomes-theorem-to-export (clean-up-defthm becomes-theorem))
                   )
@@ -304,6 +310,7 @@
               (becomes-theorems (make-becomes-theorems fns
                                                        function-renaming
                                                        (not theorem-disabled)
+                                                       t
                                                        state))
               (becomes-defthm-flag (make-becomes-defthm-flag flag-function-name
                                                              becomes-theorems
