@@ -16121,6 +16121,8 @@
   ;; This is for extra safety in ACL2(r)
   ;; but it is probably not needed due to the
   ;; concurrent change to defun useless-runes-filename.
+  #+non-standard-analysis
+  (declare (ignore useless-runes-r/w useless-runes-r/w-p))
   (let ((useless-runes-r/w
          #+non-standard-analysis nil
          #-non-standard-analysis useless-runes-r/w
