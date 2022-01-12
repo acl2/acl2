@@ -16115,6 +16115,21 @@
 ; (We could allow 0 but that would mean the same as nil, which could perhaps
 ; lead to confusion somehow.)
 
+  ;; Ignore useless-runes info in ACL2(r),
+  ;; by making it seem that the call to certify-book
+  ;; always includes ":useless-runes nil".
+  ;; This is for extra safety in ACL2(r)
+  ;; but it is probably not needed due to the
+  ;; concurrent change to defun useless-runes-filename.
+  (let ((useless-runes-r/w
+         #+non-standard-analysis nil
+         #-non-standard-analysis useless-runes-r/w
+         )
+        (useless-runes-r/w-p
+         #+non-standard-analysis t
+         #-non-standard-analysis useless-runes-r/w-p
+         ))
+
   (er-let* ((str
 
 ; If :useless-runes nil was supplied explicitly to certify-book, then ignore
@@ -16181,7 +16196,7 @@
           (t (er soft ctx
                  "Illegal value ~x0 for certify-book parameter ~
                   :USELESS-RUNES.  See :DOC useless-runes."
-                 useless-runes-r/w)))))))))
+                 useless-runes-r/w))))))))))
 
 (defun useless-runes-info (full-book-name useless-runes-r/w useless-runes-r/w-p
                                           ctx state)
@@ -33692,4 +33707,3 @@
                                                 (list table-event))))))))
                :on-behalf-of :quiet!)
               ,@(memoize-partial-calls tuples)))))))
-

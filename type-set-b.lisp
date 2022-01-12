@@ -1497,7 +1497,15 @@
                   posn)
              (concatenate 'string
                           (subseq full-book-name 0 posn)
-                          "/.sys"
+                          ;; If the safety belt in useless-runes-value
+                          ;; is taken off or is insufficient,
+                          ;; this condition on ACL2(r) will prevent
+                          ;; ACL2(r) from seeing the standard ACL2
+                          ;; useless runes files.
+                          ;; .sysr/ is also in books/.gitignore
+                          ;; for an additional measure of repo safety.
+                          #-non-standard-analysis "/.sys"
+                          #+non-standard-analysis "/.sysr"
                           (subseq full-book-name posn (- len 5))
                           "@useless-runes.lsp"))))
 
