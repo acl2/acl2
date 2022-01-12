@@ -17,7 +17,7 @@ at origin with radius equal to 1:
 
 #### Progress:
 
-Finished Stage2 of the proof.
+Finished Stage3 of the proof.
 
 Stage1:
 
@@ -32,3 +32,7 @@ Stage2:
 Banach-Tarski theorem on S^2: The sphere can be partitioned into a finite number of pieces which can be rotated to form two copies of S^2. banach-tarski-1.lisp contains the proof.
 
 countable-sets.lisp: Contains the proof of the cartesian product of two countable sets is countable.
+
+Stage3:
+
+Banach-Tarski theorem on B^3-0: Except for the origin, a solid ball centered at the origin with radius equal to 1 can be partitioned into a finite number of pieces which can be rotated to form two copies of the ball. banach-tarski-b-0.lisp contains the proof.

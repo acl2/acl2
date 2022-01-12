@@ -1,6 +1,6 @@
 ; Transformation to rename parameters of a function
 ;
-; Copyright (C) 2015-2021 Kestrel Institute
+; Copyright (C) 2015-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,7 @@
 (include-book "kestrel/terms-light/rename-vars-in-term" :dir :system)
 (include-book "utilities/deftransformation")
 (include-book "utilities/function-renamingp")
-(include-book "utilities/maybe-verify-guards2")
+;(include-book "utilities/maybe-verify-guards2")
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
 (include-book "utilities/names") ; for INCREMENT-NAME-SUFFIX-SAFE
 (include-book "utilities/make-becomes-theorem")
@@ -35,6 +35,7 @@
 (include-book "kestrel/utilities/directed-untranslate-dollar" :dir :system)
 (include-book "kestrel/utilities/verify-guards-dollar" :dir :system)
 (include-book "kestrel/terms-light/restore-mv-in-branches" :dir :system)
+(include-book "kestrel/clause-processors/simplify-after-using-conjunction" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -171,9 +172,9 @@
                          ;; function:
                          (:e eqlablep)
                          (:e eqlable-listp) ; not sure whether this is needed, depends on what kinds of CASE untranslate can put in
-                         )))
-         ;;guard-hints)
-         ))
+                         ))
+         ;; This can speed things up greatly.  See comments in verify-guards-for-defun:
+         ("goal'" :clause-processor (simplify-after-using-conjunction-clause-processor clause)))))
     `(verify-guards$ ,new-fn
                      :hints ,guard-hints
                      :guard-simplify :limited ;; avoid simplification based on the current theory
