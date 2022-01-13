@@ -135,6 +135,31 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "build::cert.pl" "Build Library"))
+
+   (xdoc::p
+    "The <see topic=\"BUILD____CERT.PL\">cert.pl</see> shell command
+     by default now makes use of @(see useless-runes) files when they
+     are available.  It does that by binding the environment variable
+     @('ACL2_USELESS_RUNES=-25') unless the environment variable is
+     already defined, in which case it heeds the existing value.
+     To turn off the use of useless runes, you can set that environment
+     variable to the empty string, e.g.")
+
+   (xdoc::@{}
+    "ACL2_USELESS_RUNES=  cert.pl ..")
+
+   (xdoc::p "The above change does not apply to ACL2(r).")
+
+   (xdoc::p
+    "In ACL2(r), the useless runes files that were precomputed for ACL2
+     could cause certification errors if someone tried to use them,
+     using either @(see certify-book) or
+     <see topic=\"BUILD____CERT.PL\">cert.pl</see>.
+     Now the useless runes feature is turned off for ACL2(r).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
 
    (xdoc::p
