@@ -1602,6 +1602,10 @@
  whenever @('doc.lisp') is regenerated, it is a good idea to recertify that
  book after deleting its @('.cert') file.</p>
 
+ <p>If you include links to @(see community-books) topics in
+ @('acl2-doc.lisp'), follow the suggestions in the ``Remark for Experienced
+ Users'' in the documentation topic, @(see documentation).</p>
+
  <h3>Untouchables etc.</h3>
 
  <p>Note that during the build, ACL2 does not enforce its usual restrictions
@@ -1882,6 +1886,10 @@
  every developer should additionally be able to find pertinent Lisp comments;
  neither will necessarily look back in GitHub logs (some may, but some may
  not).</p>
+
+ <p>If your changes are related to @(see community-books), consider adding
+ links to topics defined in those books as described in the ``Remark for
+ Experienced Users'' in the documentation topic, @(see documentation).</p>
 
  <p>Also be sure to comment your code well with Lisp comments, at an
  implementation level.  For example, don't say ``union is commutative'' without

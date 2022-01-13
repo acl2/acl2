@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1404,7 +1404,7 @@
      with support for more kinds of pure expressions in the future.")
    (xdoc::p
     "If no error occurs, none of the expressions has side effects.
-     Thus, the order in which the sub-expressions are evaluated does not matter:
+     Thus, the order in which the subexpressions are evaluated does not matter:
      we just proceed left to right."))
   (b* ((e (expr-fix e)))
     (expr-case

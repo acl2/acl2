@@ -631,6 +631,7 @@
 
             ;; These are just logext:
             x86isa::n08-to-i08$inline
+            x86isa::n16-to-i16$inline
             x86isa::n32-to-i32$inline
             x86isa::n64-to-i64$inline         ;shilpi leaves this enabled
             x86isa::n128-to-i128$inline

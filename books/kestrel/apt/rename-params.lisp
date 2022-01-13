@@ -1,6 +1,6 @@
 ; Transformation to rename parameters of a function
 ;
-; Copyright (C) 2015-2021 Kestrel Institute
+; Copyright (C) 2015-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,7 @@
 (include-book "kestrel/terms-light/rename-vars-in-term" :dir :system)
 (include-book "utilities/deftransformation")
 (include-book "utilities/function-renamingp")
-(include-book "utilities/maybe-verify-guards2")
+;(include-book "utilities/maybe-verify-guards2")
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
 (include-book "utilities/names") ; for INCREMENT-NAME-SUFFIX-SAFE
 (include-book "utilities/make-becomes-theorem")
@@ -35,6 +35,7 @@
 (include-book "kestrel/utilities/directed-untranslate-dollar" :dir :system)
 (include-book "kestrel/utilities/verify-guards-dollar" :dir :system)
 (include-book "kestrel/terms-light/restore-mv-in-branches" :dir :system)
+(include-book "kestrel/clause-processors/simplify-after-using-conjunction" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -171,9 +172,9 @@
                          ;; function:
                          (:e eqlablep)
                          (:e eqlable-listp) ; not sure whether this is needed, depends on what kinds of CASE untranslate can put in
-                         )))
-         ;;guard-hints)
-         ))
+                         ))
+         ;; This can speed things up greatly.  See comments in verify-guards-for-defun:
+         ("goal'" :clause-processor (simplify-after-using-conjunction-clause-processor clause)))))
     `(verify-guards$ ,new-fn
                      :hints ,guard-hints
                      :guard-simplify :limited ;; avoid simplification based on the current theory
@@ -205,7 +206,7 @@
              (new-defun (rename-params-in-defun fn param-renaming-alist new-fn fn-event nil nil untranslate state))
              ;; TODO: Can we often avoid adding the :verify-guards t?
              (new-defun-to-export (if verify-guards (add-verify-guards-t-to-defun new-defun) new-defun)) ; no hints to clean up since non-recursive
-             (becomes-theorem (make-becomes-theorem fn new-fn nil t nil '(theory 'minimal-theory) state))
+             (becomes-theorem (make-becomes-theorem fn new-fn nil t nil '(theory 'minimal-theory) t state))
              ;; Remove :hints from the theorem before exporting it:
              (becomes-theorem-to-export (clean-up-defthm becomes-theorem))
              )
@@ -226,7 +227,7 @@
                                                   new-fn fn-event (acons fn new-fn nil) :single untranslate state)) ;;TODO: restrict the hints in this case..
                (new-defun-to-export (if verify-guards (add-verify-guards-t-to-defun new-defun) new-defun))
                (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
-               (becomes-theorem (make-becomes-theorem fn new-fn :single t nil '(theory 'minimal-theory) state))
+               (becomes-theorem (make-becomes-theorem fn new-fn :single t nil '(theory 'minimal-theory) t state))
                ;; Remove :hints from the theorem before exporting it:
                (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
             `(encapsulate ()
@@ -255,6 +256,7 @@
               (make-becomes-theorems fns
                                      function-renaming
                                      t ;todo: thread through a thm-enable argument!
+                                     t
                                      state))
              (becomes-defthm-flag (make-becomes-defthm-flag flag-function-name
                                                             becomes-theorems

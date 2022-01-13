@@ -16,6 +16,7 @@
 ;; (include-book "kestrel/typed-lists-light/cons-listp-dollar" :dir :system)
 ;; (include-book "kestrel/utilities/make-function-calls-on-formals" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
+(include-book "misc/install-not-normalized" :dir :system)
 (include-book "becomes-theorem-names")
 
 ;; ;; all the calls of the calls-on-formals should be bound in the function-renaming
@@ -58,7 +59,7 @@
     (progn$ ;; (cw "(clause is ~x0.~%  calls to expand are: ~x1)~%" clause calls-to-expand)
             `(:expand (,@calls-to-expand)))))
 
-;; Makes a theorem equating an arbitrary call of FN with a call of NEW-FN on the same arguments.
+;; Makes a theorem equating an arbitrary call of FN (on the formals of FN) with a call of NEW-FN.
 ;; REC is either nil (function is non-recursive), :single, or :mutual.
 ;; TODO: Improve this to use the $not-normalized rules if indicated for fn and/or new-fn (add options for this)
 ;; The BASE-THEORY is often (theory 'minimal-theory).
@@ -70,16 +71,24 @@
                              thm-enable ;whether the "becomes theorem" should be enabled
                              enables ; rules to always enable in the proof ; drop??
                              base-theory ; ex: '(theory 'minimal-theory) or '(current-theory :here)
+                             use-not-normalized-rulesp
                              state)
   (declare (xargs :stobjs state
                   :guard (and (symbolp fn)
                               (symbolp new-fn)
                               (member-eq rec '(nil :single :mutual))
                               (booleanp thm-enable)
-                              (true-listp enables))))
+                              (true-listp enables)
+                              (booleanp use-not-normalized-rulesp))))
   (let ((formals (fn-formals fn (w state)))
         ;; Choose which kind of defthm to use (todo: add support for defun-nx and defund-nx):
-        (defthm-variant (if thm-enable 'defthm 'defthmd)))
+        (defthm-variant (if thm-enable 'defthm 'defthmd))
+        (fn-def-rule (if use-not-normalized-rulesp
+                         (install-not-normalized-name fn)
+                       fn))
+        (new-fn-def-rule (if use-not-normalized-rulesp
+                             (install-not-normalized-name new-fn)
+                           new-fn)))
     `(,defthm-variant ,(becomes-theorem-name fn new-fn)
        (equal (,fn ,@formals)
               (,new-fn ,@formals))
@@ -89,14 +98,14 @@
                `(:hints (("Goal" :induct (,fn ,@formals) ; should we induct in the new or old function (old, since we know it is recursive?)?
                           :do-not '(generalize eliminate-destructors)
                           :in-theory (append '((:i ,fn)
-                                               ,fn
-                                               ,new-fn
+                                               ,fn-def-rule
+                                               ,new-fn-def-rule
                                                ,@enables)
                                              ,base-theory))
                          (and stable-under-simplificationp ;; TODO: Don't wait until stable (do on every inductive subgoal)?
                                (expand-calls-in-conclusion-equalities clause '(,fn ,new-fn)))))
              ;; non-recursive case:
-             `(:hints (("Goal" :in-theory (append '(,fn ,new-fn ,@enables) ,base-theory)
+             `(:hints (("Goal" :in-theory (append '(,fn-def-rule ,new-fn-def-rule ,@enables) ,base-theory)
                         :do-not '(generalize eliminate-destructors)
                         :do-not-induct t)))))
        ;; Put in a flag for defthm-flag-xxx if appropriate:
@@ -109,15 +118,17 @@
 (defun make-becomes-theorems (fns
                               function-renaming
                               thm-enable ; whether all the theorems should be enabled
+                              use-not-normalized-rulesp
                               state)
   (declare (xargs :stobjs state :guard (and (symbol-listp fns)
                                             (function-renamingp function-renaming)
-                                            (booleanp thm-enable))))
+                                            (booleanp thm-enable)
+                                            (booleanp use-not-normalized-rulesp))))
   (if (endp fns)
       nil
     (let ((fn (first fns)))
-      (cons (make-becomes-theorem fn (lookup-eq-safe fn function-renaming) :mutual thm-enable nil nil state)
-            (make-becomes-theorems (rest fns) function-renaming thm-enable state)))))
+      (cons (make-becomes-theorem fn (lookup-eq-safe fn function-renaming) :mutual thm-enable nil nil use-not-normalized-rulesp state)
+            (make-becomes-theorems (rest fns) function-renaming thm-enable use-not-normalized-rulesp state)))))
 
 ;; Wraps the becomes-theorems in a call of defthm-flag-XXX and adds the hints.
 (defund make-becomes-defthm-flag (flag-function-name

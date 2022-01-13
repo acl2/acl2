@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -69,6 +69,11 @@
     (xdoc::li
      "@('output-file$') and @('output-file-test$')
       are the results of processing @('output-dir').")
+    (xdoc::li
+     "@('output-subdir') is the directory
+      where the Java files are generated,
+      which is @('output-dir') or a subdirectory of it,
+      based on @('java-package').")
     (xdoc::li
      "@('test$') is an element of @('tests$').")
     (xdoc::li
@@ -159,7 +164,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-fn ((args true-listp) ctx state)
+(define atj-fn ((args true-listp) (ctx ctxp) state)
   :returns (mv erp
                (result "Always @('(value-triple :invisible)').")
                state)
@@ -182,7 +187,8 @@
                   guards$
                   no-aij-types$
                   java-package$
-                  java-class
+                  java-class$
+                  output-subdir
                   output-file$
                   output-file-env$
                   output-file-test$
@@ -193,7 +199,8 @@
                                    guards$
                                    no-aij-types$
                                    java-package$
-                                   java-class
+                                   java-class$
+                                   output-subdir
                                    output-file$
                                    output-file-env$
                                    output-file-test$
@@ -202,6 +209,7 @@
                                    fns-to-translate
                                    call-graph
                                    verbose$
+                                   ctx
                                    state))
        (- (if output-file-test$
               (cw "~%Generated Java files:~% ~s0~% ~s1~% ~s2~%"

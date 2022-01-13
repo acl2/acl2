@@ -218,7 +218,7 @@ function-call = identifier "(" [ expression *( "," expression ) ] ")"
 ; corresponds to yul-function-definition
 function-definition = %s"function" identifier
                       "(" [ identifier *( "," identifier ) ] ")"
-                      "->" identifier *( "," identifier )
+                      [ "->" identifier *( "," identifier ) ]
                       block
 
 ; corresponds to yul-if-statement

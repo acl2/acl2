@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1419,9 +1419,9 @@
 
   (xdoc::p
    "In C, assignments are expressions that may occur at any level,
-    i.e. assignments may be sub-expressions of other expressions at any depth.
+    i.e. assignments may be subexpressions of other expressions at any depth.
     ATC only supports assignments that are full expressions [C:6.8/4],
-    i.e. expressions at the top level, not sub-expressions of other expressions.
+    i.e. expressions at the top level, not subexpressions of other expressions.
     Specifically, ATC supports expression statements [C:6.8.3]
     whose expression is an assignment:
     this way, assignments are treated as if they were statements,
@@ -1457,7 +1457,7 @@
     The first one, as explained in @(see atc-tutorial-local-variables),
     represents the local variable declaration with initializer;
     the second one represents the assignment,
-    which in this case mentions the variable in the right sub-expression,
+    which in this case mentions the variable in the right subexpression,
     but of course it may contain any expression.
     The point is that the second @(tsee let) binds an ACL2 variable symbol
     that is the same as the one bound by the first @(tsee let).
