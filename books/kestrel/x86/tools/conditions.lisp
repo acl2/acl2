@@ -321,6 +321,30 @@
                   (not (acl2::sbvlt 32 0 x))))
   :hints (("Goal" :in-theory (enable jle-condition acl2::sbvlt-rewrite))))
 
+(defthm jle-condition-rewrite-2
+  (implies (unsigned-byte-p 32 x)
+           (equal (jle-condition (zf-spec x)
+                                 (sf-spec32 x)
+                                 0)
+                  (acl2::sbvle 32 x 0)))
+  :hints (("Goal" :in-theory (enable jle-condition
+                                     acl2::sbvlt
+                                     x86isa::zf-spec
+                                     sf-spec32))))
+
+;todo: drop since thhe of-spec32 term is always 0
+(defthm jle-condition-rewrite-3
+  (implies (unsigned-byte-p 32 x)
+           (equal (jle-condition (zf-spec x)
+                                 (sf-spec32 x)
+                                 (of-spec32 (logext 32 x)))
+                  (acl2::sbvle 32 x 0)))
+  :hints (("Goal" :in-theory (enable jle-condition
+                                     acl2::sbvlt
+                                     x86isa::zf-spec
+                                     sf-spec32
+                                     of-spec32))))
+
 ;rename
 (defthm jnle-condition-rewrite
   (implies (unsigned-byte-p 32 x)
@@ -649,30 +673,7 @@
                                                     acl2::plus-bvcat-with-0-alt ;looped
                                                     )))))
 
-(defthm jle-condition-rewrite-2
-  (implies (unsigned-byte-p 32 x)
-           (equal
-            (jle-condition (zf-spec x)
-                           (sf-spec32 x)
-                           0)
-            (acl2::sbvle 32 x 0)))
-  :hints (("Goal" :in-theory (enable jle-condition
-                                     acl2::sbvlt
-                                     x86isa::zf-spec
-                                     sf-spec32))))
 
-(defthm jle-condition-rewrite-3
-  (implies (unsigned-byte-p 32 x)
-           (equal
-            (jle-condition (zf-spec x)
-                           (sf-spec32 x)
-                           (of-spec32 (logext 32 x)))
-            (acl2::sbvle 32 x 0)))
-  :hints (("Goal" :in-theory (enable jle-condition
-                                     acl2::sbvlt
-                                     x86isa::zf-spec
-                                     sf-spec32
-                                     of-spec32))))
 
 (defthm jnle-condition-rewrite-3
   (implies (and (signed-byte-p 64 x)
