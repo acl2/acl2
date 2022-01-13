@@ -40,6 +40,30 @@
         (mv `(:parse-error ,filename) yul-or-err state)
       (mv nil yul-or-err state))))
 
+;; (parse-yul-file "test/yulOptimizerTests/disambiguator/for_statement.yul" state)
+
+;; a non-error-triple equivalent of parse-yul-file
+(define parse-yul-fileX ((filename stringp) state)
+  :returns (mv (yul-prog block-resultp) state)
+  (b* (((mv existsp state)
+        (acl2::file-existsp filename state))
+       ((when (not existsp))
+        (mv (err `(:file-does-not-exist ,filename)) state))
+       ((mv erp bytes state)
+        (acl2::read-file-into-byte-list filename state))
+       ((when (or erp (not (consp bytes))))
+        (mv (err `(:failed-to-read-from-file ,filename)) state))
+       ((unless (acl2::nat-listp bytes))
+        ;; can't happen, but helps guard checks
+        (mv (err `(:bytes-in-file-are-not-nats ,filename)) state))
+       ;; Parse the bytes read:
+       (yul-or-err (parse-yul-bytes bytes)))
+    (if (resulterrp yul-or-err)
+        (mv (err `(:parse-error ,filename yul-or-err)) state)
+      (mv yul-or-err state))))
+
+;; (parse-yul-fileX "test/yulOptimizerTests/disambiguator/for_statement.yul" state)
+
 (defund parse-yul-files (filenames state)
   (declare (xargs :stobjs state
                   :guard (string-listp filenames)))
@@ -68,6 +92,7 @@
           (cons (car strings)
                 rest-nonempty-strings))))))
 
+;; For iterating over a bunch
 (defund parse-yul-files-from-list (filenames-file state)
   (declare (xargs :stobjs state
                   :guard (stringp filenames-file)))
@@ -80,6 +105,20 @@
       )))
 
 ;; $ ls -1 /path/to/tests/*/*.{yul,yul.expected} > /tmp/yul-file-list
+;; $ cd books/kestrel/yul ; $ACL2
 ;; YUL !> (include-book "parse-yul-file")  ; this book
 ;; YUL !> (include-book "std/util/defconsts")
 ;; YUL !> (defconsts (*yul-progs-err* *yul-progs* state) (parse-yul-files-from-list "/tmp/yul-file-list" state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; in and out refer to the yul optimizer
+(define parse-yul-optimizer-pair ((in-filename stringp) (out-filename stringp) state)
+  :returns (mv (in-prog block-resultp) (out-prog block-resultp) state)
+  (b* (((mv result1 state)
+        (parse-yul-fileX in-filename state))
+       ((mv result2 state)
+        (parse-yul-fileX out-filename state)))
+    (mv result1 result2 state)))
+
+;; (parse-yul-optimizer-pair "test/yulOptimizerTests/disambiguator/for_statement.yul" "test/yulOptimizerTests/disambiguator/for_statement.yul.expected" state)
