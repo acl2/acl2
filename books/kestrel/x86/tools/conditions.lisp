@@ -35,54 +35,70 @@
 
 ;; These represent the behavior of jcc/cmovcc/setcc-spec in specific cases.
 
+;; overflow
 (defund jo-condition (of)
   (equal 1 of))
 
+;; no overflow
 (defund jno-condition (of)
   (equal 0 of))
 
+;; below
 (defund jb-condition (cf)
   (equal 1 cf))
 
+;; not below
 (defund jnb-condition (cf)
   (equal 0 cf))
 
+;; zero
 (defund jz-condition (zf)
   (equal 1 zf))
 
+ ;; not zero
 (defund jnz-condition (zf)
   (equal 0 zf))
 
+;; below or equal
 (defund jbe-condition (cf zf)
   (or (equal 1 cf)
       (equal 1 zf)))
 
+;; not below or equal
 (defund jnbe-condition (cf zf)
   (and (equal 0 cf)
        (equal 0 zf)))
 
+;; sign
 (defund js-condition (sf)
   (equal 1 sf))
 
+;; not sign
 (defund jns-condition (sf)
   (equal 0 sf))
 
+;; parity (even?)
 (defund jp-condition (pf)
   (equal 1 pf))
 
+;; not parity (odd?)
 (defund jnp-condition (pf)
   (equal 0 pf))
 
+;; less
 (defund jl-condition (sf of)
   (not (equal sf of)))
 
+;; not less
 (defund jnl-condition (sf of)
   (equal sf of))
 
+;; less than or equal
 (defund jle-condition (zf sf of)
   (or (equal 1 zf)
       (not (equal sf of))))
 
+;; not less than or equal
 (defund jnle-condition (zf sf of)
   (and (equal 0 zf)
        (equal sf of)))
