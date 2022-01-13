@@ -3762,7 +3762,7 @@
              ((interp-st-bind
                (equiv-contexts (fgl-interp-or-test-equiv-contexts equiv-contexts) equiv-contexts))
               ((fgl-interp-recursive-call testobj)
-               (fgl-interp-term-equivs test interp-st state)))
+               (fgl-interp-term-top test interp-st state)))
              ((mv ok boolfix) (gobj-syntactic-boolean-fix testobj))
              ((unless (and** ok (fgl-object-case boolfix :g-concrete)))
               (fgl-interp-error :msg (fgl-msg "Symbolic IF test occurred under ~
@@ -3839,7 +3839,7 @@
              ((interp-st-bind
                (equiv-contexts or-test-equiv-contexts equiv-contexts))
               ((fgl-interp-recursive-call testval)
-               (fgl-interp-term-equivs test interp-st state)))
+               (fgl-interp-term-top test interp-st state)))
              (interp-st (interp-st-incr-term-index (fgl-minor-frame-subterm-count test) interp-st))
              ;; ((when err) (mv nil interp-st state))
              (interp-st (interp-st-push-scratch-fgl-obj testval interp-st))
