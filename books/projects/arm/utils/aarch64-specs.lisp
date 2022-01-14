@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; November 2021
+;; January 2022
 
 ;; Extend Arm floating-point specs to AArch64 that includes two new control
 ;; bits FIZ and AH
@@ -31,6 +31,15 @@
 (defconst *ufc* 3)
 (defconst *ixc* 4)
 (defconst *idc* 7)
+
+;; An operand is forced to 0:
+
+(defun fzerp (x fz fiz ah fmt)
+  (and (denormp x fmt)
+       (or (and (= fz 1)
+                (or (= ah 0) (equal fmt (hp))))
+           (and (= fiz 1)
+                (not (equal fmt (hp)))))))
 
 (defun signed-indef (ah f)
   (declare (xargs :guard (and (bitp ah)
@@ -177,7 +186,8 @@
                       (set-flag *ufc* fpsr)))
               (if (= d u)
                   (mv (dencode d f) fpsr)
-                (let ((fpsr (set-flag *ixc* (set-flag *ufc* fpsr))))
+                (let (;; UFC is set when the result is inexact.
+                      (fpsr (set-flag *ixc* (set-flag *ufc* fpsr))))
                   (if (= d 0)
                       (mv (zencode sgn f) fpsr)
                     (if (= (abs d) (spn f))
