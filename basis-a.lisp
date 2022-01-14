@@ -6069,14 +6069,18 @@
 (defun warning-off-p (summary state)
   (warning-off-p1 summary (w state) (ld-skip-proofsp state)))
 
+(defrec do-expressionp
+  (stobjs-out . with-vars)
+  nil)
+
 (defrec state-vars
 
 ; Warning: Keep this in sync with default-state-vars.
 
 ; Note that do-expressionp is not actually a state global, even though most
 ; fields do name a state global.  That's OK, as we are careful about this in
-; default-state-vars.  Also note that its value is either nil or a cons that is
-; a legal stobjs-out.
+; default-state-vars.  Also note that its value is either nil or a
+; do-expressionp record.
 
   (((safe-mode . boot-strap-flg) . (temp-touchable-vars . guard-checking-on))
    .
