@@ -4158,12 +4158,20 @@
    (xdoc::p
     "The methods are in the @('methods-by-pkg') alist,
      which is calculated (elsewhere)
-     via @(tsee atj-gen-shallow-all-pkg-methods)."))
+     via @(tsee atj-gen-shallow-all-pkg-methods).")
+   (xdoc::p
+    "We apply to the class body elements of the class
+     the part of the post-translation that operates at that level.
+     The part of the post-translation that operates at the level of methods
+     is applied in @(tsee atj-gen-shallow-fndef-method)."))
   (b* ((class-name (atj-get-pkg-class-name pkg pkg-class-names))
        ((run-when verbose$)
         (cw "  ~s0 for ~s1~%" class-name pkg))
        (fields (cdr (assoc-equal pkg fields-by-pkg)))
-       (methods (cdr (assoc-equal pkg methods-by-pkg))))
+       (methods (cdr (assoc-equal pkg methods-by-pkg)))
+       (body-elems (append (jmethods-to-jcbody-elements methods)
+                           (jfields-to-jcbody-elements fields)))
+       (body-elems (atj-post-translate-jcbody-elements body-elems)))
     (make-jclass :access (jaccess-public)
                  :abstract? nil
                  :static? t
@@ -4172,8 +4180,7 @@
                  :name class-name
                  :superclass? nil
                  :superinterfaces nil
-                 :body (append (jmethods-to-jcbody-elements methods)
-                               (jfields-to-jcbody-elements fields)))))
+                 :body body-elems)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4768,7 +4775,8 @@
                            (jmethods-to-jcbody-elements
                             jprimarr-write-methods)
                            (jmethods-to-jcbody-elements
-                            jprimarr-conv-methods))))
+                            jprimarr-conv-methods)))
+       (body-class (atj-post-translate-jcbody-elements body-class)))
     (mv (make-jclass :access (jaccess-public)
                      :abstract? nil
                      :static? nil

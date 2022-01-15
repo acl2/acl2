@@ -16,6 +16,7 @@
 (include-book "remove-continue")
 (include-book "remove-array-write-calls")
 (include-book "simplify-conds")
+(include-book "cache-const-methods")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,3 +98,15 @@
        (body (atj-remove-array-write-calls body))
        (body (atj-simplify-conds-in-jblock body)))
     body))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-post-translate-jcbody-elements ((elems jcbody-element-listp))
+  :returns (new-elems jcbody-element-listp)
+  :short "Post-translate a list of Java class body elements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now this consists of a single operation,
+     but it may be extended in the future."))
+  (atj-cache-const-methods elems))

@@ -818,6 +818,7 @@
    (xdoc::p
     "If we encounter a call of
      an array creation function in @(tsee *atj-jprimarr-new-init-fns*),
+     and if @(':guards') is @('t'),
      we ensure that its (only) argument is a translated @(tsee list) call,
      i.e. a (possibly empty) nest of @(tsee cons)es
      ending with a quoted @('nil').
@@ -1084,7 +1085,8 @@
                 (mv (atj-type-wrap-term term types types)
                     types
                     mv-typess)))))
-         ((when (atj-jprimarr-new-init-fn-p fn))
+         ((when (and guards$
+                     (atj-jprimarr-new-init-fn-p fn)))
           (b* (((unless (= (len args) 1))
                 (raise "Internal error: ~
                         the function ~x0 has arguments ~x1."
