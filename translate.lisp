@@ -926,8 +926,8 @@
                    (and (car args)
                         (assoc-symbol-name-equal (car args)
                                                  *for-loop$-keyword-info*)))
-               (msg ". The unusual variable name, ~x0, which is a reserved word ~
-                     in loop$ syntax, might indicate that you forgot to ~
+               (msg ". The unusual variable name, ~x0, which is a reserved ~
+                     word in loop$ syntax, might indicate that you forgot to ~
                      specify the iteration variable"
                     (car args))
                (msg ""))))
@@ -17603,9 +17603,9 @@
         (trans-er+ x ctx
                    "In a DO loop$ expression, variables bound in WITH ~
                     clauses, such as ~&0, may not be LET-bound in the loop$ ~
-                    body or FINALLY clause (except on the right-hand side of ~
-                    a SETQ or MV-SETQ call or the argument of a RETURN call). ~
-                    See :DOC loop$."
+                    body or FINALLY clause (except in certain places such as ~
+                    the right-hand side of a SETQ or MV-SETQ call or the ~
+                    argument of a RETURN call). See :DOC do-loop$."
                    (intersection-eq bound-vars with-vars)
                    (cons 'progn (strip-cars *cltl-to-ersatz-fns*))))
        ((and stobjs-bound
@@ -17663,8 +17663,8 @@
 
         (trans-er+ x ctx
                    "Single-threaded object names, such as ~&0, may not be ~
-                    LET-bound at the top-level of a DO loop body or FINALLY ~
-                    clause.  See :DOC loop$."
+                    LET-bound in a DO loop body or FINALLY clause.  See :DOC ~
+                    do-loop$."
                    (collect-non-x nil stobj-flags)))
        (t (mv-let
             (erp edcls)
@@ -19024,7 +19024,7 @@
                           (cond (okp (mv erp value bindings))
                                 (t (trans-er+? cform form ctx
                                                "Illegal FINALLY body: ~@0  ~
-                                                See :DOC loop$."
+                                                See :DOC do-loop$."
                                                msg)))))))))))
 
 (defun translate11-loop$ (x stobjs-out bindings known-stobjs flet-alist cform
@@ -19101,9 +19101,9 @@
      (flet-alist
       (trans-er+? cform x ctx
                   "It is illegal for a LOOP$ expression to be in the scope of ~
-                   FLET bindings.  The occurrence of ~x0 in the context of ~
-                   the FLET form that binds function symbol~#1~[~/s~] ~&1 is ~
-                   thus illegal."
+                   function bindings of an FLET expression.  The occurrence ~
+                   of ~x0 in the context of the FLET form that binds function ~
+                   symbol~#1~[~/s~] ~&1 is thus illegal."
                   x
                   (strip-cars flet-alist)))
      (t
@@ -19498,7 +19498,7 @@
                       ((not okp)
                        (trans-er+?
                         cform x ctx
-                        "Illegal DO body: ~@0  See :DOC loop$."
+                        "Illegal DO body: ~@0  See :DOC do-loop$."
                         msg))
                       ((and (not (equal values '(nil)))
                             (null (excart :untranslated :body fin-bodyc))
@@ -19540,12 +19540,11 @@
                              (cond
                               ((eq measure-term nil)
                                (trans-er+? cform x ctx
-                                           "No :MEASURE was provided ~
-                                                after the DO operator and we ~
-                                                failed to find a likely ~
-                                                measure.  Please supply a ~
-                                                :MEASURE in ~X01.  See :DOC ~
-                                                loop$."
+                                           "No :MEASURE was provided after ~
+                                            the DO operator and we failed to ~
+                                            find a likely measure.  Please ~
+                                            supply a :MEASURE in ~X01.  See ~
+                                            :DOC do-loop$."
                                            x nil))
                               (t
                                (let ((bad-fns
@@ -19563,7 +19562,7 @@
                                      of a DO loop$ must be fully badged but ~
                                      ~&0 ~#0~[has no badge and is used ~
                                      in~/have no badges and are used in~] ~
-                                     ~X12.  See :DOC loop$."
+                                     ~X12.  See :DOC do-loop$."
                                     (reverse bad-fns)
                                     x
                                     nil))
@@ -20051,7 +20050,7 @@
                               cform ctx wrld state-vars))
           (t (trans-er+? cform x
                          ctx
-                         "It is illegal for a LOOP$ expression to occurr in a ~
+                         "It is illegal for a LOOP$ expression to occur in a ~
                           slot of ilk ~x0."
                          ilk))))
    ((and (not (eq stobjs-out t))
