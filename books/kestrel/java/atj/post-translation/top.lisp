@@ -61,7 +61,8 @@
       See "
      (xdoc::seetopic "atj-post-translation-simplify-conds" "here")
      ".")))
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,7 +71,6 @@
                                  (body jblockp)
                                  (tailrecp booleanp))
   :returns (new-body jblockp :hyp :guard)
-  :parents (atj-post-translation)
   :short "Post-translate a Java method body generated from an ACL2 function."
   :long
   (xdoc::topstring
@@ -85,8 +85,9 @@
      because tail recursion elimination
      looks for recursive calls in @('return')s.")
    (xdoc::p
-    "More post-translation steps could be added, and applied here,
-     in the future."))
+    "The other post-translation steps are always performed.
+     These are the post-translation steps that operate
+     at the level of individual method bodies."))
   (b* ((body (atj-fold-returns body))
        (body (if tailrecp
                  (atj-elim-tailrec name params body)
