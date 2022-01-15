@@ -65,10 +65,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-post-translate ((name stringp)
-                            (params jparam-listp)
-                            (body jblockp)
-                            (tailrecp booleanp))
+(define atj-post-translate-body ((name stringp)
+                                 (params jparam-listp)
+                                 (body jblockp)
+                                 (tailrecp booleanp))
   :returns (new-body jblockp :hyp :guard)
   :parents (atj-post-translation)
   :short "Post-translate a Java method body generated from an ACL2 function."

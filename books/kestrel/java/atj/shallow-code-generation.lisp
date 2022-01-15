@@ -3427,10 +3427,10 @@
        (tailrecp (and (logicp fn wrld)
                       (= 1 (len (irecursivep fn wrld)))
                       (tail-recursive-p fn wrld)))
-       (method-body (atj-post-translate method-name
-                                        method-params
-                                        method-body
-                                        tailrecp))
+       (method-body (atj-post-translate-body method-name
+                                             method-params
+                                             method-body
+                                             tailrecp))
        ((unless (consp out-types))
         (raise "Internal error: ~
                 the function ~x0 has no output types ~x1."
