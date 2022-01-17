@@ -965,7 +965,8 @@
        ensuring that it does not end with @('break') or @('continue'),
        (i.e. only with @('leave') or regularly)."))
     (b* (((fundef fundef) fundef)
-         ((ok varset) (add-vars (append fundef.inputs fundef.outputs) nil))
+         ((ok varset) (add-vars fundef.inputs nil))
+         ((ok varset) (add-vars fundef.outputs varset))
          ((ok modes) (check-safe-block fundef.body
                                        varset
                                        funtab))
