@@ -21,6 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ static-soundness
+  :parents (language)
   :short "Proof of static soundness of Yul."
   :long
   (xdoc::topstring

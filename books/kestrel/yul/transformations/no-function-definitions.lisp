@@ -22,11 +22,11 @@
    (xdoc::p
     "The @('FunctionHoister') transformation, described in
      [Solidity: Internals: The Optimizer: Yul-Based Optimizer Module:
-      Preprocessing: FuntionHoister],
+      Preprocessing: FunctionHoister],
      moves all the function definitions to the top-level block.
      The @('FunctionGrouper') transformation, described in
      [Solidity: Internals: The Optimizer: Yul-Based Optimizer Module:
-      Preprocessing: FuntionGrouper],
+      Preprocessing: FunctionGrouper],
      further moves them to the end of the top-level block,
      putting the rest of the top-level block into a nested block
      at the beginning of the top-level block.

@@ -16,7 +16,7 @@
 
 (defxdoc+ unique-functions
   :parents (transformations)
-  :short "The condition in which all the function namess are distinct."
+  :short "The condition in which all the function names are distinct."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -36,7 +36,7 @@
      and update the set of encountered function names
      with the names of the introduced functions.
      Thus, the set of function names encountered so far is threaded through.
-     We do no need to define any ACL2 functions on expressions,
+     We do not need to define any ACL2 functions on expressions,
      in order to capture this property,
      because expressions do not introduce new functions."))
   :order-subtopics t

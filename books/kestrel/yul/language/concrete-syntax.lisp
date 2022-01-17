@@ -28,7 +28,9 @@
     "The concrete syntax is defined by an ABNF grammar based on the grammar in [Yul].
      We parse the ABNF grammar into an ACL2 representation.")
    (xdoc::p
-    "More precisely, there are currently two published grammars of Yul:
+    "The primary API for parsing Yul is @(see parse-yul) and @(see parse-yul-bytes).")
+   (xdoc::p
+    "There are currently two published grammars of Yul:
      one is in [Yul: Specification of Yul];
      the other is part of the Solidity grammar in "
     (xdoc::ahref "https://docs.soliditylang.org/en/latest/grammar.html"
