@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1089,6 +1089,27 @@
        (pred stmts funtab)
        :induct (len stmts)
        :enable (base-case step-case)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-safe-top-block ((block blockp))
+  :returns (_ resulterr-optionp)
+  :short "Check if the top block is safe."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check the safety of the block
+     starting with no variables or functions in scope,
+     because this is the block at the top level.
+     Since the top block is not inside a function or loop,
+     it is only allowed to terminate regularly.
+     If the checking succeeds, we return nothing (i.e. @('nil')).
+     Otherwise, we return an error."))
+  (b* (((ok modes) (check-safe-block block nil nil)))
+    (if (equal modes (set::insert (mode-regular) nil))
+        nil
+      (err (list :top-block-mode modes))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
