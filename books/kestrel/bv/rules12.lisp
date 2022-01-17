@@ -171,40 +171,6 @@
            :cases ((integerp x))
            :use (:instance add-bvchops-to-equality-of-sbps-4))))
 
-(DEFTHM GETBIT-0-OF-TIMES-constant
-  (IMPLIES (AND (syntaxp (and (quotep x)
-                              (not (unsigned-byte-p 1 (unquote x)))))
-                (INTEGERP X)
-                (INTEGERP Y))
-           (EQUAL (GETBIT 0 (* X Y))
-                  (GETBIT 0 (* (GETBIT 0 X) Y))))
-  :HINTS
-  (("Goal" :use (:instance bvchop-of-*-of-bvchop (size 1))
-    :IN-THEORY
-    (E/D (GETBIT)
-         (BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT bvchop-of-*-of-bvchop
-                                  )))))
-
-;bozo more
-(defthm bvchop-times-logext-32
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (BVCHOP 32 (* x (LOGEXT 32 y)))
-                  (BVCHOP 32 (* x y))))
-  :hints (("Goal" :in-theory (disable bvchop-of-*-of-bvchop)
-           :use ((:instance bvchop-of-*-of-bvchop (size 32) (x (logext 32 y)) (y x))
-                 (:instance bvchop-of-*-of-bvchop (size 32) (x y) (y x))))))
-
-;sort of strength reduction
-;gen
-;can loop?
-(defthmd floor-by-4
-  (implies (integerp x)
-           (equal (floor x 4)
-                  (logtail 2 x)))
-  :hints (("Goal" :in-theory (enable logtail))))
-(theory-invariant (incompatible (:rewrite FLOOR-BY-4) (:DEFINITION LOGTAIL)))
-
 (theory-invariant (incompatible (:rewrite logapp-0) (:rewrite times-4-becomes-logapp)))
 
 ;slow?
@@ -217,8 +183,7 @@
                 (force (integerp x))
                 (force (integerp y)))
            (equal (SLICE high low (+ x (LOGEXT size y)))
-                  (SLICE high low (+ x y))
-                  ))
+                  (SLICE high low (+ x y))))
   :hints (("Goal" :in-theory (e/d (SLICE bvchop-of-logtail expt-of-+)
                                   (anti-slice LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE LOGTAIL-OF-LOGEXT)))))
 
@@ -233,8 +198,7 @@
                 (force (integerp x))
                 (force (integerp y)))
            (equal (slice high low (+ (logext size y) x))
-                  (slice high low (+ x y))
-                  ))
+                  (slice high low (+ x y))))
   :hints (("Goal" :in-theory (e/d (slice) (anti-slice LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE LOGEXT-of-logtail)))))
 
 ;instead, inner sum should go to bvplus...

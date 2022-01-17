@@ -460,3 +460,15 @@
                     (getbit (- n i) x))))
   :hints (("Goal" :use (:instance getbit-of-*-of-expt-arg1)
            :in-theory (disable getbit-of-*-of-expt-arg1))))
+
+(defthm getbit-0-of-times-constant
+  (implies (and (syntaxp (and (quotep x)
+                              (not (unsigned-byte-p 1 (unquote x)))))
+                (integerp x)
+                (integerp y))
+           (equal (getbit 0 (* x y))
+                  (getbit 0 (* (getbit 0 x) y))))
+  :hints (("Goal" :use (:instance bvchop-of-*-of-bvchop (size 1))
+           :in-theory
+           (e/d (getbit)
+                (bvchop-1-becomes-getbit slice-becomes-getbit bvchop-of-*-of-bvchop)))))
