@@ -16,7 +16,7 @@
 
 (defxdoc+ unique-functions
   :parents (transformations)
-  :short "The condition in which all the function namess are distinct."
+  :short "The condition in which all the function names are distinct."
   :long
   (xdoc::topstring
    (xdoc::p
