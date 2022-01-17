@@ -21,6 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ static-soundness
+  :parents (language)
   :short "Proof of static soundness of Yul."
   :long
   (xdoc::topstring
@@ -70,38 +71,6 @@
                     (set::list-in vars varset)))
     :enable (check-var
              set::list-in)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection theorems-about-add-vars-and-append
-  :short "Theorems about @(tsee add-var) and @(tsee add-vars)
-          for the static soundness proof."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We have two variants of @(tsee add-vars) applied to @(tsee append)
-     that differ only in the exact hypotheses.
-     This seems unfortunate, so we will try and consolidate them.
-     We also have a theorem about
-     errors for @(tsee add-vars) of @(tsee append)."))
-
-  (defruled add-vars-of-append
-    (implies (and (not (resulterrp (add-vars vars1 varset)))
-                  (not (resulterrp (add-vars vars2 (add-vars vars1 varset)))))
-             (equal (add-vars (append vars1 vars2) varset)
-                    (add-vars vars2 (add-vars vars1 varset))))
-    :enable add-vars)
-
-  (defruled add-vars-of-append-2
-    (implies (not (resulterrp (add-vars (append vars1 vars2) varset)))
-             (equal (add-vars (append vars1 vars2) varset)
-                    (add-vars vars2 (add-vars vars1 varset))))
-    :enable add-vars)
-
-  (defruled resulterrp-of-add-vars-of-append
-    (implies (resulterrp (add-vars vars varset))
-             (resulterrp (add-vars (append vars vars1) varset)))
-    :enable add-vars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -325,7 +294,9 @@
      See @(tsee funscope-safep) and @(tsee funenv-safep)
      for more information."))
   (b* (((funinfo funinfo) funinfo)
-       (varset (add-vars (append funinfo.inputs funinfo.outputs) nil))
+       (varset (add-vars funinfo.inputs nil))
+       ((when (resulterrp varset)) nil)
+       (varset (add-vars funinfo.outputs varset))
        ((when (resulterrp varset)) nil)
        (modes (check-safe-block funinfo.body varset funtab))
        ((when (resulterrp modes)) nil)
@@ -419,14 +390,13 @@
                   (funscope-safep funscope funtab)
                   (consp (omap::in fun funscope)))
              (b* ((funinfo (cdr (omap::in fun funscope)))
-                  (varset (add-vars
-                           (append (funinfo->inputs funinfo)
-                                   (funinfo->outputs funinfo))
-                           nil))
+                  (varset0 (add-vars (funinfo->inputs funinfo) nil))
+                  (varset (add-vars (funinfo->outputs funinfo) varset0))
                   (modes (check-safe-block (funinfo->body funinfo)
                                            varset
                                            funtab)))
-               (and (not (resulterrp varset))
+               (and (not (resulterrp varset0))
+                    (not (resulterrp varset))
                     (not (resulterrp modes))
                     (not (set::in (mode-break) modes))
                     (not (set::in (mode-continue) modes)))))
@@ -439,14 +409,13 @@
                     (not (resulterrp funinfoenv)))
                (b* ((funinfo (funinfo+funenv->info funinfoenv))
                     (funenv1 (funinfo+funenv->env funinfoenv))
-                    (varset (add-vars
-                             (append (funinfo->inputs funinfo)
-                                     (funinfo->outputs funinfo))
-                             nil))
+                  (varset0 (add-vars (funinfo->inputs funinfo) nil))
+                  (varset (add-vars (funinfo->outputs funinfo) varset0))
                     (modes (check-safe-block (funinfo->body funinfo)
                                              varset
                                              (funenv-to-funtable funenv1))))
-                 (and (not (resulterrp varset))
+                 (and (not (resulterrp varset0))
+                      (not (resulterrp varset))
                       (not (resulterrp modes))
                       (not (set::in (mode-break) modes))
                       (not (set::in (mode-continue) modes))
@@ -983,7 +952,7 @@
      which is what @(tsee init-local) does for the local state of course.")
    (xdoc::p
     "First, we show that @(tsee add-var-value) fails iff @(tsee add-var) does
-     (the value put into the variable puts no constraints),
+     (the value put into the variable entails no constraints),
      and the same holds for @(tsee add-vars-values) and @(tsee add-vars)
      provided that the number of values matches the number of variables.")
    (xdoc::p
@@ -994,17 +963,7 @@
      and it can probably put there, but currently it needs some other theorems,
      but it may be possible to streamline and simplify its proof.")
    (xdoc::p
-    "We also prove a forward chaining rule saying that,
-     if @(tsee init-local) succeeds,
-     the number of values matches the number of variables.
-     This is a handy fact to have available in the main proof.
-     The forward chaining rule is proved via another rule,
-     about @(tsee add-vars-values) instead of @(tsee init-local),
-     that could also be a forward chaining rule,
-     but for now we do not need that,
-     and we only need it to prove the one about @(tsee init-local).")
-   (xdoc::p
-    "The theorem @('check-var-list-of-add-vars-of-append-not-error')
+    "The theorem @('check-var-list-when-add-vars-not-error')
      serves to establish that the output variables of a function are readable
      given that they have been added via @(tsee init-local).
      This is not really a theorem about @(tsee init-local), but it is related;
@@ -1012,9 +971,7 @@
    (xdoc::p
     "We finally show that @(tsee init-local) fails iff
      the addition of the variables to the variable table fails,
-     or the number of values does not match the number of variables.
-     This is the theorem @('resulterrp-of-init-local'),
-     which is proved via the two theorems that preced it."))
+     or the number of values does not match the number of variables."))
 
   (defruled error-add-var-value-iff-error-add-var
     (equal (resulterrp (add-var-value var val cstate))
@@ -1042,64 +999,31 @@
                         (init-local in-vars in-vals out-vars cstate))))
              (equal (cstate-to-vars
                      (init-local in-vars in-vals out-vars cstate))
-                    (add-vars (append in-vars out-vars) nil)))
+                    (add-vars out-vars (add-vars in-vars nil))))
     :enable (init-local
-             add-vars-of-append
              error-add-vars-values-iff-error-add-vars))
 
-  (defruled same-len-when-add-vars-values-not-error
-    (implies (not (resulterrp (add-vars-values vars vals cstate)))
-             (equal (len vals) (len vars)))
-    :enable add-vars-values)
-
-  (defrule same-len-when-init-local-not-error
-    (implies (not (resulterrp (init-local in-vars in-vals out-vars cstate)))
-             (equal (len in-vals) (len in-vars)))
-    :rule-classes ((:forward-chaining
-                    :trigger-terms
-                    ((resulterrp
-                      (init-local in-vars in-vals out-vars cstate)))))
-    :enable init-local
-    :use (:instance same-len-when-add-vars-values-not-error
-          (vals in-vals)
-          (vars in-vars)
-          (cstate (cstate nil))))
-
-  (defruled check-var-list-of-add-vars-of-append-not-error
+  (defruled check-var-list-when-add-vars-not-error
     (implies (and (identifier-listp vars)
-                  (identifier-listp vars1)
                   (identifier-setp varset)
-                  (not (resulterrp (add-vars (append vars1 vars) varset))))
-             (check-var-list vars (add-vars (append vars1 vars) varset)))
+                  (not (resulterrp (add-vars vars varset))))
+             (check-var-list vars (add-vars vars varset)))
     :enable (add-vars-to-set-list-insert
              check-var-list-to-set-list-in))
 
-  (defruled add-vars-of-append-not-error-when-init-local-not-error
-    (implies (and (not (resulterrp
-                        (init-local in-vars in-vals out-vars cstate))))
-             (not (resulterrp (add-vars (append in-vars out-vars) nil))))
-    :enable not-resulterrp-when-identifier-setp
-    :disable cstate-to-vars-of-init-local
-    :use cstate-to-vars-of-init-local)
-
-  (defruled init-local-not-error-when-add-vars-of-append-not-error
-    (implies (and (equal (len in-vals) (len in-vars))
-                  (not (resulterrp (add-vars (append in-vars out-vars) nil))))
-             (not (resulterrp (init-local in-vars in-vals out-vars cstate))))
-    :enable (init-local
-             resulterrp-of-add-vars-of-append
-             error-add-vars-values-iff-error-add-vars)
-    :use (:instance add-vars-of-append-2
-          (vars1 in-vars)
-          (vars2 out-vars)
-          (varset nil)))
-
   (defruled resulterrp-of-init-local
     (equal (resulterrp (init-local in-vars in-vals out-vars cstate))
-           (or (resulterrp (add-vars (append in-vars out-vars) nil))
+           (or (resulterrp (add-vars in-vars nil))
+               (resulterrp (add-vars out-vars (add-vars in-vars nil)))
                (not (equal (len in-vals) (len in-vars)))))
-    :use (add-vars-of-append-not-error-when-init-local-not-error
-          init-local-not-error-when-add-vars-of-append-not-error)))
+    :cases ((equal (len in-vals) (len in-vars)))
+    :enable (init-local
+             error-add-vars-values-iff-error-add-vars)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (not (equal (len vals) (len vars)))
+                (resulterrp (add-vars-values vars vals cstate)))
+       :enable add-vars-values))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1486,7 +1410,8 @@
                len-of-funinfo->inputs
                len-of-funinfo->outputs
                read-vars-values-when-check-var-list
-               check-var-list-of-add-vars-of-append-not-error
+               check-var-list-when-add-vars-not-error
+               cstate-to-vars-of-init-local
                resulterrp-of-init-local
                resulterrp-of-find-fun)
               (equal-of-mode-continue
@@ -1496,3 +1421,26 @@
              :expand ((check-safe-statement stmt
                                             (cstate-to-vars cstate)
                                             (funenv-to-funtable funenv)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule exec-top-block-static-soundness
+  :short "Top-level static soundness theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This applies to the top-level block.
+     If the block is safe,
+     then its execution can only return either a final state
+     or a limit error, never any other kind of error."))
+  (implies (not (resulterrp (check-safe-top-block block)))
+           (b* ((cstate (exec-top-block block limit)))
+             (implies (not (resulterr-limitp cstate))
+                      (not (resulterrp cstate)))))
+  :enable (check-safe-top-block
+           exec-top-block
+           resulterr-limitp)
+  :disable exec-block-static-soundness
+  :use (:instance exec-block-static-soundness
+        (cstate (cstate nil))
+        (funenv nil)))

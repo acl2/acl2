@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "YUL")
 
-(include-book "../language/abstract-syntax")
+(include-book "renamings")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,56 +43,31 @@
      by operating on the enclosing code,
      prior to recursively operating on the enclosed code.
      Thus, in case of success, in general this function returns
-     updated renaming information.")
-   (xdoc::p
-    "The renaming information is captured as
-     an omap from identifiers to identifiers.
-     Its keys are the variables in scope in the old code;
-     its values are the variables in scope in the new code.
-     These facts hold because of the way the omap is threaded through,
-     in the ACL2 code that defines the renaming relation.
-     These facts are formally explicated and proved as part of the "
-    (xdoc::seetopic "disambiguator-variables-safety"
-                    "the proof of static safety preservation")
-    ".")
-   (xdoc::p
-    "The renaming omap is injective.
-     This is a natural property,
-     because just like the variables in scope in the old code
-     do not shadow each other,
-     in the same way the variables in scope in the new code
-     do not shadow each other.
-     Thus, as we encounter new variables in the old and new code,
-     the former must not be keys in the omap
-     and the latter must not be values in the omap."))
+     updated renaming information."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-renamevar ((old identifierp)
-                       (new identifierp)
-                       (ren identifier-identifier-mapp))
+(define var-renamevar ((old identifierp) (new identifierp) (ren renamingp))
   :returns (_ resulterr-optionp)
   :short "Check if two variables are related by variable renaming."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check is the two variables form an association pair in the omap."))
+    "We check if the two variables form a pair in the renaming list."))
   (b* ((old (identifier-fix old))
-       (new (identifier-fix new))
-       (ren (identifier-identifier-map-fix ren)))
-    (if (equal (omap::in old ren)
-               (cons old new))
+       (new (identifier-fix new)))
+    (if (member-equal (cons old new) (renaming->list ren))
         nil
-      (err (list :mismatch old new ren))))
+      (err (list :mismatch old new (renaming-fix ren)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define var-list-renamevar ((old identifier-listp)
                             (new identifier-listp)
-                            (ren identifier-identifier-mapp))
+                            (ren renamingp))
   :returns (_ resulterr-optionp)
   :short "Check if two lists of variables are related by variable renaming."
   :long
@@ -112,9 +87,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define path-renamevar ((old pathp)
-                        (new pathp)
-                        (ren identifier-identifier-mapp))
+(define path-renamevar ((old pathp) (new pathp) (ren renamingp))
   :returns (_ resulterr-optionp)
   :short "Check if two paths are related by variable renaming."
   :long
@@ -137,9 +110,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define path-list-renamevar ((old path-listp)
-                             (new path-listp)
-                             (ren identifier-identifier-mapp))
+(define path-list-renamevar ((old path-listp) (new path-listp) (ren renamingp))
   :returns (_ resulterr-optionp)
   :short "Check if two lists of paths are
           related by variable renaming."
@@ -171,7 +142,7 @@
 
   (define expression-renamevar ((old expressionp)
                                 (new expressionp)
-                                (ren identifier-identifier-mapp))
+                                (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two expressions are
             related by variable renaming."
@@ -204,7 +175,7 @@
 
   (define expression-list-renamevar ((old expression-listp)
                                      (new expression-listp)
-                                     (ren identifier-identifier-mapp))
+                                     (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two lists of expressions are
             related by variable renaming."
@@ -225,7 +196,7 @@
 
   (define funcall-renamevar ((old funcallp)
                              (new funcallp)
-                             (ren identifier-identifier-mapp))
+                             (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two function calls are
             related by variable renaming."
@@ -249,7 +220,7 @@
 
 (define expression-option-renamevar ((old expression-optionp)
                                      (new expression-optionp)
-                                     (ren identifier-identifier-mapp))
+                                     (ren renamingp))
   :returns (_ resulterr-optionp)
   :short "Check if two optional expressions are
           related by variable renaming."
@@ -279,7 +250,7 @@
 
 (define funcall-option-renamevar ((old funcall-optionp)
                                   (new funcall-optionp)
-                                  (ren identifier-identifier-mapp))
+                                  (ren renamingp))
   :returns (_ resulterr-optionp)
   :short "Check if two optional function calls are
           related by variable renaming."
@@ -309,47 +280,40 @@
 
 (define add-var-to-var-renaming ((old identifierp)
                                  (new identifierp)
-                                 (ren identifier-identifier-mapp))
-  :returns (new-ren identifier-identifier-map-resultp)
-  :short "Add a variable to a variable renaming map."
+                                 (ren renamingp))
+  :returns (new-ren renaming-resultp)
+  :short "Add a variable to a variable renaming list."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check that the old variable is not already a key in the map.
+    "We check that the old variable is not already a key in the alist,
+     and that the new variable is not already a value in the alist.
      This is always the case when processing statically safe code,
-     because variables are addded to the renaming map as they get in scope,
+     because variables are addded to the renaming list as they get in scope,
      and the static safety checks ensure that
-     only variables not in scope are added to the scope.")
-   (xdoc::p
-    "We could consider omitting this check here,
-     but having it facilitates some proofs.")
-   (xdoc::p
-    "We also check that the new variable is not already a value in the map.
-     This is also always the case when processing statically safe code.
-     In fact, by checking this, we are checking that the new code
-     does not shadow variables, which is part of its safety checks.
-     This means that the omap is injective,
-     which we plan to formally prove."))
+     only variables not in scope are added to the scope.
+     In fact, by checking this,
+     we are checking that the code does not shadow variables."))
   (b* ((old (identifier-fix old))
        (new (identifier-fix new))
-       (ren (identifier-identifier-map-fix ren)))
-    (if (consp (omap::in old ren))
-        (err (list :old-var-already-in-scope old new ren))
-      (if (set::in new (omap::values ren))
-          (omap::update old new ren)
-        (err (list :new-var-already-in-scope old new ren)))))
+       (list (renaming->list ren))
+       ((when (member-equal old (strip-cars list)))
+        (err (list :old-var-already-in-scope old new (renaming-fix ren))))
+       ((when (member-equal new (strip-cdrs list)))
+        (err (list :new-var-already-in-scope old new (renaming-fix ren)))))
+    (renaming (cons (cons old new) list)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-vars-to-var-renaming ((old identifier-listp)
                                   (new identifier-listp)
-                                  (ren identifier-identifier-mapp))
-  :returns (new-ren identifier-identifier-map-resultp)
-  :short "Add the variables in a list to a variable renaming map."
+                                  (ren renamingp))
+  :returns (new-ren renaming-resultp)
+  :short "Add the variables in a list to a variable renaming list."
   (b* (((when (endp old))
         (if (endp new)
-            (identifier-identifier-map-fix ren)
+            (renaming-fix ren)
           (err (list :mismatch-extra-new (identifier-list-fix new)))))
        ((when (endp new))
         (err (list :mismatch-extra-old (identifier-list-fix old))))
@@ -371,36 +335,36 @@
 
   (define statement-renamevar ((old statementp)
                                (new statementp)
-                               (ren identifier-identifier-mapp))
-    :returns (new-ren identifier-identifier-map-resultp)
+                               (ren renamingp))
+    :returns (new-ren renaming-resultp)
     :short "Check if two statements are
             related by variable renaming."
     :long
     (xdoc::topstring
      (xdoc::p
       "In case of success,
-       this function returns a renaming map
+       this function returns a renaming list
        updated according to the variables introduced in the statement.")
      (xdoc::p
       "Old and new statement must be of the same kind,
        and have constituents recursively related.")
      (xdoc::p
-      "Variable declarations extend the renaming map
+      "Variable declarations extend the renaming list
        with additional associations.
        All the other kinds of statements
-       leave the renaming map unchanged.")
+       leave the renaming list unchanged.")
      (xdoc::p
       "We treat the initialization blocks of a loop specially,
        as usual (e.g. in the static safety checks and in dynamic execution):
-       we extend the renaming map according to
+       we extend the renaming list according to
        the statements in the initialization block,
        and then we process the rest of the statement
-       with the updated renaming map.
-       However, the renaming map after the loop is the same as the one before:
+       with the updated renaming list.
+       However, the renaming list after the loop is the same as the one before:
        a loop does not permanently introduce new variables.")
      (xdoc::p
       "The ACL2 function to check function definitions
-       does not take a renaming map as argument,
+       does not take a renaming list as argument,
        because a function definition has a fresh variable scope."))
     (statement-case
      old
@@ -411,7 +375,7 @@
                   (statement-fix new))))
           ((statement-block new) new)
           ((ok &) (block-renamevar old.get new.get ren)))
-       (identifier-identifier-map-fix ren))
+       (renaming-fix ren))
      :variable-single
      (b* (((unless (statement-case new :variable-single))
            (err (list :mismatch
@@ -436,7 +400,7 @@
           ((statement-assign-single new) new)
           ((ok &) (path-renamevar old.target new.target ren))
           ((ok &) (expression-renamevar old.value new.value ren)))
-       (identifier-identifier-map-fix ren))
+       (renaming-fix ren))
      :assign-multi
      (b* (((unless (statement-case new :assign-multi))
            (err (list :mismatch
@@ -445,7 +409,7 @@
           ((statement-assign-multi new) new)
           ((ok &) (path-list-renamevar old.targets new.targets ren))
           ((ok &) (funcall-renamevar old.value new.value ren)))
-       (identifier-identifier-map-fix ren))
+       (renaming-fix ren))
      :funcall
      (b* (((unless (statement-case new :funcall))
            (err (list :mismatch
@@ -453,7 +417,7 @@
                   (statement-fix new))))
           ((statement-funcall new) new)
           ((ok &) (funcall-renamevar old.get new.get ren)))
-       (identifier-identifier-map-fix ren))
+       (renaming-fix ren))
      :if
      (b* (((unless (statement-case new :if))
            (err (list :mismatch
@@ -462,7 +426,7 @@
           ((statement-if new) new)
           ((ok &) (expression-renamevar old.test new.test ren))
           ((ok &) (block-renamevar old.body new.body ren)))
-       (identifier-identifier-map-fix ren))
+       (renaming-fix ren))
      :for
      (b* (((unless (statement-case new :for))
            (err (list :mismatch
@@ -475,7 +439,7 @@
           ((ok &) (expression-renamevar old.test new.test ren1))
           ((ok &) (block-renamevar old.update new.update ren1))
           ((ok &) (block-renamevar old.body new.body ren1)))
-       (identifier-identifier-map-fix ren))
+       (renaming-fix ren))
      :switch
      (b* (((unless (statement-case new :switch))
            (err (list :mismatch
@@ -485,25 +449,25 @@
           ((ok &) (expression-renamevar old.target new.target ren))
           ((ok &) (swcase-list-renamevar old.cases new.cases ren))
           ((ok &) (block-option-renamevar old.default new.default ren)))
-       (identifier-identifier-map-fix ren))
+       (renaming-fix ren))
      :leave
      (b* (((unless (statement-case new :leave))
            (err (list :mismatch
                   (statement-fix old)
                   (statement-fix new)))))
-       (identifier-identifier-map-fix ren))
+       (renaming-fix ren))
      :break
      (b* (((unless (statement-case new :break))
            (err (list :mismatch
                   (statement-fix old)
                   (statement-fix new)))))
-       (identifier-identifier-map-fix ren))
+       (renaming-fix ren))
      :continue
      (b* (((unless (statement-case new :continue))
            (err (list :mismatch
                   (statement-fix old)
                   (statement-fix new)))))
-       (identifier-identifier-map-fix ren))
+       (renaming-fix ren))
      :fundef
      (b* (((unless (statement-case new :fundef))
            (err (list :mismatch
@@ -511,13 +475,13 @@
                   (statement-fix new))))
           ((statement-fundef new) new)
           ((ok &) (fundef-renamevar old.get new.get)))
-       (identifier-identifier-map-fix ren)))
+       (renaming-fix ren)))
     :measure (statement-count old))
 
   (define statement-list-renamevar ((old statement-listp)
                                     (new statement-listp)
-                                    (ren identifier-identifier-mapp))
-    :returns (new-ren identifier-identifier-map-resultp)
+                                    (ren renamingp))
+    :returns (new-ren renaming-resultp)
     :short "Check if two lists of statements are
             related by variable renaming."
     :long
@@ -525,10 +489,10 @@
      (xdoc::p
       "The two lists must have the same length,
        and have corresponding elements related by the renaming.
-       The renaming map is updated and threaded through the statements."))
+       The renaming list is updated and threaded through the statements."))
     (b* (((when (endp old))
           (if (endp new)
-              (identifier-identifier-map-fix ren)
+              (renaming-fix ren)
             (err (list :mismatch-extra-new (statement-list-fix new)))))
          ((when (endp new))
           (err (list :mismatch-extra-old (statement-list-fix old))))
@@ -538,7 +502,7 @@
 
   (define block-renamevar ((old blockp)
                            (new blockp)
-                           (ren identifier-identifier-mapp))
+                           (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two blocks are
             related by variable renaming."
@@ -546,7 +510,7 @@
     (xdoc::topstring
      (xdoc::p
       "We process the list of statements,
-       discarding the final renaming map,
+       discarding the final renaming list,
        because the scope of a block ends at the end of the block."))
     (b* ((old-stmts (block->statements old))
          (new-stmts (block->statements new))
@@ -556,7 +520,7 @@
 
   (define block-option-renamevar ((old block-optionp)
                                   (new block-optionp)
-                                  (ren identifier-identifier-mapp))
+                                  (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two optional blocks are
             related by variable renaming."
@@ -579,7 +543,7 @@
 
   (define swcase-renamevar ((old swcasep)
                             (new swcasep)
-                            (ren identifier-identifier-mapp))
+                            (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two switch cases are
             related by variable renaming."
@@ -599,7 +563,7 @@
 
   (define swcase-list-renamevar ((old swcase-listp)
                                  (new swcase-listp)
-                                 (ren identifier-identifier-mapp))
+                                 (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two lists of switch cases are
             related by variable renaming."
@@ -625,7 +589,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We initialize the renaming map according to the inputs and outputs,
+      "We initialize the renaming list according to the inputs and outputs,
        and then we process the bodies."))
     (b* (((unless (equal (fundef->name old)
                          (fundef->name new)))
@@ -634,7 +598,7 @@
                  (fundef->name new))))
          ((ok ren) (add-vars-to-var-renaming (fundef->inputs old)
                                              (fundef->inputs new)
-                                             nil))
+                                             (renaming nil)))
          ((ok ren) (add-vars-to-var-renaming (fundef->outputs old)
                                              (fundef->outputs new)
                                              ren)))

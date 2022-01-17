@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "YUL")
 
-(include-book "../language/abstract-syntax")
+(include-book "renamings")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,7 +33,7 @@
 
 (define fun-renamefun ((old identifierp)
                        (new identifierp)
-                       (ren identifier-identifier-mapp))
+                       (ren renamingp))
   :returns (_ resulterr-optionp)
   :short "Check if two function names are related by function renaming."
   :long
@@ -41,12 +41,10 @@
    (xdoc::p
     "We check is the two function names form an association pair in the omap."))
   (b* ((old (identifier-fix old))
-       (new (identifier-fix new))
-       (ren (identifier-identifier-map-fix ren)))
-    (if (equal (omap::in old ren)
-               (cons old new))
+       (new (identifier-fix new)))
+    (if (member-equal (cons old new) (renaming->list ren))
         nil
-      (err (list :mismatch old new ren))))
+      (err (list :mismatch old new (renaming-fix ren)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -57,7 +55,7 @@
 
   (define expression-renamefun ((old expressionp)
                                 (new expressionp)
-                                (ren identifier-identifier-mapp))
+                                (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two expressions are
             related by function renaming."
@@ -90,7 +88,7 @@
 
   (define expression-list-renamefun ((old expression-listp)
                                      (new expression-listp)
-                                     (ren identifier-identifier-mapp))
+                                     (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two lists of expressions are
             related by function renaming."
@@ -111,7 +109,7 @@
 
   (define funcall-renamefun ((old funcallp)
                              (new funcallp)
-                             (ren identifier-identifier-mapp))
+                             (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two function calls are
             related by function renaming."
@@ -134,7 +132,7 @@
 
 (define expression-option-renamefun ((old expression-optionp)
                                      (new expression-optionp)
-                                     (ren identifier-identifier-mapp))
+                                     (ren renamingp))
   :returns (_ resulterr-optionp)
   :short "Check if two optional expressions are
           related by function renaming."
@@ -164,7 +162,7 @@
 
 (define funcall-option-renamefun ((old funcall-optionp)
                                   (new funcall-optionp)
-                                  (ren identifier-identifier-mapp))
+                                  (ren renamingp))
   :returns (_ resulterr-optionp)
   :short "Check if two optional function calls are
           related by function renaming."
@@ -194,9 +192,9 @@
 
 (define add-fun-to-fun-renaming ((old identifierp)
                                  (new identifierp)
-                                 (ren identifier-identifier-mapp))
-  :returns (new-ren identifier-identifier-map-resultp)
-  :short "Add a function name to a function renaming map."
+                                 (ren renamingp))
+  :returns (new-ren renaming-resultp)
+  :short "Add a function name to a function renaming list."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -204,24 +202,24 @@
      See its documentation."))
   (b* ((old (identifier-fix old))
        (new (identifier-fix new))
-       (ren (identifier-identifier-map-fix ren)))
-    (if (consp (omap::in old ren))
-        (err (list :old-fun-already-in-scope old new ren))
-      (if (set::in new (omap::values ren))
-          (omap::update old new ren)
-        (err (list :new-fun-already-in-scope old new ren)))))
+       (list (renaming->list ren))
+       ((when (member-equal old (strip-cars list)))
+        (err (list :old-fun-already-in-scope old new (renaming-fix ren))))
+       ((when (member-equal new (strip-cdrs list)))
+        (err (list :new-fun-already-in-scope old new (renaming-fix ren)))))
+    (renaming (cons (cons old new) list)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-funs-to-fun-renaming ((old identifier-listp)
                                   (new identifier-listp)
-                                  (ren identifier-identifier-mapp))
-  :returns (new-ren identifier-identifier-map-resultp)
-  :short "Add the function names in a list to a function renaming map."
+                                  (ren renamingp))
+  :returns (new-ren renaming-resultp)
+  :short "Add the function names in a list to a function renaming list."
   (b* (((when (endp old))
         (if (endp new)
-            (identifier-identifier-map-fix ren)
+            (renaming-fix ren)
           (err (list :mismatch-extra-new (identifier-list-fix new)))))
        ((when (endp new))
         (err (list :mismatch-extra-old (identifier-list-fix old))))
@@ -243,7 +241,7 @@
 
   (define statement-renamefun ((old statementp)
                                (new statementp)
-                               (ren identifier-identifier-mapp))
+                               (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two statements are
             related by function renaming."
@@ -260,10 +258,10 @@
      (xdoc::p
       "We treat the initialization blocks of a loop specially,
        as usual (e.g. in the static safety checks and in dynamic execution):
-       we extend the renaming map according to
+       we extend the renaming list according to
        the function definitions in the initialization block,
        and then we process the rest of the statement
-       with the updated renaming map."))
+       with the updated renaming list."))
     (statement-case
      old
      :block
@@ -395,7 +393,7 @@
 
   (define statement-list-renamefun ((old statement-listp)
                                     (new statement-listp)
-                                    (ren identifier-identifier-mapp))
+                                    (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two lists of statements are
             related by function renaming."
@@ -416,7 +414,7 @@
 
   (define block-renamefun ((old blockp)
                            (new blockp)
-                           (ren identifier-identifier-mapp))
+                           (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two blocks are
             related by function renaming."
@@ -437,7 +435,7 @@
 
   (define block-option-renamefun ((old block-optionp)
                                   (new block-optionp)
-                                  (ren identifier-identifier-mapp))
+                                  (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two optional blocks are
             related by function renaming."
@@ -460,7 +458,7 @@
 
   (define swcase-renamefun ((old swcasep)
                             (new swcasep)
-                            (ren identifier-identifier-mapp))
+                            (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two switch cases are
             related by function renaming."
@@ -474,7 +472,7 @@
 
   (define swcase-list-renamefun ((old swcase-listp)
                                  (new swcase-listp)
-                                 (ren identifier-identifier-mapp))
+                                 (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two lists of switch cases are
             related by function renaming."
@@ -495,7 +493,7 @@
 
   (define fundef-renamefun ((old fundefp)
                             (new fundefp)
-                            (ren identifier-identifier-mapp))
+                            (ren renamingp))
     :returns (_ resulterr-optionp)
     :short "Check if two function definitions are
             related by function renaming."

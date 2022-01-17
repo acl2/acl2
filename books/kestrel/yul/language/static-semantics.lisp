@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ static-semantics
-  :parents (yul)
+  :parents (language)
   :short "Static semantics of Yul."
   :long
   (xdoc::topstring

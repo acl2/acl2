@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -38,6 +38,7 @@
                         fty::resulterrp
                         fty::resulterr-optionp
                         fty::stack
+                        std::define-sk
                         str::hex-digit-char
                         ubyte256
                         values)))

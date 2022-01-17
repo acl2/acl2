@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -28,9 +28,11 @@
    (xdoc::p
     "This is (the main) part of the Yul static semantics.
      It consists of checks that ensure the safety of execution,
-     i.e. that certain situations never happens during execution,
+     i.e. that certain situations never happen during execution,
      such as reading or writing a non-existent variable.
-     Our formal dynamic semantics of Yul defensively checks these conditions,
+     Our formal
+     <see topic='@(url DYNAMIC-SEMANTICS)'>dynamic semantics</see>
+     of Yul defensively checks these conditions,
      returning error values when the conditions are not satisfied.
      The static safety checks formalized here
      ensure that those error values are never returned by the dynamic semantics,
@@ -43,7 +45,7 @@
      These are essentially symbol tables for variables and functions:
      they describe the variables and functions in scope.")
    (xdoc::p
-    "These symbol tables for varaibles consists of
+    "These symbol tables for variables consists of
      the variables that are not only visible, but also accessible,
      according to [Yul: Specification of Yul: Scoping Rules]:
      a variable is visible in the rest of the block in which it is declared,
@@ -575,7 +577,7 @@
   (xdoc::topstring
    (xdoc::p
     "These are checked in the context of
-     a variable table for visible and accessible variable @('varset'),
+     a variable table for visible and accessible variables @('varset'),
      and a function table @('funtab').")
    (xdoc::p
     "A successful check returns
@@ -965,7 +967,8 @@
        ensuring that it does not end with @('break') or @('continue'),
        (i.e. only with @('leave') or regularly)."))
     (b* (((fundef fundef) fundef)
-         ((ok varset) (add-vars (append fundef.inputs fundef.outputs) nil))
+         ((ok varset) (add-vars fundef.inputs nil))
+         ((ok varset) (add-vars fundef.outputs varset))
          ((ok modes) (check-safe-block fundef.body
                                        varset
                                        funtab))
@@ -1008,7 +1011,7 @@
    (xdoc::p
     "This does not really add anything
      compared to @(tsee check-safe-statement-list),
-     in the sense that checking the safey of a list of function definitions
+     in the sense that checking the safety of a list of function definitions
      is the same as checking the safety of them as a list of statements.
      However, it is convenient to define a dedicated ACL2 function
      to check the safety of lists of function definitions directly,
@@ -1018,9 +1021,9 @@
     ".)")
    (xdoc::p
     "We prove that if a list of statements passes the safety checks,
-     the list of function definitions extraced from the statements
-     passed the safety checks according to this ACL2 function.
-     Given that the statement checking functions take variables tables as inputs
+     the list of function definitions extracted from the statements
+     passes the safety checks according to this ACL2 function.
+     Given that the statement checking functions take variable tables as inputs
      while the function definition checking function do not,
      and given that the statement checking functions modify variable tables
      and thread them through the list of statements,
@@ -1092,19 +1095,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-safe-top-block ((block blockp))
+  :returns (_ resulterr-optionp)
+  :short "Check if the top block is safe."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check the safety of the block
+     starting with no variables or functions in scope,
+     because this is the block at the top level.
+     Since the top block is not inside a function or loop,
+     it is only allowed to terminate regularly.
+     If the checking succeeds, we return nothing (i.e. @('nil')).
+     Otherwise, we return an error."))
+  (b* (((ok modes) (check-safe-block block nil nil)))
+    (if (equal modes (set::insert (mode-regular) nil))
+        nil
+      (err (list :top-block-mode modes))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection check-safe-extends-varset
   :short "Theorems about the variable table being extended
           by the ACL2 safety checking functions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The safety checking functions that return udpated variables tables,
+    "The safety checking functions that return updated variables tables,
      namely @(tsee check-safe-statement) and @(tsee check-safe-statement-list),
      extend the variable table in general.
      That is, the resulting variable table is always a superset
      of the initial variable table;
      this is not strict superset, i.e. they may be equal.
-     We prove that for @(tsee add-var) and @(tsee add-vars) first,
+     We prove that first for @(tsee add-var) and @(tsee add-vars),
      which are the functions that actually extend the variable table
      in the safety checking functions,
      and then we prove it on the safety checking functions by induction."))
