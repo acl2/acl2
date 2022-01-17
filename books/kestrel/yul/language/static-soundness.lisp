@@ -1496,3 +1496,26 @@
              :expand ((check-safe-statement stmt
                                             (cstate-to-vars cstate)
                                             (funenv-to-funtable funenv)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule exec-top-block-static-soundness
+  :short "Top-level static soundness theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This applies to the top-level block.
+     If the block is safe,
+     then its execution can only return either a final state
+     or a limit error, never any other kind of error."))
+  (implies (not (resulterrp (check-safe-top-block block)))
+           (b* ((cstate (exec-top-block block limit)))
+             (implies (not (resulterr-limitp cstate))
+                      (not (resulterrp cstate)))))
+  :enable (check-safe-top-block
+           exec-top-block
+           resulterr-limitp)
+  :disable exec-block-static-soundness
+  :use (:instance exec-block-static-soundness
+        (cstate (cstate nil))
+        (funenv nil)))
