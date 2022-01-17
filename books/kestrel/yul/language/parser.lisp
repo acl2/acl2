@@ -27,7 +27,13 @@
   (xdoc::topstring
    (xdoc::p
     "This is a simple parser for Yul code.
-     The main entry point is @('parse-yul'), which takes a string containing a Yul block."))
+     The parser <see topic='@(url lexer)'>lexes</see>
+     and <see topic='@(url tokenizer)'>tokenizes</see>
+     according to the lexical grammar rules,
+     and then parses according to the syntactic grammar rules.
+     See @(see grammar-new).")
+   (xdoc::p
+    "The primary API for parsing Yul is @(see parse-yul) and @(see parse-yul-bytes)."))
   :order-subtopics t
   :default-parent t)
 
@@ -1778,9 +1784,13 @@
 
 (define parse-yul ((yul-string stringp))
   :returns (block? block-resultp)
-  :short "Parses the bytes of @('yul-string') into abstract syntax."
-  :long "Returns either a block or a resulterrp.
-         Yul object notation is not supported at this time."
+  :short "Parses a Yul source program string into abstract syntax."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "@('yul-string') must contain the surface syntax of a single Yul block.")
+   (xdoc::p "Returns either a block or a resulterrp.
+             Yul object notation is not supported at this time."))
   (b* ((tokens (tokenize-yul yul-string))
        ((when (resulterrp tokens))
         tokens)
@@ -1802,10 +1812,7 @@
   (xdoc::topstring
    (xdoc::p
     "This does the same thing as @(see parse-yul), but does not need to
-convert the string to bytes first.")
-   (xdoc::p
-    "Returns either a block or a resulterrp.
-         Yul object notation is not supported at this time."))
+convert the string to bytes first."))
   (b* ((tokens (tokenize-yul-bytes yul-bytes))
        ((when (resulterrp tokens))
         tokens)

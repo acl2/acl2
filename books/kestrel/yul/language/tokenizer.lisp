@@ -21,8 +21,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a simple tokenizer for Yul code.
-     The main entry point is @('tokenize-yul')."))
+    "This is a simple tokenizer for Yul code.  The tokenizer simply lexes and
+     then discards comments and whitespace.")
+   (xdoc::p
+    "The primary API for tokenizing is @(see tokenize-yul) and @(see tokenize-yul-bytes)."))
   :order-subtopics t
   :default-parent t)
 
@@ -150,10 +152,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The returned trees are for rulenames keyword, literal, identifier, or symbol.
+    "The returned trees are for rulenames @('keyword'), @('literal'), @('identifier'), or @('symbol').
+     Each token is represented by an @(see abnf::tree).
      Discards comments and whitespace.  If the input structure from any lexeme
-     down to the specific token type is incorrect, returns resulterrp.
-     If the input string ends in the middle of a token, returns resulterrp."))
+     down to the specific token type is incorrect, returns an error result value of type
+     @(see fty::resulterr) instead of a list of tokens.
+     Also, if the input string ends in the middle of a token, returns @('resulterr')."))
   (b* (((mv erp lexeme-trees) (lexemeize-yul yul-string))
        ((when erp) (err "problem lexing yul-string"))
        (subtoken-trees (filter-and-reduce-lexeme-tree-to-subtoken-trees lexeme-trees))
@@ -169,13 +173,7 @@
   (xdoc::topstring
    (xdoc::p
     "This does the same thing as @(see tokenize-yul), but does not need to
-convert the string to bytes first.")
-   (xdoc::p
-    "The returned tokens are for rulenames keyword, literal, identifier, or
-     symbol.  Each token is represented by an @(abnf::tree).
-     Discards comments and whitespace.  If the input structure from any lexeme
-     down to the specific token type is incorrect, returns resulterrp.
-     If the input bytes end in the middle of a token, returns resulterrp."))
+convert the string to bytes first."))
   (b* (((mv erp lexeme-trees) (lexemeize-yul-bytes yul-bytes))
        ((when erp) (err "problem lexing yul-bytes"))
        (subtoken-trees (filter-and-reduce-lexeme-tree-to-subtoken-trees lexeme-trees))

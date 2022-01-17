@@ -30,6 +30,8 @@
     "This is a simple lexer for the Yul lexical grammar.  The grammar is defined in ABNF.
      See @(see grammar-new).")
    (xdoc::p
+    "The primary API for lexing Yul is @(see lexemeize-yul) and @(see lexemeize-yul-bytes).")
+   (xdoc::p
     "The lexer is defined in three sections:")
    (xdoc::ol
     (xdoc::li
@@ -1024,10 +1026,13 @@
 (define lexemeize-yul ((yul-string stringp))
   :returns (mv (erp booleanp) (yul-lexemes abnf::tree-listp))
   :short "Lexes the bytes of @('yul-string') into a list of lexemes."
-  :long "A lexeme is a token, comment, or whitespace.  Lexemize-yul returns
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A lexeme is a token, comment, or whitespace.  Lexemize-yul returns
      two values: an error flag and a list of these lexemes in @('abnf::tree') form.
      Lexemes are further separated into keyword, literal, identifier, or
-     symbol.  Recombining these lexemes is done in the @(see parser)."
+     symbol.  Recombining these lexemes is done in the @(see parser)."))
   (b* (((mv trees rest-input)
         (lex-repetition-*-lexeme (acl2::string=>nats yul-string)))
        ;; It is probably impossible for trees to be resulterrp, since
@@ -1050,10 +1055,10 @@
 
 ;; A variation on lexemize-yul that takes a list of bytes
 (define lexemeize-yul-bytes ((yul-bytes nat-listp))
-  :short "Lexes the bytes into a list of lexemes."
-  :long "This does the same thing as @(see lexemize-yul), but does not need to
-convert the string to bytes first."
   :returns (mv (erp booleanp) (yul-lexemes abnf::tree-listp))
+  :short "Lexes the bytes into a list of lexemes."
+  :long "This does the same thing as @(see lexemeize-yul), but does not need to
+convert the string to bytes first."
   (b* (((mv trees rest-input)
         (lex-repetition-*-lexeme yul-bytes))
        ;; It is probably impossible for trees to be resulterrp, since
