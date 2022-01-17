@@ -80,29 +80,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist identifier-identifier-alist
-  :short "Fixtype of alists from identifiers to identifiers."
-  :key-type identifier
-  :val-type identifier
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil nil
-  :pred identifier-identifier-alistp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled identifier-listp-of-strip-cars-when-identifier-identifier-alistp
-  (implies (identifier-identifier-alistp alist)
-           (identifier-listp (strip-cars alist))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled identifier-listp-of-strip-cdrs-when-identifier-identifier-alistp
-  (implies (identifier-identifier-alistp alist)
-           (identifier-listp (strip-cdrs alist))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod renaming
   :short "Fixtype of renamings."
   :long

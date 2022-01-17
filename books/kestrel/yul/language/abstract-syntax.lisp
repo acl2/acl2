@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -152,6 +152,8 @@
            (identifier-setp (omap::keys m)))
   :enable omap::keys)
 
+;;;;;;;;;;;;;;;;;;;;
+
 (defrule identifier-setp-of-values-when-identifier-identifier-mapp
   (implies (identifier-identifier-mapp m)
            (identifier-setp (omap::values m)))
@@ -163,6 +165,29 @@
   :short "Fixtype of errors and omaps from identifiers to identifiers."
   :ok identifier-identifier-map
   :pred identifier-identifier-map-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defalist identifier-identifier-alist
+  :short "Fixtype of alists from identifiers to identifiers."
+  :key-type identifier
+  :val-type identifier
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil nil
+  :pred identifier-identifier-alistp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled identifier-listp-of-strip-cars-when-identifier-identifier-alistp
+  (implies (identifier-identifier-alistp alist)
+           (identifier-listp (strip-cars alist))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled identifier-listp-of-strip-cdrs-when-identifier-identifier-alistp
+  (implies (identifier-identifier-alistp alist)
+           (identifier-listp (strip-cdrs alist))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
