@@ -1780,7 +1780,7 @@
   :returns (block? block-resultp)
   :short "Parses the bytes of @('yul-string') into abstract syntax."
   :long "Returns either a block or a resulterrp.
-         Yul objects are not supported at this time."
+         Yul object notation is not supported at this time."
   (b* ((tokens (tokenize-yul yul-string))
        ((when (resulterrp tokens))
         tokens)
@@ -1798,8 +1798,14 @@
 (define parse-yul-bytes ((yul-bytes nat-listp))
   :returns (block? block-resultp)
   :short "Parses the Yul source program bytes into abstract syntax."
-  :long "Returns either a block or a resulterrp.
-         Yul objects are not supported at this time."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does the same thing as @(see parse-yul), but does not need to
+convert the string to bytes first.")
+   (xdoc::p
+    "Returns either a block or a resulterrp.
+         Yul object notation is not supported at this time."))
   (b* ((tokens (tokenize-yul-bytes yul-bytes))
        ((when (resulterrp tokens))
         tokens)
