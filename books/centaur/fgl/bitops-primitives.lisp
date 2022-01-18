@@ -51,7 +51,11 @@
    acl2::binary-logeqv
    +carry
    +carry-trunc
-   +carry-ext))
+   +carry-ext
+   floor
+   mod
+   truncate
+   rem))
 
 
 
@@ -699,3 +703,58 @@
                   
 ;; (remove-fgl-rewrite int-less-than-0)
 ;; (add-fgl-definition int-less-than-0)
+
+
+
+(def-fgl-primitive floor (x y)
+  (b* (((unless (and (gobj-syntactic-integerp x)
+                     (gobj-syntactic-integerp y)))
+        (mv nil nil interp-st))
+       (x-bits (gobj-syntactic-integer->bits x))
+       (y-bits (gobj-syntactic-integer->bits y)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (ans-bits logicman)
+               (bfr-floor-ss x-bits y-bits logicman)
+               (mv t (mk-g-integer ans-bits) interp-st)))
+  :formula-check bitops-formula-checks)
+
+
+(def-fgl-primitive mod (x y)
+  (b* (((unless (and (gobj-syntactic-integerp x)
+                     (gobj-syntactic-integerp y)))
+        (mv nil nil interp-st))
+       (x-bits (gobj-syntactic-integer->bits x))
+       (y-bits (gobj-syntactic-integer->bits y)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (ans-bits logicman)
+               (bfr-mod-ss x-bits y-bits logicman)
+               (mv t (mk-g-integer ans-bits) interp-st)))
+  :formula-check bitops-formula-checks)
+
+
+(def-fgl-primitive truncate (x y)
+  (b* (((unless (and (gobj-syntactic-integerp x)
+                     (gobj-syntactic-integerp y)))
+        (mv nil nil interp-st))
+       (x-bits (gobj-syntactic-integer->bits x))
+       (y-bits (gobj-syntactic-integer->bits y)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (ans-bits logicman)
+               (bfr-truncate-ss x-bits y-bits logicman)
+               (mv t (mk-g-integer ans-bits) interp-st)))
+  :formula-check bitops-formula-checks)
+
+
+(def-fgl-primitive rem (x y)
+  (b* (((unless (and (gobj-syntactic-integerp x)
+                     (gobj-syntactic-integerp y)))
+        (mv nil nil interp-st))
+       (x-bits (gobj-syntactic-integer->bits x))
+       (y-bits (gobj-syntactic-integer->bits y)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (ans-bits logicman)
+               (bfr-rem-ss x-bits y-bits logicman)
+               (mv t (mk-g-integer ans-bits) interp-st)))
+  :formula-check bitops-formula-checks)
+
+
