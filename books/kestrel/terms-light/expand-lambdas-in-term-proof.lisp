@@ -63,48 +63,48 @@
            (pseudo-termp (wrap-term-in-lambda body lambda-formals args)))
   :hints (("Goal" :in-theory (enable wrap-term-in-lambda))))
 
-(defthm EMPTY-EVAL-of-cdr-of-assoc-equal
-  (IMPLIES (AND (SYMBOLP TERM)
-                ;(MEMBER-EQUAL TERM LAMBDA-FORMALS)
-        ;        (SYMBOL-LISTP LAMBDA-FORMALS)
-                ;(PSEUDO-TERM-LISTP ARGS)
-       ;         (EQUAL (LEN LAMBDA-FORMALS) (LEN ARGS))
-                TERM)
-           (EQUAL (EMPTY-EVAL (CDR (ASSOC-EQUAL TERM alist)) A)
-                  (CDR (ASSOC-EQUAL TERM (PAIRLIS$ (strip-cars alist)
-                                                   (EMPTY-EVAL-LIST (strip-cdrs alist)
-                                                                     A))))))
+;this holds for any evaluator?
+;term may often be a var
+(defthmd empty-eval-of-cdr-of-assoc-equal
+  (equal (empty-eval (cdr (assoc-equal term alist)) a)
+         ;; evaluates all the terms in the alist wrt a and then looks up the term:
+         (cdr (assoc-equal term (pairlis$ (strip-cars alist)
+                                         (empty-eval-list (strip-cdrs alist)
+                                                          a)))))
   :hints (("Goal" :in-theory (enable PAIRLIS$ assoc-equal))))
 
 (defthm empty-eval-of-wrap-term-in-lambda-when-symbolp
-  (implies (and (symbolp term)
+  (implies (and (symbolp var)
 ;                (symbol-listp lambda-formals)
 ;                (pseudo-term-listp args)
                 (equal (len lambda-formals) (len args)))
-           (equal (empty-eval (wrap-term-in-lambda term lambda-formals args) a)
-                  (if (equal term nil) ; gross exception in defevaluator
+           (equal (empty-eval (wrap-term-in-lambda var lambda-formals args) a)
+                  (if (equal var nil) ; gross exception in defevaluator
                       nil
-                    (if (member-equal term lambda-formals)
-                        (empty-eval (cdr (assoc-equal term (pairlis$ lambda-formals args)))
+                    (if (member-equal var lambda-formals)
+                        (empty-eval (cdr (assoc-equal var (pairlis$ lambda-formals args)))
                                      a)
-                      (empty-eval term a)))))
+                      (empty-eval var a)))))
   :hints (("Goal" :in-theory (enable wrap-term-in-lambda
-                                     ;assoc-equal-iff
+                                     ;;assoc-equal-iff
+                                     empty-eval-of-cdr-of-assoc-equal
                                      ))))
 
-(include-book "kestrel/alists-light/lookup-equal" :dir :system)
-(include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
+;(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
+(local (include-book "kestrel/alists-light/lookup-equal-lst" :dir :system))
 
 ;this holds for any evaluator?
-(defthm empty-eval-list-when-symbol-listp
+(local
+ (defthm empty-eval-list-when-symbol-listp
   (implies (and (symbol-listp vars)
-                (not (member-equal nil vars)))
+                (not (member-equal nil vars)) ;evaluating nil just gives nil
+                )
            (equal (empty-eval-list vars a)
                   (lookup-equal-lst vars a)))
   :hints (("Goal" :in-theory (enable ;empty-eval-list
                               (:i len)
                               LOOKUP-EQUAL)
-           :induct (len vars))))
+           :induct (len vars)))))
 
 ;; Checks whether ALIST1 and ALIST2 are equivalent wrt the KEYS.  For these
 ;; purposes, not having a binding for a key is equivalent to binding it to nil.
@@ -202,16 +202,18 @@
            (equal (assoc-equal key (pairlis$ keys vals))
                   nil)))
 
-(defthm assoc-equal-of-pairlis$-of-lookup-equal-lst-same
+(local
+ (defthm assoc-equal-of-pairlis$-of-lookup-equal-lst-same
   (implies (alistp alist)
            (equal (assoc-equal key (pairlis$ keys (lookup-equal-lst keys alist)))
                   (if (member-equal key keys)
                       (cons key (cdr (assoc-equal key alist)))
                     nil)))
-  :hints (("Goal" :in-theory (enable assoc-equal lookup-equal-lst pairlis$ LOOKUP-EQUAL))))
+  :hints (("Goal" :in-theory (enable assoc-equal lookup-equal-lst pairlis$ LOOKUP-EQUAL)))))
 
 
-(defthm alists-equiv-on-of-pairlis$-of-lookup-equal-lst-same
+(local
+ (defthm alists-equiv-on-of-pairlis$-of-lookup-equal-lst-same
   (alists-equiv-on keys
                    (pairlis$ keys (lookup-equal-lst keys a))
                    a)
@@ -221,7 +223,7 @@
 ;:induct (ALISTS-EQUIV-ON KEYS a a)
            :in-theory (enable pairlis$ lookup-equal
                               assoc-equal-iff
-                              (:I len)))))
+                              (:I len))))))
 
 ;; term may have free vars not among the lambda formals
 (defthm empty-eval-of-wrap-term-in-lambda
@@ -296,7 +298,8 @@
                             MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
-                            empty-eval-of-fncall-args)
+                            empty-eval-of-fncall-args
+                            empty-eval-of-cdr-of-assoc-equal)
                            (pairlis$
                             set-difference-equal
                             empty-eval-of-fncall-args-back)))))
@@ -330,7 +333,8 @@
                             MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
-                            empty-eval-of-fncall-args)
+                            empty-eval-of-fncall-args
+                            empty-eval-of-cdr-of-assoc-equal)
                            (pairlis$
                             set-difference-equal
                             empty-eval-of-fncall-args-back)))))
@@ -388,7 +392,7 @@
            (not (member-equal var (free-vars-in-term (expand-lambdas-in-term term))))))
 
 ;; This is needed due to a deficiency in how deevaluator evaluates NIL, which
-;; is syntactually a variable although not a legal one:
+;; is syntactically a variable although not a legal one:
 (mutual-recursion
  (defun no-nils-in-termp (term)
    (declare (xargs :guard (pseudo-termp term)))
