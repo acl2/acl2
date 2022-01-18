@@ -12,6 +12,7 @@
 
 (include-book "expand-lambdas-in-term")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
+(include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
@@ -69,9 +70,9 @@
   (equal (empty-eval (cdr (assoc-equal term alist)) a)
          ;; evaluates all the terms in the alist wrt a and then looks up the term:
          (cdr (assoc-equal term (pairlis$ (strip-cars alist)
-                                         (empty-eval-list (strip-cdrs alist)
-                                                          a)))))
-  :hints (("Goal" :in-theory (enable PAIRLIS$ assoc-equal))))
+                                          (empty-eval-list (strip-cdrs alist)
+                                                           a)))))
+  :hints (("Goal" :in-theory (enable pairlis$ assoc-equal))))
 
 (defthm empty-eval-of-wrap-term-in-lambda-when-symbolp
   (implies (and (symbolp var)
@@ -106,21 +107,6 @@
                               LOOKUP-EQUAL)
            :induct (len vars)))))
 
-;; Checks whether ALIST1 and ALIST2 are equivalent wrt the KEYS.  For these
-;; purposes, not having a binding for a key is equivalent to binding it to nil.
-(defun alists-equiv-on (keys alist1 alist2)
-  (if (endp keys)
-      t
-    (let ((key (first keys)))
-      (and (equal (cdr (assoc-equal key alist1)) ; ok if bound to nil in one alist and not bound in the other
-                  (cdr (assoc-equal key alist2)))
-           (alists-equiv-on (rest keys) alist1 alist2)))))
-
-(defthm alists-equiv-on-of-union-equal
-  (equal (alists-equiv-on (union-equal keys1 keys2) alist1 alist2)
-         (and (alists-equiv-on keys1 alist1 alist2)
-              (alists-equiv-on keys2 alist1 alist2))))
-
 ;; empty-eval gives the same result if the alist is changed to one that equivalent for the free vars of the term
 (defthm-flag-free-vars-in-term
   (defthm equal-of-empty-eval-and-empty-eval-when-alists-equiv-on
@@ -142,60 +128,17 @@
                             empty-eval-of-fncall-args)
                            (empty-eval-of-fncall-args-back)))))
 
-(defthm ALISTS-EQUIV-ON-of-cons-and-cons-same
-  (implies (ALISTS-EQUIV-ON KEYS alist1 alist2)
-           (ALISTS-EQUIV-ON KEYS
-                            (CONS pair alist1)
-                            (CONS pair alist2))))
-
-(defthm ALISTS-EQUIV-ON-of-cons-and-cons-same-2
-  (implies (ALISTS-EQUIV-ON (remove-equal (car pair) KEYS) alist1 alist2)
-           (ALISTS-EQUIV-ON KEYS
-                            (CONS pair alist1)
-                            (CONS pair alist2))))
-
-(defthm equal-of-cdr-of-assoc-equal-and-cdr-of-assoc-equal-when-alists-equiv-on
-  (implies (and (alists-equiv-on keys alist1 alist2)
-                (member-equal key keys))
-           (equal (equal (cdr (assoc-equal key alist1))
-                         (cdr (assoc-equal key alist2)))
-                  t)))
-
-(defun cdr-remove-caar-induct (x y)
-  (if (endp x)
-      (list x y)
-    (cdr-remove-caar-induct (cdr x) (remove-equal (caar x) y))))
-
-(defthm alists-equiv-on-of-append-and-append-same
-  (implies (and (alists-equiv-on (set-difference-equal keys (strip-cars alist1))
-                                 alist2
-                                 alist3)
-                (alistp alist1)
-;                (no-duplicatesp-equal (strip-cars alist1)) ;drop?
-                )
-           (alists-equiv-on keys
-                            (append alist1 alist2)
-                            (append alist1 alist3)))
-  :hints (("subgoal *1/2" :cases ((equal (car keys) (caar alist1))))
-          ("Goal" :expand ((STRIP-CARS ALIST1)
-                           (ALISTS-EQUIV-ON KEYS (APPEND ALIST1 ALIST2)
-                                            (APPEND ALIST1 ALIST3)))
-           :induct (cdr-remove-caar-induct ALIST1 keys)
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (enable append
-                              ))))
-
 (defthm equal-of-car-of-assoc-equal-same
   (implies (alistp alist)
            (iff (equal key (car (assoc-equal key alist)))
                 (or (equal key nil)
                     (assoc-equal key alist)))))
 
-(defun cdr-remove-caar-induct-2 (x y)
-  (if (or (endp x)
-          (endp y))
-      (list x y)
-    (cdr-remove-caar-induct-2 (cdr x) (remove-equal (caar x) y))))
+;; (defun cdr-remove-caar-induct-2 (x y)
+;;   (if (or (endp x)
+;;           (endp y))
+;;       (list x y)
+;;     (cdr-remove-caar-induct-2 (cdr x) (remove-equal (caar x) y))))
 
 (defthm assoc-equal-of-pairlis$-when-not-member-equal
   (implies (not (member-equal key keys))
