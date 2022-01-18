@@ -65,17 +65,6 @@
                         (con-and-dis-eval my-make-flag-eval)
                         (con-and-dis-eval-list my-make-flag-eval-list)))))
 
-;; ;changes the evaluator
-;; (defthm my-make-flag-eval-of-disjoin-of-sublis-var-and-simplify-lst
-;;   (implies (and (alistp a)
-;;                 (pseudo-term-listp clause))
-;;            (iff (my-make-flag-eval (disjoin (sublis-var-and-simplify-lst nil clause nil nil)) a)
-;;                 (my-make-flag-eval (disjoin clause) a)))
-;;   :hints (("Goal" :use (:functional-instance
-;;                         equality-eval-of-disjoin-of-sublis-var-and-simplify-lst-special
-;;                         (equality-eval my-make-flag-eval)
-;;                         (equality-eval-list my-make-flag-eval-list)))))
-
 ;changes the evaluator
 (defthm my-make-flag-eval-of-disjoin-of-push-unary-functions-in-literals
   (implies (and (symbol-listp unary-fns)

@@ -13,9 +13,21 @@
 (include-book "tools/flag" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
 (include-book "kestrel/clause-processors/simplify-after-using-conjunction" :dir :system)
+(include-book "kestrel/clause-processors/subst-flag" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-list-listp" :dir :system))
 
 (local (in-theory (disable disjoin)))
+
+;; changes the evaluator
+(defthm my-make-flag-eval-of-disjoin-of-sublis-var-and-simplify-lst
+  (implies (and (alistp a)
+                (pseudo-term-listp clause))
+           (iff (my-make-flag-eval (disjoin (sublis-var-and-simplify-lst nil clause nil nil)) a)
+                (my-make-flag-eval (disjoin clause) a)))
+  :hints (("Goal" :use (:functional-instance
+                        equality-eval-of-disjoin-of-sublis-var-and-simplify-lst-special
+                        (equality-eval my-make-flag-eval)
+                        (equality-eval-list my-make-flag-eval-list)))))
 
 (defun my-make-flag-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
