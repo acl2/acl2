@@ -273,6 +273,7 @@
                                             a))))
   :hints (("Goal" :in-theory (enable wrap-terms-in-lambdas))))
 
+;; The result of substituting evaluates the same as if we had made a lambda.
 ;todo: exclude term from being nil, or containing a nil as a subterm, since defevaluator has gross behavior on nil.
 ;move
 (defthm-flag-sublis-var-simple
@@ -348,11 +349,6 @@
                 (subsetp-equal (FREE-VARS-IN-TERMS (STRIP-CDRS ALIST)) free))
            (SUBSETP-EQUAL (FREE-VARS-IN-TERM (SUBLIS-VAR-SIMPLE ALIST TERM))
                           free)))
-
-(defthm free-vars-in-terms-of-true-list-fix
-  (equal (free-vars-in-terms (true-list-fix terms))
-         (free-vars-in-terms terms))
-  :hints (("Goal" :in-theory (enable true-list-fix free-vars-in-terms))))
 
 (defthm-flag-expand-lambdas-in-term
   (defthm free-vars-in-term-of-expand-lambdas-in-term
