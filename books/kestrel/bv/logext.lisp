@@ -656,3 +656,13 @@
                 (force (integerp y)))
            (equal (LOGEXT smallsize (+ (LOGEXT bigsize y) x))
                   (LOGEXT smallsize (+ x y)))))
+
+;gen
+(defthm bvchop-times-logext-32
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvchop 32 (* x (logext 32 y)))
+                  (bvchop 32 (* x y))))
+  :hints (("Goal" :in-theory (disable bvchop-of-*-of-bvchop)
+           :use ((:instance bvchop-of-*-of-bvchop (size 32) (x (logext 32 y)) (y x))
+                 (:instance bvchop-of-*-of-bvchop (size 32) (x y) (y x))))))
