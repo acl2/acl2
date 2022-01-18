@@ -44,7 +44,7 @@
      referenced in @(see static-safety-checking-evm).")
    (xdoc::p
     "In order to enter the information concisely,
-     we introduce a macro that builds a nest of @(tsee omap::udpates)."))
+     we introduce a macro that builds a nest of @(tsee omap::update)s."))
   (evm-funtable-build "stop" 0 0
                       "add" 2 1
                       "sub" 2 1
