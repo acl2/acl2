@@ -105,6 +105,11 @@
                       (free-vars-in-terms terms)))
   :hints (("Goal" :in-theory (enable free-vars-in-terms))))
 
+(defthm free-vars-in-terms-of-true-list-fix
+  (equal (free-vars-in-terms (true-list-fix terms))
+         (free-vars-in-terms terms))
+  :hints (("Goal" :in-theory (enable true-list-fix free-vars-in-terms))))
+
 (defthm-flag-free-vars-in-term
   (defthm no-duplicatesp-of-free-vars-in-term
     (no-duplicatesp (free-vars-in-term term))
