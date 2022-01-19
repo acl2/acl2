@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1412,14 +1412,14 @@
     "This function generates the subformula")
    (xdoc::codeblock
     "(and (implies context1<x1,...,xn>"
-    "              (and (oldp update1-y1<x1,...,xn>)"
+    "              (and (oldp update1-x1<x1,...,xn>)"
     "                   ..."
-    "                   (oldp update1-yp<x1,...,xn>)))"
+    "                   (oldp update1-xp<x1,...,xn>)))"
     "     ..."
-    "     (implies contextm<x1,...,xn>"
-    "              (and (oldp updatem-y1<x1,...,xn>)"
+    "     (implies contextr<x1,...,xn>"
+    "              (and (oldp updater-x1<x1,...,xn>)"
     "                   ..."
-    "                   (oldp updatem-yp<x1,...,xn>))))")
+    "                   (oldp updater-xp<x1,...,xn>))))")
    (xdoc::p
     "of the @(':oldp-of-rec-call-args') applicability condition."))
   (b* (((when (endp rec-calls)) *t*)
