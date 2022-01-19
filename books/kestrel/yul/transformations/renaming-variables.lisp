@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ renaming-variables
-  :parents (transformation)
+  :parents (transformations)
   :short "Renaming of variables."
   :long
   (xdoc::topstring
