@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ renaming-functions
-  :parents (transformation)
+  :parents (transformations)
   :short "Renaming of functions."
   :long
   (xdoc::topstring
