@@ -27,6 +27,28 @@
 
 ;; TODO: Add tests
 
+;; move
+;; Returns the acl2-defaults-table as an alist.
+(defund acl2-defaults-table-alist (wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (let ((result (table-alist 'acl2-defaults-table wrld)))
+    (if (not (alistp result))
+        (er hard? 'acl2-defaults-table-alist "ACL2 defaults table is not an alist.") ; should never happen
+      result)))
+
+(defthm alistp-of-acl2-defaults-table-alist
+  (alistp (acl2-defaults-table-alist wrld))
+  :hints (("Goal" :in-theory (enable acl2-defaults-table-alist))))
+
+;; Sets the ignore-ok property in WRLD to t.
+;; Returns a new world.
+(defund set-ignore-ok-in-world (wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (putprop 'acl2-defaults-table
+           'table-alist
+           (acons :ignore-ok t (acl2-defaults-table-alist wrld))
+           wrld))
+
 ;; Throws an error if macroexpansion fails.  Returns the term with one macro call now expanded.
 (defund magic-macroexpand1$$ (term ctx wrld state)
   (declare (xargs :mode :program
@@ -370,6 +392,7 @@
                   :mode :program ; since translation is done
                   :stobjs state))
   (let* ((wrld (w state))
+         (wrld (set-ignore-ok-in-world wrld))
          (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
                                         (fn-arities (strip-cars function-renaming) wrld)))
          ;; New fns from the renaming may appear in TERM, but they are not yet
