@@ -135,31 +135,6 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "build::cert.pl" "Build Library"))
-
-   (xdoc::p
-    "The <see topic=\"BUILD____CERT.PL\">cert.pl</see> shell command
-     by default now makes use of @(see useless-runes) files when they
-     are available.  It does that by binding the environment variable
-     @('ACL2_USELESS_RUNES=-25') unless the environment variable is
-     already defined, in which case it heeds the existing value.
-     To turn off the use of useless runes, you can set that environment
-     variable to the empty string, e.g.")
-
-   (xdoc::@{}
-    "ACL2_USELESS_RUNES=  cert.pl ..")
-
-   (xdoc::p "The above change does not apply to ACL2(r).")
-
-   (xdoc::p
-    "In ACL2(r), the useless runes files that were precomputed for ACL2
-     could cause certification errors if someone tried to use them,
-     using either @(see certify-book) or
-     <see topic=\"BUILD____CERT.PL\">cert.pl</see>.
-     Now the useless runes feature is turned off for ACL2(r).")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
    (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
 
    (xdoc::p
@@ -213,12 +188,50 @@
 
    (xdoc::h3 "Build System Updates")
 
+   (xdoc::h4 "Hons Always Enabled")
+
    (xdoc::p
     "As discussed in topic @(see note-8-5), essentially all support for
      building ACL2 without the @(see hons-enabled) features has been removed.
      The build system has been similarly updated, in particular by eliminating
      the @('hons-only') value for @('cert_param') and the exported variable
      @('ACL2_HAS_HONS').")
+
+   (xdoc::h4 "Useless Runes Updates")
+
+   (xdoc::p
+    "The <see topic='@(url build::cert.pl)'>cert.pl</see> shell command
+     by default now makes use of @(see useless-runes) files when they
+     are available.  It does that by binding the environment variable
+     @('ACL2_USELESS_RUNES=-25') unless the environment variable is
+     already defined, in which case it heeds the existing value.")
+
+   (xdoc::p
+     "This behavior is now the same as using @('make') to certify
+     community books.  Previously there was an unexpected slowdown when using
+     <see topic='@(url build::cert.pl)'>cert.pl</see>
+     to certify a needed subset of books prerequisite to a particular
+     book of interest, when those prerequisite books had precomputed
+     @('*@useless-runes.lsp') files.
+     Note that the default behavior of
+     @(see certify-book) in ACL2 has not changed, just the default
+     behavior of <see topic='@(url build::cert.pl)'>cert.pl</see>.")
+
+   (xdoc::p
+    "To turn off the use of useless runes, you can set that environment
+     variable to the empty string, e.g.:")
+
+   (xdoc::@{}
+    "ACL2_USELESS_RUNES=  cert.pl ..")
+
+   (xdoc::p "The above change does not apply to ACL2(r).")
+
+   (xdoc::p
+    "In ACL2(r), the useless runes files that were precomputed for ACL2
+     could cause certification errors if someone tried to use them,
+     using either @(see certify-book) or
+     <see topic='@(url build::cert.pl)'>cert.pl</see>.
+     Now the useless runes feature has been turned off for ACL2(r).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
