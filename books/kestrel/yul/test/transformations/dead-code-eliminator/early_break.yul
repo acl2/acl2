@@ -22,7 +22,7 @@
 //
 // {
 //     let a := 20
-//     for { } lt(a, 40) { a := myadd(a, 2) }
+//     for { } mylt(a, 40) { a := myadd(a, 2) }
 //     {
 //         a := a
 //         break
