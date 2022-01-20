@@ -75,11 +75,10 @@ acl2::ifdef-undefine).</li>
 
 </ul>
 
-<p>@('cert.pl') was originally developed in 2008 by Sol Swords at <a
-href='http://www.centtech.com/'>Centaur Technology</a>, and has been actively
-used and improved since then.  It is now distributed in the @('build')
-directory of the Community Books, and is today the main tool behind
-@('books/GNUmakefile').</p>
+<p>@('cert.pl') was originally developed in 2008 by Sol Swords at Centaur
+Technology, and has been actively used and improved since then.  It is now
+distributed in the @('build') directory of the Community Books, and is today
+the main tool behind @('books/GNUmakefile').</p>
 
 
 <h3>Using @('cert.pl')</h3>

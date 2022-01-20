@@ -1,5 +1,5 @@
 ; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2021, Regents of the University of Texas
+; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -3533,13 +3533,6 @@
 ; Before we resume development of the waterfall, we introduce functions in
 ; support of gag-mode.
 
-(defmacro initialize-pspv-for-gag-mode (pspv)
-  `(if (gag-mode)
-       (change prove-spec-var ,pspv
-               :gag-state
-               *initial-gag-state*)
-     ,pspv))
-
 ; For debug only:
 ; (progn
 ;
@@ -4009,11 +4002,11 @@
 ;                  (cons #\1 (or-hit-msg t cl-id ttree)))
 ;            (proofs-co state) state nil))
 
-       ((and msg (gag-mode))
+       ((and msg gag-mode)
         (fms "~@0~|" (list (cons #\0 msg)) (proofs-co state) state nil))
        (t state))
       (cond
-       ((or (gag-mode)
+       ((or gag-mode
             (f-get-global 'raw-proof-format state))
         (print-splitter-rules-summary cl-id clauses ttree state))
        (t state))
@@ -9293,7 +9286,9 @@
                         (t (prove-loop2 (1+ forcing-round)
                                         nil
                                         pairs
-                                        (initialize-pspv-for-gag-mode new-pspv)
+                                        (change prove-spec-var new-pspv
+                                                :gag-state
+                                                *initial-gag-state*)
                                         hints ens wrld ctx state
                                         step-limit)))))))
 
@@ -9415,7 +9410,7 @@
         (mv-let (erp val state)
                 (pstack)
                 (declare (ignore erp val))
-                (print-gag-state state))))))))
+                (save-and-print-gag-state state))))))))
 
 (defun prove-loop0 (clauses pspv hints ens wrld ctx state)
 
@@ -9454,10 +9449,8 @@
           (pprogn
            (increment-timer 'other-time state)
            (f-put-global 'bddnotes nil state)
-           (if (gag-mode)
-               (pprogn (f-put-global 'gag-state *initial-gag-state* state)
-                       (f-put-global 'gag-state-saved nil state))
-             state)
+           (pprogn (f-put-global 'gag-state *initial-gag-state* state)
+                   (f-put-global 'gag-state-saved nil state))
            (mv-let (erp ttree state)
                    (bind-acl2-time-limit ; make *acl2-time-limit* be let-bound
                     (prove-loop0 clauses pspv hints ens wrld ctx state))

@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1425,7 +1425,7 @@
     (mv t (car vars) (cdr vars) indices wrapped body wrapper))
 
   :prepwork
-  ((defrule verify-guards-lemma
+  ((defrulel verify-guards-lemma
      (implies (symbol-listp x)
               (iff (consp x) x))))
 
@@ -1776,7 +1776,16 @@
                 fn term))
     :measure (pseudo-term-count term))
 
-  :prepwork ((set-state-ok t))
+  :prepwork ((set-state-ok t)
+             ;; for speed:
+             (local
+              (in-theory (disable default-car
+                                  default-cdr
+                                  acl2::apply$-badgep-properties
+                                  type-optionp-of-car-when-type-option-listp
+                                  typep-of-car-when-type-listp
+                                  symbol-listp
+                                  type-listp-when-not-consp))))
 
   :verify-guards nil ; done below
 
@@ -1828,12 +1837,14 @@
                                                              state)))
     (acl2::value (list (cons expr exprs)
                        (cons type types))))
+  :verify-guards nil ; done below
   ///
   (more-returns
    (val (and (consp val)
              (true-listp val))
         :name typeset-of-atc-gen-expr-cval-pure-list
-        :rule-classes :type-prescription)))
+        :rule-classes :type-prescription))
+  (verify-guards atc-gen-expr-cval-pure-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2070,7 +2081,7 @@
                            (type typep)
                            (limit pseudo-termp)
                            val)
-                    :hints nil)
+                    :hints nil) ; for speed
                state)
   :short "Generate a C statement from an ACL2 term."
   :long
@@ -3138,7 +3149,16 @@
                            (limit-body pseudo-termp)
                            (limit-all pseudo-termp)
                            val)
-                    :hints (("Goal" :in-theory (disable member-equal))))
+                    ;; for speed:
+                    :hints (("Goal" :induct (atc-gen-loop-stmt term
+                                                               inscope
+                                                               fn
+                                                               measure-for-fn
+                                                               measure-formals
+                                                               prec-fns
+                                                               proofs
+                                                               ctx
+                                                               state))))
                state)
   :short "Generate a C loop statement from an ACL2 term."
   :long
@@ -3197,6 +3217,7 @@
      we also return @('limit-body'), which is just for the loop body;
      this is in support for more modular proofs. "))
   (b* (((acl2::fun (irr)) (list (irr-stmt) nil nil nil nil nil))
+       (wrld (w state))
        ((mv okp test then else) (fty-check-if-call term))
        ((unless okp)
         (er-soft+ ctx t (irr)
@@ -3231,13 +3252,9 @@
                                                     ctx
                                                     state))
        ((when erp) (mv erp (irr) state))
-       (wrld (w state))
-       ((unless (plist-worldp wrld))
-        (prog2$ (raise "Internal error: world does not satisfy PLIST-WORLDP.")
-                (acl2::value (irr))))
        (formals (formals+ fn wrld))
        ((mv okp affect)
-        (b* (((when (member-equal else formals)) (mv t (list else)))
+        (b* (((when (member-eq else formals)) (mv t (list else)))
              ((mv okp terms) (fty-check-list-call else))
              ((when (and okp
                          (subsetp-eq terms formals)))
@@ -3268,20 +3285,14 @@
         (acl2::value (irr)))
        (body-stmt (make-stmt-compound :items body-items))
        (stmt (make-stmt-while :test test-expr :body body-stmt))
-       ((unless (symbol-listp affect))
-        (raise "Internal error: ~x0 is not a list of symbols." affect)
+       ((when (eq measure-for-fn 'quote))
+        (raise "Internal error: the measure function is QUOTE.")
         (acl2::value (irr)))
-       (wrld (w state))
-       ((unless (plist-worldp wrld))
-        (raise "Internal error: malformed world.")
-        (acl2::value (irr)))
-       (measure-call `(,measure-for-fn ,@measure-formals))
-       ((unless (pseudo-termp measure-call))
-        (raise "Internal error.")
-        (acl2::value (irr)))
+       (measure-call (pseudo-term-fncall measure-for-fn measure-formals))
        (limit `(binary-+ '1 (binary-+ ,body-limit ,measure-call))))
     (acl2::value (list stmt test then affect body-limit limit)))
   :measure (pseudo-term-count term)
+  :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p)))
   :prepwork
   ((local (include-book "std/typed-lists/symbol-listp" :dir :system)))
   ///
@@ -3291,7 +3302,45 @@
              (true-listp val))
         :name cons-true-listp-of-atc-gen-loop-stmt-val
         :rule-classes :type-prescription
-        :hints (("Goal" :in-theory (disable member-equal))))))
+        ;;  for speed:
+        :hints (("Goal" :induct (atc-gen-loop-stmt term
+                                                   inscope
+                                                   fn
+                                                   measure-for-fn
+                                                   measure-formals
+                                                   prec-fns
+                                                   proofs
+                                                   ctx
+                                                   state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-recognizer-to-type ((recognizer symbolp))
+  :returns (type type-optionp)
+  :short "C integer type or integer array type
+          corresponding to a recognizer name, if any."
+  (case recognizer
+    (scharp (type-schar))
+    (ucharp (type-uchar))
+    (sshortp (type-sshort))
+    (ushortp (type-ushort))
+    (sintp (type-sint))
+    (uintp (type-uint))
+    (slongp (type-slong))
+    (ulongp (type-ulong))
+    (sllongp (type-sllong))
+    (ullongp (type-ullong))
+    (schar-arrayp (type-pointer (type-schar)))
+    (uchar-arrayp (type-pointer (type-uchar)))
+    (sshort-arrayp (type-pointer (type-sshort)))
+    (ushort-arrayp (type-pointer (type-ushort)))
+    (sint-arrayp (type-pointer (type-sint)))
+    (uint-arrayp (type-pointer (type-uint)))
+    (slong-arrayp (type-pointer (type-slong)))
+    (ulong-arrayp (type-pointer (type-ulong)))
+    (sllong-arrayp (type-pointer (type-sllong)))
+    (ullong-arrayp (type-pointer (type-ullong)))
+    (t nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3367,28 +3416,7 @@
                                            ctx
                                            state))
           (type-fn (ffn-symb conjunct))
-          (type (case type-fn
-                  (scharp (type-schar))
-                  (ucharp (type-uchar))
-                  (sshortp (type-sshort))
-                  (ushortp (type-ushort))
-                  (sintp (type-sint))
-                  (uintp (type-uint))
-                  (slongp (type-slong))
-                  (ulongp (type-ulong))
-                  (sllongp (type-sllong))
-                  (ullongp (type-ullong))
-                  (schar-arrayp (type-pointer (type-schar)))
-                  (uchar-arrayp (type-pointer (type-uchar)))
-                  (sshort-arrayp (type-pointer (type-sshort)))
-                  (ushort-arrayp (type-pointer (type-ushort)))
-                  (sint-arrayp (type-pointer (type-sint)))
-                  (uint-arrayp (type-pointer (type-uint)))
-                  (slong-arrayp (type-pointer (type-slong)))
-                  (ulong-arrayp (type-pointer (type-ulong)))
-                  (sllong-arrayp (type-pointer (type-sllong)))
-                  (ullong-arrayp (type-pointer (type-ullong)))
-                  (t nil)))
+          (type (atc-recognizer-to-type type-fn))
           ((when (not type))
            (atc-typed-formals-prelim-alist fn
                                            formals
@@ -3512,7 +3540,16 @@
                :type (atc-gen-tyspecseq ref-type)))
        ((er params)
         (atc-gen-param-declon-list (cdr typed-formals) fn ctx state)))
-    (acl2::value (cons param params))))
+    (acl2::value (cons param params)))
+  :prepwork ((local (include-book "std/alists/top" :dir :system))
+             (local
+              (in-theory
+               (e/d
+                (symbol-listp-of-strip-cars-when-atc-symbol-type-alistp)
+                ;; for speed:
+                (always$
+                 member-equal
+                 symbol-name-lst))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3791,6 +3828,7 @@
                     ullongp-of-ullong-oct-const
                     ullongp-of-ullong-hex-const
                     sintp-of-sint-from-boolean
+                    condexpr
                     declar
                     assign
                     mv-nth-of-cons
@@ -3918,7 +3956,7 @@
      the names of the formals must be portable C identifiers.
      For each array formal @('a') of @('fn'),
      we generate a pointer variable @('a-ptr') as explained,
-     along with a binding @('(a (read-array a-ptr compst))'):
+     along with a binding @('(a (read-array (pointer->address a-ptr) compst))'):
      this binding relates the two variables,
      and lets us use the guard of @('fn') as hypothesis in the theorem,
      which uses @('a'),
@@ -3962,7 +4000,7 @@
      we introduce an additional @('a-ptr') variable,
      similarly to the case of non-recursive @('fn').
      We generate two bindings @('(a-ptr (read-var <a> compst))')
-     and @('(a (read-array a-ptr compst))'),
+     and @('(a (read-array (pointer->address a-ptr) compst))'),
      in that order.
      The first binding serves to tie @('a-ptr')
      to the corresponding variable in the computation state,
@@ -3977,7 +4015,7 @@
      the bindings are put into a @(tsee b*),
      which enforces the order.
      We generate no substitution map in @('pointer-subst') here,
-     because that only applied to @(tsee exec-fun),
+     because that only applies to @(tsee exec-fun),
      which is not used for C loops.")
    (xdoc::p
     "The reason for generating and using these bindings in the theorems,
@@ -3995,15 +4033,16 @@
   (b* (((when (endp typed-formals)) (mv nil nil nil nil))
        ((cons formal type) (car typed-formals))
        (formal-ptr (add-suffix-to-fn formal "-PTR"))
+       (formal-addr `(pointer->address ,formal-ptr))
        (formal-id `(ident ,(symbol-name formal)))
        (arrayp (type-case type :pointer))
        (bindings (if fn-recursivep
                      (if arrayp
                          (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                               `(,formal (read-array ,formal-ptr ,compst-var)))
+                               `(,formal (read-array ,formal-addr ,compst-var)))
                        (list `(,formal (read-var ,formal-id ,compst-var))))
                    (if arrayp
-                       (list `(,formal (read-array ,formal-ptr ,compst-var)))
+                       (list `(,formal (read-array ,formal-addr ,compst-var)))
                      nil)))
        (subst? (and arrayp
                     (list (cons formal formal-ptr))))
@@ -4014,12 +4053,13 @@
                                 ',(type-pointer->referenced type)))))
        (inst (if fn-recursivep
                  (if arrayp
-                     (list `(,formal (read-array (read-var ,formal-id
-                                                           ,compst-var)
+                     (list `(,formal (read-array (pointer->address
+                                                  (read-var ,formal-id
+                                                            ,compst-var))
                                                  ,compst-var)))
                    (list `(,formal (read-var ,formal-id ,compst-var))))
                (if arrayp
-                   (list `(,formal (read-array ,formal-ptr ,compst-var)))
+                   (list `(,formal (read-array ,formal-addr ,compst-var)))
                  nil)))
        ((mv more-bindings more-hyps more-subst more-inst)
         (atc-gen-outer-bindings-and-hyps (cdr typed-formals)
@@ -4068,8 +4108,8 @@
   (b* (((when (endp pointer-vars)) nil)
        (var (car pointer-vars))
        (hyps (loop$ for var2 in (cdr pointer-vars)
-                    collect `(not (equal (pointer->address? ,var)
-                                         (pointer->address? ,var2)))))
+                    collect `(not (equal (pointer->address ,var)
+                                         (pointer->address ,var2)))))
        (more-hyps (atc-gen-diff-address-hyps (cdr pointer-vars))))
     (append hyps more-hyps)))
 
@@ -4085,7 +4125,7 @@
   (xdoc::topstring
    (xdoc::p
     "The correctness theorem of a C function says that
-     executing the fucntion on a generic computation state
+     executing the function on a generic computation state
      (satisfying conditions in the hypotheses of the theorem)
      and on generic arguments
      yields an optional result (absent if the function is @('void'))
@@ -4113,7 +4153,8 @@
      the array variables are bound to
      the possibly modified arrays returned by @('fn')."))
   (cond ((endp mod-arrs) compst-var)
-        (t `(write-array ,(cdr (assoc-eq (car mod-arrs) pointer-subst))
+        (t `(write-array (pointer->address
+                          ,(cdr (assoc-eq (car mod-arrs) pointer-subst)))
                          ,(car mod-arrs)
                          ,(atc-gen-cfun-final-compustate (cdr mod-arrs)
                                                          pointer-subst
@@ -5198,7 +5239,7 @@
        (mod-var (car mod-vars))
        (ptr (cdr (assoc-eq mod-var pointer-subst))))
     (if ptr
-        `(write-array ,ptr
+        `(write-array (pointer->address ,ptr)
                       ,mod-var
                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
                                                       pointer-subst
@@ -5953,18 +5994,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-file ((tunit transunitp) (output-file stringp) state)
+(define atc-gen-file ((tunit transunitp)
+                      (output-file stringp)
+                      (pretty-printing pprint-options-p)
+                      state)
   :returns (mv erp val state)
   :mode :program
   :short "Pretty-print the generated C code (i.e. translation unit)
           to the output file."
-  (b* ((lines (pprint-transunit tunit)))
+  (b* ((lines (pprint-transunit tunit pretty-printing)))
     (pprinted-lines-to-file lines output-file state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-file-event ((tunit transunitp)
                             (output-file stringp)
+                            (pretty-printing pprint-options-p)
                             (print evmac-input-print-p)
                             state)
   :returns (mv erp
@@ -6010,7 +6055,10 @@
                            `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
-          (b* (((er &) (atc-gen-file ',tunit ,output-file state)))
+          (b* (((er &) (atc-gen-file ',tunit
+                                     ,output-file
+                                     ',pretty-printing
+                                     state)))
             (acl2::value '(value-triple :invisible))))))
     (acl2::value `(progn ,@progress-start?
                          ,file-gen-event
@@ -6039,6 +6087,7 @@
 
 (define atc-gen-everything ((fn1...fnp symbol-listp)
                             (output-file stringp)
+                            (pretty-printing pprint-options-p)
                             (proofs booleanp)
                             (prog-const symbolp)
                             (wf-thm symbolp)
@@ -6072,7 +6121,11 @@
        ((er (list tunit local-events exported-events &))
         (atc-gen-transunit fn1...fnp proofs prog-const wf-thm fn-thms
                            print names-to-avoid ctx state))
-       ((er file-gen-event) (atc-gen-file-event tunit output-file print state))
+       ((er file-gen-event) (atc-gen-file-event tunit
+                                                output-file
+                                                pretty-printing
+                                                print
+                                                state))
        (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events output-file)))
        (encapsulate

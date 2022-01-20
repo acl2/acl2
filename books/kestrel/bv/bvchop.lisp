@@ -15,6 +15,7 @@
 (include-book "../arithmetic-light/power-of-2p")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "../arithmetic-light/expt2"))
+(local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/times-and-divides"))
 (local (include-book "../arithmetic-light/divides"))
 (local (include-book "../arithmetic-light/plus"))
@@ -128,16 +129,16 @@
 (defthm bvchop-of-*-of-bvchop
    (implies (and (integerp x)
                  (integerp y))
-            (equal (bvchop n (* (bvchop n x) y))
-                   (bvchop n (* x y))))
+            (equal (bvchop size (* (bvchop size x) y))
+                   (bvchop size (* x y))))
    :hints (("Goal" :do-not '(generalize eliminate-destructors)
             :in-theory (enable bvchop))))
 
 (defthm bvchop-of-*-of-bvchop-arg2
    (implies (and (integerp x)
                  (integerp y))
-            (equal (bvchop n (* x (bvchop n y)))
-                   (bvchop n (* x y))))
+            (equal (bvchop size (* x (bvchop size y)))
+                   (bvchop size (* x y))))
    :hints (("Goal" :do-not '(generalize eliminate-destructors)
             :in-theory (enable bvchop))))
 
@@ -739,8 +740,8 @@
            (implies (unsigned-byte-p size (* (bvchop size x) (bvchop size y)))
                     (equal (bvchop size (* x y))
                            (* (bvchop size x) (bvchop size y)))))
-  :hints (("Goal" :use ((:instance bvchop-of-*-of-bvchop (n size))
-                        (:instance bvchop-of-*-of-bvchop-arg2 (n size)
+  :hints (("Goal" :use ((:instance bvchop-of-*-of-bvchop)
+                        (:instance bvchop-of-*-of-bvchop-arg2
                                    (x (bvchop size x))))
            :in-theory (disable bvchop-of-*-of-bvchop
                                bvchop-of-*-of-bvchop-arg2
@@ -752,3 +753,52 @@
                 (integerp x))
            (equal (bvchop (+ -1 size) (+ x (expt 2 size)))
                   (bvchop (+ -1 size) x))))
+
+(defthm bvchop-of-+-of-bvchop-arg3
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z))
+           (equal (bvchop size (+ x y (bvchop size z)))
+                  (bvchop size (+ x y z))))
+  :hints (("Goal" :in-theory (enable bvchop))))
+
+(defthm bvchop-of-+-of-*-of-bvchop
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z))
+           (equal (bvchop size (+ x (* y (bvchop size z))))
+                  (bvchop size (+ x (* y z))))))
+
+(defthm bvchop-of-*-of-expt-arg3
+  (implies (and (<= size size2)
+                (integerp x)
+                (integerp y)
+                (natp size)
+                (natp size2))
+           (equal (bvchop size (* x y (expt 2 size2)))
+                  0))
+  :hints (("Goal" :in-theory (enable bvchop))))
+
+(defthm bvchop-of-+-of-expt-arg2-arg3
+  (implies (and (<= size size2)
+                (integerp x)
+                (integerp y)
+                (integerp z)
+                (natp size)
+                (natp size2))
+           (equal (bvchop size (+ x (* y z (expt 2 size2))))
+                  (bvchop size x))))
+
+;gen?
+(defthm bvchop-31-of-*-of-2147483648
+  (IMPLIES (INTEGERP X)
+           (EQUAL (BVCHOP 31 (* 2147483648 X))
+                  0))
+  :hints (("Goal" :in-theory (enable bvchop))))
+
+(defthm bvchop-of-+-of---of-*-of-expt
+  (implies (and (integerp x)
+                (integerp y)
+                (natp size))
+           (equal (bvchop size (+ (- (* x (expt 2 size))) y))
+                  (bvchop size y))))

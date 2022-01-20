@@ -51,9 +51,8 @@ you to write type-safe programs that support efficient reasoning (by minimizing
 the need for type-related hypotheses) and also have good execution
 efficiency.</p>
 
-<p>FTY is now used extensively at <a href='http://www.centtech.com/'>Centaur
-Technology</a> for data structures in large libraries like @(see acl2::vl) and
-@(see acl2::sv).</p>
+<p>FTY has been used extensively at Centaur Technology for data structures in
+large libraries like @(see acl2::vl) and @(see acl2::sv).</p>
 
 <p>Here are the major components of FTY, roughly in order from low-level to
 high-level utilities:</p>

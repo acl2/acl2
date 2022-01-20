@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -60,7 +60,9 @@
                ensure-function-is-defined$
                ensure-function-is-guard-verified$
                ensure-function-is-logic-mode$
+               ensure-keyword-value-list$
                ensure-list-has-no-duplicates$
+               ensure-list-subset$
                ensure-symbol-is-fresh-event-name$
                ensure-value-is-boolean$
                ensure-value-is-function-name$
@@ -96,6 +98,7 @@
                irecursivep+
                keyword-listp
                keyword-symbol-alistp
+               keyword-value-list-to-alist
                lnfix
                make-event-terse
                make-evmac-appcond

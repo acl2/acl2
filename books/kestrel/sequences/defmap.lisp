@@ -189,7 +189,7 @@
            (and theorems
                 (equal 1 list-formal-count)
                 (let* ((list-formal (first list-formals))
-                       (fresh-var (fresh-var-name list-formal 0 all-formals))
+                       (fresh-var (fresh-symbol-aux list-formal 0 all-formals))
                        ;;have each name reflect the formal it's replacing?
                        (fresh-vars (fresh-var-names (len fixed-formals) 'tmp (cons fresh-var all-formals)))
                        (fresh-var-alist (pairlis$ fixed-formals fresh-vars) )

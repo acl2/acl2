@@ -137,7 +137,7 @@
         (let* ((first-binding (first bindings))
                (first-var (car first-binding))
                (first-val (cdr first-binding))
-               (first-var-temp (make-fresh-name (pack$ first-var '-temp) names-to-avoid))
+               (first-var-temp (fresh-symbol (pack$ first-var '-temp) names-to-avoid))
                ;;now fix up the values in later bindings to use first-var-temp instead of first-var:
                (rest-bindings (rest bindings))
                (rest-binding-vars (strip-cars rest-bindings))

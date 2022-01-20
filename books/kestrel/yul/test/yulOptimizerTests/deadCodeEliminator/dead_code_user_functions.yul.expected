@@ -1,0 +1,13 @@
+
+ {
+     switch calldataload(0)
+     case 0 { recursive() }
+     case 1 { terminating() }
+     case 2 { reverting() }
+     function recursive()
+     { recursive() }
+     function terminating()
+     { return(0, 0) }
+     function reverting()
+     { revert(0, 0) }
+ }

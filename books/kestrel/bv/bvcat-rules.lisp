@@ -42,8 +42,7 @@
                          (bvxor highsize (slice (+ -1 size) lowsize x) highval)
                          lowsize
                          (bvxor lowsize (bvchop lowsize x) lowval))))
-  :hints (("Goal" :in-theory (e/d (bvcat bvxor LOGTAIL-OF-BVCHOP-BECOMES-SLICE)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvcat bvxor LOGTAIL-OF-BVCHOP-BECOMES-SLICE))))
 
 (defthmd bvxor-of-bvcat-alt
   (implies (and (equal size (+ lowsize highsize))
@@ -63,7 +62,7 @@
                 (natp lowsize))
            (equal (bvor size (bvcat highsize highval lowsize lowval) x)
                   (bvor size lowval x)))
-  :hints (("Goal" :in-theory (e/d (bvor) ()))))
+  :hints (("Goal" :in-theory (enable bvor))))
 
 (defthm bvor-of-bvcat-low-arg3
   (implies (and (<= size lowsize)
@@ -71,7 +70,7 @@
                 (natp lowsize))
            (equal (bvor size x (bvcat highsize highval lowsize lowval))
                   (bvor size x lowval)))
-  :hints (("Goal" :in-theory (e/d (bvor) ()))))
+  :hints (("Goal" :in-theory (enable bvor))))
 
 (defthmd bvor-of-bvcat-arg3
   (implies (and (equal size (+ lowsize highsize)) ;gen?
@@ -83,7 +82,7 @@
                          (bvor highsize (slice (+ -1 size) lowsize x) highval)
                          lowsize
                          (bvor lowsize (bvchop lowsize x) lowval))))
-  :hints (("Goal" :in-theory (e/d (bvcat bvor logtail-of-bvchop-becomes-slice) ()))))
+  :hints (("Goal" :in-theory (enable bvcat bvor logtail-of-bvchop-becomes-slice))))
 
 (defthmd bvor-of-bvcat-arg2
   (implies (and (equal size (+ lowsize highsize)) ;gen?
@@ -104,7 +103,7 @@
                 (natp lowsize))
            (equal (bvand size (bvcat highsize highval lowsize lowval) x)
                   (bvand size lowval x)))
-  :hints (("Goal" :in-theory (e/d (bvand) ()))))
+  :hints (("Goal" :in-theory (enable bvand))))
 
 (defthm bvand-of-bvcat-low-arg3
   (implies (and (<= size lowsize)
@@ -112,7 +111,7 @@
                 (natp lowsize))
            (equal (bvand size x (bvcat highsize highval lowsize lowval))
                   (bvand size x lowval)))
-  :hints (("Goal" :in-theory (e/d (bvand) ()))))
+  :hints (("Goal" :in-theory (enable bvand))))
 
 (defthmd bvand-of-bvcat-arg3
   (implies (and (equal size (+ lowsize highsize)) ;gen?
@@ -124,7 +123,7 @@
                          (bvand highsize (slice (+ -1 size) lowsize x) highval)
                          lowsize
                          (bvand lowsize (bvchop lowsize x) lowval))))
-  :hints (("Goal" :in-theory (e/d (bvcat bvand logtail-of-bvchop-becomes-slice) ()))))
+  :hints (("Goal" :in-theory (enable bvcat bvand logtail-of-bvchop-becomes-slice))))
 
 (defthmd bvand-of-bvcat-arg2
   (implies (and (equal size (+ lowsize highsize)) ;gen?

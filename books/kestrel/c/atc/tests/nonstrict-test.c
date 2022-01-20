@@ -54,4 +54,5 @@ int main(void) {
   condor_test(3);
   notandor_test(3);
   notandor_test(150);
+  return 0;
 }

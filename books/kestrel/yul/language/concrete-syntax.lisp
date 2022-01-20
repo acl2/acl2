@@ -13,6 +13,10 @@
 (include-book "grammar-old")
 (include-book "grammar-new")
 
+(include-book "lexer")
+(include-book "tokenizer")
+(include-book "parser")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ concrete-syntax
@@ -21,10 +25,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of an ABNF grammar based on the grammar in [Yul].
+    "The concrete syntax is defined by an ABNF grammar based on the grammar in [Yul].
      We parse the ABNF grammar into an ACL2 representation.")
    (xdoc::p
-    "More precisely, there are currently two published grammar of Yul:
+    "The primary API for parsing Yul is @(see parse-yul) and @(see parse-yul-bytes).")
+   (xdoc::p
+    "There are currently two published grammars of Yul:
      one is in [Yul: Specification of Yul];
      the other is part of the Solidity grammar in "
     (xdoc::ahref "https://docs.soliditylang.org/en/latest/grammar.html"

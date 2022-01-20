@@ -386,8 +386,8 @@
                                                                      nil ;Sun Jan  2 19:08:59 2011 monitored-symbols (was printing too much)
                                                                      print ;:brief ;;print more for work-hard hyps (seemed to print too much? but i would like to see the failures) was :brief until Mon Nov  1 04:23:45 2010 but that may have caused errors with increment-hit-count
                                                                      (symbol-name (pack$ rule-symbol "-HYP-" hyp-num "-WORK-HARD-FOR-" tag))
-                                                                     *default-stp-timeout* ;timeout ;fixme pass this around
-                                                                     t ;nil ;print-timeout-goalp
+                                                                     *default-stp-max-conflicts* ;max-conflicts ;fixme pass this around
+                                                                     t ;nil ;print-max-conflicts-goalp
                                                                      nil ;don't work hard on another work-hard hyp fffixme think about this
                                                                      info tries
                                                                      1 ;prover-depth > 1 disallows changing existing nodes

@@ -1,5 +1,5 @@
 ; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2021, Regents of the University of Texas
+; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -2289,22 +2289,31 @@
    (t ; no checkpoints; proof never started
     state)))
 
-(defun erase-gag-state (state)
+(defun save-and-print-gag-state (state)
+  (let ((gag-state (f-get-global 'gag-state state)))
+    (pprogn
 
-; Avoid repeated printing of the gag state, e.g. for a theorem under several
-; levels of encapsulate or under certify-book.  We set 'gag-state here rather
-; than directly inside print-gag-state because gag-state is untouchable and
-; translate11 is called on in the process of running :psog.
+; Note that the state global gag-state is often nil at the top level, in
+; particular since it is bound by state-global-let* in
+; save-event-state-globals, which is wrapped around print-summary in
+; with-ctx-summarized.  Here, we save its value for use globally by other
+; utilities -- but only if it's non-nil!  Our purpose here is to record the
+; most recent proof failure in gag-state-saved.
 
-  (pprogn (f-put-global 'gag-state-saved (f-get-global 'gag-state state) state)
-          (f-put-global 'gag-state nil state)))
+     (if gag-state
+         (f-put-global 'gag-state-saved gag-state state)
+       state)
 
-(defun print-gag-state (state)
-  (io? error nil state
-       ()
-       (let ((gag-state (f-get-global 'gag-state state)))
-         (pprogn (erase-gag-state state)
-                 (print-gag-state1 gag-state state)))))
+; Next, avoid repeated printing of the gag-state, e.g. for a theorem under
+; several levels of encapsulate or under certify-book.
+
+     (f-put-global 'gag-state nil state)
+
+; Print checkpoints etc. if summary output is enabled.
+
+     (io? summary nil state
+          (gag-state)
+          (print-gag-state1 gag-state state)))))
 
 #+acl2-par
 (defun clause-id-is-top-level (cl-id)
@@ -2431,8 +2440,7 @@
 
 (defun print-failure (erp event-type ctx state)
   (pprogn
-   (io? summary nil state nil
-        (print-gag-state state))
+   (save-and-print-gag-state state)
    #+acl2-par
    (print-acl2p-checkpoints state)
    (cond ((not (member-eq event-type
@@ -2517,7 +2525,8 @@
 ; a symbolic name denoting an event;
 ; a theorem; or
 ; of the form (:kwd name), where :kwd is :termination-theorem or
-;    :guard-theorem, and name is a symbolic name denoting an event.
+;    :guard-theorem (in which case a third element of the list is legal if it
+;    is :limited or nil), and name is a symbolic name denoting an event.
 
 ; Depending on flg we return the following.
 
@@ -3966,6 +3975,7 @@
 
             writes-okp
             cert-data
+            gag-state-saved
             ))))
     val))
 
@@ -3974,6 +3984,9 @@
          nil)
         (t (cons `(,(car names) (f-get-global ',(car names) state))
                  (state-global-bindings (cdr names))))))
+
+(defconst *protected-system-state-global-bindings*
+  (state-global-bindings *protected-system-state-globals*))
 
 (defmacro protect-system-state-globals (form)
 
@@ -3984,7 +3997,7 @@
   `(state-global-let*
     ((writes-okp nil)
      (cert-data nil) ; avoid using global cert-data; see make-event-fn
-     ,@(state-global-bindings *protected-system-state-globals*))
+     ,@*protected-system-state-global-bindings*)
     ,form))
 
 (defun formal-value-triple (erp val)
@@ -6648,8 +6661,8 @@
                                   (pe ,logical-name)))))
                   (value '(value-triple :invisible))))))
 
-(defmacro gthm (fn &optional (simp-p 't) guard-debug)
-  `(untranslate (guard-theorem ,fn ,simp-p ,guard-debug (w state) state)
+(defmacro gthm (fn &optional (simplify ':limited) guard-debug)
+  `(untranslate (guard-theorem ,fn ,simplify ,guard-debug (w state) state)
                 t
                 (w state)))
 
@@ -13605,7 +13618,7 @@
 ; Typically, do-fn-var and fin-fn-var, which are the names of formal parameter
 ; of the do fn lambda and the finally fn lambda, are the same, namely the
 ; symbol ALIST.  Furthermore, the guards of the two functions are terms in that
-; formal.  
+; formal.
 
 ; (d) the initial alist satisfies the guard on do-fn.
 
@@ -14722,7 +14735,23 @@
           (merge-sort-length cl-set) nil nil))
         ens (match-free-override wrld) wrld state ttree)))))
 
-(defun guard-theorem (fn simp-p guard-debug wrld state)
+(defun guard-theorem-simplify-msg (caller x period-p)
+
+; Caller is a message indicating the utility that is causing the error, e.g.:
+
+; - (msg "The simplification argument of ~x0" 'guard-theorem)
+; - (msg "the simplification argument of ~x0" :guard-theorem)
+; - (msg "The simplification argument of ~v0" '(:guard-theorem :gthm))
+
+  (declare (xargs :guard t))
+  (msg "~@0 must be ~x1 or ~x2, hence the supplied value ~x3 is ~@4"
+       caller :limited nil x
+       (msg (if period-p "illegal~@0." "illegal~@0")
+            (cond ((eq x t)
+                   (msg " (consider using :LIMITED in place of ~x0)" t))
+                  (t "")))))
+
+(defun guard-theorem (fn simplify guard-debug wrld state)
 
 ; Warning: If you change the formals of this function, consider making a
 ; corresponding change to guard-or-termination-theorem-msg.
@@ -14730,6 +14759,7 @@
   (declare (xargs :stobjs state
                   :guard (and (plist-worldp wrld)
                               (symbolp fn)
+                              (member-eq simplify '(:limited nil))
                               (function-symbolp fn wrld)
 
 ; We can call guard-theorem for any :logic mode function, since it is perfectly
@@ -14741,6 +14771,13 @@
   (cond
    ((not (getpropc fn 'unnormalized-body nil wrld))
     *t*)
+   ((not (member-eq simplify '(:limited nil)))
+    (er hard 'guard-theorem
+        "~@0"
+        (guard-theorem-simplify-msg (msg "The simplification argument of ~x0"
+                                         'guard-theorem)
+                                    simplify
+                                    t)))
    (t
     (let ((names (or (getpropc fn 'recursivep nil wrld)
                      (list fn))))
@@ -14754,7 +14791,7 @@
                                   nil)
 ; Note that ttree is assumption-free; see guard-clauses-for-clique.
         (let ((cl-set
-               (cond (simp-p
+               (cond (simplify ; :limited
                       (mv-let (cl-set ttree)
                         (clean-up-clause-set cl-set nil wrld ttree state)
                         (declare (ignore ttree)) ; assumption-free
@@ -14774,21 +14811,30 @@
          (mv (er hard! 'guard-or-termination-theorem-msg
                  "Implementation error!")
              nil)))
-      (if (plist-worldp wrld)
-          (msg "A call of ~x0 (or ~x1) can only be made on a :logic mode ~
+      (cond
+       ((not (plist-worldp wrld))
+        (msg "The second argument of the call ~x0 is not a valid logical ~
+              world."
+             (cons called-fn args)))
+       ((and (eq kwd :gthm)
+             (not (member-eq (nth 1 args) '(:limited nil))))
+        (guard-theorem-simplify-msg
+         (msg "The simplification argument of ~v0" '(:guard-theorem :gthm))
+         (nth 1 args)
+         t))
+       (t
+        (msg "A call of ~x0 (or ~x1) can only be made on a :logic mode ~
               function symbol, but ~x2 is ~@3.~@4"
-               kwd
-               called-fn
-               fn
-               (cond ((not (symbolp fn))
-                      "not a symbol")
-                     ((not (function-symbolp fn wrld))
-                      "not a function symbol in the current world")
-                     (t ; (programp fn wrld)
-                      "a :program mode function symbol"))
-               coda)
-        (msg "The second argument of the call ~x0 is not a valid logical world."
-             (cons called-fn args))))))
+             kwd
+             called-fn
+             fn
+             (cond ((not (symbolp fn))
+                    "not a symbol")
+                   ((not (function-symbolp fn wrld))
+                    "not a function symbol in the current world")
+                   (t ; (programp fn wrld)
+                    "a :program mode function symbol"))
+             coda))))))
 
 (set-guard-msg guard-theorem
                (guard-or-termination-theorem-msg :gthm args coda))
@@ -14874,8 +14920,9 @@
 ; (3) (:theorem formula),
 ; (4) (:instance lmi . substn),
 ; (5) (:functional-instance lmi . substn),
-; (6) (:guard-theorem fn-symb) or (:guard-theorem fn-symb clean-up-flg)
-;     for fn-symb a guard-verified function symbol, or
+; (6) (:guard-theorem fn-symb) or (:guard-theorem fn-symb simplify)
+;     for fn-symb a guard-verified function symbol, where simplify is :limited
+;     or nil, or
 ; (7) (:termination-theorem fn-symb) or (:termination-theorem! fn-symb)
 ;     for fn-symb a :logic mode function symbol,
 
@@ -14972,10 +15019,17 @@
                  (msg "~x0 is not a guard-verified function symbol in the ~
                        current ACL2 logical world"
                       fn)))
+              ((and (= (length lmi) 3)
+                    (not (member-eq (caddr lmi) '(:limited nil))))
+               (er@par soft ctx str lmi
+                 (guard-theorem-simplify-msg
+                  (msg "the simplification argument of ~x0" :guard-theorem)
+                  (caddr lmi)
+                  nil)))
               (t
                (let ((term (guard-theorem fn
                                           (if (= (length lmi) 2)
-                                              t
+                                              :limited
                                             (caddr lmi))
                                           nil wrld state)))
                  (value@par (list term nil nil nil)))))))

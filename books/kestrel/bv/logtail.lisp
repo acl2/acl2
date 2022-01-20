@@ -307,3 +307,13 @@
                        (<= (* k (expt 2 pos)) i)
                        (< i (+ (expt 2 pos) (* k (expt 2 pos)))))))
   :hints (("Goal" :in-theory (enable logtail equal-of-floor))))
+
+;; ;sort of strength reduction
+;; ;gen
+;; ;can loop?
+;; (defthmd floor-by-4
+;;   (implies (integerp x)
+;;            (equal (floor x 4)
+;;                   (logtail 2 x)))
+;;   :hints (("Goal" :in-theory (enable logtail))))
+;; (theory-invariant (incompatible (:rewrite FLOOR-BY-4) (:DEFINITION LOGTAIL)))

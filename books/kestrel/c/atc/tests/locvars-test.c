@@ -19,4 +19,5 @@ int main(void) {
   f_test(3, -2);
   g_test(15, 33);
   h_test(1, 2);
+  return 0;
 }

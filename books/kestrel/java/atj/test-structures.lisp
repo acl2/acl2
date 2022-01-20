@@ -260,8 +260,8 @@
      as explained in the documentation.
      As the @(':tests') input is processed,
      the information about each test is stored
-     into an aggregate of this type.
-     This aggregate stores
+     into a value of this product type.
+     This product type stores
      @('namej'),
      @('fn'),
      the list of inputs derived from @('in1'), @('in2'), etc.,

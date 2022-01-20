@@ -486,25 +486,6 @@
            (EQUAL (FLOOR X (* (EXPT 2 LOW) (/ (EXPT 2 N))))
                   (FLOOR (* X (EXPT 2 N)) (EXPT 2 LOW)))))
 
-;can't just turn ash into slice because we don't know what the top bit is, so
-;we need the overarching slice.
-(defthm slice-of-ash-right
-  (implies (and (< n 0)
-                ;(<= n low)
-                (natp low)
-                (natp high)
-                (<= low high)
-                (integerp n))
-           (equal (acl2::slice high low (ash x n))
-                  (acl2::slice (+ high (- n)) (+ low (- n)) x)))
-  :hints (("Goal" :in-theory (e/d (ash acl2::slice logtail ;floor
-                                       ifix
-                                       acl2::expt-of-+
-                                       )
-                                  (acl2::bvchop-of-logtail-becomes-slice
-                                   acl2::floor-of-2
-                                   acl2::slice-of-*)))))
-
 (defthm rotate-left-becomes-leftrotate
   (implies (and (natp places)
                 (<= places 32) ;gen

@@ -17,14 +17,15 @@
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 
 (defthm getbit-of-minus
-  (implies (and (integerp x)
+  (implies (and (integerp x) ;todo: gen?
                 (natp n)
                 )
            (equal (getbit n (- x))
                   (if (EQUAL (BVCHOP N X) 0)
                       (getbit n x)
                     (bitnot (getbit n x)))))
-  :hints (("Goal" :in-theory (e/d (getbit bitnot)
+  :hints (("Goal" ;; :cases ((integerp x))
+           :in-theory (e/d (getbit bitnot)
                                   (BVCHOP-1-BECOMES-GETBIT
                                    SLICE-BECOMES-GETBIT
                                    ;BITNOT-OF-SLICE ;bozo

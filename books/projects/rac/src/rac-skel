@@ -116,7 +116,7 @@ fi
 if [[ "$acl2" ]]
 then
 
-     # Use suffix ".ast.lsp" instead of ".ast.lisp" so that ACL2's 
+     # Use suffix ".ast.lsp" instead of ".ast.lisp" so that ACL2's
      # cert.pl program won't try to certify it.
 
     $parseBin $basename -acl2 $basename.ast.lsp

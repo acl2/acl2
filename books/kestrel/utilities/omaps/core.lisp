@@ -1,10 +1,11 @@
 ; Ordered Maps (Omaps) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Stephen Westfold (westfold@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,7 +207,7 @@
   (defrule mapp-non-nil-implies-non-empty
     (implies (and (mapp map) map)
              (not (empty map))))
-  
+
   (defrule acl2-count-head-when-non-empty
     (implies (not (empty map))
              (< (+ (acl2-count (car (car map)))

@@ -2,7 +2,9 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-Version 8.4 release
-
-2021-08-30: Recertification seems needed after renaming of source
-function print-list-without-stobj-arrays.
+1/13/2021: The do-body-tuple record was eliminated, thus eliminating
+the rune (:TYPE-PRESCRIPTION WEAK-DO-BODY-TUPLE-P), which caused a
+failure to certify a book when attempting to include arithmetic-5/top.
+I suspect that books/build/cert_features.lsp should be updated with
+the current built-in records; I'll look into that at some point, since
+it might avoid the need to modify the present file in the future.

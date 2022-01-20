@@ -1,0 +1,243 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(+ 3 4)
+7
+ACL2 !>>(LD-HISTORY STATE)
+((LD-HISTORY-ENTRY ((+ 3 4) NIL)
+                   ((NIL) . 7)))
+ACL2 !>>(CW
+         "Next we'll see how to get the components of a ld-history entry.~|")
+NIL
+ACL2 !>>(WITH-OUTPUT
+         :OFF EVENT
+         (DEFUN
+          SHOW-LD-HISTORY-ENTRY (N STATE)
+          (DECLARE (XARGS :STOBJS STATE
+                          :GUARD (AND (NATP N)
+                                      (F-BOUNDP-GLOBAL 'LD-HISTORY STATE))))
+          (LET
+           ((LD-HISTORY (@ LD-HISTORY)))
+           (AND
+            (TRUE-LISTP LD-HISTORY)
+            (< N (LEN LD-HISTORY))
+            (LET
+             ((ENTRY (NTH N (LD-HISTORY STATE))))
+             (AND
+              (WEAK-LD-HISTORY-ENTRY-P ENTRY)
+              (LIST
+                  (LIST :INPUT (LD-HISTORY-ENTRY-INPUT ENTRY))
+                  (LIST :ERROR-FLG (LD-HISTORY-ENTRY-ERROR-FLG ENTRY))
+                  (LIST :STOBJS-OUT (LD-HISTORY-ENTRY-STOBJS-OUT ENTRY))
+                  (LIST :VALUE (LD-HISTORY-ENTRY-VALUE ENTRY))
+                  (LIST :USER-DATA (LD-HISTORY-ENTRY-USER-DATA ENTRY)))))))))
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFUN SHOW-LD-HISTORY-ENTRY ...)
+Rules: ((:DEFINITION BOUNDP-GLOBAL)
+        (:DEFINITION BOUNDP-GLOBAL1)
+        (:DEFINITION GET-GLOBAL)
+        (:DEFINITION GLOBAL-TABLE)
+        (:DEFINITION LD-HISTORY)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION STATE-P)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING CONSP-ASSOC-EQUAL)
+        (:FORWARD-CHAINING EQLABLE-ALISTP-FORWARD-TO-ALISTP)
+        (:FORWARD-CHAINING ORDERED-SYMBOL-ALISTP-FORWARD-TO-SYMBOL-ALISTP)
+        (:FORWARD-CHAINING STATE-P-IMPLIES-AND-FORWARD-TO-STATE-P1)
+        (:FORWARD-CHAINING STATE-P1-FORWARD)
+        (:FORWARD-CHAINING SYMBOL-ALISTP-FORWARD-TO-EQLABLE-ALISTP)
+        (:TYPE-PRESCRIPTION ALISTP)
+        (:TYPE-PRESCRIPTION EQLABLE-ALISTP)
+        (:TYPE-PRESCRIPTION LEN)
+        (:TYPE-PRESCRIPTION ORDERED-SYMBOL-ALISTP)
+        (:TYPE-PRESCRIPTION STATE-P)
+        (:TYPE-PRESCRIPTION STATE-P1)
+        (:TYPE-PRESCRIPTION SYMBOL-ALISTP))
+ SHOW-LD-HISTORY-ENTRY
+ACL2 !>>(* 4 5)
+20
+ACL2 !>>(ASSERT-EVENT (EQUAL (SHOW-LD-HISTORY-ENTRY 0 STATE)
+                             '((:INPUT (* 4 5))
+                               (:ERROR-FLG NIL)
+                               (:STOBJS-OUT (NIL))
+                               (:VALUE 20)
+                               (:USER-DATA NIL))))
+ :PASSED
+ACL2 !>>(CAR 3)
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (CAR X),
+which is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments
+in the call (CAR 3).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(ASSERT-EVENT (EQUAL (SHOW-LD-HISTORY-ENTRY 0 STATE)
+                             '((:INPUT (CAR 3))
+                               (:ERROR-FLG T)
+                               (:STOBJS-OUT NIL)
+                               (:VALUE NIL)
+                               (:USER-DATA NIL))))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (SHOW-LD-HISTORY-ENTRY 0 STATE)
+                             '((:INPUT (SHOW-LD-HISTORY-ENTRY 0 STATE))
+                               (:ERROR-FLG NIL)
+                               (:STOBJS-OUT (NIL))
+                               (:VALUE ((:INPUT (CAR 3))
+                                        (:ERROR-FLG T)
+                                        (:STOBJS-OUT NIL)
+                                        (:VALUE NIL)
+                                        (:USER-DATA NIL)))
+                               (:USER-DATA NIL))))
+
+
+ACL2 Error in ASSERT-EVENT:  Assertion failed on form:
+(EQUAL (SHOW-LD-HISTORY-ENTRY 0 STATE)
+       '((:INPUT (SHOW-LD-HISTORY-ENTRY 0 STATE))
+         (:ERROR-FLG NIL)
+         (:STOBJS-OUT (NIL))
+         (:VALUE (# # # # #))
+         (:USER-DATA NIL)))
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+ACL2 !>>(DEFUN FOO (X) (CONS X X))
+
+Since FOO is non-recursive, its admission is trivial.  We observe that
+the type of FOO is described by the theorem (CONSP (FOO X)).  We used
+primitive type reasoning.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ FOO
+ACL2 !>>(ASSERT-EVENT (EQUAL (SHOW-LD-HISTORY-ENTRY 0 STATE)
+                             '((:INPUT (DEFUN FOO (X) (CONS X X)))
+                               (:ERROR-FLG NIL)
+                               (:STOBJS-OUT (NIL NIL STATE))
+                               (:VALUE (NIL FOO REPLACED-STATE))
+                               (:USER-DATA NIL))))
+ :PASSED
+ACL2 !>>(ADJUST-LD-HISTORY NIL STATE)
+ (:NO-CHANGE :LENGTH 1)
+ACL2 !>>(ADJUST-LD-HISTORY T STATE)
+ (:SAVING-LD-HISTORY T)
+ACL2 !>>(ASSERT-EVENT (= (LENGTH (LD-HISTORY STATE)) 2))
+ :PASSED
+ACL2 !>>(MAKE-LIST 7)
+(NIL NIL NIL NIL NIL NIL NIL)
+ACL2 !>>(ASSERT-EVENT (= (LENGTH (LD-HISTORY STATE)) 4))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (SHOW-LD-HISTORY-ENTRY 1 STATE)
+                             '((:INPUT (MAKE-LIST 7))
+                               (:ERROR-FLG NIL)
+                               (:STOBJS-OUT (NIL))
+                               (:VALUE (NIL NIL NIL NIL NIL NIL NIL))
+                               (:USER-DATA NIL))))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (= (LENGTH (LD-HISTORY STATE)) 6))
+ :PASSED
+ACL2 !>>(ADJUST-LD-HISTORY -2 STATE)
+ (:LD-HISTORY-TRUNCATED :OLD-LENGTH 7
+                        :NEW-LENGTH 5)
+ACL2 !>>(ASSERT-EVENT (= (LENGTH (LD-HISTORY STATE)) 6))
+ :PASSED
+ACL2 !>>(ADJUST-LD-HISTORY 1 STATE)
+ (:LD-HISTORY-TRUNCATED :OLD-LENGTH 7
+                        :NEW-LENGTH 1)
+ACL2 !>>(ASSERT-EVENT (= (LENGTH (LD-HISTORY STATE)) 2))
+ :PASSED
+ACL2 !>>(DEFUN F1 (X)
+               (DECLARE (XARGS :MODE :PROGRAM))
+               (CAR X))
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: NIL
+ F1
+ACL2 !>>(LD '((F1 7) (DEFUN H (X) X))
+            :LD-ERROR-ACTION :CONTINUE)
+ACL2 !>>>(F1 7)
+ACL2 !>>>(DEFUN H (X) X)
+
+Since H is non-recursive, its admission is trivial.  We observe that
+the type of H is described by the theorem (EQUAL (H X) X).  
+
+Summary
+Form:  ( DEFUN H ...)
+Rules: NIL
+ H
+ACL2 !>>>Bye.
+ :EOF
+ACL2 !>>(ASSERT-EVENT
+             (EQUAL (LIST (SHOW-LD-HISTORY-ENTRY 0 STATE)
+                          (SHOW-LD-HISTORY-ENTRY 1 STATE)
+                          (SHOW-LD-HISTORY-ENTRY 2 STATE))
+                    '(((:INPUT (LD '((F1 7) (DEFUN H (X) X))
+                                   :LD-ERROR-ACTION :CONTINUE))
+                       (:ERROR-FLG NIL)
+                       (:STOBJS-OUT (NIL NIL STATE))
+                       (:VALUE (NIL :EOF REPLACED-STATE))
+                       (:USER-DATA NIL))
+                      ((:INPUT (DEFUN H (X) X))
+                       (:ERROR-FLG NIL)
+                       (:STOBJS-OUT (NIL NIL STATE))
+                       (:VALUE (NIL H REPLACED-STATE))
+                       (:USER-DATA NIL))
+                      ((:INPUT (DEFUN F1 (X)
+                                      (DECLARE (XARGS :MODE :PROGRAM))
+                                      (CAR X)))
+                       (:ERROR-FLG NIL)
+                       (:STOBJS-OUT (NIL NIL STATE))
+                       (:VALUE (NIL F1 REPLACED-STATE))
+                       (:USER-DATA NIL)))))
+ :PASSED
+ACL2 !>>(CAR '(7))
+7
+ACL2 !>>(MAKE-EVENT (ER-PROGN (LD '((DEFUN G (X) X)))
+                              (VALUE '(VALUE-TRIPLE 17))))
+ACL2 !>>>(DEFUN G (X) X)
+
+Since G is non-recursive, its admission is trivial.  We observe that
+the type of G is described by the theorem (EQUAL (G X) X).  
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: NIL
+ G
+ACL2 !>>>Bye.
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...))
+Rules: NIL
+ 17
+ACL2 !>>(ASSERT-EVENT
+          (EQUAL
+               (LIST (SHOW-LD-HISTORY-ENTRY 0 STATE)
+                     (SHOW-LD-HISTORY-ENTRY 1 STATE))
+               '(((:INPUT (MAKE-EVENT (ER-PROGN (LD '((DEFUN G (X) X)))
+                                                (VALUE '(VALUE-TRIPLE 17)))))
+                  (:ERROR-FLG NIL)
+                  (:STOBJS-OUT (NIL NIL STATE))
+                  (:VALUE (NIL 17 REPLACED-STATE))
+                  (:USER-DATA NIL))
+                 ((:INPUT (CAR '(7)))
+                  (:ERROR-FLG NIL)
+                  (:STOBJS-OUT (NIL))
+                  (:VALUE 7)
+                  (:USER-DATA NIL)))))
+ :PASSED
+ACL2 !>>Bye.

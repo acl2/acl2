@@ -336,7 +336,7 @@
        (defthms
          (and (equal 1 list-formal-count)
               (let* ((list-formal (first list-formals)) ;could have a function called only, which has a guard that the list if non-empty
-                     (fresh-var (fresh-var-name list-formal 0 all-formals))
+                     (fresh-var (fresh-symbol-aux list-formal 0 all-formals))
 ;have each name reflect the formal it's replacing?
                      (fresh-vars (fresh-var-names (len fixed-formals) 'tmp (cons fresh-var all-formals)))
                      (fresh-var-alist ;(acons list-formal fresh-var

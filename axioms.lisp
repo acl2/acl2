@@ -1,5 +1,5 @@
 ; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2021, Regents of the University of Texas
+; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -14591,9 +14591,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (iprint-soft-bound . ,*iprint-soft-bound-default*)
     (keep-tmp-files . nil)
     (last-event-data . nil)
-    (last-ld-result . nil)
     (last-make-event-expansion . nil)
     (last-step-limit . -1) ; any number should be OK
+    (ld-history . nil)
     (ld-level . 0)
     (ld-okp . :default) ; see :DOC calling-ld-in-bad-contexts
     (ld-redefinition-action . nil)
@@ -21619,6 +21619,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ld-error-action
     ld-query-control-alist
     ld-verbose
+
+    ld-history
+
     writes-okp
     program-fns-with-raw-code
     logic-fns-with-raw-code
@@ -21940,8 +21943,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (save-def
 (defun-one-output bad-lisp-consp (x)
   (declare (type cons x))
-  (or (bad-lisp-objectp (car x))
-      (bad-lisp-objectp (cdr x))))
+; The body below was originally
+; (or (bad-lisp-objectp (car x))
+;     (bad-lisp-objectp (cdr x))))
+; but we have rewritten it to avoid an SBCL stack overflow in an example sent
+; by Eric Smith to the acl2-help list on 12/17/2021.
+  (loop for tail on x thereis (bad-lisp-objectp (car tail))
+        finally (return (bad-lisp-atomp tail))))
 )
 
 #-acl2-loop-only

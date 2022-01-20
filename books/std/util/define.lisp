@@ -111,7 +111,7 @@ in the body.</li>
 function to be defined, as in @(see defun).  The other parts all have their own
 syntax and features to cover, and we address them in turn.</p>
 
-<p>The formal have many features; see @(see extended-formals).  Besides the
+<p>The formals have many features; see @(see extended-formals).  Besides the
 ordinary extended-formals utilities, they can also include @(':type')
 declarations; see @(see acl2::type-spec).  For instance:</p>
 

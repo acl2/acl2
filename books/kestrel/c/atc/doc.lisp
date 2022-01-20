@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -49,10 +49,11 @@
 
     (xdoc::codeblock
      "(atc fn1 ... fn"
-     "     :output-file ...  ; no default"
-     "     :proofs      ...  ; default t"
-     "     :const-name  ...  ; default :auto"
-     "     :print       ...  ; default :result"
+     "     :output-file     ...  ; no default"
+     "     :pretty-printing ...  ; default nil"
+     "     :proofs          ...  ; default t"
+     "     :const-name      ...  ; default :auto"
+     "     :print           ...  ; default :result"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -91,6 +92,44 @@
        if it does not exist, it is created;
        if it exists, it is overwritten.
        The file name must include a @('.c') extension."))
+
+    (xdoc::desc
+     "@(':pretty-printin') &mdash; default @('nil')"
+     (xdoc::p
+      "Specifies options for how the generated C code is pretty-printed.")
+     (xdoc::p
+      "This must be a "
+      (xdoc::seetopic "acl2::keyword-value-listp" "keyword-value list")
+      " @('(opt-name1 opt-value1 opt-name2 opt-value2 ...)')
+       where each @('opt-namek') is a keyword among the ones described below,
+       and each @('opt-value1') is one of the allowed values
+       for the corresponding keyword as described below.")
+     (xdoc::p
+      "The following pretty-printing options are supported:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':parenthesize-nested-conditionals t/nil'),
+        where @('t/nil') is either @('t') or @('nil').
+        This option specifies whether a conditional expression
+        that is the `then' or `else' branch of another conditional expression
+        is parenthesized or not.
+        The parentheses are not necessary
+        according to the precedence rules of C,
+        but may help make the code more readable.
+        The default value of this option is @('nil'),
+        which means that no parentheses are added.
+        If this option is @('t'), then parentheses are added.
+        For example, based on whether this option is @('nil') or @('t'),
+        an expression may be printed as either"
+       (xdoc::codeblock "a ? b ? c : d : e ? f g")
+       "or"
+       (xdoc::codeblock "a ? (b ? c : e) : (e ? f : g)")
+       "."))
+     (xdoc::p
+      "This is currently the only supported pretty-printing option.
+       More options,
+       to control additional aspects of the pretty-print of the C code,
+       may be added in the future."))
 
     (xdoc::desc
      "@(':proofs') &mdash; default @('t')"
@@ -1043,7 +1082,27 @@
       "          (mv-nth \'1 mv)"
       "          ..."
       "          (mv-nth \'n-1 mv)))"
-      " term)")))
+      " term)")
+
+     (xdoc::p
+      "Since ATC operates on translated terms,
+       there is no direct restriction
+       on the untranslated bodies of the functions,
+       which in particular may use any macro or any named constant,
+       so long as their translated form
+       satisfies all the requirements stated in this ATC documentation;
+       the restrictions on the translated bodies thus impose
+       indirect restrictions on the untranslated bodies.
+       Note also that ATC treats, for instance,
+       a translated term of the form @('(if a b \'nil)')
+       as if it were the translation of @('(and a b)')
+       in an untranslated function body,
+       even though that untranslated function body
+       may include @('(if a b \'nil)') directly,
+       or some other macro that expands to that:
+       this does not cause any problem of course,
+       because if two untranslated terms become the same translated term,
+       then they are equivalent for ATC's purposes.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

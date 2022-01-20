@@ -68,9 +68,23 @@
   :ok value
   :pred value-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-valuep
+  (implies (valuep x)
+           (not (resulterrp x)))
+  :enable (valuep resulterrp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult value-list-result
   :short "Fixtype of errors and lists of values."
   :ok value-list
   :pred value-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-value-listp
+  (implies (value-listp x)
+           (not (resulterrp x)))
+  :enable (value-listp resulterrp))

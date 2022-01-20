@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,6 +10,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "C")
+
+(include-book "pretty-printing-options")
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
@@ -84,7 +86,7 @@
      we remove from @('uncalled-fns') all the functions called by @('fn').
      If @('fn') is recursive, we add it to @('uncalled-fns').
      We return the updated list of uncalled functions."))
-  (b* ((desc (msg "The target ~x0 input" fn))
+  (b* ((desc (msg "The target function input ~x0" fn))
        ((er &) (ensure-value-is-function-name$ fn desc t nil))
        (desc (msg "The target function ~x0" fn))
        ((er &) (ensure-function-is-logic-mode$ fn desc t nil))
@@ -266,6 +268,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atc-allowed-pretty-printing-options*
+  :short "Keyword (sub)options accepted by @(tsee atc)
+          for the @(':pretty-printing') option."
+  (list :parenthesize-nested-conditionals)
+  ///
+  (assert-event (keyword-listp *atc-allowed-pretty-printing-options*))
+  (assert-event (no-duplicatesp-eq *atc-allowed-pretty-printing-options*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-process-pretty-printing (pretty-printing
+                                     (ctx ctxp)
+                                     state)
+  :returns (mv erp (options pprint-options-p) state)
+  :short "Process the @(':pretty-printing') input."
+  (b* ((irrelevant (make-pprint-options))
+       ((er &) (ensure-keyword-value-list$ pretty-printing
+                                           "The :PRETTY-PRINTING input"
+                                           t
+                                           irrelevant))
+       (alist (keyword-value-list-to-alist pretty-printing))
+       (keywords (strip-cars alist))
+       (desc (msg "The list of keywords in the :PRETTY-PRINTING input ~x0"
+                  keywords))
+       ((er &) (ensure-list-has-no-duplicates$ keywords
+                                               desc
+                                               t
+                                               irrelevant))
+       ((er &) (ensure-list-subset$ keywords
+                                    *atc-allowed-pretty-printing-options*
+                                    desc
+                                    t
+                                    irrelevant))
+       (parenthesize-nested-conditionals
+        (cdr (assoc-eq :parenthesize-nested-conditionals alist)))
+       ((er &) (ensure-value-is-boolean$
+                parenthesize-nested-conditionals
+                (msg "The value ~x0 of the pretty-printing option ~
+                      :PARENTHESIZE-NESTED-CONDITIONALS"
+                     parenthesize-nested-conditionals)
+                t
+                irrelevant)))
+    (acl2::value
+     (make-pprint-options
+      :parenthesize-nested-conditionals parenthesize-nested-conditionals)))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-keyword-value-list
+                                           acl2::ensure-value-is-boolean)))
+  :prepwork ((local (include-book "std/alists/top" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-process-const-name (const-name
                                 (const-name? booleanp)
                                 (fn1...fnp symbol-listp)
@@ -373,11 +426,12 @@
 (defval *atc-allowed-options*
   :short "Keyword options accepted by @(tsee atc)."
   (list :output-file
+        :pretty-printing
         :proofs
         :const-name
         :print)
   ///
-  (assert-event (symbol-listp *atc-allowed-options*))
+  (assert-event (keyword-listp *atc-allowed-options*))
   (assert-event (no-duplicatesp-eq *atc-allowed-options*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -386,6 +440,7 @@
   :returns (mv erp
                (val "A @('(tuple (fn1...fnp symbol-listp)
                                  (output-file stringp)
+                                 (pretty-printing pprint-options-p)
                                  (proofs booleanp)
                                  (prog-const symbolp)
                                  (wf-thm symbolp)
@@ -412,6 +467,13 @@
                                         output-file?
                                         ctx
                                         state))
+       (pretty-printing-option (assoc-eq :pretty-printing options))
+       (pretty-printing (if pretty-printing-option
+                            (cdr pretty-printing-option)
+                          nil))
+       ((er pretty-printing) (atc-process-pretty-printing pretty-printing
+                                                          ctx
+                                                          state))
        (proofs-option (assoc-eq :proofs options))
        (proofs (if proofs-option
                    (cdr proofs-option)
@@ -439,6 +501,7 @@
        ((er &) (evmac-process-input-print print ctx state)))
     (acl2::value (list fn1...fnp
                        output-file
+                       pretty-printing
                        proofs
                        prog-const
                        wf-thm

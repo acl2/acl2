@@ -543,19 +543,13 @@ UPDATE-FLD-NIL-BAD.
 [Illegal-State] >>(CONTINUE-FROM-ILLEGAL-STATE)
  :CONTINUING
 ACL2 !>>(WITH-OUTPUT
-         :OFF ERROR
+         :OFF (ERROR SUMMARY)
          (THM
              (EQUAL X X)
              :HINTS (("Goal" :INSTRUCTIONS ((CL-PROC :FUNCTION SIMPLE-CL-PROC
                                                      :HINT NIL))))))
 
-Summary
-Form:  ( THM ...)
-Rules: NIL
-
 ACL2 Error in ( THM ...):  See :DOC failure.
-
-******** FAILED ********
 
 
 ACL2 Error in CHK-ABSSTOBJ-INVARIANTS:  Possible invariance violation

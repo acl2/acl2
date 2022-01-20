@@ -975,7 +975,7 @@
     ;;replace these with a trim rule:
     bvminus-of-logext-gen-arg1
     bvminus-of-logext-gen-arg2
-    logext-equal-logext-rewrite
+    equal-of-logext-and-logext
     logext-of-logext
 
     logext-not-nil1

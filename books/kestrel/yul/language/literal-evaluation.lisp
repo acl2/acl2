@@ -129,14 +129,16 @@
      Here we turn an escape into a sequence of bytes.
      An escape consisting of a backslash followed by a single character
      is turned into a singleton byte list with the character's code.
-     A @('\x...') escape is turned into a singleton byte list
+     A @('\\x...') escape is turned into a singleton byte list
      with the value of the escape.
-     A @('\u...') escape is turned into a list of 1, 2, or 3 bytes
+     A @('\\u...') escape is turned into a list of 1, 2, or 3 bytes
      that is the UTF-8 encoding of the code point."))
   (escape-case esc
                :single-quote (list (char-code #\'))
                :double-quote (list (char-code #\"))
+               :backslash (list (char-code #\\))
                :letter-n (list 10)
+
                :letter-r (list 13)
                :letter-t (list 9)
                :line-feed (list 10)
@@ -190,7 +192,8 @@
    (xdoc::p
     "We convert the list of string elements to a list of bytes.
      If the resulting bytes exceed 32 in number, it is an error.
-     Otherwise, we pad the list with 0 bytes on the right to reach 32 bytes,
+     Otherwise, we pad the list with zeros (bytes of value 0) on
+     the right to reach 32 bytes,
      and we turn the resulting list of 32 bytes to a 256-bit word,
      interpreting the bytes in big endian form,
      i.e. the first byte contains the most significant bits of the word.
@@ -255,7 +258,8 @@
    (xdoc::p
     "We convert the list of hex pairs to a list of bytes.
      If the resulting bytes exceed 32 in number, it is an error.
-     Otherwise, we pad the list with 0 bytes on the right to reach 32 bytes,
+     Otherwise, we pad the list with zeros (bytes of value 0)
+     on the right to reach 32 bytes,
      and we turn the resulting list of 32 bytes to a 256-bit word,
      interpreting the bytes in big endian form,
      i.e. the first byte contains the most significant bits of the word.

@@ -199,7 +199,7 @@
                   :mode :program))
   `(progn ,@(specialize-calls-in-theorems-fn-aux theorem-names suffix triples state)))
 
-;; Specialize the therems, using the triples supplied.  Each triple indicates
+;; Specialize the theorems, using the triples supplied.  Each triple indicates
 ;; that all calls of a given function should have a given val (an untranslated
 ;; term, which gets translated) put in for the indicated argument (using
 ;; 1-based numbering).

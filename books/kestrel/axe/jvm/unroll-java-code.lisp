@@ -12,6 +12,15 @@
 
 (in-package "ACL2")
 
+;; TODO: The JVM lifters use debugging information (which may or may not be
+;; present) in the .class file, to choose names for parameters of generated
+;; functions (using default names param0, param1, etc. if no debugging
+;; information is present).  To prevent confusion, we could require an explicit
+;; user option to allow lifting files without debugging information.  This
+;; would serve as a clear reminder to users to compile with the -g flag. (But
+;; then is such a check all-or-nothing, or might some methods have the
+;; information and others not have it?).
+
 (include-book "unroll-java-code-common")
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/doc" :dir :system)
@@ -134,7 +143,7 @@
                                 memoizep
                                 vars-for-array-elements
                                 prune-branches
-                                call-stp ;t, nil, or a timeout
+                                call-stp ;t, nil, or a max-conflicts
                                 steps
                                 branches
                                 param-names
@@ -213,7 +222,7 @@
             state))
        ((when (not (subsetp-eq (strip-cars array-length-alist) parameter-names)))
         (mv t
-            (er hard? 'unroll-java-code-fn "Bad :array-length-alist: ~x0.  Should only mention params ~x1." array-length-alist parameter-names)
+            (er hard? 'unroll-java-code-fn "Bad :array-length-alist: ~x0.  Should only mention params ~x1.  Note that param names may depend on whether debugging info is present in the .class file." array-length-alist parameter-names)
             nil nil nil nil
             state))
        (- (and print (cw "(Parameter assumptions: ~x0.)~%" parameter-assumptions)))
@@ -355,7 +364,7 @@
                              memoizep
                              vars-for-array-elements
                              prune-branches
-                             call-stp ;t, nil, or a timeout
+                             call-stp ;t, nil, or a max-conflicts
                              produce-theorem
                              steps
                              branches
@@ -413,7 +422,7 @@
                                  memoizep
                                  vars-for-array-elements
                                  prune-branches
-                                 call-stp ;t, nil, or a timeout
+                                 call-stp ;t, nil, or a max-conflicts
                                  steps
                                  branches
                                  param-names
@@ -543,7 +552,7 @@
          (print                   "How much to print (t or nil of :brief, etc.; default nil)")
          (vars-for-array-elements "whether to introduce vars for individual array elements (nil, t, or :bits)")
          (prune-branches          "whether to aggressively prune unreachable branches in the result")
-         (call-stp                "whether to call STP when pruning (t, nil, or a number of conflicts before timeout)")
+         (call-stp                "whether to call STP when pruning (t, nil, or a number of conflicts before giving up)")
          (print-interval "How often to print (number of nodes)")
          (memoizep "Whether to memoize rewrites during unrolling (boolean, default t).")
          (steps "A number of steps to run, or :auto, meaning run until the method returns. (Consider using :output :all when using :steps, especially if the computation may not complete after that many steps.)")

@@ -1,6 +1,6 @@
 ; A generator for equality-preserving transformations
 ;
-; Copyright (C) 2016-2021 Kestrel Institute
+; Copyright (C) 2016-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -58,7 +58,7 @@
 
 ;; Returns an event
 (defun def-equality-transformation-fn (name
-                                       function-body-transformer ; args should be the function name, its untranslated body, wrld, and then the transform-specific-args
+                                       function-body-transformer ; args must be exactly: fn, untranslated-body, wrld, and then the transform-specific-args
                                        transform-specific-required-args ;arguments to function-body-transformer
                                        transform-specific-keyword-args-and-defaults ;arguments to function-body-transformer
                                        enables ; used for each function (currently)
@@ -71,6 +71,7 @@
                                        short ; a form that evaluates to a string or to nil?
                                        transform-specific-arg-descriptions
                                        description ; a form that evaluates to a string or to nil?
+                                       wrld
                                        )
   (declare (xargs :guard (and (symbolp name)
                               (symbolp function-body-transformer)
@@ -83,12 +84,24 @@
                               (symbol-listp make-becomes-theorem-extra-args)
                               (no-duplicatesp make-becomes-theorem-extra-args)
                               (symbol-listp parents)
-                              (macro-arg-descriptionsp transform-specific-arg-descriptions))))
-  (b* ((apply-to-defun-name (pack$ name '-in-defun))
-       (apply-to-defuns-name (pack$ name '-in-defuns))
-       (event-generator-name (pack$ name '-event))
+                              (macro-arg-descriptionsp transform-specific-arg-descriptions)
+                              (plist-worldp wrld))))
+  (b* (((when (not (fn-definedp function-body-transformer wrld)))
+        (er hard? 'def-equality-transformation-fn "The function body transformer, ~x0, is not a defined function." function-body-transformer))
        (transform-specific-arg-names (append transform-specific-required-args
                                              (strip-cars transform-specific-keyword-args-and-defaults)))
+       (function-body-transformer-formals (fn-formals function-body-transformer wrld))
+       (expected-function-body-transformer-formals (append '(fn untranslated-body wrld) transform-specific-arg-names))
+       ((when (not (equal function-body-transformer-formals
+                          expected-function-body-transformer-formals)))
+        (er hard? 'def-equality-transformation-fn "The function body transformer, ~x0, has formals ~x1 but it must have formals ~x2."
+            function-body-transformer
+            function-body-transformer-formals
+            expected-function-body-transformer-formals))
+       (apply-to-defun-name (pack$ name '-in-defun))
+       (apply-to-defuns-name (pack$ name '-in-defuns))
+       (event-generator-name (pack$ name '-event))
+
        ((when (not (subsetp-eq make-becomes-theorem-extra-args transform-specific-arg-names)))
         (er hard? 'def-equality-transformation-fn "make-becomes-theorem-extra-args, ~x0, are not a subset of the transform-specific-arg-names, ~x1."
             make-becomes-theorem-extra-args
@@ -105,6 +118,7 @@
                                     function-disabled ; whether to disable the new function
                                     measure ; either :auto or an (untranslated) term
                                     measure-hints ; either :auto or a list of hints like (("Goal" :in-theory (enable car-cons)))
+                                    normalize
                                     state ; todo: can we avoid taking state?
                                     )
          (declare (xargs :stobjs state
@@ -114,7 +128,8 @@
                                      (member-eq rec '(nil :single :mutual))
                                      (t/nil/auto-p function-disabled)
                                      ;; TODO: Guards for guard-hints, measure, and measure-hints
-                                     (fn-definedp fn (w state)))
+                                     (fn-definedp fn (w state))
+                                     (booleanp normalize))
                          :mode :program ; because we call rename-functions-in-untranslated-term
                          ))
          (let* ((body (get-body-from-event fn fn-event)) ; untranslated
@@ -127,6 +142,9 @@
                 (declares (get-declares-from-event fn fn-event)) ;TODO: Think about all the kinds of declares that get passed through.
                 ;; Handle the :normalize xarg (we don't need :normalize nil because install-not-normalized solves that issue (TODO: But should we pass it through anyway?)
                 (declares (remove-xarg-in-declares :normalize declares))
+                (declares (if (not normalize)
+                              (add-xarg-in-declares :normalize nil declares)
+                            declares))
                 ;; Handle the :mode xarg:
                 (declares (remove-xarg-in-declares :mode declares)) ;todo: handle this better.  this is needed because the event might have :mode :program even if the function was later lifted to logic.  Obviously we shouldn't do this once we support transforming :program mode functions.
                 ;; Deal with the :verify-guards xarg.  We always do :verify-guards nil and then perhaps
@@ -213,6 +231,7 @@
                                      function-disabled ; whether to disable all the new functions
                                      measure-alist ; maps each old function name to the measure/:auto to use for its new version
                                      measure-hints ; will be attached to the first function in the clique
+                                     normalize
                                      firstp ;whether this is the first function in the clique
                                      state)
          (declare (xargs :stobjs state
@@ -221,7 +240,8 @@
                                      (all-fn-definedp fns (w state))
                                      (function-renamingp function-renaming)
                                      (t/nil/auto-p function-disabled)
-                                     (symbol-alistp measure-alist))
+                                     (symbol-alistp measure-alist)
+                                     (booleanp normalize))
                          :mode :program))
          (if (endp fns)
              nil
@@ -233,17 +253,20 @@
                                              fn-event function-renaming :mutual function-disabled
                                              (lookup-eq fn measure-alist)
                                              (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                             normalize
                                              state)
                      ;; Just copy the function and update rec calls:
                      ;; (For copy-function only, this happens to be the same as the branch above.)
                      (copy-function-in-defun fn fn-event function-renaming :mutual function-disabled
                                              (lookup-eq fn measure-alist)
                                              (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                             normalize
                                              state))
                    (,apply-to-defuns-name (rest fns)
                                           ,@transform-specific-arg-names
                                           target-fns fn-event function-renaming function-disabled
                                           measure-alist measure-hints
+                                          normalize
                                           nil ;no longer the first function
                                           state)))))
 
@@ -260,6 +283,7 @@
                                      guard-hints
                                      measure ; may be a call of :map if mut-rec
                                      measure-hints
+                                     normalize
                                      ,@(strip-cars transform-specific-keyword-args-and-defaults)
                                      verbose ;for now, this is a boolean (corresponding to whether the :print option was :info or higher), but we could support passing in richer information
                                      ctx
@@ -298,14 +322,21 @@
                                                        function-disabled
                                                        measure
                                                        measure-hints ;todo: not appropriate to pass since non-recursive?
+                                                       normalize
                                                        state))
                       ;;extra enables needed for the proof (TODO: This is a bit brittle because the original definition also gets enabled):
-                      (enables (append (list (install-not-normalized-name fn)
-                                             (install-not-normalized-name new-fn))
+                      (enables (append (list ;; (install-not-normalized-name fn)
+                                        ;; (install-not-normalized-name new-fn)
+                                        )
                                        ',enables))
                       ;; Drop the :verify-guards nil if needed, and add :verify-guards t if appropriate:
                       (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
-                      (becomes-theorem (,make-becomes-theorem-name fn new-fn nil (not theorem-disabled) enables '(theory 'minimal-theory) ,@make-becomes-theorem-extra-args state))
+                      (becomes-theorem (,make-becomes-theorem-name fn new-fn nil (not theorem-disabled) enables
+                                                                   '(theory 'minimal-theory)
+                                                                   ;; TODO: Why can't I use t here (and below)?:
+                                                                   t ; use not-normalized definition rules
+                                                                   ,@make-becomes-theorem-extra-args
+                                                                   state))
                       ;; Remove :hints from the theorem before exporting it (:guard-hints have already been removed since the verify-guards is now separate):
                       (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
                  (mv nil
@@ -331,14 +362,19 @@
                                                          function-disabled
                                                          measure
                                                          measure-hints
+                                                         normalize
                                                          state))
-                        (enables (append (list (install-not-normalized-name fn)
-                                               (install-not-normalized-name new-fn))
+                        (enables (append (list ;; (install-not-normalized-name fn)
+                                          ;; (install-not-normalized-name new-fn)
+                                          )
                                          ',enables))
                         (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                         (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
-                        (becomes-theorem (,make-becomes-theorem-name fn new-fn :single (not theorem-disabled) enables '(theory 'minimal-theory)
-                                                                      ,@make-becomes-theorem-extra-args state))
+                        (becomes-theorem (,make-becomes-theorem-name fn new-fn :single (not theorem-disabled)
+                                                                     enables '(theory 'minimal-theory)
+                                                                     t ; use not-normalized definition rules
+                                                                     ,@make-becomes-theorem-extra-args
+                                                                     state))
                         ;; Remove :hints from the theorem before exporting it:
                         (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
                    (mv nil ; no error
@@ -372,6 +408,7 @@
                                                        function-disabled ;TODO: Add :map support
                                                        measure-alist
                                                        measure-hints
+                                                       normalize
                                                        t ; first function in the clique
                                                        state))
                     (mutual-recursion `(mutual-recursion ,@new-defuns))
@@ -398,6 +435,7 @@
                     (becomes-theorems (,make-becomes-theorems-name fns
                                                                    function-renaming
                                                                    (not theorem-disabled)
+                                                                   t ; use not-normalized definition rules
                                                                    ,@make-becomes-theorem-extra-args
                                                                    state))
                     (becomes-defthm-flag (make-becomes-defthm-flag flag-function-name
@@ -440,6 +478,7 @@
           (guard-hints ':auto)
           (measure ':auto)
           (measure-hints ':auto)
+          (normalize 't)
           ,@transform-specific-keyword-args-and-defaults)
          :pass-print t
          :pass-context t
@@ -453,7 +492,8 @@
                                       (verify-guards "Whether to verify the guards of the new function.")
                                       (guard-hints "Hints to use for the guard proof.")
                                       (measure "Measure to use for the new function.") ;todo: what about mut-rec?
-                                      (measure-hints "Hints to use for the measure/termination proof."))
+                                      (measure-hints "Hints to use for the measure/termination proof.")
+                                      (normalize "Whether to normalize the new function body, as ACL2 usually does."))
                                     transform-specific-arg-descriptions))
        ) ; end progn
     ))
@@ -488,7 +528,8 @@
                  ',parents
                  ,short
                  ',transform-specific-arg-descriptions
-                 ,description)))
+                 ,description
+                 (w state))))
 
 ;;;
 ;;; copy-function (defined here because copy-function-in-defun is used above)
@@ -497,8 +538,8 @@
 ;; The core function for copy-function (does nothing).
 ;; Such functions always take: fn, untranslated-body, wrld, and then transformation-specific args (none for copy-function).
 (defun copy-function-function-body-transformer (fn
-                                    untranslated-body
-                                    wrld)
+                                                untranslated-body
+                                                wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (plist-worldp wrld)))
            (ignore fn wrld))

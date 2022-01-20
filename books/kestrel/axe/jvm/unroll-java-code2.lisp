@@ -775,7 +775,7 @@
          (print                   "Verbosity level (passed to the Axe rewriter)")
          (abstract-state-components "Whether to define functions abstracting how the state components are updated")
          (prune-branches "whether to aggressively prune unreachable branches in the result")
-         (call-stp                 "whether to call STP when pruning (t, nil, or a number of conflicts before timeout)")
+         (call-stp                 "whether to call STP when pruning (t, nil, or a number of conflicts before giving up)")
          (extra-proof-rules "Extra rules to support proving the result with ACL2")
          (print-interval "Number of DAG nodes to create before printing intermediate results (or nil for no limit).")
          (param-names "Names to use for the parameters (e.g., if no debugging information is available).")

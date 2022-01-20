@@ -1,5 +1,5 @@
 ; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2021, Regents of the University of Texas
+; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -6069,14 +6069,18 @@
 (defun warning-off-p (summary state)
   (warning-off-p1 summary (w state) (ld-skip-proofsp state)))
 
+(defrec do-expressionp
+  (stobjs-out . with-vars)
+  nil)
+
 (defrec state-vars
 
 ; Warning: Keep this in sync with default-state-vars.
 
 ; Note that do-expressionp is not actually a state global, even though most
 ; fields do name a state global.  That's OK, as we are careful about this in
-; default-state-vars.  Also note that its value is either nil or a cons that is
-; a legal stobjs-out.
+; default-state-vars.  Also note that its value is either nil or a
+; do-expressionp record.
 
   (((safe-mode . boot-strap-flg) . (temp-touchable-vars . guard-checking-on))
    .
@@ -7850,6 +7854,13 @@
            ',name))))))
 
 ; End of stobj support in raw lisp
+
+(defrec ld-history-entry
+; This form conceptually belongs with other forms pertaining to ld-history in
+; ld.lisp.  But we use this in initialize-state-globals below.
+  ((input error-flg)
+   stobjs-out/value . user-data)
+  nil)
 
 ; We need to have state globals bound for prin1$ etc. to work, because of calls
 ; of with-print-controls.  We may also need the dolist form below for tracing,

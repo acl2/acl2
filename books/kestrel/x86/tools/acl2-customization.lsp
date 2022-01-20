@@ -11,7 +11,6 @@
 
 ;; load the user's acl2-customization.lsp, if any:
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
-(include-book "projects/x86isa/portcullis/portcullis" :dir :system)
 (include-book "../portcullis") ; for the "X" package
 (in-package "X")
 (reset-prehistory)

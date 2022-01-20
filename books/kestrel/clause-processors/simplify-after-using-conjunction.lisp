@@ -10,11 +10,15 @@
 
 (in-package "ACL2")
 
-(include-book "subst-flag")
-(include-book "flatten-literals")
+;(include-book "subst-flag")
+(include-book "flatten-literals") ; for flatten-disjuncts
 (include-book "simple-subsumption")
 (include-book "push-unary-functions")
 (include-book "simplify-assumptions")
+(include-book "kestrel/booleans/booland" :dir :system) ; why?
+(include-book "kestrel/booleans/boolor" :dir :system) ; why?
+(include-book "kestrel/booleans/boolif" :dir :system) ; why?
+(include-book "kestrel/utilities/myif-def" :dir :system) ; why?
 (local (include-book "kestrel/typed-lists-light/pseudo-term-list-listp" :dir :system))
 (local (include-book "kestrel/utilities/disjoin" :dir :system))
 
@@ -60,17 +64,6 @@
                         con-and-dis-eval-of-disjoin-of-flatten-disjuncts
                         (con-and-dis-eval my-make-flag-eval)
                         (con-and-dis-eval-list my-make-flag-eval-list)))))
-
-;changes the evaluator
-(defthm my-make-flag-eval-of-disjoin-of-sublis-var-and-simplify-lst
-  (implies (and (alistp a)
-                (pseudo-term-listp clause))
-           (iff (my-make-flag-eval (disjoin (sublis-var-and-simplify-lst nil clause nil nil)) a)
-                (my-make-flag-eval (disjoin clause) a)))
-  :hints (("Goal" :use (:functional-instance
-                        equality-eval-of-disjoin-of-sublis-var-and-simplify-lst-special
-                        (equality-eval my-make-flag-eval)
-                        (equality-eval-list my-make-flag-eval-list)))))
 
 ;changes the evaluator
 (defthm my-make-flag-eval-of-disjoin-of-push-unary-functions-in-literals
@@ -125,8 +118,8 @@
   :rule-classes :clause-processor
   :hints (("Goal" :in-theory (e/d ( ;sublis-var-and-simplify-clause-processor
                                    simple-subsumption-clause-processor
-                                   FLATTEN-LITERALS-CLAUSE-PROCESSOR
-                                   SUBLIS-VAR-AND-SIMPLIFY-CLAUSE-PROCESSOR
+                                   ;FLATTEN-LITERALS-CLAUSE-PROCESSOR
+                                   ;SUBLIS-VAR-AND-SIMPLIFY-CLAUSE-PROCESSOR
                                    PUSH-O-P-CLAUSE-PROCESSOR
                                    )
                                   (DISJOIN-LST)))))

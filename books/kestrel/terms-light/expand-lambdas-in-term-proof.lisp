@@ -12,6 +12,7 @@
 
 (include-book "expand-lambdas-in-term")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
+(include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
@@ -63,63 +64,48 @@
            (pseudo-termp (wrap-term-in-lambda body lambda-formals args)))
   :hints (("Goal" :in-theory (enable wrap-term-in-lambda))))
 
-(defthm EMPTY-EVAL-of-cdr-of-assoc-equal
-  (IMPLIES (AND (SYMBOLP TERM)
-                ;(MEMBER-EQUAL TERM LAMBDA-FORMALS)
-        ;        (SYMBOL-LISTP LAMBDA-FORMALS)
-                ;(PSEUDO-TERM-LISTP ARGS)
-       ;         (EQUAL (LEN LAMBDA-FORMALS) (LEN ARGS))
-                TERM)
-           (EQUAL (EMPTY-EVAL (CDR (ASSOC-EQUAL TERM alist)) A)
-                  (CDR (ASSOC-EQUAL TERM (PAIRLIS$ (strip-cars alist)
-                                                   (EMPTY-EVAL-LIST (strip-cdrs alist)
-                                                                     A))))))
-  :hints (("Goal" :in-theory (enable PAIRLIS$ assoc-equal))))
+;this holds for any evaluator?
+;term may often be a var
+(defthmd empty-eval-of-cdr-of-assoc-equal
+  (equal (empty-eval (cdr (assoc-equal term alist)) a)
+         ;; evaluates all the terms in the alist wrt a and then looks up the term:
+         (cdr (assoc-equal term (pairlis$ (strip-cars alist)
+                                          (empty-eval-list (strip-cdrs alist)
+                                                           a)))))
+  :hints (("Goal" :in-theory (enable pairlis$ assoc-equal))))
 
 (defthm empty-eval-of-wrap-term-in-lambda-when-symbolp
-  (implies (and (symbolp term)
+  (implies (and (symbolp var)
 ;                (symbol-listp lambda-formals)
 ;                (pseudo-term-listp args)
                 (equal (len lambda-formals) (len args)))
-           (equal (empty-eval (wrap-term-in-lambda term lambda-formals args) a)
-                  (if (equal term nil) ; gross exception in defevaluator
+           (equal (empty-eval (wrap-term-in-lambda var lambda-formals args) a)
+                  (if (equal var nil) ; gross exception in defevaluator
                       nil
-                    (if (member-equal term lambda-formals)
-                        (empty-eval (cdr (assoc-equal term (pairlis$ lambda-formals args)))
+                    (if (member-equal var lambda-formals)
+                        (empty-eval (cdr (assoc-equal var (pairlis$ lambda-formals args)))
                                      a)
-                      (empty-eval term a)))))
+                      (empty-eval var a)))))
   :hints (("Goal" :in-theory (enable wrap-term-in-lambda
-                                     ;assoc-equal-iff
+                                     ;;assoc-equal-iff
+                                     empty-eval-of-cdr-of-assoc-equal
                                      ))))
 
-(include-book "kestrel/alists-light/lookup-equal" :dir :system)
-(include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
+;(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
+(local (include-book "kestrel/alists-light/lookup-equal-lst" :dir :system))
 
 ;this holds for any evaluator?
-(defthm empty-eval-list-when-symbol-listp
+(local
+ (defthm empty-eval-list-when-symbol-listp
   (implies (and (symbol-listp vars)
-                (not (member-equal nil vars)))
+                (not (member-equal nil vars)) ;evaluating nil just gives nil
+                )
            (equal (empty-eval-list vars a)
                   (lookup-equal-lst vars a)))
   :hints (("Goal" :in-theory (enable ;empty-eval-list
                               (:i len)
                               LOOKUP-EQUAL)
-           :induct (len vars))))
-
-;; Checks whether ALIST1 and ALIST2 are equivalent wrt the KEYS.  For these
-;; purposes, not having a binding for a key is equivalent to binding it to nil.
-(defun alists-equiv-on (keys alist1 alist2)
-  (if (endp keys)
-      t
-    (let ((key (first keys)))
-      (and (equal (cdr (assoc-equal key alist1)) ; ok if bound to nil in one alist and not bound in the other
-                  (cdr (assoc-equal key alist2)))
-           (alists-equiv-on (rest keys) alist1 alist2)))))
-
-(defthm alists-equiv-on-of-union-equal
-  (equal (alists-equiv-on (union-equal keys1 keys2) alist1 alist2)
-         (and (alists-equiv-on keys1 alist1 alist2)
-              (alists-equiv-on keys2 alist1 alist2))))
+           :induct (len vars)))))
 
 ;; empty-eval gives the same result if the alist is changed to one that equivalent for the free vars of the term
 (defthm-flag-free-vars-in-term
@@ -142,76 +128,35 @@
                             empty-eval-of-fncall-args)
                            (empty-eval-of-fncall-args-back)))))
 
-(defthm ALISTS-EQUIV-ON-of-cons-and-cons-same
-  (implies (ALISTS-EQUIV-ON KEYS alist1 alist2)
-           (ALISTS-EQUIV-ON KEYS
-                            (CONS pair alist1)
-                            (CONS pair alist2))))
-
-(defthm ALISTS-EQUIV-ON-of-cons-and-cons-same-2
-  (implies (ALISTS-EQUIV-ON (remove-equal (car pair) KEYS) alist1 alist2)
-           (ALISTS-EQUIV-ON KEYS
-                            (CONS pair alist1)
-                            (CONS pair alist2))))
-
-(defthm equal-of-cdr-of-assoc-equal-and-cdr-of-assoc-equal-when-alists-equiv-on
-  (implies (and (alists-equiv-on keys alist1 alist2)
-                (member-equal key keys))
-           (equal (equal (cdr (assoc-equal key alist1))
-                         (cdr (assoc-equal key alist2)))
-                  t)))
-
-(defun cdr-remove-caar-induct (x y)
-  (if (endp x)
-      (list x y)
-    (cdr-remove-caar-induct (cdr x) (remove-equal (caar x) y))))
-
-(defthm alists-equiv-on-of-append-and-append-same
-  (implies (and (alists-equiv-on (set-difference-equal keys (strip-cars alist1))
-                                 alist2
-                                 alist3)
-                (alistp alist1)
-;                (no-duplicatesp-equal (strip-cars alist1)) ;drop?
-                )
-           (alists-equiv-on keys
-                            (append alist1 alist2)
-                            (append alist1 alist3)))
-  :hints (("subgoal *1/2" :cases ((equal (car keys) (caar alist1))))
-          ("Goal" :expand ((STRIP-CARS ALIST1)
-                           (ALISTS-EQUIV-ON KEYS (APPEND ALIST1 ALIST2)
-                                            (APPEND ALIST1 ALIST3)))
-           :induct (cdr-remove-caar-induct ALIST1 keys)
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (enable append
-                              ))))
-
 (defthm equal-of-car-of-assoc-equal-same
   (implies (alistp alist)
            (iff (equal key (car (assoc-equal key alist)))
                 (or (equal key nil)
                     (assoc-equal key alist)))))
 
-(defun cdr-remove-caar-induct-2 (x y)
-  (if (or (endp x)
-          (endp y))
-      (list x y)
-    (cdr-remove-caar-induct-2 (cdr x) (remove-equal (caar x) y))))
+;; (defun cdr-remove-caar-induct-2 (x y)
+;;   (if (or (endp x)
+;;           (endp y))
+;;       (list x y)
+;;     (cdr-remove-caar-induct-2 (cdr x) (remove-equal (caar x) y))))
 
 (defthm assoc-equal-of-pairlis$-when-not-member-equal
   (implies (not (member-equal key keys))
            (equal (assoc-equal key (pairlis$ keys vals))
                   nil)))
 
-(defthm assoc-equal-of-pairlis$-of-lookup-equal-lst-same
+(local
+ (defthm assoc-equal-of-pairlis$-of-lookup-equal-lst-same
   (implies (alistp alist)
            (equal (assoc-equal key (pairlis$ keys (lookup-equal-lst keys alist)))
                   (if (member-equal key keys)
                       (cons key (cdr (assoc-equal key alist)))
                     nil)))
-  :hints (("Goal" :in-theory (enable assoc-equal lookup-equal-lst pairlis$ LOOKUP-EQUAL))))
+  :hints (("Goal" :in-theory (enable assoc-equal lookup-equal-lst pairlis$ LOOKUP-EQUAL)))))
 
 
-(defthm alists-equiv-on-of-pairlis$-of-lookup-equal-lst-same
+(local
+ (defthm alists-equiv-on-of-pairlis$-of-lookup-equal-lst-same
   (alists-equiv-on keys
                    (pairlis$ keys (lookup-equal-lst keys a))
                    a)
@@ -221,7 +166,7 @@
 ;:induct (ALISTS-EQUIV-ON KEYS a a)
            :in-theory (enable pairlis$ lookup-equal
                               assoc-equal-iff
-                              (:I len)))))
+                              (:I len))))))
 
 ;; term may have free vars not among the lambda formals
 (defthm empty-eval-of-wrap-term-in-lambda
@@ -271,6 +216,7 @@
                                             a))))
   :hints (("Goal" :in-theory (enable wrap-terms-in-lambdas))))
 
+;; The result of substituting evaluates the same as if we had made a lambda.
 ;todo: exclude term from being nil, or containing a nil as a subterm, since defevaluator has gross behavior on nil.
 ;move
 (defthm-flag-sublis-var-simple
@@ -296,7 +242,8 @@
                             MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
-                            empty-eval-of-fncall-args)
+                            empty-eval-of-fncall-args
+                            empty-eval-of-cdr-of-assoc-equal)
                            (pairlis$
                             set-difference-equal
                             empty-eval-of-fncall-args-back)))))
@@ -330,7 +277,8 @@
                             MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
-                            empty-eval-of-fncall-args)
+                            empty-eval-of-fncall-args
+                            empty-eval-of-cdr-of-assoc-equal)
                            (pairlis$
                             set-difference-equal
                             empty-eval-of-fncall-args-back)))))
@@ -344,11 +292,6 @@
                 (subsetp-equal (FREE-VARS-IN-TERMS (STRIP-CDRS ALIST)) free))
            (SUBSETP-EQUAL (FREE-VARS-IN-TERM (SUBLIS-VAR-SIMPLE ALIST TERM))
                           free)))
-
-(defthm free-vars-in-terms-of-true-list-fix
-  (equal (free-vars-in-terms (true-list-fix terms))
-         (free-vars-in-terms terms))
-  :hints (("Goal" :in-theory (enable true-list-fix free-vars-in-terms))))
 
 (defthm-flag-expand-lambdas-in-term
   (defthm free-vars-in-term-of-expand-lambdas-in-term
@@ -388,7 +331,7 @@
            (not (member-equal var (free-vars-in-term (expand-lambdas-in-term term))))))
 
 ;; This is needed due to a deficiency in how deevaluator evaluates NIL, which
-;; is syntactually a variable although not a legal one:
+;; is syntactically a variable although not a legal one:
 (mutual-recursion
  (defun no-nils-in-termp (term)
    (declare (xargs :guard (pseudo-termp term)))
