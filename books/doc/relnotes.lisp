@@ -233,6 +233,13 @@
      <see topic='@(url build::cert.pl)'>cert.pl</see>.
      Now the useless runes feature has been turned off for ACL2(r).")
 
+   (xdoc::p
+    "The precomputed @(see useless-runes) files have been successfully used
+     with ACL2(p), so the previous code that ignored the useless runes at the
+     time of @(see books-certification) using @('make') has been removed, and
+     ACL2(p) now works the same way as ACL2 for the @(see useless-runes)
+     feature.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Testing")

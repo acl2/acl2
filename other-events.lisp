@@ -16115,90 +16115,87 @@
 ; (We could allow 0 but that would mean the same as nil, which could perhaps
 ; lead to confusion somehow.)
 
-  ;; Ignore useless-runes info in ACL2(r),
-  ;; by making it seem that the call to certify-book
-  ;; always includes ":useless-runes nil".
-  ;; This is for extra safety in ACL2(r)
-  ;; but it is probably not needed due to the
-  ;; concurrent change to defun useless-runes-filename.
+; We ignore useless-runes info in ACL2(r), by making it seem that the call to
+; certify-book always includes ":useless-runes nil".  If we decide later not to
+; do this, we will be safe in avoiding interference with useless-runes files
+; created for (standard) ACL2 because useless-runes files for ACL2(r) will be
+; in .sysr/ rather than in .sys/; see useless-runes-filename.
+
   #+non-standard-analysis
   (declare (ignore useless-runes-r/w useless-runes-r/w-p))
   (let ((useless-runes-r/w
          #+non-standard-analysis nil
-         #-non-standard-analysis useless-runes-r/w
-         )
+         #-non-standard-analysis useless-runes-r/w)
         (useless-runes-r/w-p
          #+non-standard-analysis t
-         #-non-standard-analysis useless-runes-r/w-p
-         ))
-
-  (er-let* ((str
+         #-non-standard-analysis useless-runes-r/w-p))
+    (er-let* ((str
 
 ; If :useless-runes nil was supplied explicitly to certify-book, then ignore
 ; the value of the indicated environment variable.  Otherwise the environment
 ; variable takes priority over the value of :useless-runes.
 
-             (if (and useless-runes-r/w-p (null useless-runes-r/w))
-                 (value nil)
-               (getenv! "ACL2_USELESS_RUNES" state))))
-    (cond
-     ((and str
-           (string-equal str "WRITE"))
+               (if (and useless-runes-r/w-p (null useless-runes-r/w))
+                   (value nil)
+                 (getenv! "ACL2_USELESS_RUNES" state))))
+      (cond
+       ((and str
+             (string-equal str "WRITE"))
 
 ; A value of "write" for the environment variable takes priority over the value
 ; of the :useless-runes option of certify-book.
 
-      (value (cons str 'write)))
-     (t
-      (case useless-runes-r/w
-        (:write (value (cons nil 'write)))
-        (:read  (value (cons nil 1)))
-        (:read? (value (cons nil -1)))
-        ((nil)
-         (cond
-          (useless-runes-r/w-p (value nil)) ; honor an explicit nil value
-          ((null str) (value nil))
-          ((or (string-equal str "READ")
-               (equal str "100"))
-           (value (cons str 1)))
-          ((or (string-equal str "READ?")
-               (equal str "-100"))
-           (value (cons str -1)))
-          (t ; read a number between 1 and 99
-           (let* ((len (length str))
-                  (sign (if (and (not (zerop len))
-                                 (eql (char str 0) #\-))
-                            1
-                          0))
-                  (str2 (if (int= sign 1)
-                            (subseq str 1 len)
-                          str))
-                  (len2 (if (int= sign 1)
-                            (1- len)
-                          len))
-                  (percent (and (or (int= len2 1)
-                                    (int= len2 2))
-                                (all-digits-p (coerce str2 'list) 10)
-                                (decimal-string-to-number str2 len2 0))))
-             (cond (percent (value
-                             (cons str
-                                   (/ percent
-                                      (if (int= sign 1) -100 100)))))
-                   (t (er soft ctx
-                          "Illegal value ~x0 for environment variable ~
-                           ACL2_USELESS_RUNES.  See :DOC useless-runes."
-                          str)))))))
-        (t ; should be an integer value
-         (cond
-          ((and (integerp useless-runes-r/w)
-                (not (zerop useless-runes-r/w))
-                (<= -100 useless-runes-r/w)
-                (<= useless-runes-r/w 100))
-           (value (cons nil (/ useless-runes-r/w 100))))
-          (t (er soft ctx
-                 "Illegal value ~x0 for certify-book parameter ~
-                  :USELESS-RUNES.  See :DOC useless-runes."
-                 useless-runes-r/w))))))))))
+        (value (cons str 'write)))
+       (t
+        (case useless-runes-r/w
+          (:write (value (cons nil 'write)))
+          (:read  (value (cons nil 1)))
+          (:read? (value (cons nil -1)))
+          ((nil)
+           (cond
+            (useless-runes-r/w-p (value nil)) ; honor an explicit nil value
+            ((null str) (value nil))
+            ((or (string-equal str "READ")
+                 (equal str "100"))
+             (value (cons str 1)))
+            ((or (string-equal str "READ?")
+                 (equal str "-100"))
+             (value (cons str -1)))
+            (t ; read a number between 1 and 99
+             (let* ((len (length str))
+                    (sign (if (and (not (zerop len))
+                                   (eql (char str 0) #\-))
+                              1
+                            0))
+                    (str2 (if (int= sign 1)
+                              (subseq str 1 len)
+                            str))
+                    (len2 (if (int= sign 1)
+                              (1- len)
+                            len))
+                    (percent (and (or (int= len2 1)
+                                      (int= len2 2))
+                                  (all-digits-p (coerce str2 'list) 10)
+                                  (decimal-string-to-number str2 len2 0))))
+               (cond (percent (value
+                               (cons str
+                                     (/ percent
+                                        (if (int= sign 1) -100 100)))))
+                     (t (er soft ctx
+                            "Illegal value ~x0 for environment variable ~
+                             ACL2_USELESS_RUNES.  See :DOC useless-runes."
+                            str)))))))
+          (t ; should be an integer value
+           (cond
+            ((and (integerp useless-runes-r/w)
+                  (not (zerop useless-runes-r/w))
+                  (<= -100 useless-runes-r/w)
+                  (<= useless-runes-r/w 100))
+             (value (cons nil (/ useless-runes-r/w 100))))
+            (t (er soft ctx
+                   "Illegal value ~x0 for certify-book parameter ~
+                    :USELESS-RUNES.  See :DOC useless-runes."
+                   useless-runes-r/w))))))))))
 
 (defun useless-runes-info (full-book-name useless-runes-r/w useless-runes-r/w-p
                                           ctx state)
