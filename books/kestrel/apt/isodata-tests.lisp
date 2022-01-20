@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -109,7 +109,9 @@
   (defthm f-to-f1
     (implies (oldp x)
              (equal (f x)
-                    (back (f1 (forth x))))))))
+                    (back (f1 (forth x)))))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -219,7 +221,9 @@
   (defthm f-to-f1
     (implies (in-oldp x)
              (equal (f x)
-                    (out-back (f1 (in-forth x))))))))
+                    (out-back (f1 (in-forth x)))))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -298,7 +302,9 @@
  (must-succeed*
   (defun f (state) (declare (xargs :stobjs state)) state)
   (must-fail (isodata f ((arg (oldp newp forth back)))))
-  (must-fail (isodata f ((arg iso))))))
+  (must-fail (isodata f ((arg iso)))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -328,7 +334,9 @@
  (must-fail (isodata p ()))
  (must-fail (isodata p ((x iso) (y iso))))
  (must-fail (isodata p ((x (oldp newp forth back))
-                        (y (oldp newp forth back))))))
+                        (y (oldp newp forth back)))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -373,7 +381,9 @@
   (must-fail (isodata f (((x :result y :result) iso))))
   (must-fail (isodata p (((x y x) (oldp newp forth back))) :predicate t))
   (must-fail (isodata p (((x y x) iso)) :predicate t))
-  (must-fail (isodata p (((x :result y :result) iso))))))
+  (must-fail (isodata p (((x :result y :result) iso)))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -394,7 +404,9 @@
   (must-fail (isodata f ((x (oldp newp forth back . more)))))
   (must-fail (isodata f ((x (oldp newp forth back :hints)))))
   (must-fail (isodata f ((x (oldp newp forth back
-                                  :hintss (("Goal" :in-theory nil)))))))))
+                                  :hintss (("Goal" :in-theory nil))))))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -473,7 +485,9 @@
  (must-succeed*
   (defun g (x) (declare (xargs :verify-guards nil)) x)
   (defmacro m (x) `(g ,x))
-  (must-fail (isodata f ((x (m newp forth back)))))))
+  (must-fail (isodata f ((x (m newp forth back))))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -552,7 +566,9 @@
  (must-succeed*
   (defun g (x) (declare (xargs :verify-guards nil)) x)
   (defmacro m (x) `(g ,x))
-  (must-fail (isodata f ((x (natp m forth back)))))))
+  (must-fail (isodata f ((x (natp m forth back))))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -631,7 +647,9 @@
  (must-succeed*
   (defun g (x) (declare (xargs :verify-guards nil)) x)
   (defmacro m (x) `(g ,x))
-  (must-fail (isodata f ((x (natp natp m back)))))))
+  (must-fail (isodata f ((x (natp natp m back))))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -711,7 +729,9 @@
  (must-succeed*
   (defun g (x) (declare (xargs :verify-guards nil)) x)
   (defmacro m (x) `(g ,x))
-  (must-fail (isodata f ((x (natp natp identity m)))))))
+  (must-fail (isodata f ((x (natp natp identity m))))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -730,7 +750,9 @@
  (must-fail (isodata f ((x natid))))
 
  ;; ISO has no guard theorems:
- (must-fail (isodata f ((x nat-id-ng)))))
+ (must-fail (isodata f ((x nat-id-ng))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -762,7 +784,9 @@
   (must-succeed
    (isodata p{*} ((x (natp natp identity identity))) :predicate t))
   (must-succeed (isodata p{*} ((x nat-id)) :predicate t))
-  :with-output-off nil))
+  :with-output-off nil)
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -788,7 +812,9 @@
 
  ;; NEW-NAME is a name that already exists:
  (must-fail (isodata f ((x (natp natp identity identity))) :new-name len))
- (must-fail (isodata f ((x nat-id)) :new-name len)))
+ (must-fail (isodata f ((x nat-id)) :new-name len))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -828,7 +854,9 @@
  (must-fail
   (isodata f ((x (natp natp identity identity))) :old-to-new-name car-cdr-elim))
  (must-fail
-  (isodata f ((x nat-id)) :old-to-new-name car-cdr-elim)))
+  (isodata f ((x nat-id)) :old-to-new-name car-cdr-elim))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -868,7 +896,9 @@
  (must-fail
   (isodata f ((x (natp natp identity identity))) :new-to-old-name car-cdr-elim))
  (must-fail
-  (isodata f ((x nat-id)) :new-to-old-name car-cdr-elim)))
+  (isodata f ((x nat-id)) :new-to-old-name car-cdr-elim))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -897,7 +927,9 @@
  (must-fail
   (isodata f ((x (natp natp identity identity))) :verify-guards :nil))
  (must-fail
-  (isodata f ((x nat-id)) :verify-guards :nil)))
+  (isodata f ((x nat-id)) :verify-guards :nil))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -952,7 +984,9 @@
                       :hints (:oldp-of-old (("Goal" :in-theory nil)))))
   (must-fail (isodata f ((x (natp natp identity identity)))
                       :verify-guards nil
-                      :hints (:old-of-old (("Goal" :in-theory nil)))))))
+                      :hints (:old-of-old (("Goal" :in-theory nil))))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1152,7 +1186,9 @@
   :with-output-off nil)
  (must-succeed
   (isodata p ((x nat-id)) :predicate t :print :all)
-  :with-output-off nil))
+  :with-output-off nil)
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1436,7 +1472,9 @@
           (NATP (IDENTITY X))
           (< 10 (IDENTITY X)))))
   (assert-event ; no numbered name has been recorded
-   (equal (table-alist 'numbered-names-in-use (w state)) nil))))
+   (equal (table-alist 'numbered-names-in-use (w state)) nil)))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1518,7 +1556,9 @@
   (must-succeed*
    (in-theory (disable f))
    (isodata f ((x nat-id)) :new-enable nil)
-   (assert-event (not (fundef-enabledp 'f{1} state))))))
+   (assert-event (not (fundef-enabledp 'f{1} state)))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1615,7 +1655,9 @@
            :old-to-new-name p-correct-wrt-p{1})
   (must-be-redundant
    (DEFTHM P-CORRECT-WRT-P{1}
-     (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X))))))))
+     (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1708,7 +1750,9 @@
            :predicate t :new-to-old-name p{1}-correct-wrt-p)
   (must-be-redundant
    (DEFTHM P{1}-CORRECT-WRT-P
-     (IMPLIES (NATP X) (EQUAL (P{1} X) (P (IDENTITY X))))))))
+     (IMPLIES (NATP X) (EQUAL (P{1} X) (P (IDENTITY X)))))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1742,7 +1786,9 @@
   (assert-event (not (rune-enabledp '(:rewrite f-to-f{1}) state))))
  (must-succeed*
   (isodata f ((x nat-id)) :old-to-new-enable nil)
-  (assert-event (not (rune-enabledp '(:rewrite f-to-f{1}) state)))))
+  (assert-event (not (rune-enabledp '(:rewrite f-to-f{1}) state))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1776,7 +1822,9 @@
   (assert-event (not (rune-enabledp '(:rewrite f{1}-to-f) state))))
  (must-succeed*
   (isodata f ((x nat-id)) :new-to-old-enable nil)
-  (assert-event (not (rune-enabledp '(:rewrite f{1}-to-f) state)))))
+  (assert-event (not (rune-enabledp '(:rewrite f{1}-to-f) state))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1832,7 +1880,9 @@
    (must-succeed*
     (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
     (isodata p ((x nat-id)) :predicate t)
-    (assert-event (non-executablep 'p{1} (w state)))))))
+    (assert-event (non-executablep 'p{1} (w state))))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1866,7 +1916,9 @@
   (assert-event (not (guard-verified-p 'f{1} (w state)))))
  (must-succeed*
   (isodata f ((x nat-id)) :verify-guards nil)
-  (assert-event (not (guard-verified-p 'f{1} (w state))))))
+  (assert-event (not (guard-verified-p 'f{1} (w state)))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1885,7 +1937,9 @@
   (defiso nat-id natp natp identity identity)
   (isodata f ((x nat-id)))
   (assert-event (equal (guard 'f{1} nil (w state))
-                       '(if (natp x) (natp (identity x)) 'nil)))))
+                       '(if (natp x) (natp (identity x)) 'nil))))
+
+ :with-output-off nil)
 
 
 (must-succeed*
@@ -1901,7 +1955,9 @@
   (defun p (x) (and (natp x) (> x 10))) ; OLD
   (defiso nat-id natp natp identity identity)
   (isodata p ((x nat-id)) :predicate t)
-  (assert-event (equal (guard 'p{1} nil (w state)) '(natp x)))))
+  (assert-event (equal (guard 'p{1} nil (w state)) '(natp x))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1941,7 +1997,9 @@
   (defiso nat/int natp integerp nat-to-int int-to-nat)
   (must-succeed (isodata f ((n nat/int))))
   (must-succeed (isodata f (((:result n) nat/int))))
-  (must-succeed (isodata p ((n nat/int)) :predicate t))))
+  (must-succeed (isodata p ((n nat/int)) :predicate t)))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1987,7 +2045,9 @@
   (isodata f ((x (natp natp identity identity)))))
  (must-succeed*
   (define f (x) :guard (natp x) (1+ x) :enabled t)
-  (isodata f ((x nat-id)))))
+  (isodata f ((x nat-id))))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2003,7 +2063,9 @@
 
  (isodata f ((x (natp natp identity identity))) :verify-guards nil)
 
- (isodata f ((x nat-id)) :verify-guards nil))
+ (isodata f ((x nat-id)) :verify-guards nil)
+
+ :with-output-off nil)
 
 (must-succeed*
 
@@ -2019,7 +2081,9 @@
           :predicate t :verify-guards nil)
 
  (isodata p ((x nat-id))
-          :predicate t :verify-guards nil))
+          :predicate t :verify-guards nil)
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2062,7 +2126,9 @@
   (must-succeed
    (isodata f ((x nat/int))))
   (must-succeed
-   (isodata p ((x nat/int)) :predicate t))))
+   (isodata p ((x nat/int)) :predicate t)))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2125,7 +2191,9 @@
                     (* 2 i)
                   (1- (- (* 2 i))))))
   (must-succeed (isodata f ((x nat/int))))
-  (must-succeed (isodata p ((x nat/int)) :predicate t))))
+  (must-succeed (isodata p ((x nat/int)) :predicate t)))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2211,7 +2279,9 @@
   (must-succeed
    (isodata p ((x nat/int)) :predicate t))
   (must-succeed
-   (isodata p ((y nat/int)) :predicate t))))
+   (isodata p ((y nat/int)) :predicate t)))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2322,7 +2392,9 @@
             :predicate t
             ;; without the following :UNTRANSLATE T,
             ;; we get an implementation error from directed-untranslate:
-            :untranslate t))))
+            :untranslate t)))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2385,7 +2457,9 @@
   (must-succeed
    (isodata h (((x :result) nat/int))))
   (must-succeed
-   (isodata p ((x nat/int)) :predicate t))))
+   (isodata p ((x nat/int)) :predicate t)))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2481,7 +2555,9 @@
   (must-succeed
    (isodata f ((:result nat/int))))
   (must-succeed
-   (isodata p ((x nat/int)) :predicate t))))
+   (isodata p ((x nat/int)) :predicate t)))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2562,7 +2638,9 @@
   (must-succeed
    (isodata fib (((n :result) nat/int))))
   (must-succeed
-   (isodata p ((x nat/int)) :predicate t))))
+   (isodata p ((x nat/int)) :predicate t)))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2605,7 +2683,9 @@
 
  (must-succeed*
   (defiso nat-id natp natp (lambda (a) a) (lambda (a) a))
-  (isodata p ((x nat-id)) :predicate t)))
+  (isodata p ((x nat-id)) :predicate t))
+
+ :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

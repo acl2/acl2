@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -70,7 +70,9 @@
                             :jprimarr t)))
     (or pass
         (raise "The function ~x0 has ~x1 among its input and output types, ~
-                which violates the checks required by :NO-AIJ-TYPES T."
+                which violates the checks required by :NO-AIJ-TYPES T. ~
+                You may need to use JAVA::ATJ-MAIN-FUNCTION-TYPE ~
+                to record appropriate types for the function ~x0."
                fn type)))
   ///
   ;; for (STD::DEFLIST ATJ-CHECK-NO-AIJ-TYPE-LIST ...) below:
