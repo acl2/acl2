@@ -123,6 +123,10 @@ my $make = $ENV{"MAKE"} || "make";
 my @make_args = ();
 my $acl2 = $ENV{"ACL2"};
 my $acl2_books = $ENV{"ACL2_SYSTEM_BOOKS"};
+# add default useless runes setting if undefined
+if (! defined($ENV{"ACL2_USELESS_RUNES"}) ) {
+    $ENV{"ACL2_USELESS_RUNES"} = "-25";
+}
 my $startjob = $ENV{"STARTJOB"};
 if (! $startjob ) { $startjob = "bash"; }
 my $keep_going = 0;

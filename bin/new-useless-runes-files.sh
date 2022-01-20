@@ -65,7 +65,8 @@ echo '(defabbrev ur-fname (x)
     (if p
         (concatenate (quote string)
                      (subseq x 0 p)
-                     "/.sys"
+                     #-non-standard-analysis "/.sys"
+                     #+non-standard-analysis "/.sysr"
                      (subseq x p (length x))
                      "@useless-runes.lsp")
       (er hard? (quote ur-fname)

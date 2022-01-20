@@ -88,9 +88,10 @@
            (state (newline channel state))
            (state (princ$ "EXPORTED_VARS += ACL2_THINKS_BOOK_DIR_IS" channel state))
            (state (newline channel state))
-; Matt K. mod: It seems to be too much trouble to arrange that the
-; @useless-runes.lsp files be used for ACL2(r) and ACL2(p) in addition to ACL2.
-           #-(or acl2-par non-standard-analysis)
+; Eric M: although we default to ACL2_USELESS_RUNES=-25 now,
+; to keep ACL2(r) safe from incompatible useless runes files,
+; we now turn off useless runes for ACL2(r) in both
+; useless-runes-value and useless-runes-filename.
            (state (princ$ "export ACL2_USELESS_RUNES ?= -25" channel state))
            (state (newline channel state))
            (state (princ$ "EXPORTED_VARS += ACL2_USELESS_RUNES" channel state))
@@ -252,4 +253,3 @@
 (write-defrec-certdeps *defrecs* state)
 
 (good-bye 0)
-

@@ -342,6 +342,18 @@
                     (MOD (* 2 (FLOOR Y 2)) (EXPT 2 M)))
            :induct (INDUCT-FLOOR-BY-2-FLOOR-BY-2-SUB-1 x y m))))
 
+(defthm logand-of-bvchop-tighten-free
+  (implies (and (unsigned-byte-p freesize x)
+                (< freesize size)
+                (integerp y)
+                (integerp size))
+           (equal (logand x (bvchop size y))
+                  (logand x (bvchop freesize y))))
+  :hints (("Goal" :use (:instance logand-of-bvchop
+                                  (y (bvchop size y))
+                                  (m freesize)))))
+
+
 ;; You can chop one argument of bvand down to the size of the other argument
 (defthmd bvand-tighten-1
   (implies (and (unsigned-byte-p newsize x)
