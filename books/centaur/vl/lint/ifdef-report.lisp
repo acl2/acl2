@@ -136,11 +136,13 @@
          (implies (vl-locationlist-p x)
                   (vl-locationlist-p (mergesort x)))))
 
-(define vl-jp-definfo-1 ((x        vl-define-p)
+(define vl-jp-definfo-1 ((name stringp)
+                         (x        vl-define-p)
                          (ifdefmap vl-ifdef-use-map-p "Fast alist of all define uses in ifdefs")
                          (defmap   vl-def-use-map-p   "Fast alist of all define uses in non-ifdefs")
                          &key (ps 'ps))
   (b* (((vl-define x))
+       (x.name (string-fix name))
        (ifdefs (vl-ifdef-context-list->locs (cdr (hons-get x.name ifdefmap))))
        (uses   (cdr (hons-get x.name defmap)))
        ((mv active inactive) (vl-split-def-contextlist uses nil nil)))
@@ -174,14 +176,18 @@
                            (defmap   vl-def-use-map-p   "Already fast")
                            &key
                            (ps 'ps))
-  (if (atom defines)
-      ps
-    (vl-ps-seq
-     (vl-jp-definfo-1 (car defines) ifdefmap defmap)
-     (if (consp (cdr defines))
-         (vl-println ", ")
-       ps)
-     (vl-jp-definfo-aux (cdr defines) ifdefmap defmap))))
+  :measure (len (vl-defines-fix defines))
+  (b* ((defines (vl-defines-fix defines)))
+    (if (atom defines)
+        ps
+      (if (cdar defines)
+          (vl-ps-seq
+           (vl-jp-definfo-1 (caar defines) (cdar defines) ifdefmap defmap)
+           (if (consp (cdr defines))
+               (vl-println ", ")
+             ps)
+           (vl-jp-definfo-aux (cdr defines) ifdefmap defmap))
+        (vl-jp-definfo-aux (cdr defines) ifdefmap defmap)))))
 
 (define vl-jp-definfo ((defines  vl-defines-p)
                        (ifdefmap vl-ifdef-use-map-p)
@@ -192,10 +198,8 @@
        (defmap   (make-fast-alist defmap))
        (ps       (vl-ps-seq
                   (vl-print "{")
-                  (vl-jp-definfo-aux defines ifdefmap defmap)
+                  (vl-jp-definfo-aux (fast-alist-clean defines) ifdefmap defmap)
                   (vl-print "}"))))
     (fast-alist-free ifdefmap)
     (fast-alist-free defmap)
     ps))
-
-
