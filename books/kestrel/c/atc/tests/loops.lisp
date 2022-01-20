@@ -50,14 +50,3 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c::atc |f$loop| |f| :output-file "loops.c")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-#|
-
-On macOS or Linux, you can compile and run this code as follows:
-
-  gcc -o loops loops.c loops-test.c
-  ./f
-
-|#

@@ -30,9 +30,10 @@
   (and (natp rand)
        (< rand *m31*)))
 
-(defthm minstd-rand0p-forward-to-natp
+(defthm minstd-rand0p-forward
   (implies (minstd-rand0p rand)
-           (natp rand))
+           (and (natp rand)
+                (< rand *m31*)))
   :rule-classes :forward-chaining)
 
 ;; Compute the next pseudo-random value from the current value, RAND.

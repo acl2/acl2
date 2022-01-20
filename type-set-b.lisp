@@ -1,5 +1,5 @@
 ; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2021, Regents of the University of Texas
+; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1497,7 +1497,19 @@
                   posn)
              (concatenate 'string
                           (subseq full-book-name 0 posn)
-                          "/.sys"
+
+; Currently, the function useless-runes-value avoids creation of useless-runes
+; files with ACL2(r).  If that is changed, the designation below of distinct
+; useless-runes directories for ACL2 and ACL2r (.sys and .sysr, respectively)
+; will prevent ACL2(r) from seeing the (standard) ACL2 useless-runes files (and
+; vice-versa).  Note also that .sysr/ is in books/.gitignore, providing
+; additional protection against the addition of ACL2(r) useless-runes files to
+; the github repository (even though the code in useless-runes-value should
+; prevent their creation), since files in ignored directories can't be
+; committed in git.
+
+                          #-non-standard-analysis "/.sys"
+                          #+non-standard-analysis "/.sysr"
                           (subseq full-book-name posn (- len 5))
                           "@useless-runes.lsp"))))
 

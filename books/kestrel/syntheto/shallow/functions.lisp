@@ -380,6 +380,7 @@
                                 (consp (cdar returns-list))
                                 (cadar returns-list)))
        (predicatep (or (and trans-body
+                            (consp trans-body)
                             (member (car trans-body) '(and or)))
                        (equal single-return-type 'booleanp)))
        (param-list (if predicatep (strip-cars param-list) param-list))

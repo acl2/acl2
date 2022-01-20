@@ -13,6 +13,7 @@
 (include-book "language/top")
 (include-book "json/top")
 (include-book "transformations/top")
+(include-book "test/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,8 +23,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Yul is a programming language,
-     which is being used as an intermediate language
+    "Yul is a programming language
+     that is being used as an intermediate language
      in the compilation of "
     (xdoc::ahref "https://ethereum.org" "Ethereum")
     " smart contracts written in in the Solidity language.
@@ -48,7 +49,7 @@
      the Yul documentation (part of the Solidity documentation)
      is referenced as `[Yul]`;
      subsections of it are referenced by appending
-     by appending their titles separated by colons,  e.g.
+     their titles separated by colons,  e.g.
      `[Yul: Specification of Yul: Scoping Rules]`.
      These square-bracketed references may be used
      as nouns or parenthetically.")

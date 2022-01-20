@@ -41,6 +41,7 @@
 (include-book "logapp")
 (include-book "logtail")
 (include-book "logext")
+(include-book "logops")
 
 ;; Functions to break down and create BVs:
 (include-book "bvchop-def")
@@ -167,6 +168,7 @@
 (include-book "rules9")
 (include-book "rules10")
 (include-book "rules11")
+(include-book "rules12")
 
 ;; (include-book "bv-tests") ; not including this one because it just contains tests
 

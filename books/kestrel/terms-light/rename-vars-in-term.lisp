@@ -99,7 +99,7 @@
                                           all-lambda-formals
                                           (strip-cdrs renaming)
                                           (strip-cdrs rec)))
-                   (fresh-name (fresh-var-name formal 2 vars-to-avoid)))
+                   (fresh-name (fresh-symbol-aux formal 2 vars-to-avoid)))
               (acons formal fresh-name rec))
           ;; no clash and no renaming (don't even bother to add an entry):
           (make-renaming-for-lambda (rest lambda-formals) all-lambda-formals renaming vars-to-avoid))))))

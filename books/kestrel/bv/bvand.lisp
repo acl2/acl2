@@ -1,7 +1,7 @@
 ; Bitwise and
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -202,6 +202,24 @@
   :hints (("Goal" :use (:instance bvand-with-mask-basic)
            :in-theory (disable bvand-with-mask-basic))))
 
+;lets the sizes differ
+(defthm bvand-with-mask-arg2-gen
+  (implies (and (<= size size2)
+                (natp size)
+                (natp size2))
+           (equal (bvand size2 (+ -1 (expt 2 size)) x)
+                  (bvchop size x)))
+  :hints (("Goal" :in-theory (enable bvand))))
+
+;lets the sizes differ
+(defthm bvand-with-mask-arg3-gen
+  (implies (and (<= size size2)
+                (natp size)
+                (natp size2))
+           (equal (bvand size2 x (+ -1 (expt 2 size)))
+                  (bvchop size x)))
+  :hints (("Goal" :in-theory (enable bvand))))
+
 ;requires the number of 1's in k to be size
 (defthm bvand-with-mask
   (implies (and (syntaxp (quotep k)) ;new
@@ -324,6 +342,18 @@
                     (MOD (* 2 (FLOOR Y 2)) (EXPT 2 M)))
            :induct (INDUCT-FLOOR-BY-2-FLOOR-BY-2-SUB-1 x y m))))
 
+(defthm logand-of-bvchop-tighten-free
+  (implies (and (unsigned-byte-p freesize x)
+                (< freesize size)
+                (integerp y)
+                (integerp size))
+           (equal (logand x (bvchop size y))
+                  (logand x (bvchop freesize y))))
+  :hints (("Goal" :use (:instance logand-of-bvchop
+                                  (y (bvchop size y))
+                                  (m freesize)))))
+
+
 ;; You can chop one argument of bvand down to the size of the other argument
 (defthmd bvand-tighten-1
   (implies (and (unsigned-byte-p newsize x)
@@ -346,3 +376,15 @@
                   (bvand newsize x y)))
   :hints (("Goal" :in-theory (enable bvand
                                      logand-of-bvchop))))
+
+(defthm <=-of-bvand-arg1-linear
+  (implies (natp x)
+           (<= (bvand size x y) x))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable bvand))))
+
+(defthm <=-of-bvand-arg2-linear
+  (implies (natp y)
+           (<= (bvand size x y) y))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable bvand))))

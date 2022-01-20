@@ -1,5 +1,5 @@
 ; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2021, Regents of the University of Texas
+; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1063,6 +1063,150 @@
   (setq *accumulated-warnings* nil)
   nil)
 
+; See basis-a.lisp for (defrec ld-history-entry ...).
+
+(defconst *empty-ld-history-entry*
+  (make ld-history-entry))
+
+(defun ld-history (state)
+  (declare (xargs :stobjs state
+                  :guard (f-boundp-global 'ld-history state)))
+  (f-get-global 'ld-history state))
+
+(defun ld-history-entry-input (x)
+  (declare (xargs :guard (weak-ld-history-entry-p x)))
+  (access ld-history-entry x :input))
+
+(defun ld-history-entry-error-flg (x)
+  (declare (xargs :guard (weak-ld-history-entry-p x)))
+  (access ld-history-entry x :error-flg))
+
+(defun ld-history-entry-stobjs-out/value (x)
+  (declare (xargs :guard (weak-ld-history-entry-p x)))
+  (access ld-history-entry x :stobjs-out/value))
+
+(defun ld-history-entry-stobjs-out (x)
+  (declare (xargs :guard (weak-ld-history-entry-p x)))
+  (and (not (access ld-history-entry x :error-flg))
+       (let ((y (access ld-history-entry x :stobjs-out/value)))
+         (and (consp y) ; always true
+              (car y)))))
+
+(defun ld-history-entry-value (x)
+  (declare (xargs :guard (weak-ld-history-entry-p x)))
+  (and (not (access ld-history-entry x :error-flg))
+       (let ((y (access ld-history-entry x :stobjs-out/value)))
+         (and (consp y) ; always true
+              (cdr y)))))
+
+(defun ld-history-entry-user-data (x)
+  (declare (xargs :guard (weak-ld-history-entry-p x)))
+  (access ld-history-entry x :user-data))
+
+(defstub set-ld-history-entry-user-data (* * * state) => *)
+
+(defun set-ld-history-entry-user-data-default (input error-flg stobjs-out/value
+                                                 state)
+  (declare (ignore input error-flg stobjs-out/value state)
+           (xargs :stobjs state))
+  nil)
+
+(defun adjust-ld-history (x state)
+  (declare (xargs :stobjs state
+                  :guard (and (or (and (integerp x)
+                                       (not (zerop x)))
+                                  (booleanp x))
+                              (f-boundp-global 'ld-history state)
+                              (consp (f-get-global 'ld-history state)))))
+  (let* ((ld-history (f-get-global 'ld-history state))
+         (len (len ld-history))
+         (end (cdr ld-history)))
+    (cond ((and (integerp x)
+                (not (zerop x)))
+           (cond
+            ((null end)
+             (prog2$
+; We use hard-error here rather than (er soft ...) so that this function can be
+; in :logic mode.
+              (hard-error 'adjust-ld-history
+                          "It is illegal to call ~x0 on an integer argument ~
+                           here, because the ld-history is in single-entry ~
+                           mode.  See :DOC ld-history."
+                          (list (cons #\0 'adjust-ld-history)))
+              (value :error)))
+            (t
+             (let ((abs (abs x)))
+               (cond
+                ((< abs len)
+                 (let* ((new-len (if (< 0 x)
+                                     x           ; i.e., abs
+                                   (- len abs))) ; i.e., (+ len x)
+                        (new-ld-history
+                         (cond ((int= new-len 1)
+                                (list (car ld-history)
+; Note that *empty-ld-history-entry* will be removed later; see
+; extend-ld-history.
+                                      *empty-ld-history-entry*))
+                               (t (take new-len
+; We use fix-true-list here to help with guard verification.
+                                        (fix-true-list ld-history))))))
+                   (pprogn (f-put-global 'ld-history new-ld-history state)
+                           (value `(:ld-history-truncated
+                                    :old-length ,len
+                                    :new-length ,new-len)))))
+                (t (value `(:no-change :length ,len))))))))
+          ((and (eq x t) end)
+           (value `(:no-change :length ,len)))
+          ((and (eq x nil) (null end))
+           (value `(:no-change :length ,len)))
+          ((eq x t)
+           (pprogn (f-put-global 'ld-history
+                                 (list (car ld-history)
+; Note that *empty-ld-history-entry* will be removed later; see
+; extend-ld-history.
+                                       *empty-ld-history-entry*)
+                                 state)
+                   (value '(:saving-ld-history t))))
+          ((eq x nil)
+           (pprogn (f-put-global 'ld-history (list (car ld-history)) state)
+                   (value '(:saving-ld-history nil))))
+          (t
+           (prog2$
+; We use illegal here rather than (er soft ...) so that this function can be in
+; :logic mode.
+            (illegal 'adjust-ld-history
+                     "Illegal value for ~x0: ~x1.  Note: Normally ~
+                      guard-checking would avoid this error.  See :DOC ~
+                      ld-history."
+                     (list (cons #\0 'adjust-ld-history)
+                           (cons #\1 x)))
+            (value :error))))))
+
+(defun extend-ld-history (input error-flg trans-ans state)
+  (declare (xargs :stobjs state
+                  :guard (and (f-boundp-global 'ld-history state)
+                              (consp (f-get-global 'ld-history state)))))
+  (let* ((ld-history (f-get-global 'ld-history state))
+         (new-entry (make ld-history-entry
+                          :input input
+                          :error-flg error-flg
+                          :stobjs-out/value trans-ans
+                          :user-data
+                          (set-ld-history-entry-user-data input error-flg
+                                                          trans-ans state))))
+    (f-put-global 'ld-history
+                  (cond ((eq (cdr ld-history) nil) ; keep single entry
+                         (list new-entry))
+                        ((and (consp (cdr ld-history)) ; for guard
+                              (equal (cadr ld-history)
+                                     *empty-ld-history-entry*))
+; We remove the temporary entry *empty-ld-history-entry*, as promised in
+; comments in adjust-ld-history.  See also discussion of the Special Case in
+; :doc ld-history.
+                         (list new-entry (car ld-history)))
+                        (t (cons new-entry ld-history)))
+                  state)))
+
 (defun ld-read-eval-print (state)
 
 ; This is LD's read-eval-print step.  We read a form from standard-oi, eval it,
@@ -1148,9 +1292,9 @@
 
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx).
 
-                             (er-progn
-                              (assign last-ld-result (cons error-flg
-                                                           trans-ans))
+                             (pprogn
+                              (extend-ld-history form error-flg trans-ans
+                                                 state)
                               (cond
                                (error-flg (mv t nil state))
                                ((and (ld-error-triples state)
@@ -4642,34 +4786,23 @@
                              nil
                              channel state nil)
                         (value :invisible))))
-     (t (let ((old-gag-state (f-get-global 'gag-state state)))
-          (state-global-let*
-           ((saved-output-reversed nil) ; preserve this (value doesn't matter)
-            (inhibit-output-lst inhibit-output-lst)
-            (gag-mode gag-mode)
-            (gag-state-saved (f-get-global 'gag-state-saved state)))
-           (pprogn (initialize-summary-accumulators state)
-                   (save-event-state-globals
+     (t (state-global-let*
+         ((saved-output-reversed nil) ; preserve this (value doesn't matter)
+          (inhibit-output-lst inhibit-output-lst)
+          (gag-mode gag-mode)
+          (gag-state-saved (f-get-global 'gag-state-saved state)))
+         (pprogn (initialize-summary-accumulators state)
+                 (save-event-state-globals
+                  (revert-world
+                   (state-global-let*
+                    ((saved-output-p nil)
+                     (acl2-world-alist (f-get-global 'acl2-world-alist
+                                                     state)))
                     (pprogn
-                     (if old-gag-state
-                         state
-
-; Otherwise we set gag-state to nil after saving the gag-state in
-; gag-state-saved.
-
-                       (f-put-global 'gag-state
-                                     (f-get-global 'gag-state-saved state)
-                                     state))
-                     (revert-world
-                      (state-global-let*
-                       ((saved-output-p nil)
-                        (acl2-world-alist (f-get-global 'acl2-world-alist
-                                                        state)))
-                       (pprogn
-                        (pop-current-acl2-world 'saved-output-reversed state)
-                        (print-saved-output-lst saved-output io-markers
-                                                stop-markers ctx
-                                                state)))))))))))))
+                     (pop-current-acl2-world 'saved-output-reversed state)
+                     (print-saved-output-lst saved-output io-markers
+                                             stop-markers ctx
+                                             state)))))))))))
 
 (defun convert-io-markers-lst (io-markers acc)
   (cond ((endp io-markers) acc)

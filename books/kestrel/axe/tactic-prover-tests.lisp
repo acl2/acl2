@@ -125,21 +125,21 @@
 ;;                                      (booleanp-rules)
 ;;                                      (amazing-rules))))
 
-;wow!  This proves even with timeout 0 (presumably by rewriting)
+;wow!  This proves even with max-conflicts 0 (presumably by rewriting)
 (deftest
-  (prove-with-tactics '(equal (bvplus '32 x y) (bvplus '32 y x)) :tactics '(:stp) :timeout 0))
+  (prove-with-tactics '(equal (bvplus '32 x y) (bvplus '32 y x)) :tactics '(:stp) :max-conflicts 0))
 
 (deftest
-  (prove-with-tactics '(equal (bvplus '32 x y) (bvplus '32 y x)) :tactics '(:stp) :timeout 100000))
+  (prove-with-tactics '(equal (bvplus '32 x y) (bvplus '32 y x)) :tactics '(:stp) :max-conflicts 100000))
 
 (deftest
-  (prove-with-tactics '(equal (bvplus '32 x y) (bvplus '32 y x)) :tactics '(:stp) :timeout nil))
+  (prove-with-tactics '(equal (bvplus '32 x y) (bvplus '32 y x)) :tactics '(:stp) :max-conflicts nil))
 
-;wow!  This proves even with timeout 0 (presumably by rewriting)
+;wow!  This proves even with max-conflicts 0 (presumably by rewriting)
 (deftest
-  (prove-with-tactics '(equal (bvmult '4 x (bvmult '4 y z)) (bvmult '4 z (bvmult '4 y x))) :tactics '(:stp) :timeout 0))
+  (prove-with-tactics '(equal (bvmult '4 x (bvmult '4 y z)) (bvmult '4 z (bvmult '4 y x))) :tactics '(:stp) :max-conflicts 0))
 
-;; TODO: Add tests where the :timeout arg matters
+;; TODO: Add tests where the :max-conflicts arg matters
 
 ;; TODO: Test STP-based pruning.
 

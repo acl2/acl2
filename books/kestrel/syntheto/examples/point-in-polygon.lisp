@@ -258,7 +258,7 @@ function max_x(vertices: seq<point>) returns (m: int) ensures m >= 0 {
                                 :name (make-identifier :name "y"))
                          :else (make-expression-variable
                                 :name (make-identifier :name "x")))
-                  :measure nil)))) 
+                  :measure nil))))
 
 (process-syntheto-toplevel
  (make-toplevel-function
@@ -945,7 +945,7 @@ theorem path_of_path_vertices
                                                   :name (make-identifier :name "edges")))))))
 
 #|
-function append_first(vertices:seq<point>) assumes !is_empty(vertices) 
+function append_first(vertices:seq<point>) assumes !is_empty(vertices)
   returns (s: seq<point>) ensures points2_p(s) {
   return append(vertices, add(first(vertices), empty));
 }
@@ -1348,7 +1348,7 @@ function collinear(p1: point, p2: point, p3: point) returns (b:bool) {
                           :alternative (make-identifier :name "colinear")
                           :fields (list)))))))
 
- 
+
 
 #|
 function on_segment(p1: point, p2: point, p3: point) returns (b: bool) {
@@ -1730,7 +1730,7 @@ function edges_intersect(edge1: edge, edge2: edge) returns (b: bool) {
                                            :target (make-expression-variable
                                                     :name (make-identifier :name "edge2"))
                                            :field (make-identifier :name "p2"))))
-                  :measure nil))))  
+                  :measure nil))))
 
 #|
 // return true when no three adjacent points in a list are collinear
@@ -2051,7 +2051,7 @@ function non_adjacent_edges_do_not_intersect(edges: seq<edge>) returns (b: bool)
                        :else (make-expression-literal
                               :get (make-literal-boolean
                                     :value nil))))
-         :measure nil)))) 
+         :measure nil))))
 
 #|
 // A simple polygon is built from a sequence of n (>= 3) distinct vertices
@@ -2402,7 +2402,7 @@ function point_in_polygon(p: point, polygon: seq<point>) assumes simple_polygon(
 
 #|
 // Introduced because syntheto doesn't currently have conditional expressions
-function rest1(vertices:seq<point>) assumes !(is_empty(vertices) || is_empty(rest(vertices))) 
+function rest1(vertices:seq<point>) assumes !(is_empty(vertices) || is_empty(rest(vertices)))
   returns (vs:seq<point>)  ensures points2_p(vs) {
   if (is_empty(rest(rest(vertices)))) {
     empty;}
@@ -2913,9 +2913,15 @@ theorem p2_first_path
 /* Derivation */
 
 function crossings_count_aux_1 =
-  transform crossings_count_aux 
+  transform crossings_count_aux
     by tail_recursion {new_parameter_name = count}
 |#
+
+; Matt K. addition: Avoid ACL2(p) error in call of process-syntheto-toplevel
+; below when waterfall-parallelism is enabled: "Clause-processors that return
+; one or more stobjs are not officially supported when waterfall parallelism is
+; enabled."
+(set-waterfall-parallelism nil)
 
 (must-eval-to--then-eval
  (process-syntheto-toplevel

@@ -319,6 +319,9 @@
                                             (= 1 (len (fargs lit))))
                                        ;; if the clause is (or (not A) ...rest...)
                                        ;; we can assume A when processing rest
+                                       ;; More generally, if we have (or LIT ...rest...)
+                                       ;; we can assume anything implied by LIT's negation, when
+                                       ;; processing rest (TODO: Consider when LIT is an IMPLIES).
                                        (append (get-conjuncts-of-term (farg1 lit))
                                                true-terms)
                                      true-terms)

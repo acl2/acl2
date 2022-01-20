@@ -203,6 +203,11 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    D<
+    L<
+    LEX-FIX
+    LEXP
+    NFIX-LIST
   ))
 
 (defconst *special-ops*

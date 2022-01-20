@@ -4104,7 +4104,6 @@
               ((when erp) (mv erp nil))
               (node-replacement-array (make-into-array 'node-replacement-array node-replacement-alist))
               (node-replacement-array-num-valid-nodes (+ 1 (max-key node-replacement-alist 0))) ;todo: optimize if no assumptions?  the array len of 0 will prevent any lookup
-              ((when erp) (mv erp nil))
               ((mv erp
                    new-nodenum-or-quotep
                    dag-array

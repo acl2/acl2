@@ -1,7 +1,7 @@
 ; Utilities for manipulating terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -74,7 +74,7 @@
            (alistp alist))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-;;drop any pair in ALIST whose car mentions any of the variables in VARS
+;;drop any pair in ALIST whose key or value mentions any of the variables in VARS
 (defun drop-pairs-that-mention-vars (alist vars)
   (declare (xargs :guard (and (pseudo-term-alistp alist)
                               (symbol-listp vars))))

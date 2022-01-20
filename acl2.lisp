@@ -1,5 +1,5 @@
 ; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2021, Regents of the University of Texas
+; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1109,6 +1109,7 @@ ACL2 from scratch.")
                      (compress1 'iprint-ar
                                 (f-get-global 'iprint-ar state))
                      state)
+       (f-put-global 'ld-history (list (make ld-history-entry)) state)
        (f-put-global 'compiler-enabled
 
 ; Either t, nil, or :books is fine here.  For example, it might be reasonable

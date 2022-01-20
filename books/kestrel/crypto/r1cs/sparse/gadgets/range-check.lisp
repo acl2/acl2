@@ -2250,7 +2250,7 @@
                 (symbol-listp avars)
                 (symbol-listp pivars)
                 (equal n (len avars))
-                (equal n (len pivars))
+                (equal n (len pivars)) ; todo: perhaps we never use the leading pivar
                 (no-duplicatesp-equal avars)
                 (no-duplicatesp-equal pivars)
                 (not (intersection-equal avars pivars))

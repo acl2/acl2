@@ -60,7 +60,7 @@
 
 (defconst *vl-generic-help*
   "VL Verilog Toolkit
-Copyright (C) 2008-2016 Centaur Technology <http://www.centtech.com>
+Copyright (C) 2008-2016 Centaur Technology
 
 Usage: vl <command> [arguments]
 

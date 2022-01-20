@@ -1800,7 +1800,7 @@
    (def-tr my-run (pc prog sta)
      (declare (xargs :guard (and (natp pc) (true-listp prog))
                      :stobjs sta
-                     :guard-simplify nil
+                     :guard-simplify :limited
                      :guard-debug t))
      (if (< (len prog) pc)
          sta

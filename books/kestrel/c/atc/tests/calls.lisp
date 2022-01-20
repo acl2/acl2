@@ -36,14 +36,3 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c::atc |f| |g| |h| :output-file "calls.c")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-#|
-
-On macOS or Linux, you can compile and run this code as follows:
-
-  gcc -o calls calls.c calls-test.c
-  ./calls
-
-|#

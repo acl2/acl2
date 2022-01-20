@@ -33,6 +33,7 @@
 (include-book "pairlis-dollar")
 (include-book "pairlis-dollar-fast")
 (include-book "uniquify-alist-eq")
+(include-book "alists-equiv-on")
 
 ;; Books mixing built-in and new functions:
 (include-book "strip-cars2")

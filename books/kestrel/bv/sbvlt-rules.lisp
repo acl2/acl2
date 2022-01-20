@@ -14,6 +14,7 @@
 (include-book "sbvlt")
 (include-book "bvlt")
 (local (include-book "logext"))
+(local (include-book "logapp"))
 (include-book "kestrel/utilities/myif-def" :dir :system)
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 

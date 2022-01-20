@@ -1,4 +1,4 @@
-# A script to call the STP solver with a timeout
+# A script to call the STP solver with a limit on the number of conflicts
 #
 # Copyright (C) 2008-2011 Eric Smith and Stanford University
 # Copyright (C) 2013-2021 Kestrel Institute
@@ -11,20 +11,20 @@
 
 #!/bin/bash
 
-# This script calls STP (with a timeout) on a file.
+# This script calls STP (with a max conflicts) on a file.
 
 set -e # Exit immediately on errors
 
 #Check the number of arguments supplied:
 if [ $# -ne 4 ]
 then
-    echo "callstplimited.bash: ERROR: Arguments must be the input file, output file, timeout (number of conflicts), and whether to generate a counterexample (y/n)."
+    echo "callstplimited.bash: ERROR: Arguments must be the input file, output file, max conflicts, and whether to generate a counterexample (y/n)."
     exit 1
 fi
 
 INPUT_FILE=$1  # This should be the .cvc file
 OUTPUT_FILE=$2 # The caller should check whether this contains "Valid."
-TIMEOUT=$3 # number of conflicts
+MAX_CONFLICTS=$3 # number of conflicts
 COUNTEREXAMPLE=$4
 
 if [ ${COUNTEREXAMPLE} = "y" ] ; then
@@ -41,16 +41,16 @@ fi
 echo "CALLING STP"
 
 ## Requires a relatively new STP:
-stp ${COUNTEREXAMPLE_ARGS} --max_num_confl $TIMEOUT -r ${INPUT_FILE} > ${OUTPUT_FILE}
+stp ${COUNTEREXAMPLE_ARGS} --max_num_confl $MAX_CONFLICTS -r ${INPUT_FILE} > ${OUTPUT_FILE}
 
 # if [ -f "${NEWSTP}" ]; then
 #     echo "Using NEWSTP, which is ${NEWSTP}."
 #     ## Call a relatively new version of STP:
 #     ## echo "Calling new STP: ${NEWSTP}."
-#     ${NEWSTP} ${COUNTEREXAMPLE_ARGS} --max_num_confl $TIMEOUT -r ${INPUT_FILE} > ${OUTPUT_FILE}
+#     ${NEWSTP} ${COUNTEREXAMPLE_ARGS} --max_num_confl $MAX_CONFLICTS -r ${INPUT_FILE} > ${OUTPUT_FILE}
 # elif [ -f "${STP}" ]; then
 #     ## Call a relatively old version of STP:
-#     ${STP} ${COUNTEREXAMPLE_ARGS} -g $TIMEOUT -r ${INPUT_FILE} > ${OUTPUT_FILE}
+#     ${STP} ${COUNTEREXAMPLE_ARGS} -g $MAX_CONFLICTS -r ${INPUT_FILE} > ${OUTPUT_FILE}
 # else
 #     echo "ERROR: callstplimited.bash: Cannot find NEWSTP or STP"
 #     echo "(NEWSTP environment var = ${NEWSTP})"

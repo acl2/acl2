@@ -1,6 +1,6 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -300,6 +300,42 @@
                            :a1...an (a1 a2)
                            :b1...bm (b1 b2)
                            :aa1...aan (a1$ a2$)
+                           :bb1...bbm (b1$ b2$))
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+ (test-title "Some theorems enabled.")
+ (must-be-before-defmapping)
+ (enable-all)
+ (defmapping map doma domb alpha beta :thm-enable (:alpha-image :domb-guard))
+ (must-be-after-defmapping :alpha-image-enable t
+                           :domb-guard-enable t
+                           :a1...an (a1 a2)
+                           :aa1...aan (a1$ a2$)
+                           :b1...bm (b1 b2)
+                           :bb1...bbm (b1$ b2$))
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+ (test-title "All (for default options) theorems enabled.")
+ (must-be-before-defmapping)
+ (enable-all)
+ (defmapping map doma domb alpha beta :thm-enable (:alpha-image :beta-image
+                                                   :doma-guard :domb-guard
+                                                   :alpha-guard :beta-guard))
+ (must-be-after-defmapping :alpha-image-enable t
+                           :beta-image-enable t
+                           :doma-guard-enable t
+                           :domb-guard-enable t
+                           :alpha-guard-enable t
+                           :beta-guard-enable t
+                           :a1...an (a1 a2)
+                           :aa1...aan (a1$ a2$)
+                           :b1...bm (b1 b2)
                            :bb1...bbm (b1$ b2$))
  :with-output-off nil)
 

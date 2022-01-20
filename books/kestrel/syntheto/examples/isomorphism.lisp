@@ -13,8 +13,12 @@
 (include-book "../base-theory")
 
 #|
+functions nat_p(x:int) returns (b: bool) {
+  return x >= 0;
+}
+
 subtype nat {
-  x:int | x >= 0
+  x:int | nat_p(x)
 }
 
 function add1(x: nat) returns (y: nat | y > 0) {
@@ -35,6 +39,28 @@ function add1_2 =
                     new_to_old = id,
                     simplify = true}
 |#
+
+(defconst *function-nat_p*
+  (make-toplevel-function
+   :get
+   (make-function-definition
+    :header
+    (make-function-header
+     :name (make-identifier :name "nat_p")
+     :inputs (list (make-typed-variable :name (make-identifier :name "x")
+                                        :type (type-integer)))
+     :outputs (list (make-typed-variable :name (make-identifier :name "b")
+                                         :type (type-boolean))))
+    :definer
+    (make-function-definer-regular
+     :body
+     (make-expression-binary
+         :operator (binary-op-ge)
+         :left-operand
+         (make-expression-variable :name (identifier "x"))
+         :right-operand
+         (make-expression-literal :get (literal-integer 0)))))))
+(process-syntheto-toplevel *function-nat_p*)
 
 (defconst *subtype-nat*
   (let ((x (identifier "x")))
@@ -121,10 +147,10 @@ function add1_2 =
                            :value (make-transform-argument-value-identifier :name (make-identifier :name "xx")))
                           (make-transform-argument
                            :name (make-identifier :name "old_type")
-                           :value (make-transform-argument-value-identifier :name (make-identifier :name "nat")))
+                           :value (make-transform-argument-value-identifier :name (make-identifier :name "nat_p")))
                           (make-transform-argument
                            :name (make-identifier :name "new_type")
-                           :value (make-transform-argument-value-identifier :name (make-identifier :name "nat")))
+                           :value (make-transform-argument-value-identifier :name (make-identifier :name "nat_p")))
                           (make-transform-argument
                            :name (make-identifier :name "old_to_new")
                            :value (make-transform-argument-value-identifier :name (make-identifier :name "id")))

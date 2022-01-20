@@ -403,10 +403,9 @@
  <p>This material is based upon work supported by the National Science
   Foundation under Grant Number CNS-1525472.</p>
 
- <p>Thanks to the folks at <a href=\"http://www.centtech.com\">Centaur
- Technology</a> \(Anna Slobodova, Jared Davis, and Sol Swords\) for
- their suggestions and their wonderful libraries, especially the
- @('bitops') books.</p>
+ <p>Thanks to folks formerly at Centaur Technology \(including Anna Slobodova,
+ Jared Davis, and Sol Swords\) for their suggestions and their wonderful
+ libraries, especially the @('bitops') books.</p>
 
  <p>Thanks to Marijn Heule for contributing his SAT solver for model
  validation.</p>

@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; October 2021
+;; January 2022
 
 (in-package "RTL")
 
@@ -958,6 +958,7 @@
    (in-theory (disable acl2::|(* (if a b c) x)|
                        acl2::|(* x (if a b c))|
                        acl2::|(+ x (if a b c))|
+                       acl2::|(+ (if a b c) x)|
                        acl2::|(- (if a b c))|
                        acl2::|(/ (if a b c))|
                        acl2::|(< (if a b c) x)|
@@ -979,6 +980,20 @@
                        acl2::not-integerp-1e
                        acl2::not-integerp-2e
                        acl2::not-integerp-3e)))
+
+  (defthmd-nl sum-hp-lemma
+    (or (<= (abs (+ (decode a (hp)) (decode b (hp))))
+            (- (spn (hp))
+               (expt 2 (+ 1 (- (bias (hp))) (- (prec (hp)))))))
+        (<= (spn (hp))
+            (abs (+ (decode a (hp)) (decode b (hp))))))
+    :hints (("Goal"
+             :use (:instance int+1<=
+                             (x (+ (manf a (hp)) (manf b (hp))))
+                             (y *2^10*))
+             :in-theory (enable decode ddecode ndecode
+                                sgnf expf manf
+                                spn-hp))))
 
   (local
    (defthmd-nl++ quotient-hp-lemma-aux-1
@@ -1124,6 +1139,7 @@
    (in-theory (disable acl2::|(* (if a b c) x)|
                        acl2::|(* x (if a b c))|
                        acl2::|(+ x (if a b c))|
+                       acl2::|(+ (if a b c) x)|
                        acl2::|(- (if a b c))|
                        acl2::|(/ (if a b c))|
                        acl2::|(< (if a b c) x)|
@@ -1145,6 +1161,20 @@
                        acl2::not-integerp-1e
                        acl2::not-integerp-2e
                        acl2::not-integerp-3e)))
+
+  (defthmd-nl sum-sp-lemma
+    (or (<= (abs (+ (decode a (sp)) (decode b (sp))))
+            (- (spn (sp))
+               (expt 2 (+ 1 (- (bias (sp))) (- (prec (sp)))))))
+        (<= (spn (sp))
+            (abs (+ (decode a (sp)) (decode b (sp))))))
+    :hints (("Goal"
+             :use (:instance int+1<=
+                             (x (+ (manf a (sp)) (manf b (sp))))
+                             (y *2^23*))
+             :in-theory (enable decode ddecode ndecode
+                                sgnf expf manf
+                                spn-sp))))
 
   (local
    (defthmd-nl++ quotient-sp-lemma-aux-1
@@ -1290,6 +1320,7 @@
    (in-theory (disable acl2::|(* (if a b c) x)|
                        acl2::|(* x (if a b c))|
                        acl2::|(+ x (if a b c))|
+                       acl2::|(+ (if a b c) x)|
                        acl2::|(- (if a b c))|
                        acl2::|(/ (if a b c))|
                        acl2::|(< (if a b c) x)|
@@ -1311,6 +1342,20 @@
                        acl2::not-integerp-1e
                        acl2::not-integerp-2e
                        acl2::not-integerp-3e)))
+
+  (defthmd-nl sum-dp-lemma
+    (or (<= (abs (+ (decode a (dp)) (decode b (dp))))
+            (- (spn (dp))
+               (expt 2 (+ 1 (- (bias (dp))) (- (prec (dp)))))))
+        (<= (spn (dp))
+            (abs (+ (decode a (dp)) (decode b (dp))))))
+    :hints (("Goal"
+             :use (:instance int+1<=
+                             (x (+ (manf a (dp)) (manf b (dp))))
+                             (y *2^52*))
+             :in-theory (enable decode ddecode ndecode
+                                sgnf expf manf
+                                spn-dp))))
 
   (local
    (defthmd-nl++ quotient-dp-lemma-aux-1

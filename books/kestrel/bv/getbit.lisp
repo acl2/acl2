@@ -21,6 +21,7 @@
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/floor")) ;for FLOOR-DIVIDE-BY-same
 (local (include-book "../arithmetic-light/floor2"))
+(local (include-book "../arithmetic-light/times"))
 (local (include-book "unsigned-byte-p"))
 
 (defthm getbit-type
@@ -419,3 +420,55 @@
   :hints (("Goal" :in-theory (e/d (getbit slice)
                                   (slice-becomes-getbit
                                    bvchop-1-becomes-getbit)))))
+
+(defthm getbit-of-*-of-2-arg2+
+  (implies (and (natp n)
+                (integerp x)
+                (integerp y))
+           (equal (getbit n (* x 2 y))
+                  (if (equal n 0)
+                      0
+                    (getbit (+ -1 n) (* x y)))))
+  :hints (("Goal" :use (:instance getbit-of-*-of-2
+                                  (x (* x y)))
+           :in-theory (disable getbit-of-*-of-2))))
+
+(local
+ (defun sub1-sub1-induct (n i)
+   (if (zp i)
+       (list n i)
+     (sub1-sub1-induct (+ -1 n) (+ -1  i)))))
+
+(defthm getbit-of-*-of-expt-arg1
+  (implies (and (natp n)
+                (natp i)
+                (integerp x))
+           (equal (getbit n (* (expt 2 i) x))
+                  (if (< n i)
+                      0
+                    (getbit (- n i) x))))
+  :hints (("Goal" :expand (EXPT 2 I)
+           :induct (sub1-sub1-induct n i))))
+
+(defthm getbit-of-*-of-expt-arg2
+  (implies (and (natp n)
+                (natp i)
+                (integerp x))
+           (equal (getbit n (* x (expt 2 i)))
+                  (if (< n i)
+                      0
+                    (getbit (- n i) x))))
+  :hints (("Goal" :use (:instance getbit-of-*-of-expt-arg1)
+           :in-theory (disable getbit-of-*-of-expt-arg1))))
+
+(defthm getbit-0-of-times-constant
+  (implies (and (syntaxp (and (quotep x)
+                              (not (unsigned-byte-p 1 (unquote x)))))
+                (integerp x)
+                (integerp y))
+           (equal (getbit 0 (* x y))
+                  (getbit 0 (* (getbit 0 x) y))))
+  :hints (("Goal" :use (:instance bvchop-of-*-of-bvchop (size 1))
+           :in-theory
+           (e/d (getbit)
+                (bvchop-1-becomes-getbit slice-becomes-getbit bvchop-of-*-of-bvchop)))))

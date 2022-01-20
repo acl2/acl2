@@ -233,6 +233,10 @@
     (equal (pointerp (if a b c))
            (if a (pointerp b) (pointerp c))))
 
+  (defruled booleanp-of-if
+    (equal (booleanp (if a b c))
+           (if a (booleanp b) (booleanp c))))
+
   (defruled compustate->frames-of-if
     (equal (compustate->frames (if a b c))
            (if a (compustate->frames b) (compustate->frames c))))
@@ -266,6 +270,7 @@
     sllongp-of-if
     ullongp-of-if
     pointerp-of-if
+    booleanp-of-if
     compustate->frames-of-if
     scope-fix-of-if
     value-result-fix-of-if))

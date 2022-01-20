@@ -2660,8 +2660,8 @@
                                                      nil ;context-array
                                                      0
                                                      nil ;context ;a contextp over nodes in context-array
-                                                     6000 ;timeout
-                                                     nil  ;print-timeout-goalp
+                                                     6000 ;max-conflicts
+                                                     nil  ;print-max-conflicts-goalp
                                                      nil  ;options
                                                      state))
                 (progn$ (cw "  (Axe prover disabled: consider setting :use-prover-for-invars.)~%")

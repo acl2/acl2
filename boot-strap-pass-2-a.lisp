@@ -1,5 +1,5 @@
 ; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2021, Regents of the University of Texas
+; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -85,6 +85,7 @@
 
 ; miscellaneous
 
+(verify-termination-boot-strap guard-theorem-simplify-msg) ; and guards
 (verify-termination-boot-strap guard-or-termination-theorem-msg) ; and guards
 (verify-termination-boot-strap alist-keys-subsetp) ; and guards
 (verify-termination-boot-strap keyword-listp) ; and guards
@@ -1088,6 +1089,24 @@
  (verify-termination-boot-strap sort-symbol-listp) ; and guards
 
  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; verify-termination and guard verification:
+; ld-history and associated functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination-boot-strap ld-history) ; and guards
+(verify-termination-boot-strap ld-history-entry-input) ; and guards
+(verify-termination-boot-strap ld-history-entry-error-flg) ; and guards
+(verify-termination-boot-strap ld-history-entry-stobjs-out/value) ; and guards
+(verify-termination-boot-strap ld-history-entry-stobjs-out) ; and guards
+(verify-termination-boot-strap ld-history-entry-value) ; and guards
+(verify-termination-boot-strap ld-history-entry-user-data) ; and guards
+(verify-termination-boot-strap
+ set-ld-history-entry-user-data-default)
+
+(defattach set-ld-history-entry-user-data
+  set-ld-history-entry-user-data-default)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Theories

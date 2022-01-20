@@ -22,4 +22,5 @@ int main(void) {
   g_test(-1);
   h_test(2, 78);
   h_test(-3, 0);
+  return 0;
 }

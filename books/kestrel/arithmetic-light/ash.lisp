@@ -45,10 +45,9 @@
 ;;todo: combine with other rules?
 ;; avoids name clash
 (defthm unsigned-byte-p-of-ash-alt
-  (implies (and (natp c)
-                (unsigned-byte-p (- size c) i)
-                (acl2-numberp size))
-           (unsigned-byte-p size (ash i c)))
+  (implies (unsigned-byte-p (- size c) i)
+           (equal (unsigned-byte-p size (ash i c))
+                  (natp size)))
   :hints (("Goal"
            :use (:instance <-of-*-and-*-cancel
                            (x1 i)
@@ -56,6 +55,16 @@
                            (y (expt 2 c)))
            :in-theory (e/d (ash expt-of-+)
                            (<-of-*-and-*-cancel)))))
+
+(defthm acl2::unsigned-byte-p-ash-alt-strong
+  (implies (and (natp i)
+                (natp size)
+                (natp count)
+                (<= COUNT SIZE) ;move to conc
+                )
+           (equal (unsigned-byte-p size (ash i count))
+                  (unsigned-byte-p (- size count) i)))
+  :hints (("Goal" :in-theory (enable ash expt-of-+))))
 
 ;; could make a version restricted to constant c and k
 ;; works for both positive and negative shifts
