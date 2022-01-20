@@ -346,8 +346,8 @@
        (m (number-of-results old$ wrld))
        (err-msg-part (if (= m 1)
                          (msg "must be either a formal argument of ~x0, ~
-                               or the keyword @(':RESULT'),
-                               or the keyword @(':RESULT1')."
+                               or the keyword :RESULT,
+                               or the keyword :RESULT1."
                               old$)
                        (msg "must be either a formal argument of ~x0, ~
                              or a keyword :RESULTj where j is ~
@@ -379,7 +379,7 @@
            (err-msg-preamble (msg "Each element ~
                                    of the ~n0 ARG/RES-LIST component ~
                                    of the second input ~
-                                   must be ~@1"
+                                   ~@1"
                                   (list k) err-msg-part)))
         (isodata-process-arg/res-list-aux arg/res-list x1...xn m
                                           err-msg-preamble ctx state))))
