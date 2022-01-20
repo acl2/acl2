@@ -229,13 +229,17 @@
   :guard (and (modalist-addr-p (design->modalist (svtv-data$c->design svtv-data$c)))
               (svtv-data$c-flatten-okp svtv-data$c (svtv-data$c->flatten svtv-data$c)))
   :enabled t
-  (flatnorm-res-equiv flatnorm
-                      (b* ((flatten (svtv-data$c->flatten svtv-data$c))
-                           (setup (svtv-data$c->flatnorm-setup svtv-data$c)))
-                        (stobj-let ((aliases (svtv-data$c->aliases svtv-data$c)))
-                                   (assigns)
-                                   (svtv-normalize-assigns flatten aliases setup)
-                                   assigns)))
+  (b* ((flatten (svtv-data$c->flatten svtv-data$c))
+       (setup (svtv-data$c->flatnorm-setup svtv-data$c))
+       ((flatnorm-res spec)
+        (stobj-let ((aliases (svtv-data$c->aliases svtv-data$c)))
+                   (spec)
+                   (svtv-normalize-assigns flatten aliases setup)
+                   spec))
+       ((flatnorm-res flatnorm)))
+    (and (ec-call (svex-alist-eval-equiv flatnorm.assigns spec.assigns))
+         (equal flatnorm.delays spec.delays)
+         (equal flatnorm.constraints spec.constraints)))
   ///
   
   (acl2::def-updater-independence-thm svtv-data$c-flatnorm-okp-updater-independence
@@ -1293,16 +1297,17 @@
                                           svtv-data$c-flatten-okp))))
   :guard-debug t
   :returns (mv err new-svtv-data)
-  (b* ((design (svtv-data->design svtv-data)))
-    (stobj-let ((moddb (svtv-data->moddb svtv-data))
-                (aliases (svtv-data->aliases svtv-data)))
-               (err flatten moddb aliases)
-               (svtv-design-flatten design)
-               (b* ((svtv-data (update-svtv-data->flatten flatten svtv-data))
-                    ((when err)
-                     (mv err svtv-data))
-                    (svtv-data (update-svtv-data->flatten-validp t svtv-data)))
-                 (mv nil svtv-data))))
+  (time$ (b* ((design (svtv-data->design svtv-data)))
+           (stobj-let ((moddb (svtv-data->moddb svtv-data))
+                       (aliases (svtv-data->aliases svtv-data)))
+                      (err flatten moddb aliases)
+                      (svtv-design-flatten design)
+                      (b* ((svtv-data (update-svtv-data->flatten flatten svtv-data))
+                           ((when err)
+                            (mv err svtv-data))
+                           (svtv-data (update-svtv-data->flatten-validp t svtv-data)))
+                        (mv nil svtv-data))))
+         :msg "; Svtv-data flatten: ~st seconds, ~sa bytes.~%")
   ///
   (defret <fn>-preserves-svtv-data$ap
     (implies (and (svtv-data$ap svtv-data)
@@ -1330,13 +1335,15 @@
   :guard (and (svtv-data->flatten-validp svtv-data)
               (not (svtv-data->phase-fsm-validp svtv-data)))
   :returns new-svtv-data
-  (b* ((flatten (svtv-data->flatten svtv-data))
-       (flatnorm-setup (svtv-data->flatnorm-setup svtv-data)))
-    (stobj-let ((aliases (svtv-data->aliases svtv-data)))
-               (assigns)
-               (svtv-normalize-assigns flatten aliases flatnorm-setup)
-               (b* ((svtv-data (update-svtv-data->flatnorm assigns svtv-data)))
-                 (update-svtv-data->flatnorm-validp t svtv-data))))
+  (time$
+   (b* ((flatten (svtv-data->flatten svtv-data))
+        (flatnorm-setup (svtv-data->flatnorm-setup svtv-data)))
+     (stobj-let ((aliases (svtv-data->aliases svtv-data)))
+                (assigns)
+                (svtv-normalize-assigns flatten aliases flatnorm-setup)
+                (b* ((svtv-data (update-svtv-data->flatnorm assigns svtv-data)))
+                  (update-svtv-data->flatnorm-validp t svtv-data))))
+   :msg "; Svtv-data flatnorm: ~st seconds, ~sa bytes.~%")
   ///
   (defret <fn>-preserves-svtv-data$ap
     (implies (and (svtv-data$ap svtv-data)
@@ -1364,19 +1371,21 @@
                      '(:in-theory (enable normalize-stobjs-of-svtv-design-flatten
                                           svtv-data$c-namemap-okp
                                           svtv-data$c-flatten-okp))))
-  (b* ((user-names (svtv-data->user-names svtv-data))
-       (design (svtv-data->design svtv-data)))
-    (stobj-let ((moddb (svtv-data->moddb svtv-data))
-                (aliases (svtv-data->aliases svtv-data)))
-               (errs lhsmap)
-               (svtv-namemap->lhsmap user-names
-                                     (moddb-modname-get-index (design->top design) moddb)
-                                     moddb aliases)
-               (b* (((when errs)
-                     (mv (msg-list errs) svtv-data))
-                    (svtv-data (update-svtv-data->namemap lhsmap svtv-data))
-                    (svtv-data (update-svtv-data->namemap-validp t svtv-data)))
-                 (mv nil svtv-data))))
+  (time$
+   (b* ((user-names (svtv-data->user-names svtv-data))
+        (design (svtv-data->design svtv-data)))
+     (stobj-let ((moddb (svtv-data->moddb svtv-data))
+                 (aliases (svtv-data->aliases svtv-data)))
+                (errs lhsmap)
+                (svtv-namemap->lhsmap user-names
+                                      (moddb-modname-get-index (design->top design) moddb)
+                                      moddb aliases)
+                (b* (((when errs)
+                      (mv (msg-list errs) svtv-data))
+                     (svtv-data (update-svtv-data->namemap lhsmap svtv-data))
+                     (svtv-data (update-svtv-data->namemap-validp t svtv-data)))
+                  (mv nil svtv-data))))
+   :msg "; Svtv-data namemap: ~st seconds, ~sa bytes.~%")
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))

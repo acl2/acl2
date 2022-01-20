@@ -40,11 +40,13 @@
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable svtv-data$ap))))
   :returns new-svtv-data
-  (b* ((svtv-data (update-svtv-data->phase-fsm (svtv-compose-assigns/delays
-                                                (svtv-data->flatnorm svtv-data)
-                                                (svtv-data->phase-fsm-setup svtv-data))
-                                               svtv-data)))
-    (update-svtv-data->phase-fsm-validp t svtv-data))
+  (time$
+   (b* ((svtv-data (update-svtv-data->phase-fsm (svtv-compose-assigns/delays
+                                                 (svtv-data->flatnorm svtv-data)
+                                                 (svtv-data->phase-fsm-setup svtv-data))
+                                                svtv-data)))
+     (update-svtv-data->phase-fsm-validp t svtv-data))
+   :msg "; Svtv-data phase: ~st seconds, ~sa bytes.~%")
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
