@@ -104,61 +104,61 @@
            )))
 
 (encapsulate
-  ()
+ ()
 
-  (local (include-book "arithmetic/top" :dir :system))
+ (local (include-book "arithmetic/top" :dir :system))
 
-  (defthmd b3-0-iff-b3-0-equiv-1-1
-    (implies (and (realp d)
-                  (realp a)
-                  (realp b)
-                  (realp c)
-                  (equal x (/ a d))
-                  (equal y (/ b d))
-                  (equal z (/ c d)))
-             (equal (+ (* x x) (* y y) (* z z))
-                    (/ (+ (* a a) (* b b) (* c c)) (* d d)))))
+ (defthmd b3-0-iff-b3-0-equiv-1-1
+   (implies (and (realp d)
+		 (realp a)
+		 (realp b)
+		 (realp c)
+		 (equal x (/ a d))
+		 (equal y (/ b d))
+		 (equal z (/ c d)))
+	    (equal (+ (* x x) (* y y) (* z z))
+		   (/ (+ (* a a) (* b b) (* c c)) (* d d)))))
 
-  (defthmd b3-0-iff-b3-0-equiv-1
-    (implies (b3-0 p)
-             (s2-def-p (point-p/r p)))
-    :hints (("goal"
-             :use ((:instance b3-0-s2-1-suff (p-s2 (point-p/r p)) (p p))
-                   (:instance point-p/r=>1 (p p))
-                   (:instance s2-def-p (point (point-p/r p)))
-                   (:instance pr3-point-p (p p))
-                   (:instance b3-0 (p p))
-                   (:instance b3-0=>r^2>0 (p p))
-                   (:instance b3-0-iff-b3-0-equiv-1-1
-                              (d (cal-radius p))
-                              (x (aref2 :fake-name (point-p/r p) 0 0))
-                              (y (aref2 :fake-name (point-p/r p) 1 0))
-                              (z (aref2 :fake-name (point-p/r p) 2 0))
-                              (a (point-in-r3-x1 p))
-                              (b (point-in-r3-y1 p))
-                              (c (point-in-r3-z1 p)))
+ (defthmd b3-0-iff-b3-0-equiv-1
+   (implies (b3-0 p)
+	    (s2-def-p (point-p/r p)))
+   :hints (("goal"
+	    :use ((:instance b3-0-s2-1-suff (p-s2 (point-p/r p)) (p p))
+		  (:instance point-p/r=>1 (p p))
+		  (:instance s2-def-p (point (point-p/r p)))
+		  (:instance pr3-point-p (p p))
+		  (:instance b3-0 (p p))
+		  (:instance b3-0=>r^2>0 (p p))
+		  (:instance b3-0-iff-b3-0-equiv-1-1
+			     (d (cal-radius p))
+			     (x (aref2 :fake-name (point-p/r p) 0 0))
+			     (y (aref2 :fake-name (point-p/r p) 1 0))
+			     (z (aref2 :fake-name (point-p/r p) 2 0))
+			     (a (point-in-r3-x1 p))
+			     (b (point-in-r3-y1 p))
+			     (c (point-in-r3-z1 p)))
 
-                   )
-             :in-theory (e/d () (point-in-r3 point-in-r3-x1 point-in-r3-y1 point-in-r3-z1 point-p/r cal-radius s2-def-p b3-0-s2 b3-0-s2-1 (:rewrite b3-0-s2-1-suff) pr3-point-p))
-             )))
+		  )
+	    :in-theory (e/d () (point-in-r3 point-in-r3-x1 point-in-r3-y1 point-in-r3-z1 point-p/r cal-radius s2-def-p b3-0-s2 b3-0-s2-1 (:rewrite b3-0-s2-1-suff) pr3-point-p))
+	    )))
 
-  (defthmd b3-0-iff-b3-0-s2
-    (iff (b3-0 p)
-         (b3-0-s2 p))
-    :hints (("goal"
-             :use ((:instance b3-0-s2-1-suff (p-s2 (point-p/r p)) (p p))
-                   (:instance point-p/r=>1 (p p))
-                   (:instance point-p/r=>2 (p p))
-                   (:instance s2-def-p (point (point-p/r p)))
-                   (:instance pr3-point-p (p p))
-                   (:instance b3-0 (p p))
-                   (:instance b3-0=>r^2>0 (p p))
-                   (:instance b3-0-iff-b3-0-equiv-1 (p p))
-                   (:instance b3-0-s2 (p p))
-                   )
-             :in-theory (e/d () (point-in-r3 point-in-r3-x1 point-in-r3-y1 point-in-r3-z1 point-p/r cal-radius s2-def-p b3-0-s2 b3-0-s2-1 (:rewrite b3-0-s2-1-suff) pr3-point-p))
-             )))
-  )
+ (defthmd b3-0-iff-b3-0-s2
+   (iff (b3-0 p)
+	(b3-0-s2 p))
+   :hints (("goal"
+	    :use ((:instance b3-0-s2-1-suff (p-s2 (point-p/r p)) (p p))
+		  (:instance point-p/r=>1 (p p))
+		  (:instance point-p/r=>2 (p p))
+		  (:instance s2-def-p (point (point-p/r p)))
+		  (:instance pr3-point-p (p p))
+		  (:instance b3-0 (p p))
+		  (:instance b3-0=>r^2>0 (p p))
+		  (:instance b3-0-iff-b3-0-equiv-1 (p p))
+		  (:instance b3-0-s2 (p p))
+		  )
+	    :in-theory (e/d () (point-in-r3 point-in-r3-x1 point-in-r3-y1 point-in-r3-z1 point-p/r cal-radius s2-def-p b3-0-s2 b3-0-s2-1 (:rewrite b3-0-s2-1-suff) pr3-point-p))
+	    )))
+ )
 
 (defun-sk b3-0-set-a1-1 (p)
   (exists p-s2
@@ -928,7 +928,7 @@
   (exists p-s2
           (and (b3-0-set-a4 p-s2)
                (m-= (m-* (a-inv-rotation (acl2-sqrt 2))
-                         (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                         (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                          p-s2)
                     p))))
 
@@ -965,56 +965,56 @@
                  (:instance base-rotations (x (acl2-sqrt 2)))
                  (:instance rot*rot-is-rot
                             (m1 (a-inv-rotation (acl2-sqrt 2)))
-                            (m2 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                            (m2 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
                  (:instance b3-0-set-a-inv-r-a4-1-suff
                             (p-s2 (m-* (a-inv-rotation (acl2-sqrt 2))
-                                       (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                       (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                        (b3-0-set-a4-1-witness (b3-0-a-inv-r-b3-0-set-a4-1-witness p))))
                             (p p))
                  (:instance set-a-inv-r-a4
                             (p (m-* (a-inv-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                     (b3-0-set-a4-1-witness (b3-0-a-inv-r-b3-0-set-a4-1-witness p)))))
                  (:instance set-a4 (p (b3-0-set-a4-1-witness (b3-0-a-inv-r-b3-0-set-a4-1-witness p))))
                  (:instance m-=m-*rot-p1=p2=>r-p1=r-p2
                             (p1 (b3-0-a-inv-r-b3-0-set-a4-1-witness p))
                             (p2 p)
                             (rot (m-* (a-inv-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness
+                                      (rotation-3d
                                        (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                        (point-on-s2-not-d)))))
                  (:instance associativity-of-m-*
                             (m1 (a-inv-rotation (acl2-sqrt 2)))
-                            (m2 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m2 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m3 (b3-0-a-inv-r-b3-0-set-a4-1-witness p)))
                  (:instance set-e-p-iff-wit-inv*s2-d-p-n-set-e-p-1-1
                             (p1 (b3-0-set-a4-1-witness (b3-0-a-inv-r-b3-0-set-a4-1-witness p)))
                             (rot (m-* (a-inv-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance r3-rotationp
                             (m (m-* (a-inv-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance associativity-of-m-*
                             (m1 (a-inv-rotation (acl2-sqrt 2)))
-                            (m2 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m2 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m3 (b3-0-set-a4-1-witness (b3-0-a-inv-r-b3-0-set-a4-1-witness p))))
                  (:instance set-a-inv-r-a4-1-suff
                             (p (b3-0-set-a4-1-witness (b3-0-a-inv-r-b3-0-set-a4-1-witness p)))
                             (point (m-* (a-inv-rotation (acl2-sqrt 2))
-                                        (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                        (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                         (b3-0-set-a4-1-witness (b3-0-a-inv-r-b3-0-set-a4-1-witness p)))))
                  (:instance xyz-p1=xyz-p2
                             (p1 p)
                             (p2 (b3-0-a-inv-r-b3-0-set-a4-1-witness p))
                             (p3 (b3-0-set-a4-1-witness (b3-0-a-inv-r-b3-0-set-a4-1-witness p)))
                             (rot (m-* (a-inv-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                               0 (* 2 (acl2-pi)))
-                                                              (point-on-s2-not-d))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                    0 (* 2 (acl2-pi)))
+                                                   (point-on-s2-not-d))))
                             (a (/ (cal-radius p))))
                  (:instance pr3=>r^2>=0 (p p))
                  (:instance m1=m2/a=>m1=s-*/a-m2
@@ -1095,62 +1095,62 @@
            )))
 
 (encapsulate
-  ()
+ ()
 
-  (local (include-book "arithmetic/top" :dir :system))
+ (local (include-book "arithmetic/top" :dir :system))
 
-  (defthmd b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-4
-    (m-= (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                          0 (* 2 (acl2-pi))))
-                                      (point-on-s2-not-d))
-              (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                       0 (* 2 (acl2-pi)))
-                                      (point-on-s2-not-d)))
-         (id-rotation))
-    :hints (("goal"
-             :use ((:instance r-t1*r-t2=r-t1+t2
-                              (angle2 (exists-in-interval-but-not-in-angle-sequence-witness
-                                       0 (* 2 (acl2-pi))))
-                              (angle1 (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                          0 (* 2 (acl2-pi)))))
-                              (u (point-on-s2-not-d)))
-                   (:instance exists-point-on-s2-not-d-2)
-                   (:instance s2-def-p (point (point-on-s2-not-d)))
-                   (:instance witness-not-in-angle-sequence)
-                   (:instance r-theta-0=id (u (point-on-s2-not-d)))
-                   )
-             :in-theory (e/d () (point-on-s2-not-d rotation-about-witness s2-def-p point-in-r3 aref2 m-* rotation nth-angle-exists angles-seq alist2p))
-             )))
-  )
+ (defthmd b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-4
+   (m-= (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+			      0 (* 2 (acl2-pi))))
+			  (point-on-s2-not-d))
+	     (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+			   0 (* 2 (acl2-pi)))
+			  (point-on-s2-not-d)))
+	(id-rotation))
+   :hints (("goal"
+	    :use ((:instance r-t1*r-t2=r-t1+t2
+			     (angle2 (exists-in-interval-but-not-in-angle-sequence-witness
+				      0 (* 2 (acl2-pi))))
+			     (angle1 (- (exists-in-interval-but-not-in-angle-sequence-witness
+					 0 (* 2 (acl2-pi)))))
+			     (u (point-on-s2-not-d)))
+		  (:instance exists-point-on-s2-not-d-2)
+		  (:instance s2-def-p (point (point-on-s2-not-d)))
+		  (:instance witness-not-in-angle-sequence)
+		  (:instance r-theta-0=id (u (point-on-s2-not-d)))
+		  )
+	    :in-theory (e/d () (point-on-s2-not-d rotation-3d s2-def-p point-in-r3 aref2 m-* rotation nth-angle-exists angles-seq alist2p))
+	    )))
+ )
 
 (encapsulate
-  ()
+ ()
 
-  (local (include-book "arithmetic/top" :dir :system))
+ (local (include-book "arithmetic/top" :dir :system))
 
-  (defthmd b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-6
-    (m-= (m-* (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                       0 (* 2 (acl2-pi)))
-                                      (point-on-s2-not-d))
-              (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                          0 (* 2 (acl2-pi))))
-                                      (point-on-s2-not-d)))
-         (id-rotation))
-    :hints (("goal"
-             :use ((:instance r-t1*r-t2=r-t1+t2
-                              (angle1 (exists-in-interval-but-not-in-angle-sequence-witness
-                                       0 (* 2 (acl2-pi))))
-                              (angle2 (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                          0 (* 2 (acl2-pi)))))
-                              (u (point-on-s2-not-d)))
-                   (:instance exists-point-on-s2-not-d-2)
-                   (:instance s2-def-p (point (point-on-s2-not-d)))
-                   (:instance witness-not-in-angle-sequence)
-                   (:instance r-theta-0=id (u (point-on-s2-not-d)))
-                   )
-             :in-theory (e/d () (point-on-s2-not-d rotation-about-witness s2-def-p point-in-r3 aref2 m-* rotation nth-angle-exists angles-seq alist2p))
-             )))
-  )
+ (defthmd b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-6
+   (m-= (m-* (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+			   0 (* 2 (acl2-pi)))
+			  (point-on-s2-not-d))
+	     (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+			      0 (* 2 (acl2-pi))))
+			  (point-on-s2-not-d)))
+	(id-rotation))
+   :hints (("goal"
+	    :use ((:instance r-t1*r-t2=r-t1+t2
+			     (angle1 (exists-in-interval-but-not-in-angle-sequence-witness
+				      0 (* 2 (acl2-pi))))
+			     (angle2 (- (exists-in-interval-but-not-in-angle-sequence-witness
+					 0 (* 2 (acl2-pi)))))
+			     (u (point-on-s2-not-d)))
+		  (:instance exists-point-on-s2-not-d-2)
+		  (:instance s2-def-p (point (point-on-s2-not-d)))
+		  (:instance witness-not-in-angle-sequence)
+		  (:instance r-theta-0=id (u (point-on-s2-not-d)))
+		  )
+	    :in-theory (e/d () (point-on-s2-not-d rotation-3d s2-def-p point-in-r3 aref2 m-* rotation nth-angle-exists angles-seq alist2p))
+	    )))
+ )
 
 (defthmd b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-5
   (implies (and (m-= (m-* a-1-2 a) id-1)
@@ -1173,18 +1173,18 @@
                  (:instance b3-0-a-inv-r-b3-0-set-a4 (p p))
                  (:instance b3-0-a-inv-r-b3-0-set-a4-1-suff
                             (p p)
-                            (p-s2 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (p-s2 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                        (a-rotation (acl2-sqrt 2)) p)))
-                 (:instance b3-0-set-a4 (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                            0 (* 2 (acl2-pi))))
-                                                                        (point-on-s2-not-d))
+                 (:instance b3-0-set-a4 (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                                 0 (* 2 (acl2-pi))))
+                                                             (point-on-s2-not-d))
                                                 (a-rotation (acl2-sqrt 2))
                                                 p)))
                  (:instance set-e-p-iff-wit-inv*s2-d-p-n-set-e-p-1-1
                             (p1 p)
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                  0 (* 2 (acl2-pi))))
-                                                              (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                       0 (* 2 (acl2-pi))))
+                                                   (point-on-s2-not-d))
                                       (a-rotation (acl2-sqrt 2)))))
                  (:instance r3-rotationp-r-theta
                             (angle (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))))))
@@ -1192,15 +1192,15 @@
                  (:instance base-rotations (x (acl2-sqrt 2)))
                  (:instance rot*rot-is-rot
                             (m2 (a-rotation (acl2-sqrt 2)))
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
-                 (:instance r3-rotationp (m (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                             0 (* 2 (acl2-pi))))
-                                                                         (point-on-s2-not-d))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
+                 (:instance r3-rotationp (m (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                                  0 (* 2 (acl2-pi))))
+                                                              (point-on-s2-not-d))
                                                  (a-rotation (acl2-sqrt 2)))))
                  (:instance associativity-of-m-*
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (a-rotation (acl2-sqrt 2)))
                             (m3 p))
                  (:instance m1=m2/a=>m1=s-*/a-m2
@@ -1219,20 +1219,20 @@
                  (:instance set-a4 (p (set-a-inv-r-a4-1-witness (b3-0-set-a-inv-r-a4-1-witness p))))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-1
                             (a-1 (a-inv-rotation (acl2-sqrt 2)))
-                            (r (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                        0 (* 2 (acl2-pi)))
-                                                       (point-on-s2-not-d)))
+                            (r (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                             0 (* 2 (acl2-pi)))
+                                            (point-on-s2-not-d)))
                             (wit-wit (set-a-inv-r-a4-1-witness (b3-0-set-a-inv-r-a4-1-witness p)))
                             (wit-wit-1 (set-a-inv-r-a4-1-witness (b3-0-set-a-inv-r-a4-1-witness p)))
                             (wit (b3-0-set-a-inv-r-a4-1-witness p))
                             (a (a-rotation (acl2-sqrt 2)))
                             (id-1 (id-rotation))
-                            (r1 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
-                            (r-1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi))))
-                                                         (point-on-s2-not-d)))
+                            (r1 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
+                            (r-1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi))))
+                                              (point-on-s2-not-d)))
                             (id-2 (id-rotation)))
                  (:instance m-*point-id=point
                             (p1 (set-a-inv-r-a4-1-witness (b3-0-set-a-inv-r-a4-1-witness p))))
@@ -1240,11 +1240,11 @@
                  (:instance r3-rotationp-r-theta
                             (angle (exists-in-interval-but-not-in-angle-sequence-witness
                                     0 (* 2 (acl2-pi)))))
-                 (:instance r3-rotationp (m (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
-                 (:instance id*m=m (m1 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
-                 (:instance m-*-s-*-right (m1 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                               0 (* 2 (acl2-pi))))
-                                                                           (point-on-s2-not-d))
+                 (:instance r3-rotationp (m (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                 (:instance id*m=m (m1 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                 (:instance m-*-s-*-right (m1 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                                    0 (* 2 (acl2-pi))))
+                                                                (point-on-s2-not-d))
                                                    (a-rotation (acl2-sqrt 2))))
                             (m2 p)
                             (name :fake-name)
@@ -1253,68 +1253,68 @@
                             (wit-wit (set-a-inv-r-a4-1-witness (b3-0-set-a-inv-r-a4-1-witness p)))
                             (wit (b3-0-set-a-inv-r-a4-1-witness p))
                             (b (a-rotation (acl2-sqrt 2)))
-                            (a (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                           0 (* 2 (acl2-pi))))
-                                                       (point-on-s2-not-d)))
+                            (a (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                0 (* 2 (acl2-pi))))
+                                            (point-on-s2-not-d)))
                             (s (s-* (/ (cal-radius p)) p)))
                  (:instance array2p-alist2p
                             (name :fake-name)
-                            (l (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (l (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (a-rotation (acl2-sqrt 2)))))
                  (:instance point-in-r3 (x p))
                  (:instance normalize-dimensions-name (name '$arg) (l p))
                  (:instance normalize-dimensions-name (name '$arg)
-                            (l (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (l (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (a-rotation (acl2-sqrt 2)))))
                  (:instance array2p-alist2p
                             (name :fake-name)
                             (l p))
                  (:instance b3-0-set-a4-1-suff
                             (p-s2 (set-a-inv-r-a4-1-witness (b3-0-set-a-inv-r-a4-1-witness p)))
-                            (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (a-rotation (acl2-sqrt 2))
                                     p)))
-                 (:instance r3-matrixp (m (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                           0 (* 2 (acl2-pi))))
-                                                                       (point-on-s2-not-d))
+                 (:instance r3-matrixp (m (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                                0 (* 2 (acl2-pi))))
+                                                            (point-on-s2-not-d))
                                                (a-rotation (acl2-sqrt 2)))))
                  (:instance m-=m-*rot-p1=p2=>r-p1=r-p2
                             (p1 p)
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                  0 (* 2 (acl2-pi))))
-                                                              (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                       0 (* 2 (acl2-pi))))
+                                                   (point-on-s2-not-d))
                                       (a-rotation (acl2-sqrt 2))))
-                            (p2 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                 0 (* 2 (acl2-pi))))
-                                                             (point-on-s2-not-d))
+                            (p2 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                      0 (* 2 (acl2-pi))))
+                                                  (point-on-s2-not-d))
                                      (a-rotation (acl2-sqrt 2))
                                      p)))
                  (:instance pr3-p=>pr3-a*p
                             (a (/ (cal-radius p)))
-                            (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (a-rotation (acl2-sqrt 2))
                                     p)))
                  (:instance pr3=>r^2>=0 (p p))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-3
                             (wit-wit (set-a-inv-r-a4-1-witness (b3-0-set-a-inv-r-a4-1-witness p)))
-                            (r-1-rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                      0 (* 2 (acl2-pi))))
-                                                                  (point-on-s2-not-d))
+                            (r-1-rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                           0 (* 2 (acl2-pi))))
+                                                       (point-on-s2-not-d))
                                           (a-rotation (acl2-sqrt 2))))
                             (p p)
                             (a (/ (cal-radius p))))
                  (:instance associativity-of-m-*
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (a-rotation (acl2-sqrt 2)))
                             (m3 (s-* (/ (cal-radius p)) p)))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-4)
@@ -1324,12 +1324,12 @@
                             (a-1-2 (a-inv-rotation (acl2-sqrt 2)))
                             (id-1 (id-rotation))
                             (id-2 (id-rotation))
-                            (r (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                        0 (* 2 (acl2-pi)))
-                                                       (point-on-s2-not-d)))
-                            (r-1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi))))
-                                                         (point-on-s2-not-d))))
+                            (r (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                             0 (* 2 (acl2-pi)))
+                                            (point-on-s2-not-d)))
+                            (r-1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi))))
+                                              (point-on-s2-not-d))))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-6)
                  (:instance funs-lemmas-1 (x (acl2-sqrt 2)))
                  (:instance m-*point-id=point (p1 p))
@@ -1348,7 +1348,7 @@
 (defun-sk b3-0-r-1-a-inv-b3-0-set-a5-1 (p)
   (exists p-s2
           (and (b3-0-set-a5 p-s2)
-               (m-= (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+               (m-= (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                          (a-inv-rotation (acl2-sqrt 2))
                          p-s2)
                     p))))
@@ -1386,14 +1386,14 @@
                  (:instance base-rotations (x (acl2-sqrt 2)))
                  (:instance rot*rot-is-rot
                             (m2 (a-inv-rotation (acl2-sqrt 2)))
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
                  (:instance b3-0-set-r-1-a-inv-a5-1-suff
-                            (p-s2 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (p-s2 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                        (a-inv-rotation (acl2-sqrt 2))
                                        (b3-0-set-a5-1-witness (b3-0-r-1-a-inv-b3-0-set-a5-1-witness p))))
                             (p p))
                  (:instance set-r-1-a-inv-a5
-                            (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                     (a-inv-rotation (acl2-sqrt 2))
                                     (b3-0-set-a5-1-witness (b3-0-r-1-a-inv-b3-0-set-a5-1-witness p)))))
                  (:instance set-a5 (p (b3-0-set-a5-1-witness (b3-0-r-1-a-inv-b3-0-set-a5-1-witness p))))
@@ -1404,39 +1404,39 @@
                  (:instance m-=m-*rot-p1=p2=>r-p1=r-p2
                             (p1 (b3-0-r-1-a-inv-b3-0-set-a5-1-witness p))
                             (p2 p)
-                            (rot (m-* (rotation-about-witness
+                            (rot (m-* (rotation-3d
                                        (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))))
                                        (point-on-s2-not-d))
                                       (a-inv-rotation (acl2-sqrt 2)))))
                  (:instance associativity-of-m-*
                             (m2 (a-inv-rotation (acl2-sqrt 2)))
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m3 (b3-0-r-1-a-inv-b3-0-set-a5-1-witness p)))
                  (:instance set-e-p-iff-wit-inv*s2-d-p-n-set-e-p-1-1
                             (p1 (b3-0-set-a5-1-witness (b3-0-r-1-a-inv-b3-0-set-a5-1-witness p)))
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                       (a-inv-rotation (acl2-sqrt 2)))))
                  (:instance r3-rotationp
-                            (m (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (m (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                     (a-inv-rotation (acl2-sqrt 2)))))
                  (:instance associativity-of-m-*
                             (m2 (a-inv-rotation (acl2-sqrt 2)))
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m3 (b3-0-set-a5-1-witness (b3-0-r-1-a-inv-b3-0-set-a5-1-witness p))))
                  (:instance set-r-1-a-inv-a5-1-suff
                             (p (b3-0-set-a5-1-witness (b3-0-r-1-a-inv-b3-0-set-a5-1-witness p)))
-                            (point (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (point (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                         (a-inv-rotation (acl2-sqrt 2))
                                         (b3-0-set-a5-1-witness (b3-0-r-1-a-inv-b3-0-set-a5-1-witness p)))))
                  (:instance xyz-p1=xyz-p2
                             (p1 p)
                             (p2 (b3-0-r-1-a-inv-b3-0-set-a5-1-witness p))
                             (p3 (b3-0-set-a5-1-witness (b3-0-r-1-a-inv-b3-0-set-a5-1-witness p)))
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d)) (a-inv-rotation (acl2-sqrt 2))))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d)) (a-inv-rotation (acl2-sqrt 2))))
                             (a (/ (cal-radius p))))
                  (:instance pr3=>r^2>=0 (p p))
                  (:instance m1=m2/a=>m1=s-*/a-m2
@@ -1477,28 +1477,28 @@
                  (:instance b3-0-r-1-a-inv-b3-0-set-a5-1-suff
                             (p p)
                             (p-s2 (m-* (a-rotation (acl2-sqrt 2))
-                                       (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                       (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                        p)))
                  (:instance b3-0-set-a5 (p (m-* (a-rotation (acl2-sqrt 2))
-                                                (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                                (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                                 p)))
                  (:instance set-e-p-iff-wit-inv*s2-d-p-n-set-e-p-1-1
                             (p1 p)
                             (rot (m-* (a-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance r3-rotationp-r-theta
                             (angle (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))))
                  (:instance witness-not-in-angle-sequence)
                  (:instance base-rotations (x (acl2-sqrt 2)))
                  (:instance rot*rot-is-rot
                             (m1 (a-rotation (acl2-sqrt 2)))
-                            (m2 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                            (m2 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
                  (:instance r3-rotationp (m (m-* (a-rotation (acl2-sqrt 2))
-                                                 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                                 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance associativity-of-m-*
-                            (m2 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m2 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m1 (a-rotation (acl2-sqrt 2)))
                             (m3 p))
                  (:instance m1=m2/a=>m1=s-*/a-m2
@@ -1523,18 +1523,18 @@
                  (:instance s2-def-p (point (set-r-1-a-inv-a5-1-witness (b3-0-set-r-1-a-inv-a5-1-witness p))))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-1
                             (r (a-inv-rotation (acl2-sqrt 2)))
-                            (a (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                        0 (* 2 (acl2-pi)))
-                                                       (point-on-s2-not-d)))
+                            (a (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                             0 (* 2 (acl2-pi)))
+                                            (point-on-s2-not-d)))
                             (wit-wit (set-r-1-a-inv-a5-1-witness (b3-0-set-r-1-a-inv-a5-1-witness p)))
                             (wit-wit-1 (set-r-1-a-inv-a5-1-witness (b3-0-set-r-1-a-inv-a5-1-witness p)))
                             (wit (b3-0-set-r-1-a-inv-a5-1-witness p))
                             (r-1 (a-rotation (acl2-sqrt 2)))
                             (id-1 (id-rotation))
                             (r1 (a-inv-rotation (acl2-sqrt 2)))
-                            (a-1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi))))
-                                                         (point-on-s2-not-d)))
+                            (a-1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi))))
+                                              (point-on-s2-not-d)))
                             (id-2 (id-rotation)))
                  (:instance m-*point-id=point
                             (p1 (set-r-1-a-inv-a5-1-witness (b3-0-set-r-1-a-inv-a5-1-witness p))))
@@ -1542,79 +1542,79 @@
                  (:instance r3-rotationp-r-theta
                             (angle (- (exists-in-interval-but-not-in-angle-sequence-witness
                                        0 (* 2 (acl2-pi))))))
-                 (:instance r3-rotationp (m (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
-                 (:instance m*id=m (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
+                 (:instance r3-rotationp (m (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
+                 (:instance m*id=m (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-2
                             (wit-wit (set-r-1-a-inv-a5-1-witness (b3-0-set-r-1-a-inv-a5-1-witness p)))
                             (wit (b3-0-set-r-1-a-inv-a5-1-witness p))
                             (a (a-rotation (acl2-sqrt 2)))
-                            (b (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                        0 (* 2 (acl2-pi)))
-                                                       (point-on-s2-not-d)))
+                            (b (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                             0 (* 2 (acl2-pi)))
+                                            (point-on-s2-not-d)))
                             (s (s-* (/ (cal-radius p)) p)))
                  (:instance array2p-alist2p
                             (name :fake-name)
                             (l (m-* (a-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance point-in-r3 (x p))
                  (:instance normalize-dimensions-name (name '$arg) (l p))
                  (:instance normalize-dimensions-name (name '$arg)
                             (l (m-* (a-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d)))))
                  (:instance array2p-alist2p
                             (name :fake-name)
                             (l p))
                  (:instance b3-0-set-a5-1-suff
                             (p-s2 (set-r-1-a-inv-a5-1-witness (b3-0-set-r-1-a-inv-a5-1-witness p)))
                             (p (m-* (a-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                     p)))
                  (:instance r3-matrixp (m (m-* (a-rotation (acl2-sqrt 2))
-                                               (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                               (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance m-=m-*rot-p1=p2=>r-p1=r-p2
                             (p1 p)
                             (rot (m-* (a-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
                             (p2 (m-* (a-rotation (acl2-sqrt 2))
-                                     (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                     (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                      p)))
                  (:instance pr3-p=>pr3-a*p
                             (a (/ (cal-radius p)))
                             (p (m-* (a-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d))
                                     p)))
                  (:instance pr3=>r^2>=0 (p p))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-3
                             (wit-wit (set-r-1-a-inv-a5-1-witness (b3-0-set-r-1-a-inv-a5-1-witness p)))
                             (r-1-rot (m-* (a-rotation (acl2-sqrt 2))
-                                          (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                                          (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
                             (p p)
                             (a (/ (cal-radius p))))
                  (:instance associativity-of-m-*
-                            (m2 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m2 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m1 (a-rotation (acl2-sqrt 2)))
                             (m3 (s-* (/ (cal-radius p)) p)))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-4)
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-5
                             (r (a-inv-rotation (acl2-sqrt 2)))
                             (r-1 (a-rotation (acl2-sqrt 2)))
-                            (a-1-2 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                               0 (* 2 (acl2-pi))))
-                                                           (point-on-s2-not-d)))
+                            (a-1-2 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                    0 (* 2 (acl2-pi))))
+                                                (point-on-s2-not-d)))
                             (id-1 (id-rotation))
                             (id-2 (id-rotation))
-                            (a (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                        0 (* 2 (acl2-pi)))
-                                                       (point-on-s2-not-d)))
-                            (a-1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi))))
-                                                         (point-on-s2-not-d))))
+                            (a (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                             0 (* 2 (acl2-pi)))
+                                            (point-on-s2-not-d)))
+                            (a-1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi))))
+                                              (point-on-s2-not-d))))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-6)
                  (:instance funs-lemmas-1 (x (acl2-sqrt 2)))
                  (:instance m-*point-id=point (p1 p))
@@ -1634,9 +1634,9 @@
 (defun-sk b3-0-r-1-a-inv-r-b3-0-set-a6-1 (p)
   (exists p-s2
           (and (b3-0-set-a6 p-s2)
-               (m-= (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+               (m-= (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                          (a-inv-rotation (acl2-sqrt 2))
-                         (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                         (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                          p-s2)
                     p))))
 
@@ -1686,21 +1686,21 @@
                  (:instance m-=m-*rot-p1=p2=>r-p1=r-p2
                             (p1 (b3-0-r-1-a-inv-r-b3-0-set-a6-1-witness p))
                             (p2 p)
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                  0 (* 2 (acl2-pi))))
-                                                              (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                       0 (* 2 (acl2-pi))))
+                                                   (point-on-s2-not-d))
                                       (a-inv-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                               0 (* 2 (acl2-pi)))
-                                                              (point-on-s2-not-d)))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                    0 (* 2 (acl2-pi)))
+                                                   (point-on-s2-not-d)))))
                  (:instance b3-0-r-1-a-inv-r-b3-0-a6-iff-b3-0-r-1-a-1-r-a6-1
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (a-inv-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d))))
+                            (m3 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d))))
                  (:instance r3-rotationp-r-theta
                             (angle (- (exists-in-interval-but-not-in-angle-sequence-witness
                                        0 (* 2 (acl2-pi))))))
@@ -1709,24 +1709,24 @@
                  (:instance witness-not-in-angle-sequence)
                  (:instance base-rotations (x (acl2-sqrt 2)))
                  (:instance b3-0-r-1-a-inv-r-b3-0-a6-iff-b3-0-r-1-a-1-r-a6-2
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (a-inv-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m3 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m4 (b3-0-r-1-a-inv-r-b3-0-set-a6-1-witness p)))
                  (:instance b3-0-set-r-1-a-inv-r-a6-1-suff
                             (p p)
-                            (p-s2 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (p-s2 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                        (a-inv-rotation (acl2-sqrt 2))
-                                       (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                       (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                        (b3-0-set-a6-1-witness (b3-0-r-1-a-inv-r-b3-0-set-a6-1-witness p)))))
                  (:instance set-r-1-a-inv-r-a6
-                            (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                     (a-inv-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                     (b3-0-set-a6-1-witness (b3-0-r-1-a-inv-r-b3-0-set-a6-1-witness p)))))
                  (:instance set-a6
                             (p (b3-0-set-a6-1-witness (b3-0-r-1-a-inv-r-b3-0-set-a6-1-witness p))))
@@ -1740,36 +1740,36 @@
                             (point (b3-0-set-a6-1-witness (b3-0-r-1-a-inv-r-b3-0-set-a6-1-witness p))))
                  (:instance set-r-1-a-inv-r-a6-1-suff
                             (p (b3-0-set-a6-1-witness (b3-0-r-1-a-inv-r-b3-0-set-a6-1-witness p)))
-                            (point (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (point (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                         (a-inv-rotation (acl2-sqrt 2))
-                                        (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                        (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                         (b3-0-set-a6-1-witness (b3-0-r-1-a-inv-r-b3-0-set-a6-1-witness p)))))
                  (:instance r3-rotationp
-                            (m (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (m (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                     (a-inv-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance set-e-p-iff-wit-inv*s2-d-p-n-set-e-p-1-1
                             (p1 (b3-0-set-a6-1-witness (b3-0-r-1-a-inv-r-b3-0-set-a6-1-witness p)))
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                       (a-inv-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance b3-0-r-1-a-inv-r-b3-0-a6-iff-b3-0-r-1-a-1-r-a6-2
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (a-inv-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m3 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m4 (b3-0-set-a6-1-witness (b3-0-r-1-a-inv-r-b3-0-set-a6-1-witness p))))
                  (:instance xyz-p1=xyz-p2
                             (p3 (b3-0-set-a6-1-witness (b3-0-r-1-a-inv-r-b3-0-set-a6-1-witness p)))
                             (p2 (b3-0-r-1-a-inv-r-b3-0-set-a6-1-witness p))
                             (a (/ (cal-radius p)))
                             (p1 p)
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                       (a-inv-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance pr3=>r^2>=0 (p p))
                  (:instance m1=m2/a=>m1=s-*/a-m2
                             (p1 (b3-0-set-a6-1-witness (b3-0-r-1-a-inv-r-b3-0-set-a6-1-witness p)))
@@ -1832,40 +1832,40 @@
                  (:instance set-r-1-a-inv-r-a6-1 (point (b3-0-set-r-1-a-inv-r-a6-1-witness p)))
                  (:instance b3-0-r-1-a-inv-r-b3-0-set-a6 (p p))
                  (:instance b3-0-r-1-a-inv-r-b3-0-set-a6-1-suff
-                            (p-s2 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                   0 (* 2 (acl2-pi))))
-                                                               (point-on-s2-not-d))
+                            (p-s2 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                        0 (* 2 (acl2-pi))))
+                                                    (point-on-s2-not-d))
                                        (a-rotation (acl2-sqrt 2))
-                                       (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi)))
-                                                               (point-on-s2-not-d))
+                                       (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi)))
+                                                    (point-on-s2-not-d))
                                        p))
                             (p p))
-                 (:instance b3-0-set-a6 (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                            0 (* 2 (acl2-pi))))
-                                                                        (point-on-s2-not-d))
+                 (:instance b3-0-set-a6 (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                                 0 (* 2 (acl2-pi))))
+                                                             (point-on-s2-not-d))
                                                 (a-rotation (acl2-sqrt 2))
-                                                (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                         0 (* 2 (acl2-pi)))
-                                                                        (point-on-s2-not-d))
+                                                (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                              0 (* 2 (acl2-pi)))
+                                                             (point-on-s2-not-d))
                                                 p)))
                  (:instance set-e-p-iff-wit-inv*s2-d-p-n-set-e-p-1-1
                             (p1 p)
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                  0 (* 2 (acl2-pi))))
-                                                              (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                       0 (* 2 (acl2-pi))))
+                                                   (point-on-s2-not-d))
                                       (a-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                               0 (* 2 (acl2-pi)))
-                                                              (point-on-s2-not-d)))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                    0 (* 2 (acl2-pi)))
+                                                   (point-on-s2-not-d)))))
                  (:instance b3-0-r-1-a-inv-r-b3-0-a6-iff-b3-0-r-1-a-1-r-a6-1
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (a-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d))))
+                            (m3 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d))))
                  (:instance r3-rotationp-r-theta
                             (angle (- (exists-in-interval-but-not-in-angle-sequence-witness
                                        0 (* 2 (acl2-pi))))))
@@ -1874,55 +1874,55 @@
                  (:instance witness-not-in-angle-sequence)
                  (:instance base-rotations (x (acl2-sqrt 2)))
                  (:instance r3-rotationp
-                            (m (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (m (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (a-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d)))))
                  (:instance b3-0-r-1-a-inv-r-b3-0-a6-iff-b3-0-r-1-a-1-r-a6-2
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (a-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m3 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m4 p))
                  (:instance b3-0-set-a6-1-suff
                             (p-s2 (set-r-1-a-inv-r-a6-1-witness (b3-0-set-r-1-a-inv-r-a6-1-witness p)))
-                            (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (a-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d))
                                     p)))
                  (:instance m-=m-*rot-p1=p2=>r-p1=r-p2
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                  0 (* 2 (acl2-pi))))
-                                                              (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                       0 (* 2 (acl2-pi))))
+                                                   (point-on-s2-not-d))
                                       (a-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                               0 (* 2 (acl2-pi)))
-                                                              (point-on-s2-not-d))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                    0 (* 2 (acl2-pi)))
+                                                   (point-on-s2-not-d))))
                             (p1 p)
-                            (p2 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                 0 (* 2 (acl2-pi))))
-                                                             (point-on-s2-not-d))
+                            (p2 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                      0 (* 2 (acl2-pi))))
+                                                  (point-on-s2-not-d))
                                      (a-rotation (acl2-sqrt 2))
-                                     (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                              0 (* 2 (acl2-pi)))
-                                                             (point-on-s2-not-d))
+                                     (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                   0 (* 2 (acl2-pi)))
+                                                  (point-on-s2-not-d))
                                      p)))
                  (:instance b3-0-r-1-a-1-r-a6=>b3-0-r-1-a-inv-r-b3-0-a6-1
-                            (r-1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi))))
-                                                         (point-on-s2-not-d)))
+                            (r-1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi))))
+                                              (point-on-s2-not-d)))
                             (a-1 (a-inv-rotation (acl2-sqrt 2)))
-                            (r (rotation-about-witness
+                            (r (rotation-3d
                                 (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                 (point-on-s2-not-d)))
                             (wit-wit (set-r-1-a-inv-r-a6-1-witness (b3-0-set-r-1-a-inv-r-a6-1-witness p)))
@@ -1931,7 +1931,7 @@
                             (a-1-1 (a-inv-rotation (acl2-sqrt 2)))
                             (a (a-rotation (acl2-sqrt 2)))
                             (id-2 (id-rotation))
-                            (r1 (rotation-about-witness
+                            (r1 (rotation-3d
                                  (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                  (point-on-s2-not-d)))
                             (id-3 (id-rotation))
@@ -1942,11 +1942,11 @@
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-3
                             (wit-wit (set-r-1-a-inv-r-a6-1-witness (b3-0-set-r-1-a-inv-r-a6-1-witness p)))
                             (r-1-rot (m-*
-                                      (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                  0 (* 2 (acl2-pi))))
-                                                              (point-on-s2-not-d))
+                                      (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                       0 (* 2 (acl2-pi))))
+                                                   (point-on-s2-not-d))
                                       (a-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness
+                                      (rotation-3d
                                        (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                        (point-on-s2-not-d))))
                             (a (/ (cal-radius p)))
@@ -1966,67 +1966,67 @@
                             (y (point-in-r3-z1 p)))
                  (:instance b3-0-r-1-a-1-r-a6=>b3-0-r-1-a-inv-r-b3-0-a6-2
                             (wit-wit (set-r-1-a-inv-r-a6-1-witness (b3-0-set-r-1-a-inv-r-a6-1-witness p)))
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (a-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness
+                            (m3 (rotation-3d
                                  (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                  (point-on-s2-not-d)))
                             (wit (b3-0-set-r-1-a-inv-r-a6-1-witness p))
                             (s (s-* (/ (cal-radius p)) p)))
                  (:instance b3-0-r-1-a-inv-r-b3-0-a6-iff-b3-0-r-1-a-1-r-a6-2
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (a-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness
+                            (m3 (rotation-3d
                                  (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                  (point-on-s2-not-d)))
                             (m4 (s-* (/ (cal-radius p)) p)))
                  (:instance r3-matrixp
-                            (m (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (m (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (a-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d)))))
                  (:instance array2p-alist2p
                             (name :fake-name)
-                            (l (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (l (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (a-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d)))))
                  (:instance pr3-p=>pr3-a*p
                             (a (/ (cal-radius p)))
-                            (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (a-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d))
                                     p)))
                  (:instance pr3=>r^2>=0 (p p))
                  (:instance normalize-dimensions-name (name '$arg) (l p))
                  (:instance normalize-dimensions-name (name '$arg)
-                            (l (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (l (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (a-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d)))))
                  (:instance point-in-r3 (x p))
                  (:instance array2p-alist2p
                             (name :fake-name)
                             (l p))
-                 (:instance id*m=m (m1 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
-                 (:instance r3-rotationp (m (rotation-about-witness
+                 (:instance id*m=m (m1 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                 (:instance r3-rotationp (m (rotation-3d
                                              (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                              (point-on-s2-not-d))))
                  (:instance funs-lemmas-1 (x (acl2-sqrt 2)))
@@ -2034,15 +2034,15 @@
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-6)
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-4)
                  (:instance b3-0-r-1-a-1-r-a6=>b3-0-r-1-a-inv-r-b3-0-a6-3
-                            (r (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                        0 (* 2 (acl2-pi)))
-                                                       (point-on-s2-not-d)))
-                            (r1 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
-                            (r-1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi))))
-                                                         (point-on-s2-not-d)))
+                            (r (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                             0 (* 2 (acl2-pi)))
+                                            (point-on-s2-not-d)))
+                            (r1 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
+                            (r-1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi))))
+                                              (point-on-s2-not-d)))
                             (id-1 (id-rotation))
                             (id-2 (id-rotation))
                             (id-3 (id-rotation))
@@ -2422,7 +2422,7 @@
   (exists p-s2
           (and (b3-0-set-a10 p-s2)
                (m-= (m-* (b-inv-rotation (acl2-sqrt 2))
-                         (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                         (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                          p-s2)
                     p))))
 
@@ -2459,56 +2459,56 @@
                  (:instance base-rotations (x (acl2-sqrt 2)))
                  (:instance rot*rot-is-rot
                             (m1 (b-inv-rotation (acl2-sqrt 2)))
-                            (m2 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                            (m2 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
                  (:instance b3-0-set-b-inv-r-a10-1-suff
                             (p-s2 (m-* (b-inv-rotation (acl2-sqrt 2))
-                                       (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                       (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                        (b3-0-set-a10-1-witness (b3-0-b-inv-r-b3-0-set-a10-1-witness p))))
                             (p p))
                  (:instance set-b-inv-r-a10
                             (p (m-* (b-inv-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                     (b3-0-set-a10-1-witness (b3-0-b-inv-r-b3-0-set-a10-1-witness p)))))
                  (:instance set-a10 (p (b3-0-set-a10-1-witness (b3-0-b-inv-r-b3-0-set-a10-1-witness p))))
                  (:instance m-=m-*rot-p1=p2=>r-p1=r-p2
                             (p1 (b3-0-b-inv-r-b3-0-set-a10-1-witness p))
                             (p2 p)
                             (rot (m-* (b-inv-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness
+                                      (rotation-3d
                                        (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                        (point-on-s2-not-d)))))
                  (:instance associativity-of-m-*
                             (m1 (b-inv-rotation (acl2-sqrt 2)))
-                            (m2 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m2 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m3 (b3-0-b-inv-r-b3-0-set-a10-1-witness p)))
                  (:instance set-e-p-iff-wit-inv*s2-d-p-n-set-e-p-1-1
                             (p1 (b3-0-set-a10-1-witness (b3-0-b-inv-r-b3-0-set-a10-1-witness p)))
                             (rot (m-* (b-inv-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance r3-rotationp
                             (m (m-* (b-inv-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance associativity-of-m-*
                             (m1 (b-inv-rotation (acl2-sqrt 2)))
-                            (m2 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m2 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m3 (b3-0-set-a10-1-witness (b3-0-b-inv-r-b3-0-set-a10-1-witness p))))
                  (:instance set-b-inv-r-a10-1-suff
                             (p (b3-0-set-a10-1-witness (b3-0-b-inv-r-b3-0-set-a10-1-witness p)))
                             (point (m-* (b-inv-rotation (acl2-sqrt 2))
-                                        (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                        (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                         (b3-0-set-a10-1-witness (b3-0-b-inv-r-b3-0-set-a10-1-witness p)))))
                  (:instance xyz-p1=xyz-p2
                             (p1 p)
                             (p2 (b3-0-b-inv-r-b3-0-set-a10-1-witness p))
                             (p3 (b3-0-set-a10-1-witness (b3-0-b-inv-r-b3-0-set-a10-1-witness p)))
                             (rot (m-* (b-inv-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                               0 (* 2 (acl2-pi)))
-                                                              (point-on-s2-not-d))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                    0 (* 2 (acl2-pi)))
+                                                   (point-on-s2-not-d))))
                             (a (/ (cal-radius p))))
                  (:instance pr3=>r^2>=0 (p p))
                  (:instance m1=m2/a=>m1=s-*/a-m2
@@ -2548,18 +2548,18 @@
                  (:instance b3-0-b-inv-r-b3-0-set-a10 (p p))
                  (:instance b3-0-b-inv-r-b3-0-set-a10-1-suff
                             (p p)
-                            (p-s2 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (p-s2 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                        (b-rotation (acl2-sqrt 2)) p)))
-                 (:instance b3-0-set-a10 (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                             0 (* 2 (acl2-pi))))
-                                                                         (point-on-s2-not-d))
+                 (:instance b3-0-set-a10 (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                                  0 (* 2 (acl2-pi))))
+                                                              (point-on-s2-not-d))
                                                  (b-rotation (acl2-sqrt 2))
                                                  p)))
                  (:instance set-e-p-iff-wit-inv*s2-d-p-n-set-e-p-1-1
                             (p1 p)
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                  0 (* 2 (acl2-pi))))
-                                                              (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                       0 (* 2 (acl2-pi))))
+                                                   (point-on-s2-not-d))
                                       (b-rotation (acl2-sqrt 2)))))
                  (:instance r3-rotationp-r-theta
                             (angle (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))))))
@@ -2567,15 +2567,15 @@
                  (:instance base-rotations (x (acl2-sqrt 2)))
                  (:instance rot*rot-is-rot
                             (m2 (b-rotation (acl2-sqrt 2)))
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
-                 (:instance r3-rotationp (m (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                             0 (* 2 (acl2-pi))))
-                                                                         (point-on-s2-not-d))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
+                 (:instance r3-rotationp (m (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                                  0 (* 2 (acl2-pi))))
+                                                              (point-on-s2-not-d))
                                                  (b-rotation (acl2-sqrt 2)))))
                  (:instance associativity-of-m-*
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (b-rotation (acl2-sqrt 2)))
                             (m3 p))
                  (:instance m1=m2/a=>m1=s-*/a-m2
@@ -2594,20 +2594,20 @@
                  (:instance set-a10 (p (set-b-inv-r-a10-1-witness (b3-0-set-b-inv-r-a10-1-witness p))))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-1
                             (a-1 (b-inv-rotation (acl2-sqrt 2)))
-                            (r (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                        0 (* 2 (acl2-pi)))
-                                                       (point-on-s2-not-d)))
+                            (r (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                             0 (* 2 (acl2-pi)))
+                                            (point-on-s2-not-d)))
                             (wit-wit (set-b-inv-r-a10-1-witness (b3-0-set-b-inv-r-a10-1-witness p)))
                             (wit-wit-1 (set-b-inv-r-a10-1-witness (b3-0-set-b-inv-r-a10-1-witness p)))
                             (wit (b3-0-set-b-inv-r-a10-1-witness p))
                             (a (b-rotation (acl2-sqrt 2)))
                             (id-1 (id-rotation))
-                            (r1 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
-                            (r-1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi))))
-                                                         (point-on-s2-not-d)))
+                            (r1 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
+                            (r-1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi))))
+                                              (point-on-s2-not-d)))
                             (id-2 (id-rotation)))
                  (:instance m-*point-id=point
                             (p1 (set-b-inv-r-a10-1-witness (b3-0-set-b-inv-r-a10-1-witness p))))
@@ -2615,11 +2615,11 @@
                  (:instance r3-rotationp-r-theta
                             (angle (exists-in-interval-but-not-in-angle-sequence-witness
                                     0 (* 2 (acl2-pi)))))
-                 (:instance r3-rotationp (m (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
-                 (:instance id*m=m (m1 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
-                 (:instance m-*-s-*-right (m1 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                               0 (* 2 (acl2-pi))))
-                                                                           (point-on-s2-not-d))
+                 (:instance r3-rotationp (m (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                 (:instance id*m=m (m1 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                 (:instance m-*-s-*-right (m1 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                                    0 (* 2 (acl2-pi))))
+                                                                (point-on-s2-not-d))
                                                    (b-rotation (acl2-sqrt 2))))
                             (m2 p)
                             (name :fake-name)
@@ -2628,68 +2628,68 @@
                             (wit-wit (set-b-inv-r-a10-1-witness (b3-0-set-b-inv-r-a10-1-witness p)))
                             (wit (b3-0-set-b-inv-r-a10-1-witness p))
                             (b (b-rotation (acl2-sqrt 2)))
-                            (a (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                           0 (* 2 (acl2-pi))))
-                                                       (point-on-s2-not-d)))
+                            (a (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                0 (* 2 (acl2-pi))))
+                                            (point-on-s2-not-d)))
                             (s (s-* (/ (cal-radius p)) p)))
                  (:instance array2p-alist2p
                             (name :fake-name)
-                            (l (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (l (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (b-rotation (acl2-sqrt 2)))))
                  (:instance point-in-r3 (x p))
                  (:instance normalize-dimensions-name (name '$arg) (l p))
                  (:instance normalize-dimensions-name (name '$arg)
-                            (l (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (l (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (b-rotation (acl2-sqrt 2)))))
                  (:instance array2p-alist2p
                             (name :fake-name)
                             (l p))
                  (:instance b3-0-set-a10-1-suff
                             (p-s2 (set-b-inv-r-a10-1-witness (b3-0-set-b-inv-r-a10-1-witness p)))
-                            (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (b-rotation (acl2-sqrt 2))
                                     p)))
-                 (:instance r3-matrixp (m (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                           0 (* 2 (acl2-pi))))
-                                                                       (point-on-s2-not-d))
+                 (:instance r3-matrixp (m (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                                0 (* 2 (acl2-pi))))
+                                                            (point-on-s2-not-d))
                                                (b-rotation (acl2-sqrt 2)))))
                  (:instance m-=m-*rot-p1=p2=>r-p1=r-p2
                             (p1 p)
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                  0 (* 2 (acl2-pi))))
-                                                              (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                       0 (* 2 (acl2-pi))))
+                                                   (point-on-s2-not-d))
                                       (b-rotation (acl2-sqrt 2))))
-                            (p2 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                 0 (* 2 (acl2-pi))))
-                                                             (point-on-s2-not-d))
+                            (p2 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                      0 (* 2 (acl2-pi))))
+                                                  (point-on-s2-not-d))
                                      (b-rotation (acl2-sqrt 2))
                                      p)))
                  (:instance pr3-p=>pr3-a*p
                             (a (/ (cal-radius p)))
-                            (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (b-rotation (acl2-sqrt 2))
                                     p)))
                  (:instance pr3=>r^2>=0 (p p))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-3
                             (wit-wit (set-b-inv-r-a10-1-witness (b3-0-set-b-inv-r-a10-1-witness p)))
-                            (r-1-rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                      0 (* 2 (acl2-pi))))
-                                                                  (point-on-s2-not-d))
+                            (r-1-rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                           0 (* 2 (acl2-pi))))
+                                                       (point-on-s2-not-d))
                                           (b-rotation (acl2-sqrt 2))))
                             (p p)
                             (a (/ (cal-radius p))))
                  (:instance associativity-of-m-*
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (b-rotation (acl2-sqrt 2)))
                             (m3 (s-* (/ (cal-radius p)) p)))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-4)
@@ -2699,12 +2699,12 @@
                             (a-1-2 (b-inv-rotation (acl2-sqrt 2)))
                             (id-1 (id-rotation))
                             (id-2 (id-rotation))
-                            (r (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                        0 (* 2 (acl2-pi)))
-                                                       (point-on-s2-not-d)))
-                            (r-1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi))))
-                                                         (point-on-s2-not-d))))
+                            (r (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                             0 (* 2 (acl2-pi)))
+                                            (point-on-s2-not-d)))
+                            (r-1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi))))
+                                              (point-on-s2-not-d))))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-6)
                  (:instance funs-lemmas-1 (x (acl2-sqrt 2)))
                  (:instance m-*point-id=point (p1 p))
@@ -2724,7 +2724,7 @@
 (defun-sk b3-0-r-1-b-inv-b3-0-set-a11-1 (p)
   (exists p-s2
           (and (b3-0-set-a11 p-s2)
-               (m-= (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+               (m-= (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                          (b-inv-rotation (acl2-sqrt 2))
                          p-s2)
                     p))))
@@ -2762,14 +2762,14 @@
                  (:instance base-rotations (x (acl2-sqrt 2)))
                  (:instance rot*rot-is-rot
                             (m2 (b-inv-rotation (acl2-sqrt 2)))
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
                  (:instance b3-0-set-r-1-b-inv-a11-1-suff
-                            (p-s2 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (p-s2 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                        (b-inv-rotation (acl2-sqrt 2))
                                        (b3-0-set-a11-1-witness (b3-0-r-1-b-inv-b3-0-set-a11-1-witness p))))
                             (p p))
                  (:instance set-r-1-b-inv-a11
-                            (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                     (b-inv-rotation (acl2-sqrt 2))
                                     (b3-0-set-a11-1-witness (b3-0-r-1-b-inv-b3-0-set-a11-1-witness p)))))
                  (:instance set-a11 (p (b3-0-set-a11-1-witness (b3-0-r-1-b-inv-b3-0-set-a11-1-witness p))))
@@ -2780,39 +2780,39 @@
                  (:instance m-=m-*rot-p1=p2=>r-p1=r-p2
                             (p1 (b3-0-r-1-b-inv-b3-0-set-a11-1-witness p))
                             (p2 p)
-                            (rot (m-* (rotation-about-witness
+                            (rot (m-* (rotation-3d
                                        (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))))
                                        (point-on-s2-not-d))
                                       (b-inv-rotation (acl2-sqrt 2)))))
                  (:instance associativity-of-m-*
                             (m2 (b-inv-rotation (acl2-sqrt 2)))
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m3 (b3-0-r-1-b-inv-b3-0-set-a11-1-witness p)))
                  (:instance set-e-p-iff-wit-inv*s2-d-p-n-set-e-p-1-1
                             (p1 (b3-0-set-a11-1-witness (b3-0-r-1-b-inv-b3-0-set-a11-1-witness p)))
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                       (b-inv-rotation (acl2-sqrt 2)))))
                  (:instance r3-rotationp
-                            (m (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (m (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                     (b-inv-rotation (acl2-sqrt 2)))))
                  (:instance associativity-of-m-*
                             (m2 (b-inv-rotation (acl2-sqrt 2)))
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m3 (b3-0-set-a11-1-witness (b3-0-r-1-b-inv-b3-0-set-a11-1-witness p))))
                  (:instance set-r-1-b-inv-a11-1-suff
                             (p (b3-0-set-a11-1-witness (b3-0-r-1-b-inv-b3-0-set-a11-1-witness p)))
-                            (point (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (point (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                         (b-inv-rotation (acl2-sqrt 2))
                                         (b3-0-set-a11-1-witness (b3-0-r-1-b-inv-b3-0-set-a11-1-witness p)))))
                  (:instance xyz-p1=xyz-p2
                             (p1 p)
                             (p2 (b3-0-r-1-b-inv-b3-0-set-a11-1-witness p))
                             (p3 (b3-0-set-a11-1-witness (b3-0-r-1-b-inv-b3-0-set-a11-1-witness p)))
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d)) (b-inv-rotation (acl2-sqrt 2))))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d)) (b-inv-rotation (acl2-sqrt 2))))
                             (a (/ (cal-radius p))))
                  (:instance pr3=>r^2>=0 (p p))
                  (:instance m1=m2/a=>m1=s-*/a-m2
@@ -2853,28 +2853,28 @@
                  (:instance b3-0-r-1-b-inv-b3-0-set-a11-1-suff
                             (p p)
                             (p-s2 (m-* (b-rotation (acl2-sqrt 2))
-                                       (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                       (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                        p)))
                  (:instance b3-0-set-a11 (p (m-* (b-rotation (acl2-sqrt 2))
-                                                 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                                 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                                  p)))
                  (:instance set-e-p-iff-wit-inv*s2-d-p-n-set-e-p-1-1
                             (p1 p)
                             (rot (m-* (b-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance r3-rotationp-r-theta
                             (angle (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))))
                  (:instance witness-not-in-angle-sequence)
                  (:instance base-rotations (x (acl2-sqrt 2)))
                  (:instance rot*rot-is-rot
                             (m1 (b-rotation (acl2-sqrt 2)))
-                            (m2 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                            (m2 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
                  (:instance r3-rotationp (m (m-* (b-rotation (acl2-sqrt 2))
-                                                 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                                 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance associativity-of-m-*
-                            (m2 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m2 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m1 (b-rotation (acl2-sqrt 2)))
                             (m3 p))
                  (:instance m1=m2/a=>m1=s-*/a-m2
@@ -2899,18 +2899,18 @@
                  (:instance s2-def-p (point (set-r-1-b-inv-a11-1-witness (b3-0-set-r-1-b-inv-a11-1-witness p))))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-1
                             (r (b-inv-rotation (acl2-sqrt 2)))
-                            (a (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                        0 (* 2 (acl2-pi)))
-                                                       (point-on-s2-not-d)))
+                            (a (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                             0 (* 2 (acl2-pi)))
+                                            (point-on-s2-not-d)))
                             (wit-wit (set-r-1-b-inv-a11-1-witness (b3-0-set-r-1-b-inv-a11-1-witness p)))
                             (wit-wit-1 (set-r-1-b-inv-a11-1-witness (b3-0-set-r-1-b-inv-a11-1-witness p)))
                             (wit (b3-0-set-r-1-b-inv-a11-1-witness p))
                             (r-1 (b-rotation (acl2-sqrt 2)))
                             (id-1 (id-rotation))
                             (r1 (b-inv-rotation (acl2-sqrt 2)))
-                            (a-1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi))))
-                                                         (point-on-s2-not-d)))
+                            (a-1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi))))
+                                              (point-on-s2-not-d)))
                             (id-2 (id-rotation)))
                  (:instance m-*point-id=point
                             (p1 (set-r-1-b-inv-a11-1-witness (b3-0-set-r-1-b-inv-a11-1-witness p))))
@@ -2918,79 +2918,79 @@
                  (:instance r3-rotationp-r-theta
                             (angle (- (exists-in-interval-but-not-in-angle-sequence-witness
                                        0 (* 2 (acl2-pi))))))
-                 (:instance r3-rotationp (m (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
-                 (:instance m*id=m (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
+                 (:instance r3-rotationp (m (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
+                 (:instance m*id=m (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-2
                             (wit-wit (set-r-1-b-inv-a11-1-witness (b3-0-set-r-1-b-inv-a11-1-witness p)))
                             (wit (b3-0-set-r-1-b-inv-a11-1-witness p))
                             (a (b-rotation (acl2-sqrt 2)))
-                            (b (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                        0 (* 2 (acl2-pi)))
-                                                       (point-on-s2-not-d)))
+                            (b (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                             0 (* 2 (acl2-pi)))
+                                            (point-on-s2-not-d)))
                             (s (s-* (/ (cal-radius p)) p)))
                  (:instance array2p-alist2p
                             (name :fake-name)
                             (l (m-* (b-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance point-in-r3 (x p))
                  (:instance normalize-dimensions-name (name '$arg) (l p))
                  (:instance normalize-dimensions-name (name '$arg)
                             (l (m-* (b-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d)))))
                  (:instance array2p-alist2p
                             (name :fake-name)
                             (l p))
                  (:instance b3-0-set-a11-1-suff
                             (p-s2 (set-r-1-b-inv-a11-1-witness (b3-0-set-r-1-b-inv-a11-1-witness p)))
                             (p (m-* (b-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                     p)))
                  (:instance r3-matrixp (m (m-* (b-rotation (acl2-sqrt 2))
-                                               (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                               (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance m-=m-*rot-p1=p2=>r-p1=r-p2
                             (p1 p)
                             (rot (m-* (b-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
                             (p2 (m-* (b-rotation (acl2-sqrt 2))
-                                     (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                     (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                      p)))
                  (:instance pr3-p=>pr3-a*p
                             (a (/ (cal-radius p)))
                             (p (m-* (b-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d))
                                     p)))
                  (:instance pr3=>r^2>=0 (p p))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-3
                             (wit-wit (set-r-1-b-inv-a11-1-witness (b3-0-set-r-1-b-inv-a11-1-witness p)))
                             (r-1-rot (m-* (b-rotation (acl2-sqrt 2))
-                                          (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                                          (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
                             (p p)
                             (a (/ (cal-radius p))))
                  (:instance associativity-of-m-*
-                            (m2 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m2 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m1 (b-rotation (acl2-sqrt 2)))
                             (m3 (s-* (/ (cal-radius p)) p)))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-4)
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-5
                             (r (b-inv-rotation (acl2-sqrt 2)))
                             (r-1 (b-rotation (acl2-sqrt 2)))
-                            (a-1-2 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                               0 (* 2 (acl2-pi))))
-                                                           (point-on-s2-not-d)))
+                            (a-1-2 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                    0 (* 2 (acl2-pi))))
+                                                (point-on-s2-not-d)))
                             (id-1 (id-rotation))
                             (id-2 (id-rotation))
-                            (a (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                        0 (* 2 (acl2-pi)))
-                                                       (point-on-s2-not-d)))
-                            (a-1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi))))
-                                                         (point-on-s2-not-d))))
+                            (a (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                             0 (* 2 (acl2-pi)))
+                                            (point-on-s2-not-d)))
+                            (a-1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi))))
+                                              (point-on-s2-not-d))))
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-6)
                  (:instance funs-lemmas-1 (x (acl2-sqrt 2)))
                  (:instance m-*point-id=point (p1 p))
@@ -3010,9 +3010,9 @@
 (defun-sk b3-0-r-1-b-inv-r-b3-0-set-a12-1 (p)
   (exists p-s2
           (and (b3-0-set-a12 p-s2)
-               (m-= (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+               (m-= (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                          (b-inv-rotation (acl2-sqrt 2))
-                         (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                         (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                          p-s2)
                     p))))
 
@@ -3046,21 +3046,21 @@
                  (:instance m-=m-*rot-p1=p2=>r-p1=r-p2
                             (p1 (b3-0-r-1-b-inv-r-b3-0-set-a12-1-witness p))
                             (p2 p)
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                  0 (* 2 (acl2-pi))))
-                                                              (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                       0 (* 2 (acl2-pi))))
+                                                   (point-on-s2-not-d))
                                       (b-inv-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                               0 (* 2 (acl2-pi)))
-                                                              (point-on-s2-not-d)))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                    0 (* 2 (acl2-pi)))
+                                                   (point-on-s2-not-d)))))
                  (:instance b3-0-r-1-a-inv-r-b3-0-a6-iff-b3-0-r-1-a-1-r-a6-1
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (b-inv-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d))))
+                            (m3 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d))))
                  (:instance r3-rotationp-r-theta
                             (angle (- (exists-in-interval-but-not-in-angle-sequence-witness
                                        0 (* 2 (acl2-pi))))))
@@ -3069,24 +3069,24 @@
                  (:instance witness-not-in-angle-sequence)
                  (:instance base-rotations (x (acl2-sqrt 2)))
                  (:instance b3-0-r-1-a-inv-r-b3-0-a6-iff-b3-0-r-1-a-1-r-a6-2
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (b-inv-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m3 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m4 (b3-0-r-1-b-inv-r-b3-0-set-a12-1-witness p)))
                  (:instance b3-0-set-r-1-b-inv-r-a12-1-suff
                             (p p)
-                            (p-s2 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (p-s2 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                        (b-inv-rotation (acl2-sqrt 2))
-                                       (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                       (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                        (b3-0-set-a12-1-witness (b3-0-r-1-b-inv-r-b3-0-set-a12-1-witness p)))))
                  (:instance set-r-1-b-inv-r-a12
-                            (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                     (b-inv-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                     (b3-0-set-a12-1-witness (b3-0-r-1-b-inv-r-b3-0-set-a12-1-witness p)))))
                  (:instance set-a12
                             (p (b3-0-set-a12-1-witness (b3-0-r-1-b-inv-r-b3-0-set-a12-1-witness p))))
@@ -3100,36 +3100,36 @@
                             (point (b3-0-set-a12-1-witness (b3-0-r-1-b-inv-r-b3-0-set-a12-1-witness p))))
                  (:instance set-r-1-b-inv-r-a12-1-suff
                             (p (b3-0-set-a12-1-witness (b3-0-r-1-b-inv-r-b3-0-set-a12-1-witness p)))
-                            (point (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (point (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                         (b-inv-rotation (acl2-sqrt 2))
-                                        (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
+                                        (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))
                                         (b3-0-set-a12-1-witness (b3-0-r-1-b-inv-r-b3-0-set-a12-1-witness p)))))
                  (:instance r3-rotationp
-                            (m (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (m (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                     (b-inv-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance set-e-p-iff-wit-inv*s2-d-p-n-set-e-p-1-1
                             (p1 (b3-0-set-a12-1-witness (b3-0-r-1-b-inv-r-b3-0-set-a12-1-witness p)))
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                       (b-inv-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance b3-0-r-1-a-inv-r-b3-0-a6-iff-b3-0-r-1-a-1-r-a6-2
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (b-inv-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m3 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m4 (b3-0-set-a12-1-witness (b3-0-r-1-b-inv-r-b3-0-set-a12-1-witness p))))
                  (:instance xyz-p1=xyz-p2
                             (p3 (b3-0-set-a12-1-witness (b3-0-r-1-b-inv-r-b3-0-set-a12-1-witness p)))
                             (p2 (b3-0-r-1-b-inv-r-b3-0-set-a12-1-witness p))
                             (a (/ (cal-radius p)))
                             (p1 p)
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))) (point-on-s2-not-d))
                                       (b-inv-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d)))))
                  (:instance pr3=>r^2>=0 (p p))
                  (:instance m1=m2/a=>m1=s-*/a-m2
                             (p1 (b3-0-set-a12-1-witness (b3-0-r-1-b-inv-r-b3-0-set-a12-1-witness p)))
@@ -3168,40 +3168,40 @@
                  (:instance set-r-1-b-inv-r-a12-1 (point (b3-0-set-r-1-b-inv-r-a12-1-witness p)))
                  (:instance b3-0-r-1-b-inv-r-b3-0-set-a12 (p p))
                  (:instance b3-0-r-1-b-inv-r-b3-0-set-a12-1-suff
-                            (p-s2 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                   0 (* 2 (acl2-pi))))
-                                                               (point-on-s2-not-d))
+                            (p-s2 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                        0 (* 2 (acl2-pi))))
+                                                    (point-on-s2-not-d))
                                        (b-rotation (acl2-sqrt 2))
-                                       (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi)))
-                                                               (point-on-s2-not-d))
+                                       (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi)))
+                                                    (point-on-s2-not-d))
                                        p))
                             (p p))
-                 (:instance b3-0-set-a12 (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                            0 (* 2 (acl2-pi))))
-                                                                        (point-on-s2-not-d))
-                                                (b-rotation (acl2-sqrt 2))
-                                                (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                         0 (* 2 (acl2-pi)))
-                                                                        (point-on-s2-not-d))
-                                                p)))
-                 (:instance set-e-p-iff-wit-inv*s2-d-p-n-set-e-p-1-1
-                            (p1 p)
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
+                 (:instance b3-0-set-a12 (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
                                                                   0 (* 2 (acl2-pi))))
                                                               (point-on-s2-not-d))
-                                      (b-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 (b-rotation (acl2-sqrt 2))
+                                                 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
                                                                0 (* 2 (acl2-pi)))
-                                                              (point-on-s2-not-d)))))
+                                                              (point-on-s2-not-d))
+                                                 p)))
+                 (:instance set-e-p-iff-wit-inv*s2-d-p-n-set-e-p-1-1
+                            (p1 p)
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                       0 (* 2 (acl2-pi))))
+                                                   (point-on-s2-not-d))
+                                      (b-rotation (acl2-sqrt 2))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                    0 (* 2 (acl2-pi)))
+                                                   (point-on-s2-not-d)))))
                  (:instance b3-0-r-1-a-inv-r-b3-0-a6-iff-b3-0-r-1-a-1-r-a6-1
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (b-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d))))
+                            (m3 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d))))
                  (:instance r3-rotationp-r-theta
                             (angle (- (exists-in-interval-but-not-in-angle-sequence-witness
                                        0 (* 2 (acl2-pi))))))
@@ -3210,55 +3210,55 @@
                  (:instance witness-not-in-angle-sequence)
                  (:instance base-rotations (x (acl2-sqrt 2)))
                  (:instance r3-rotationp
-                            (m (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (m (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (b-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d)))))
                  (:instance b3-0-r-1-a-inv-r-b3-0-a6-iff-b3-0-r-1-a-1-r-a6-2
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (b-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
+                            (m3 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
                             (m4 p))
                  (:instance b3-0-set-a12-1-suff
                             (p-s2 (set-r-1-b-inv-r-a12-1-witness (b3-0-set-r-1-b-inv-r-a12-1-witness p)))
-                            (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (b-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d))
                                     p)))
                  (:instance m-=m-*rot-p1=p2=>r-p1=r-p2
-                            (rot (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                  0 (* 2 (acl2-pi))))
-                                                              (point-on-s2-not-d))
+                            (rot (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                       0 (* 2 (acl2-pi))))
+                                                   (point-on-s2-not-d))
                                       (b-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                               0 (* 2 (acl2-pi)))
-                                                              (point-on-s2-not-d))))
+                                      (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                    0 (* 2 (acl2-pi)))
+                                                   (point-on-s2-not-d))))
                             (p1 p)
-                            (p2 (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                 0 (* 2 (acl2-pi))))
-                                                             (point-on-s2-not-d))
+                            (p2 (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                      0 (* 2 (acl2-pi))))
+                                                  (point-on-s2-not-d))
                                      (b-rotation (acl2-sqrt 2))
-                                     (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                              0 (* 2 (acl2-pi)))
-                                                             (point-on-s2-not-d))
+                                     (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                   0 (* 2 (acl2-pi)))
+                                                  (point-on-s2-not-d))
                                      p)))
                  (:instance b3-0-r-1-a-1-r-a6=>b3-0-r-1-a-inv-r-b3-0-a6-1
-                            (r-1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi))))
-                                                         (point-on-s2-not-d)))
+                            (r-1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi))))
+                                              (point-on-s2-not-d)))
                             (a-1 (b-inv-rotation (acl2-sqrt 2)))
-                            (r (rotation-about-witness
+                            (r (rotation-3d
                                 (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                 (point-on-s2-not-d)))
                             (wit-wit (set-r-1-b-inv-r-a12-1-witness (b3-0-set-r-1-b-inv-r-a12-1-witness p)))
@@ -3267,7 +3267,7 @@
                             (a-1-1 (b-inv-rotation (acl2-sqrt 2)))
                             (a (b-rotation (acl2-sqrt 2)))
                             (id-2 (id-rotation))
-                            (r1 (rotation-about-witness
+                            (r1 (rotation-3d
                                  (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                  (point-on-s2-not-d)))
                             (id-3 (id-rotation))
@@ -3278,11 +3278,11 @@
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-3
                             (wit-wit (set-r-1-b-inv-r-a12-1-witness (b3-0-set-r-1-b-inv-r-a12-1-witness p)))
                             (r-1-rot (m-*
-                                      (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                  0 (* 2 (acl2-pi))))
-                                                              (point-on-s2-not-d))
+                                      (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                       0 (* 2 (acl2-pi))))
+                                                   (point-on-s2-not-d))
                                       (b-rotation (acl2-sqrt 2))
-                                      (rotation-about-witness
+                                      (rotation-3d
                                        (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                        (point-on-s2-not-d))))
                             (a (/ (cal-radius p)))
@@ -3302,67 +3302,67 @@
                             (y (point-in-r3-z1 p)))
                  (:instance b3-0-r-1-a-1-r-a6=>b3-0-r-1-a-inv-r-b3-0-a6-2
                             (wit-wit (set-r-1-b-inv-r-a12-1-witness (b3-0-set-r-1-b-inv-r-a12-1-witness p)))
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (b-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness
+                            (m3 (rotation-3d
                                  (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                  (point-on-s2-not-d)))
                             (wit (b3-0-set-r-1-b-inv-r-a12-1-witness p))
                             (s (s-* (/ (cal-radius p)) p)))
                  (:instance b3-0-r-1-a-inv-r-b3-0-a6-iff-b3-0-r-1-a-1-r-a6-2
-                            (m1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                            0 (* 2 (acl2-pi))))
-                                                        (point-on-s2-not-d)))
+                            (m1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                 0 (* 2 (acl2-pi))))
+                                             (point-on-s2-not-d)))
                             (m2 (b-rotation (acl2-sqrt 2)))
-                            (m3 (rotation-about-witness
+                            (m3 (rotation-3d
                                  (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                  (point-on-s2-not-d)))
                             (m4 (s-* (/ (cal-radius p)) p)))
                  (:instance r3-matrixp
-                            (m (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (m (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (b-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d)))))
                  (:instance array2p-alist2p
                             (name :fake-name)
-                            (l (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (l (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (b-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d)))))
                  (:instance pr3-p=>pr3-a*p
                             (a (/ (cal-radius p)))
-                            (p (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (p (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (b-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d))
                                     p)))
                  (:instance pr3=>r^2>=0 (p p))
                  (:instance normalize-dimensions-name (name '$arg) (l p))
                  (:instance normalize-dimensions-name (name '$arg)
-                            (l (m-* (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                                0 (* 2 (acl2-pi))))
-                                                            (point-on-s2-not-d))
+                            (l (m-* (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                     0 (* 2 (acl2-pi))))
+                                                 (point-on-s2-not-d))
                                     (b-rotation (acl2-sqrt 2))
-                                    (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi)))
-                                                            (point-on-s2-not-d)))))
+                                    (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi)))
+                                                 (point-on-s2-not-d)))))
                  (:instance point-in-r3 (x p))
                  (:instance array2p-alist2p
                             (name :fake-name)
                             (l p))
-                 (:instance id*m=m (m1 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
-                 (:instance r3-rotationp (m (rotation-about-witness
+                 (:instance id*m=m (m1 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi))) (point-on-s2-not-d))))
+                 (:instance r3-rotationp (m (rotation-3d
                                              (exists-in-interval-but-not-in-angle-sequence-witness 0 (* 2 (acl2-pi)))
                                              (point-on-s2-not-d))))
                  (:instance funs-lemmas-1 (x (acl2-sqrt 2)))
@@ -3370,15 +3370,15 @@
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-6)
                  (:instance b3-0-a-1-r-a4=>b3-0-a-1-r-b3-0-a4-4)
                  (:instance b3-0-r-1-a-1-r-a6=>b3-0-r-1-a-inv-r-b3-0-a6-3
-                            (r (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                        0 (* 2 (acl2-pi)))
-                                                       (point-on-s2-not-d)))
-                            (r1 (rotation-about-witness (exists-in-interval-but-not-in-angle-sequence-witness
-                                                         0 (* 2 (acl2-pi)))
-                                                        (point-on-s2-not-d)))
-                            (r-1 (rotation-about-witness (- (exists-in-interval-but-not-in-angle-sequence-witness
-                                                             0 (* 2 (acl2-pi))))
-                                                         (point-on-s2-not-d)))
+                            (r (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                             0 (* 2 (acl2-pi)))
+                                            (point-on-s2-not-d)))
+                            (r1 (rotation-3d (exists-in-interval-but-not-in-angle-sequence-witness
+                                              0 (* 2 (acl2-pi)))
+                                             (point-on-s2-not-d)))
+                            (r-1 (rotation-3d (- (exists-in-interval-but-not-in-angle-sequence-witness
+                                                  0 (* 2 (acl2-pi))))
+                                              (point-on-s2-not-d)))
                             (id-1 (id-rotation))
                             (id-2 (id-rotation))
                             (id-3 (id-rotation))

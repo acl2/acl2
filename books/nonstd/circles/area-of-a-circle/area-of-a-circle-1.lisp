@@ -24,7 +24,6 @@
   (consta1 () t)
   )
  (local (defun rad() 1))
- (local (defun fi-dom-variable() 5))
  (local (defun consta1() 1))
 
  (defthm rad-def
