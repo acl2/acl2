@@ -744,6 +744,13 @@
   :hints (("Goal" :in-theory (enable manf)))
   :rule-classes :linear)
 
+(defthm-nl sigf-upper-bound
+  (implies (formatp f)
+           (< (sigf x f)
+              (expt 2 (prec f))))
+  :hints (("Goal" :in-theory (enable sigf sigw)))
+  :rule-classes :linear)
+
 (defthm sigf-=-manf
   (implies (not (explicitp f))
            (equal (sigf x f)
@@ -780,6 +787,17 @@
                 (not (normp x f))))
   :hints (("Goal" :in-theory (enable snanp qnanp nanp infp zerp normp denormp
                                      encodingp expw formatp))))
+
+(defthm zerp-zencode
+  (implies (formatp f)
+           (zerp (zencode sgn f) f))
+  :hints (("Goal" :in-theory (enable zerp
+                                     zencode
+                                     encodingp
+                                     expf sigf
+                                     cat
+                                     bits
+                                     bvecp))))
 
 (defthmd zerp-decode-rel
   (implies (encodingp x f)
@@ -1549,8 +1567,7 @@
                      (bits x
                            (expo x)
                            (- (1+ (expo x)) k)))))
-  :hints (("Goal" :use (:instance bits-rtz
-                                  (n (1+ (expo x)))))))
+  :hints (("Goal" :use (:instance bits-rtz (n (1+ (expo x)))))))
 
 (defthm-nl rna-neg-bits
   (implies (and (< n 0)

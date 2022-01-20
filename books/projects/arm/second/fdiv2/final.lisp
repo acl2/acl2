@@ -1,6 +1,6 @@
 ;; Cuong Chau <cuong.chau@arm.com>
 
-;; October 2021
+;; January 2022
 
 (in-package "RTL")
 
@@ -22,13 +22,6 @@
 (local
  (encapsulate
    ()
-
-   (local
-    (defthm zerp-zencode
-      (zerp (zencode sgn (f))
-            (f))
-      :hints (("Goal"
-               :in-theory (enable zerp zencode f encodingp expf manf)))))
 
    (local
     (defthm decode-opz-rewrite
