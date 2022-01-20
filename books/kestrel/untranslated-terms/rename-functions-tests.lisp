@@ -52,3 +52,12 @@
        (- (CW "Hello"))
        ((MV A B C) (MV (new< A A) B C)))
     (LIST X A B C)))
+
+
+;; Example with an ignored let var.  Gave an error before we changed the tool to set ignore-ok.
+(assert-equal
+ (rename-functions-in-untranslated-term
+ '(LET ((Y 4)) x)
+ '((foo . bar))
+ state)
+ '(LET ((Y 4)) x))
