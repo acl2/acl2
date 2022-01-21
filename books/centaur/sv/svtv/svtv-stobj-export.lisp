@@ -415,9 +415,15 @@
                   (svtv-data-obj->flatten-validp x)
                   (svtv-data-obj->flatnorm-validp x))
              (b* (((mv ?err ?res ?moddb ?aliases)
-                   (svtv-design-flatten (svtv-data-obj->design x) :moddb nil :aliases nil)))
-               (equal (svtv-data-obj->flatnorm x)
-                      (svtv-normalize-assigns res aliases (svtv-data-obj->flatnorm-setup x)))))
+                   (svtv-design-flatten (svtv-data-obj->design x) :moddb nil
+                                        :aliases nil))
+                  ((flatnorm-res flatnorm) (svtv-data-obj->flatnorm x))
+                  ((flatnorm-res spec) (svtv-normalize-assigns res aliases
+                                                               (svtv-data-obj->flatnorm-setup
+                                                                x))))
+               (and (svex-alist-eval-equiv flatnorm.assigns spec.assigns)
+                    (equal flatnorm.delays spec.delays)
+                    (equal flatnorm.constraints spec.constraints))))
     :Hints(("Goal" :in-theory (enable svtv-data$ap
                                       svtv-data$c-flatten-okp
                                       svtv-data$c-flatnorm-okp))))
