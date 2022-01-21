@@ -720,10 +720,11 @@
                        a))
     :hints (("goal"
              :do-not-induct t
-             :expand (valid-sc (cons (car term)
+             :expand ( (VALID-SC '(NIL) A)
+                       (valid-sc (cons (car term)
                                      (rp-apply-bindings-subterms (cdr term)
                                                                  bindings))
-                               a)
+                               a))
              :in-theory (e/d (
                               is-rp
                               rp-apply-bindings-subterms
@@ -1023,10 +1024,15 @@
           (bindings-alistp bindings)
           (rp-evlt (rp-apply-bindings (rp-hyp rule) bindings) a))
      (valid-sc (rp-apply-bindings (rp-rhs rule) bindings) a))
-    :otf-flg t
+    ;;:otf-flg t
     :hints (("Goal"
              :use ((:instance rp-apply-bindings-to-evl
+                              (term (rp-hyp rule))
+                              (bindings (RP-TRANS-BINDINGS BINDINGS)))
+                   (:instance rp-apply-bindings-to-evl
                               (term (rp-hyp rule)))
+                   (:instance rp-apply-bindings-to-evl
+                              (term (rp-rhs rule)))
                    (:instance rp-apply-bindings-to-valid-sc-with-different-a
                               (term (rp-rhs rule)))
                    (:instance valid-rulep-sk-necc
@@ -1036,8 +1042,17 @@
                               (a (bind-bindings (rp-trans-bindings bindings) a))))
              :do-not-induct t
              :in-theory (e/d (valid-rulep
+                              not-include-rp-means-valid-sc
+                              ;;is-equals
                               rule-syntaxp)
                              (rp-apply-bindings
+                              rp-apply-bindings-to-valid-sc-with-different-a
+                              valid-rulep-sk-necc
+                              rp-apply-bindings-to-evl
+                              ;;include-fnc
+                              rp-termp
+                              rp-term-listp
+                              ;;VALID-RULEP-SK-BODY
                               (:REWRITE VALID-RULEP-IMPLIES-VALID-SC)
                               ;(:DEFINITION VALID-RULEP)
                               ;(:DEFINITION RULE-SYNTAXP)

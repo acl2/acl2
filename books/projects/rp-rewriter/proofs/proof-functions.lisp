@@ -124,7 +124,7 @@
        nil)
       ((is-if term)
        (b* ((if-context (cadr term));(ex-from-rp (cadr term)))
-            (not-if-context (dumb-negate-lit2 if-context)))
+            ((mv not-if-context &) (dumb-negate-lit2 if-context)))
          (append
           (ext-side-conditions (cadr term)
                                context)

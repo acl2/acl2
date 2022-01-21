@@ -1456,3 +1456,9 @@
 
 (add-rp-rule loghead-of-+-is-2vec-adder-without-carry)
 (add-rp-rule loghead-of-+-is-2vec-adder)
+
+
+(def-rp-rule integerp-of-if
+  (implies (and (integerp then)
+                (integerp else))
+           (integerp (if test then else))))

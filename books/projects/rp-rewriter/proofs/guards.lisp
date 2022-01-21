@@ -750,4 +750,4 @@
                  (:type-prescription symbol-alistp))))))
 
 
-(verify-guards rp-state-init-rules)
+(verify-guards rp-state-init-rules-fn)

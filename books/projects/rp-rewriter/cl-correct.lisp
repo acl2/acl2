@@ -91,7 +91,7 @@
                                  'rp-clause-processor-aux
                                  "Conjectures given to RP-Rewriter cannot include an rp instance~%" nil)))))
             (mv nil (list cl) rp-state state))
-         
+
            (rp-state (rp-state-new-run rp-state))
            (rp-state (rp-state-init-rules (access rp-cl-hints hints :runes)
                                           (access rp-cl-hints hints :runes-outside-in)

@@ -123,7 +123,7 @@
 (add-rp-rule endp)
 (add-rp-rule eql)
 (add-rp-rule not :outside-in t)
-(add-rp-rule implies :outside-in t)
+;;(add-rp-rule implies :outside-in t)
 (add-rp-rule eq)
 (add-rp-rule eql)
 (add-rp-rule cons-equal)

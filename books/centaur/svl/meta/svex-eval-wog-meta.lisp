@@ -31,6 +31,11 @@
 (include-book "../svex-reduce-with-env")
 ;;(include-book "centaur/sv/svex/rewrite" :dir :system)
 
+(include-book "std/alists/remove-assocs" :dir :system)
+
+(local
+ (include-book "../bits-sbits"))
+
 (local
  (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))
 
@@ -137,11 +142,19 @@
         (args (if quoted (rp::unquote-all args) args)))
      (case ,fn
        ,@(svex-apply-cases-wog-fn-meta args args-dontrw
-                                       (cons '(ID sv::4VEC-FIX$INLINE (ACL2::X)
-                                               "identity function") ;; had to
-                                             ;; change this because 4vec-fix is
-                                             ;; the only function that is inlined
-                                             (cdr sv::*svex-op-table*))))))
+                                       (list* '(ID sv::4VEC-FIX$INLINE (ACL2::X)
+                                                   "identity function") ;; had to
+                                              ;; change this because 4vec-fix is
+                                              ;; the only function that is
+                                              ;; inlined
+                                              ;; '(sv::? 4vec-?-raw (x y z) nil)
+                                              ;; '(sv::?* 4vec-?*-raw (x y z)
+                                              ;;          nil)
+                                              ;; '(sv::?! 4vec-?!-raw (x y z) nil)
+                                              (acl2::remove-assocs '(ID ;;sv::?
+                                                                        ;;sv::?* sv::?!
+                                                                        )
+                                                                   sv::*svex-op-table*))))))
 
 (defund svex-apply-wog-meta (fn args args-dontrw)
   (declare (xargs :guard (and (true-listp args)

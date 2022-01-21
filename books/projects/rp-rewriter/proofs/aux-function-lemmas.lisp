@@ -122,9 +122,10 @@
              :in-theory (e/d (is-lambda is-lambda-strict lambda-exp-free-p LAMBDA-EXP-FREE-LISTP )
                              ())))))
 
-(defthm rp-termp-dumb-negate-lit2
+(defret rp-termp-dumb-negate-lit2
   (implies (rp-termp term)
-           (rp-termp (dumb-negate-lit2 term)))
+           (rp-termp new-term))
+  :fn dumb-negate-lit2
   :hints (("goal" :in-theory (enable rp-term-listp
                                      dumb-negate-lit2))))
 

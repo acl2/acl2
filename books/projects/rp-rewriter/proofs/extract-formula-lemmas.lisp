@@ -51,6 +51,15 @@
   :hints (("Goal"
            :in-theory (e/d (rule-syntaxp) ()))))
 
+(defthm is-rp-of-list
+  (not (is-rp (cons 'list x)))
+  :hints (("Goal"
+           :in-theory (e/d (is-rp) ()))))
+
+(defthm is-if-of-list
+  (not (is-if (cons 'list x)))
+  :hints (("Goal"
+           :in-theory (e/d (is-if) ()))))
 (local
  ;;local funcitons for local lemmas
  (encapsulate
@@ -729,6 +738,22 @@
                               (:DEFINITION RP-TERMP)
                               (:DEFINITION INCLUDE-FNC)
                               (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-NT))))))
+  (local
+   (defthm lemma14-v2
+     (implies (and (valid-sc term a)
+                   (consp term)
+                   (rp-termp term)
+                   (not (eq (car term) 'quote))
+                   (not (is-if term)))
+              (valid-sc-subterms (cdr term) a))
+     :hints (("goal"
+              :do-not-induct t
+              :expand (VALID-SC TERM A)
+              :cases ((is-rp term))
+              :in-theory (e/d (is-rp
+                               valid-sc-single-step)
+                              (ex-from-rp-lemma1
+                               rp-termp))))))
 
   (local
    (defthm lemma14
@@ -741,24 +766,12 @@
      :hints (("goal"
               :do-not-induct t
               :cases ((is-rp term))
+              :expand (VALID-SC-NT TERM A)
               :in-theory (e/d (is-rp
                                valid-sc-nt-single-step)
                               (EX-FROM-RP-LEMMA1))))))
 
-  (local
-   (defthm lemma14-v2
-     (implies (and (valid-sc term a)
-                   (consp term)
-                   (rp-termp term)
-                   (not (eq (car term) 'quote))
-                   (not (is-if term)))
-              (valid-sc-subterms (cdr term) a))
-     :hints (("goal"
-              :do-not-induct t
-              :cases ((is-rp term))
-              :in-theory (e/d (is-rp
-                               valid-sc-single-step)
-                              (ex-from-rp-lemma1))))))
+  
 
   #|(local
   (defthm lemma15
@@ -1015,6 +1028,9 @@
                                     A)
                        (EX-FROM-RP (LIST 'RP
                                          (LIST 'QUOTE SC-TYPE)
+                                         SC-TERM))
+                       (EX-FROM-RP (LIST 'RP
+                                         (LIST 'QUOTE SC-TYPE)
                                          (CONS (CAR SC-TERM)
                                                (ATTACH-SC-LST (CDR SC-TERM)
                                                               SC-TYPE
@@ -1052,8 +1068,8 @@
   (valid-sc SC-TERM A)
   (rp-termp SC-TERM)
   (NOT (EQUAL (CAR SC-TERM) 'IF))
-; (NOT (INCLUDE-FNC-SUBTERMS (CDR SC-TERM) ; ; ;
-;                           'IF)) ; ; ;
+; (NOT (INCLUDE-FNC-SUBTERMS (CDR SC-TERM) ; ; ; ; ; ; ;
+;                           'IF)) ; ; ; ; ; ; ;
   (not (is-rp sc-term))
   (IS-RP (LIST 'RP
   (LIST 'QUOTE SC-TYPE)
@@ -1178,6 +1194,13 @@
      :hints (("Goal"
               :do-not-induct t
               :cases ((is-rp term))
+              :expand ((VALID-SC TERM A)
+                       (VALID-SC (CONS (CAR TERM)
+                                       (ATTACH-SC-LST (CDR TERM)
+                                                      SC-TYPE SC-TERM))
+                                 A)
+                       (:free (x)
+                              (valid-sc (cons 'equals x) a)))
               :in-theory (e/d (
                                valid-sc-single-step
                                is-rp-implies-fc
@@ -1212,6 +1235,14 @@
                         A))
      :hints (("Goal"
               :do-not-induct t
+               :expand ((VALID-SC (CONS (CAR SC-TERM)
+                                       (ATTACH-SC-LST (CDR SC-TERM)
+                                                      SC-TYPE SC-TERM))
+                                 A)
+                       (VALID-SC (CONS 'LIST
+                                       (ATTACH-SC-LST (CDR SC-TERM)
+                                                      SC-TYPE SC-TERM))
+                                 A))
               :use ((:instance rp-evlt-lemma20
                                (fn (CAR SC-TERM))
                                (lst1 (cdr SC-TERM))
@@ -1328,6 +1359,13 @@
      (equal (rp-evl-lst (list x) a)
             (list (rp-evl x a)))))
 
+  (local
+   (defthm when-rp-termp-and-not-is-rp
+     (implies (and (not (is-rp term))
+                   (rp-termp term))
+              (not (equal (car term) 'rp)))
+     :rule-classes :forward-chaining))
+
   (defthm-attach-sc
     (defthm valid-sc-nt-attach-sc
       (implies (and (valid-sc-nt term a)
@@ -1368,6 +1406,14 @@
                               (:rewrite default-car)
                               rp-evl-lst-of-cons)))))
 
+  (local
+   (defthm valid-sc-attach-sc-lemma
+     (implies (and (is-rp term)
+                   (consp other)
+                   (not (cdr other)))
+              (is-rp (list* 'rp (cadr term) other)))
+     :hints (("Goal"
+              :in-theory (e/d (is-rp) ())))))
 
   (defthm-attach-sc
     (defthm valid-sc-attach-sc
@@ -1388,15 +1434,30 @@
                (valid-sc-subterms (attach-sc-lst lst sc-type sc-term) a))
       :flag attach-sc-lst)
     :otf-flg t
-    :hints (("Subgoal *1/3"
-             :use ((:instance RP-EVLt-LEMMA20
+    :hints (
+            ("Subgoal *1/3"
+             :use ((:instance rp-evlt-lemma20
                               (fn (car sc-term))
                               (lst1 (cdr sc-term))
                               (lst2 (attach-sc-lst (cdr sc-term) sc-type sc-term)))))
             ("Goal"
              :do-not-induct t
+             :expand ((IS-RP (LIST* (CAR TERM)
+                            (ATTACH-SC (CADR TERM) SC-TYPE SC-TERM)
+                            (CDDR TERM)))
+                      (:free (x y z k) (is-rp (list* x y z k))) 
+                      (VALID-SC TERM A)
+                      (ATTACH-SC-LST (CDDDDR TERM)
+                                           SC-TYPE SC-TERM)
+                      (ATTACH-SC-LST (CDDDR TERM)
+                                     SC-TYPE SC-TERM)
+                      (ATTACH-SC-LST (CDDR TERM)
+                                     SC-TYPE SC-TERM)
+                      (ATTACH-SC-LST (CDR TERM)
+                                     SC-TYPE SC-TERM))
              ;;:cases ((Is-rp term))
-             :in-theory (e/d (IS-RP-IMPLIES-FC
+             :in-theory (e/d (;;is-rp
+                              IS-RP-IMPLIES-FC
                               ;;is-if
                               ;;rp-evl-constraint-0
                               eval-and-all
@@ -1406,6 +1467,7 @@
                               valid-sc-single-step)
                              (VALID-SC-EX-FROM-RP-2
                               RP-EVL-LEMMA20
+                              rp-evlt-lemma20
                               NOT-INCLUDE-RP-MEANS-VALID-SC
                               not-include-rp-means-valid-sc-lst
                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
@@ -1578,7 +1640,6 @@
     (equal (get-vars1 (attach-sc-list-to-rhs rhs sc-list) acc)
            (get-vars1 rhs acc))))
 
-
 (encapsulate
   nil
   (defthm not-include-fnc-subterms-if-to-and-list
@@ -1742,6 +1803,8 @@
               (valid-rulep-with-a (attach-sc-to-rule rule sc-formula) a))
      :hints (("Goal"
               :in-theory (e/d (IF-TO-AND-LIST
+                               not-include-rp-means-valid-sc
+                               not-include-rp-means-valid-sc-nt
                                rule-syntaxp-implies
                                rule-syntaxp-implies-m
                                rule-syntaxp-implies-2
@@ -2091,14 +2154,13 @@
                             (:DEFINITION ACL2::APPLY$-BADGEP))))))
 
 (defthm symbol-listp-get-enabled-rules-from-table
-  (symbol-listp (mv-nth 2 (get-enabled-rules-from-table state)))
+  (symbol-listp (mv-nth 2 (get-enabled-rules-from-table state :ruleset ruleset)))
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (get-enabled-rules-from-table) ()))))
 
 ;; here prove that rp-state-init-rules returns valid-rp-statep and
 ;; valid-rp-state-syntaxp
-
 
 ;; Syntax check:
 
@@ -2122,7 +2184,7 @@
 (in-theory (disable RULES-ALIST-INSIDE-OUTP
                     RULES-ALIST-OUTSIDE-INP
                     DISABLED-EXC-RULESP
-                    
+
                     SHOW-USED-RULES-FLGP
                     COUNT-USED-RULES-FLGP
                     RULES-USEDP
@@ -2168,7 +2230,8 @@
                                             runes-outside-in
                                             new-synps
                                             rp-state
-                                            state))))
+                                            state
+                                            :ruleset ruleset))))
   :hints (("Goal"
            :in-theory (e/d (rp-state-init-rules) ()))))
 
@@ -2305,7 +2368,7 @@
                             (:TYPE-PRESCRIPTION RULES-USEDP)
                             (:TYPE-PRESCRIPTION RULE-FRAME-CNTSP)
                             (:TYPE-PRESCRIPTION RP-BRRP)
-                            
+
                             (:TYPE-PRESCRIPTION RW-STACKP)
                             (:TYPE-PRESCRIPTION
                              valid-rp-statep)
@@ -2403,7 +2466,7 @@
                             (:TYPE-PRESCRIPTION RULES-USEDP)
                             (:TYPE-PRESCRIPTION RULE-FRAME-CNTSP)
                             (:TYPE-PRESCRIPTION RP-BRRP)
-                            
+
                             (:TYPE-PRESCRIPTION RW-STACKP)
                             (:TYPE-PRESCRIPTION
                              VALID-RP-STATE-SYNTAXP-AUX)
@@ -2533,12 +2596,12 @@
                                                  runes-outside-in
                                                  new-synps
                                                  rp-state
-                                                 state)))
+                                                 state
+                                                 :ruleset ruleset)))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (rp-state-init-rules)
                            (valid-rp-statep)))))
-
 
 (defun rules-alistp2 (alist)
   (if (atom alist)
@@ -2638,16 +2701,14 @@
                             (:DEFINITION SUBSETP-EQUAL)
                             (:DEFINITION MEMBER-EQUAL))))))
 
-
-
 (defthm valid-rp-state-syntaxp-of-rp-state-init-rules-aux
   (implies (valid-rp-state-syntaxp rp-state)
            (and (implies (and (rules-alistp2 rules-alist)
                               (or (equal flg :inside-out)
                                   (equal flg :outside-in)))
                          (valid-rp-state-syntaxp (rp-state-init-rules-aux rules-alist
-                                                                   flg
-                                                                   rp-state)))
+                                                                          flg
+                                                                          rp-state)))
                 (implies (Not (or (equal flg :inside-out)
                                   (equal flg :outside-in)))
                          (valid-rp-state-syntaxp (rp-state-init-rules-aux rules-alist
@@ -2675,9 +2736,6 @@
                              ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
                             (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA))))))
 
-
-
-
 (defthmd valid-rp-statep-implies-valid-rp-state-syntaxp
   (implies (and (rp-statep rp-state)
                 (valid-rp-statep rp-state))
@@ -2695,7 +2753,8 @@
                                                         runes-outside-in
                                                         new-synps
                                                         rp-state
-                                                        state)))
+                                                        state
+                                                        :ruleset ruleset)))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (rp-state-init-rules)

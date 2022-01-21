@@ -1526,5 +1526,38 @@
 ;;(bump-down-rp-rule (:META medw-compress-meta . equal))
 ;;(bump-down-rp-rule (:META make-sc-fgl-ready-meta-main . equal))
 
-
+#|(bump-rules ;;(:meta hons-acons-meta . hons-acons)
+            ;;(:meta fast-alist-free-meta . fast-alist-free)
+            ;;(:meta hons-get-meta . hons-get)
+            ;;(:meta assoc-eq-vals-meta . assoc-eq-vals)
+            ;;(:meta rp-equal-meta . equal)
+            ;;(:meta rp-equal-cnt-meta . equal)
+            ;;(:meta mv-nth-meta . mv-nth)
+            ;;(:meta implies-meta . implies)
+            ;;(:meta cons-to-list-meta . cons-to-list)
+            ;;(:meta list-to-cons-meta . list-to-cons)
+            (:meta svl::bits-of-meta-fn
+                   . sv::4vec-part-select)
+            (:meta svl::bits-of-meta-fn . svl::bits)
+            (:meta svl::concat-meta . svl::4vec-concat$)
+            (:meta svl::concat-meta . sv::4vec-concat)
+            (:meta svl::svexl-node-eval-wog-meta-main
+                   . svl::svexl-node-eval-wog)
+            (:meta svl::svex-eval-wog-meta-main
+                   . svl::svex-eval-wog)
+            (:meta svl::svex-alist-eval-meta
+                   . sv::svex-alist-eval)
+            (:meta svl::4vec-rsh-of-meta . sv::4vec-rsh)
+            (:meta rp-equal-iter-pp+-meta . equal)
+            (:meta resolve-adder-and-order
+                   . merge-adder-and)
+            (:meta resolve-adder-sum-order
+                   . merge-adder-b+)
+            (:meta adder-mux-meta . adder-mux)
+            (:meta sort-sum-meta . sort-sum)
+            (:meta s-c-spec-meta . s-spec)
+            (:meta s-c-spec-meta . c-spec)
+            (:meta s-c-spec-meta . s-c-spec)
+            (:meta s-c-spec-meta . c-s-spec)
+            (:meta unpack-booth-meta . unpack-booth))|#
 
