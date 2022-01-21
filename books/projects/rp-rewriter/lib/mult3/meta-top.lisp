@@ -50,6 +50,9 @@
 
 (include-book "adder-rules-meta")
 
+
+(include-book "4vec-branch-drop-redundant-case")
+
 (local
  (include-book "summation-tree-meta-fncs-correct"))
 
