@@ -151,8 +151,11 @@
 
                     x86isa::select-segment-register
 
+                    x86isa::n08-to-i08
+                    x86isa::n16-to-i16
                     x86isa::n32-to-i32
                     x86isa::n64-to-i64
+                    x86isa::n128-to-i128
 
                     x86isa::two-byte-opcode-decode-and-execute
                     x86isa::x86-effective-addr-when-64-bit-modep

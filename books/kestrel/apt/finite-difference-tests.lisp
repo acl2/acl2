@@ -17,6 +17,8 @@
 
 ;TODO: Add sum of squares example
 
+;TODO: Add example with len or max of list
+
 (deftest
   ;; return the list of the doubles of all numbers from x down to 0
   (defun list-of-doubles (x)

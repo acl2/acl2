@@ -30,6 +30,7 @@
                                              (if-eval-list if-and-not-eval-list)))))
 
 ;; Correctness of drop-clearly-implied-conjuncts.
+;; just changes the evaluator
 (defthm if-and-not-eval-of-drop-clearly-implied-conjuncts
   (implies (all-eval-to-true-with-if-and-not-eval true-terms a)
            (iff (if-and-not-eval (drop-clearly-implied-conjuncts term true-terms) a)

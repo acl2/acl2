@@ -415,8 +415,8 @@
                                                                      nil ;Sun Jan  2 19:08:08 2011 monitored-symbols (was causing too much printing)
                                                                      print ;;:brief ;;print more for work-hard hyps (printed too much) ;was :brief until Mon Nov  1 04:24:34 2010 - may have caused problems with increment-hit-count
                                                                      (symbol-name (pack$ case-designator '- "WORK-HARD")) ; fixme add the rule name?
-                                                                     *default-stp-timeout* ;timeout ;fffixme pass this around?
-                                                                     nil ;print-timeout-goalp
+                                                                     *default-stp-max-conflicts* ;max-conflicts ;fffixme pass this around?
+                                                                     nil ;print-max-conflicts-goalp
                                                                      nil ;don't work hard on any more ;fixme think about this
                                                                      info tries
                                                                      (+ 1 prover-depth)
@@ -1689,9 +1689,9 @@
                                           monitored-symbols
                                           print
                                           case-designator ;the name of this case (a string?)
-                                          timeout ;a number of seconds, or nil for no timeout
-                                          ;;fixme add abandon-whole-goal-upon-timeoutp
-                                          print-timeout-goalp
+                                          max-conflicts ;a number of conflicts, or nil for no max
+                                          ;;fixme add abandon-whole-goal-upon-max-conflictsp
+                                          print-max-conflicts-goalp
                                           work-hard-when-instructedp info tries
                                           prover-depth options count state)
    (declare (xargs :stobjs state
@@ -1706,8 +1706,8 @@
                                (booleanp work-hard-when-instructedp)
                                (natp prover-depth)
                                (axe-prover-optionsp options)
-                               (or (natp timeout) (null timeout))
-                               (booleanp print-timeout-goalp))
+                               (or (natp max-conflicts) (null max-conflicts))
+                               (booleanp print-max-conflicts-goalp))
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (zp-fast count)
@@ -1747,7 +1747,7 @@
                        ;; We have been told not to use STP:
                        (mv :not-calling-stp state)
                      ;; Calling STP:
-                     (prove-disjunction-with-stp literal-nodenums dag-array dag-len dag-parent-array case-designator print timeout
+                     (prove-disjunction-with-stp literal-nodenums dag-array dag-len dag-parent-array case-designator print max-conflicts
                                                  nil ;no counterexample (for now)
                                                  state))
                    (if (eq *valid* result)
@@ -1760,9 +1760,9 @@
 ;fixme don't both printing the literals or exprs for this case if you don't print the dag!
                                  (cw "Literals:~% ~x0~%(This case: ~x1)~%DAG:~%" literal-nodenums (expressions-for-this-case literal-nodenums dag-array dag-len) ;call print-list on this?
                                      )
-;(cw "print-timeout-goalp: ~x0" print-timeout-goalp)
+;(cw "print-max-conflicts-goalp: ~x0" print-max-conflicts-goalp)
                                  (if (or (< dag-len 1000) ;drop?  ffffixme this isn't appropriate to test, but how do we check whether the literals are too big to print (have a maximum nodes to print for each literal?)?
-                                         print-timeout-goalp
+                                         print-max-conflicts-goalp
                                          (eq t print)
                                          (eq :verbose print)) ;new
                                      (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
@@ -1774,7 +1774,7 @@
                          (if (not nodenum)
                              (let ((printp (and print
                                                 (or (< dag-len 1000) ;fixme not the appropriate test
-                                                    (not timeout) ;fffixme hack to print more on interesting goals
+                                                    (not max-conflicts) ;fffixme hack to print more on interesting goals
                                                     (eq t print)  ;new
                                                     (eq :verbose print)  ;new
                                                     (eq :verbose2 print) ;new
@@ -1783,7 +1783,7 @@
                                        (and printp
                                             (or (eq t print) (eq :verbose print) (eq :verbose2 print))
 
-;print-timeout-goalp ;fixme rename this, because now we are printing a failure that didn't time out.. fixme may print many failures b/f the 1st timeout
+;print-max-conflicts-goalp ;fixme rename this, because now we are printing a failure that didn't time out.. fixme may print many failures b/f the 1st max-conflicts
 
                                             (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this"))
                                        (cw ")~%")
@@ -1826,7 +1826,7 @@
                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                     rule-alists interpreted-function-alist monitored-symbols
                                                                     print case-1-designator
-                                                                    timeout print-timeout-goalp work-hard-when-instructedp info tries
+                                                                    max-conflicts print-max-conflicts-goalp work-hard-when-instructedp info tries
                                                                     (+ 1 prover-depth) ;to indicate that nodes should not be changed
                                                                     options (+ -1 count) state))
                                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
@@ -1857,7 +1857,7 @@
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                        rule-alists interpreted-function-alist monitored-symbols
                                        print case-2-designator
-                                       timeout print-timeout-goalp work-hard-when-instructedp info tries
+                                       max-conflicts print-max-conflicts-goalp work-hard-when-instructedp info tries
                                        (+ 1 prover-depth) ;to match what we do in the other case above
                                        options (+ -1 count) state))
                                      ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
@@ -1897,8 +1897,8 @@
                                   context-array
                                   context-array-len
                                   context ;a contextp over nodes in context-array
-                                  timeout
-                                  print-timeout-goalp
+                                  max-conflicts
+                                  print-max-conflicts-goalp
                                   options state)
   (declare (xargs :stobjs state
                   :verify-guards nil ;todo
@@ -1910,7 +1910,7 @@
                               (array1p context-array-name context-array)
                               (contextp-with-bound context (alen1 context-array-name context-array))
                               ;;todo: add more
-                              (or (natp timeout) (null timeout))
+                              (or (natp max-conflicts) (null max-conflicts))
                               (all-rule-alistp rule-alists)
                               (symbol-listp monitored-symbols)
                               (interpreted-function-alistp interpreted-function-alist)
@@ -1921,7 +1921,7 @@
         (b* ((- (cw "Note: The DAG was the constant nil.")))
           (mv (erp-nil) :failed state)))
     (b* ( ;(dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
-;          (dummy (cw "print-timeout-goalp:  ~x0" print-timeout-goalp))
+;          (dummy (cw "print-max-conflicts-goalp:  ~x0" print-max-conflicts-goalp))
          (dag-array (make-into-array 'dag-array dag))
          (top-nodenum (top-nodenum dag))
          (dag-len (+ 1 top-nodenum))
@@ -1966,8 +1966,8 @@
                                             interpreted-function-alist monitored-symbols
                                             print
                                             case-name
-                                            timeout
-                                            print-timeout-goalp
+                                            max-conflicts
+                                            print-max-conflicts-goalp
                                             t ;fixme work-hard
                                             (and print (empty-info-world))
                                             (and print (zero-tries))
@@ -1988,12 +1988,12 @@
 ;; Returns (mv erp provedp state)
 (defun prove-implication-with-axe-prover (conc ;a term
                                           hyps ;list of terms
-                                          name timeout rule-alists monitored-symbols interpreted-function-alist print options state)
+                                          name max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
   (declare (xargs :stobjs state
                   :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
                               (symbolp name)
-                              (or (natp timeout) (null timeout))
+                              (or (natp max-conflicts) (null max-conflicts))
                               (all-rule-alistp rule-alists)
                               (symbol-listp monitored-symbols)
                               (interpreted-function-alistp interpreted-function-alist)
@@ -2017,8 +2017,8 @@
                                       monitored-symbols
                                       t                  ;print
                                       (symbol-name name) ;;case-designator
-                                      timeout
-                                      t ;print-timeout-goalp
+                                      max-conflicts
+                                      t ;print-max-conflicts-goalp
                                       t ; work-hard-when-instructedp
                                       (and print (empty-info-world))
                                       (and print (zero-tries))
@@ -2040,12 +2040,12 @@
 ;the caller should check that defthm-name is not already defined
 (defun prove-theorem-with-axe-prover (conc ;a term
                                       hyps ;list of terms
-                                      defthm-name timeout rule-alists monitored-symbols interpreted-function-alist print options state)
+                                      defthm-name max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
   (declare (xargs :mode :program ;because we call submit-events
                   :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
                               (symbolp defthm-name)
-                              (or (natp timeout) (null timeout))
+                              (or (natp max-conflicts) (null max-conflicts))
                               (all-rule-alistp rule-alists)
                               (symbol-listp monitored-symbols)
                               (interpreted-function-alistp interpreted-function-alist)
@@ -2054,7 +2054,7 @@
                               )
                   :stobjs state))
   (mv-let (erp provedp state)
-    (prove-implication-with-axe-prover conc hyps defthm-name timeout rule-alists monitored-symbols interpreted-function-alist print options state)
+    (prove-implication-with-axe-prover conc hyps defthm-name max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
     (if erp
         (mv erp nil state)
       (if provedp
@@ -2081,13 +2081,13 @@
 (defun prove-theorem-with-axe-prover2 (conc        ;a term
                                        hyps        ;list of terms
                                        defthm-name ;TODO: Should this come first?
-                                       timeout rule-alists monitored-symbols interpreted-function-alist print options state)
+                                       max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
   (declare (xargs :mode :program
                   :stobjs state
                   :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
                               (symbolp defthm-name)
-                              (or (natp timeout) (null timeout))
+                              (or (natp max-conflicts) (null max-conflicts))
                               (all-rule-alistp rule-alists)
                               (symbol-listp monitored-symbols)
                               (interpreted-function-alistp interpreted-function-alist)
@@ -2095,7 +2095,7 @@
                               (axe-prover-optionsp options)
                               )))
   (mv-let (erp provedp state)
-    (prove-theorem-with-axe-prover conc hyps defthm-name timeout rule-alists monitored-symbols interpreted-function-alist print options state)
+    (prove-theorem-with-axe-prover conc hyps defthm-name max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
     (if erp
         (prog2$ (hard-error 'prove-theorem-with-axe-prover2 "Failed to prove ~s0.~%" (acons #\0 defthm-name nil))
                 state)
@@ -2106,11 +2106,11 @@
 
 ;; Returns (mv erp provedp state).  Attempts to prove the clause (a disjunction
 ;; of terms) with the Axe Prover.
-(defun prove-clause-with-axe-prover (clause name timeout rule-alists monitored-symbols interpreted-function-alist print options state)
+(defun prove-clause-with-axe-prover (clause name max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
   (declare (xargs :stobjs state
                   :guard (and (pseudo-term-listp clause)
                               (symbolp name)
-                              (or (natp timeout) (null timeout))
+                              (or (natp max-conflicts) (null max-conflicts))
                               (all-rule-alistp rule-alists)
                               (symbol-listp monitored-symbols)
                               (interpreted-function-alistp interpreted-function-alist)
@@ -2133,8 +2133,8 @@
                                           monitored-symbols
                                           t                  ;print
                                           (symbol-name name) ;;case-designator
-                                          timeout
-                                          t ;print-timeout-goalp
+                                          max-conflicts
+                                          t ;print-max-conflicts-goalp
                                           t ; work-hard-when-instructedp
                                           (and print (empty-info-world))
                                           (and print (zero-tries))
@@ -2162,9 +2162,9 @@
                   :guard (and (pseudo-term-listp clause)
                               (alistp hint))))
   (b* ((must-prove (lookup-eq :must-prove hint))
-       (timeout (if (assoc-eq :timeout hint)
-                    (lookup-eq :timeout hint)
-                  *default-stp-timeout*))
+       (max-conflicts (if (assoc-eq :max-conflicts hint)
+                    (lookup-eq :max-conflicts hint)
+                  *default-stp-max-conflicts*))
        ;; Handle the :rules input:
        (rules (lookup-eq :rules hint))
        ((when (not (symbol-listp rules)))
@@ -2189,7 +2189,7 @@
        ((mv erp provedp state)
         (prove-clause-with-axe-prover clause
                                       'axe-prover-clause-proc
-                                      timeout
+                                      max-conflicts
                                       rule-alists
                                       monitored-symbols
                                       nil ;interpreted-function-alist ;todo?

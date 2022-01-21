@@ -659,66 +659,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-array ((ptr pointerp) (compst compustatep))
+(define read-array ((addr addressp) (compst compustatep))
   :returns (array array-resultp)
   :short "Read an array in the computation state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the pointer is null, we return an error.
-     Otherwise, we check whether the heap has an array at the pointer's address.
-     We ensure that the array type matches the pointer type.")
+    "We check whether the heap has an array at the address.
+     If this check succeeds, we return the array.")
    (xdoc::p
     "Note that this function reads the array as a whole;
      it does not read an array element.
      Functions like @(tsee uchar-array-read-sint)
      can be used to read individual array elements."))
-  (b* ((address (pointer->address? ptr))
-       (reftype (pointer->reftype ptr))
+  (b* ((addr (address-fix addr))
        (heap (compustate->heap compst))
-       ((when (not address))
-        (error :null-pointer))
-       (address+array (omap::in address heap))
-       ((unless (consp address+array))
-        (error (list :address-not-found address)))
-       (array (cdr address+array))
-       ((unless (equal reftype (type-of-array-element array)))
-        (error (list :mistype-array-read
-                     :pointer reftype
-                     :array (type-of-array-element array)))))
+       (addr+array (omap::in addr heap))
+       ((unless (consp addr+array))
+        (error (list :address-not-found addr)))
+       (array (cdr addr+array)))
     array)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-array ((ptr pointerp) (array arrayp) (compst compustatep))
+(define write-array ((addr addressp) (array arrayp) (compst compustatep))
   :returns (new-compst compustate-resultp)
   :short "Write an array in the computation state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the pointer is null, we return an error.
-     Otherwise, we check whether the heap has an array at the pointer's adress,
-     of the same type and size as the array passed as argument.
-     If these checks succeed, we overwrite the array in the heap.")
+    "We check whether the heap has an array at the address.
+     If this checks succeed, we overwrite the array in the heap.")
    (xdoc::p
     "Note that this function writes the array as a whole;
      it does not write an array element.
      Functions like @(tsee uchar-array-write-sint)
      can be used to write individual array elements."))
-  (b* ((address (pointer->address? ptr))
-       (reftype (pointer->reftype ptr))
+  (b* ((addr (address-fix addr))
        (heap (compustate->heap compst))
-       ((when (not address))
-        (error :null-pointer))
-       (address+array (omap::in address heap))
-       ((unless (consp address+array))
-        (error (list :address-not-found address)))
-       (old-array (cdr address+array))
-       ((unless (equal reftype (type-of-array-element old-array)))
-        (error (list :mistype-array-write
-                     :pointer reftype
-                     :array (type-of-array-element old-array))))
+       (addr+array (omap::in addr heap))
+       ((unless (consp addr+array))
+        (error (list :address-not-found addr)))
+       (old-array (cdr addr+array))
        ((unless (equal (type-of-array-element array)
                        (type-of-array-element old-array)))
         (error (list :array-type-mismatch
@@ -729,7 +712,7 @@
         (error (list :array-length-mismatch
                      :old (array-length old-array)
                      :new (array-length array))))
-       (new-heap (omap::update address (array-fix array) heap))
+       (new-heap (omap::update addr (array-fix array) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)
   :hooks (:fix)

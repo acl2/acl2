@@ -61,11 +61,11 @@
   (b* (((when (atom al))
         nil)
        ((cons name val) (car al)))
-    (cons (make-vl-define :name name
-                          :body val
-                          :formals nil
-                          :loc *vl-fakeloc*)
-          (simple-test-defines (cdr al)))))
+    (vl-add-define name (make-vl-define
+                         :body val
+                         :formals nil
+                         :loc *vl-fakeloc*)
+                   (simple-test-defines (cdr al)))))
 
 (program)
 

@@ -1728,6 +1728,7 @@ Example: int10-map-p-->-int20-map-p
        (defiso-name (pack$ iso-source-pred "-ISO-" iso-target-pred))
        (defiso-form `(defiso ,defiso-name
                        ,iso-source-pred ,iso-target-pred ,convert-old-to-new-fn ,convert-new-to-old-fn
+                       :thm-enable :all-nonguard
                        :hints (:beta-of-alpha
                                (("Goal" :in-theory (enable ,iso-source-pred ,iso-target-pred
                                                            ,convert-old-to-new-fn ,convert-new-to-old-fn)))

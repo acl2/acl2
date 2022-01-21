@@ -1,7 +1,8 @@
 ; Banach-Tarski theorem
 ;
-; Proof of Hausdorff paradox.
-; Book contains the proof of equivalence between different partitions of S^2-D.
+; Proof of the Hausdorff paradox (part 1).
+;
+; Book contains the proof of the equivalence between different partitions of S^2-D.
 ; See hausdorff-paradox-2.lisp for the proof that the set D is countable.
 ;
 ;

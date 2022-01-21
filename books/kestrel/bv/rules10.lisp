@@ -35,26 +35,6 @@
   (signed-byte-p 64 (bvchop 32 x))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
 
-;seems to cause problems (was missing a call to quotep -- still problems or no?)
-(defthmd logext-of-sum-trim-constant
-  (implies (and (syntaxp (quotep k))
-                (not (signed-byte-p 64 k))
-                (integerp k)
-                (integerp x))
-           (equal (logext 64 (+ k x))
-                  (logext 64 (+ (logext 64 k) x))))
-  :hints (("Goal" :in-theory (enable logapp))))
-
-;i've seen k be 2^65-24
-(defthm logext-of-sum-trim-constant-big
-  (implies (and (syntaxp (quotep k))
-                (not (signed-byte-p 65 k))
-                (integerp k)
-                (integerp x))
-           (equal (logext 64 (+ k x))
-                  (logext 64 (+ (logext 64 k) x))))
-  :hints (("Goal" :in-theory (enable logapp))))
-
 (defthm plus-of-minus-subst-constant
   (implies (and (EQUAL x (+ k y)) ;k is a free var
                 (syntaxp (quotep k))
@@ -335,20 +315,7 @@
   :hints (("Goal" :in-theory (enable bvand))))
 
 ;move
-(defthm slice-of-ash
-  (implies (and (<= n low)
-                (integerp low)
-                (integerp high)
-                (<= low high)
-                (natp n))
-           (equal (slice high low (ash x n))
-                  (slice (- high n) (- low n) x)))
-  :hints (("Goal" :in-theory (e/d (ash slice logtail ;floor
-                                       ACL2::expt-of-+
-                                       )
-                                  (bvchop-of-logtail-becomes-slice
-                                   unsigned-byte-p-of-+-when-<-of-logtail-and-expt
-                                   slice-of-*)))))
+
 
 (defthm ash-becomes-bvcat
   (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x)) ;only works for constant size?
@@ -511,7 +478,6 @@
   :hints (("Goal" :in-theory (e/d (bvmult bvcat)
                                   (bvchop-of-*-of-bvchop-arg2))
            :use (:instance bvchop-of-*-of-bvchop-arg2
-                           (n size)
                            (y (* (expt 2 lowsize) x))
                            (x k)))))
 
@@ -677,8 +643,6 @@
            (equal (getbit 63 x)
                   0))
   :hints (("Goal" :in-theory (enable logext))))
-
-(in-theory (disable LOGEXT-OF-PLUS)) ;pretty aggressive
 
 (defthm mod-of-bvchop-and-2
   (equal (mod (bvchop 63 x) 2)

@@ -60,7 +60,7 @@
 ;(extra-stuff (g :extra-stuff hints))
 ;           (test-cases (g :test-cases hints))
          (print (g :print hints))
-         (timeout (g :timeout hints))
+         (max-conflicts (g :max-conflicts hints))
          (monitored-symbols (g :monitor hints))
          (interpreted-function-alist (g :interpreted-function-alist hints))
          (goal-name-passed-in (g :goal-name hints)) ;should be a string or symbol (or nil)
@@ -112,8 +112,8 @@
                                         monitored-symbols
                                         print
                                         goal-name
-                                        timeout
-                                        t ;print-timeout-goalp
+                                        max-conflicts
+                                        t ;print-max-conflicts-goalp
                                         t ;work-hard..
                                         (and print (empty-info-world))
                                         (and print (zero-tries))

@@ -55,3 +55,10 @@
   :short "Fixtype of errors and osets of modes."
   :ok mode-set
   :pred mode-set-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-mode-setp
+  (implies (mode-setp x)
+           (not (resulterrp x)))
+  :enable (mode-setp resulterrp))

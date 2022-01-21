@@ -545,7 +545,7 @@
            (defsvtv-stobj-pipeline-setup x ,svtv-data :skip-cycle t))
           ((when err)
            (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))
-          ((mv err ,moddb ,aliases ,vcd-wiremap ,vcd-vals state)
+          ((mv ,vcd-wiremap ,vcd-vals state)
            (svtv-data-debug-pipeline-aux ,env pipeline-setup . ,args)))
        (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))))
 

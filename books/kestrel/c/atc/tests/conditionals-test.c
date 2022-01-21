@@ -37,4 +37,5 @@ int main(void) {
   i_test(-667);
   j_test(2728, -1);
   j_test(0, 0);
+  return 0;
 }

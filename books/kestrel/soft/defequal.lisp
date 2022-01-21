@@ -160,8 +160,10 @@
         (er-soft+ ctx t 0 "The :LEFT input must be present, but it is not."))
        ((unless right-present)
         (er-soft+ ctx t 0 "The :RIGHT input must be present, but it is not."))
-       ((er &) (ensure-value-is-function-name$ left "The :LEFT input" t 0))
-       ((er &) (ensure-value-is-function-name$ right "The :RIGHT input" t 0))
+       ((er &) (ensure-value-is-function-name$
+                left (msg "The :LEFT input ~x0" left) t 0))
+       ((er &) (ensure-value-is-function-name$
+                right (msg "The :RIGHT input ~x0" right) t 0))
        (left-guard (uguard left wrld))
        (right-guard (uguard right wrld))
        (left-arity (arity+ left wrld))

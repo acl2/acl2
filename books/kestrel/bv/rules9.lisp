@@ -712,7 +712,7 @@
                 (< size 31)
                 (natp size))
            (equal (bvcat highsize
-                         (bvchop size x)
+                         (bvchop size x) ;todo: won't the size here go away usually?
                          lowsize
                          (slice 31 size x))
                   (acl2::rightrotate 32 size x)))

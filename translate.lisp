@@ -350,13 +350,13 @@
     (nil     when$     when$+    t)             ; scion that is not a loop$ op
     ))
 
-; This is a list of every function symbol used in the translation of for loop$
-; statements.  Note that do loop$s are not included here!  Because do$ is so
+; This is a list of every function symbol used in the translation of FOR loop$
+; statements.  Note that DO loop$s are not included here!  Because do$ is so
 ; different from the other loop$ scions we decided not to try to shoehorn its
 ; special characteristics into the above generic format.  Note however that do$
 ; is considered a loop$ scion.
 
-; Built into our for loop$ code, e.g., make-plain-loop$, make-fancy-loop$,
+; Built into our FOR loop$ code, e.g., make-plain-loop$, make-fancy-loop$,
 ; chk-lambdas-for-loop$-recursion, etc, is the knowlege that every plain scion
 ; takes the lambda expression in arg 1 and the domain (over which mapping
 ; occurs) in arg 2.  Every fancy scion takes the lambda expression in arg 1 and
@@ -405,7 +405,7 @@
 (defun for-loop$-operator-scionp (fn alist)
 
 ; Note that this function is explicitly about FOR loop$s (see the name of the
-; function!) and does not consider do$ a ``for loop$ operator scion''.
+; function!) and does not consider do$ a ``FOR loop$ operator scion''.
 
   (cond ((endp alist) nil)
         ((and (car (car alist)) ; operator?
@@ -417,7 +417,7 @@
 (defun loop$-scion-style1 (fn alist)
 
 ; Fn is a symbol and alist is a tail of *for-loop$-keyword-info*.  We determine
-; whether fn is either a plain or fancy for loop$ scion.  We return nil,
+; whether fn is either a plain or fancy FOR loop$ scion.  We return nil,
 ; :plain, or :fancy.
 
   (cond
@@ -431,8 +431,8 @@
 (defun loop$-scion-style (fn)
 
 ; Fn is a function symbol and if it is a loop$-scion we return its ``style''
-; otherwise we return nil.  The style of for loop$ scions is either :plain
-; or :fancy.  The style of the do loop$ scion, do$, is :do.
+; otherwise we return nil.  The style of FOR loop$ scions is either :plain
+; or :fancy.  The style of the DO loop$ scion, do$, is :do.
 
   (cond
    ((eq fn 'do$) :do)
@@ -456,11 +456,11 @@
 
 (defun loop$-scion-restriction (fn)
 
-; Fn is a symbol and we return the restriction, if any, imposed on the
-; output of its functional argument.  If fn is not a loop$ scion, the restriction is nil.
-; The restriction on do$ is also nil.  The restriction on the for loop$ scions
-; is given by the *for-loop$-keyword-info* and is the name of the relevant predicate
-; or nil if no restriction is imposed.
+; Fn is a symbol and we return the restriction, if any, imposed on the output
+; of its functional argument.  If fn is not a loop$ scion, the restriction is
+; nil.  The restriction on do$ is also nil.  The restriction on the FOR loop$
+; scions is given by the *for-loop$-keyword-info* and is the name of the
+; relevant predicate or nil if no restriction is imposed.
 
 ; The need for this function arises in guard conjecture generation.
 
@@ -555,7 +555,7 @@
 
 (defun parse-loop$-accum (stmt args ans)
 
-; We're parsing the for loop$ statement stmt and have gotten down to args, a
+; We're parsing the FOR loop$ statement stmt and have gotten down to args, a
 ; tail of stmt that is supposed to be a loop$ operator, optional :guard, and
 ; body.  We add two things to ans, the op and the (unfinished) carton for the
 ; op's term.  We return two results, (mv msg ans'), where msg is nil if the
@@ -926,8 +926,8 @@
                    (and (car args)
                         (assoc-symbol-name-equal (car args)
                                                  *for-loop$-keyword-info*)))
-               (msg ". The unusual variable name, ~x0, which is a reserved word ~
-                     in loop$ syntax, might indicate that you forgot to ~
+               (msg ". The unusual variable name, ~x0, which is a reserved ~
+                     word in loop$ syntax, might indicate that you forgot to ~
                      specify the iteration variable"
                     (car args))
                (msg ""))))
@@ -1007,14 +1007,16 @@
                      unusual-var-msg))
                (t (msg "OF-TYPE, IN, ON, or FROM~@0"
                        unusual-var-msg)))))
-; Note:  If we get so far as confirming the presence of IN or ON or BY then the
-; only way the parse could have failed is that we ran out of tokens, which we've
-; already handled.  So we don't need to think about those three cases.
+
+; Note: If we get so far as confirming the presence of IN or ON or BY then the
+; only way the parse could have failed is that we ran out of tokens, which
+; we've already handled.  So we don't need to think about those three cases.
+
          ((symbol-name-equal (nth 1 args) "FROM")
 
-; We could check (nth 3 args) and possibly (nth 5 args), looking for TO and possibly
-; BY.  But we know that TO is missing!  Why?  If TO is present then we would have
-; succeeded in parsing FROM/TO (since we didn't run out of tokens).
+; We could check (nth 3 args) and possibly (nth 5 args), looking for TO and
+; possibly BY.  But we know that TO is missing!  Why?  If TO is present then we
+; would have succeeded in parsing FROM/TO (since we didn't run out of tokens).
 
           (mv 3
               (nthcdr 3 args)
@@ -1149,7 +1151,7 @@
 (defun parse-do$-keywords-and-body (args measure guard values)
 
 ; Args is the argument list for a DO loop$ after optional WITH clauses: (loop$
-; [with-clauses] do . args).  We parse keyword arguments and the do-body from
+; [with-clauses] DO . args).  We parse keyword arguments and the do-body from
 ; args.  In the non-error case we return (mv nil new-args measure guard values
 ; do-body-carton), where the measure, guard, and values are respective values
 ; of :MEASURE, :GUARD, and :VALUES (nil for omitted keywords), new-args is the
@@ -1167,7 +1169,7 @@
 ; body must be a compound-form, which precludes atoms.  We impose that
 ; restriction here.  We also impose here that restriction on the :measure,
 ; :guard, and :values terms, to prevent pathological occurrences such as (loop$
-; with temp = lst do :measure :guard (natp ...)).
+; WITH temp = lst DO :measure :guard (natp ...)).
 
   (cond
    ((atom args)
@@ -1353,16 +1355,16 @@
 ; statement.  The form of a successful parse of a FOR loop$ is (FOR vsts untilc
 ; whenc op lobodyc) where
 
-; * Vsts is a list of elements, each of the form (v spec target), where target is
-; one of (IN lst), (ON lst), or (FROM-TO-BY i j k).  If multiple vsts are
+; * Vsts is a list of elements, each of the form (v spec target), where target
+; is one of (IN lst), (ON lst), or (FROM-TO-BY i j k).  If multiple vsts are
 ; returned, they are understood to be combined with AS in the order listed.  If
 ; no OF-TYPE is provided for v, T is used for its spec.
 
 ; * Untilc is either an unfinished carton for the UNTIL expression or nil if
 ; there was no UNTIL clause.
 
-; * Whenc is either an unfinished carton for the WHEN expression or nil if there
-; was no WHEN clause.
+; * Whenc is either an unfinished carton for the WHEN expression or nil if
+; there was no WHEN clause.
 
 ; * Op is the loop$'s accumulator operator, e.g., SUM, COLLECT, etc.
 
@@ -8306,20 +8308,21 @@
                    (gc-off state)
                    latches hard-error-returns-nilp aok)))
 
-; See Section 11 of the Essay on Loop$ for an explanation of these
-; six ``ersatz'' symbols.
+; See Section 11 of the Essay on Loop$ for an explanation of these ``ersatz''
+; symbols.
 
-(defstub ersatz-locally-scoped (x y) t)
 (defstub ersatz-prog2 (x y) t)
 (defstub ersatz-setq (x y) t)
 (defstub ersatz-return (x) t)
 (defstub ersatz-loop-finish () t)
 (defstub ersatz-mv-setq (x y)
 
-; This defstub is particularly bogus for an ersatz-xxx symbol, because the
-; "arity" is not fixed.  We handle ersatz-mv-setq specially in translate11, so
-; that is OK.  We are simply trying to introduce a function symbol that cannot
-; actually be called in a legal term!
+; This ersatz-mv-setq defstub is particularly bogus, even for an ersatz-xxx
+; symbol, because the "arity" is not fixed (in spite of an appearance here of
+; having arity 2).  We handle ersatz-mv-setq specially in translate11, so that
+; is OK.  We are simply trying to introduce a function symbol ephemeral to our
+; translation of DO loop$ expressions, one that cannot actually be called in a
+; legal term!
 
 ; We were tempted to transform input (mv-setq (v1 ... vk) body) to
 ; (ersatz-mv-setq (v1 ... vk) body), but that isn't a proper pseudo-term in the
@@ -8355,10 +8358,7 @@
 ; and so are actual ACL2 function symbols, but have no operational meanings.
 ; They are given meaning only by the ideal do-body interpreter (which is not
 ; defined in these sources) and by the compiler from do-bodies to terms,
-; cmp-do-body.  Note that the defstub'd ERSATZ-LOCALLY-SCOPED is not in this
-; list, simply because there is no CLTL counterpart to it and no reason for the
-; user ever to enter it directly.  See the Essay on the Evaluation of DO and
-; FINALLY Bodies.
+; cmp-do-body.  See the Essay on the Evaluation of DO and FINALLY Bodies.
 
 ; The third component of each tuple is the arity of the first component (but
 ; we may allow nil as a sort of indicator that the arity is not relevant).
@@ -8370,8 +8370,7 @@
     (loop-finish ersatz-loop-finish 0)))
 
 (defun ersatz-functionp (fn)
-  (or (eq fn 'ersatz-locally-scoped)
-      (assoc-eq-cadr fn *cltl-to-ersatz-fns*)))
+  (assoc-eq-cadr fn *cltl-to-ersatz-fns*))
 
 (mutual-recursion
 
@@ -8388,20 +8387,18 @@
          (let* ((temp1 (ersatz-symbols flg (lambda-body (ffn-symb x))))
                 (temp2 (if (and (eq flg t) temp1)
                            t
-                           (ersatz-symbols-list flg (fargs x)))))
+                         (ersatz-symbols-list flg (fargs x)))))
            (if (eq flg t)
                (or temp1 temp2)
-               (union-eq temp1 temp2))))
+             (union-eq temp1 temp2))))
         ((ersatz-functionp (ffn-symb x))
          (if (eq flg t)
              t
-             (add-to-set-eq
-              (if (eq flg :rename)
-                  (if (eq (ffn-symb x) 'ersatz-locally-scoped)
-                      'ersatz-locally-scoped
-                      (car (assoc-eq-cadr (ffn-symb x) *cltl-to-ersatz-fns*)))
-                  (ffn-symb x))
-              (ersatz-symbols-list flg (fargs x)))))
+           (add-to-set-eq
+            (if (eq flg :rename)
+                (car (assoc-eq-cadr (ffn-symb x) *cltl-to-ersatz-fns*))
+              (ffn-symb x))
+            (ersatz-symbols-list flg (fargs x)))))
         (t (ersatz-symbols-list flg (fargs x)))))
 
 (defun ersatz-symbols-list (flg x)
@@ -8413,7 +8410,8 @@
                         (ersatz-symbols-list flg (cdr x)))))
         (if (eq flg t)
             (or temp1 temp2)
-            (union-eq temp1 temp2)))))))
+            (union-eq temp1 temp2))))))
+)
 
 (defun untranslate (term iff-flg wrld)
   (let ((user-untranslate
@@ -8486,34 +8484,14 @@
 ; with their counterparts and untranslate that, or perhaps untranslate and then
 ; replace ersatz functions.  We can't do the latter because it is impossible to
 ; explore an untranslated expression given the possible presence of user
-; macros.  Replacing the ersatz functions first means that whatever we create
-; has to survive untranslation with the same do-body semantics when translated.
-; The problem is there if g is supposed to be locally scoped but is being bound
-; to itself, as in (let ((x ...) (g g)) ...) then untranslation drops g.  Our
-; solution is to make sure locally scoped formals are never bound to
-; themselves, by inserting the identity function around the actual as
-; necessary.  See the discussion in untranslate-do-body below.
-
-(defun identify-locally-scoped-values (formals actuals locally-scoped-vars)
-  (cond
-   ((endp formals) nil)
-   (t
-    (cons (if (and (equal (car formals) (car actuals))
-                   (member-equal (car formals) locally-scoped-vars))
-              `(identity ,(car actuals))
-              (car actuals))
-          (identify-locally-scoped-values (cdr formals)
-                                          (cdr actuals)
-                                          locally-scoped-vars)))))
+; macros.
 
 (mutual-recursion
 
 (defun replace-ersatz-functions (x)
 
 ; This function replaces ersatz function symbols by their counterparts and
-; merges PROG2s into PROGNs.  It drops the ersats-locally-scoped forms after
-; making sure that the translation of the result has the same set of locally
-; scoped variables.  See the discussion in untranslate-do-body below.
+; merges PROG2s into PROGNs.  See the discussion in untranslate-do-body below.
 
   (cond
    ((variablep x) x)
@@ -8522,27 +8500,11 @@
     (let* ((formals (lambda-formals (ffn-symb x)))
            (body (lambda-body (ffn-symb x)))
            (actuals (fargs x))
-           (locally-scopedp (and (nvariablep body)
-                                 (not (fquotep body))
-                                 (eq (ffn-symb body) 'ersatz-locally-scoped)
-                                 (quotep (fargn body 1))
-                                 (symbol-listp (unquote (fargn body 1)))))
-           (locally-scoped-vars (if locally-scopedp
-                                    (unquote (fargn body 1))
-                                  formals))
-           (body1 (if locally-scopedp
-                      (replace-ersatz-functions (fargn body 2))
-                    body)))
+           (body1 (replace-ersatz-functions (fargn body 2))))
       (cons (list 'lambda formals body1)
-            (replace-ersatz-functions-list
-             (identify-locally-scoped-values formals
-                                             actuals
-                                             locally-scoped-vars)))))
+            (replace-ersatz-functions-list actuals))))
    ((ersatz-functionp (ffn-symb x))
     (cond
-     ((eq (ffn-symb x) 'ersatz-locally-scoped)
-      (cons 'ersatz-locally-scoped
-            (replace-ersatz-functions-list (fargs x))))
      ((eq (ffn-symb x) 'ersatz-prog2)
       (let ((arg1 (replace-ersatz-functions (fargn x 1)))
             (arg2 (replace-ersatz-functions (fargn x 2))))
@@ -8572,25 +8534,18 @@
 (defun untranslate-do-body (x wrld)
 
 ; See Section 11 of the Essay on Loop$.  This function takes a fully-translated
-; do-body term and untranslates it wrt to the world wrld.  Basically we just
+; do-body term and untranslates it wrt to the world wrld.  We just
 ; replace all the ersatz functions by their CLTL counterparts and merge PROG2s
 ; into PROGNs, and then untranslate that conventionally.  This works because
-; untranslate can tolerate non-function symbols in its input.  However, the
-; ersatz-locally-scoped form must be dealt with rather curiously.  The problem
-; is that when untranslate sees a lambda expression with formal g applied to
-; the identical actual, g, it drops that formal because translation will add it
-; back.  But dropping the formal is incorrect if the formal was supposed to be
-; locally bound.  To force untranslate to include a binding of g to g we
-; replace the actual g by (IDENTITY g) in the special case that g is being
-; bound to itself and the ersatz-locally-scoped form specifies that g is
-; locally-scoped.
+; untranslate can tolerate non-function symbols in its input.
 
   (untranslate (replace-ersatz-functions x)
                nil
                wrld))
 
 (defun progn$-of-check-dcl-guardiansp (term)
-; Check that term is the translated version of
+
+; Check that term is the translated version of:
 
 ; (PROGN$ (CHECK-DCL-GUARDIAN ...) ... (CHECK-DCL-GUARDIAN ...))
 
@@ -8603,56 +8558,31 @@
      (progn$-of-check-dcl-guardiansp rest))
     (& nil)))
 
-(defun list-of-check-dcl-guardian-terms (term)
-; Assuming term satisfies progn$-of-check-dcl-guardiansp, return the list of
-; check-dcl-guardian terms.
-  (case-match term
-    (('check-dcl-guardian & ('quote &))
-     (list term))
-    (('return-last '(quote progn)
-                   ('check-dcl-guardian & ('quote &))
-                   rest)
-     (cons (caddr term)
-           (list-of-check-dcl-guardian-terms rest)))
-    (& nil)))
-
 (defun lambda-do-body-deconstructor (body)
 
-; Confirm that body has the expected shape of the body of a translated LET or LET*
-; in a do-body context.  The basic shape is
+; Confirm that body has the expected shape of the body of a translated LET or
+; LET* in a do-body context.  The basic shape is
 
-; (ERSATZ-LOCALLY-SCOPED (QUOTE locally-scoped-vars)
-;  (PROGN$
-;   check-dcl-guardians-term
-;   true-body))
+;   (PROGN$
+;    check-dcl-guardians-term
+;    true-body)
 
 ; except the PROGN$ is translated and there may be no guardians (so the PROGN$
-; may be missing).  If body has the expected form, we return
-; (mv t locally-scoped-vars check-dcl-guardians-term true-body).  If there are
-; no guardians, the check-dcl-guardians-term is the non-term nil.  If we can't
-; so deconstruct body, we return all nils.
+; may be missing).  If body has the expected form, we return (mv t
+; check-dcl-guardians-term true-body).  If there are no guardians, the
+; check-dcl-guardians-term is the non-term nil.  If we can't so deconstruct
+; body, we return all nils.
 
   (case-match body
-    (('ersatz-locally-scoped
-      ('quote locally-scoped-vars)
-      ('return-last '(quote progn)
-                    check-dcl-guardians-term
-                    true-body))
+    (('return-last '(quote progn)
+                   check-dcl-guardians-term
+                   true-body)
      (cond
       ((progn$-of-check-dcl-guardiansp check-dcl-guardians-term)
-       (mv t
-           locally-scoped-vars
-           check-dcl-guardians-term
-           true-body))
-      (t (mv nil nil nil nil))))
-    (('ersatz-locally-scoped
-      ('quote locally-scoped-vars)
-      true-body)
-     (mv t
-         locally-scoped-vars
-         nil
-         true-body))
-    (& (mv nil nil nil nil))))
+       (mv t check-dcl-guardians-term true-body))
+      (t (mv nil nil nil))))
+    (&
+     (mv t nil body))))
 
 (mutual-recursion
 
@@ -8661,9 +8591,9 @@
 ; We know x is a term!  (Here we ignore the reality that ersatz-mv-setq has no
 ; de facto arity.)  Finallyp is non-nil iff x is being used as a finally
 ; clause.  If so, we do not allow calls of ERSATZ-LOOP-FINISH.  Settable-vars
-; is the list of a variables which may be SETQ'd.  We return (mv okp msg) where
-; okp indicates whether x is a well-formed do-body and if it is not, msg
-; explains.
+; is the list of variables that may be set with SETQ or MV-SETQ.  We return (mv
+; okp msg) where okp indicates whether x is a well-formed do-body and if it is
+; not, msg explains.
 
 ; Finallyp can be nil, t, or a stobjs-out list other than (nil).  In the latter
 ; case we also insist that every exit is via a RETURN statement.
@@ -8676,7 +8606,7 @@
                              '(ersatz-return if ersatz-loop-finish
                                              ersatz-prog2)))))
     (mv nil
-        (msg "the FINALLY clause in a do loop$ must exit using solely RETURN ~
+        (msg "the FINALLY clause in a DO loop$ must exit using solely RETURN ~
               expressions when the :VALUES is other than (NIL).  In this case ~
               :VALUES is ~x0 yet the FINALLY clause may exit with the ~
               expression, ~x1."
@@ -8691,8 +8621,7 @@
    ((fquotep x)
     (mv t nil))
    ((flambda-applicationp x)
-    (let* ((formals (lambda-formals (ffn-symb x)))
-           (body (lambda-body (ffn-symb x))))
+    (let ((body (lambda-body (ffn-symb x))))
       (cond
        ((null (ersatz-symbols t body))
 ; This is a perfectly normal ACL2 lambda application.
@@ -8703,39 +8632,25 @@
               (mv nil (msg "~&0 ~#0~[is~/are~] called in one or more bindings ~
                             of local variables in ~x1 (which might have ~
                             originally been written as a LET, LET* or lambda ~
-                            application in a do loop$)."
+                            application in a DO loop$)."
                            bad-fns
                            (untranslate-do-body x wrld))))
-
              (t
-              (mv-let (okp locally-scoped-vars check-dcl-guardians-term
-                           true-body)
+              (mv-let (okp check-dcl-guardians-term true-body)
                 (lambda-do-body-deconstructor body)
                 (declare (ignore check-dcl-guardians-term))
                 (cond
                  ((not okp)
                   (mv nil
                       (msg "~x0 (which might have originally been written as ~
-                            a LET, LET*, or lambda application in a do loop$) ~
+                            a LET, LET*, or lambda application in a DO loop$) ~
                             could not be destructured as expected to identify ~
-                            locally scoped variables and their guards."
+                            guards."
                            (untranslate-do-body x wrld))))
-                 ((not (subsetp-eq locally-scoped-vars formals))
-                  (mv nil
-                      (msg "the indicated list of locally scoped variables ~
-                            ~x0 is not a subset of the formals ~x1 in ~x2 ~
-                            (which might have originally been written as a ~
-                            LET, LET*, or lambda application in a do loop$).  ~
-                            We thought this was impossible!  Please notify ~
-                            the developers."
-                           locally-scoped-vars
-                           formals
-                           x)))
                  (t
                   (well-formed-do-body finallyp
                                        true-body
-                                       (union-eq locally-scoped-vars
-                                                 settable-vars)
+                                       settable-vars
                                        wrld)))))))))))
    (t (case (ffn-symb x)
         (IF
@@ -8744,7 +8659,7 @@
             (bad-fns
              (mv nil
                  (msg "the tests of IFs must be ACL2 terms, even in the body ~
-                       of a do loop$.  Thus it is illegal to call ~&0 in the ~
+                       of a DO loop$.  Thus it is illegal to call ~&0 in the ~
                        test ~x1."
                       bad-fns
                       (untranslate-do-body (fargn x 1) wrld))))
@@ -8804,7 +8719,8 @@
                       (set-difference-eq x-vars settable-vars)
                       settable-vars
                       (untranslate-do-body x wrld))))
-            (t (let ((bad-fns (ersatz-symbols :rename (ersatz-mv-setq-body x))))
+            (t (let ((bad-fns (ersatz-symbols :rename
+                                              (ersatz-mv-setq-body x))))
                  (cond
                   (bad-fns
                    (mv nil
@@ -8832,7 +8748,7 @@
           (finallyp
            (mv nil
                (msg "it is illegal to use loop-finish in a finally clause of ~
-                     a do loop$.")))
+                     a DO loop$.")))
           (t (mv t nil))))
         (ersatz-return
          (let ((bad-fns (ersatz-symbols :rename (fargn x 1))))
@@ -8864,64 +8780,15 @@
             (well-formed-do-body-list finallyp (cdr x) settable-vars wrld)
             (mv nil msg)))))))
 
-; Now we define the semantics of do-bodies by compiling them to ACL2 terms.
-; This happens in 2 passes.  In the first pass, cmp-do-body-pass1, we transform
-; well-formed do-bodies into IF-trees of ``do-body-tuples.''  In the second
-; pass, cmp-do-body-pass2, we transform such IF-trees into terms.  The
-; ``compiler,'' cmp-do-body is just the composition.
+; We define the semantics of DO bodies by compiling them to ACL2 terms.  See
+; cmp-do-body for an explanation.
 
-; Each do-body-tuple records the computation of a single execution path through
-; the do-body.  All terms mentioned below are in terms of the variables
-; mentioned in the do-body (those global to the scope of the do loop$ and those
-; declared in WITH clauses in the loop$ statement).  Local variables introduced
-; by LET etc in the do-body are eliminated by instantiation with their ultimate
-; bindings.  We will track the final values of all variables in an alist
-; mapping variables to their symbolic values.  Thus, if X's value is given by
-; term a and Y's value is given by term b, and we step over (SETQ X (FOO X Y))
-; then in the new alist X is bound to (FOO a b).
-
-(defrec do-body-tuple ((exit-flg . val) . (guardians . alist)) nil)
-
-; where
-; * exit-flg is :LOOP-FINISH, :RETURN, or NIL indicating how the do-body terminated
-; * val is a term denoting the returned value
-; * guardians is a list of (check-dcl-guardian term1 'term2) terms to be checked
-;   along the path
-; * alist is the final variable substitution.
-
-; An IF-tree of do-body-tuples is just that: a do-body-tuple or an IF tree
-; whose tests are ACL2 terms and whose two branches are such IF-trees.
-
-(defun remove-twvts-of-locally-scoped-vars (locally-scoped-vars twvts)
-
-; When we enter a lambda application being interpreted as a do-body we must
-; remove any type info derived from an external type-spec for a locally-scoped
-; variable so that we don't erroneously enforce it on setqs in the body of the
-; lambda.
-
-  (cond
-   ((endp twvts) nil)
-   ((member-eq (car (car twvts)) locally-scoped-vars)
-    (remove-twvts-of-locally-scoped-vars locally-scoped-vars
-                                         (cdr twvts)))
-   (t (cons (car twvts)
-            (remove-twvts-of-locally-scoped-vars locally-scoped-vars
-                                                 (cdr twvts))))))
-
-(defun copy-vals-from-to (non-locally-scoped-vars alist1 alist0)
-; Copy the bindings of the non-locally-scoped-vars from alist1 to alist0.
-  (cond
-   ((endp non-locally-scoped-vars)
-    alist0)
-   (t (let* ((var (car non-locally-scoped-vars))
-             (val0 (cdr (assoc-eq var alist0)))
-             (val1 (cdr (assoc-eq var alist1))))
-        (cond
-         ((equal val0 val1)
-          (copy-vals-from-to (cdr non-locally-scoped-vars) alist1 alist0))
-         (t (copy-vals-from-to (cdr non-locally-scoped-vars)
-                               alist1
-                               (put-assoc-eq var val1 alist0))))))))
+; In the code below, twvts is the list of tuples created by
+; translate-with-var-tuples.  Each tuple corresponds to a `WITH var OF-TYPE
+; type-spec = init-val' clause and consists of (var type-spec type-predicate
+; init-val), where the type-predicate and init-val are fully translated.  If
+; the type-spec for X was (RATIONAL 0 100), then the type-predicate is the
+; translated form of (AND (RATIONALP X) (<= 0 X) (<= X 100)).
 
 (mutual-recursion
 
@@ -8943,106 +8810,318 @@
 
 )
 
-(defun proper-dumb-occur-as-output (x y)
+(defun var-on-if-leaf (var term)
+  (cond ((eq var term) t)
+        ((ffn-symb-p term 'if)
+         (or (var-on-if-leaf var (fargn term 2))
+             (var-on-if-leaf var (fargn term 3))))
+        (t nil)))
 
-; We determine whether the term x properly occurs within the term y, insisting
-; in addition that if y is an IF expression then x occurs properly within each
-; of the two output branches.
+(defun guess-do-body-measure-vars (x tested alist)
 
-; For example, X does not properly occur in X or Z.  It does properly occur in
-; (CDR X) and (APPEND X Y).  It does properly occur in (IF a (CDR X) (CAR X))
-; but not in (IF a (CDR X) 0) or (IF a (CDR X) X).
+; X is a well-formed do-body.  Tested is nil at the top level, and in general
+; represents all variables in if-tests (accounting for alist) leading to x.
+; Alist is nil at the top level, and otherwise reflects the lambda bindings
+; above x.  We consider a variable to be "changed" only if it is the target of
+; a setq or mv-setq form.
 
-; This function is used in always-tested-and-changedp to identify a formal to
-; use as the measured formal in the justification of a recursive definition.
-; We seek a formal that is tested on every branch and changed in every
-; recursion.  But if (IF a (CDR X) X) is the new value of X in some recursion,
-; then it is not really changed, since if we distributed the IF out of the
-; recursive call we would see a call in which X did not change.
+; We return t if there is no "recursion" in x because every branch through x,
+; viewed as an if-tree, terminates in a call of loop-finish or return.
+; Otherwise we return the list of all variables v with an occurrence in x/alist
+; such that either v belongs to the list, tested, or the occurrence is below a
+; test in x such that v occurs in test/alist.  (Our notion of "occurrence"
+; accommodates lambdas in an "obvious" way.)
 
-  (cond ((equal x y) nil)
-        ((variablep y) nil)
-        ((fquotep y) nil)
-        ((eq (ffn-symb y) 'if)
-         (and (proper-dumb-occur-as-output x (fargn y 2))
-              (proper-dumb-occur-as-output x (fargn y 3))))
-        (t (dumb-occur-lst x (fargs y)))))
-
-(defun do-body-changed-vars-of-alist (alist)
   (cond
-   ((endp alist) nil)
-   ((or (equal (car (car alist)) (cdr (car alist)))
-        (not (proper-dumb-occur-as-output (car (car alist)) (cdr (car alist)))))
-    (do-body-changed-vars-of-alist (cdr alist)))
-   (t (cons (car (car alist))
-            (do-body-changed-vars-of-alist (cdr alist))))))
+   ((or (variablep x)
+        (fquotep x))
+    nil)
+   ((flambda-applicationp x)
+    (let* ((fn (ffn-symb x)) ; (lambda ...)
+           (formals (lambda-formals fn))
+           (body (lambda-body fn)))
+      (guess-do-body-measure-vars body tested
+                                  (pairlis$ formals (fargs x)))))
+   (t
+    (case (ffn-symb x)
+      (if (let* ((tested (union-eq tested
+                                   (all-vars (sublis-var alist (fargn x 1)))))
+                 (ans1 (guess-do-body-measure-vars (fargn x 2) tested alist))
+                 (ans2 (guess-do-body-measure-vars (fargn x 3) tested alist)))
+            (cond ((eq ans1 t) ans2)
+                  ((eq ans2 t) ans1)
+                  (t (intersection-eq ans1 ans2)))))
+      (ersatz-setq
+       (let ((var (fargn x 1)))
+         (if (and (member-eq var tested)
+                  (or (let ((pair (assoc-eq var alist)))
+                        (and pair
+                             (not (eq var (cdr pair)))))
+                      (not (var-on-if-leaf var (fargn x 2)))))
+             (list var)
+           nil)))
+      (ersatz-mv-setq
 
-(defun do-body-tested-and-changed-vars (if-tree tested-so-far)
-  (cond
-   ((eq (car if-tree) 'IF)
-    (let* ((tested-so-far (union-eq tested-so-far (all-vars (cadr if-tree))))
-           (ans1 (do-body-tested-and-changed-vars (caddr if-tree) tested-so-far))
-           (ans2 (do-body-tested-and-changed-vars (cadddr if-tree) tested-so-far)))
-      (if (eq ans1 t)
-          ans2
-          (if (eq ans2 t)
-              ans1
-              (intersection-eq ans1 ans2)))))
-   ((eq (access do-body-tuple if-tree :exit-flg) nil)
-    (intersection-eq tested-so-far
-                     (do-body-changed-vars-of-alist
-                      (access do-body-tuple if-tree :alist))))
-   (t t)))
+; With some effort we could rule out something like (mv-setq (x y) (mv x ..)).
+; But it seems far-fetched that anyone would write that, and anyhow this code
+; is just heuristic.  Let far-fetched is (mv-setq (x y) (mv (if ... x ...)
+; ...)), but that still seems not worth the bother here.
 
-; In the code below, twvts is the list of tuples created by
-; translate-with-var-tuples.  Each tuple corresponds to a `WITH var OF-TYPE
-; type-spec = init-val' clause and consists of (var type-spec type-predicate
-; init-val), where the type-predicate and init-val are fully translated.  If
-; the type-spec for X was (RATIONAL 0 100), then the type-predicate is the
-; translated form of (AND (RATIONALP X) (<= 0 X) (<= X 100)).
+       (intersection-eq (cdr (fargs x)) tested))
+      (ersatz-prog2
+       (let ((x1 (fargn x 1))
+             (x2 (fargn x 2)))
+         (case-match x1
+           (('IF tst tbr fbr)
+            (guess-do-body-measure-vars `(if ,tst
+                                             (ersatz-prog2 ,tbr ,x2)
+                                           (ersatz-prog2 ,fbr ,x2))
+                                        tested
+                                        alist))
+           (&
+            (let ((ans1 (guess-do-body-measure-vars x1 tested alist))
+                  (ans2 (guess-do-body-measure-vars x2 tested alist)))
+              (cond ((or (eq ans1 t) (eq ans2 t)) ; then we don't iterate
+                     t)
+                    (t (union-eq ans1 ans2))))))))
+      ((ersatz-return ersatz-loop-finish)
+       t)
+      (otherwise
+       nil)))))
 
-(defun guess-do-body-measure (if-tree twvts)
+(defun guess-do-body-measure (x)
 
-; If-tree is an if-tree with do-body-tuples at the tips.  We guess a measure to
-; justify its iteration, for use when the user does not specify a :measure.  We
-; always guess (acl2-count var), for the first var (in the order in which they
-; were declared in the WITH clauses) that is tested on every branch through
-; if-tree that terminates with an :exit-flg of nil and that is changed on every
-; branch.  If every branch has a non-nil :exit-flg we return the measure '0,
-; because no measure is needed.  If there is at least one branch with a nil
-; :exit-flg but no var tested and changed on every such branch we return nil.
+; X is a translated term corresponding to a DO body or FINALLY clause; thus, it
+; has calls of ersatz functions.  If every branch through x is an exit (via a
+; return or loop-finish), then no measure is necessary so we return '0.
+; Otherwise we return (acl2-count var) for the first var in x, if any, that is
+; both tested and changed on every branch
 
-  (let* ((vars1 (do-body-tested-and-changed-vars if-tree nil))
-         (vars (if (eq vars1 t)
-                   t
-                   (intersection-eq (strip-cars twvts) vars1))))
+  (let ((vars (guess-do-body-measure-vars x nil nil)))
     (cond
      ((eq vars nil) nil)
      ((eq vars t) *0*)
      (t `(acl2-count ,(car vars))))))
 
-(defun make-translated-mv-nths (args call i)
+(defun cmp-do-body-alist (vars)
+  (cond ((endp vars) *nil*)
+        (t (fcons-term* 'cons
+                        (fcons-term* 'cons (kwote (car vars)) (car vars))
+                        (cmp-do-body-alist (cdr vars))))))
 
-; This is the same as make-mv-nths except that i is quoted.  We expect each arg
-; in args, as well as call, to be translated terms.
+(defun make-true-list-cons-nest (term-lst)
+  (declare (xargs :guard (pseudo-term-listp term-lst)))
+  (cond ((endp term-lst) *nil*)
+        (t (cons-term 'cons
+                      (list (car term-lst)
+                            (make-true-list-cons-nest (cdr term-lst)))))))
 
-  (declare (xargs :guard (and (true-listp args)
-                              (integerp i))))
-  (cond ((endp args) nil)
-        (t (cons (list (car args) (list 'mv-nth (kwote i) call))
-                 (make-translated-mv-nths (cdr args) call (+ i 1))))))
+(defun cmp-do-body-exit (exit-flg val aterm)
+  (make-true-list-cons-nest (list (kwote exit-flg) val aterm)))
 
-(mutual-recursion
+(defun cmp-do-body-guardian (var val twvts)
+  (let* ((temp (assoc-eq var twvts)) ; nil if not WITH-bound
+         (type-spec (cadr temp))     ; maybe nil
+         (pred (caddr temp)))        ; maybe nil
+    (and pred
+         (not (equal pred *t*))
+         (fcons-term* 'check-dcl-guardian
+                      pred
+                      `'(setq ,var (the ,type-spec ,val))))))
 
-(defun cmp-do-body-pass1 (x twvts guardians alist)
+(defmacro prog2$-call (x y)
 
-; X is a well-formed do-body and twvts is as above.  Since these type-specs are
-; known to the Common Lisp compiler, they must be enforced on every SETQ, by
-; adding the corresponding check-dcl-guardian form of the instantiated
-; type-predicate.  Guardians is a list of (check-dcl-guardian term1 'term2)
-; terms that must be checked on the execution path so far.  And alist maps each
-; free variable occurring in x to a term denoting its value.  We return an
-; IF-tree of do-body-tuples.
+; Warning: Keep this in sync with the handlng of 'return-last in oneify.
+
+  `(fcons-term* 'return-last ''progn ,x ,y))
+
+(defun cmp-do-body-mv-guardian-1 (mv-var vars twvts index)
+  (cond ((endp vars) nil)
+        (t (let ((g (cmp-do-body-guardian
+                     (car vars)
+                     (fcons-term* 'mv-nth (kwote index) mv-var)
+                     twvts))
+                 (gs (cmp-do-body-mv-guardian-1 mv-var (cdr vars) twvts
+                                                (1+ index))))
+             (cond (g (cond (gs (prog2$-call g gs))
+                            (t g)))
+                   (t gs))))))
+
+(defun cmp-do-body-mv-guardian (mv-var vars twvts)
+  (cmp-do-body-mv-guardian-1 mv-var vars twvts 0))
+
+(defun translated-mv-nth-calls (mv-var i max)
+  (cond ((= i max) nil)
+        (t (cons (fcons-term* 'mv-nth (kwote i) mv-var)
+                 (translated-mv-nth-calls mv-var (1+ i) max)))))
+
+; Below are two ways that we create a lambda application (see the Warnings
+; about how they differ).
+
+(defun collect-by-position (sub-domain full-domain full-range)
+
+; Full-domain and full-range are lists of the same length, where
+; full-domain is a list of symbols.  Collect into a list those members
+; of full-range that correspond (positionally) to members of
+; full-domain that belong to sub-domain.
+
+  (declare (xargs :guard (and (symbol-listp full-domain)
+                              (true-listp sub-domain)
+                              (true-listp full-range)
+                              (eql (length full-domain)
+                                   (length full-range)))))
+  (if (endp full-domain)
+      nil
+    (if (member-eq (car full-domain) sub-domain)
+        (cons (car full-range)
+              (collect-by-position sub-domain
+                                   (cdr full-domain)
+                                   (cdr full-range)))
+      (collect-by-position sub-domain
+                           (cdr full-domain)
+                           (cdr full-range)))))
+
+(defun make-lambda-application (formals body actuals)
+
+; Warning: If you consider making a call of this function, ask yourself whether
+; make-lambda-term would be more appropriate; the answer depends on why you are
+; calling this function.  In particular, the present function will drop an
+; unused formal, but make-lambda-term does not (though its caller could choose
+; to "hide" such a formal; see translate11-let).
+
+; Example:
+; (make-lambda-application '(x y z)
+;                          '(foo x z)
+;                          '((x1 a b) (y1 a b) (z1 a b)))
+; equals
+; ((lambda (x z) (foo x z)) (x1 a b) (z1 a b))
+;
+; Note that the irrelevant formal y has been eliminated.
+
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (pseudo-termp body)
+                              (true-listp actuals)
+                              (eql (length formals)
+                                   (length actuals)))))
+  (let ((vars (all-vars body)))
+    (cond
+     ((null vars)
+      body)
+     ((equal formals actuals)
+      body)
+     (t (let ((extra-vars (set-difference-eq vars formals)))
+
+; The slightly tricky thing here is to avoid using all the formals, since some
+; might be irrelevant.  Note that the call of intersection-eq below is
+; necessary rather than just using vars, even though it is a no-op when viewed
+; as a set operation (as opposed to a list operation), in order to preserve the
+; order of the formals.
+
+          (fcons-term (make-lambda (append? (intersection-eq formals vars)
+                                            extra-vars)
+                                   body)
+                      (append? (collect-by-position vars formals actuals)
+                               extra-vars)))))))
+
+(defun make-lambda-term (formals actuals body)
+
+; Warning: If you consider making a call of this function, ask yourself whether
+; make-lambda-application would be more appropriate; the answer depends on why
+; you are calling this function.  For example, make-lambda-application will
+; drop an unused formal, but the present function does not (though its caller
+; could choose to "hide" such a formal; see translate11-let).
+
+; Formals is a true list of distinct variables, actuals is a true list of terms
+; of the same length as formals, and body is a term.  We want to create
+; something like ((lambda formals body) . actuals).  However, body may have
+; free variables that do not belong to formals, and lambdas must be closed in
+; ACL2.  We add the necessary extra variables to the end of formals and
+; actuals.  See translate11-let for how this function may be called to "hide"
+; unused formals.
+
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (pseudo-term-listp actuals)
+                              (pseudo-termp body))))
+  (let* ((body-vars (all-vars body))
+         (extra-body-vars (set-difference-eq body-vars formals)))
+    (fcons-term (make-lambda (append formals extra-body-vars)
+                             body)
+                (append actuals extra-body-vars))))
+
+(defun cmp-do-body-setq (x twvts term)
+
+; X is of the form (setq var val).
+
+; We return something like (let ((var val)) term), but if guardian (below) is
+; non-nil then we guard aterm with it.
+
+  (let* ((var (fargn x 1))
+         (val (fargn x 2))
+         (guardian (cmp-do-body-guardian var val twvts))
+         (term+ (if guardian
+                    (prog2$-call guardian term)
+                  term)))
+    (make-lambda-application
+     (list var)
+     term+
+     (list val))))
+
+(defun cmp-do-body-mv-setq (x vars twvts term)
+
+; X is of the form (ersatz-mv-setq body v1 ... vn).
+
+; The basic idea is to generate something like this:
+
+; (let ((mv-var body))
+;   (let ((v0 (mv-nth 0 mv-var))
+;         ...
+;         (vk (mv-nth k mv-var)))
+;     term)).
+
+; But we need to account for the guardians, so we replace aterm by
+; (prog2$ guardians aterm) if there are guardians.
+
+; We could just generate right-associated prog2$ calls, first with setq of
+; mv-var and then with setq of the vars.  But perhaps a single lambda for the
+; vars, as above, is prettier.
+
+  (let* ((mv-var
+
+; We generate a fresh variable.  It might seem that the caller needs to add
+; this variable to vars, so that the next such variable differs from this one.
+; However, we use mv-var only to lay down the translated version of (let
+; ((mv-var ...)) (let* ((v0 (mv-nth 0 mv-var)) ... (vk (mv-nth k mv-var)))
+; ...)).  Indeed, mv-var really only needs to be distinct from v1, ... vk (not
+; even v0).  But it's easy enough to pass vars here, and if we ever need mv-var
+; to be included in vars, we can pass back that information.
+
+          (genvar 'cmp-do-body "MV" 0 vars))
+         (mvars (ersatz-mv-setq-vars x))
+         (mbody (ersatz-mv-setq-body x))
+         (guardian (cmp-do-body-mv-guardian mv-var mvars twvts))
+         (term+ (if guardian
+                    (prog2$-call guardian term)
+                  term)))
+    (make-lambda-application
+     (list mv-var)
+     (make-lambda-term mvars
+                       (translated-mv-nth-calls mv-var 0 (length mvars))
+                       term+)
+     (list mbody))))
+
+(defun cmp-do-body-1 (x twvts aterm vars)
+
+; This function carries out the algorithm described in the Algorithm
+; Description given in a comment in cmp-do-body, on the given x, twvts, and
+; vars as described there.  See that comment for relevant background.
+
+; Here, aterm is a term representing an alist formed by mapping each quoted
+; variable in vars to that variable.  We return a term representing the alist
+; produced by SETQ and MV-SETQ forms encountered during the evaluation of x
+; with respect to the alist corresponding to aterm.  Our intention is to
+; represent a pass through the do-body, x, by apply$ing the corresponding do-fn
+; to the alist at the start of that pass, represented by aterm, to get a new
+; alist.  Again see also cmp-do-body.
 
   (cond
    ((or (variablep x)
@@ -9050,257 +9129,169 @@
         (and (eq (ffn-symb x) 'IF)
              (not (ersatz-symbols t (fargn x 2)))
              (not (ersatz-symbols t (fargn x 3)))))
-    (make do-body-tuple
-          :exit-flg nil
-          :val (sublis-var alist x)
-          :guardians guardians
-          :alist alist))
+    (cmp-do-body-exit nil *nil* aterm))
    ((flambda-applicationp x)
-    (let* ((formals (lambda-formals (ffn-symb x)))
-           (body (lambda-body (ffn-symb x))))
-      (mv-let (okp locally-scoped-vars check-dcl-guardians-term true-body)
-        (lambda-do-body-deconstructor body)
-        (declare (ignore okp)) ; it's true if x is well-formed
-        (let* ((actuals (sublis-var-lst alist (fargs x)))
-
-; Note: The alist1 below binds every variable mentioned in the body of this
-; lambda because even do-body lambdas are closed!
-
-               (alist1 (pairlis$ formals actuals))
-
-               (twvts1 (remove-twvts-of-locally-scoped-vars
-                        locally-scoped-vars
-                        twvts))
-               (guardians1
-                (append (sublis-var-lst alist1
-                                        (list-of-check-dcl-guardian-terms
-                                         check-dcl-guardians-term))
-                        guardians))
-               (if-tree (cmp-do-body-pass1 true-body twvts1 guardians1 alist1)))
-          (propagate-non-local-vals-into-do-body-tuples
-           if-tree
-           (set-difference-eq formals
-                              locally-scoped-vars)
-           alist)))))
+    (let ((beta-reduced (subcor-var (lambda-formals (ffn-symb x))
+                                    (fargs x)
+                                    (lambda-body (ffn-symb x)))))
+      (cmp-do-body-1 beta-reduced twvts aterm vars)))
    (t (case (ffn-symb x)
         (IF
-         `(IF ,(sublis-var alist (fargn x 1))
-              ,(cmp-do-body-pass1 (fargn x 2) twvts guardians alist)
-              ,(cmp-do-body-pass1 (fargn x 3) twvts guardians alist)))
-        (ersatz-setq
-         (let* ((var (fargn x 1))
-                (val (sublis-var alist (fargn x 2)))
-                (temp (assoc-eq var twvts)) ; nil if not locally bound
-                (type-spec (cadr temp))     ; maybe nil
-                (pred (caddr temp))         ; maybe nil
-                (new-alist
-
-; If this ersatz-setq was generated by a call of ersatz-mv-setq, then the
-; following extension of alist guarantees that the next time we generate an MV
-; variable where we are maintaining this alist, it will be distinct from this
-; one.
-
-                 (put-assoc-eq var val alist))
-                (guardian
-                 (if (or (null pred)
-                         (equal pred *t*))
-                     *t*
-                   `(check-dcl-guardian ,(sublis-var new-alist pred)
-                                        '(setq ,var (the ,type-spec ,(fargn x 2))))))
-                (new-guardians
-                 (if (equal guardian *t*)
-                     guardians
-                   (cons guardian guardians))))
-           (make do-body-tuple
-                 :exit-flg nil
-                 :val val
-                 :guardians new-guardians
-                 :alist new-alist)))
-        (ersatz-mv-setq ; (ersatz-mv-setq body v1 ... vn)
-         (let ((mv-var (genvar 'cmp-do-body-pass1 "MV" 0 (strip-cars alist)))
-               (vars (ersatz-mv-setq-vars x))
-               (body (ersatz-mv-setq-body x)))
-           (cmp-do-body-pass1
-            `(ersatz-prog2
-              (ersatz-setq ,mv-var ,body)
-              ,(xxxjoin 'ersatz-prog2
-                        (pairlis-x1
-                         'ersatz-setq
-                         (make-translated-mv-nths vars mv-var 0))))
-            twvts guardians alist)))
-        (ersatz-prog2
-         (let ((if-tree (cmp-do-body-pass1
-                         (fargn x 1)
-                         twvts guardians alist)))
-           (cmp-do-body-pass1-wrt-do-body-tuples if-tree
-                                                 twvts
-                                                 (fargn x 2))))
+         `(IF ,(fargn x 1)
+              ,(cmp-do-body-1 (fargn x 2) twvts aterm vars)
+              ,(cmp-do-body-1 (fargn x 3) twvts aterm vars)))
         (ersatz-loop-finish
-         (make do-body-tuple
-               :exit-flg :loop-finish
-               :val *nil*
-               :guardians guardians
-               :alist alist))
+         (cmp-do-body-exit :loop-finish *nil* aterm))
         (ersatz-return
-         (make do-body-tuple
-               :exit-flg :return
-               :val (sublis-var alist (fargn x 1))
-               :guardians guardians
-               :alist alist))
+         (cmp-do-body-exit :return (fargn x 1) aterm))
+        (ersatz-setq
+         (cmp-do-body-exit nil
+                           *nil*
+                           (cmp-do-body-setq x twvts aterm)))
+        (ersatz-mv-setq
+         (cmp-do-body-exit nil
+                           *nil*
+                           (cmp-do-body-mv-setq x vars twvts aterm)))
+        (ersatz-prog2
+         (let ((x1 (fargn x 1))
+               (x2 (fargn x 2)))
+           (cond
+            ((or (variablep x1)
+                 (fquotep x1)
+                 (and (eq (ffn-symb x1) 'IF)
+                      (not (ersatz-symbols t (fargn x1 2)))
+                      (not (ersatz-symbols t (fargn x1 3)))))
+             (cmp-do-body-1 x2 twvts aterm vars))
+            (t
+             (case (ffn-symb x1)
+               (IF
+                `(IF ,(fargn x1 1)
+                     ,(cmp-do-body-1 `(ersatz-prog2 ,(fargn x1 2) ,x2)
+                                     twvts aterm vars)
+                     ,(cmp-do-body-1 `(ersatz-prog2 ,(fargn x1 3) ,x2)
+                                     twvts aterm vars)))
+               (ersatz-prog2 ; then right-associate
+                (cmp-do-body-1 `(ersatz-prog2 ,(fargn x1 1)
+                                              (ersatz-prog2 ,(fargn x1 2)
+                                                            ,x2))
+                               twvts aterm vars))
+               (ersatz-loop-finish
+                (cmp-do-body-exit :loop-finish *nil* aterm))
+               (ersatz-return
+                (cmp-do-body-exit :return (fargn x1 1) aterm))
+               (ersatz-setq
+                (cmp-do-body-setq x1
+                                  twvts
+                                  (cmp-do-body-1 x2 twvts aterm vars)))
+               (ersatz-mv-setq
+                (cmp-do-body-mv-setq x1 vars twvts
+                                     (cmp-do-body-1 x2 twvts aterm vars)))
+               (otherwise
+                (cmp-do-body-1 x2 twvts aterm vars)))))))
         (otherwise
-         (make do-body-tuple
-               :exit-flg nil
-               :val (sublis-var alist (fargn x 1))
-               :guardians guardians
-               :alist alist))))))
+         (cmp-do-body-exit nil *nil* aterm))))))
 
-(defun cmp-do-body-pass1-wrt-do-body-tuples (if-tree twvts x)
-  (cond
-   ((eq (car if-tree) 'IF)
-    `(IF ,(cadr if-tree)
-         ,(cmp-do-body-pass1-wrt-do-body-tuples (caddr if-tree) twvts x)
-         ,(cmp-do-body-pass1-wrt-do-body-tuples (cadddr if-tree) twvts x)))
-   ((eq (access do-body-tuple if-tree :exit-flg) nil)
-    (cmp-do-body-pass1 x twvts
-                       (access do-body-tuple if-tree :guardians)
-                       (access do-body-tuple if-tree :alist)))
-   (t if-tree)))
-
-(defun propagate-non-local-vals-into-do-body-tuples
-    (if-tree non-locally-scoped-vars alist)
-  (cond
-   ((eq (car if-tree) 'IF)
-    `(IF ,(cadr if-tree)
-         ,(propagate-non-local-vals-into-do-body-tuples
-           (caddr if-tree)
-           non-locally-scoped-vars
-           alist)
-         ,(propagate-non-local-vals-into-do-body-tuples
-           (cadddr if-tree)
-           non-locally-scoped-vars
-           alist)))
-   (t
-    (change do-body-tuple if-tree
-            :alist
-            (copy-vals-from-to non-locally-scoped-vars
-                               (access do-body-tuple if-tree :alist)
-                               alist)))))
-)
-
-; Now we work on pass 2 of the do-body compiler.  The job here is turn an
-; IF-tree of do-body-tuples into a term.  This term is supposed to be
-; completely free of ersatz functions.
-
-(defun make-progn-guardians-term (guardians)
-
-; Guardians is a non-empty list of (check-dcl-guardian term1 'term2) terms and
-; we build a translated progn of them.  If guardians is a singleton there is no
-; progn!
-
-  (cond
-   ((endp (cdr guardians))
-    (car guardians))
-   (t `(return-last 'progn
-                    ,(car guardians)
-                    ,(make-progn-guardians-term (cdr guardians))))))
-
-(defun make-do-body-progn-guardians-and-result-term (guardians result)
-  (cond
-   ((endp guardians) result)
-   (t `(return-last 'progn
-                    ,(make-progn-guardians-term guardians)
-                    ,result))))
-
-(defun make-do-body-alist-term (alist)
-  (cond ((endp alist) *nil*)
-        (t `(cons (cons (quote ,(car (car alist)))
-                        ,(cdr (car alist)))
-                  ,(make-do-body-alist-term (cdr alist))))))
-
-(defun do-body-tuple-to-term (tuple)
-
-; We will return a fully translated term that is essentially
-; (progn (progn guardians)
-;        (list exit-flg val alist))
-; (See the Note on Fully Translated above.)
-
-; Warning: It is not unusual for some branches of the if-tree to contain the
-; identity substitution, which when expressed as a term by
-; make-do-body-alist-term might look like (cons (cons 'var1 var1) (cons (cons
-; 'var2 var2) ...)).  But that just re-conses the original alist.  So there is
-; a temptation to optimize the compiled code for such substitutions by
-; replacing that cons expression with ALIST, which is the name of the formal
-; variable of the lambda$ whose body is being created.  That temptation is
-; dangerous because the body being created is embedded in a LET that extracts
-; from the formal ALIST the values of the variables the user used in the do
-; body.  If one of those variables happens to be ALIST then the
-; ``optimization'' just described refers to the wrong variable!  Some renaming
-; will be required to correctly reach out of that LET to get the original
-; formal!
-
-  (make-do-body-progn-guardians-and-result-term
-   (revappend (access do-body-tuple tuple :guardians) nil)
-   `(cons (quote ,(access do-body-tuple tuple :exit-flg))
-          (cons ,(access do-body-tuple tuple :val)
-                (cons ,(make-do-body-alist-term
-                        (access do-body-tuple tuple :alist))
-                      (quote nil))))))
-
-; So here is pass 2: just copy the IF-tree down to the tuples at the bottom and
-; turn them into terms...
-
-(defun cmp-do-body-pass2 (if-tree)
-  (cond ((eq (car if-tree) 'IF)
-         `(IF ,(cadr if-tree)
-              ,(cmp-do-body-pass2 (caddr if-tree))
-              ,(cmp-do-body-pass2 (cadddr if-tree))))
-        (t (do-body-tuple-to-term if-tree))))
-
-(defun cmp-do-body (guess-measurep x twvts vars)
+(defun cmp-do-body (x twvts vars)
 
 ; X is a well-formed do-body with respect to the settable variables of the
 ; containing loop$ (the cars of the twvts tuples).  Twvts is a list of tuples
 ; of the form (var type-spec type-pred init-val), where type-pred and init-val
-; are fully translated.  Vars is the list of all vars whose values should be
-; tracked.  This generally includes all the vars in x and all the vars (cars)
-; of twvts but may also include vars from other parts of the loop, e.g., the
-; measure or finally body.  We compile x into a term free of ersatz symbols,
-; suitable for embedding in a lambda$ (with appropriate interfacing).  If
-; guess-measurep is t we attempt to guess a measure for x.  We return (mv
-; measure term), where measure is as described below and term is the compiled
-; form of x.  Measure is nil if either we were not asked to guess a measure or
-; we were asked but found no suitable guess, othersie measure is our fully
-; translated guess at a measure.  In fact, it is either '0 because every branch
-; through x has a non-nil :exit-flg so no measure is necessary or else it is
-; (acl2-count var) for the first var in twvts that is both tested and changed
-; on every branch with a nil :exit-flg.
+; are fully translated.  We compile x into a term free of ersatz symbols as
+; explained in the Algorithm Description below; in short, that term represents
+; the alist produced by evaluating the SETQ and MV-SETQ forms in x, suitable
+; for embedding in a lambda$ (with appropriate interfacing).  We return that
+; compiled form of x.
 
-; Note: the alist provided to pass1 below binds all variables in x to
-; themselves, regardless of whether the vars are settable (declared in the
-; loop$'s WITH clauses) or not.  This allows us to look up each variable's
-; current value as we create symbolic terms.  Furthermore, the odd way of
-; computing vars just arranges for the variables declared in WITH clauses to
-; appear first in the alist, in the order in which they were declared.
+; Since the type-specs in twvts are known to the Common Lisp compiler, they
+; must be enforced on every SETQ and MV-SETQ, by adding the corresponding
+; check-dcl-guardians form of the instantiated type-predicates.
 
-  (let* ((alist (pairlis$ vars vars))
-         (if-tree (cmp-do-body-pass1 x twvts nil alist))
-         (term (cmp-do-body-pass2 if-tree)))
+; Algorithm Description
 
-; The following sanity check can be removed when we're convinced we've eliminated
-; all the ersatz symbols!
+; At a high level, the semantics of a DO body is a function that takes a
+; variable substitution, where the domain includes not only the WITH-bound
+; variables and declared stobjs but all free variables of the DO body.  That
+; function returns a triple (list exit-flg val alist) representing the result
+; of one trip through the loop starting with the given alist, where:
 
-    (cond
-     ((null (ersatz-symbols t term))
-      (mv (if guess-measurep
-              (guess-do-body-measure if-tree twvts)
-              nil)
-          term))
-     (t (mv nil
-            (er hard 'cmp-do-body
-                "Cmp-do-body discovered an ersatz symbol in the compiled ~
-                 term.  Here are the major milestones.~%input ~
-                 do-body:~%~X01~%Pass 1 IF-tree:~%~X21~%Pass 2 term:~%~X31~%"
-                x if-tree term))))))
+; * exit-flg is :LOOP-FINISH, :RETURN, or NIL indicating how the do-body
+;   terminated;
+; * val is a term denoting the returned value when exit-flg is NIL (else val is
+;   irrelevant); and
+; * alist is a term representing the final variable substitution.
+
+; The algorithm is implemented by cmp-do-body-1 (called below).  It sweeps
+; through the translated term, down through the IF-tree and lambdas
+; (beta-reducing them).  Subterms that contain no ersatz function call have no
+; effect on the alist.  Calls of ersatz-prog2 are normalized by
+; right-associating them and lifting IFs.  Calls of ersatz-return and
+; ersatz-loop-finish terminate appropriately.  Calls of ersatz-setq and
+; ersatz-mv-setq modify the alist by creating suitable let bindings, which are
+; in force when ultimately a formal alist is returned.  For example,
+; (ersatz-setq x (foo y)) generates something like (let ((x (foo y))) (list
+; (cons 'x x) (cons 'y y))), while (ersatz-prog2 (ersatz-setq x (foo y))
+; <rest>) generates something like (let ((x (foo y))) <compilation of rest>).
+; Correctness depends on prohibiting the input term from having let bindings of
+; WITH-bound variables and stobjs in the input that will shadow the let
+; bindings generated as mentioned above.  Imagine, for example, that the user
+; writes a DO loop$ body containing the following subterm.
+
+;   (prog2 (let ((x 17)) (setq x 23))
+;          (return x)
+
+; In Common Lisp evaluation this form will return 17, but our algorithm would
+; create an alist binding x to 23.  Those restrictions are enforced when
+; translation produces the input x to this function, specifically: in
+; translate11-let, in the case (intersectp-eq bound-vars with-vars); and in
+; translate11-loop$, with the uses of stobjs-out-simple in the bindings of
+; translated-do-body and translated-fin-body, to prevent stobj modification and
+; hence stobj let-binding.
+
+; We conclude with a word about why we generate let bindings to represent the
+; effects of SETQ and MV-SETQ rather than using substitution.  The reason is
+; the need for stobj manipulations to be single-threaded, since DO$ calls are
+; executed.  (Only guard-verified code using Common Lisp loop calls.)  Consider
+; the followign code from the function do-loop-single-threaded-check in
+; community book books/projects/apply/loop-tests.lisp.
+
+;   (progn (setq st
+;                (update-fld (cons (car temp)
+;                                  (fld st))
+;                            st))
+;          (setq x (fld st)) ; This causes a problem!
+;          (setq temp (cdr temp))))
+
+; The corresponding code produced by cmp-do-body, in untranslated form, is as
+; follows.
+
+;   (LET* ((ST (UPDATE-FLD (CONS (CAR TEMP) (FLD ST))
+;                          ST))
+;          (X (FLD ST)))
+;         (LIST NIL NIL
+;               (LET ((TEMP (CDR TEMP)))
+;                    (LIST (CONS 'ST ST)
+;                          (CONS 'TEMP TEMP)
+;                          (CONS 'X X)))))
+
+; If substitution were used instead, the result would instead be as follows,
+; presumably.
+
+;   (LIST NIL NIL
+;         (LIST (CONS 'ST
+;                     (UPDATE-FLD (CONS (CAR TEMP) (FLD ST))
+;                                 ST))
+;               (CONS 'TEMP (CDR TEMP))
+;               (CONS 'X
+;                     (FLD (UPDATE-FLD (CONS (CAR TEMP) (FLD ST))
+;                                      ST)))))
+
+; Execution of this form would return an incorrect result because update-fld is
+; called twice.
+
+  (cmp-do-body-1 x
+                 twvts
+                 (cmp-do-body-alist vars)
+                 vars))
 
 ; Now we create the lambda$ term that runs the compiled do-body term.
 
@@ -9363,8 +9354,8 @@
 ; all terms in variables bound in sigma and sigma is used, for example, to
 ; re-express the type-preds and guard in terms of ALIST.  Evaluating body-term
 ; in an environment with all the vars of sigma bound to some values will
-; produce a triple, (exit-flg val alist), used on the next iteration of the do
-; or on the finally clause.
+; produce a triple, (exit-flg val alist), used on the next iteration of the DO
+; or on the FINALLY clause.
 
 ; This function produces the appropriately guarded lambda$ term that unpacks an
 ; alist into bindings for all the vars and then evaluates x.
@@ -9402,13 +9393,16 @@
                            '(alistp alist)
                            `(and (alistp alist)
                                  ,@types-and-guard-lst))))
-; The let below needs to bind each var to its value in 'alist'.  Sigma is almost
-; the appropriate list, but it is a list of pairs and we need a list of 2-tuples;
+
+; The let below needs to bind each var to its value in 'alist'.  Sigma is
+; almost the appropriate list, but it is a list of pairs and we need a list of
+; 2-tuples.
+
               (let ,(pairlis$ (strip-cars sigma)
                               (pairlis-x2 (strip-cdrs sigma) nil))
 
-; Not every WITH var need actually be used, nor will every var used in the DO clause
-; be used in the FINALLY clause.  So we make all ignorable.
+; Not every WITH var need actually be used, nor will every var used in the DO
+; clause be used in the FINALLY clause.  So we make all ignorable.
 
                 (declare (ignorable ,@(strip-cars sigma)))
                 ,body-term))))
@@ -11025,7 +11019,7 @@
 ; ACL2, but we actually add loop$.  We left the Abstract as originally written
 ; partly because it formed the abstract of a talk given to the ACL2 Seminar on
 ; 25 January, 2019, and we knew the audience wouldn't know what ``loop$'' was.
-; Loop$ was added to the sources in late January, 2019.  Do loop$s were added
+; Loop$ was added to the sources in late January, 2019.  DO loop$s were added
 ; in October, 2021.]
 
 ; -----------------------------------------------------------------
@@ -11114,7 +11108,7 @@
 ; loops require a generalization of the basic semantic form and an elaboration
 ; of the guard proof machinery.
 
-; Then we move on to a restricted form of do loops, such as
+; Then we move on to a restricted form of DO loops, such as
 
 ; (LOOP$ WITH TEMP OF-TYPE (SATISFIES NAT-LISTP) = LST
 ;        WITH ANS OF-TYPE INTEGER = 0
@@ -11128,7 +11122,7 @@
 ;        (RETURN ANS))
 
 ; which are handled formally in a somewhat different way than the so-called
-; ``for loop$'' heretofore sketched.
+; ``FOR loop$'' heretofore sketched.
 
 ; There are several paragraphs marked
 
@@ -11197,40 +11191,40 @@
 ; operator names as scion names because for example the names always and append
 ; are already defined in CLTL and ACL2.)
 
-; For loop$s and do loop$s are handled separately.  We do not allow mixing.
+; FOR loop$s and DO loop$s are handled separately.  We do not allow mixing.
 ; For example, this is legal in CLTL but not in ACL2
 
 ; (loop for x in lst with ans = 0
 ;       do (setq ans (+ x ans))
 ;       finally (return ans))
 
-; In for loop$s, the first symbol after LOOP$ must be FOR.  In do loop$s, the
-; first symbol after LOOP$ must be WITH.  For loop$s allow a variety of
+; In FOR loop$s, the first symbol after LOOP$ must be FOR.  In DO loop$s, the
+; first symbol after LOOP$ must be WITH.  FOR loop$s allow a variety of
 ; clauses, e.g., AS, UNTIL, WHEN, and operators, e.g., SUM, COLLECT, etc., but
-; do loop$s allow only multiple WITH clauses and the DO and FINALLY
-; ``operators.''  Do loop$s allow some ``imperative'' programming primitives:
-; progn, setq, return, and loop-finish, but for loop$s do not.  The lambda$s
-; generated for do loop$s traffic in an alist the binds all the variables
-; relevant to the loop$ bodies because each iteration of the do body can set
-; the variables in arbitrary ways.  The lambda$s for for loop$s operate on the
+; DO loop$s allow only multiple WITH clauses and the DO and FINALLY
+; ``operators.''  DO loop$s allow some ``imperative'' programming primitives:
+; progn, setq, return, and loop-finish, but FOR loop$s do not.  The lambda$s
+; generated for DO loop$s traffic in an alist the binds all the variables
+; relevant to the loop$ bodies because each iteration of the DO body can set
+; the variables in arbitrary ways.  The lambda$s for FOR loop$s operate on the
 ; value of the iteration var (in plain loop$s) or on a tuple of values of the
-; iteration vars (in fancy loop$s).  Do loop$ bodies have side effects and thus
-; must return the final value of each variable.  For loop$ bodies are entirely
-; functional.  For loop$s of necessity terminate because they map over finite
-; ranges.  Do loop$s may not terminate and a measure must be proved to go down
+; iteration vars (in fancy loop$s).  DO loop$ bodies have side effects and thus
+; must return the final value of each variable.  FOR loop$ bodies are entirely
+; functional.  FOR loop$s of necessity terminate because they map over finite
+; ranges.  DO loop$s may not terminate and a measure must be proved to go down
 ; if the loop$ is to execute in raw Lisp as a loop.  For these reasons, the two
 ; classes of loop$ statements are handled differently.
 
-; Warning to the reader: For loop$s were introduced to ACL2 in Version 8.2
+; Warning to the reader: FOR loop$s were introduced to ACL2 in Version 8.2
 ; (May, 2019).  Extensive comments in the code and documentation topics
-; describe ``for loop$s'' but refer to them simply as ``loop$s'' because no
-; other kind of ACL2 loop$ was supported.  When do loop$s were introduced
+; describe ``FOR loop$s'' but refer to them simply as ``loop$s'' because no
+; other kind of ACL2 loop$ was supported.  When DO loop$s were introduced
 ; (Version 8.5, circa 2022?) an effort was made to clarify whether comments and
-; documentation referred to ``for loop$s'' or ``do loop$s''.  But the word
+; documentation referred to ``FOR loop$s'' or ``DO loop$s''.  But the word
 ; ``loop$'' occurs over 1500 times in the sources) and we are not confident
 ; that all ambiguity has been eliminated.  So when reading the comments and
 ; documentation and encountering statements about ``loop$'' it is best to
-; assume that we mean ``for loop$'' and not ``do loop$.''
+; assume that we mean ``FOR loop$'' and not ``DO loop$.''
 
 ; Loop$ is essentially an ACL2 macro so that
 
@@ -11284,11 +11278,11 @@
 ; A ``loop$ scion'' is any scion used in the translation of loop$ statements.
 ; The plain ones are sum$, always$, thereis$, collect$, append$, until$, and
 ; when$ and their fancy counterparts are sum$+, always$+, thereis$+, collect$+,
-; append$+, until$+, and when$+.  The loop$ scion for do loop$s is do$.  We
-; discuss the fancy loop$ scions in Section 8.  We discuss the do loop$ scion
+; append$+, until$+, and when$+.  The loop$ scion for DO loop$s is do$.  We
+; discuss the fancy loop$ scions in Section 8.  We discuss the DO loop$ scion
 ; in Section 11 and Section 12.
 
-; Henceforth until Section 11, ``loop$'' refers to ``for loop$''.
+; Henceforth until Section 11, ``loop$'' refers to ``FOR loop$''.
 
 ; The plain loop$ scions are informally described as follows, where the
 ; elements of lst are e1, ..., en:
@@ -11629,7 +11623,7 @@
 ; and when called on a LAMBDA object (as by the raw Lisp apply$-lambda and
 ; *cl-cache* machinery).  In these situations -- where raw Lisp code will be
 ; run -- guard-clauses treats certains calls of loop$ scions specially.  In
-; particular, if the for loop$ scion's function object is a quoted tame
+; particular, if the FOR loop$ scion's function object is a quoted tame
 ; function symbol of the appropriate arity (depending on whether the loop$
 ; scion is plain or fancy) or is a quoted well-formed LAMBDA object of the
 ; appropriate arity, then guard-clauses adds possibly three guard conjectures
@@ -11860,9 +11854,11 @@
 ; the ACL2 loop.  However, we're satisfied with the current top-level
 ; evaluation performance.
 
-; Let's put some numbers on that.  We start with an empty compiled LAMBDA cache.
+; Let's put some numbers on that.  We start with an empty compiled LAMBDA
+; cache.
 
-; The simplest version of our loop$, containing no declarations, is timed below.
+; The simplest version of our loop$, containing no declarations, is timed
+; below.
 
 ; ACL2 !>(len (time$
 ;              (loop$ for v
@@ -11926,7 +11922,8 @@
 ;  (and (integer-listp lst)
 ;       (member-equal newv
 ;                     (when$ (lambda$ (v) (evenp (car v)))
-;                            (until$ (lambda$ (v) (not (member (car v) (cdr v))))
+;                            (until$ (lambda$ (v) (not (member (car v)
+;                                                              (cdr v))))
 ;                                    (tails lst)))))
 ;  (and (consp newv)
 ;       (integer-listp newv)))
@@ -12429,9 +12426,9 @@
 ; apply$ and reasoning about loop$, especially guard verification.
 
 ; -----------------------------------------------------------------
-; Section 11: Do Loop$s
+; Section 11: DO Loop$s
 
-; The general form of a do loop$ is
+; The general form of a DO loop$ is
 
 ; (LOOP$ WITH var1 OF-TYPE spec1 = init1
 ;        WITH var2 OF-TYPE spec2 = init2
@@ -12480,82 +12477,38 @@
 ; When translate is in ``do-expressionp'' mode, i.e., (access state-vars
 ; state-vars :do-expressionp) is non-nil, and sees one of the CLTL names above
 ; it substitutes the ersatz name and otherwise proceeds normally.  The result
-; is a well-formed ACL2 term that mentions the ersatz symbols.  Another effect
-; of do-expressionp mode is that when translate expands LET and LET* to lambda
-; applications it embeds the body in a call of ERSATZ-LOCALLY-SCOPED so as to
-; distinguish the variables that were local to the let/let* from the ones added
-; to make the lambda application closed.  (We discuss this later below.)  The
-; result is a normal, well-formed ACL2 term that calls some of the ersatz
-; symbols.  We check that term for well-formedness.
+; is a normal, well-formed ACL2 term that calls some of the ersatz symbols.  We
+; check that term for well-formedness.
 
 ; But it remains to give meaning to these terms.  Once upon a time we did that
-; by defining an interpreter for do-bodies.  The basic idea was that the
+; by defining an interpreter for DO-bodies.  The basic idea was that the
 ; interpreter took an alist binding variables to values, followed CLTL rules to
 ; evaluate it (including handling SETQ, etc), and returned a triple consisting
-; of a token indicating whether a loop-finish, return, or normal (running off
+; of a token indicating whether a LOOP-FINISH, RETURN, or normal (running off
 ; the end) termination occurred, what the final value is, and what the final
 ; alist is.
 
-; But carrying that approach forward to a semantics for do loop$s would require
+; But carrying that approach forward to a semantics for DO loop$s would require
 ; introducing a new version of apply$ that uses that interpreter instead of ev$
 ; and adding a new ilk to make sure do-bodies were never passed into the old
 ; apply$ or ev$.  So we abandoned that approach and adopted the idea of
 ; ``compiling'' do-bodies into terms that return the same results as the
-; interpreter would.  See cmp-do-body for the definition of the compiler.
+; interpreter would.  See cmp-do-body for the definition of the compiler and an
+; "Algorithm Description".
 
 ; The results of the compiled term is an IF-tree in which LET and LET*s
-; superior to at least one call of an ersatz symbol have been flattened and at
-; the tip of each branch is a cons nest that builds the same triple of values
-; as the interpreter, (list exit-flg val alist).
+; superior to at least one call of an ersatz symbol have been flattened, but
+; (translated) LET expressions have been introduced to represent the effects of
+; SETQ and MV-SETQ calls.  (Again, see the Algorithm Description in
+; cmp-do-body.)  At each tip is a cons nest that builds the same triple of
+; values as the interpreter, (list exit-flg val alist).
 
 ; * exit-flg - one of the tokens :loop-finish, :return, or nil
 
 ; * val - the value left on the Lisp stack
 
-; * alist - a new alist reflecting all of the assignments along the path.
-
-; Lets and lambda applications in do-bodies have to be specially handled.
-; Consider the untranslated and translated (with do-expressionp non-nil) forms
-; of a let (or lambda application).  E.g.,
-
-; untranslated: (let ((x val))
-;                (progn
-;                  (setq x (cdr x))
-;                  (setq g (car g))))
-
-; equivalently
-
-;               ((lambda (x)
-;                        (progn
-;                         (setq x (cdr x))
-;                         (setq g (car g))))
-;                val)
-
-; translated:   ((LAMBDA (X G)
-;                        (ERSATZ-LOCALLY-SCOPED '(X)
-;                          (ERSATZ-PROG2
-;                            (ERSATZ-SETQ X (CDR X))
-;                            (ERSATZ-SETQ G (CAR G)))))
-;                 val G)
-
-; Note that in the untranslated forms x is the only locally scoped variable.  G
-; is used in the body but it is scoped outside the let or lambda.  However,
-; following ACL2 conventions, all lambda applications in ACL2 are closed, so
-; during translation g is added as a formal of the lambda and and is added as
-; the corresponding actual.  (One might ask why we don't allow lambda
-; applications inside do and finally forms to violate that rule.  The answer is
-; that we must expand macros in these forms and so we have to call translate.
-; It is simplest to make the result of that translation be a well-formed fully
-; translated ACL2 term, even if some of the function symbols in it have no
-; defined meaning in ACL2.)
-
-; But this raises a problem for cmp-do-body.  The assignment to x in the term
-; is relevant only in that scope but the assignment to g must be propagated out
-; to the containing scope.  Thus, it is crucial that cmp-do-body know which
-; formals of the lambda are locally scoped and which are not.  Identifying the
-; locally scoped vars is the job of the ersatz-locally-scoped form inserted
-; when we translate do and finally bodies.  Every translated lambda application
-; in the context of do or finally begins with an ersatz-locally-scoped form.
+; * alist - an alist reflecting all of the assignments along the path (because
+;           of translated LET-bindings introduce above the tip)
 
 ; Evaluation is not straightforward in unrestricted CLTL since SETQs (and
 ; MULTIPLE-VALUE-SETQs) and RETURNs can occur anywhere, not just at the
@@ -12609,9 +12562,9 @@
 ; :loop-finish exit, it applies the fin-fn to the final alist.  When it stops
 ; with a :return, it exits immediately with the given val.
 
-; This simple story is complicated by three other facts.  First, every setq
-; assignment to a typed variable must generate a guard check on the value
-; assigned, to make sure that the value fits in the space alloted to the
+; This simple story is complicated by three other facts.  First, every setq or
+; mv-setq assignment to a typed variable must generate a guard check on the
+; value assigned, to make sure that the value fits in the space alloted to the
 ; variable by the CLTL compiler.  This affects how the two bodies are
 ; ``compiled.''  To see what we do it is probably easiest to :trans a simple do
 ; loop$ with an of-type clause.
@@ -12627,7 +12580,7 @@
 ; tuple.  Then, before each new iteration do$ checks that m-fn on the new
 ; alist is L<-smaller than m-fn on alist and causes a hard error if it is not.
 
-; When the do loop$ above occurs in a guard verified defun it becomes
+; When the DO loop$ above occurs in a guard verified defun it becomes
 ; the following loop in raw Lisp:
 
 ; (LOOP$ WITH var1 OF-TYPE spec1 = init1
@@ -12638,8 +12591,8 @@
 ;        FINALLY
 ;        fin-body)
 
-; Note that the :measure has disappeared.  The loop just runs until the do body
-; executes a loop-finish or a return.  Guard verification of the do loop$
+; Note that the :measure has disappeared.  The loop just runs until the DO body
+; executes a loop-finish or a return.  Guard verification of the DO loop$
 ; attempts, among other things, to verify that the measure decreases.
 
 ; The measure conjecture for the do$ term above is
@@ -12672,9 +12625,10 @@
 ; 0.
 
 ; If the of-type clause above is omitted (and no :guard clause were added on
-; the do) the defun would be rejected because we don't know that n is a natural.
+; the do) the defun would be rejected because we don't know that n is a
+; natural.
 
-; It may see odd that the measure conjecture for a do loop$ is considered part
+; It may see odd that the measure conjecture for a DO loop$ is considered part
 ; of guard verification rather than logical admission, i.e., that these measure
 ; conjectures are not proved a defun-time but only a verify-guards time.  The
 ; reason is that from the logical perspective the bad foo (without the of-type)
@@ -12685,7 +12639,7 @@
 ; no different than the other guard conjectures generated: guard conjectures
 ; ensure that raw Lisp computes in accordance with the axioms.
 
-; Finally, the guard conjectures generated for a do loop$ are the normal guard
+; Finally, the guard conjectures generated for a DO loop$ are the normal guard
 ; conditions for the arguments (which thus includes the guard conditions for
 ; the three lambda$s), plus four ``Special Conjectures'' akin to the Special
 ; Conjectures generated for for loop$s and discussed in Appendix A.
@@ -12702,31 +12656,45 @@
 
 ; * Special Conjecture (g): if the guard on do-fn is satisfied by alist and
 ;     running do-fn produces an exit flg of nil then the measure of the new
-;     alist is smaller than the of alist.
+;     alist is smaller than that of alist.
 
-; As with for loop$s, do loop$s typed at the top-level of the ACL2 loop do not
+; As with for loop$s, DO loop$s typed at the top-level of the ACL2 loop do not
 ; execute as raw Lisp loops but are interpreted by the loop scions (e.g., sum$
 ; or do$) and apply$.
 
+; Here is a summary of key parts of the process of translating a DO loop$.
+
+; - Translate11 calls translate11-loop$.
+; - Translate11-loop$ calls translate11 to translate the DO body and FINALLY
+;   clause.  The result has calls of ersatz functions.
+; - Cmp-do-body transforms the translated DO body (with ersatz functions) into
+;   a translated term (a true term, without ersatz functions).  That term
+;   represents the alist resulting from one pass through that body (and
+;   similarly for the FINALLY clause, if any).
+; - Translate11-loop$ then finishes the job by calling translate11 again on the
+;   resulting pieces, including the final DO body, to create a call of do$.
+
 ; -----------------------------------------------------------------
-; Section 12: Do Loop$s Returning Multiple Values or Stobjs
+; Section 12: DO Loop$s Returning Multiple Values or Stobjs
 
-; The preceding Section introduces do loop$s and mentions the :values keyword,
+; The preceding Section introduces DO loop$s and mentions the :values keyword,
 ; which indicates the intended stobjs-out for the loop$ expression.  The value
-; defaults to (nil), indicating that the do loop$ returns a single non-stobj
-; value.  In this Section we discuss the general case, where a do loop$ may
-; return a stobj or multiple values (possibly including stobjs).
+; defaults to (nil), indicating that the DO loop$ returns a single non-stobj
+; value.  In this Section we discuss the general case, where a DO loop$ may
+; return a stobj or multiple values (possibly including stobjs).  See also the
+; Algorithm Discussion in cmp-do-body.
 
-; Here are several aspects at the user level of extending do loop$s both to
+; Here are several aspects at the user level of extending DO loop$s both to
 ; reference and modify stobjs and to permit the return of stobjs and multiple
 ; values.
 
 ; - The value returned logically when the measure test fails is the list
-;   specified by :values.  For execution, that list is replaced by
-;   corresponding multiple values.
+;   specified by :values.  This is (nil) by default; note that an explicit
+;   value must be non-atomic, so :values nil is illegal syntax.  For execution,
+;   that list is replaced by corresponding multiple values.
 
-; - A finally clause is mandatory when there is at least one loop-finish
-;   expression in the loop$'s body.  In that case, the finally clause must be
+; - A FINALLY clause is mandatory when there is at least one loop-finish
+;   expression in the loop$'s body.  In that case, the FINALLY clause must be
 ;   determined syntactically to return a result with suitable stobjs-out.
 
 ; - All bodies in well-formed lambda objects are now tagged.  (This was
@@ -12735,30 +12703,41 @@
 ;   theorems (stobjs-out = t).  Attachable function untranslate-lambda-object-p
 ;   can have attachments constant-t-function-arity-0 (the default),
 ;   constant-nil-function-arity-0 (no untranslation), or
-;   untranslate-lambda-object-cheat (translate using the quoted lambda$).
+;   untranslate-lambda-object-cheat (untranslate using the quoted lambda$).
 
-; - It is illegal to locally bind stobjs in WITH clauses.  Rather, known stobjs
-;   are implicitly available in the value terms in those clauses, and they are
-;   also available -- both for reference and for binding -- in the do body and
-;   the finally clause.
+; - It is illegal for a stobj to be declared in a WITH clauses.  Rather, known
+;   stobjs are implicitly available in the value terms in those clauses, and
+;   they are also available -- both for reference and for binding with SETQ and
+;   MV-SETQ -- in the DO body and the FINALLY clause.
 
-; - Consider exploring the body or finally clause of a do loop$, passing
-;   through calls of IF, PROGN, and PROG2 in the obvious way.  At a leaf we may
-;   find a call of one of the supported CL functions such as SETQ or RETURN, or
-;   we may find an "ordinary" expression.  The "ordinary" expression must
-;   return a single non-stobj value (unless we are translating for theorems,
-;   with stobjs-out = t).  This stobj restriction is important for avoiding
-;   stobj changes that are not logically justified, while the restriction to a
-;   single value seems mild and is easy to implement and explain.
+; - Imagine exploring the body or FINALLY clause of a DO loop$, passing through
+;   calls of IF, PROGN, PROG2, in the obvious way and expanding away LET and
+;   LET* expressions.  At a leaf we may find a call of one of the supported CL
+;   functions such as SETQ or RETURN, or we may find an "ordinary" expression.
+;   The "ordinary" expression must return a single non-stobj value (unless we
+;   are translating for theorems, with stobjs-out = t).  This stobj restriction
+;   is important for avoiding stobj changes that are not logically justified,
+;   while the restriction to a single value seems mild and is easy to implement
+;   and explain.
 
-; - Stobjs must not be let-bound at the top-level of a loop$ body or finally
-;   clause.  This restriction helps to ensure that all stobj changes are
-;   tracked logically.
+; - Stobjs must not be let-bound in a loop$ body or FINALLY clause.  This
+;   restriction helps to ensure that all stobj changes (which are made using
+;   SETQ or MV-SETQ) are tracked logically.
+
+; - Variables declared in WITH clauses must not be let-bound (except we allow
+;   that in the right-hand side of a SETQ or MV-SETQ call and the argument of a
+;   RETURN call).  We could allow such let-bindings when there are no
+;   subsidiary imperative constructs, e.g.,
+;     (progn (setq acc (cdr temp))
+;            (let ((acc nil)) acc) ; illegal but could be allowed
+;            (setq temp acc))
+;   but the current restriction is easy to explain and implement [using
+;   do-expressionp] and it doesn't seem unduly restrictive.
 
 ; - :Guard expressions must generally include stobj recognizer calls for the
 ;   mentioned stobjs.  (Here is why.  Currently we do not use the stobj-optp
-;   optimization when generating guard proof obligations for the do body and
-;   finally clauses.  That's because we cannot determine at the appropriate
+;   optimization when generating guard proof obligations for the DO body and
+;   FINALLY clauses.  That's because we cannot determine at the appropriate
 ;   time whether the resulting lambdas were translated for execution (i.e.,
 ;   with non-nil stobjs-out).)
 
@@ -12768,32 +12747,34 @@
 ;   signature of the function.
 
 ; Here are several of the (possibly less obvious) ways that the implementation
-; of do loop$s accounts for return of multiple values and stobjs (in addition
+; of DO loop$s accounts for return of multiple values and stobjs (in addition
 ; to those mentioned above).
 
 ; - As noted above, when stobjs-out is not t, then an ordinary expression at
-;   the leaf of a do loop$ body or finally clause is translated with stobjs-out
+;   the leaf of a DO loop$ body or FINALLY clause is translated with stobjs-out
 ;   = (nil).  The value of (access state-vars state-vars :do-expressionp) in
-;   that situation is not merely non-nil; it is in fact the saved stobjs-out
-;   for the loop$, to use for the argument of a call of RETURN when converting
-;   it to a translated call of ERSATZ-RETURN.
+;   that situation is not merely non-nil; it includes the saved stobjs-out for
+;   the loop$, to use for the argument of a call of RETURN when converting it
+;   to a translated call of ERSATZ-RETURN.
 
 ; - The symbol DO belongs to *stobjs-out-invalid*, and function do$-stobjs-out
 ;   computes the stobjs-out based on the arguments to do$.  Loop$-stobjs-out is
 ;   similar for loop$ expressions; see for example its use in oneify.
 
 ; - Function translate11-do-clause is used for combining the
-;   separately-translated parts of a do loop$.  We are careful to translate
+;   separately-translated parts of a DO loop$.  We are careful to translate
 ;   with stobjs-out = t when we do that, since we already dealing with
 ;   translated terms at that point and thus, in particular, we need to avoid
-;   single-threadedness violations.
+;   stobj violations, since our terms represent stobjs in alists.  (But we are
+;   careful to maintain true single-threadedness; see the Algorithm Description
+;   in cmp-do-body.)
 
-; - We always translate a do loop$ with respect to its stobjs-out (i.e.,
+; - We always translate a DO loop$ with respect to its stobjs-out (i.e.,
 ;   :values) -- then we translate-bind afterwards when appropriate.  That is,
 ;   we are not hampered by having an unknown stobjs-out at the point the loop$
 ;   is translated.
 
-; - The raw Lisp code for a do loop$ when *aokp* is nil, as generated by
+; - The raw Lisp code for a DO loop$ when *aokp* is nil, as generated by
 ;   logic-code-to-runnable-code (which is called as part of populating the
 ;   world global, loop$-alist), wraps ec-call around functions that take
 ;   stobjs, since *1* functions are the ones that enforce the requirement,
@@ -12917,10 +12898,10 @@
 
 ; Before deciding to use the compositional approach, which makes proofs easier
 ; and maintains CLTL speed in guard verified loop$ in defuns, we experimented
-; with top-level ACL2 evaluation of various special-purpose scions.  We actually
-; defined and guard verified all 43 of the necessary scions.  (This list was
-; written when the only supported loop$ operators were sum, always, collect, and
-; append.)
+; with top-level ACL2 evaluation of various special-purpose scions.  We
+; actually defined and guard verified all 43 of the necessary scions.  (This
+; list was written when the only supported loop$ operators were sum, always,
+; collect, and append.)
 
 ; sum$-until$-when$-ac
 ; sum$-until$-ac
@@ -13489,12 +13470,6 @@
 
 (defmacro return-last-call (fn &rest args)
   `(fcons-term* 'return-last ',fn ,@args))
-
-(defmacro prog2$-call (x y)
-
-; Warning: Keep this in sync with the handlng of 'return-last in oneify.
-
-  `(fcons-term* 'return-last ''progn ,x ,y))
 
 (defun dcl-guardian (term-lst)
 
@@ -16122,54 +16097,6 @@
                           "Implementation error: expected no duplicate stobjs ~
                            in stobjs-out list!")))))))
 
-(defun make-lambda-term (formals actuals body)
-
-; Warning: If you consider making a call of this function, ask yourself whether
-; make-lambda-application would be more appropriate; the answer depends on why
-; you are calling this function.  For example, make-lambda-application will
-; drop an unused formal, but the present function does not (though its caller
-; could choose to "hide" such a formal; see translate11-let).
-
-; Formals is a true list of distinct variables, actuals is a true list of terms
-; of the same length as formals, and body is a term.  We want to create
-; something like ((lambda formals body) . actuals).  However, body may have
-; free variables that do not belong to formals, and lambdas must be closed in
-; ACL2.  We add the necessary extra variables to the end of formals and
-; actuals.  See translate11-let for how this function may be called to "hide"
-; unused formals.
-
-  (declare (xargs :guard (and (symbol-listp formals)
-                              (pseudo-term-listp actuals)
-                              (pseudo-termp body))))
-  (let* ((body-vars (all-vars body))
-         (extra-body-vars (set-difference-eq body-vars formals)))
-    (fcons-term (make-lambda (append formals extra-body-vars)
-                             body)
-                (append actuals extra-body-vars))))
-
-(defun make-lambda-do-body-term (formals actuals do-body)
-
-; This function is like make-lambda-term -- it builds a lambda application
-; ((lambda formals do-body) . actuals).  But the body of the lambda is a
-; do-body (presumably with ersatz symbols in it) and this function inserts an
-; ersatz-locally-scoped term to mark the locally-scoped vars.  This function is
-; only called in the do-expression = t translation of do and finally clauses
-; and generates a ersatz-laden ``term'' which is then compiled to eliminate the
-; ersatz functions.
-
-  (declare (xargs :guard (and (symbol-listp formals)
-                              (pseudo-term-listp actuals)
-                              (pseudo-termp do-body))))
-  (let*
-    ((body-vars (all-vars do-body))
-     (non-locally-scoped (set-difference-eq body-vars formals)))
-    (fcons-term
-     (make-lambda (append formals non-locally-scoped)
-                  (cons 'ersatz-locally-scoped
-                        (cons (cons 'quote (cons formals 'nil))
-                              (cons do-body 'nil))))
-     (append actuals non-locally-scoped))))
-
 (mutual-recursion
 
 (defun all-unbadged-fnnames (term wrld acc)
@@ -16241,8 +16168,8 @@
                                 (car x) ; binder = 'LAMBDA or 'LAMBDA$
                                 ctx wrld)
 
-; Even if we are in the lambda-casep we do the collection above to check for the
-; legality of the vars used in the TYPE/IGNORE/IGNORABLE declarations.
+; Even if we are in the lambda-casep we do the collection above to check for
+; the legality of the vars used in the TYPE/IGNORE/IGNORABLE declarations.
 
       (cond
        (erp (mv erp edcls bindings))
@@ -16449,7 +16376,7 @@
 ; given name, e.g., (CAR (CDR LOOP$-IVARS)).  This is perhaps doubly confusing
 ; because if the loop$ we're translating turns out to be a plain loop the
 ; lambda formal is not LOOP$-IVARS and is not a tuple to be car/cdr'd.  We lift
-; the type guard as though for for a fancy loop$ because easier to produce the
+; the type guard as though for a fancy loop$ because easier to produce the
 ; ``lifted type guard'' for the single-variable plain loop$.  In any case, do
 ; not treat this as a translated term, do not confuse it with the entire guard
 ; of the lambda (the guard of the lobody, for example, is not included in
@@ -16540,11 +16467,11 @@
 ; Free-vars is a list, (u1 u2 ...), of distinct variables different from the
 ; vi.  The guardi are UNtranslated terms obtained by translating (TYPE speci
 ; vi) to a ``term'', except we don't use the variable symbol vi, we use the
-; appropriate car/cdr nest around the variable symbol LOOP$-IVARS.  The guardi are
-; untranslated terms.  For example, E.g., if speci is (INTEGER 0 7) then guardi
-; would be (AND (INTEGERP v) (<= 0 v) (<= v 7)), where the v is a car/cdr nest.
-; The macros AND and <= and unquoted numbers really are there!  Don't treat
-; this like a term!
+; appropriate car/cdr nest around the variable symbol LOOP$-IVARS.  The guardi
+; are untranslated terms.  For example, E.g., if speci is (INTEGER 0 7) then
+; guardi would be (AND (INTEGERP v) (<= 0 v) (<= v 7)), where the v is a
+; car/cdr nest.  The macros AND and <= and unquoted numbers really are there!
+; Don't treat this like a term!
 
 ; Carton is the carton holding the guard and body of the lambda$ we're to
 ; create.  The guard and body are in terms of the vi and ui.
@@ -16580,7 +16507,6 @@
 
 ; Guard is the guard in the carton and is expressed in terms of car/cdr nest
 ; around LOOP$-GVARS and LOOP$-IVARS.
-
 
   (let* ((global-bindings (make-bindings free-vars 'loop$-gvars))
          (local-bindings (make-bindings (strip-cars tvsts) 'loop$-ivars))
@@ -16799,10 +16725,10 @@
 
 ; This is akin to remove-for-loop$-guards but deals with do-loop$s and removes
 ; :guard, :measure, and :values from the do clause and removes :guard from the
-; finally clause.  We take a slightly different tack with this function though.
+; FINALLY clause.  We take a slightly different tack with this function though.
 ; When can :guard occur as an element in a legal loop$ statement?  It can't be
 ; in places where we expect a legal variable name, OF-TYPE, a type-spec, an
-; =-sign, a DO or FINALLY.  Nor may it occur as a do- or finally-body because
+; =-sign, a DO or FINALLY.  Nor may it occur as a do- or FINALLY-body because
 ; they must be non-atomic.  So the only place there :guard may occur and not be
 ; our special ``xargs'' sense of :guard is as the value of a local variable or
 ; as the term provided as a :measure or :guard.  But local variable values are
@@ -17241,13 +17167,6 @@
                        (primitive-event-macros))
              nil)))
 
-(defun make-true-list-cons-nest (term-lst)
-  (declare (xargs :guard (pseudo-term-listp term-lst)))
-  (cond ((endp term-lst) *nil*)
-        (t (cons-term 'cons
-                      (list (car term-lst)
-                            (make-true-list-cons-nest (cdr term-lst)))))))
-
 (defun loop$-default (values)
 
 ; For the given values, which is really a stobjs-out list, return a term
@@ -17271,7 +17190,8 @@
          (trans-er-let*
           ((flet-entry
             (translate11-flet-alist1 form (car fives) stobjs-out bindings
-                                     known-stobjs flet-alist ctx wrld state-vars))
+                                     known-stobjs flet-alist ctx wrld
+                                     state-vars)) 
            (flet-entries
             (translate11-flet-alist  form (cdr fives) stobjs-out bindings
                                      known-stobjs flet-alist ctx wrld state-vars)))
@@ -17657,7 +17577,10 @@
             (and (not (eq stobjs-out t))
                  (compute-stobj-flags bound-vars known-stobjs wrld)))
            (stobjs-bound (and stobj-flags ; optimization
-                              (collect-non-x nil stobj-flags))))
+                              (collect-non-x nil stobj-flags)))
+           (do-expressionp (access state-vars state-vars :do-expressionp))
+           (with-vars (and do-expressionp
+                           (access do-expressionp do-expressionp :with-vars))))
       (cond
        ((and stobj-flags ; optimization (often false)
              multiple-bindings-p
@@ -17669,8 +17592,24 @@
                    binding in the LET, but ~x1 binds more than one variable."
                   (non-trivial-stobj-binding stobj-flags (cadr x))
                   x))
-       ((and (collect-non-x nil stobj-flags)
-             (access state-vars state-vars :do-expressionp))
+       ((intersectp-eq bound-vars with-vars)
+
+; This error is referenced in the Algorithm Description found in a comment in
+; cmp-do-body.  It is more draconian than necessary, in that we could allow
+; such binding when there are no imperative constructs the the translation of
+; x.  But this is a simple rule to implement and explain, and the extra
+; restriction doesn't seem harsh.
+
+        (trans-er+ x ctx
+                   "In a DO loop$ expression, variables bound in WITH ~
+                    clauses, such as ~&0, may not be LET-bound in the loop$ ~
+                    body or FINALLY clause (except in certain places such as ~
+                    the right-hand side of a SETQ or MV-SETQ call or the ~
+                    argument of a RETURN call). See :DOC do-loop$."
+                   (intersection-eq bound-vars with-vars)
+                   (cons 'progn (strip-cars *cltl-to-ersatz-fns*))))
+       ((and stobjs-bound
+             do-expressionp)
 
 ; Here we prohibit LET-bindings of stobjs in DO loop$s above "functions" such
 ; as SETQ (keys of the alist, *cltl-to-ersatz-fns*, as well as PROGN).  To see
@@ -17724,8 +17663,8 @@
 
         (trans-er+ x ctx
                    "Single-threaded object names, such as ~&0, may not be ~
-                    LET-bound at the top-level of a DO loop body or FINALLY ~
-                    clause.  See :DOC loop$."
+                    LET-bound in a DO loop body or FINALLY clause.  See :DOC ~
+                    do-loop$."
                    (collect-non-x nil stobj-flags)))
        (t (mv-let
             (erp edcls)
@@ -17877,7 +17816,7 @@
                            (if (and (access state-vars state-vars
                                             :do-expressionp)
                                     (ersatz-symbols t tbody))
-                               (make-lambda-do-body-term
+                               (make-lambda-term
                                 bound-vars
                                 (hide-ignored-actuals ignore-vars
                                                       bound-vars
@@ -18544,7 +18483,7 @@
 
 ; We have already translated the pieces of a do loop$ expression and compiled
 ; away their ersatz functions.  Term is one such translation (for the measure,
-; do body, or finally clause).
+; do body, or FINALLY clause).
 
 ; Since term is already translated, we cannot in general translate it for
 ; execution.  But we do not need to translate it for execution, as our
@@ -18553,8 +18492,8 @@
   (mv-let (erp val bindings)
     (translate11-lambda-object
      (make-do-body-lambda$ type-preds tguard sigma term)
-     t ; stobjs-out; see comment above about not translating for execution
-     nil        ; bindings
+     t   ; stobjs-out; see comment above about not translating for execution
+     nil ; bindings
      known-stobjs flet-alist cform ctx wrld state-vars nil)
     (cond (erp (trans-er ctx "~@0" val))
           (t (trans-value val)))))
@@ -18738,7 +18677,8 @@
                                             type-exprs
                                             guard-conjuncts)
                                          nil))
-                   (free-vars-guard (set-difference-eq (all-vars tguard) vars)))
+                   (free-vars-guard (set-difference-eq (all-vars tguard)
+                                                       vars)))
               (cond
                ((and free-vars-guard (not allow-free-varsp))
                 (trans-er+? cform x
@@ -19046,7 +18986,7 @@
 
 ; Here we translate the FINALLY clause of a do loop$.  Thus, do-state-vars has
 ; a non-nil :do-expressionp field.  It is tempting simply to call translate11
-; as we do for the do loop$ body, but we want to give more useful feedback when
+; as we do for the DO loop$ body, but we want to give more useful feedback when
 ; the problem may be due to forgetting to wrap RETURN around the result, since
 ; that is an easy error to make.  See for example the attempted definitions of
 ; do-mv-1-bad and do-mv-2-bad in community book
@@ -19055,7 +18995,7 @@
   (mv-let (erp value bindings)
     (translate11 form
                  nil        ; ilk
-                 stobjs-out ; :do-expressionp of do-state-vars is stobjs-out
+                 stobjs-out
                  nil        ; bindings
                  known-stobjs
                  nil ; flet-alist
@@ -19084,7 +19024,7 @@
                           (cond (okp (mv erp value bindings))
                                 (t (trans-er+? cform form ctx
                                                "Illegal FINALLY body: ~@0  ~
-                                                See :DOC loop$."
+                                                See :DOC do-loop$."
                                                msg)))))))))))
 
 (defun translate11-loop$ (x stobjs-out bindings known-stobjs flet-alist cform
@@ -19097,7 +19037,7 @@
 ; X here is a form beginning with LOOP$.
 
 ; Here we record some ideas that we have begun to consider for augmenting the
-; guards generated for the lambda$s in a loop$ expression.
+; guards generated for the lambda$s in a FOR loop$ expression.
 
 ; To refresh our memories, UNTIL, WHEN, and OPERATOR expressions all generate
 ; lambda$ expressions.  Those lambda$s currently carry guards stated in the
@@ -19161,9 +19101,9 @@
      (flet-alist
       (trans-er+? cform x ctx
                   "It is illegal for a LOOP$ expression to be in the scope of ~
-                   FLET bindings.  The occurrence of ~x0 in the context of ~
-                   the FLET form that binds function symbol~#1~[~/s~] ~&1 is ~
-                   thus illegal."
+                   function bindings of an FLET expression.  The occurrence ~
+                   of ~x0 in the context of the FLET form that binds function ~
+                   symbol~#1~[~/s~] ~&1 is thus illegal."
                   x
                   (strip-cars flet-alist)))
      (t
@@ -19326,8 +19266,10 @@
                        (if untilc
                            (set-difference-eq
                             (revappend
-                             (all-vars1-lst (list (excart :translated :guard untilc)
-                                                  (excart :translated :body untilc))
+                             (all-vars1-lst (list (excart :translated :guard
+                                                          untilc)
+                                                  (excart :translated :body
+                                                          untilc))
                                             nil)
                              nil)
                             iteration-vars)
@@ -19345,8 +19287,10 @@
                       (lobody-free-vars
                        (set-difference-eq
                         (revappend
-                         (all-vars1-lst (list (excart :translated :guard lobodyc)
-                                              (excart :translated :body lobodyc))
+                         (all-vars1-lst (list (excart :translated :guard
+                                                      lobodyc)
+                                              (excart :translated :body
+                                                      lobodyc))
                                         nil)
                          nil)
                         iteration-vars)))
@@ -19414,8 +19358,11 @@
             (let* ((stobjs (collect-non-x nil values))
                    (values0 values)
                    (values (or values '(nil)))
+                   (do-expressionp (make do-expressionp
+                                         :stobjs-out values
+                                         :with-vars (strip-cars wvts)))
                    (do-state-vars (change state-vars state-vars
-                                          :do-expressionp values))
+                                          :do-expressionp do-expressionp))
                    (settable-vars (append (collect-non-x nil values)
                                           (strip-cars wvts))))
 
@@ -19477,7 +19424,11 @@
                   (translated-do-body
                    (translate11 (excart :untranslated :body do-bodyc)
                                 nil               ; ilk
-                                stobjs-out-simple ; do-expressionp is stobjs-out
+
+; This use of stobjs-out-simple is referenced in the Algorithm Description
+; found in a comment in cmp-do-body.
+
+                                stobjs-out-simple
                                 nil               ; bindings
                                 known-stobjs
                                 nil ; flet-alist
@@ -19498,18 +19449,23 @@
                                (not (ffnnamep 'ersatz-loop-finish
                                               translated-do-body)))
 
-; The missing finally clause is never accessed with (loop-finish), but the
-; implicit finally clause of nil would violate stobjs-out restrictions.
+; The missing FINALLY clause is never accessed with (loop-finish), but the
+; implicit FINALLY clause of nil would violate stobjs-out restrictions.
 
                           (trans-value (fcons-term* 'ersatz-return
                                                     (loop$-default values))))
                          (t
-                          (translate11-do-finally (excart :untranslated :body
-                                                          fin-bodyc)
-                                                  stobjs-out-simple known-stobjs
-                                                  cform ctx wrld
-                                                  do-state-vars
-                                                  settable-vars)))))
+                          (translate11-do-finally
+                           (excart :untranslated :body fin-bodyc)
+
+; This use of stobjs-out-simple is referenced in the Algorithm Description
+; found in a comment in cmp-do-body.
+
+                           stobjs-out-simple
+                           known-stobjs
+                           cform ctx wrld
+                           do-state-vars
+                           settable-vars)))))
 
 ; In the FOR loop$ case handled above, there are comments at this point
 ; pertaining to recursion in loop$ expressions.  We do not currently allow
@@ -19529,7 +19485,7 @@
                                       settable-vars))))
 
 ; Vars is the list of all variables tracked by the alist passed around through
-; the measure, body, and finally functions.  But if no measure was provided,
+; the measure, body, and FINALLY functions.  But if no measure was provided,
 ; mform is nil and translated-mform is 'nil.  And the compilation of the do
 ; body will guess a measure.  But whatever measure it guesses will mention a
 ; variable in the do-body-term.  So we can tolerate not knowing the var in the
@@ -19542,7 +19498,7 @@
                       ((not okp)
                        (trans-er+?
                         cform x ctx
-                        "Illegal DO body: ~@0  See :DOC loop$."
+                        "Illegal DO body: ~@0  See :DOC do-loop$."
                         msg))
                       ((and (not (equal values '(nil)))
                             (null (excart :untranslated :body fin-bodyc))
@@ -19568,137 +19524,138 @@
                                        loop$."
                                       msg))
                           (t
-                           (mv-let (guessed-measure do-body-term)
-; We guess a measure if none were provided.
-                             (cmp-do-body (eq mform nil)
-                                          translated-do-body
-                                          twvts
-                                          vars)
-                             (mv-let (temp fin-body-term)
-                               (cmp-do-body nil translated-fin-body twvts vars)
-                               (declare (ignore temp))
-                               (let ((measure-term (if (eq mform nil)
-                                                       guessed-measure
-                                                     translated-mform)))
+                           (let ((do-body-term
+                                  (cmp-do-body translated-do-body
+                                               twvts
+                                               vars))
+                                 (measure-term
+                                  (if mform
+                                      translated-mform
+                                    (guess-do-body-measure
+                                     translated-do-body)))
+                                 (fin-body-term
+                                  (cmp-do-body translated-fin-body
+                                               twvts
+                                               vars)))
+                             (cond
+                              ((eq measure-term nil)
+                               (trans-er+? cform x ctx
+                                           "No :MEASURE was provided after ~
+                                            the DO operator and we failed to ~
+                                            find a likely measure.  Please ~
+                                            supply a :MEASURE in ~X01.  See ~
+                                            :DOC do-loop$."
+                                           x nil))
+                              (t
+                               (let ((bad-fns
+                                      (all-unbadged-fnnames
+                                       measure-term wrld
+                                       (all-unbadged-fnnames
+                                        do-body-term wrld
+                                        (all-unbadged-fnnames
+                                         fin-body-term wrld nil)))))
                                  (cond
-                                  ((eq measure-term nil)
-                                   (trans-er+? cform x ctx
-                                               "No :measure was provided ~
-                                                after the do operator and we ~
-                                                failed to find a likely ~
-                                                measure.  Please supply one ~
-                                                in ~X01.  See :DOC loop$."
-                                               x nil))
+                                  (bad-fns
+                                   (trans-er+?
+                                    cform x ctx
+                                    "The measure, body, and FINALLY clauses ~
+                                     of a DO loop$ must be fully badged but ~
+                                     ~&0 ~#0~[has no badge and is used ~
+                                     in~/have no badges and are used in~] ~
+                                     ~X12.  See :DOC do-loop$."
+                                    (reverse bad-fns)
+                                    x
+                                    nil))
                                   (t
-                                   (let ((bad-fns
-                                          (all-unbadged-fnnames
-                                           measure-term wrld
-                                           (all-unbadged-fnnames
-                                            do-body-term wrld
-                                            (all-unbadged-fnnames
-                                             fin-body-term wrld nil)))))
+                                   (mv-let (flg1 flg2 flg3)
+                                     (mv (not (executable-tamep
+                                               measure-term wrld))
+                                         (not (executable-tamep
+                                               do-body-term wrld))
+                                         (not (executable-tamep
+                                               fin-body-term wrld)))
                                      (cond
-                                      (bad-fns
+                                      ((or flg1 flg2 flg3)
                                        (trans-er+?
                                         cform x ctx
-                                        "The measure, body, and finally ~
-                                         clauses of a do loop$ must be fully ~
-                                         badged but ~&0 ~#0~[has no badge and ~
-                                         is used in~/have no badges and are ~
-                                         used in~] ~X12.  See :DOC loop$."
-                                        (reverse bad-fns)
+                                        "The measure, body, and FINALLY ~
+                                         clauses of a DO loop$ must be tame ~
+                                         and ~*0 ~#0~[clause is~/clauses ~
+                                         are~] not tame in ~X12.  See :DOC ~
+                                         loop$."
+                                        (list "" "~s*" "~s* and " "~s*, "
+                                              (append (if flg1
+                                                          '("the measure")
+                                                        nil)
+                                                      (if flg2
+                                                          '("the do")
+                                                        nil)
+                                                      (if flg3
+                                                          '("the FINALLY")
+                                                        nil)))
                                         x
                                         nil))
                                       (t
-                                       (mv-let (flg1 flg2 flg3)
-                                         (mv (not (executable-tamep
-                                                   measure-term wrld))
-                                             (not (executable-tamep
-                                                   do-body-term wrld))
-                                             (not (executable-tamep
-                                                   fin-body-term wrld)))
-                                         (cond
-                                          ((or flg1 flg2 flg3)
-                                           (trans-er+?
-                                            cform x ctx
-                                            "The measure, body, and finally ~
-                                             clauses of a do loop$ must be ~
-                                             tame and ~*0 ~#0~[clause ~
-                                             is~/clauses are~] not tame in ~
-                                             ~X12.  See :DOC loop$."
-                                            (list "" "~s*" "~s* and " "~s*, "
-                                                  (append (if flg1
-                                                              '("the measure")
-                                                            nil)
-                                                          (if flg2
-                                                              '("the do")
-                                                            nil)
-                                                          (if flg3
-                                                              '("the finally")
-                                                            nil)))
-                                            x
-                                            nil))
-                                          (t
-                                           (let* ((sigma
-                                                   (var-to-cdr-assoc-var-substitution
-                                                    vars))
-                                                  (type-preds
-                                                   (collect-twvts-type-preds twvts)))
-                                             (trans-er-let*
-                                              ((measure-fn
-                                                (translate11-do-clause
-                                                 measure-term
-                                                 type-preds
-                                                 translated-do-body-guard
-                                                 sigma
-                                                 known-stobjs flet-alist
-                                                 cform ctx wrld state-vars))
-                                               (alist
-                                                (trans-value
-                                                 (make-initial-do-body-alist
-                                                  twvts vars nil)))
-                                               (do-fn
-                                                (translate11-do-clause
-                                                 do-body-term
-                                                 type-preds
-                                                 translated-do-body-guard
-                                                 sigma
-                                                 known-stobjs
-                                                 flet-alist cform ctx wrld
-                                                 state-vars))
-                                               (finally-fn
-                                                (translate11-do-clause
-                                                 fin-body-term
-                                                 type-preds
-                                                 translated-fin-body-guard
-                                                 sigma
-                                                 known-stobjs
-                                                 flet-alist cform ctx wrld
-                                                 state-vars)))
-                                              (let ((bindings
-                                                     (cond
-                                                      ((and
-                                                        (symbolp stobjs-out)
-                                                        (not (eq stobjs-out
-                                                                 t)))
-                                                       (translate-bind
-                                                        stobjs-out
-                                                        values
-                                                        bindings0))
-                                                      (t bindings0))))
-                                                (trans-value
-                                                 (tag-loop$
-                                                  x
-                                                  (fcons-term*
-                                                   'do$
-                                                   measure-fn
-                                                   alist
-                                                   do-fn
-                                                   finally-fn
-                                                   (loop$-default values)
-                                                   (kwote measure-term)
-                                                   (kwote x))))))))
-                                          )))))))))))))))))))))))))))))
+                                       (let* ((sigma
+                                               (var-to-cdr-assoc-var-substitution
+                                                vars))
+                                              (type-preds
+                                               (collect-twvts-type-preds twvts)))
+                                         (trans-er-let*
+                                          ((measure-fn
+                                            (translate11-do-clause
+                                             measure-term
+                                             type-preds
+                                             translated-do-body-guard
+                                             sigma
+                                             known-stobjs flet-alist
+                                             cform ctx wrld state-vars))
+                                           (alist
+                                            (trans-value
+                                             (make-initial-do-body-alist
+                                              twvts vars nil)))
+                                           (do-fn
+                                            (translate11-do-clause
+                                             do-body-term
+                                             type-preds
+                                             translated-do-body-guard
+                                             sigma
+                                             known-stobjs
+                                             flet-alist cform ctx wrld
+                                             state-vars))
+                                           (finally-fn
+                                            (translate11-do-clause
+                                             fin-body-term
+                                             type-preds
+                                             translated-fin-body-guard
+                                             sigma
+                                             known-stobjs
+                                             flet-alist cform ctx wrld
+                                             state-vars)))
+                                          (let ((bindings
+                                                 (cond
+                                                  ((and
+                                                    (symbolp stobjs-out)
+                                                    (not (eq stobjs-out
+                                                             t)))
+                                                   (translate-bind
+                                                    stobjs-out
+                                                    values
+                                                    bindings0))
+                                                  (t bindings0))))
+                                            (trans-value
+                                             (tag-loop$
+                                              x
+                                              (fcons-term*
+                                               'do$
+                                               measure-fn
+                                               alist
+                                               do-fn
+                                               finally-fn
+                                               (loop$-default values)
+                                               (kwote measure-term)
+                                               (kwote x))))))))
+                                      )))))))))))))))))))))))))))
 
 (defun translate11 (x ilk stobjs-out bindings known-stobjs flet-alist
                       cform ctx wrld state-vars)
@@ -19999,8 +19956,10 @@
           (return
            (trans-er-let*
             ((body (translate11 (cadr x) ilk
-                                (access state-vars state-vars
-                                        :do-expressionp) ; stobjs-out
+                                (access do-expressionp
+                                        (access state-vars state-vars
+                                                :do-expressionp)
+                                        :stobjs-out)
                                 bindings known-stobjs
                                 flet-alist cform ctx wrld
                                 (change state-vars state-vars
@@ -20091,7 +20050,7 @@
                               cform ctx wrld state-vars))
           (t (trans-er+? cform x
                          ctx
-                         "It is illegal for a LOOP$ expression to occurr in a ~
+                         "It is illegal for a LOOP$ expression to occur in a ~
                           slot of ilk ~x0."
                          ilk))))
    ((and (not (eq stobjs-out t))
@@ -22960,25 +22919,17 @@
                         (eq (car (cadr args)) 'SETQ)
                         (consp (caddr (cadr args)))
                         (eq (car (caddr (cadr args))) 'THE))
-
-; If the second argument is a SETQ form, it was generated by cmp-do-body-pass1
-; and is of the form (SETQ var (THE type-spec val)).  We actually check for the
-; THE just to make this test even more specific, but we do not expect to ever
-; see a check-dcl-guardian form with a second arg of (SETQ ...) except the form
-; generated by cmp-do-body-pass1!  The user almost certainly did not write a
-; THE form since the type-spec cmp-do-body-pass1 uses was from the `WITH var
-; OF-TYPE type-spec ...'  clause.  Cmp-do-body-pass1 puts it in just so we can
-; recover the type-spec and the setq for this message!
-
                    (msg "The type-spec on ~x0, which was ~x1, was violated by ~
                          ~x2.~@3"
                         (cadr (cadr args))         ; var
                         (cadr (caddr (cadr args))) ; type-spec
                         `(SETQ ,(cadr (cadr args)) ; offending assignment
-                               ,(untranslate (caddr (caddr (cadr args))) nil world))
+                               ,(untranslate (caddr (caddr (cadr args)))
+                                             nil
+                                             world))
                         coda)
                  (msg "The guard condition ~x0, which was generated from a ~
-                         type declaration, has failed.~@1"
+                       type declaration, has failed.~@1"
                       (untranslate (cadr args) t world)
                       coda)))
 

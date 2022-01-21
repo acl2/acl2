@@ -1,6 +1,6 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -481,6 +481,37 @@
 ;; duplicate theorem names:
 (must-fail
  (defmapping map dom dom id id :thm-names (:alpha-image th :beta-image th)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-title ":THM-ENABLE input validation.")
+
+;; not the right non-list option:
+(must-succeed*
+ (must-fail (defmapping map dom dom id id :thm-enable 66))
+ (must-fail (defmapping map dom dom id id :thm-enable t))
+ (must-fail (defmapping map dom dom id id :thm-enable :everyone))
+ (must-fail (defmapping map dom dom id id :thm-enable :all-but-guard-thms)))
+
+;; list of not all theorem keywords:
+(must-succeed*
+ (must-fail (defmapping map dom dom id id :thm-enable (one something)))
+ (must-fail (defmapping map dom dom id id :thm-enable (:unrelated)))
+ (must-fail (defmapping map dom dom id id :thm-enable (:alpha-image 6))))
+
+;; duplicate keywords:
+(must-succeed*
+ (must-fail (defmapping map dom dom id id
+              :thm-enable (:alpha-image :alpha-image)))
+ (must-fail (defmapping map dom dom id id
+              :thm-enable (:beta-image :alpha-image :beta-image))))
+
+;; keyword of theorems that are not generated:
+(must-succeed*
+ (must-fail (defmapping map dom dom id id :thm-enable (:beta-of-alpha)))
+ (must-fail (defmapping map dom dom id id
+              :guard-thms nil
+              :thm-enable (:alpha-guard :alpha-image))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

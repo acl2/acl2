@@ -30,51 +30,94 @@
 set -e
 
 # test the factorial function:
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialDeepUnguardedTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialDeepGuardedTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialShallowUnguardedTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FactorialShallowGuardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     FactorialDeepUnguardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     FactorialDeepGuardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     FactorialShallowUnguardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     FactorialShallowGuardedTests 1
 
 # test the Fibonacci function:
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciDeepUnguardedTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciDeepGuardedTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciShallowUnguardedTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G FibonacciShallowGuardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     FibonacciDeepUnguardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     FibonacciDeepGuardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     FibonacciShallowUnguardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     FibonacciShallowGuardedTests 1
 
 # test the ABNF parser:
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFDeepUnguardedTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFDeepGuardedTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFShallowUnguardedTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G ABNFShallowGuardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     ABNFDeepUnguardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     ABNFDeepGuardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     ABNFShallowUnguardedTests 1
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     ABNFShallowGuardedTests 1
 
 # test AIJ's native implementations of ACL2 functions
 # (without timings because they are very fast, all print as 0.000):
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesDeepUnguardedTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesDeepGuardedTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesShallowUnguardedTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NativesShallowGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     NativesDeepUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     NativesDeepGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     NativesShallowUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     NativesShallowGuardedTests
 
 # test the Java code that manipulates Java primitive values
 # (without timings because they are very fast, all print as 0.000):
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G PrimitivesShallowGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     PrimitivesShallowGuardedTests
 
 # test the Java code that manipulates Java primitive arrays
 # (without timings because they are very fast, all print as 0.000):
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G PrimarraysShallowGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     PrimarraysShallowGuardedTests
 
 # test the multi-value functions
 # (without timings because they are very fast, all print as 0.000):
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G MultivalueDeepUnguardedTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G MultivalueDeepGuardedTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G MultivalueShallowUnguardedTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G MultivalueShallowGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     MultivalueDeepUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     MultivalueDeepGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     MultivalueShallowUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     MultivalueShallowGuardedTests
 
 # test the boolean functions
 # (without timings because they are very fast, all print as 0.000):
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G BooleansDeepUnguardedTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G BooleansDeepGuardedTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G BooleansShallowUnguardedTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G BooleansShallowGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     BooleansDeepUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     BooleansDeepGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     BooleansShallowUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     BooleansShallowGuardedTests
+
+# test the no-AIJ-type functions
+# (without timings because they are very fast, all print as 0.000):
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NoAIJTypesTests
+
+# test the caching of nullar method results
+# (without timings because they are very fast, all print as 0.000):
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     CacheConstMethodDeepUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     CacheConstMethodDeepGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     CacheConstMethodShallowUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     CacheConstMethodShallowGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     CacheConstMethodNoAIJTypesTests
 
 # printed only if all the tests succeed:
 echo "" # blank line

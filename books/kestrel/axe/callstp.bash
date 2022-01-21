@@ -11,7 +11,7 @@
 
 #!/bin/bash
 
-# This script calls STP (with no timeout) on a file.
+# This script calls STP (with no max conflicts) on a file.
 
 set -e # Exit immediately on errors
 

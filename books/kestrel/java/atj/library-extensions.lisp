@@ -17,6 +17,8 @@
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
+(include-book "kestrel/std/system/check-if-call" :dir :system)
+(include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/check-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
@@ -232,6 +234,144 @@
   (defret pseudo-term-count-of-fty-check-mv-let-call.body-term
     (implies yes/no
              (< (pseudo-term-count body-term)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fty-check-list-call ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (elements pseudo-term-listp))
+  :short "FTY version of @(tsee check-list-call)."
+  (check-list-call (pseudo-term-fix term))
+  ///
+
+  (defrulel pseudo-term-count-of-check-list-call-weak
+    (implies (pseudo-termp term)
+             (b* (((mv okp elements) (check-list-call term)))
+               (implies okp
+                        (<= (pseudo-term-list-count elements)
+                            (pseudo-term-count term)))))
+    :enable (check-list-call
+             pseudo-term-count
+             pseudo-term-list-count
+             pseudo-term-call->args
+             pseudo-term-kind))
+
+  (defrulel pseudo-term-count-of-check-list-call
+    (implies (pseudo-termp term)
+             (b* (((mv okp elements) (check-list-call term)))
+               (implies (and okp
+                             (consp elements))
+                        (< (pseudo-term-list-count elements)
+                           (pseudo-term-count term)))))
+    :enable (check-list-call
+             pseudo-term-count
+             pseudo-term-list-count
+             pseudo-term-call->args
+             pseudo-term-kind))
+
+  (defret pseudo-term-count-of-fty-check-list-call-weak
+    (implies yes/no
+             (<= (pseudo-term-list-count elements)
+                 (pseudo-term-count term)))
+    :rule-classes :linear
+    :hints (("Goal" :use (:instance pseudo-term-count-of-check-list-call-weak
+                          (term (pseudo-term-fix term))))))
+
+  (defret pseudo-term-count-of-fty-check-list-call
+    (implies yes/no
+             (implies (consp elements)
+                      (< (pseudo-term-list-count elements)
+                         (pseudo-term-count term))))
+    :rule-classes :linear
+    :hints (("Goal" :use (:instance pseudo-term-count-of-check-list-call
+                          (term (pseudo-term-fix term)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fty-check-if-call ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (test pseudo-termp)
+               (then pseudo-termp)
+               (else pseudo-termp))
+  :short "FTY version of @(tsee check-if-call)."
+  (check-if-call (pseudo-term-fix term))
+  ///
+
+  (defrule pseudo-term-count-of-check-if-call.test
+    (implies (pseudo-termp term)
+             (b* (((mv yes/no test & &) (check-if-call term)))
+               (implies yes/no
+                        (< (pseudo-term-count test)
+                           (pseudo-term-count term)))))
+    :rule-classes :linear
+    :enable (check-if-call
+             pseudo-term-kind
+             pseudo-term-call->args)
+    :expand (pseudo-term-count term))
+
+  (defret pseudo-term-count-of-fty-check-if-call.test
+    (implies yes/no
+             (< (pseudo-term-count test)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defrule pseudo-term-count-of-check-if-call.then
+    (implies (pseudo-termp term)
+             (b* (((mv yes/no & then &) (check-if-call term)))
+               (implies yes/no
+                        (< (pseudo-term-count then)
+                           (pseudo-term-count term)))))
+    :rule-classes :linear
+    :enable (check-if-call
+             pseudo-term-kind
+             pseudo-term-call->args)
+    :expand (pseudo-term-count term))
+
+  (defret pseudo-term-count-of-fty-check-if-call.then
+    (implies yes/no
+             (< (pseudo-term-count then)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defrule pseudo-term-count-of-check-if-call.else
+    (implies (pseudo-termp term)
+             (b* (((mv yes/no & & else) (check-if-call term)))
+               (implies yes/no
+                        (< (pseudo-term-count else)
+                           (pseudo-term-count term)))))
+    :rule-classes :linear
+    :enable (check-if-call
+             pseudo-term-kind
+             pseudo-term-call->args)
+    :expand (pseudo-term-count term))
+
+  (defret pseudo-term-count-of-fty-check-if-call.else
+    (implies yes/no
+             (< (pseudo-term-count else)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defrule pseudo-term-count-of-check-if-call
+    (implies (pseudo-termp term)
+             (b* (((mv yes/no test then else) (check-if-call term)))
+               (implies yes/no
+                        (< (+ (pseudo-term-count test)
+                              (pseudo-term-count then)
+                              (pseudo-term-count else))
+                           (pseudo-term-count term)))))
+    :rule-classes :linear
+    :enable (check-if-call
+             pseudo-term-kind
+             pseudo-term-call->args)
+    :expand (pseudo-term-count term))
+
+  (defret pseudo-term-count-of-fty-check-if-call
+    (implies yes/no
+             (< (+ (pseudo-term-count test)
+                   (pseudo-term-count then)
+                   (pseudo-term-count else))
                 (pseudo-term-count term)))
     :rule-classes :linear))
 

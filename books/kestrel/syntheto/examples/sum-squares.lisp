@@ -88,6 +88,12 @@ function sum_squares_1 =
                            :name (make-identifier :name "new_parameter_name")
                            :value (transform-argument-value-identifier (make-identifier :name "result")))))))
 
+; Matt K. addition: Avoid ACL2(p) error in call of process-syntheto-toplevel
+; below when waterfall-parallelism is enabled: "Clause-processors that return
+; one or more stobjs are not officially supported when waterfall parallelism is
+; enabled."
+(set-waterfall-parallelism nil)
+
 (acl2::must-eval-to
  (process-syntheto-toplevel *tailrec-transform-sum_squares*)
  '(make-outcome-transformation-success

@@ -127,6 +127,57 @@
            (character-listp (reverse-list l)))
   :hints (("Goal" :in-theory (enable character-listp reverse-list))))
 
+;just use repeat?
+;optimize?
+(defun n-close-parens (n acc)
+  (declare (xargs :guard (natp n)))
+  (if (zp n)
+      acc
+    (n-close-parens (+ -1 n) (cons ")" acc))))
+
+(defthm string-listp-of-n-close-parens
+  (equal (string-listp (n-close-parens n acc))
+         (string-listp acc)))
+
+(defthm true-listp-of-n-close-parens
+  (equal (true-listp (n-close-parens n acc))
+         (true-listp acc)))
+
+(defthm string-treep-of-n-close-parens
+  (implies (string-treep acc)
+           (string-treep (n-close-parens n acc))))
+
+
+
+(in-theory (disable (:e nat-to-string)))
+
+;; (defthm <-of-maxelem-of-cdr
+;;   (implies (and (all-< items x)
+;;                 (< 1 (len items)))
+;;            (< (maxelem (cdr items)) x))
+;;   :hints (("Goal" :in-theory (enable all-< maxelem))))
+
+;; (defthm <=-of-0-and-maxelem
+;;   (implies (and (nat-listp x)
+;;                 (<= 1 (len x)))
+;;            (<= 0 (maxelem x)))
+;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
+
+;; (defthm integerp-of-maxelem-when-nat-listp
+;;   (implies (and (nat-listp x)
+;;                 (<= 1 (len x)))
+;;            (integerp (maxelem x)))
+;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
+
+(defthmd integer-listp-when-nat-listp
+  (implies (nat-listp x)
+           (integer-listp x))
+  :hints (("Goal" :in-theory (enable integer-listp))))
+
+(defthm nat-listp-forward-to-all-integerp
+  (implies (nat-listp x)
+           (all-integerp x))
+  :rule-classes :forward-chaining)
 
 ;fixme are there other functions like this to deprecate?
 ;returns a type or nil (if we could not determine the type)
@@ -733,6 +784,11 @@
  (implies (constant-array-infop constant-array-info)
           (string-treep (mv-nth 0 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info))))
  :hints (("Goal" :in-theory (e/d (translate-equality-to-stp) (list-typep bv-array-typep bv-array-type-len BV-ARRAY-TYPE-ELEMENT-WIDTH)))))
+
+(defthm constant-array-infop-of-mv-nth-1-of-translate-equality-to-stp
+  (implies (constant-array-infop constant-array-info)
+           (constant-array-infop (mv-nth 1 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len nodenum-type-alist constant-array-info))))
+  :hints (("Goal" :in-theory (enable translate-equality-to-stp))))
 
 ;; Returns (mv array-name constant-array-info actual-element-width) where ARRAY-NAME is a string-tree that can be used to refer to the array
 (defund translate-array-arg (arg
@@ -1611,8 +1667,8 @@
          (if (= 2 (len (dargs expr)))
              (mv-let (translated-expr constant-array-info)
                (translate-equality-to-stp (darg1 expr)
-                                   (darg2 expr)
-                                   dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info)
+                                          (darg2 expr)
+                                          dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info)
                (mv (erp-nil)
                    translated-expr
                    constant-array-info))
@@ -1701,8 +1757,7 @@
                                                        cut-nodenum-type-alist))))
   :hints (("Goal" :in-theory (e/d (translate-dag-expr
                                    bounded-dag-exprp
-                                   car-becomes-nth-of-0
-                                   )
+                                   car-becomes-nth-of-0)
                                   ((:e nat-to-string-debug) ;problem!
                                    ;;for speed:
                                    nat-to-string-debug
@@ -1711,73 +1766,12 @@
                                    pad-with-zeros
                                    max)))))
 
-;just use repeat?
-;optimize?
-(defun n-close-parens (n acc)
-  (declare (xargs :guard (natp n)))
-  (if (zp n)
-      acc
-    (n-close-parens (+ -1 n) (cons ")" acc))))
-
-(defthm string-listp-of-n-close-parens
-  (equal (string-listp (n-close-parens n acc))
-         (string-listp acc)))
-
-(defthm true-listp-of-n-close-parens
-  (equal (true-listp (n-close-parens n acc))
-         (true-listp acc)))
-
-(defthm constant-array-infop-of-mv-nth-1-of-translate-equality-to-stp
-  (implies (and (constant-array-infop constant-array-info)
-;                (nat-listp (unquote data))
-  ;              (natp element-width)
-   ;             (natp element-count)
-    ;            (<= element-count (len (unquote data)))
-                )
-           (constant-array-infop (mv-nth 1 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len nodenum-type-alist constant-array-info))))
-  :hints (("Goal" :in-theory (enable translate-equality-to-stp))))
-
-(in-theory (disable (:e nat-to-string)))
-
 (defthm constant-array-infop-of-mv-nth-1-of-translate-dag-expr
   (implies (and (bounded-dag-exprp dag-len expr)
                 (constant-array-infop constant-array-info))
            (constant-array-infop (mv-nth 1 (translate-dag-expr expr dag-array-name dag-array dag-len constant-array-info cut-nodenum-type-alist))))
   :hints (("Goal" :in-theory (enable translate-dag-expr bounded-dag-exprp
                                      car-becomes-nth-of-0))))
-
-;; (defthm <-of-maxelem-of-cdr
-;;   (implies (and (all-< items x)
-;;                 (< 1 (len items)))
-;;            (< (maxelem (cdr items)) x))
-;;   :hints (("Goal" :in-theory (enable all-< maxelem))))
-
-;; (defthm <=-of-0-and-maxelem
-;;   (implies (and (nat-listp x)
-;;                 (<= 1 (len x)))
-;;            (<= 0 (maxelem x)))
-;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
-
-;; (defthm integerp-of-maxelem-when-nat-listp
-;;   (implies (and (nat-listp x)
-;;                 (<= 1 (len x)))
-;;            (integerp (maxelem x)))
-;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
-
-(defthm nat-listp-of-cdr
-  (implies (nat-listp x)
-           (nat-listp (cdr x)))
-  :hints (("Goal" :in-theory (enable nat-listp))))
-
-(defthmd integer-listp-when-nat-listp
-  (implies (nat-listp x)
-           (integer-listp x))
-  :hints (("Goal" :in-theory (enable integer-listp))))
-
-(defthm nat-listp-forward-to-all-integerp
-  (implies (nat-listp x)
-           (all-integerp x))
-  :rule-classes :forward-chaining)
 
 ;returns (mv translation constant-array-info opened-paren-count) where TRANSLATION is a string-tree
 ;handles nodes nodenum down through 0 (translates those which have been tagged for translation)
@@ -1824,6 +1818,46 @@
                                   (+ 1 opened-paren-count)
                                   cut-nodenum-type-alist))))))
 
+(defthm natp-of-mv-nth-2-of-translate-nodes-to-stp
+  (implies (natp opened-paren-count)
+           (natp
+            (mv-nth 2
+                    (translate-nodes-to-stp nodenums-to-translate dag-array-name
+                                            dag-array dag-len acc
+                                            constant-array-info
+                                            opened-paren-count cut-nodenum-type-alist))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable translate-nodes-to-stp))))
+
+(defthm string-treep-of-mv-nth-0-of-translate-nodes-to-stp
+  (implies (and (string-treep acc)
+                (constant-array-infop constant-array-info)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp nodenums-to-translate)
+                (all-< nodenums-to-translate dag-len))
+           (string-treep
+            (mv-nth 0
+                    (translate-nodes-to-stp nodenums-to-translate dag-array-name
+                                            dag-array dag-len acc
+                                            constant-array-info
+                                            opened-paren-count cut-nodenum-type-alist))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable translate-nodes-to-stp nat-listp))))
+
+(defthm constant-array-infop-of-mv-nth-1-of-translate-nodes-to-stp
+  (implies (and (constant-array-infop constant-array-info )
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp nodenums-to-translate)
+                (all-< nodenums-to-translate dag-len))
+           (constant-array-infop
+            (mv-nth 1
+                    (translate-nodes-to-stp nodenums-to-translate dag-array-name
+                                            dag-array dag-len acc
+                                            constant-array-info
+                                            opened-paren-count cut-nodenum-type-alist))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable translate-nodes-to-stp nat-listp))))
+
 ;todo
 ;; (thm
 ;;  (implies
@@ -1845,7 +1879,7 @@
 
 ;fffixme think about arrays whose lengths are not powers of 2...
 ;returns string-tree
-(defun make-stp-type-declarations (nodenum-type-alist)
+(defund make-stp-type-declarations (nodenum-type-alist)
   (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist) ;;TODO: This also allows :range types but axe-typep doesn't allow range types?
                   :guard-hints (("Goal" :expand (nodenum-type-alistp nodenum-type-alist)
                                  :in-theory (e/d (axe-typep empty-typep list-typep most-general-typep)
@@ -1896,7 +1930,11 @@
               ;todo: prove this doesn't happen:
               (er hard? 'make-stp-type-declarations "Unknown form for type: ~x0." type))))))))
 
-;; Returns string-tree.
+(defthm string-treep-of-make-stp-type-declarations
+  (string-treep (make-stp-type-declarations nodenum-type-alist))
+  :hints (("Goal" :in-theory (enable make-stp-type-declarations))))
+
+;; Returns a string-tree.
 (defun make-stp-range-assertions (nodenum-type-alist)
   (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist) ;;TODO: This also allows :range types but axe-typep doesn't allow range types?
                   :guard-hints (("Goal" :expand (nodenum-type-alistp nodenum-type-alist)
@@ -1933,6 +1971,10 @@
                 (er hard? 'make-stp-range-assertions "Unknown form for size: ~x0." type))))
         (make-stp-range-assertions (rest nodenum-type-alist))))))
 
+(defthm string-treep-of-make-stp-range-assertions
+  (string-treep (make-stp-range-assertions cut-nodenum-type-alist))
+  :hints (("Goal" :in-theory (enable make-stp-range-assertions))))
+
 ;; Returns a string-tree.
 ;make tail rec?
 (defun make-type-declarations-for-array-constants (constant-array-info)
@@ -1956,6 +1998,11 @@
              ");"
              (newline-string)
              (make-type-declarations-for-array-constants (rest constant-array-info))))))
+
+(defthm string-treep-of-make-type-declarations-for-array-constants
+  (implies (constant-array-infop constant-array-info)
+           (string-treep (make-type-declarations-for-array-constants constant-array-info)))
+  :hints (("Goal" :in-theory (enable make-type-declarations-for-array-constants constant-array-infop))))
 
 ; Returns a string-tree.
 ;fixme this used to generate too many asserts (which could contradict each other!) if the data is longer than would be expected for the index...  now it counts up to element-count
@@ -1990,6 +2037,12 @@
                                                      (newline-string)
                                                      acc))))
 
+(defthm string-treep-of-make-value-assertions-for-array-constant
+  (implies (and (string-treep acc)
+                (string-treep array-name))
+           (string-treep (make-value-assertions-for-array-constant array-data array-name elemnum element-count index-size element-size acc)))
+  :hints (("Goal" :in-theory (enable make-value-assertions-for-array-constant))))
+
 ;; Returns a string-tree.
 (defun make-value-assertions-for-array-constants (constant-array-info acc)
   (declare (xargs :guard (constant-array-infop constant-array-info)
@@ -2007,29 +2060,6 @@
        (rest constant-array-info)
        (make-value-assertions-for-array-constant constant-data array-name 0 element-count index-size element-width acc)))))
 
-(defthm string-treep-of-n-close-parens
-  (implies (string-treep acc)
-           (string-treep (n-close-parens n acc))))
-
-(defthm string-treep-of-make-stp-range-assertions
-  (string-treep (make-stp-range-assertions cut-nodenum-type-alist))
-  :hints (("Goal" :in-theory (enable make-stp-range-assertions))))
-
-(defthm string-treep-of-make-type-declarations-for-array-constants
-  (implies (constant-array-infop constant-array-info)
-           (string-treep (make-type-declarations-for-array-constants constant-array-info)))
-  :hints (("Goal" :in-theory (enable make-type-declarations-for-array-constants constant-array-infop))))
-
-(defthm string-treep-of-make-stp-type-declarations
-  (string-treep (make-stp-type-declarations nodenum-type-alist))
-  :hints (("Goal" :in-theory (enable make-stp-type-declarations))))
-
-(defthm string-treep-of-make-value-assertions-for-array-constant
-  (implies (and (string-treep acc)
-                (string-treep array-name))
-           (string-treep (make-value-assertions-for-array-constant array-data array-name elemnum element-count index-size element-size acc)))
-  :hints (("Goal" :in-theory (enable make-value-assertions-for-array-constant))))
-
 (defthm string-treep-of-make-value-assertions-for-array-constants
   (implies (and (string-treep acc)
                 (constant-array-infop constant-array-info))
@@ -2038,45 +2068,7 @@
                                      make-value-assertions-for-array-constant
                                      constant-array-infop))))
 
-(defthm natp-of-mv-nth-2-of-translate-nodes-to-stp
-  (implies (natp opened-paren-count)
-           (natp
-            (mv-nth 2
-                    (translate-nodes-to-stp nodenums-to-translate dag-array-name
-                                            dag-array dag-len acc
-                                            constant-array-info
-                                            opened-paren-count cut-nodenum-type-alist))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable translate-nodes-to-stp))))
 
-(defthm string-treep-of-mv-nth-0-of-translate-nodes-to-stp
-  (implies (and (string-treep acc)
-                (constant-array-infop constant-array-info)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (nat-listp nodenums-to-translate)
-                (all-< nodenums-to-translate dag-len))
-           (string-treep
-            (mv-nth 0
-                    (translate-nodes-to-stp nodenums-to-translate dag-array-name
-                                            dag-array dag-len acc
-                                            constant-array-info
-                                            opened-paren-count cut-nodenum-type-alist))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable translate-nodes-to-stp nat-listp))))
-
-(defthm constant-array-infop-of-mv-nth-1-of-translate-nodes-to-stp
-  (implies (and (constant-array-infop constant-array-info )
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (nat-listp nodenums-to-translate)
-                (all-< nodenums-to-translate dag-len))
-           (constant-array-infop
-            (mv-nth 1
-                    (translate-nodes-to-stp nodenums-to-translate dag-array-name
-                                            dag-array dag-len acc
-                                            constant-array-info
-                                            opened-paren-count cut-nodenum-type-alist))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable translate-nodes-to-stp nat-listp))))
 
 ;returns (mv erp state)
 ;translates the DAG to STP and writes the result to FILENAME
@@ -2148,20 +2140,20 @@
 ;; We don't fix up the counterexample here because we don't have access to the cut-nodenum-type-alist, etc.
 (defund call-stp-on-file (input-filename
                           output-filename
-                          print ;whether to print the result (valid/invalid/timeout)
-                          timeout ;a number of seconds (now conflicts!), or nil for no timeout
+                          print ;whether to print the result (valid/invalid/max-conflicts)
+                          max-conflicts ;a number of conflicts, or nil for no max
                           counterexamplep
                           state)
   (declare (xargs :stobjs state
                   :guard (and (stringp input-filename)
                               (stringp output-filename)
                               ;;(booleanp print)
-                              (or (null timeout)
-                                  (natp timeout))
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
                               (booleanp counterexamplep))))
   (b* ((counterexample-arg (if counterexamplep "y" "n"))
-       ((mv status state) (if timeout ;;timeout is the the number of seconds (now conflicts!):
-                              (call-axe-script "callstplimited.bash" (list input-filename output-filename (nat-to-string timeout) counterexample-arg) state)
+       ((mv status state) (if max-conflicts
+                              (call-axe-script "callstplimited.bash" (list input-filename output-filename (nat-to-string max-conflicts) counterexample-arg) state)
                             ;;don't time out:
                             (call-axe-script "callstp.bash" (list input-filename output-filename counterexample-arg) state)))
        ;;(- (cw "STP exit status: ~x0~%" status))
@@ -2170,7 +2162,7 @@
     ;;(STP seems to exit with status 0 for both Valid and Invalid examples and with non-zero status for errors.)
     (if (not (eql 0 status)) ;;todo: do we still need to do all these checks?
         (if (eql 143 status)
-            ;;exit status 143 seems to indicate timeout (why?!  perhaps it's 128+15 where 15 represents the TERM signal)
+            ;;exit status 143 seems to indicate max-conflicts (why?!  perhaps it's 128+15 where 15 represents the TERM signal)
             (prog2$ (cw "!! STP timed out !!")
                     (mv *timedout* state))
           (if (eql 201 status)
@@ -2217,8 +2209,8 @@
   (let ((res (mv-nth 0 (call-stp-on-file
                         input-filename
                         output-filename
-                        print ;whether to print the result (valid/invalid/timeout)
-                        timeout ;a number of seconds (now conflicts!), or nil for no timeout
+                        print ;whether to print the result (valid/invalid/max-conflicts)
+                        max-conflicts ;a number of conflicts, or nil for no max
                         counterexamplep
                         state
                         ))))
@@ -2233,13 +2225,13 @@
   :hints (("Goal" :in-theory (enable call-stp-on-file))))
 
 (defthm raw-counterexamplep-of-cadr-of-mv-nth-0-of-call-stp-on-file
-  (implies (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print timeout counterexamplep state)))
-           (raw-counterexamplep (cadr (mv-nth 0 (call-stp-on-file input-filename output-filename print timeout counterexamplep state)))))
+  (implies (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
+           (raw-counterexamplep (cadr (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))))
   :hints (("Goal" :in-theory (enable call-stp-on-file))))
 
 (defthm len-of-mv-nth-0-of-call-stp-on-file
-  (implies (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print timeout counterexamplep state)))
-           (equal (len (mv-nth 0 (call-stp-on-file input-filename output-filename print timeout counterexamplep state)))
+  (implies (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
+           (equal (len (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
                   2))
   :hints (("Goal" :in-theory (e/d (call-stp-on-file) (;LIST::EQUAL-CONS-CASES
                                                       )))))
@@ -2295,7 +2287,7 @@
                               base-filename
                               cut-nodenum-type-alist ;tells the types of vars introduced at the cuts (some may be true input vars)
                               print
-                              timeout ;a number of seconds (now conflicts!), or nil for no timeout
+                              max-conflicts ;a number of conflicts!, or nil for no max
                               constant-array-info ;may get an entry when we create translated-query-core (e.g., if a term is equated to a constant array)
                               counterexamplep
                               state)
@@ -2309,8 +2301,8 @@
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               ;;(consp nodenums-to-translate) ;think
                               (stringp base-filename)
-                              (or (null timeout)
-                                  (natp timeout))
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
                               (booleanp counterexamplep)
                               (symbolp dag-array-name)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -2325,7 +2317,7 @@
         (maybe-make-temp-dir state))
        (base-filename (concatenate 'string temp-dir-name "/" base-filename))
        (base-filename (maybe-shorten-filename base-filename))
-       (- (and print (cw "(Calling STP ~s0 (timeout ~x1):~%" extra-string timeout)))
+       (- (and print (cw "(Calling STP ~s0 (max-conflicts ~x1):~%" extra-string max-conflicts)))
        (stp-input-filename (string-append base-filename ".cvc"))
        (stp-output-filename (string-append base-filename ".out"))
        ;;write the STP file...
@@ -2351,7 +2343,7 @@
         (mv *error* state))
        ;; Call STP on the file:
        ((mv result state)
-        (call-stp-on-file stp-input-filename stp-output-filename print timeout counterexamplep state))
+        (call-stp-on-file stp-input-filename stp-output-filename print max-conflicts counterexamplep state))
        (counterexamplep (and (consp result)
                              (eq *counterexample* (car result)))) ;todo: maybe this should be labeled as :raw-counterexample?
        (counterexample
@@ -2407,7 +2399,7 @@
                                                       base-filename
                                                       cut-nodenum-type-alist
                                                       print
-                                                      timeout
+                                                      max-conflicts
                                                       constant-array-info
                                                       counterexamplep
                                                       state))))
@@ -2439,28 +2431,27 @@
                                        cut-nodenum-type-alist
                                        extra-asserts
                                        print
-                                       timeout ;a number of seconds (now conflicts!), or nil for no timeout
+                                       max-conflicts ;a number of conflicts, or nil for no max
                                        counterexamplep
                                        state)
-  (declare (xargs :stobjs state
-                  :guard (and
-                          (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                          (or (myquotep lhs)
-                              (and (natp lhs)
-                                   (< lhs dag-len)))
-                        (or (myquotep rhs)
-                            (and (natp rhs)
-                                 (< rhs dag-len)))
-                        (booleanp counterexamplep)
-                        (stringp base-filename)
-                        (symbolp dag-array-name)
-                        (consp nodenums-to-translate) ;why?
-                        (nat-listp nodenums-to-translate)
-                        (all-< nodenums-to-translate dag-len)
-                        (natp timeout)
-                        (nodenum-type-alistp cut-nodenum-type-alist)
-                        (all-< (strip-cars cut-nodenum-type-alist) dag-len)
-                        (string-treep extra-asserts))))
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (or (myquotep lhs)
+                                  (and (natp lhs)
+                                       (< lhs dag-len)))
+                              (or (myquotep rhs)
+                                  (and (natp rhs)
+                                       (< rhs dag-len)))
+                              (booleanp counterexamplep)
+                              (stringp base-filename)
+                              (symbolp dag-array-name)
+                              (consp nodenums-to-translate) ;why?
+                              (nat-listp nodenums-to-translate)
+                              (all-< nodenums-to-translate dag-len)
+                              (natp max-conflicts)
+                              (nodenum-type-alistp cut-nodenum-type-alist)
+                              (all-< (strip-cars cut-nodenum-type-alist) dag-len)
+                              (string-treep extra-asserts))
+                  :stobjs state))
   (mv-let (translated-expr constant-array-info)
     (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist nil)
     (prove-query-with-stp translated-expr
@@ -2472,7 +2463,7 @@
                           extra-asserts
                           base-filename
                           cut-nodenum-type-alist
-                          print timeout constant-array-info
+                          print max-conflicts constant-array-info
                           counterexamplep
                           state)))
 
@@ -2487,7 +2478,7 @@
                                                                cut-nodenum-type-alist
                                                                extra-asserts
                                                                print
-                                                               timeout
+                                                               max-conflicts
                                                                counterexamplep
                                                                state))))
              (or (eq *error* res)
@@ -2515,7 +2506,7 @@
 ;get this working by generating an appropriate cut-nodenum-type-alist
 ;; ;pass in a dag-array-name?
 ;; ;; returns (mv validp timedoutp state) where validp indicates whether STP said "Valid."
-;; (defun prove-with-stp-quick (dag-lst var-type-alist timeout state)
+;; (defun prove-with-stp-quick (dag-lst var-type-alist max-conflicts state)
 ;;   (declare (xargs :mode :program
 ;;                   :stobjs state))
 ;;   (let* ((dag-array (make-into-array 'dag-array dag-lst))
@@ -2529,7 +2520,7 @@
 ;;                              ;var-type-alist
 ;;                              nil ;cut-nodenum-type-alist fffixme!
 ;;                              nil t   ;print
-;;                              timeout
+;;                              max-conflicts
 ;;                              state)))
 
 ;; ;; ;get this working again by generating an appropriate cut-nodenum-type-alist
@@ -2539,7 +2530,7 @@
 ;; ;was called prove-whole-dag-with-stp before changes
 ;; (defun prove-array-node-with-stp (dag-array
 ;;                                   nodenum ;; the node to be proved true
-;;                                   var-type-alist timeout state)
+;;                                   var-type-alist max-conflicts state)
 ;;   (declare (xargs :mode :program
 ;;                   :stobjs state))
 ;;   (prove-equality-query-with-stp nodenum
@@ -2551,7 +2542,7 @@
 ;;                            ;var-type-alist
 ;;                            nil   ;cut-nodenum-type-alist
 ;;                           nil t     ;print
-;;                            timeout
+;;                            max-conflicts
 ;;                            state))
 
 ;; ;now can return nil
@@ -2614,7 +2605,7 @@
 ;returns a string-tree
 ;the input must have at least one element
 ;make tail rec with an acc?
-(defun translate-disjunction-aux (items)
+(defund translate-disjunction-aux (items)
   (declare (xargs :guard (and (consp items)
                               (possibly-negated-nodenumsp items))
                   :guard-hints (("Goal" ;:use (:instance consp-of-car-when-possibly-negated-nodenumsp-weaken-cheap)
@@ -2629,9 +2620,13 @@
             (cons " OR "
                   (translate-disjunction-aux (rest items)))))))
 
+(defthm string-treep-of-translate-disjunction-aux
+  (string-treep (translate-disjunction-aux items))
+  :hints (("Goal" :in-theory (enable translate-disjunction-aux))))
+
 ;; TODO: Handle constant disjunctions?
 ;returns a string-tree
-(defun translate-disjunction (items)
+(defund translate-disjunction (items)
   (declare (xargs :guard (possibly-negated-nodenumsp items)))
   (if (endp items)
       ;; the disjunction of no items is false
@@ -2644,4 +2639,5 @@
 ;;(flatten-string-tree (translate-disjunction '(2 3 (not 4) 5))) = "(NODE2 OR NODE3 OR (NOT(NODE4)) OR NODE5)"
 
 (defthm string-treep-of-translate-disjunction
-  (string-treep (translate-disjunction items)))
+  (string-treep (translate-disjunction items))
+  :hints (("Goal" :in-theory (enable translate-disjunction))))

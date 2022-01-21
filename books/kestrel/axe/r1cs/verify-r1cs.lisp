@@ -30,6 +30,7 @@
                        tactic
                        rule-lists ;todo: improve by building some in and allowing :extra-rules and :remove-rules? ;todo: what if we give these but no :rewrite tactic
                        global-rules ;; rules to be added to every rule-list
+                       use
                        interpreted-function-alist
                        no-splitp ; whether to prevent splitting into cases (note that we change the default here)
                        monitor
@@ -54,6 +55,7 @@
       :tactic ,tactic
       :rule-lists ,rule-lists     ;todo: use a default rule-list
       :global-rules ,global-rules ;todo: add some default global-rules
+      :use ,use
       :interpreted-function-alist ,interpreted-function-alist ;todo
       :no-splitp ,no-splitp
       :monitor ,monitor
@@ -70,6 +72,7 @@
                                 (tactic ''(:rep :rewrite :subst))
                                 (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules? ;todo: what if we give these but no :rewrite tactic
                                 (global-rules 'nil) ;; rules to be added to every rule-list
+                                (use 'nil) ; :use hints
                                 (interpreted-function-alist 'nil)
                                 (no-splitp 't) ; whether to prevent splitting into cases (note that we change the default here)
                                 (monitor 'nil)
@@ -81,6 +84,7 @@
                   tactic
                   rule-lists
                   global-rules
+                  use
                   interpreted-function-alist
                   no-splitp
                   monitor
@@ -95,6 +99,7 @@
          (tactic "The Axe tactic to use")
          (rule-lists "A sequence of Axe rule sets, each of which is a list of rule names and/or calls of 0-ary functions that return lists of rule names.  These are applied one after the other.")
          (global-rules "Rules to add to every rule-list in the sequence")
+         (use "Axe :use hints for the proof (satisfies axe-use-hintp)")
          (interpreted-function-alist "An interpreted-function-alist to evaluate ground terms") ;todo: document
          (no-splitp "Whether to split into cases") ;todo: switch it to :splitp? or :allow-splitting?  why is splitting not a tactic?!
          (monitor "Rules to monitor during rewriting")

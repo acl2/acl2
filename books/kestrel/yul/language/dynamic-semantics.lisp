@@ -279,7 +279,11 @@
        ((unless (set::empty overlap))
         (err (list :duplicate-functions overlap))))
     (ensure-funscope-disjoint funscope (cdr funenv)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule ensure-funscope-disjoint-of-empty-funscope-not-error
+    (not (resulterrp (ensure-funscope-disjoint nil funenv)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -302,7 +306,12 @@
   :prepwork
   ((local
     (in-theory
-     (enable funscopep-when-funscope-resultp-and-not-resulterrp)))))
+     (enable funscopep-when-funscope-resultp-and-not-resulterrp))))
+  ///
+
+  (defrule add-funs-of-no-fundefs
+    (equal (add-funs nil funenv)
+           (cons nil (funenv-fix funenv)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -394,7 +403,13 @@
        ((ok val) (read-var-value (car vars) cstate))
        ((ok vals) (read-vars-values (cdr vars) cstate)))
     (cons val vals))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret len-of-read-vars-values
+    (implies (not (resulterrp vals))
+             (equal (len vals)
+                    (len vars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1164,3 +1179,27 @@
                     (not (equal (statement-kind stmt) :break))
                     (not (equal (statement-kind stmt) :continue)))))
     :enable exec-statement))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-top-block ((block blockp) (limit natp))
+  :returns (cstate cstate-resultp)
+  :short "Execute the top block."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used for the top-level block.
+     Starting with the empty computation state
+     and the empty function environment,
+     we execute the block, propagating errors.
+     Since the top-level block is not inside a function or loop,
+     we defensively check that the execution terminates regularly,
+     returning an error if it does not.
+     In case of success, we return the final computation state."))
+  (b* ((cstate (make-cstate :local nil))
+       (funenv nil)
+       ((ok (soutcome outcome)) (exec-block block cstate funenv limit))
+       ((unless (equal outcome.mode (mode-regular)))
+        (err (list :top-block-move outcome.mode))))
+    outcome.cstate)
+  :hooks (:fix))

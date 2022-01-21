@@ -294,8 +294,8 @@
 ;;; axe-rule-lhsp
 ;;;
 
-;; The LHS of an Axe rule is a lambda-free pseudo-term that is not a function
-;; call (i.e., not a variable or constant)..
+;; The LHS of an Axe rule is a lambda-free pseudo-term that is a function call
+;; (i.e., not a variable or constant).
 (defund axe-rule-lhsp (lhs)
   (declare (xargs :guard t))
   (and (pseudo-termp lhs)

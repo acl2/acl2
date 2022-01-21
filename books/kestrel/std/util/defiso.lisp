@@ -1,6 +1,6 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -78,6 +78,7 @@
                     (unconditional 'nil)
                     (guard-thms 't)
                     (thm-names 'nil)
+                    (thm-enable 'nil)
                     (hints 'nil)
                     (print ':result)
                     (show-only 'nil))
@@ -92,6 +93,7 @@
                          ',guard-thms
                          ',unconditional
                          ',thm-names
+                         ',thm-enable
                          ',hints
                          ',print
                          ',show-only

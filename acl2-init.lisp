@@ -1,5 +1,5 @@
 ; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2021, Regents of the University of Texas
+; Copyright (C) 2022, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -904,7 +904,7 @@ implementations.")
    "~% + ~a~72t+"
    "~% +   built ~a.~72t+"
    (acl2-snapshot-info)
-   "~% + Copyright (C) 2021, Regents of the University of Texas.~72t+"
+   "~% + Copyright (C) 2022, Regents of the University of Texas.~72t+"
    "~% + ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and~72t+"
    "~% + you are welcome to redistribute it under certain conditions.  For~72t+"
    "~% + details, see the LICENSE file distributed with ACL2.~72t+"

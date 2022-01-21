@@ -11,7 +11,8 @@
        (with-output! :on error ,form)
      ,form))
 
-(defun prove$-fn (term state hints otf-flg with-translate-error)
+(defun prove$-fn (term state hints otf-flg ignore-ok ignore-ok-p
+                       with-translate-error)
 
 ; This function is based on thm-fn.  It returns (value t) if the proof
 ; succeeds, else (value nil).
@@ -27,7 +28,17 @@
      (mv-let (erp val state)
        (with-error-output?
         with-translate-error
-        (er-let* ((hints (translate-hints+ 'thm
+        (er-let* ((wrld
+                   (value (cond ((null ignore-ok-p) wrld)
+                                (t (putprop 'acl2-defaults-table
+                                            'table-alist
+                                            (acons :ignore-ok
+                                                   ignore-ok
+                                                   (table-alist
+                                                    'acl2-defaults-table
+                                                    (w state)))
+                                            wrld)))))
+                  (hints (translate-hints+ 'thm
                                            hints
                                            (default-hints wrld)
                                            ctx wrld state))
@@ -61,12 +72,15 @@
                        (with-output '(:off :all :gag-mode nil))
                        time-limit
                        step-limit
+                       (ignore-ok 'nil ignore-ok-p)
                        (with-translate-error 't))
 
 ; All of the arguments except :with-output are evaluated.  The result is
 ; (mv nil t state) if the proof is successful, otherwise (mv nil nil state).
 
-  (let* ((form `(prove$-fn ,term state ,hints ,otf-flg ,with-translate-error))
+  (declare (xargs :guard (member-eq ignore-ok '(t nil :warn))))
+  (let* ((form `(prove$-fn ,term state ,hints ,otf-flg ,ignore-ok ,ignore-ok-p
+                           ,with-translate-error))
          (form `(with-output! ,@with-output ,form))
          (form (if time-limit
                    `(with-prover-time-limit ,time-limit ,form)
@@ -75,6 +89,13 @@
                    `(with-prover-step-limit! ,step-limit ,form)
                  form)))
     `(prove$-return ,form)))
+
+(set-guard-msg prove$
+               (msg "Illegal value for :IGNORE-OK keyword of ~x0: ~x1.  The ~
+                     legal values are ~&2."
+                    'prove$
+                    (cadr (assoc-keyword :ignore-ok (cdr args)))
+                    '(t nil :warn)))
 
 (defxdoc prove$
   :parents (kestrel-utilities system-utilities-non-built-in)
@@ -87,6 +108,7 @@
  (prove$ term                  ; any term (translated or not)
          &key
          hints                 ; default nil
+         ignore-ok             ; default taken from acl2-defaults-table
          otf-flg               ; default nil
          with-output           ; default (:off :all :gag-mode nil)
          time-limit            ; default nil
@@ -99,7 +121,10 @@
  one would give to the macro, @(tsee with-output), hence a list that satisfies
  @(tsee keyword-value-listp).  The @(tsee hints), @(tsee otf-flg), @(tsee
  time-limit), and @(tsee step-limit) arguments are as one would expect for
- calls of the prover.</p>
+ calls of the prover.  The @('ignore-ok') option has the same effect as if
+ @(see set-ignore-ok) were called with that same value, immediately preceding
+ the call of @('prove$') &mdash; but of course warning and error messages may
+ be suppressed, depending on @('with-output').</p>
 
  <p>@('Prove$') returns an @(see error-triple), @('(mv erp val state)'), where
  @('val') is @('t') when @('term') is successfully proved, else @('nil').  By

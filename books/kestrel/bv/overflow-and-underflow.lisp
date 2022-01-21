@@ -134,6 +134,7 @@
                 (< (+ (logext size x) (logext size y)) (- (expt 2 (+ -1 size))))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-plus
                                           logext-cases
+                                          logext-of-plus
                                           bvminus bvuminus
                                           bvchop-when-top-bit-1
                                           getbit-when-val-is-not-an-integer)

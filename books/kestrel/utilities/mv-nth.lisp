@@ -13,7 +13,7 @@
 
 (in-theory (disable mv-nth))
 
-;fixme think about this
+;; Usually not what we want, so disabled.
 (defthmd mv-nth-becomes-nth
   (equal (mv-nth n x)
          (nth n x))
@@ -41,3 +41,10 @@
              a
            (mv-nth (+ -1 n) b)))
   :hints (("Goal" :in-theory (enable mv-nth))))
+
+;; Consider restricting this
+(defthm mv-nth-of-if
+  (equal (mv-nth n (if test l1 l2))
+         (if test
+             (mv-nth n l1)
+           (mv-nth n l2))))

@@ -1,6 +1,6 @@
 ; Utilities to fix up ignore declares
 ;
-; Copyright (C) 2014-2021 Kestrel Institute
+; Copyright (C) 2014-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,7 +36,7 @@
         (translate-term-with-defaults body 'fixup-ignores-with-fake-world fake-wrld) ;pass a better context
         )
        ((when ctx) ;; check for translation error
-        (er hard? 'fixup-ignores-with-fake-world "Failed to translate ~x0. ~@1." body msg-or-translated-body))
+        (er hard? 'fixup-ignores-with-fake-world "Failed to translate ~X01. ~@2." body nil msg-or-translated-body))
        (translated-body msg-or-translated-body)
        (formals-mentioned (free-vars-in-term translated-body))
        (ignored-formals (set-difference-eq formals formals-mentioned))

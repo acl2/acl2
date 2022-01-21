@@ -579,6 +579,7 @@ $instrs .= "(acl2::in-package \"ACL2\")\n";
 $instrs .= "; see github issue #638 (waterfall-parallelism and profiling): \n";
 $instrs .= "#+(and hons (not acl2-par)) (profile-fn 'prove)\n";
 $instrs .= "#+(and hons (not acl2-par)) (profile-fn 'certify-book-fn)\n";
+$instrs .= "#+(and hons (not acl2-par)) (profile-fn 'include-book-fn)\n";
 $instrs .= "(acl2::lp)\n";
 # We used to comment this out, but maybe it's better to leave this enabled by default?
 $instrs .= "(set-debugger-enable :bt)\n" if ($STACK_TRACES);

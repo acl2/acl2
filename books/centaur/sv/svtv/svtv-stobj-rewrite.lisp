@@ -150,10 +150,12 @@
                 (and stable-under-simplificationp
                      '(:in-theory (enable svtv-data$ap))))
   :returns new-svtv-data
-  (update-svtv-data->phase-fsm
-   (base-fsm-rewrite (svtv-data->phase-fsm svtv-data)
-                     :count count :verbosep verbosep)
-   svtv-data)
+  (time$
+   (update-svtv-data->phase-fsm
+    (base-fsm-rewrite (svtv-data->phase-fsm svtv-data)
+                      :count count :verbosep verbosep)
+    svtv-data)
+   :msg "; Svtv-data rewrite phase: ~st seconds, ~sa bytes.~%")
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
@@ -169,10 +171,12 @@
                 (and stable-under-simplificationp
                      '(:in-theory (enable svtv-data$ap))))
   :returns new-svtv-data
-  (update-svtv-data->phase-fsm
-   (base-fsm-norm-concats (svtv-data->phase-fsm svtv-data)
-                          :verbosep verbosep)
-   svtv-data)
+  (time$
+   (update-svtv-data->phase-fsm
+    (base-fsm-norm-concats (svtv-data->phase-fsm svtv-data)
+                           :verbosep verbosep)
+    svtv-data)
+   :msg "; Svtv-data concatnorm phase: ~st seconds, ~sa bytes.~%")
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
@@ -180,13 +184,28 @@
              (equal (svtv-data$c-get k new-svtv-data)
                     (svtv-data$c-get key svtv-data)))))
 
-(define svtv-data-maybe-rewrite-phase-fsm (do-it svtv-data &key ((count natp) '4) (verbosep 'nil))
+(define svtv-data-maybe-rewrite-phase-fsm (do-it svtv-data &key (verbosep 'nil))
   :guard (or (not do-it)
              (svtv-data->phase-fsm-validp svtv-data)
              (not (svtv-data->cycle-fsm-validp svtv-data)))
   :returns new-svtv-data
   (if do-it
-      (svtv-data-rewrite-phase-fsm svtv-data :count count :verbosep verbosep)
+      (svtv-data-rewrite-phase-fsm svtv-data :count (if (natp do-it) do-it 4) :verbosep verbosep)
+    svtv-data)
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :phase-fsm)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data)))))
+
+(define svtv-data-maybe-concatnorm-phase-fsm (do-it svtv-data &key (verbosep 'nil))
+  :guard (or (not do-it)
+             (svtv-data->phase-fsm-validp svtv-data)
+             (not (svtv-data->cycle-fsm-validp svtv-data)))
+  :returns new-svtv-data
+  (if do-it
+      (svtv-data-concatnorm-phase-fsm svtv-data :verbosep verbosep)
     svtv-data)
   ///
   (defret svtv-data$c-get-of-<fn>
@@ -207,10 +226,12 @@
                      '(:in-theory (enable svtv-data$ap)))
                 )
   :returns new-svtv-data
-  (update-svtv-data->cycle-fsm
-   (base-fsm-rewrite (svtv-data->cycle-fsm svtv-data)
-                     :count count :verbosep verbosep)
-   svtv-data)
+  (time$
+   (update-svtv-data->cycle-fsm
+    (base-fsm-rewrite (svtv-data->cycle-fsm svtv-data)
+                      :count count :verbosep verbosep)
+    svtv-data)
+   :msg "; Svtv-data rewrite cycle: ~st seconds, ~sa bytes.~%")
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
@@ -227,10 +248,12 @@
                      '(:in-theory (enable svtv-data$ap)))
                 )
   :returns new-svtv-data
-  (update-svtv-data->cycle-fsm
-   (base-fsm-norm-concats (svtv-data->cycle-fsm svtv-data)
-                          :verbosep verbosep)
-   svtv-data)
+  (time$
+   (update-svtv-data->cycle-fsm
+    (base-fsm-norm-concats (svtv-data->cycle-fsm svtv-data)
+                           :verbosep verbosep)
+    svtv-data)
+   :msg "; Svtv-data concatnorm cycle: ~st seconds, ~sa bytes.~%")
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
@@ -239,7 +262,7 @@
                     (svtv-data$c-get key svtv-data)))))
 
 
-(define svtv-data-maybe-rewrite-cycle-fsm (do-it svtv-data &key ((count natp) '4) (verbosep 'nil))
+(define svtv-data-maybe-rewrite-cycle-fsm (do-it svtv-data &key (verbosep 'nil))
   :guard (or (not do-it)
              (svtv-data->cycle-fsm-validp svtv-data)
              (not (svtv-data->pipeline-validp svtv-data)))
@@ -249,7 +272,7 @@
                 )
   :returns new-svtv-data
   (if do-it
-      (svtv-data-rewrite-cycle-fsm svtv-data :count count :verbosep verbosep)
+      (svtv-data-rewrite-cycle-fsm svtv-data :count (if (natp do-it) do-it 4) :verbosep verbosep)
     svtv-data)
   ///
   (defret svtv-data$c-get-of-<fn>
@@ -257,7 +280,6 @@
                   (not (equal key :cycle-fsm)))
              (equal (svtv-data$c-get k new-svtv-data)
                     (svtv-data$c-get key svtv-data)))))
-
 
 
 (local (defthm eval-lookup-of-svex-alist-rewrite-fixpoint
@@ -274,6 +296,117 @@
                               x)
          :hints ((witness) (witness))))
 
+
+(local (defthm eval-lookup-of-svex-alist-normalize-concats
+         (equal (svex-eval (svex-lookup v (svex-alist-normalize-concats x :verbosep verbosep)) env)
+                (svex-eval (svex-lookup v x) env))
+         :hints (("goal" :use ((:instance svex-env-lookup-of-svex-alist-eval
+                                (k v) (x (svex-alist-normalize-concats x :verbosep verbosep)))
+                               (:instance svex-env-lookup-of-svex-alist-eval
+                                (k v) (x x)))
+                  :in-theory (disable svex-env-lookup-of-svex-alist-eval)))))
+
+(local (defthm svex-alist-normalize-concats-under-svex-alist-eval-equiv
+         (svex-alist-eval-equiv (svex-alist-normalize-concats x :verbosep verbosep)
+                              x)
+         :hints ((witness) (witness))))
+
+
+(define svtv-data-rewrite-flatnorm (svtv-data &key ((count natp) '4) (verbosep 'nil))
+  :guard ;; (or (svtv-data->flatnorm-validp svtv-data)
+  ;; FIXME: should be able to show that this preserves validity of the phase-fsm when flatnorm-validp.
+  (not (svtv-data->phase-fsm-validp svtv-data))
+  :guard-hints (("goal" :do-not-induct t)
+                (and stable-under-simplificationp
+                     '(:in-theory (enable svtv-data$ap)))
+                )
+  :returns new-svtv-data
+  (time$
+   (b* (((flatnorm-res flatnorm) (svtv-data->flatnorm svtv-data)))
+     (update-svtv-data->flatnorm
+      (change-flatnorm-res flatnorm
+                           :assigns (svex-alist-rewrite-fixpoint
+                                     flatnorm.assigns :count count :verbosep verbosep))
+      svtv-data))
+   :msg "; Svtv-data rewrite flatnorm: ~st seconds, ~sa bytes.~%")
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :flatnorm)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data)))))
+
+
+(define svtv-data-concatnorm-flatnorm (svtv-data &key (verbosep 'nil))
+  :guard ;; (or (svtv-data->flatnorm-validp svtv-data)
+  ;; FIXME: should be able to show that this preserves validity of the phase-fsm when flatnorm-validp.
+  (not (svtv-data->phase-fsm-validp svtv-data))
+  :guard-hints (("goal" :do-not-induct t)
+                (and stable-under-simplificationp
+                     '(:in-theory (enable svtv-data$ap)))
+                )
+  :returns new-svtv-data
+  (time$
+   (b* (((flatnorm-res flatnorm) (svtv-data->flatnorm svtv-data)))
+     (update-svtv-data->flatnorm
+      (change-flatnorm-res flatnorm
+                           :assigns (svex-alist-normalize-concats flatnorm.assigns :verbosep verbosep))
+      svtv-data))
+   :msg "; Svtv-data concatnorm flatnorm: ~st seconds, ~sa bytes.~%")
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :flatnorm)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data)))))
+
+
+(define svtv-data-maybe-rewrite-flatnorm (do-it svtv-data &key (verbosep 'nil))
+  :guard (or (not do-it)
+             (svtv-data->flatnorm-validp svtv-data)
+             (not (svtv-data->phase-fsm-validp svtv-data)))
+  :guard-hints (("goal" :do-not-induct t)
+                (and stable-under-simplificationp
+                     '(:in-theory (enable svtv-data$ap)))
+                )
+  :returns new-svtv-data
+  ;; FIXME: should be able to show that this preserves validity of the phase-fsm when flatnorm-validp.
+  (if (and do-it (not (svtv-data->phase-fsm-validp svtv-data)))
+      (svtv-data-rewrite-flatnorm svtv-data
+                                  :count (if (natp do-it) do-it 4)
+                                  :verbosep verbosep)
+    svtv-data)
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :flatnorm)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data)))))
+
+(define svtv-data-maybe-concatnorm-flatnorm (do-it svtv-data &key (verbosep 'nil))
+  :guard (or (not do-it)
+             (svtv-data->flatnorm-validp svtv-data)
+             (not (svtv-data->phase-fsm-validp svtv-data)))
+  :guard-hints (("goal" :do-not-induct t)
+                (and stable-under-simplificationp
+                     '(:in-theory (enable svtv-data$ap)))
+                )
+  :returns new-svtv-data
+  ;; FIXME: should be able to show that this preserves validity of the phase-fsm when flatnorm-validp.
+  (if (and do-it (not (svtv-data->phase-fsm-validp svtv-data)))
+      (svtv-data-concatnorm-flatnorm svtv-data
+                                  :verbosep verbosep)
+    svtv-data)
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :flatnorm)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data)))))
+
+
+
+
 (define svtv-data-rewrite-pipeline (svtv-data &key ((count natp) '4) (verbosep 'nil))
   ;; :guard (or (not (svtv-data->pipeline-validp svtv-data))
   ;;            ;; (svtv-data->flatten-validp svtv-data)
@@ -283,9 +416,11 @@
                      '(:in-theory (enable svtv-data$ap)))
                 )
   :returns new-svtv-data
-  (b* ((results (svtv-data->pipeline svtv-data))
-       (results-rw (svex-alist-rewrite-fixpoint results :count count :verbosep verbosep)))
-    (update-svtv-data->pipeline results-rw svtv-data))
+  (time$
+   (b* ((results (svtv-data->pipeline svtv-data))
+        (results-rw (svex-alist-rewrite-fixpoint results :count count :verbosep verbosep)))
+     (update-svtv-data->pipeline results-rw svtv-data))
+   :msg "; Svtv-data rewrite pipeline: ~st seconds, ~sa bytes.~%")
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
@@ -294,14 +429,14 @@
                     (svtv-data$c-get key svtv-data)))))
 
 
-(define svtv-data-maybe-rewrite-pipeline (do-it svtv-data &key ((count natp) '4) (verbosep 'nil))
+(define svtv-data-maybe-rewrite-pipeline (do-it svtv-data &key (verbosep 'nil))
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
                      '(:in-theory (enable svtv-data$ap)))
                 )
   :returns new-svtv-data
   (if do-it
-      (svtv-data-rewrite-pipeline svtv-data :count count :verbosep verbosep)
+      (svtv-data-rewrite-pipeline svtv-data :count (if (natp do-it) do-it 4) :verbosep verbosep)
     svtv-data)
   ///
   (defret svtv-data$c-get-of-<fn>
@@ -310,3 +445,48 @@
              (equal (svtv-data$c-get k new-svtv-data)
                     (svtv-data$c-get key svtv-data)))))
        
+
+
+
+
+
+
+
+
+(define svtv-data-concatnorm-pipeline (svtv-data &key (verbosep 'nil))
+  ;; :guard (or (not (svtv-data->pipeline-validp svtv-data))
+  ;;            ;; (svtv-data->flatten-validp svtv-data)
+  ;;            )
+  :guard-hints (("goal" :do-not-induct t)
+                (and stable-under-simplificationp
+                     '(:in-theory (enable svtv-data$ap)))
+                )
+  :returns new-svtv-data
+  (time$
+   (b* ((results (svtv-data->pipeline svtv-data))
+        (results-rw (svex-alist-normalize-concats results :verbosep verbosep)))
+     (update-svtv-data->pipeline results-rw svtv-data))
+   :msg "; Svtv-data concatnorm pipeline: ~st seconds, ~sa bytes.~%")
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :pipeline)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data)))))
+
+
+(define svtv-data-maybe-concatnorm-pipeline (do-it svtv-data &key (verbosep 'nil))
+  :guard-hints (("goal" :do-not-induct t)
+                (and stable-under-simplificationp
+                     '(:in-theory (enable svtv-data$ap)))
+                )
+  :returns new-svtv-data
+  (if do-it
+      (svtv-data-concatnorm-pipeline svtv-data :verbosep verbosep)
+    svtv-data)
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :pipeline)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data)))))

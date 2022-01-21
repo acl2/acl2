@@ -442,6 +442,7 @@
 
        ((mv err svtv-data)
         (svtv-data-defcycle-core x.design phases svtv-data
+                                 :rewrite-assigns x.pre-simplify
                                  :rewrite-phases x.pre-simplify
                                  :rewrite-cycle x.pre-simplify
                                  :cycle-simp x.cycle-simp

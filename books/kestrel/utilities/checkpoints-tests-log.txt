@@ -1,0 +1,1959 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(INCLUDE-BOOK "checkpoints")
+
+Summary
+Form:  ( INCLUDE-BOOK "checkpoints" ...)
+Rules: NIL
+ "checkpoints.lisp"
+ACL2 !>>(DEFMACRO
+         PRINT-AND-RUN
+         (FORM &OPTIONAL (PRINT 'T))
+         (CONS
+          'LET
+          (CONS
+           (CONS (CONS 'CHAN
+                       (CONS (CONS 'STANDARD-CO (CONS 'STATE 'NIL))
+                             'NIL))
+                 'NIL)
+           (CONS
+            (CONS
+             'PPROGN
+             (CONS
+              (CONS
+               'FMS
+               (CONS
+                '"----------~|~x0:~|"
+                (CONS
+                 (CONS 'LIST
+                       (CONS (CONS 'CONS
+                                   (CONS '#\0
+                                         (CONS (CONS 'QUOTE (CONS FORM 'NIL))
+                                               'NIL)))
+                             'NIL))
+                 (CONS 'CHAN
+                       (CONS 'STATE (CONS 'NIL 'NIL))))))
+              (CONS
+               (IF
+                PRINT
+                (CONS
+                  'FMS
+                  (CONS '"~x0~|----------~|~%"
+                        (CONS (CONS 'LIST
+                                    (CONS (CONS 'CONS
+                                                (CONS '#\0 (CONS FORM 'NIL)))
+                                          'NIL))
+                              (CONS 'CHAN
+                                    (CONS 'STATE (CONS 'NIL 'NIL))))))
+                (CONS
+                 'PPROGN
+                 (CONS
+                     FORM
+                     (CONS (CONS 'PRINC$
+                                 (CONS '"----------"
+                                       (CONS 'CHAN (CONS 'STATE 'NIL))))
+                           (CONS (CONS 'NEWLINE
+                                       (CONS 'CHAN (CONS 'STATE 'NIL)))
+                                 (CONS (CONS 'NEWLINE
+                                             (CONS 'CHAN (CONS 'STATE 'NIL)))
+                                       'NIL))))))
+               'NIL)))
+            'NIL))))
+
+Summary
+Form:  ( DEFMACRO PRINT-AND-RUN ...)
+Rules: NIL
+ PRINT-AND-RUN
+ACL2 !>>(DEFMACRO CHECKPOINT-TESTS NIL
+                  '(PPROGN (PRINT-AND-RUN (CHECKPOINT-LIST T STATE))
+                           (PRINT-AND-RUN (CHECKPOINT-LIST NIL STATE))
+                           (PRINT-AND-RUN (CHECKPOINT-LIST-PRETTY T STATE))
+                           (PRINT-AND-RUN (CHECKPOINT-LIST-PRETTY NIL STATE))
+                           (PRINT-AND-RUN (CHECKPOINT-INFO-LIST T STATE))
+                           (PRINT-AND-RUN (CHECKPOINT-INFO-LIST NIL STATE))
+                           (PRINT-AND-RUN (SHOW-CHECKPOINT-LIST)
+                                          NIL)
+                           (PRINT-AND-RUN (SHOW-CHECKPOINT-LIST T)
+                                          NIL)))
+
+Summary
+Form:  ( DEFMACRO CHECKPOINT-TESTS ...)
+Rules: NIL
+ CHECKPOINT-TESTS
+ACL2 !>>(DEFTHM FOO
+                (EQUAL (APPEND (APPEND (IF A X Z) Y) X)
+                       (APPEND X Y X)))
+Subgoal 2
+Subgoal 2'
+
+([ A key checkpoint:
+
+Subgoal 2'
+(EQUAL (APPEND (APPEND X Y) X)
+       (APPEND X Y X))
+
+*1 (Subgoal 2') is pushed for proof by induction.
+
+])
+Subgoal 1
+Subgoal 1'
+
+([ A key checkpoint:
+
+Subgoal 1'
+(EQUAL (APPEND (APPEND Z Y) X)
+       (APPEND X Y X))
+
+Normally we would attempt to prove Subgoal 1' by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  However, one of these is flawed and so we are
+left with one viable candidate.  
+
+We will induct according to a scheme suggested by (APPEND Y X).  This
+suggestion was produced using the :induction rule BINARY-APPEND.  If
+we let (:P A X Y Z) denote *1 above then the induction scheme we'll
+use is
+(AND (IMPLIES (AND (NOT (ENDP Y)) (:P A X (CDR Y) Z))
+              (:P A X Y Z))
+     (IMPLIES (ENDP Y) (:P A X Y Z))).
+This induction is justified by the same argument used to admit BINARY-APPEND.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2.2
+Subgoal *1/2.2'
+Subgoal *1/2.2''
+Subgoal *1/2.2'''
+Subgoal *1/2.2'4'
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2.2'
+(IMPLIES (AND (CONSP Y)
+              (EQUAL (APPEND (APPEND X (CDR Y)) X)
+                     (APPEND X (CDR Y) X)))
+         (EQUAL (APPEND (APPEND X Y) X)
+                (APPEND X (CONS (CAR Y) (APPEND (CDR Y) X)))))
+
+*1.1 (Subgoal *1/2.2'4') is pushed for proof by induction.
+
+])
+Subgoal *1/2.1
+Subgoal *1/2.1'
+Subgoal *1/2.1''
+Subgoal *1/2.1'''
+Subgoal *1/2.1'4'
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2.1'
+(IMPLIES (AND (CONSP Y)
+              (EQUAL (APPEND (APPEND Z (CDR Y)) X)
+                     (APPEND X (CDR Y) X)))
+         (EQUAL (APPEND (APPEND Z Y) X)
+                (APPEND X (CONS (CAR Y) (APPEND (CDR Y) X)))))
+
+*1.2 (Subgoal *1/2.1'4') is pushed for proof by induction.
+
+])
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1.2
+Subgoal *1/1.2'
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/1.2'
+(IMPLIES (NOT (CONSP Y))
+         (EQUAL (APPEND (APPEND X Y) X)
+                (APPEND X X)))
+
+*1.3 (Subgoal *1/1.2') is pushed for proof by induction.
+
+])
+Subgoal *1/1.1
+Subgoal *1/1.1'
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/1.1'
+(IMPLIES (NOT (CONSP Y))
+         (EQUAL (APPEND (APPEND Z Y) X)
+                (APPEND X X)))
+
+*1.4 (Subgoal *1/1.1') is pushed for proof by induction.
+
+])
+
+So we now return to *1.4, which is
+
+(IMPLIES (NOT (CONSP Y))
+         (EQUAL (APPEND (APPEND Z Y) X)
+                (APPEND X X))).
+Subgoal *1.4/2
+Subgoal *1.4/2'
+Subgoal *1.4/2''
+Subgoal *1.4/2'''
+Subgoal *1.4/2'4'
+
+*1.4.1 (Subgoal *1.4/2'4') is pushed for proof by induction.
+Subgoal *1.4/1
+Subgoal *1.4/1'
+Subgoal *1.4/1''
+Subgoal *1.4/1'''
+
+*1.4.2 (Subgoal *1.4/1''') is pushed for proof by induction.
+
+So we now return to *1.4.2, which is
+
+(EQUAL X (APPEND X X)).
+Subgoal *1.4.2/2
+Subgoal *1.4.2/2'
+Subgoal *1.4.2/2''
+Subgoal *1.4.2/2'''
+Subgoal *1.4.2/2'4'
+Subgoal *1.4.2/2'5'
+
+*1.4.2.1 (Subgoal *1.4.2/2'5') is pushed for proof by induction.
+Subgoal *1.4.2/1
+Subgoal *1.4.2/1'
+
+So we now return to *1.4.2.1, which is
+
+(EQUAL (APPEND X2 X2)
+       (APPEND X2 (CONS X1 X2))).
+Subgoal *1.4.2.1/2
+Subgoal *1.4.2.1/2'
+Subgoal *1.4.2.1/2''
+Subgoal *1.4.2.1/2'''
+Subgoal *1.4.2.1/2'4'
+
+*1.4.2.1.1 (Subgoal *1.4.2.1/2'4') is pushed for proof by induction.
+Subgoal *1.4.2.1/1
+Subgoal *1.4.2.1/1'
+Subgoal *1.4.2.1/1''
+Subgoal *1.4.2.1/1'''
+
+A goal of NIL, Subgoal *1.4.2.1/1''', has been generated!  Obviously,
+the proof attempt has failed.
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: ((:DEFINITION BINARY-APPEND)
+        (:DEFINITION ENDP)
+        (:DEFINITION NOT)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION BINARY-APPEND)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE CONS-EQUAL))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+<GOAL>
+
+*** Key checkpoints under a top-level induction
+    before generating a goal of NIL (see :DOC nil-goal): ***
+
+Subgoal *1/2.2'
+(IMPLIES (AND (CONSP Y)
+              (EQUAL (APPEND (APPEND X (CDR Y)) X)
+                     (APPEND X (CDR Y) X)))
+         (EQUAL (APPEND (APPEND X Y) X)
+                (APPEND X (CONS (CAR Y) (APPEND (CDR Y) X)))))
+
+Subgoal *1/2.1'
+(IMPLIES (AND (CONSP Y)
+              (EQUAL (APPEND (APPEND Z (CDR Y)) X)
+                     (APPEND X (CDR Y) X)))
+         (EQUAL (APPEND (APPEND Z Y) X)
+                (APPEND X (CONS (CAR Y) (APPEND (CDR Y) X)))))
+
+Subgoal *1/1.2'
+(IMPLIES (NOT (CONSP Y))
+         (EQUAL (APPEND (APPEND X Y) X)
+                (APPEND X X)))
+
+Note: There is one additional key checkpoint under a top-level induction.
+See :DOC set-checkpoint-summary-limit to change the number printed.
+
+ACL2 Error in ( DEFTHM FOO ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(CHECKPOINT-TESTS)
+
+----------
+(CHECKPOINT-LIST T STATE):
+
+((<GOAL>))
+----------
+
+
+----------
+(CHECKPOINT-LIST NIL STATE):
+
+(((NOT (CONSP Y))
+  (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND X (CDR Y))
+                             X)
+              (BINARY-APPEND X (BINARY-APPEND (CDR Y) X))))
+  (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+         (BINARY-APPEND X
+                        (CONS (CAR Y)
+                              (BINARY-APPEND (CDR Y) X)))))
+ ((NOT (CONSP Y))
+  (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND Z (CDR Y))
+                             X)
+              (BINARY-APPEND X (BINARY-APPEND (CDR Y) X))))
+  (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+         (BINARY-APPEND X
+                        (CONS (CAR Y)
+                              (BINARY-APPEND (CDR Y) X)))))
+ ((CONSP Y)
+  (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+         (BINARY-APPEND X X)))
+ ((CONSP Y)
+  (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+         (BINARY-APPEND X X))))
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY T STATE):
+
+(<GOAL>)
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY NIL STATE):
+
+((IMPLIES (AND (CONSP Y)
+               (EQUAL (APPEND (APPEND X (CDR Y)) X)
+                      (APPEND X (CDR Y) X)))
+          (EQUAL (APPEND (APPEND X Y) X)
+                 (APPEND X (CONS (CAR Y) (APPEND (CDR Y) X)))))
+ (IMPLIES (AND (CONSP Y)
+               (EQUAL (APPEND (APPEND Z (CDR Y)) X)
+                      (APPEND X (CDR Y) X)))
+          (EQUAL (APPEND (APPEND Z Y) X)
+                 (APPEND X (CONS (CAR Y) (APPEND (CDR Y) X)))))
+ (IMPLIES (NOT (CONSP Y))
+          (EQUAL (APPEND (APPEND X Y) X)
+                 (APPEND X X)))
+ (IMPLIES (NOT (CONSP Y))
+          (EQUAL (APPEND (APPEND Z Y) X)
+                 (APPEND X X))))
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST T STATE):
+
+(((:CLAUSE-ID (0) NIL . 0) (:CLAUSE <GOAL>) (:PUSHED (((0) NIL . 0) 1))))
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST NIL STATE):
+
+(((:CLAUSE-ID (0 1) (2 2) . 1)
+  (:CLAUSE (NOT (CONSP Y))
+           (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND X (CDR Y))
+                                      X)
+                       (BINARY-APPEND X (BINARY-APPEND (CDR Y) X))))
+           (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+                  (BINARY-APPEND X
+                                 (CONS (CAR Y)
+                                       (BINARY-APPEND (CDR Y) X)))))
+  (:PUSHED (((0 1) (2 2) . 4) 1 1)))
+ ((:CLAUSE-ID (0 1) (2 1) . 1)
+  (:CLAUSE (NOT (CONSP Y))
+           (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND Z (CDR Y))
+                                      X)
+                       (BINARY-APPEND X (BINARY-APPEND (CDR Y) X))))
+           (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+                  (BINARY-APPEND X
+                                 (CONS (CAR Y)
+                                       (BINARY-APPEND (CDR Y) X)))))
+  (:PUSHED (((0 1) (2 1) . 4) 1 2)))
+ ((:CLAUSE-ID (0 1) (1 2) . 1)
+  (:CLAUSE (CONSP Y)
+           (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+                  (BINARY-APPEND X X)))
+  (:PUSHED (((0 1) (1 2) . 1) 1 3)))
+ ((:CLAUSE-ID (0 1) (1 1) . 1)
+  (:CLAUSE (CONSP Y)
+           (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+                  (BINARY-APPEND X X)))
+  (:PUSHED (((0 1 4 2 1) (2) . 4) 1 4 2 1 1)
+           (((0 1 4 2) (2) . 5) 1 4 2 1)
+           (((0 1 4) (1) . 3) 1 4 2)
+           (((0 1 4) (2) . 4) 1 4 1)
+           (((0 1) (1 1) . 1) 1 4))))
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST):
+
+++++++ Top-level checkpoint list: ++++++
+
+Goal:
+(<GOAL>)
+
+++++++ Non-top-level checkpoint list: ++++++
+
+Subgoal *1/2.2':
+((NOT (CONSP Y))
+ (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND X (CDR Y))
+                            X)
+             (BINARY-APPEND X (BINARY-APPEND (CDR Y) X))))
+ (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+        (BINARY-APPEND X
+                       (CONS (CAR Y)
+                             (BINARY-APPEND (CDR Y) X)))))
+
+Subgoal *1/2.1':
+((NOT (CONSP Y))
+ (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND Z (CDR Y))
+                            X)
+             (BINARY-APPEND X (BINARY-APPEND (CDR Y) X))))
+ (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+        (BINARY-APPEND X
+                       (CONS (CAR Y)
+                             (BINARY-APPEND (CDR Y) X)))))
+
+Subgoal *1/1.2':
+((CONSP Y)
+ (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+        (BINARY-APPEND X X)))
+
+Subgoal *1/1.1':
+((CONSP Y)
+ (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+        (BINARY-APPEND X X)))
+
+++++++ Forced goals?: No ++++++
+
+++++++ Abort?: Yes, EMPTY-CLAUSE ++++++
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST T):
+
+++++++ Top-level checkpoint list: ++++++
+
+Goal:
+<GOAL>
+
+++++++ Non-top-level checkpoint list: ++++++
+
+Subgoal *1/2.2':
+(IMPLIES (AND (CONSP Y)
+              (EQUAL (APPEND (APPEND X (CDR Y)) X)
+                     (APPEND X (CDR Y) X)))
+         (EQUAL (APPEND (APPEND X Y) X)
+                (APPEND X (CONS (CAR Y) (APPEND (CDR Y) X)))))
+
+Subgoal *1/2.1':
+(IMPLIES (AND (CONSP Y)
+              (EQUAL (APPEND (APPEND Z (CDR Y)) X)
+                     (APPEND X (CDR Y) X)))
+         (EQUAL (APPEND (APPEND Z Y) X)
+                (APPEND X (CONS (CAR Y) (APPEND (CDR Y) X)))))
+
+Subgoal *1/1.2':
+(IMPLIES (NOT (CONSP Y))
+         (EQUAL (APPEND (APPEND X Y) X)
+                (APPEND X X)))
+
+Subgoal *1/1.1':
+(IMPLIES (NOT (CONSP Y))
+         (EQUAL (APPEND (APPEND Z Y) X)
+                (APPEND X X)))
+
+++++++ Forced goals?: No ++++++
+
+++++++ Abort?: Yes, EMPTY-CLAUSE ++++++
+----------
+
+<state>
+ACL2 !>>(DEFUND H (X Y) (LIST X Y))
+
+Since H is non-recursive, its admission is trivial.  We observe that
+the type of H is described by the theorem 
+(AND (CONSP (H X Y)) (TRUE-LISTP (H X Y))).  We used primitive type
+reasoning.
+
+Summary
+Form:  ( DEFUN H ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ (:DEFUND H)
+ACL2 !>>(DEFTHM NULL-CDDR-H
+                (IMPLIES (FORCE (EQUAL (APPEND X Y) (APPEND Y X)))
+                         (EQUAL (CDDR (H X Y)) NIL)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES (EQUAL (APPEND X Y) (APPEND Y X))
+         (NOT (CDDR (H X Y))))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  We will choose arbitrarily among these.  
+
+We will induct according to a scheme suggested by (APPEND X Y).  This
+suggestion was produced using the :induction rule BINARY-APPEND.  If
+we let (:P X Y) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X) Y))
+              (:P X Y))
+     (IMPLIES (ENDP X) (:P X Y))).
+This induction is justified by the same argument used to admit BINARY-APPEND.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/3''
+Subgoal *1/3'''
+Subgoal *1/3'4'
+
+([ A key checkpoint while proving *1 (descended from Goal''):
+
+Subgoal *1/3''
+(IMPLIES (AND (CONSP X)
+              (NOT (CDDR (H (CDR X) Y)))
+              (EQUAL (CONS (CAR X) (APPEND (CDR X) Y))
+                     (APPEND Y X)))
+         (NOT (CDDR (H X Y))))
+
+*1.1 (Subgoal *1/3'4') is pushed for proof by induction.
+
+])
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2''
+Subgoal *1/2'''
+Subgoal *1/2'4'
+Subgoal *1/2'5'
+
+([ A key checkpoint while proving *1 (descended from Goal''):
+
+Subgoal *1/2''
+(IMPLIES (AND (CONSP X)
+              (NOT (EQUAL (APPEND (CDR X) Y)
+                          (APPEND Y (CDR X))))
+              (EQUAL (CONS (CAR X) (APPEND (CDR X) Y))
+                     (APPEND Y X)))
+         (NOT (CDDR (H X Y))))
+
+*1.2 (Subgoal *1/2'5') is pushed for proof by induction.
+
+])
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+Subgoal *1/1'''
+
+([ A key checkpoint while proving *1 (descended from Goal''):
+
+Subgoal *1/1''
+(IMPLIES (AND (NOT (CONSP X))
+              (EQUAL Y (APPEND Y X)))
+         (NOT (CDDR (H X Y))))
+
+*1.3 (Subgoal *1/1''') is pushed for proof by induction.
+
+])
+
+So we now return to *1.3, which is
+
+(IMPLIES (NOT (CONSP X))
+         (NOT (CDDR (H X (APPEND Y X))))).
+Subgoal *1.3/2
+Subgoal *1.3/2'
+Subgoal *1.3/2''
+Subgoal *1.3/2'''
+Subgoal *1.3/2'4'
+Subgoal *1.3/2'5'
+
+*1.3.1 (Subgoal *1.3/2'5') is pushed for proof by induction.
+Subgoal *1.3/1
+Subgoal *1.3/1'
+Subgoal *1.3/1''
+Subgoal *1.3/1'''
+
+*1.3.2 (Subgoal *1.3/1''') is pushed for proof by induction.
+
+So we now return to *1.3.2, which is
+
+(IMPLIES (NOT (CONSP X))
+         (NOT (CDDR (H X X)))).
+
+No induction schemes are suggested by *1.3.2.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( DEFTHM NULL-CDDR-H ...)
+Rules: ((:DEFINITION BINARY-APPEND)
+        (:DEFINITION ENDP)
+        (:DEFINITION FORCE)
+        (:DEFINITION NOT)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION BINARY-APPEND))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(IMPLIES (EQUAL (APPEND X Y) (APPEND Y X))
+         (NOT (CDDR (H X Y))))
+
+*** Key checkpoints under a top-level induction: ***
+
+Subgoal *1/3''
+(IMPLIES (AND (CONSP X)
+              (NOT (CDDR (H (CDR X) Y)))
+              (EQUAL (CONS (CAR X) (APPEND (CDR X) Y))
+                     (APPEND Y X)))
+         (NOT (CDDR (H X Y))))
+
+Subgoal *1/2''
+(IMPLIES (AND (CONSP X)
+              (NOT (EQUAL (APPEND (CDR X) Y)
+                          (APPEND Y (CDR X))))
+              (EQUAL (CONS (CAR X) (APPEND (CDR X) Y))
+                     (APPEND Y X)))
+         (NOT (CDDR (H X Y))))
+
+Subgoal *1/1''
+(IMPLIES (AND (NOT (CONSP X))
+              (EQUAL Y (APPEND Y X)))
+         (NOT (CDDR (H X Y))))
+
+ACL2 Error in ( DEFTHM NULL-CDDR-H ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(CHECKPOINT-TESTS)
+
+----------
+(CHECKPOINT-LIST T STATE):
+
+(((NOT (EQUAL (BINARY-APPEND X Y)
+              (BINARY-APPEND Y X)))
+  (NOT (CDR (CDR (H X Y))))))
+----------
+
+
+----------
+(CHECKPOINT-LIST NIL STATE):
+
+(((NOT (CONSP X))
+  (CDR (CDR (H (CDR X) Y)))
+  (NOT (EQUAL (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+              (BINARY-APPEND Y X)))
+  (NOT (CDR (CDR (H X Y)))))
+ ((NOT (CONSP X))
+  (EQUAL (BINARY-APPEND (CDR X) Y)
+         (BINARY-APPEND Y (CDR X)))
+  (NOT (EQUAL (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+              (BINARY-APPEND Y X)))
+  (NOT (CDR (CDR (H X Y)))))
+ ((CONSP X)
+  (NOT (EQUAL Y (BINARY-APPEND Y X)))
+  (NOT (CDR (CDR (H X Y))))))
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY T STATE):
+
+((IMPLIES (EQUAL (APPEND X Y) (APPEND Y X)) (NOT (CDDR (H X Y)))))
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY NIL STATE):
+
+((IMPLIES (AND (CONSP X)
+               (NOT (CDDR (H (CDR X) Y)))
+               (EQUAL (CONS (CAR X) (APPEND (CDR X) Y))
+                      (APPEND Y X)))
+          (NOT (CDDR (H X Y))))
+ (IMPLIES (AND (CONSP X)
+               (NOT (EQUAL (APPEND (CDR X) Y)
+                           (APPEND Y (CDR X))))
+               (EQUAL (CONS (CAR X) (APPEND (CDR X) Y))
+                      (APPEND Y X)))
+          (NOT (CDDR (H X Y))))
+ (IMPLIES (AND (NOT (CONSP X))
+               (EQUAL Y (APPEND Y X)))
+          (NOT (CDDR (H X Y)))))
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST T STATE):
+
+(((:CLAUSE-ID (0) NIL . 2)
+  (:CLAUSE (NOT (EQUAL (BINARY-APPEND X Y)
+                       (BINARY-APPEND Y X)))
+           (NOT (CDR (CDR (H X Y)))))
+  (:PUSHED (((0) NIL . 2) 1))))
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST NIL STATE):
+
+(((:CLAUSE-ID (0 1) (3) . 2)
+  (:CLAUSE (NOT (CONSP X))
+           (CDR (CDR (H (CDR X) Y)))
+           (NOT (EQUAL (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+                       (BINARY-APPEND Y X)))
+           (NOT (CDR (CDR (H X Y)))))
+  (:PUSHED (((0 1) (3) . 4) 1 1)))
+ ((:CLAUSE-ID (0 1) (2) . 2)
+  (:CLAUSE (NOT (CONSP X))
+           (EQUAL (BINARY-APPEND (CDR X) Y)
+                  (BINARY-APPEND Y (CDR X)))
+           (NOT (EQUAL (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+                       (BINARY-APPEND Y X)))
+           (NOT (CDR (CDR (H X Y)))))
+  (:PUSHED (((0 1) (2) . 5) 1 2)))
+ ((:CLAUSE-ID (0 1) (1) . 2)
+  (:CLAUSE (CONSP X)
+           (NOT (EQUAL Y (BINARY-APPEND Y X)))
+           (NOT (CDR (CDR (H X Y)))))
+  (:PUSHED (((0 1 3) (1) . 3) 1 3 2)
+           (((0 1 3) (2) . 5) 1 3 1)
+           (((0 1) (1) . 3) 1 3))))
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST):
+
+++++++ Top-level checkpoint list: ++++++
+
+Goal'':
+((NOT (EQUAL (BINARY-APPEND X Y)
+             (BINARY-APPEND Y X)))
+ (NOT (CDR (CDR (H X Y)))))
+
+++++++ Non-top-level checkpoint list: ++++++
+
+Subgoal *1/3'':
+((NOT (CONSP X))
+ (CDR (CDR (H (CDR X) Y)))
+ (NOT (EQUAL (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+             (BINARY-APPEND Y X)))
+ (NOT (CDR (CDR (H X Y)))))
+
+Subgoal *1/2'':
+((NOT (CONSP X))
+ (EQUAL (BINARY-APPEND (CDR X) Y)
+        (BINARY-APPEND Y (CDR X)))
+ (NOT (EQUAL (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+             (BINARY-APPEND Y X)))
+ (NOT (CDR (CDR (H X Y)))))
+
+Subgoal *1/1'':
+((CONSP X)
+ (NOT (EQUAL Y (BINARY-APPEND Y X)))
+ (NOT (CDR (CDR (H X Y)))))
+
+++++++ Forced goals?: No ++++++
+
+++++++ Abort?: No ++++++
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST T):
+
+++++++ Top-level checkpoint list: ++++++
+
+Goal'':
+(IMPLIES (EQUAL (APPEND X Y) (APPEND Y X))
+         (NOT (CDDR (H X Y))))
+
+++++++ Non-top-level checkpoint list: ++++++
+
+Subgoal *1/3'':
+(IMPLIES (AND (CONSP X)
+              (NOT (CDDR (H (CDR X) Y)))
+              (EQUAL (CONS (CAR X) (APPEND (CDR X) Y))
+                     (APPEND Y X)))
+         (NOT (CDDR (H X Y))))
+
+Subgoal *1/2'':
+(IMPLIES (AND (CONSP X)
+              (NOT (EQUAL (APPEND (CDR X) Y)
+                          (APPEND Y (CDR X))))
+              (EQUAL (CONS (CAR X) (APPEND (CDR X) Y))
+                     (APPEND Y X)))
+         (NOT (CDDR (H X Y))))
+
+Subgoal *1/1'':
+(IMPLIES (AND (NOT (CONSP X))
+              (EQUAL Y (APPEND Y X)))
+         (NOT (CDDR (H X Y))))
+
+++++++ Forced goals?: No ++++++
+
+++++++ Abort?: No ++++++
+----------
+
+<state>
+ACL2 !>>(DEFTHM NULL-CDDR-H
+                (IMPLIES (FORCE (EQUAL (APPEND X Y) (APPEND Y X)))
+                         (EQUAL (CDDR (H X Y)) NIL))
+                :HINTS (("Goal" :IN-THEORY (ENABLE H))))
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM NULL-CDDR-H ...)
+Rules: ((:DEFINITION FORCE)
+        (:DEFINITION H)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART IF)
+        (:REWRITE CDR-CONS))
+ NULL-CDDR-H
+ACL2 !>>(THM (NULL (CDDR (H X Y))))
+Goal'
+
+Forcing Round 1 is pending (caused first by Goal').
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal' by applying (:REWRITE NULL-CDDR-H).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(EQUAL (APPEND X Y) (APPEND Y X))
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+Perhaps we can prove [1]*1 by induction.  Two induction schemes are
+suggested by this conjecture.  We will choose arbitrarily among these.
+
+We will induct according to a scheme suggested by (APPEND X Y).  This
+suggestion was produced using the :induction rule BINARY-APPEND.  If
+we let (:P X Y) denote [1]*1 above then the induction scheme we'll
+use is
+(AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X) Y))
+              (:P X Y))
+     (IMPLIES (ENDP X) (:P X Y))).
+This induction is justified by the same argument used to admit BINARY-APPEND.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+[1]Subgoal *1/2
+[1]Subgoal *1/2'
+[1]Subgoal *1/2''
+[1]Subgoal *1/2'''
+[1]Subgoal *1/2'4'
+[1]Subgoal *1/2'5'
+
+([ A key checkpoint while proving [1]*1 (descended from [1]Goal):
+
+[1]Subgoal *1/2''
+(IMPLIES (AND (CONSP X)
+              (EQUAL (APPEND (CDR X) Y)
+                     (APPEND Y (CDR X))))
+         (EQUAL (CONS (CAR X) (APPEND Y (CDR X)))
+                (APPEND Y X)))
+
+[1]*1.1 ([1]Subgoal *1/2'5') is pushed for proof by induction.
+
+])
+[1]Subgoal *1/1
+[1]Subgoal *1/1'
+[1]Subgoal *1/1''
+
+([ A key checkpoint while proving [1]*1 (descended from [1]Goal):
+
+[1]Subgoal *1/1''
+(IMPLIES (NOT (CONSP X))
+         (EQUAL Y (APPEND Y X)))
+
+[1]*1.2 ([1]Subgoal *1/1'') is pushed for proof by induction.
+
+])
+
+So we now return to [1]*1.2, which is
+
+(IMPLIES (NOT (CONSP X))
+         (EQUAL Y (APPEND Y X))).
+[1]Subgoal *1.2/2
+[1]Subgoal *1.2/2'
+[1]Subgoal *1.2/1
+[1]Subgoal *1.2/1'
+[1]Subgoal *1.2/1''
+[1]Subgoal *1.2/1'''
+
+A goal of NIL, [1]Subgoal *1.2/1''', has been generated!  Obviously,
+the proof attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-APPEND)
+        (:DEFINITION ENDP)
+        (:DEFINITION NOT)
+        (:DEFINITION NULL)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION BINARY-APPEND)
+        (:REWRITE CONS-CAR-CDR)
+        (:REWRITE NULL-CDDR-H))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(EQUAL (APPEND X Y) (APPEND Y X))
+
+*** Key checkpoints under a top-level induction
+    before generating a goal of NIL (see :DOC nil-goal): ***
+
+[1]Subgoal *1/2''
+(IMPLIES (AND (CONSP X)
+              (EQUAL (APPEND (CDR X) Y)
+                     (APPEND Y (CDR X))))
+         (EQUAL (CONS (CAR X) (APPEND Y (CDR X)))
+                (APPEND Y X)))
+
+[1]Subgoal *1/1''
+(IMPLIES (NOT (CONSP X))
+         (EQUAL Y (APPEND Y X)))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(CHECKPOINT-TESTS)
+
+----------
+(CHECKPOINT-LIST T STATE):
+
+(((EQUAL (BINARY-APPEND X Y) (BINARY-APPEND Y X))))
+----------
+
+
+----------
+(CHECKPOINT-LIST NIL STATE):
+
+(((NOT (CONSP X))
+  (NOT (EQUAL (BINARY-APPEND (CDR X) Y)
+              (BINARY-APPEND Y (CDR X))))
+  (EQUAL (CONS (CAR X) (BINARY-APPEND Y (CDR X)))
+         (BINARY-APPEND Y X)))
+ ((CONSP X)
+  (EQUAL Y (BINARY-APPEND Y X))))
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY T STATE):
+
+((EQUAL (APPEND X Y) (APPEND Y X)))
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY NIL STATE):
+
+((IMPLIES (AND (CONSP X)
+               (EQUAL (APPEND (CDR X) Y)
+                      (APPEND Y (CDR X))))
+          (EQUAL (CONS (CAR X) (APPEND Y (CDR X)))
+                 (APPEND Y X)))
+ (IMPLIES (NOT (CONSP X))
+          (EQUAL Y (APPEND Y X))))
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST T STATE):
+
+(((:CLAUSE-ID (1) NIL . 0)
+  (:CLAUSE (EQUAL (BINARY-APPEND X Y)
+                  (BINARY-APPEND Y X)))
+  (:PUSHED (((1) NIL . 0) 1))))
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST NIL STATE):
+
+(((:CLAUSE-ID (1 1) (2) . 2)
+  (:CLAUSE (NOT (CONSP X))
+           (NOT (EQUAL (BINARY-APPEND (CDR X) Y)
+                       (BINARY-APPEND Y (CDR X))))
+           (EQUAL (CONS (CAR X) (BINARY-APPEND Y (CDR X)))
+                  (BINARY-APPEND Y X)))
+  (:PUSHED (((1 1) (2) . 5) 1 1)))
+ ((:CLAUSE-ID (1 1) (1) . 2)
+  (:CLAUSE (CONSP X)
+           (EQUAL Y (BINARY-APPEND Y X)))
+  (:PUSHED (((1 1) (1) . 2) 1 2))))
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST):
+
+++++++ Top-level checkpoint list: ++++++
+
+[1]Goal:
+((EQUAL (BINARY-APPEND X Y)
+        (BINARY-APPEND Y X)))
+
+++++++ Non-top-level checkpoint list: ++++++
+
+[1]Subgoal *1/2'':
+((NOT (CONSP X))
+ (NOT (EQUAL (BINARY-APPEND (CDR X) Y)
+             (BINARY-APPEND Y (CDR X))))
+ (EQUAL (CONS (CAR X) (BINARY-APPEND Y (CDR X)))
+        (BINARY-APPEND Y X)))
+
+[1]Subgoal *1/1'':
+((CONSP X)
+ (EQUAL Y (BINARY-APPEND Y X)))
+
+++++++ Forced goals?: No ++++++
+
+++++++ Abort?: Yes, EMPTY-CLAUSE ++++++
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST T):
+
+++++++ Top-level checkpoint list: ++++++
+
+[1]Goal:
+(EQUAL (APPEND X Y) (APPEND Y X))
+
+++++++ Non-top-level checkpoint list: ++++++
+
+[1]Subgoal *1/2'':
+(IMPLIES (AND (CONSP X)
+              (EQUAL (APPEND (CDR X) Y)
+                     (APPEND Y (CDR X))))
+         (EQUAL (CONS (CAR X) (APPEND Y (CDR X)))
+                (APPEND Y X)))
+
+[1]Subgoal *1/1'':
+(IMPLIES (NOT (CONSP X))
+         (EQUAL Y (APPEND Y X)))
+
+++++++ Forced goals?: No ++++++
+
+++++++ Abort?: Yes, EMPTY-CLAUSE ++++++
+----------
+
+<state>
+ACL2 !>>(THM (AND (NULL (CDDR (H X Y)))
+                  (EQUAL (CAR X) X)))
+Subgoal 2
+
+Forcing Round 1 is pending (caused first by Subgoal 2).
+Subgoal 1
+Subgoal 1.2
+Subgoal 1.2'
+
+([ A key checkpoint:
+
+Subgoal 1
+(EQUAL (CAR X) X)
+
+Normally we would attempt to prove Subgoal 1.2' by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION NULL)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE DEFAULT-CAR)
+        (:REWRITE NULL-CDDR-H))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint before reverting to proof by induction: ***
+
+Subgoal 1
+(EQUAL (CAR X) X)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(CHECKPOINT-TESTS)
+
+----------
+(CHECKPOINT-LIST T STATE):
+
+((<GOAL>))
+----------
+
+
+----------
+(CHECKPOINT-LIST NIL STATE):
+
+NIL
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY T STATE):
+
+(<GOAL>)
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY NIL STATE):
+
+NIL
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST T STATE):
+
+(((:CLAUSE-ID (0) NIL . 0) (:CLAUSE <GOAL>) (:PUSHED (((0) NIL . 0) 1))))
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST NIL STATE):
+
+NIL
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST):
+
+++++++ Top-level checkpoint list: ++++++
+
+Goal:
+(<GOAL>)
+
+++++++ Non-top-level checkpoint list: ++++++
+
+[Empty]
+
+++++++ Forced goals?: No ++++++
+
+++++++ Abort?: No ++++++
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST T):
+
+++++++ Top-level checkpoint list: ++++++
+
+Goal:
+<GOAL>
+
+++++++ Non-top-level checkpoint list: ++++++
+
+[Empty]
+
+++++++ Forced goals?: No ++++++
+
+++++++ Abort?: No ++++++
+----------
+
+<state>
+ACL2 !>>(THM (AND (NULL (CDDR (H X Y)))
+                  (EQUAL (CAR X) X))
+             :OTF-FLG T)
+Subgoal 2
+
+Forcing Round 1 is pending (caused first by Subgoal 2).
+Subgoal 1
+Subgoal 1.2
+Subgoal 1.2'
+
+([ A key checkpoint:
+
+Subgoal 1
+(EQUAL (CAR X) X)
+
+*1 (Subgoal 1.2') is pushed for proof by induction:
+(IMPLIES (NOT (CONSP X)) (NOT X)).
+Subgoal 1.1
+Subgoal 1.1'
+
+A goal of NIL, Subgoal 1.1', has been generated!  Obviously, the proof
+attempt has failed.
+
+])
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION NULL)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE DEFAULT-CAR)
+        (:REWRITE NULL-CDDR-H))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level
+    before generating a goal of NIL (see :DOC nil-goal): ***
+
+Subgoal 1
+(EQUAL (CAR X) X)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(CHECKPOINT-TESTS)
+
+----------
+(CHECKPOINT-LIST T STATE):
+
+(((EQUAL (CAR X) X)))
+----------
+
+
+----------
+(CHECKPOINT-LIST NIL STATE):
+
+NIL
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY T STATE):
+
+((EQUAL (CAR X) X))
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY NIL STATE):
+
+NIL
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST T STATE):
+
+(((:CLAUSE-ID (0) (1) . 0)
+  (:CLAUSE (EQUAL (CAR X) X))
+  (:PUSHED (((0) (1 2) . 1) 1))))
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST NIL STATE):
+
+NIL
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST):
+
+++++++ Top-level checkpoint list: ++++++
+
+Subgoal 1:
+((EQUAL (CAR X) X))
+
+++++++ Non-top-level checkpoint list: ++++++
+
+[Empty]
+
+++++++ Forced goals?: Yes ++++++
+
+++++++ Abort?: Yes, EMPTY-CLAUSE ++++++
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST T):
+
+++++++ Top-level checkpoint list: ++++++
+
+Subgoal 1:
+(EQUAL (CAR X) X)
+
+++++++ Non-top-level checkpoint list: ++++++
+
+[Empty]
+
+++++++ Forced goals?: Yes ++++++
+
+++++++ Abort?: Yes, EMPTY-CLAUSE ++++++
+----------
+
+<state>
+ACL2 !>>(THM (EQUAL X X))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+
+Proof succeeded.
+ACL2 !>>(CHECKPOINT-TESTS)
+
+----------
+(CHECKPOINT-LIST T STATE):
+
+:UNAVAILABLE
+----------
+
+
+----------
+(CHECKPOINT-LIST NIL STATE):
+
+:UNAVAILABLE
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY T STATE):
+
+:UNAVAILABLE
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY NIL STATE):
+
+:UNAVAILABLE
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST T STATE):
+
+:UNAVAILABLE
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST NIL STATE):
+
+:UNAVAILABLE
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST):
+
+There are no checkpoints available to show.
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST T):
+
+There are no checkpoints available to show.
+----------
+
+<state>
+ACL2 !>>(INCLUDE-BOOK "tools/prove-dollar"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "tools/prove-dollar" ...)
+Rules: NIL
+ "[books]/tools/prove-dollar.lisp"
+ACL2 !>>(PROVE$ '(EQUAL (APPEND (APPEND (IF A X Z) Y) X)
+                        (APPEND X Y X)))
+ NIL
+ACL2 !>>(CHECKPOINT-TESTS)
+
+----------
+(CHECKPOINT-LIST T STATE):
+
+((<GOAL>))
+----------
+
+
+----------
+(CHECKPOINT-LIST NIL STATE):
+
+(((NOT (CONSP Y))
+  (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND X (CDR Y))
+                             X)
+              (BINARY-APPEND X (BINARY-APPEND (CDR Y) X))))
+  (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+         (BINARY-APPEND X
+                        (CONS (CAR Y)
+                              (BINARY-APPEND (CDR Y) X)))))
+ ((NOT (CONSP Y))
+  (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND Z (CDR Y))
+                             X)
+              (BINARY-APPEND X (BINARY-APPEND (CDR Y) X))))
+  (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+         (BINARY-APPEND X
+                        (CONS (CAR Y)
+                              (BINARY-APPEND (CDR Y) X)))))
+ ((CONSP Y)
+  (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+         (BINARY-APPEND X X)))
+ ((CONSP Y)
+  (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+         (BINARY-APPEND X X))))
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY T STATE):
+
+(<GOAL>)
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY NIL STATE):
+
+((IMPLIES (AND (CONSP Y)
+               (EQUAL (APPEND (APPEND X (CDR Y)) X)
+                      (APPEND X (CDR Y) X)))
+          (EQUAL (APPEND (APPEND X Y) X)
+                 (APPEND X (CONS (CAR Y) (APPEND (CDR Y) X)))))
+ (IMPLIES (AND (CONSP Y)
+               (EQUAL (APPEND (APPEND Z (CDR Y)) X)
+                      (APPEND X (CDR Y) X)))
+          (EQUAL (APPEND (APPEND Z Y) X)
+                 (APPEND X (CONS (CAR Y) (APPEND (CDR Y) X)))))
+ (IMPLIES (NOT (CONSP Y))
+          (EQUAL (APPEND (APPEND X Y) X)
+                 (APPEND X X)))
+ (IMPLIES (NOT (CONSP Y))
+          (EQUAL (APPEND (APPEND Z Y) X)
+                 (APPEND X X))))
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST T STATE):
+
+(((:CLAUSE-ID (0) NIL . 0) (:CLAUSE <GOAL>) (:PUSHED (((0) NIL . 0) 1))))
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST NIL STATE):
+
+(((:CLAUSE-ID (0 1) (2 2) . 1)
+  (:CLAUSE (NOT (CONSP Y))
+           (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND X (CDR Y))
+                                      X)
+                       (BINARY-APPEND X (BINARY-APPEND (CDR Y) X))))
+           (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+                  (BINARY-APPEND X
+                                 (CONS (CAR Y)
+                                       (BINARY-APPEND (CDR Y) X)))))
+  (:PUSHED (((0 1) (2 2) . 4) 1 1)))
+ ((:CLAUSE-ID (0 1) (2 1) . 1)
+  (:CLAUSE (NOT (CONSP Y))
+           (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND Z (CDR Y))
+                                      X)
+                       (BINARY-APPEND X (BINARY-APPEND (CDR Y) X))))
+           (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+                  (BINARY-APPEND X
+                                 (CONS (CAR Y)
+                                       (BINARY-APPEND (CDR Y) X)))))
+  (:PUSHED (((0 1) (2 1) . 4) 1 2)))
+ ((:CLAUSE-ID (0 1) (1 2) . 1)
+  (:CLAUSE (CONSP Y)
+           (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+                  (BINARY-APPEND X X)))
+  (:PUSHED (((0 1) (1 2) . 1) 1 3)))
+ ((:CLAUSE-ID (0 1) (1 1) . 1)
+  (:CLAUSE (CONSP Y)
+           (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+                  (BINARY-APPEND X X)))
+  (:PUSHED (((0 1 4 2 1) (2) . 4) 1 4 2 1 1)
+           (((0 1 4 2) (2) . 5) 1 4 2 1)
+           (((0 1 4) (1) . 3) 1 4 2)
+           (((0 1 4) (2) . 4) 1 4 1)
+           (((0 1) (1 1) . 1) 1 4))))
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST):
+
+++++++ Top-level checkpoint list: ++++++
+
+Goal:
+(<GOAL>)
+
+++++++ Non-top-level checkpoint list: ++++++
+
+Subgoal *1/2.2':
+((NOT (CONSP Y))
+ (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND X (CDR Y))
+                            X)
+             (BINARY-APPEND X (BINARY-APPEND (CDR Y) X))))
+ (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+        (BINARY-APPEND X
+                       (CONS (CAR Y)
+                             (BINARY-APPEND (CDR Y) X)))))
+
+Subgoal *1/2.1':
+((NOT (CONSP Y))
+ (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND Z (CDR Y))
+                            X)
+             (BINARY-APPEND X (BINARY-APPEND (CDR Y) X))))
+ (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+        (BINARY-APPEND X
+                       (CONS (CAR Y)
+                             (BINARY-APPEND (CDR Y) X)))))
+
+Subgoal *1/1.2':
+((CONSP Y)
+ (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+        (BINARY-APPEND X X)))
+
+Subgoal *1/1.1':
+((CONSP Y)
+ (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+        (BINARY-APPEND X X)))
+
+++++++ Forced goals?: No ++++++
+
+++++++ Abort?: Yes, EMPTY-CLAUSE ++++++
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST T):
+
+++++++ Top-level checkpoint list: ++++++
+
+Goal:
+<GOAL>
+
+++++++ Non-top-level checkpoint list: ++++++
+
+Subgoal *1/2.2':
+(IMPLIES (AND (CONSP Y)
+              (EQUAL (APPEND (APPEND X (CDR Y)) X)
+                     (APPEND X (CDR Y) X)))
+         (EQUAL (APPEND (APPEND X Y) X)
+                (APPEND X (CONS (CAR Y) (APPEND (CDR Y) X)))))
+
+Subgoal *1/2.1':
+(IMPLIES (AND (CONSP Y)
+              (EQUAL (APPEND (APPEND Z (CDR Y)) X)
+                     (APPEND X (CDR Y) X)))
+         (EQUAL (APPEND (APPEND Z Y) X)
+                (APPEND X (CONS (CAR Y) (APPEND (CDR Y) X)))))
+
+Subgoal *1/1.2':
+(IMPLIES (NOT (CONSP Y))
+         (EQUAL (APPEND (APPEND X Y) X)
+                (APPEND X X)))
+
+Subgoal *1/1.1':
+(IMPLIES (NOT (CONSP Y))
+         (EQUAL (APPEND (APPEND Z Y) X)
+                (APPEND X X)))
+
+++++++ Forced goals?: No ++++++
+
+++++++ Abort?: Yes, EMPTY-CLAUSE ++++++
+----------
+
+<state>
+ACL2 !>>(PROVE$ '(NULL (CDDR (H X Y))))
+ NIL
+ACL2 !>>(CHECKPOINT-TESTS)
+
+----------
+(CHECKPOINT-LIST T STATE):
+
+(((EQUAL (BINARY-APPEND X Y) (BINARY-APPEND Y X))))
+----------
+
+
+----------
+(CHECKPOINT-LIST NIL STATE):
+
+(((NOT (CONSP X))
+  (NOT (EQUAL (BINARY-APPEND (CDR X) Y)
+              (BINARY-APPEND Y (CDR X))))
+  (EQUAL (CONS (CAR X) (BINARY-APPEND Y (CDR X)))
+         (BINARY-APPEND Y X)))
+ ((CONSP X)
+  (EQUAL Y (BINARY-APPEND Y X))))
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY T STATE):
+
+((EQUAL (APPEND X Y) (APPEND Y X)))
+----------
+
+
+----------
+(CHECKPOINT-LIST-PRETTY NIL STATE):
+
+((IMPLIES (AND (CONSP X)
+               (EQUAL (APPEND (CDR X) Y)
+                      (APPEND Y (CDR X))))
+          (EQUAL (CONS (CAR X) (APPEND Y (CDR X)))
+                 (APPEND Y X)))
+ (IMPLIES (NOT (CONSP X))
+          (EQUAL Y (APPEND Y X))))
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST T STATE):
+
+(((:CLAUSE-ID (1) NIL . 0)
+  (:CLAUSE (EQUAL (BINARY-APPEND X Y)
+                  (BINARY-APPEND Y X)))
+  (:PUSHED (((1) NIL . 0) 1))))
+----------
+
+
+----------
+(CHECKPOINT-INFO-LIST NIL STATE):
+
+(((:CLAUSE-ID (1 1) (2) . 2)
+  (:CLAUSE (NOT (CONSP X))
+           (NOT (EQUAL (BINARY-APPEND (CDR X) Y)
+                       (BINARY-APPEND Y (CDR X))))
+           (EQUAL (CONS (CAR X) (BINARY-APPEND Y (CDR X)))
+                  (BINARY-APPEND Y X)))
+  (:PUSHED (((1 1) (2) . 5) 1 1)))
+ ((:CLAUSE-ID (1 1) (1) . 2)
+  (:CLAUSE (CONSP X)
+           (EQUAL Y (BINARY-APPEND Y X)))
+  (:PUSHED (((1 1) (1) . 2) 1 2))))
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST):
+
+++++++ Top-level checkpoint list: ++++++
+
+[1]Goal:
+((EQUAL (BINARY-APPEND X Y)
+        (BINARY-APPEND Y X)))
+
+++++++ Non-top-level checkpoint list: ++++++
+
+[1]Subgoal *1/2'':
+((NOT (CONSP X))
+ (NOT (EQUAL (BINARY-APPEND (CDR X) Y)
+             (BINARY-APPEND Y (CDR X))))
+ (EQUAL (CONS (CAR X) (BINARY-APPEND Y (CDR X)))
+        (BINARY-APPEND Y X)))
+
+[1]Subgoal *1/1'':
+((CONSP X)
+ (EQUAL Y (BINARY-APPEND Y X)))
+
+++++++ Forced goals?: No ++++++
+
+++++++ Abort?: Yes, EMPTY-CLAUSE ++++++
+----------
+
+
+----------
+(SHOW-CHECKPOINT-LIST T):
+
+++++++ Top-level checkpoint list: ++++++
+
+[1]Goal:
+(EQUAL (APPEND X Y) (APPEND Y X))
+
+++++++ Non-top-level checkpoint list: ++++++
+
+[1]Subgoal *1/2'':
+(IMPLIES (AND (CONSP X)
+              (EQUAL (APPEND (CDR X) Y)
+                     (APPEND Y (CDR X))))
+         (EQUAL (CONS (CAR X) (APPEND Y (CDR X)))
+                (APPEND Y X)))
+
+[1]Subgoal *1/1'':
+(IMPLIES (NOT (CONSP X))
+         (EQUAL Y (APPEND Y X)))
+
+++++++ Forced goals?: No ++++++
+
+++++++ Abort?: Yes, EMPTY-CLAUSE ++++++
+----------
+
+<state>
+ACL2 !>>(DEFUN CHECKPOINT-LIST-BOTH (STATE)
+               (DECLARE (XARGS :STOBJS STATE
+                               :GUARD (CHECKPOINT-LIST-GUARD :BOTH STATE)))
+               (LET ((LST (CHECKPOINT-LIST T STATE)))
+                    (IF (EQ LST :UNAVAILABLE)
+                        NIL
+                        (LIST LST (CHECKPOINT-LIST NIL STATE)))))
+
+Since CHECKPOINT-LIST-BOTH is non-recursive, its admission is trivial.
+We observe that the type of CHECKPOINT-LIST-BOTH is described by the
+theorem (TRUE-LISTP (CHECKPOINT-LIST-BOTH STATE)).  We used primitive
+type reasoning.
+
+(CHECKPOINT-LIST-BOTH STATE) => *.
+
+Computing the guard conjecture for CHECKPOINT-LIST-BOTH....
+
+The non-trivial part of the guard conjecture for CHECKPOINT-LIST-BOTH
+is
+
+Goal
+(AND (IMPLIES (AND (CHECKPOINT-LIST-GUARD :BOTH STATE)
+                   (STATE-P STATE))
+              (CHECKPOINT-LIST-GUARD T STATE))
+     (IMPLIES (AND (CHECKPOINT-LIST-GUARD :BOTH STATE)
+                   (STATE-P STATE))
+              (LET ((LST (CHECKPOINT-LIST T STATE)))
+                   (OR (EQ LST :UNAVAILABLE)
+                       (CHECKPOINT-LIST-GUARD NIL STATE))))).
+Subgoal 2
+Subgoal 1
+
+Q.E.D.
+
+That completes the proof of the guard theorem for CHECKPOINT-LIST-BOTH.
+CHECKPOINT-LIST-BOTH is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN CHECKPOINT-LIST-BOTH ...)
+Rules: ((:DEFINITION BOUNDP-GLOBAL)
+        (:DEFINITION BOUNDP-GLOBAL1)
+        (:DEFINITION CHECKPOINT-LIST)
+        (:DEFINITION CHECKPOINT-LIST-GUARD)
+        (:DEFINITION CHECKPOINT-STACK-FROM-GAG-STATE-SAVED)
+        (:DEFINITION EQ)
+        (:DEFINITION GET-GLOBAL)
+        (:DEFINITION GLOBAL-TABLE)
+        (:DEFINITION NOT)
+        (:DEFINITION STATE-P)
+        (:DEFINITION WEAK-GAG-STATE-P)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING CONSP-ASSOC-EQUAL)
+        (:FORWARD-CHAINING EQLABLE-ALISTP-FORWARD-TO-ALISTP)
+        (:FORWARD-CHAINING ORDERED-SYMBOL-ALISTP-FORWARD-TO-SYMBOL-ALISTP)
+        (:FORWARD-CHAINING STATE-P1-FORWARD)
+        (:FORWARD-CHAINING SYMBOL-ALISTP-FORWARD-TO-EQLABLE-ALISTP)
+        (:TYPE-PRESCRIPTION ALISTP)
+        (:TYPE-PRESCRIPTION EQLABLE-ALISTP)
+        (:TYPE-PRESCRIPTION ORDERED-SYMBOL-ALISTP)
+        (:TYPE-PRESCRIPTION STATE-P1)
+        (:TYPE-PRESCRIPTION SYMBOL-ALISTP)
+        (:TYPE-PRESCRIPTION WEAK-GAG-INFO-LISP))
+ CHECKPOINT-LIST-BOTH
+ACL2 !>>(DEFUN MY-SET-LD-HISTORY-ENTRY-USER-DATA
+               (INPUT ERROR-FLG STOBJS-OUT/VALUE STATE)
+               (DECLARE (IGNORE INPUT ERROR-FLG STOBJS-OUT/VALUE)
+                        (XARGS :STOBJS STATE :GUARD T))
+               (IF (CHECKPOINT-LIST-GUARD :BOTH STATE)
+                   (CHECKPOINT-LIST-BOTH STATE)
+                   (ER HARD? 'MY-SET-LD-HISTORY-ENTRY-USER-DATA
+                       "Unexpected violation of ~x0."
+                       '(CHECKPOINT-LIST-GUARD :BOTH STATE))))
+
+Since MY-SET-LD-HISTORY-ENTRY-USER-DATA is non-recursive, its admission
+is trivial.  We observe that the type of MY-SET-LD-HISTORY-ENTRY-USER-DATA
+is described by the theorem 
+(TRUE-LISTP
+     (MY-SET-LD-HISTORY-ENTRY-USER-DATA INPUT
+                                        ERROR-FLG STOBJS-OUT/VALUE STATE)).
+We used the :type-prescription rules CHECKPOINT-LIST-BOTH and HARD-ERROR.
+
+(MY-SET-LD-HISTORY-ENTRY-USER-DATA * * * STATE) => *.
+
+Computing the guard conjecture for MY-SET-LD-HISTORY-ENTRY-USER-DATA....
+
+The guard conjecture for MY-SET-LD-HISTORY-ENTRY-USER-DATA is trivial
+to prove.  MY-SET-LD-HISTORY-ENTRY-USER-DATA is compliant with Common
+Lisp.
+
+Summary
+Form:  ( DEFUN MY-SET-LD-HISTORY-ENTRY-USER-DATA ...)
+Rules: ((:TYPE-PRESCRIPTION CHECKPOINT-LIST-BOTH)
+        (:TYPE-PRESCRIPTION HARD-ERROR))
+ MY-SET-LD-HISTORY-ENTRY-USER-DATA
+ACL2 !>>(DEFATTACH
+           (SET-LD-HISTORY-ENTRY-USER-DATA MY-SET-LD-HISTORY-ENTRY-USER-DATA)
+           :SYSTEM-OK T)
+
+The guard proof obligation is
+
+(IMPLIES (STATE-P STATE)
+         (STATE-P STATE)).
+
+Q.E.D.
+
+This concludes the guard proof.
+
+
+The attachment trivially satisfies the required constraints.
+
+
+ACL2 Observation in ( DEFATTACH (SET-LD-HISTORY-ENTRY-USER-DATA 
+MY-SET-LD-HISTORY-ENTRY-USER-DATA) ...):  The pre-existing attachment
+is being removed for function SET-LD-HISTORY-ENTRY-USER-DATA, before
+adding the requested attachment.
+
+Summary
+Form:  ( DEFATTACH (SET-LD-HISTORY-ENTRY-USER-DATA 
+MY-SET-LD-HISTORY-ENTRY-USER-DATA) ...)
+Rules: ((:TYPE-PRESCRIPTION STATE-P))
+Modified system attachments:
+       ((SET-LD-HISTORY-ENTRY-USER-DATA MY-SET-LD-HISTORY-ENTRY-USER-DATA))
+ :ATTACHMENTS-RECORDED
+ACL2 !>>(THM (EQUAL X X))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+Modified system attachments:
+       ((SET-LD-HISTORY-ENTRY-USER-DATA MY-SET-LD-HISTORY-ENTRY-USER-DATA))
+
+Proof succeeded.
+ACL2 !>>(THM (AND (NULL (CDDR (H X Y)))
+                  (EQUAL (CAR X) X))
+             :OTF-FLG T)
+Subgoal 2
+
+Forcing Round 1 is pending (caused first by Subgoal 2).
+Subgoal 1
+Subgoal 1.2
+Subgoal 1.2'
+
+([ A key checkpoint:
+
+Subgoal 1
+(EQUAL (CAR X) X)
+
+*1 (Subgoal 1.2') is pushed for proof by induction:
+(IMPLIES (NOT (CONSP X)) (NOT X)).
+Subgoal 1.1
+Subgoal 1.1'
+
+A goal of NIL, Subgoal 1.1', has been generated!  Obviously, the proof
+attempt has failed.
+
+])
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION NULL)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE DEFAULT-CAR)
+        (:REWRITE NULL-CDDR-H))
+Modified system attachments:
+       ((SET-LD-HISTORY-ENTRY-USER-DATA MY-SET-LD-HISTORY-ENTRY-USER-DATA))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level
+    before generating a goal of NIL (see :DOC nil-goal): ***
+
+Subgoal 1
+(EQUAL (CAR X) X)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ASSERT-EVENT
+             (EQUAL (LD-HISTORY-ENTRY-USER-DATA (CAR (LD-HISTORY STATE)))
+                    (LIST '(((EQUAL (CAR X) X))) NIL)))
+ :PASSED
+ACL2 !>>Bye.

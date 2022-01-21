@@ -203,12 +203,14 @@
   :guard-hints (("goal" :do-not-induct t
                  :in-theory (enable base-fsm-to-cycle)))
   :returns new-svtv-data
-  (b* (((base-fsm cycle-fsm)
-        (base-fsm-to-cycle (svtv-data->cycle-phases svtv-data)
-                           (svtv-data->phase-fsm svtv-data)
-                           simp))
-       (svtv-data (update-svtv-data->cycle-fsm cycle-fsm svtv-data)))
-    (update-svtv-data->cycle-fsm-validp t svtv-data))
+  (time$
+   (b* (((base-fsm cycle-fsm)
+         (base-fsm-to-cycle (svtv-data->cycle-phases svtv-data)
+                            (svtv-data->phase-fsm svtv-data)
+                            simp))
+        (svtv-data (update-svtv-data->cycle-fsm cycle-fsm svtv-data)))
+     (update-svtv-data->cycle-fsm-validp t svtv-data))
+   :msg "; Svtv-data cycle: ~st seconds, ~sa bytes.~%")
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))

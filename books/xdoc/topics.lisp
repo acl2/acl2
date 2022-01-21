@@ -278,11 +278,12 @@ links</i> into the source code are handled by the @(see preprocessor).</p>
 links, e.g.,</p>
 
 @({
-<a href=\"http://www.centtech.com/\">Centaur Technology</a>
+<a href=\"https://www.cs.utexas.edu/\">University of Texas Department of
+Computer Science</a>
 })
 
-<p>Produces a link to <a href=\"http://www.centtech.com/\">Centaur
-Technology</a>.</p>
+<p>produces a link to the <a href=\"https://www.cs.utexas.edu/\">University of
+Texas Department of Computer Science</a>.</p>
 
 
 <h3>Typesetting Mathematics (Experimental)</h3>
@@ -883,9 +884,8 @@ intranet connection, but it can be quite slow over the internet.</p>
 
 <p>The XDOC manuals created by @('save') can be reconfigured to just load the
 @(':long') sections as they are accessed.  This results in a much
-faster-loading manual, and is how, for instance, the <a
-href='http://fv.centtech.com/acl2/latest/doc/'>online XDOC manual</a> at
-Centaur is deployed.</p>
+faster-loading manual, and is how, for instance, the online XDOC manual at
+Centaur was deployed.</p>
 
 <p>This option requires a small amount of configuration, and you may need to
 coordinate with your network administrator to get certain software

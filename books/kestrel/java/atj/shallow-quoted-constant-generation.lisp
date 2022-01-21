@@ -37,8 +37,6 @@
     "We extract all the quoted constants
      from the pre-translated bodies of the ACL2 functions,
      and we create a static final field for each.
-     For now we only do this for quoted numbers, characters, and strings,
-     but we will cover the other quoted values soon.
      The fields for these quoted constants
      are declared in the generated main class;
      they are named in a way that describes their value,

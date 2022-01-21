@@ -14,6 +14,11 @@
 
 ; cert_param: (uses-stp)
 
+; Matt K. mod: Avoid ACL2(p) with waterfall-parallelism, "Clause-processors
+; that return one or more stobjs are not officially supported when waterfall
+; parallelism is enabled."
+(set-waterfall-parallelism nil)
+
 (include-book "stp-clause-processor")
 
 ;full syntax for the :clause-processor hint:

@@ -1,0 +1,7 @@
+
+ {
+     fun()
+     revert(0, 0)
+     function fun()
+     { sstore(0, 1) }
+ }

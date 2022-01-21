@@ -24,6 +24,9 @@
 (local (include-book "../arithmetic-light/minus"))
 (local (include-book "../arithmetic-light/plus"))
 (local (include-book "../arithmetic-light/integerp"))
+(local (include-book "../arithmetic-light/times-and-divides"))
+(local (include-book "../arithmetic-light/divides"))
+(local (include-book "../arithmetic-light/times"))
 (local (include-book "unsigned-byte-p"))
 
 ;move
@@ -219,6 +222,14 @@
                            (slice-becomes-bvchop)))))
 
 (theory-invariant (incompatible (:definition slice) (:rewrite logtail-of-bvchop-becomes-slice)))
+
+;; Puts the bvchop inside the logtail
+(defthmd slice-alt-def
+  (implies (and (natp low)
+                (natp high))
+           (equal (slice high low x)
+                  (logtail low (bvchop (+ 1 high) x))))
+  :hints (("Goal" :in-theory (enable logtail-of-bvchop-becomes-slice))))
 
 (defthm slice-of-logtail
   (implies (and (natp high)
@@ -458,7 +469,7 @@
                 (natp high))
            (equal (slice high low (+ -1 (expt 2 low)))
                   0))
-  :hints (("Goal" :in-theory (e/d (slice) (acl2::bvchop-of-logtail-becomes-slice)))))
+  :hints (("Goal" :in-theory (e/d (slice) (bvchop-of-logtail-becomes-slice)))))
 
 ;some way to automate this kind of reasoning?
 (defthmd slice-leibniz
@@ -520,3 +531,57 @@
                 (natp low))
            (not (< k (slice high low x))))
   :hints (("Goal" :by slice-bound-3)))
+
+(defthm slice-of-times-of-expt
+  (implies (and (<= j n)     ;drop?
+                (integerp x) ;drop?
+                (natp n)
+                (natp j)
+                (natp m))
+           (equal (slice m n (* (expt 2 j) x))
+                  (slice (- m j) (- n j) x)))
+  :hints (("Goal" :in-theory (e/d (slice logtail EXPT-OF-+ FLOOR-NORMALIZE-DENOMINATOR)
+                                  (FLOOR-OF-*-OF-/-AND-1)))))
+
+(defthm slice-of-times-of-expt-alt
+  (implies (and (<= j n)     ;drop?
+                (integerp x) ;drop?
+                (natp n)
+                (natp j)
+                (natp m))
+           (equal (slice m n (* x (expt 2 j)))
+                  (slice (- m j) (- n j) x)))
+  :hints (("Goal" :use (:instance slice-of-times-of-expt)
+           :in-theory (disable slice-of-times-of-expt))))
+
+(defthm slice-of-ash
+  (implies (and (<= n low)
+                (integerp low)
+                (integerp high)
+                (natp n))
+           (equal (slice high low (ash x n))
+                  (slice (- high n) (- low n) x)))
+  :hints (("Goal" :in-theory (e/d (ash slice logtail ;floor
+                                       expt-of-+)
+                                  (bvchop-of-logtail-becomes-slice)))))
+
+;can't just turn ash into slice because we don't know what the top bit is, so
+;we need the overarching slice.
+(defthm slice-of-ash-right
+  (implies (and (< n 0)
+                (natp low)
+                (natp high)
+                (integerp n))
+           (equal (slice high low (ash x n))
+                  (slice (+ high (- n)) (+ low (- n)) x)))
+  :hints (("Goal" :in-theory (e/d (ash slice logtail ;floor
+                                       ifix
+                                       expt-of-+)
+                                  (bvchop-of-logtail-becomes-slice)))))
+
+(defthm slice-of-ash-same
+  (implies (and (natp high)
+                (natp low))
+           (equal (slice high low (ash x low))
+                  (bvchop (+ 1 (- high low)) x)))
+  :hints (("Goal" :cases ((<= n 0)))))

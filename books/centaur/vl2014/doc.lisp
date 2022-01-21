@@ -45,8 +45,7 @@
 <p>The @(see vl::vl) Verilog Toolkit is a large ACL2 library for working with
 <a href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a> and <a
 href='http://en.wikipedia.org/wiki/SystemVerilog'>SystemVerilog</a> source
-code, developed at <a href='http://www.centtech.com/'>Centaur Technology</a> by
-Jared Davis and Sol Swords.</p>
+code, developed at Centaur Technology by Jared Davis and Sol Swords.</p>
 
 <p>The <u>2014 Edition</u> of VL is a \"stable\" fork of VL that is meant to
 provide continuing support for older tools, notably including @(see
