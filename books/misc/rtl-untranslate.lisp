@@ -135,6 +135,7 @@
                                                             untrans-tbl sigs-btree lops-alist
                                                             preprocess-fn
                                                             wrld))
+            nil ; type-dcls; setting to nil to match legacy (pre-2022) behavior
             (rtl-untrans1 (lambda-body (ffn-symb term)) iff-flg untrans-tbl sigs-btree lops-alist
                           preprocess-fn wrld)))
           ((and (eq (ffn-symb term) 'nth)

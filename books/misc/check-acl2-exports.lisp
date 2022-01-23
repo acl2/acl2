@@ -208,6 +208,7 @@
     LEX-FIX
     LEXP
     NFIX-LIST
+    MAYBE-CONVERT-TO-MV
   ))
 
 (defconst *special-ops*

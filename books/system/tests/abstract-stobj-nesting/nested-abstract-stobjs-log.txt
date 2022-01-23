@@ -558,12 +558,12 @@ The non-trivial part of the guard conjecture for FOO is
 
 Goal
 (IMPLIES (TOPP TOP)
-         (LET ((SUB$C (SUB0 TOP)))
-              (MV-LET (SUB$C)
-                      (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
-                             (SUB$C-VAL (FLD0$C SUB$C)))
-                            (LIST SUB$C SUB$C-VAL))
-                      (NATP (FLD0$C SUB$C))))).
+         (LET* ((SUB$C (SUB0 TOP))
+                (MV (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                           (SUB$C-VAL (FLD0$C SUB$C)))
+                          (LIST SUB$C SUB$C-VAL)))
+                (SUB$C (MV-NTH 0 MV)))
+               (NATP (FLD0$C SUB$C)))).
 Goal'
 
 Q.E.D.
@@ -790,12 +790,12 @@ The non-trivial part of the guard conjecture for FOO2 is
 
 Goal
 (IMPLIES (TOP2P TOP2)
-         (LET ((SUB$C (SUB02 TOP2)))
-              (MV-LET (SUB$C)
-                      (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
-                             (SUB$C-VAL (FLD0$C SUB$C)))
-                            (LIST SUB$C SUB$C-VAL))
-                      (NATP (FLD0$C SUB$C))))).
+         (LET* ((SUB$C (SUB02 TOP2))
+                (MV (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                           (SUB$C-VAL (FLD0$C SUB$C)))
+                          (LIST SUB$C SUB$C-VAL)))
+                (SUB$C (MV-NTH 0 MV)))
+               (NATP (FLD0$C SUB$C)))).
 Goal'
 
 Q.E.D.
@@ -1172,7 +1172,7 @@ Goal
             (MV N$2 N$)
             (LET* ((N$ (UPDATE-N$VAL (N$2VAL N$2) N$))
                    (N$ (UPDATE-N$VAL (+ 1 (N$2VAL N$2)) N$)))
-                  (LIST N$2 N$)))
+                  (MV N$2 N$)))
     (AND
      (OR
       (NOT (UENVALID TWO-ORDERED-NUMS))

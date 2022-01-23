@@ -1227,7 +1227,7 @@
 
   (let ((new-bindings (make-let-smart-bindings bindings vars)))
     (cond ((null new-bindings) body)
-          (t (make-let new-bindings body)))))
+          (t (make-let new-bindings nil nil body)))))
 
 (mutual-recursion
 

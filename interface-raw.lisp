@@ -7812,6 +7812,22 @@
                      (not (cdr (assoc-eq x *boot-strap-invariant-risk-alist*)))
                      collect x)))))
 
+(defun computed-type-expr-to-type-spec-alist (state)
+  (pair-type-expressions-with-type-specs
+   *type-spec-templates*
+   '((-3   . int-lo)
+     (5    . int-hi)
+     (2    . nat)
+     (-1/7 . rat-lo)
+     (1/11 . rat-hi))
+   '(('-3   . int-lo)
+     ('5    . int-hi)
+     ('2    . nat)
+     ('-1/7 . rat-lo)
+     ('1/11 . rat-hi))
+   nil
+   (w state)))
+
 (defun check-built-in-constants (&aux (state *the-live-state*))
 
 ; Certain defconsts are problematic because they build in values that one
@@ -7977,6 +7993,14 @@
                      (strip-cars *primitive-formals-and-guards*)
                      (ens state)
                      (w state)))))
+    (cond
+     ((not
+       (equal *type-expr-to-type-spec-alist*
+              (computed-type-expr-to-type-spec-alist state)))
+      (interface-er str
+                    '*type-expr-to-type-spec-alist*
+                    *type-expr-to-type-spec-alist*
+                    (computed-type-expr-to-type-spec-alist state))))
     (cond
      ((not (getpropc 'booleanp 'tau-pair))
       (interface-er

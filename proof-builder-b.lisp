@@ -973,16 +973,6 @@
              (chk-assumption-free-ttree ttree ctx state)
              (value ttree)))))
 
-(defun sublis-equal (alist tree)
-  (declare (xargs :guard (alistp alist)))
-  (let ((pair (assoc-equal tree alist)))
-    (if pair
-        (cdr pair)
-      (if (atom tree)
-          tree
-        (cons (sublis-equal alist (car tree))
-              (sublis-equal alist (cdr tree)))))))
-
 (defun abbreviations-alist-? (abbreviations)
   ;; Same as abbreviations-alist, except that we assume that we
   ;; haven't translated yet, and hence we use ? instead of ?-fn

@@ -1244,7 +1244,7 @@
 
 (defun first-unusual-with-clause (alist)
 
-; We return (mv n culprit) where 
+; We return (mv n culprit) where
 ; n = 0 means we saw an unusual var, culprit
 ; n = 1 means we saw an unusual type-spec for culprit = (var . spec)
 ; n = 2 means we saw an unusual init form for culprit = (var . init)
@@ -1253,7 +1253,7 @@
   (cond
    ((endp alist) (mv nil nil))
    ((member-eq (car (car alist)) '(OF-TYPE = WITH DO))
-    (mv 0 (car (car alist)))) 
+    (mv 0 (car (car alist))))
    ((member-eq (cadr (car alist)) '(OF-TYPE = WITH DO))
     (mv 1 (cons (car (car alist)) (cadr (car alist)))))
    ((and (caddr (car alist))
@@ -1283,7 +1283,7 @@
 
 ; and the successful parse is
 
-; (((v1 spec t . a1) ; local var, type spec or NIL, init-flg, init form 
+; (((v1 spec t . a1) ; local var, type spec or NIL, init-flg, init form
 ;   ...
 ;   (vn spec t . an))
 ;  m                               ; measure term
@@ -1448,7 +1448,7 @@
 ; are tracking latches.
 
 ; Also see related function loop$-stobjs-out.
-  
+
   (let* ((quoted-loop$-expr (car (last arg-exprs)))
          (loop$-expr (and (quotep quoted-loop$-expr)
                           (unquote quoted-loop$-expr))))
@@ -2193,19 +2193,83 @@
      (otherwise
       (cdr (assoc-eq sym (table-alist 'return-last-table wrld)))))))
 
-(defun make-let-or-let* (bindings body)
+(defun add-ignore-to-rest (var rest)
+
+; We place ignore declarations before others.
+
+  (case-match rest
+    ((('declare ('ignore . vars)) . rest2)
+     (cons `(declare (ignore ,@vars ,var))
+           rest2))
+    (&
+     (cons `(declare (ignore ,var))
+           rest))))
+
+(defun add-type-dcls-to-rest (type-dcls rest)
+
+; We place type declarations at the end.
+
+  (cond ((null type-dcls) rest)
+        (t (case-match rest
+             ((('declare . dcls) . rest2)
+              (cons `(declare ,@dcls ,@type-dcls)
+                    rest2))
+             (&
+              (cons `(declare ,@type-dcls)
+                    rest))))))
+
+(defun collect-ignored-let-vars (bindings)
+  (cond ((endp bindings) (mv nil nil))
+        (t (mv-let (bs is)
+             (collect-ignored-let-vars (cdr bindings))
+             (let ((b (car bindings)))
+               (case-match b
+                 ((v ('HIDE e))
+                  (mv (cons (list v e) bs)
+                      (cons v is)))
+                 (& (mv (cons b bs) is))))))))
+
+(defun make-let-or-let* (bindings type-dcls body)
+
+; Bindings and body are untranslated, and we essentially return (let bindings
+; body).  But we combine nested lets into let*; and if tbody-for-stobj is
+; non-nil then we expect it to be a translated term returning a stobj that
+; untranslates to body.
+
   (declare (xargs :guard (doublet-listp bindings)))
   (cond ((and bindings (null (cdr bindings)))
-         (case-match body
-           (('let ((& &)) x)
-            `(let* (,@bindings
-                    ,@(cadr body))
-               ,x))
-           (('let* rest-bindings x)
-            `(let* ,(cons (car bindings) rest-bindings)
-               ,x))
-           (& (make-let bindings body))))
-        (t (make-let bindings body))))
+         (let ((binding (car bindings)))
+           (mv-let (b0 i0)
+             (case-match binding
+               ((v0 ('hide e0))
+                (mv (list v0 e0) v0))
+               (& (mv binding nil)))
+             (case-match body
+               (('let ((& &)) . x)
+                (let ((x (add-type-dcls-to-rest type-dcls x)))
+                  `(let* (,b0
+                          ,@(cadr body))
+                     ,@(if i0
+                           (add-ignore-to-rest i0 x)
+                         x))))
+               (('let* rest-bindings . x)
+                (let ((x (add-type-dcls-to-rest type-dcls x)))
+                  `(let* ,(cons b0 rest-bindings)
+                     ,@(if i0
+                           (add-ignore-to-rest i0 x)
+                         x))))
+               (& (cond (i0 (let ((ignores (list i0)))
+                              (make-let (list b0)
+                                        ignores
+                                        type-dcls
+                                        body)))
+                        (t (make-let bindings
+                                     nil
+                                     type-dcls
+                                     body))))))))
+        (t (mv-let (bs is)
+             (collect-ignored-let-vars bindings)
+             (make-let bs is type-dcls body)))))
 
 (defmacro untranslate*-lst (lst iff-flg wrld)
 
@@ -5692,7 +5756,7 @@
 ; This proof attempt fails.
 ; (thm (implies (and (APPLY$-WARRANT-MY-FN4)
 ;                    (APPLY$-WARRANT-MY-FN1))
-;               (tamep 
+;               (tamep
 ;                '((lambda (u v)
 ;                    (my-fn1 u (my-fn2 'my-fn4 v)))
 ;                  (unary-/ a)
@@ -5721,7 +5785,7 @@
 ;                    (APPLY$-WARRANT-MY-FN4)
 ;                    (APPLY$-WARRANT-MY-FN2)
 ;                    (APPLY$-WARRANT-MY-FN1))
-;               (tamep 
+;               (tamep
 ;                '((lambda (u v)
 ;                    (my-fn1 u (my-fn2 'my-fn4 v)))
 ;                  (unary-/ a)
@@ -6231,6 +6295,649 @@
 
             (cltl-def-from-name fn wrld))
            (otherwise nil)))))
+
+; The one-way-unify code is needed here for stripping out expressions generated
+; by translating type declarations.  Previously it resided in type-set-b.lisp,
+; because type-set uses type-prescription rules with general patterns in them
+; (rather than Nqthm-style rules for function symbols), we need one-way
+; unification or pattern matching.
+
+; One-way-unify1 can "see" (binary-+ 1 x) in 7, by letting x be 6.  Thus, we
+; say that binary-+ is an "implicit" symbol to one-way-unify1.  Here is the
+; current list of implicit symbols.  This list is used for heuristic reasons.
+; Basically, a quick necessary condition for pat to one-way-unify with term is
+; for the function symbols of pat (except for the implicit ones) to be a subset
+; of the function symbols of term.
+
+(defconst *one-way-unify1-implicit-fns*
+  '(binary-+
+    binary-*
+    unary--
+    unary-/
+    intern-in-package-of-symbol
+    coerce
+    cons))
+
+(defun one-way-unify1-quotep-subproblems (pat term)
+
+; Caution:  If you change the code below, update
+; *one-way-unify1-implicit-fns*.
+
+; Term is a quotep.  This function returns (mv pat1 term1 pat2 term2) as
+; follows.  If pat1 is t then pat/s = term for every substitution s, where here
+; and below, = denotes provable equality (in other words, it is a theorem in
+; the given context that pat = term).  If pat1 is nil then there are no
+; requirements.  Otherwise pat1 and term1 are terms and the spec is as follows.
+; If pat2 is nil then for every substitution s, pat/s = term if pat1/s = term1.
+; But if pat2 is non-nil; then pat2 and term2 are terms, and pat/s = term/s if
+; both pat1/s = term1/s and pat2/s = term2/s.
+
+; Thus, this function allows us to reduce the problem of matching pat to a
+; quotep, term, to one or two matching problems for "parts" of pat and term.
+
+; In order to prevent loops, we insist that one-way-unification does not
+; present the rewriter with ever-more-complex goals.  Robert Krug has sent the
+; following examples, which motivated the controls in the code for binary-+ and
+; binary-* below.
+
+;  (defstub foo (x) t)
+;  (defaxiom foo-axiom
+;    (equal (foo (* 2 x))
+;           (foo x)))
+;  (thm
+;   (foo 4))
+;  :u
+;  (defaxiom foo-axiom
+;    (equal (foo (+ 1 x))
+;           (foo x)))
+;  (thm
+;    (foo 4))
+
+; Another interesting example is (thm (foo 4)) after replacing the second
+; foo-axiom with (equal (foo (+ -1 x)) (foo x)).
+
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (nvariablep pat)
+                              (not (fquotep pat))
+                              (pseudo-termp term)
+                              (quotep term))))
+  (let ((evg (cadr term)))
+    (cond ((acl2-numberp evg)
+           (let ((ffn-symb (ffn-symb pat)))
+             (case ffn-symb
+               (binary-+
+                (cond ((quotep (fargn pat 1))
+                       (let ((new-evg (- evg (fix (cadr (fargn pat 1))))))
+                         (cond
+                          ((<= (acl2-count new-evg)
+                               (acl2-count evg))
+                           (mv (fargn pat 2) (kwote new-evg) nil nil))
+                          (t (mv nil nil nil nil)))))
+                      ((quotep (fargn pat 2))
+                       (let ((new-evg (- evg (fix (cadr (fargn pat 2))))))
+                         (cond ((<= (acl2-count new-evg)
+                                    (acl2-count evg))
+                                (mv (fargn pat 1) (kwote new-evg) nil nil))
+                               (t (mv nil nil nil nil)))))
+                      (t (mv nil nil nil nil))))
+               (binary-*
+                (cond ((or (not (integerp evg))
+                           (int= evg 0))
+                       (mv nil nil nil nil))
+                      ((and (quotep (fargn pat 1))
+                            (integerp (cadr (fargn pat 1)))
+                            (> (abs (cadr (fargn pat 1))) 1))
+                       (let ((new-term-evg (/ evg (cadr (fargn pat 1)))))
+                         (cond ((integerp new-term-evg)
+                                (mv (fargn pat 2) (kwote new-term-evg)
+                                    nil nil))
+                               (t (mv nil nil nil nil)))))
+                      ((and (quotep (fargn pat 2))
+                            (integerp (cadr (fargn pat 2)))
+                            (> (abs (cadr (fargn pat 2))) 1))
+                       (let ((new-term-evg (/ evg (cadr (fargn pat 2)))))
+                         (cond ((integerp new-term-evg)
+                                (mv (fargn pat 1) (kwote new-term-evg)
+                                    nil nil))
+                               (t (mv nil nil nil nil)))))
+                      (t (mv nil nil nil nil))))
+
+; We once were willing to unify (- x) with 3 by binding x to -3.  John Cowles'
+; experience with developing ACL2 arithmetic led him to suggest that we not
+; unify (- x) with any constant other than negative ones.  Similarly, we do not
+; unify (/ x) with any constant other than those between -1 and 1.  The code
+; below reflects these suggestions.
+
+               (unary-- (cond ((>= (+ (realpart evg)
+                                      (imagpart evg))
+                                   0)
+                               (mv nil nil nil nil))
+                              (t (mv (fargn pat 1) (kwote (- evg)) nil nil))))
+               (unary-/ (cond ((or (>= (* evg (conjugate evg))
+                                       1)
+                                   (eql 0 evg))
+                               (mv nil nil nil nil))
+                              (t (mv (fargn pat 1) (kwote (/ evg)) nil nil))))
+               (otherwise (mv nil nil nil nil)))))
+          ((symbolp evg)
+           (cond
+            ((eq (ffn-symb pat) 'intern-in-package-of-symbol)
+
+; We are unifying 'pkg::name with (intern-in-package-of-symbol x y).  Suppose
+; that x is unified with "name"; then when is (intern-in-package-of-symbol
+; "name" y) equal to pkg::name?  It would suffice to unify y with any symbol in
+; pkg.  It might be that y is already such a quoted symbol.  Or perhaps we
+; could unify y with pkg::name, which is one symbol we know is in pkg.  But
+; note that it is not necessary that y unify with a symbol in pkg.  It would
+; suffice, for example, if y could be unified with a symbol in some other
+; package, say gkp, with the property that pkg::name was imported into gkp, for
+; then gkp::name would be pkg::name.  Thus, as is to be expected by all failed
+; unifications, failure does not mean there is no instance that is equal to the
+; term.  Suppose that y is not a quoted symbol and is not a variable (which
+; could therefore be unified with pkg::name).  What else might unify with "any
+; symbol in pkg?"  At first sight one might think that if y were
+; (intern-in-package-of-symbol z 'pkg::name2) then the result is a symbol in
+; pkg no matter what z is.  (The idea is that one might think that
+; (intern-in-package-of-symbol z 'pkg::name2) is "the" generic expression of
+; "any symbol in pkg.")  But that is not true because for certain z it is
+; possible that the result isn't in pkg.  Consider, for example, the
+; possibility that gkp::zzz is imported into pkg so that if z is "ZZZ" the
+; result is a symbol in gkp not pkg.
+
+             (let ((pkg (symbol-package-name evg))
+                   (name (symbol-name evg)))
+               (cond
+                ((and (nvariablep (fargn pat 2))
+                      (fquotep (fargn pat 2)))
+                 (cond
+                  ((symbolp (cadr (fargn pat 2)))
+                   (if (equal pkg
+                              (symbol-package-name (cadr (fargn pat 2))))
+                       (mv (fargn pat 1) (kwote name) nil nil)
+                     (mv nil nil nil nil)))
+                  (t
+
+; (intern-in-package-of-symbol x y) is NIL if y is not a symbol.  So we win if
+; term is 'nil and lose otherwise.  If we win, note that x is unified
+; (unnecessarily) with "NIL" in alist1 and so we report the win with alist!  If
+; we lose, we have to report alist to be a no change loser.  So it's alist
+; either way.
+
+                   (mv (eq evg nil) nil nil nil))))
+                (t (mv (fargn pat 1) (kwote name) (fargn pat 2) term)))))
+            (t (mv nil nil nil nil))))
+          ((stringp evg)
+           (cond ((and (eq (ffn-symb pat) 'coerce)
+                       (equal (fargn pat 2) ''string))
+                  (mv (fargn pat 1) (kwote (coerce evg 'list)) nil nil))
+                 (t (mv nil nil nil nil))))
+          ((consp evg)
+           (cond ((eq (ffn-symb pat) 'cons)
+
+; We have to be careful with alist below so we are a no change loser.
+
+                  (mv (fargn pat 1) (kwote (car evg))
+                      (fargn pat 2) (kwote (cdr evg))))
+                 (t (mv nil nil nil nil))))
+          (t (mv nil nil nil nil)))))
+
+(mutual-recursion
+
+(defun one-way-unify1 (pat term alist)
+
+; Warning: Keep this in sync with one-way-unify1-term-alist.
+
+; This function is a "No-Change Loser" meaning that if it fails and returns nil
+; as its first result, it returns the unmodified alist as its second.
+
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (pseudo-termp term)
+                              (alistp alist))))
+  (cond ((variablep pat)
+         (let ((pair (assoc-eq pat alist)))
+           (cond (pair (cond ((equal (cdr pair) term)
+                              (mv t alist))
+                             (t (mv nil alist))))
+                 (t (mv t (cons (cons pat term) alist))))))
+        ((fquotep pat)
+         (cond ((equal pat term) (mv t alist))
+               (t (mv nil alist))))
+        ((variablep term) (mv nil alist))
+        ((fquotep term)
+
+; We have historically attempted to unify ``constructor'' terms with explicit
+; values, and we try to simulate that here, treating the primitive arithmetic
+; operators, intern-in-package-of-symbol, coerce (to a very limited extent),
+; and, of course, cons, as constructors.
+
+         (mv-let
+          (pat1 term1 pat2 term2)
+          (one-way-unify1-quotep-subproblems pat term)
+          (cond ((eq pat1 t) (mv t alist))
+                ((eq pat1 nil) (mv nil alist))
+                ((eq pat2 nil) (one-way-unify1 pat1 term1 alist))
+                (t
+
+; We are careful with alist to keep this a no change loser.
+
+                 (mv-let (ans alist1)
+                         (one-way-unify1 pat1 term1 alist)
+                         (cond ((eq ans nil) (mv nil alist))
+                               (t (mv-let
+                                   (ans alist2)
+                                   (one-way-unify1 pat2 term2 alist1)
+                                   (cond (ans (mv ans alist2))
+                                         (t (mv nil alist)))))))))))
+        ((cond ((flambda-applicationp pat)
+                (equal (ffn-symb pat) (ffn-symb term)))
+               (t
+                (eq (ffn-symb pat) (ffn-symb term))))
+         (cond ((eq (ffn-symb pat) 'equal)
+                (one-way-unify1-equal (fargn pat 1) (fargn pat 2)
+                                      (fargn term 1) (fargn term 2)
+                                      alist))
+               (t (mv-let (ans alist1)
+                          (one-way-unify1-lst (fargs pat) (fargs term) alist)
+                          (cond (ans (mv ans alist1))
+                                (t (mv nil alist)))))))
+        (t (mv nil alist))))
+
+(defun one-way-unify1-lst (pl tl alist)
+
+; Warning: Keep this in sync with one-way-unify1-term-alist-lst.
+
+; This function is NOT a No Change Loser.  That is, it may return nil
+; as its first result, indicating that no substitution exists, but
+; return as its second result an alist different from its input alist.
+
+  (declare (xargs :guard (and (pseudo-term-listp pl)
+                              (pseudo-term-listp tl)
+                              (alistp alist))))
+  (cond ((null pl) (mv t alist))
+        (t (mv-let (ans alist)
+             (one-way-unify1 (car pl) (car tl) alist)
+             (cond
+              (ans
+               (one-way-unify1-lst (cdr pl) (cdr tl) alist))
+              (t (mv nil alist)))))))
+
+(defun one-way-unify1-equal1 (pat1 pat2 term1 term2 alist)
+
+; At first glance, the following code looks more elaborate than
+; necessary.  But this function is supposed to be a No Change Loser.
+; The first time we coded this we failed to ensure that property.  The
+; bug is the result of fuzzy thinking in the vicinity of conjunctive
+; subgoals.  Suppose success requires success on x and success on y.
+; The naive way to code it is (mv-let (ans nochanger) x (if ans y (mv
+; nil nochanger))), i.e., to solve the x problem and if you win,
+; return your solution to the y problem.  But if x wins it will have
+; changed nochanger.  If y then loses, it returns the changed
+; nochanger produced by x.  Clearly, if x might win and change things
+; but ultimate success also depends on y, you must preserve the
+; original inputs and explicitly revert to them if y loses.
+
+  (mv-let (ans alist1)
+    (one-way-unify1 pat1 term1 alist)
+    (cond (ans
+           (mv-let (ans alist2)
+                   (one-way-unify1 pat2 term2 alist1)
+                   (cond (ans (mv ans alist2))
+                         (t (mv nil alist)))))
+          (t (mv nil alist)))))
+
+(defun one-way-unify1-equal (pat1 pat2 term1 term2 alist)
+  (mv-let (ans alist)
+    (one-way-unify1-equal1 pat1 pat2 term1 term2 alist)
+    (cond
+     (ans (mv ans alist))
+     (t (one-way-unify1-equal1 pat2 pat1 term1 term2 alist)))))
+)
+
+(defun one-way-unify (pat term)
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (pseudo-termp term))))
+
+; This function returns two values.  The first is T or NIL, according to
+; whether unification succeeded.  The second value returned is a symbol alist
+; that when substituted into pat will produce term, when the unification
+; succeeded.
+
+; The use of the phrase ``unify'' here is somewhat opaque but is
+; historically justified by its usage in nqthm.  Really, all we are
+; doing is matching because we do not treat the ``variable symbols''
+; in term as instantiable.
+
+; Note that the fact that this function returns nil should not be
+; taken as a sign that no substitution makes pat equal to term in the
+; current theory.  For example, we fail to unify (+ x x) with '2 even
+; though '((x . 1)) does the job.
+
+  (one-way-unify1 pat term nil))
+
+(defconst *initial-return-last-table*
+  '((time$1-raw . time$1)
+    (with-prover-time-limit1-raw . with-prover-time-limit1)
+    (with-fast-alist-raw . with-fast-alist)
+    (with-stolen-alist-raw . with-stolen-alist)
+    (fast-alist-free-on-exit-raw . fast-alist-free-on-exit)
+
+; Keep the following comment in sync with return-last-table and with
+; chk-return-last-entry.
+
+; The following could be omitted since return-last gives them each special
+; handling: prog2$ and mbe1 are used during the boot-strap before tables are
+; supported, and ec-call1 and (in ev-rec-return-last) with-guard-checking gets
+; special handling.  It is harmless though to include them explicitly, in
+; particular at the end so that they do not add time in the expected case of
+; finding one of the other entries in the table.  If we decide to avoid special
+; handling (which we have a right to do, by the way, since users who modify
+; return-last-table are supposed to know what they are doing, as a trust tag is
+; needed), then we should probably move these entries to the top where they'll
+; be seen more quickly.
+
+    (progn . prog2$)
+    (mbe1-raw . mbe1)
+    (ec-call1-raw . ec-call1)
+    (with-guard-checking1-raw . with-guard-checking1)))
+
+(defun maybe-convert-to-mv (uterm)
+
+; Uterm is an untranslated term.  We return a version of uterm that is
+; logically equal to uterm but attempts, heuristically, to reflect the
+; expectation that uterm returns multiple values.
+
+; This function might reasonably be named convert-to-mv.  The "maybe-" is
+; intended to suggest that we don't always introduce mv (we only replace some
+; calls of list by mv calls).
+
+  (cond ((atom uterm) uterm)
+        ((and (eq (car uterm) 'list)
+              (consp (cddr uterm)))
+         (cons 'mv (cdr uterm)))
+        ((and (eq (car uterm) 'if)
+              (= (length uterm) 4)) ; always true?
+         (list 'if
+               (cadr uterm)
+               (maybe-convert-to-mv (caddr uterm))
+               (maybe-convert-to-mv (cadddr uterm))))
+        ((member-eq (car uterm) '(let let* mv-let))
+         (append (butlast uterm 1)
+                 (list (maybe-convert-to-mv (car (last uterm))))))
+
+; The next several cases handle some of what may come out of untranslate1 for
+; inputs that are translated return-last calls.
+
+        ((and (eq (car uterm) 'mbe)
+              (= (length uterm) 5) ; always true?
+              (eq (nth 1 uterm) :logic)
+              (eq (nth 3 uterm) :exec))
+         `(mbe :logic ,(maybe-convert-to-mv (nth 2 uterm))
+               :exec  ,(maybe-convert-to-mv (nth 4 uterm))))
+        ((or (member-eq (car uterm)
+                        '(return-last mbt prog2$))
+
+; We could pass in the world and use its return-last-table instead of the
+; current return-last-table.  But we doubt that this would make much difference
+; in practice.  If we decide to do that, we could allow the world argument to
+; be nil, in which case the *initial-return-last-table* would be used as
+; before.
+
+             (rassoc-eq (car uterm) *initial-return-last-table*))
+         (append (butlast uterm 1)
+                 (list (maybe-convert-to-mv (car (last uterm))))))
+        ((and (eq (car uterm) 'ec-call)
+              (= (length uterm) 2)) ; always true?
+         (list 'ec-call
+               (maybe-convert-to-mv (cadr uterm))))
+        ((eq (car uterm) 'time$) ; (time$ x ...)
+         (list* 'time$
+                (maybe-convert-to-mv (cadr uterm))
+                (cddr uterm)))
+        (t uterm)))
+
+(defconst *type-expr-to-type-spec-alist*
+
+; See check-type-expr-to-type-spec-alist for how this list was generated.
+
+  '(((INTEGERP VAR) . INTEGER)
+    ((IF (INTEGERP VAR)
+         (NOT (< VAR INT-LO))
+         'NIL)
+     INTEGER INT-LO *)
+    ((IF (INTEGERP VAR)
+         (NOT (< INT-HI VAR))
+         'NIL)
+     INTEGER * INT-HI)
+    ((IF (INTEGERP VAR)
+         (IF (NOT (< VAR INT-LO))
+             (NOT (< INT-HI VAR))
+             'NIL)
+         'NIL)
+     INTEGER INT-LO INT-HI)
+    ((RATIONALP VAR) . RATIONAL)
+    #+non-standard-analysis
+    ((REALP VAR) . REAL)
+    #-non-standard-analysis
+    ((COMPLEX-RATIONALP VAR) . COMPLEX)
+    #+non-standard-analysis
+    ((COMPLEXP VAR) . COMPLEX)
+    ((IF (RATIONALP VAR)
+         (NOT (< VAR RAT-LO))
+         'NIL)
+     RATIONAL RAT-LO *)
+    ((IF (RATIONALP VAR)
+         (NOT (< RAT-HI VAR))
+         'NIL)
+     RATIONAL * RAT-HI)
+    ((IF (RATIONALP VAR)
+         (IF (NOT (< VAR RAT-LO))
+             (NOT (< RAT-HI VAR))
+             'NIL)
+         'NIL)
+     RATIONAL RAT-LO RAT-HI)
+    #+non-standard-analysis
+    ((IF (REALP VAR)
+         (NOT (< VAR RAT-LO))
+         'NIL)
+     REAL RAT-LO *)
+    #+non-standard-analysis
+    ((IF (REALP VAR)
+         (NOT (< RAT-HI VAR))
+         'NIL)
+     REAL * RAT-HI)
+    #+non-standard-analysis
+    ((IF (REALP VAR)
+         (IF (NOT (< VAR RAT-LO))
+             (NOT (< RAT-HI VAR))
+             'NIL)
+         'NIL)
+     REAL RAT-LO RAT-HI)
+    ((IF (EQUAL VAR '1)
+         (EQUAL VAR '1)
+         (EQUAL VAR '0))
+     . BIT)
+    ((ATOM VAR) . ATOM)
+    ((CHARACTERP VAR) . CHARACTER)
+    ((CONSP VAR) . CONS)
+    ((LISTP VAR) . LIST)
+    ((EQ VAR 'NIL) . NULL)
+    ((IF (RATIONALP VAR)
+         (NOT (INTEGERP VAR))
+         'NIL)
+     . RATIO)
+    ((STANDARD-CHAR-P+ VAR) . STANDARD-CHAR)
+    ((STRINGP VAR) . STRING)
+    ((IF (STRINGP VAR)
+         (EQUAL (LENGTH VAR) NAT)
+         'NIL)
+     STRING NAT)
+    ((SYMBOLP VAR) . SYMBOL)
+    ('T . T)))
+
+(defun type-spec-fix-unify-subst (alist)
+  (cond ((endp alist) nil)
+        (t (let ((rest (type-spec-fix-unify-subst (cdr alist))))
+             (cond ((eq rest :fail) :fail)
+                   ((eq (caar alist) 'var)
+                    (cons (car alist) rest))
+                   ((quotep (cdar alist))
+                    (acons (caar alist)
+                           (unquote (cdar alist))
+                           rest))
+                   (t :fail))))))
+
+(defun type-spec-and-var-from-type-expression-1 (x alist)
+
+; X is a translated term and alist is the alist stored at key t of
+; type-expr-to-type-spec-alist.
+
+; We return either nil or a pair (type-spec . var).  For example, a return
+; value of ((INTEGER 3 7) . Y) means that the input term x comes from the
+; translation of (type (integer 3 7) y); x is presumably thus '(IF (INTEGERP Y)
+; (IF (NOT (< Y '3)) (NOT (< '7 Y)) 'NIL) 'NIL).
+
+  (cond
+   ((endp alist) nil)
+   (t (let* ((pair (car alist))
+             (expr (car pair))
+             (type (cdr pair)))
+        (mv-let (flg unify-subst)
+          (one-way-unify expr x)
+          (cond
+           (flg (let ((unify-subst (type-spec-fix-unify-subst unify-subst)))
+                  (cond ((eq unify-subst :fail)
+                         nil)
+                        (t (cons (sublis-var unify-subst type)
+                                 (cdr (assoc-eq 'var unify-subst)))))))
+           (t (type-spec-and-var-from-type-expression-1 x (cdr alist)))))))))
+
+(defun type-spec-and-var-from-type-expression (x alist)
+
+; X is a translated term and alist associates each key, a term, with a
+; corresponding type-spec.  The return value is either nil or a pair
+; (type-spec . var), where var is a variable such that x implies that type-spec
+; holds of var.
+
+  (let ((pair (type-spec-and-var-from-type-expression-1 x alist)))
+    (cond
+     (pair (let ((type-spec (car pair))
+                 (var (cdr pair)))
+             (cons type-spec var)))
+     (t
+      (case-match x
+        (('if x1 x2 *nil*)
+         (let ((pair1
+                (type-spec-and-var-from-type-expression x1 alist)))
+           (and pair1
+                (let ((pair2
+                       (type-spec-and-var-from-type-expression x2 alist)))
+                  (and pair2
+                       (eq (cdr pair1) (cdr pair2)) ; same variable
+                       (cons `(and ,(car pair1) ,(car pair2)) (cdr pair1)))))))
+        (('if x1 x1 x2)
+         (let ((pair1
+                (type-spec-and-var-from-type-expression x1 alist)))
+           (and pair1
+                (let ((pair2
+                       (type-spec-and-var-from-type-expression x2 alist)))
+                  (and pair2
+                       (eq (cdr pair1) (cdr pair2)) ; same variable
+                       (cons `(or ,(car pair1) ,(car pair2)) (cdr pair1)))))))
+        (('not x1)
+         (let ((pair (type-spec-and-var-from-type-expression x1 alist)))
+           (and pair
+                (cons `(not ,(car pair)) (cdr pair)))))
+        (('(LAMBDA (X L)
+                   (RETURN-LAST
+                    'MBE1-RAW
+                    (MEMBER-EQL-EXEC X L)
+                    (RETURN-LAST 'PROGN
+                                 (MEMBER-EQL-EXEC$GUARD-CHECK X L)
+                                 (MEMBER-EQUAL X L))))
+          x1
+          ('quote lst))
+         (and (legal-variablep x1)
+              (eqlable-listp lst)
+              (cons `(member ,@lst) x1)))
+        (('IF ('COMPLEX-RATIONALP var)
+              ('IF (tp ('REALPART var))
+                   (tp ('IMAGPART var))
+                   *nil*)
+              *nil*)
+         (let ((pair
+                (type-spec-and-var-from-type-expression `(,tp ,var) alist)))
+           (and pair
+                (cons `(complex ,(car pair))
+                      (cdr pair)))))
+        (& nil))))))
+
+(defun type-spec-to-varlist-alist (lst alist)
+
+; Given a list of type expressions, return either nil or a non-nil alist that
+; associates each key, a type expression, with a non-nil list of variables.
+
+  (cond
+   ((endp lst) nil)
+   (t (let* ((expr (car lst))
+             (pair (type-spec-and-var-from-type-expression expr alist)))
+        (and pair
+             (let ((rest (type-spec-to-varlist-alist (cdr lst) alist))
+                   (key (car pair))
+                   (var (cdr pair)))
+               (put-assoc-equal key
+                                (add-to-set-eq var
+                                               (cdr (assoc-equal key rest)))
+                                rest)))))))
+
+(defun recover-type-spec-exprs!1 (term)
+
+; Keep this in sync with recover-type-spec-exprs1, and see that definition for
+; comments.  Here we implement a stricter criterion on the input (translated)
+; term, to try to restrict to check-dcl-guardian calls that come from the
+; translation of the type declarations in a let or mv-let expression.
+
+  (case-match term
+    (('RETURN-LAST ''PROGN ('CHECK-DCL-GUARDIAN guard ('QUOTE guard)) rest)
+     (cons guard (recover-type-spec-exprs!1 rest)))
+    (('CHECK-DCL-GUARDIAN guard ('QUOTE guard))
+     (cons guard nil))
+    (& nil)))
+
+(defun recover-type-spec-exprs! (x)
+
+; Keep this in sync with recover-type-spec-exprs.  Here we implement a stricter
+; criterion; see recover-type-spec-exprs!1.  Moreover, we return a second value
+; in addition to the list of type expressions: the term remaining after
+; stripping the dcl-guardian information from the input term.
+
+  (case-match x
+    (('RETURN-LAST ''PROGN
+                   ('RETURN-LAST ''PROGN ('CHECK-DCL-GUARDIAN & &) &)
+                   term)
+     (let ((lst (recover-type-spec-exprs!1 (fargn x 2))))
+       (cond (lst (mv lst term))
+             (t (mv nil x)))))
+    (('RETURN-LAST ''PROGN ('CHECK-DCL-GUARDIAN guard ('QUOTE guard)) term)
+     (mv (list guard) term))
+    (& (mv nil x))))
+
+(defun split-type-specs-from-term (term)
+
+; Given the translated term input, return (mv decl term') where if decl is nil
+; then term' is term, and otherwise decl is a declare form composed of type
+; declarations such that term can be generated by enhancing term' according to
+; that declare form.
+
+  (mv-let (lst term)
+    (recover-type-spec-exprs! term)
+    (cond
+     ((null lst) ; optimization
+      (mv nil term))
+     (t (mv (pairlis-x1 'type
+                        (reverse (type-spec-to-varlist-alist
+                                  lst
+                                  *type-expr-to-type-spec-alist*)))
+            term)))))
 
 (defstub untranslate-lambda-object-p () t)
 (defattach untranslate-lambda-object-p constant-t-function-arity-0)
@@ -7814,7 +8521,7 @@
                     (and (true-listp rest)
                          (true-listp mv-nths/rest)
                          (true-listp vars/rest)
-                         (<= 0 len-vars)
+                         (<= 2 len-vars)
                          (equal len-vars/rest (len mv-nths/rest))
                          (equal (nthcdr len-vars vars/rest)
                                 rest)
@@ -7824,32 +8531,39 @@
                            (collect-ignored-mv-vars mv-var 0 len-vars
                                                     vars/rest mv-nths/rest)
                            (and flg
-                                (let* ((uterm
-                                        (untranslate1 tm nil untrans-tbl
-                                                      preprocess-fn wrld))
-                                       (uterm
-                                        (if (and (consp uterm) ; always true?
-                                                 (eq (car uterm) 'list))
-                                            (cons 'mv (cdr uterm))
-                                          uterm))
-                                       (ubody
-                                        (untranslate1 body iff-flg
-                                                      untrans-tbl
-                                                      preprocess-fn wrld)))
-                                  `(mv-let ,(take len-vars vars/rest)
-                                     ,uterm
-                                     ,@(and ignores
-                                            `((declare (ignore ,@ignores))))
-                                     ,ubody))))))))
-               (make-let-or-let*
-                (collect-non-trivial-bindings (lambda-formals (ffn-symb term))
-                                              (untranslate1-lst (fargs term)
-                                                                nil
-                                                                untrans-tbl
-                                                                preprocess-fn
-                                                                wrld))
-                (untranslate1 (lambda-body (ffn-symb term)) iff-flg untrans-tbl
-                              preprocess-fn wrld))))
+                                (mv-let (type-specs body)
+                                  (split-type-specs-from-term body)
+                                  (let* ((uterm
+                                          (untranslate1 tm nil untrans-tbl
+                                                        preprocess-fn wrld))
+                                         (uterm (maybe-convert-to-mv uterm))
+                                         (ubody
+                                          (untranslate1 body iff-flg
+                                                        untrans-tbl
+                                                        preprocess-fn wrld)))
+                                    `(mv-let ,(take len-vars vars/rest)
+                                       ,uterm
+                                       ,@(and
+                                          (or ignores type-specs)
+                                          `((declare
+                                             ,@(and ignores
+                                                    `((ignore ,@ignores)))
+                                             ,@type-specs)))
+                                       ,ubody)))))))))
+               (mv-let (type-specs body)
+                 (split-type-specs-from-term (lambda-body (ffn-symb term)))
+                 (let ((bindings (collect-non-trivial-bindings
+                                  (lambda-formals (ffn-symb term))
+                                  (untranslate1-lst (fargs term)
+                                                    nil
+                                                    untrans-tbl
+                                                    preprocess-fn
+                                                    wrld))))
+                   (make-let-or-let*
+                    bindings
+                    type-specs
+                    (untranslate1 body iff-flg untrans-tbl preprocess-fn
+                                  wrld))))))
           ((eq (ffn-symb term) 'if)
            (case-match term
              (('if x1 *nil* *t*)
@@ -8677,7 +9391,7 @@
           ((not (legal-variablep (fargn x 1)))
            (mv nil
                (msg "it is illegal to attempt an assignment (with ~x0 or ~x1) ~
-                     to ~x2, as it is not a legal variable." 
+                     to ~x2, as it is not a legal variable."
                     'setq
                     'mv-setq
                     (fargn x 1))))
@@ -12795,7 +13509,7 @@
 ; true-listp for APPEND.
 
 ; Special Conjecture (c): the type-spec of each iteration var continues to hold
-; at the step BEYOND the last step!  For example, in 
+; at the step BEYOND the last step!  For example, in
 
 ; (LOOP$ FOR i OF-TYPE spec FROM 0 TO 23 BY 5 SUM ...)
 
@@ -16018,32 +16732,6 @@
         (find-stobj-out-and-call (cdr lst) known-stobjs ctx wrld
                                  state-vars)))))
 
-(defconst *initial-return-last-table*
-  '((time$1-raw . time$1)
-    (with-prover-time-limit1-raw . with-prover-time-limit1)
-    (with-fast-alist-raw . with-fast-alist)
-    (with-stolen-alist-raw . with-stolen-alist)
-    (fast-alist-free-on-exit-raw . fast-alist-free-on-exit)
-
-; Keep the following comment in sync with return-last-table and with
-; chk-return-last-entry.
-
-; The following could be omitted since return-last gives them each special
-; handling: prog2$ and mbe1 are used during the boot-strap before tables are
-; supported, and ec-call1 and (in ev-rec-return-last) with-guard-checking gets
-; special handling.  It is harmless though to include them explicitly, in
-; particular at the end so that they do not add time in the expected case of
-; finding one of the other entries in the table.  If we decide to avoid special
-; handling (which we have a right to do, by the way, since users who modify
-; return-last-table are supposed to know what they are doing, as a trust tag is
-; needed), then we should probably move these entries to the top where they'll
-; be seen more quickly.
-
-    (progn . prog2$)
-    (mbe1-raw . mbe1)
-    (ec-call1-raw . ec-call1)
-    (with-guard-checking1-raw . with-guard-checking1)))
-
 (defun defined-symbols (sym-name pkg-name known-package-alist wrld acc)
   (cond
    ((endp known-package-alist) acc)
@@ -17191,7 +17879,7 @@
           ((flet-entry
             (translate11-flet-alist1 form (car fives) stobjs-out bindings
                                      known-stobjs flet-alist ctx wrld
-                                     state-vars)) 
+                                     state-vars))
            (flet-entries
             (translate11-flet-alist  form (cdr fives) stobjs-out bindings
                                      known-stobjs flet-alist ctx wrld state-vars)))
@@ -18864,7 +19552,7 @@
 ; We tag the translated lambda body.  At one time, we avoiding doing that when
 ; proving theorems, with a special case for stobjs-out = t, so that the
 ; following theorem could be proved trivially.
-; 
+;
 ; (thm (equal (loop$ for x in lst collect (car (cons x (cons x nil))))
 ;             (loop$ for x in lst collect (car (list x x)))))
 ;
@@ -19341,7 +20029,7 @@
                   stobjs-out-simple ; only DO returns stobj or multiple values
                   bindings known-stobjs flet-alist
                   cform ctx wrld state-vars)))))))
-         (t ; (eq (car parse) 'DO) 
+         (t ; (eq (car parse) 'DO)
           (mv-let (wvts mform values do-bodyc fin-bodyc finp)
             (mv (nth 1 parse) ; wvts = ``with-var tuples''
                 (nth 2 parse) ; :measure
@@ -19940,7 +20628,7 @@
                                                        wrld)
                                   bindings known-stobjs flet-alist cform ctx wrld
                                   (change state-vars state-vars
-                                          :do-expressionp nil)))) 
+                                          :do-expressionp nil))))
               (trans-value (make-ersatz-mv-setq (cadr x) body))))))
           (setq
            (trans-er-let*
@@ -21689,7 +22377,7 @@
 
 ; Loop-expr is a loop$ expression with translation trans.  We return the
 ; appropriate stobjs-out.  Also see related function do$-stobjs-out.
-  
+
   (case-match trans
     (('RETURN-LAST ''PROGN & ('DO$ . &))
      (mv-let (erp parse)
@@ -22956,3 +23644,93 @@
                (msg "The call ~x0 is illegal, because the arguments are not ~
                      all symbols.  See :DOC remove-invisible-fns."
                     (cons 'remove-invisible-fns args)))
+
+; The definitions below of *type-spec-templates* and
+; pair-type-expressions-with-type-specs are used only in
+; check-type-expr-to-type-spec-alist, which is defined and used in
+; interface-raw.lisp.  But we place them here, since they can be defined in
+; ACL2 (not just raw Lisp) and because they are relevant to code above (but not
+; used there).
+
+(defun sublis-equal (alist tree)
+  (declare (xargs :guard (alistp alist)))
+  (let ((pair (assoc-equal tree alist)))
+    (if pair
+        (cdr pair)
+      (if (atom tree)
+          tree
+        (cons (sublis-equal alist (car tree))
+              (sublis-equal alist (cdr tree)))))))
+
+(defconst *type-spec-templates*
+
+; This constant is used in check-type-expr-to-type-spec-alist.
+
+  '(integer
+    (integer -3 *)
+    (integer * 5)
+    (integer -3 5)
+    rational
+    real
+    complex
+    (rational -1/7 *)
+    (rational * 1/11)
+    (rational -1/7 1/11)
+; Note that REAL type-specs translate differently in ACL2(r) and ACL2.  That's
+; not a problem, though.
+    (real -1/7 *)
+    (real * 1/11)
+    (real -1/7 1/11)
+    bit
+; The following types generate expressions that are also generated by integer
+; types, so we will be generating integer types in these cases (since we can't
+; tell the type source from the expression).
+;   (mod k)
+;   signed-byte
+;   (signed-byte p)
+;   unsigned-byte
+;   (unsigned-byte p)
+    atom
+    character
+    cons
+    list
+;   nil ; type-spec translates the same as null; let's give preference to null
+    null
+    ratio
+    standard-char
+    string
+    (string 2)
+    symbol
+    t))
+
+(defun pair-type-expressions-with-type-specs (tplist subs qsubs keys-seen wrld)
+
+; This function is used in check-type-expr-to-type-spec-alist.
+
+  (declare (xargs :mode :program))
+  (cond
+   ((endp tplist) nil)
+   (t (let ((g (translate-declaration-to-guard (car tplist) 'var wrld)))
+        (mv-let (erp val bindings)
+          (translate1-cmp g t nil nil 'trans-to-type wrld
+                          (default-state-vars nil))
+          (declare (ignore bindings))
+          (cond
+           (erp
+            (er hard 'type-expressions
+                "Unable to translate to type expression:~|~x0"
+                g))
+           (t
+            (let* ((new-key (sublis-equal qsubs val))
+                   (new-key-seen (member-equal new-key keys-seen))
+                   (rest (pair-type-expressions-with-type-specs
+                          (cdr tplist) subs qsubs
+                          (if new-key-seen
+                              keys-seen
+                            (cons new-key keys-seen))
+                          wrld)))
+              (cond
+               (new-key-seen rest)
+               (t (acons new-key
+                         (sublis subs (car tplist))
+                         rest)))))))))))
