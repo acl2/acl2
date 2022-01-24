@@ -800,7 +800,8 @@ was ~st seconds."))
                               (nth-term x y)))
               :in-theory (e/d (svex-apply-wog
                                svex-apply-wog-meta)
-                              (svex-apply-is-svex-apply-wog
+                              (4VEC-OVERRIDE-WHEN-INTEGERP
+                               svex-apply-is-svex-apply-wog
                                (:definition nth)
                                (:rewrite default-cdr)
                                (:rewrite default-car)

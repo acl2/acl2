@@ -38,22 +38,95 @@
 (local
  (rp::fetch-new-events
   (include-book "centaur/bitops/ihs-extensions" :dir :system)
-  use-ihs-extensions))
+  use-ihs-extensions
+  ))
 
 (local
  (rp::fetch-new-events
   (include-book "ihs/logops-lemmas" :dir :system)
-  use-ihs-logops-lemmas))
+  use-ihs-logops-lemmas
+  ))
 
 (local
  (rp::fetch-new-events
   (include-book "arithmetic-5/top" :dir :system)
-  use-arithmetic-5))
+  use-arithmetic-5
+  ))
 
 (local
  (rp::fetch-new-events
   (include-book "ihs/quotient-remainder-lemmas" :dir :system)
-  use-qr-lemmas))
+  use-qr-lemmas
+  ))
+
+(encapsulate
+  nil
+  (local
+   (use-arithmetic-5 t))
+
+  (defthmd 4vec-rsh-better-opener
+    (implies (natp size)
+             (equal (4vec-rsh size x)
+                    (4vec-fix (cons (logtail size (sv::4vec->upper x))
+                                    (logtail size (sv::4vec->lower x))))))
+    :hints (("Goal"
+             :in-theory (e/d (4vec-rsh
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              logtail
+                              4VEC-FIX
+                              4VEC-SHIFT-CORE)
+                             ()))))
+
+  (defthmd 4vec-concat-better-opener
+    (implies (natp size)
+             (equal (4vec-concat size x y)
+                    (4vec-fix (cons (logapp size (sv::4vec->upper x) (sv::4vec->upper y))
+                                    (logapp size (sv::4vec->lower x) (sv::4vec->lower y))))))
+    :hints (("Goal"
+             :in-theory (e/d (4vec-rsh
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              logtail
+                              4vec-concat
+                              4VEC-FIX
+                              4VEC-SHIFT-CORE)
+                             ()))))
+
+  (local
+   (use-arithmetic-5 nil))
+
+  (defthmd 4VEC-PART-SELECT-better-opener
+    (implies (and (natp size)
+                  (natp start))
+             (equal (4vec-part-select start size x)
+                    (4vec-fix (cons (loghead size (logtail start (sv::4vec->upper x)))
+                                    (loghead size (logtail start (sv::4vec->lower x)))))))
+    :hints (("Goal"
+             :in-theory (e/d (4vec-part-select
+                              ACL2::|arith (- (- x))|
+                              4VEC-CONCAT
+                              4VEC-ZERO-EXT
+                              ;;logtail loghead
+                              4vec
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              ;;logtail
+                              ;;4VEC-ZERO-EXT
+                              ;;loghead
+                              4VEC-FIX
+                              4VEC-SHIFT-CORE
+                              4VEC-RSH)
+                             ()))))
+
+  (defthmd 4vec-res-better-opener
+    (equal (sv::4vec-res sv::a sv::b)
+           (B* (((4VEC SV::A)) ((4VEC SV::B)))
+             (4VEC-fix (cons (LOGIOR SV::A.UPPER SV::B.UPPER)
+                             (LOGAND SV::A.LOWER SV::B.LOWER)))))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-res
+                              4VEC-FIX) ())))))
 
 (progn
   ;; lemmas about ifix
@@ -1066,7 +1139,7 @@
                                    y)))
      :hints (("goal"
               :use (( :instance ash-of-logapp-lemma
-                      (s1 (- s1))))
+                                (s1 (- s1))))
               :cases ((acl2-numberp s1))
               :in-theory (e/d ()
                               ()))))))
@@ -6955,6 +7028,65 @@
 
 (add-svex-simplify-rule sv::4vec-fix-of-4vec)
 
+(def-rp-rule 4vec-fix-of-the-same
+  (equal (4vec-fix (cons x x))
+         (ifix x))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-fix) ()))))
+
+(def-rp-rule 4vec-rsh-of-4vec-bitnot$
+  (implies (and (natp size1)
+                (natp size2)
+                (syntaxp (and (quotep size1)
+                              (quotep size2))))
+           (equal (4vec-rsh size1 (4vec-bitnot$ size2 x))
+                  (if (>= size1 size2)
+                      0
+                    (4vec-bitnot$ (- size2 size1) (4vec-rsh size1 x)))))
+  :otf-flg t
+
+  :hints (("Goal"
+           :expand (
+                    )
+           :in-theory (e/d* (4VEC-PART-SELECT-better-opener
+                             4vec-rsh-better-opener
+                             ;;4vec-rsh-of-integerp
+                             ;;4vec-rsh-of-not-4vec-p
+                             4vec-bitnot$
+                             ;;4vec-part-select-drop-start-insert-4vec-rsh
+                             LOGNOT-OF-LOGTAIL
+                             ;;loghead-of-lognot
+                             ;;BITOPS::LOGTAIL-OF-LOGNOT
+                             ;;BITOPS::LOGHEAD-OF-LOGIOR
+                             ;;BITOPS::LOGtail-OF-LOGIOR
+                             lognot-of-logand
+                             lognot-of-logior
+                             4VEC-SHIFT-CORE
+                             ;;bitops::ihsext-recursive-redefs
+                             ;;bitops::ihsext-inductions
+                             4VEC-BITNOT
+                             ;;4VEC-PART-SELECT
+                             SV::4VEC->UPPER
+                             SV::4VEC->LOWER
+                             SV::3VEC-BITNOT
+                             SV::3VEC-FIX
+                             4VEC-CONCAT
+                             ;;4vec-rsh
+                             )
+                            (4vec
+                             sv::4vec-p
+                             SV::4VEC-FIX-UNDER-4VEC-EQUIV
+                             4VEC-PART-SELECT-OF-4VEC-RSH
+                             ;;SV::2VEC-P$INLINE
+                             ;;SV::2VEC->VAL$INLINE
+                             ;;SV::3VEC-FIX-OF-3VEC-P
+                             BITOPS::LOGTAIL-OF-LOGNOT
+                             ;;BITOPS::LOGHEAD-OF-LOGIOR
+                             ;;BITOPS::LOGtail-OF-LOGIOR
+                             )))))
+
+(add-svex-simplify-rule 4vec-rsh-of-4vec-bitnot$)
+
 (local
  (defthmd 3vec-p-of-4vec-part-select-lemma
    (implies (and (EQUAL x 0)
@@ -7018,6 +7150,31 @@
            :in-theory (e/d () ()))))
 
 (add-svex-simplify-rule 3vec-fix-of-4vec-bitnot$)
+
+(def-rp-rule 3vec-p-of-4vec-concat$
+  (implies (and (integerp x)
+                (sv::3vec-p y)
+                (sv::3vec-p z))
+           (and (sv::3vec-p (4vec-concat x y z))
+                (sv::3vec-p (4vec-concat$ x y z))))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-concat
+                            4vec-concat$
+                            sv::3vec-p)
+                           ()))))
+
+(add-svex-simplify-rule 3vec-p-of-4vec-concat$)
+
+(defthm 3vec-p-of-4vec-fix
+  (IMPLIES (AND (SV::3VEC-P Y))
+           (SV::3VEC-P (4VEC-FIX Y)))
+  :hints (("Goal"
+           :in-theory (e/d (4VEC-FIX
+                            SV::3VEC-P) ()))))
+
+
+
+
 
 (def-rp-rule 3vec-fix-of-4vec-==
   (equal (sv::3vec-fix (sv::4vec-== x y))
@@ -7184,7 +7341,6 @@
                             )
                            (BITP-OF-4VEC-PART-SELECT
                             EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1)))))
-
 
 (progn
   (defthm 4vec-?*-to-if-dummy-sc
@@ -7371,16 +7527,16 @@
                              ;;sv::3vec-p
                              bitops::ihsext-inductions
                              bitops::ihsext-recursive-redefs
-                            ;;SV::3VEC-P
-                            SV::3VEC-FIX
-                            ;;SV::3VEC-FIX
-                            SV::4VEC-?!
-                            4VEC-?
-                            SV::3VEC-?
-                            SV::4VEC->UPPER
-                            SV::4VEC->LOWER
-                            4VEC-FIX
-                            4vec-?*) ()))))
+                             ;;SV::3VEC-P
+                             SV::3VEC-FIX
+                             ;;SV::3VEC-FIX
+                             SV::4VEC-?!
+                             4VEC-?
+                             SV::3VEC-?
+                             SV::4VEC->UPPER
+                             SV::4VEC->LOWER
+                             4VEC-FIX
+                             4vec-?*) ()))))
 
 (add-svex-simplify-rule 4vec-?-branch-of-the-same-then-else)
 
@@ -7527,14 +7683,13 @@
 
 (add-svex-simplify-rule integerp-of-4vec-branch)
 
-
 (def-rp-rule bitp-of-4vec-bitand/or/xor
   (and (implies (or (and (bitp x) (bitp y))
                     (and (bitp x) (integerp y))
                     (and (bitp y) (integerp x)))
                 (bitp (4vec-bitand x y)))
        (implies (and (bitp x)
-                    (bitp y))
+                     (bitp y))
                 (and (bitp (sv::4vec-bitxor x y))
                      (bitp (4vec-bitor x y)))))
   :hints (("Goal"
@@ -7543,3 +7698,117 @@
                             3VEC-BITAND) ()))))
 
 (add-svex-simplify-rule bitp-of-4vec-bitand/or/xor)
+
+(defthm 4vec-concat-of-first-bit-and-the-rest
+  (equal (4VEC-concat 1
+                      (4VEC-PART-SELECT 0 1 Y)
+                      (4VEC-RSH 1 Y))
+         (4vec-fix y))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-concat-better-opener
+                            4vec-rsh-better-opener
+                            ;;4VEC-RSH
+                            4VEC-FIX
+                            4VEC-SHIFT-CORE
+                            4VEC-PART-SELECT-better-opener
+                            )
+                           ()))))
+
+(defthmd 4vec-?*-of-with-bitp-cond
+  (implies (and (bitp x)
+                (integerp y)
+                (integerp z))
+           (equal (sv::4vec-?* (- x) y z)
+                  (svl::4vec-concat 1
+                                    (sv::4vec-?* x
+                                                 (4vec-part-select 0 1 y)
+                                                 (4vec-part-select 0 1 z))
+                                    (sv::4vec-?* (- x)
+                                                 (sv::4vec-rsh 1 y)
+                                                 (sv::4vec-rsh 1 z)))))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
+;;:i-am-here
+(defthmd 4vec-==-with-constant
+  (implies (and (integerp x)
+                (natp y)
+                )
+           (equal (sv::4vec-== x y)
+                  (- (sv::4vec-bitand (if (equal (acl2::logcar y) 1)
+                                          (acl2::logcar x)
+                                        (svl::4vec-bitnot$ 1 (acl2::logcar x)))
+                                      (- (sv::4vec-== (acl2::logcdr x)
+                                                      (acl2::logcdr y)))))))
+  :hints (("Goal"
+           :in-theory (e/d (sv::4vec-==
+                            SV::3VEC-==
+                            SV::3VEC-BITXOR
+                            SV::3VEC-BITNOT
+                            4VEC-BITAND
+                            SV::3VEC-REDUCTION-AND
+                            3VEC-BITAND
+                            SV::BOOL->VEC
+                            4vec-part-select-better-opener)
+                           ()))))
+
+(defthmd 4VEC-SYMWILDEQ-with-constant
+  (implies (and (integerp x)
+                (natp y)
+               )
+           (equal (sv::4vec-symwildeq x y)
+                  (- (sv::4vec-bitand
+                      (if (equal (acl2::logcar y) 1)
+                          (acl2::logcar x)
+                        (svl::4vec-bitnot$ 1 (acl2::logcar x)))
+                      (- (sv::4vec-symwildeq (acl2::logcdr x)
+                                             (acl2::logcdr
+                                              y)))))))
+  :hints (("Goal"
+           :in-theory (e/d* (sv::4vec-symwildeq
+                             SV::BOOL->VEC
+                             bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions
+                             SV::4VEC-BITXOR
+                             SV::4VEC->UPPER
+                             SV::4VEC->LOWER
+                             SV::2VEC
+                             SV::4VEC
+                             SV::3VEC-BITNOT
+                             SV::3VEC-BITOR
+                             SV::3VEC-REDUCTION-AND)
+                            ()))))
+
+(def-rp-rule 4vec-override-when-integerp
+  (implies (integerp x)
+           (equal (sv::4vec-override x y)
+                  x))
+  :hints (("Goal"
+           :in-theory (e/d (sv::4vec-override
+                            SV::4VEC->UPPER
+                            SV::4VEC->LOWER)
+                           ()))))
+
+(def-rp-rule 4vec-res-chain
+  (equal (sv::4vec-res x (sv::4vec-res x y))
+         (sv::4vec-res x y))
+  :hints (("Goal"
+           :in-theory (e/d* (sv::4vec-res
+                             4vec-res-better-opener
+                             bitops::ihsext-inductions
+                             bitops::ihsext-recursive-redefs)
+                            (4vec)))))
+
+(def-rp-rule integerp-4vec-sym-wildeq
+  (implies (and (integerp x)
+                (integerp y))
+           (integerp (SV::4VEC-SYMWILDEQ x y)))
+  :hints (("Goal"
+           :in-theory (e/d (SV::4VEC-SYMWILDEQ
+                            SV::3VEC-REDUCTION-AND
+                            SV::3VEC-BITOR
+                            SV::3VEC-BITNOT
+                            SV::4VEC-BITXOR
+                            SV::BOOL->VEC
+                            SV::4VEC->UPPER
+                            SV::4VEC->LOWER)
+                           ()))))

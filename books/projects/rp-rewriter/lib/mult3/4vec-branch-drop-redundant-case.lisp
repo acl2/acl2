@@ -292,8 +292,7 @@
                              ex-from-rp
                              rp-evlt-of-ex-from-rp))))))
 
-(skip-proofs
- (defret 4vec-branch-drop-r-case-aux-correct
+(defret 4vec-branch-drop-r-case-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (4vec-branch-formula-checks state)
                 (mult-formula-checks state)
@@ -326,11 +325,10 @@
                         binary-or-p)
                        (4vec-branch-formula-checks-implies-mult-formula-checks
                         pp-term-p
-                        valid-sc))))))
+                        valid-sc)))))
 
 
-(skip-proofs
- (defret 4vec-branch-drop-r-case-aux-valid-sc
+(defret 4vec-branch-drop-r-case-aux-valid-sc
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (4vec-branch-formula-checks state)
                 (mult-formula-checks state)
@@ -338,14 +336,11 @@
                 (valid-sc term a))
            (valid-sc new-term a))
   :fn 4vec-branch-drop-r-case-aux
-  :hints (
-          
-          ("goal"
-           
+  :hints (("goal"
            :in-theory (e/d
                        (4vec-branch-drop-r-case-aux
                         is-rp)
-                       (4vec-branch-formula-checks-implies-mult-formula-checks))))))
+                       (4vec-branch-formula-checks-implies-mult-formula-checks)))))
 
 
 (rp::add-meta-rule

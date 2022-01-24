@@ -405,6 +405,10 @@
            :in-theory (e/d (bitp)
                            ()))))
 
+(def-rp-rule integerp-of---
+  (integerp (-- x))
+  :hints (("Goal"
+           :in-theory (e/d (--) ()))))
 
 (def-rp-rule plus-with-0
   (implies (integerp a)
@@ -412,3 +416,7 @@
                        a)
                 (equal (+ 0 a)
                        a))))
+
+(def-rp-rule --=of=-1
+  (equal (-- -1)
+         1))

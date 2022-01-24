@@ -1845,6 +1845,7 @@
                             (l (sv::4vec-rsh 1 (svl::bits y start size)))))
            :in-theory (e/d ()
                            (4vec
+                            4VEC-CONCAT-OF-FIRST-BIT-AND-THE-REST
                             EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1
                             4vec-concat-of-part-select-and-rsh
                             ;;4VEC-CONCAT$-OF-SIZE=1-TERM2=0

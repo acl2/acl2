@@ -3920,15 +3920,15 @@
            (s (s-sum-merge s (create-list-instance s-lst2)))
            (c-lst (s-sum-merge-aux c-lst c-lst2))
 
-           (pp-lst-orig pp-lst2)
+           (?pp-lst-orig pp-lst2)
            ((mv s-lst2 pp-lst2 c-lst2) (pp-radix8+-fix pp-lst2))
            (s (s-sum-merge s (create-list-instance s-lst2)))
            (c-lst (s-sum-merge-aux c-lst c-lst2))
-           (- (and (include-fnc-subterms pp-lst2 's)
+           #|(- (and (include-fnc-subterms pp-lst2 's)
                    (hard-error 'pp-radix8+-fix
                                "pp-lst-orig: ~p0, pp-lst-after: ~p1 ~%"
                                (list (cons #\0 pp-lst-orig)
-                                     (cons #\1 pp-lst2))))) 
+                                     (cons #\1 pp-lst2)))))|# 
 
            ((mv pp-lst2 recollected-c-lst) (recollect-pp-lst-to-sc-main pp-lst2))
            (c-lst (s-sum-merge-aux recollected-c-lst c-lst))

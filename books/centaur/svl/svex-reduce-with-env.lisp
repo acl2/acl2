@@ -1318,7 +1318,8 @@ but did not resolve the branch ~%" first))))
            :do-not-induct t
            :expand ((:free (x y)
                            (sv::svex-apply x y)))
-           :in-theory (e/d (svex-reduce-w/-env-apply) ()))))
+           :in-theory (e/d (svex-reduce-w/-env-apply)
+                           (4VEC-OVERRIDE-WHEN-INTEGERP)))))
 
 (local
  (defthm svex-reduce-w/-env-apply-correct-when-returns-4vec-p
