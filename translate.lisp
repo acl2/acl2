@@ -6674,14 +6674,7 @@
          `(mbe :logic ,(maybe-convert-to-mv (nth 2 uterm))
                :exec  ,(maybe-convert-to-mv (nth 4 uterm))))
         ((or (member-eq (car uterm)
-                        '(return-last mbt prog2$))
-
-; We could pass in the world and use its return-last-table instead of the
-; current return-last-table.  But we doubt that this would make much difference
-; in practice.  If we decide to do that, we could allow the world argument to
-; be nil, in which case the *initial-return-last-table* would be used as
-; before.
-
+                        '(return-last prog2$))
              (rassoc-eq (car uterm) *initial-return-last-table*))
          (append (butlast uterm 1)
                  (list (maybe-convert-to-mv (car (last uterm))))))
