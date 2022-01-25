@@ -110,6 +110,22 @@
                  :in-theory (enable vl-atts-count remove-from-alist)
                  :induct (remove-from-alist key atts)))))
 
+(local (defthm vl-paramvalue-count-of-maybe-paramvalue
+         (implies (and (vl-maybe-paramvalue-p x)
+                       x)
+                  (< (vl-paramvalue-count x) (vl-maybe-paramvalue-count x)))
+         :hints(("Goal" :expand ((vl-maybe-paramvalue-count x)
+                                 (vl-maybe-paramvalue-some->val x))))
+         :rule-classes :linear))
+
+(local (defthm vl-paramargs-count-of-maybe-paramargs
+         (implies (and (vl-maybe-paramargs-p x)
+                       x)
+                  (< (vl-paramargs-count x) (vl-maybe-paramargs-count x)))
+         :hints(("Goal" :expand ((vl-maybe-paramargs-count x)
+                                 (vl-maybe-paramargs-some->val x))))
+         :rule-classes :linear))
+
 (defines vl-pretty-exprs
   :flag nil
 
@@ -134,9 +150,14 @@
     :measure (vl-scopeexpr-count x)
     (vl-scopeexpr-case x
       (:end   (vl-pretty-hidexpr x.hid))
-      (:colon (list :scope
-                    (vl-pretty-scopename x.first)
-                    (vl-pretty-scopeexpr x.rest)))))
+      (:colon (if x.paramargs
+                  (list :scope
+                        (vl-pretty-scopename x.first)
+                        (vl-pretty-paramargs x.paramargs)
+                        (vl-pretty-scopeexpr x.rest))
+                (list :scope
+                      (vl-pretty-scopename x.first)
+                      (vl-pretty-scopeexpr x.rest))))))
 
   (define vl-pretty-plusminus ((x vl-plusminus-p))
     :measure (vl-plusminus-count x)
@@ -449,6 +470,40 @@
                (list (vl-pretty-scopeexpr x.name))
                (and x.pdims (cons :dims (vl-pretty-dimensionlist x.pdims)))
                (and x.udims (cons :udims (vl-pretty-dimensionlist x.udims)))))))
+
+  (define vl-pretty-paramargs ((x vl-paramargs-p))
+    :measure (vl-paramargs-count x)
+    (vl-paramargs-case x
+      (:vl-paramargs-named (vl-pretty-namedparamvaluelist x.args))
+      (:vl-paramargs-plain (vl-pretty-paramvaluelist x.args))))
+
+  (define vl-pretty-paramvalue ((x vl-paramvalue-p))
+    :measure (vl-paramvalue-count x)
+    (vl-paramvalue-case x
+      (:type (vl-pretty-datatype x.type))
+      (:expr (vl-pretty-expr x.expr))))
+  
+  (define vl-pretty-namedparamvalue ((x vl-namedparamvalue-p))
+    :measure (vl-namedparamvalue-count x)
+    (b* (((vl-namedparamvalue x)))
+      (if x.value 
+          (cons x.name (vl-pretty-paramvalue x.value))
+        (list x.name))))
+
+  (define vl-pretty-paramvaluelist ((x vl-paramvaluelist-p))
+    :measure (vl-paramvaluelist-count x)
+    (if (atom x)
+        nil
+      (cons (vl-pretty-paramvalue (car x))
+            (vl-pretty-paramvaluelist (cdr x)))))
+
+  (define vl-pretty-namedparamvaluelist ((x vl-namedparamvaluelist-p))
+    :measure (vl-namedparamvaluelist-count x)
+    (if (atom x)
+        nil
+      (cons (vl-pretty-namedparamvalue (car x))
+            (vl-pretty-namedparamvaluelist (cdr x)))))
+  
 
   (define vl-pretty-structmemberlist ((x vl-structmemberlist-p))
     :measure (vl-structmemberlist-count x)

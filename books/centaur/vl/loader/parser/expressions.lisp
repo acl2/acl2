@@ -657,69 +657,33 @@ trivial:</p>
       (implies (atom (vl-tokstream->tokens))
                errmsg))))
 
-(defparser vl-parse-parameter-value-assignment-hack ()
-  :short "Ostensibly match a @('parameter_value_assignment') within an
-expression."
+;; (defparser vl-parse-parameter-value-assignment-hack ()
+;;   :short "Ostensibly match a @('parameter_value_assignment') within an
+;; expression."
 
-  :long "<p>In Verilog-2005, parameter value assignments could only occur in
-module instances (e.g., you might instantiate an adder with #(.width(16)) or
-just #(16)).  But in SystemVerilog-2012, they can now be embedded within
-certain kinds of casting and streaming concatenation expressions.</p>
+;;   :long "<p>In Verilog-2005, parameter value assignments could only occur in
+;; module instances (e.g., you might instantiate an adder with #(.width(16)) or
+;; just #(16)).  But in SystemVerilog-2012, they can now be embedded within
+;; certain kinds of casting and streaming concatenation expressions.</p>
 
-<p>We don't see a very good way to support this in our current expression
-format.  So, for now, if we actually encounter a parameter value assignment in
-one of these contexts, we'll just cause a parse error.  If some day we actually
-need to support this, we might be able to add some new kind of fancy
-operator(s), e.g., a namedarg operator with an alternating list of name/value
-expressions.</p>"
-  :result (not val)
-  :resultp-of-nil t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (:= (vl-match-token :vl-pound))
-       (:= (vl-match-token :vl-lparen))
-       (return-raw
-        (vl-parse-error
-         "Embedded parameter value assignments #(...) aren't implemented yet."))))
+;; <p>We don't see a very good way to support this in our current expression
+;; format.  So, for now, if we actually encounter a parameter value assignment in
+;; one of these contexts, we'll just cause a parse error.  If some day we actually
+;; need to support this, we might be able to add some new kind of fancy
+;; operator(s), e.g., a namedarg operator with an alternating list of name/value
+;; expressions.</p>"
+;;   :result (not val)
+;;   :resultp-of-nil t
+;;   :fails gracefully
+;;   :count strong
+;;   (seq tokstream
+;;        (:= (vl-match-token :vl-pound))
+;;        (:= (vl-match-token :vl-lparen))
+;;        (return-raw
+;;         (vl-parse-error
+;;          "Embedded parameter value assignments #(...) aren't implemented yet."))))
 
-(defparser vl-parse-pva-tail ()
-  :short "Match @(' { '::' identifier [parameter_value_assignment] } '::'
-identifier ') and return an expression."
 
-  :long "<p>Since we start by matching a @('::'), we always turn the
-identifiers into hid pieces instead of ordinary id atoms.</p>
-
-<p>We don't actually support parameter value assignments within expressions
-yet; they'll just cause a parse error.</p>"
-
-  :result (vl-scopeexpr-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  :verify-guards nil
-
-  (seq tokstream
-       (:= (vl-match-token :vl-scope))
-       (head := (vl-match-token :vl-idtoken))
-       (when (vl-is-token? :vl-pound)
-         (:= (vl-parse-parameter-value-assignment-hack))
-         (return-raw
-          ;; Should never actually get here until we implement PVAs.
-          (vl-parse-error "Implement PVAs.")))
-
-       (unless (vl-is-token? :vl-scope)
-         (return
-          (make-vl-scopeexpr-end
-           :hid (make-vl-hidexpr-end :name (vl-idtoken->name head)))))
-
-       (tail := (vl-parse-pva-tail))
-       (return
-        (make-vl-scopeexpr-colon
-         :first (vl-idtoken->name head)
-         :rest tail)))
-  ///
-  (verify-guards vl-parse-pva-tail-fn))
 
 (defparser vl-parse-0+-scope-prefixes ()
   :short "Match @('{ id '::' }') and return a list of all the ids that have been matched."
@@ -2295,6 +2259,46 @@ syntax of a concatenation.</p>"
            (:= (vl-match-token :vl-rcurly))
            (return args)))
 
+    (defparser vl-parse-pva-tail ()
+;;       :short "Match @(' { '::' identifier [parameter_value_assignment] } '::'
+;; identifier ') and return an expression."
+
+;;       :long "<p>Since we start by matching a @('::'), we always turn the
+;; identifiers into hid pieces instead of ordinary id atoms.</p>
+
+;; <p>We don't actually support parameter value assignments within expressions
+;; yet; they'll just cause a parse error.</p>"
+
+      ;; :result (vl-scopeexpr-p val)
+      ;; :resultp-of-nil nil
+      ;; :fails gracefully
+      ;; :count strong
+      ;; :verify-guards nil
+      :measure (two-nats-measure (vl-tokstream-measure) 10)
+      (seq tokstream
+           (:= (vl-match-token :vl-scope))
+           (head := (vl-match-token :vl-idtoken))
+           (when (vl-is-token? :vl-pound)
+             (:= (vl-parse-parameter-value-assignment))
+             (return-raw
+              ;; Should never actually get here until we implement PVAs.
+              (vl-parse-error "Implement PVAs.")))
+
+           (unless (vl-is-token? :vl-scope)
+             (return
+              (make-vl-scopeexpr-end
+               :hid (make-vl-hidexpr-end :name (vl-idtoken->name head)))))
+
+           (tail := (vl-parse-pva-tail))
+           (return
+            (make-vl-scopeexpr-colon
+             :first (vl-idtoken->name head)
+             :rest tail)))
+      ;; ///
+      ;; (verify-guards vl-parse-pva-tail-fn)
+      )
+
+    
     (defparser vl-parse-simple-type ()
       :short "Match @('simple_type') and return an expression."
       :long "<p>The rule from SystemVerilog-2012 is:</p>
@@ -2356,7 +2360,7 @@ with these grammar rules, I believe simple_type is equivalent to:</p>
            (when (vl-lookahead-is-token? :vl-pound (cdr (vl-tokstream->tokens)))
              ;; identifier pva pva_tail
              (:= (vl-match))
-             (:= (vl-parse-parameter-value-assignment-hack))
+             (:= (vl-parse-parameter-value-assignment))
              (return-raw
               (vl-parse-error "Implement PVAs.")))
 
@@ -2614,7 +2618,10 @@ identifier, so we convert it into a hidpiece.</p>"
 ; function_call ::=
 ;    hierarchical_identifier { attribute_instance }
 ;      '(' expression { ',' expression } ')'
-
+; But we want to extend this to the extent of supporting calls of
+; static methods of parameterized classes, e.g.
+;   myclass #(.width(10)) :: methodname ( args) ;
+; so we'll additionally support a parameter-value-list 
     (defparser vl-parse-scoped-hid ()
       :measure (two-nats-measure (vl-tokstream-measure) 5)
       ;; If we have a name followed by ::, then it's part of the scope, otherwise
@@ -2623,16 +2630,20 @@ identifier, so we convert it into a hidpiece.</p>"
            ((mv err first tokstream)
             (seq tokstream
                  (name := (vl-parse-scopename))
-                 (:= (vl-match-token :vl-scope))
-                 (return name)))
+                 (when (vl-is-some-token? '(:vl-pound :vl-scope))
+                   (return name))
+                 (return-raw (vl-parse-error "backup for hid"))))
            ((when err)
             (b* ((tokstream (vl-tokstream-restore backup)))
               (seq tokstream
                    (hid := (vl-parse-hierarchical-identifier nil))
                    (return (make-vl-scopeexpr-end :hid hid))))))
         (seq tokstream
+             (when (vl-is-token? :vl-pound)
+               (params :s= (vl-parse-parameter-value-assignment)))
+             (:= (vl-match-token :vl-scope))
              (rest := (vl-parse-scoped-hid))
-             (return (make-vl-scopeexpr-colon :first first :rest rest)))))
+             (return (make-vl-scopeexpr-colon :first first :paramargs params :rest rest)))))
 
     (defparser vl-parse-call-namedarg-pair ()
       :measure (two-nats-measure (vl-tokstream-measure) 10)
@@ -4061,6 +4072,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-val-when-error-claim vl-parse-stream-expression)
         ,(vl-val-when-error-claim vl-parse-stream-concatenation)
         ,(vl-val-when-error-claim vl-parse-1+-stream-expressions-separated-by-commas)
+        ,(vl-val-when-error-claim vl-parse-pva-tail)
         ,(vl-val-when-error-claim vl-parse-simple-type)
         ,(vl-val-when-error-claim vl-parse-slice-size)
         ,(vl-val-when-error-claim vl-parse-any-sort-of-concatenation)
@@ -4198,6 +4210,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-warning-claim vl-parse-stream-expression)
         ,(vl-warning-claim vl-parse-stream-concatenation)
         ,(vl-warning-claim vl-parse-1+-stream-expressions-separated-by-commas)
+        ,(vl-warning-claim vl-parse-pva-tail)
         ,(vl-warning-claim vl-parse-simple-type)
         ,(vl-warning-claim vl-parse-slice-size)
         ,(vl-warning-claim vl-parse-any-sort-of-concatenation)
@@ -4374,6 +4387,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-progress-claim vl-parse-stream-expression)
         ,(vl-progress-claim vl-parse-stream-concatenation)
         ,(vl-progress-claim vl-parse-1+-stream-expressions-separated-by-commas)
+        ,(vl-progress-claim vl-parse-pva-tail)
         ,(vl-progress-claim vl-parse-simple-type)
         ,(vl-progress-claim vl-parse-slice-size)
         ,(vl-progress-claim vl-parse-any-sort-of-concatenation)
@@ -4524,6 +4538,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-eof-claim vl-parse-stream-expression :error)
         ,(vl-eof-claim vl-parse-stream-concatenation :error)
         ,(vl-eof-claim vl-parse-1+-stream-expressions-separated-by-commas :error)
+        ,(vl-eof-claim vl-parse-pva-tail :error)
         ,(vl-eof-claim vl-parse-simple-type :error)
         ,(vl-eof-claim vl-parse-slice-size :error)
         ,(vl-eof-claim vl-parse-any-sort-of-concatenation :error)
@@ -4717,6 +4732,7 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-resulttype-claim vl-parse-stream-expression :streamexpr)
       ,(vl-resulttype-claim vl-parse-stream-concatenation :streamexprlist)
       ,(vl-resulttype-claim vl-parse-1+-stream-expressions-separated-by-commas :streamexprlist)
+      ,(vl-resulttype-claim vl-parse-pva-tail :scopeexpr)
       ,(vl-resulttype-claim vl-parse-simple-type :type)
       ,(vl-resulttype-claim vl-parse-slice-size :slicesize)
       ,(vl-resulttype-claim vl-parse-any-sort-of-concatenation :expr)
