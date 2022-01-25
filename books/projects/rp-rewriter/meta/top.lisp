@@ -45,6 +45,6 @@
 (include-book "mv-nth-meta")
 (include-book "implies-meta")
 (include-book "cons-to-list-meta")
-
+(include-book "casesplitter")
 
 (attach-meta-fncs built-in-metas)

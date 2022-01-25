@@ -1771,6 +1771,8 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
   (not-simplified-action :type (satisfies symbolp) :initially :error)
 
+  (casesplitter-cases :type (satisfies rp-term-listp) :initially nil)
+
   :inline t)
 
 
@@ -1793,7 +1795,8 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (defund rp-state-new-run (rp-state)
   (declare (xargs :stobjs (rp-state)))
-  (b* ((rp-state (rules-used-clear rp-state))
+  (b* ((rp-state (update-casesplitter-cases nil rp-state))
+       (rp-state (rules-used-clear rp-state))
        (rp-state (update-rw-stack-size 0 rp-state))
        (rp-state (update-rw-stack nil rp-state))
        (rp-state (update-rule-frame-cnts nil rp-state)))

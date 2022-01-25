@@ -472,6 +472,33 @@
   :hints (("Goal"
            :in-theory (disable valid-rulep))))
 
+(defthm-ex-from-rp-all2
+  (defthm valid-sc-ex-from-rp-all2
+    (valid-sc (ex-from-rp-all2 term) a)
+    :flag ex-from-rp-all2)
+  (defthm valid-sc-subterms-ex-from-rp-all2-lst
+    (valid-sc-subterms (ex-from-rp-all2-lst lst) a)
+    :flag ex-from-rp-all2-lst)
+  :hints (("Goal"
+           :do-not-induct t
+           
+           :expand (VALID-SC (CONS (CAR TERM)
+                         (EX-FROM-RP-ALL2-LST (CDR TERM)))
+                   A)
+           :in-theory (e/d (
+                            EX-FROM-RP-ALL2
+                            IS-RP-LOOSE
+                            is-rp
+                            is-if
+                            ;;rp-termp-ex-from-rp-all2-lemma
+                            ex-from-rp-all2-lst
+                            )
+                           (ex-from-rp
+                            ;;FALIST-CONSISTENT
+                            RP-TERMP-EX-FROM-RP
+                            RP-TERMP-CONS-CAR-TERM-SUBTERMS
+                            )))))
+
 (encapsulate
   nil
   (local

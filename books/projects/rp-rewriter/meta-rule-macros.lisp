@@ -383,7 +383,11 @@ with RP-Rewriter. ~%"
                          (valid-sc term a))))
 
          ,@(append (and valid-syntaxp
-                        `((implies (rp-termp term)
+                        `((implies (and (rp-termp term)
+                                        ,@(append (and (member-equal 'context args)
+                                                       `((rp-term-listp context)))
+                                                  (and (member-equal 'rp-state args)
+                                                       `((rp-statep rp-state)))))
                                    (b* ((term-input term)
                                         (term
                                          (,processor-fnc . ,args)))

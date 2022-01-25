@@ -1150,3 +1150,28 @@
                             RP-TERMP-EX-FROM-RP
                             RP-TERMP-CONS-CAR-TERM-SUBTERMS
                             )))))
+
+(defthm-ex-from-rp-all2
+    (defthm ex-from-rp-all2-not-include-rp
+        (implies (rp-termp term)
+                 (not (include-fnc (ex-from-rp-all2 term) 'rp)))
+      :flag ex-from-rp-all2)
+    (defthm ex-from-rp-all2-lst-not-include-rp
+        (implies (rp-term-listp lst)
+                 (not (include-fnc-subterms (ex-from-rp-all2-lst lst) 'rp)))
+      :flag ex-from-rp-all2-lst)
+  :hints (("Goal"
+           :do-not-induct t
+           :expand (RP-TERMP (EX-FROM-RP TERM))
+           :in-theory (e/d (
+                            EX-FROM-RP-ALL2
+                            IS-RP-LOOSE
+                            is-rp
+                            ;;rp-termp-ex-from-rp-all2-lemma
+                            ex-from-rp-all2-lst
+                            )
+                           (ex-from-rp
+                            ;;FALIST-CONSISTENT
+                            RP-TERMP-EX-FROM-RP
+                            RP-TERMP-CONS-CAR-TERM-SUBTERMS
+                            )))))

@@ -689,7 +689,9 @@
                  (rp-state-preservedp rp-state res-rp-state))))
 
     (defthm rp-rw-meta-rule-valid-rp-termp
-      (implies (rp-termp term)
+      (implies (and (rp-termp term)
+                    (rp-term-listp context)
+                    (rp-statep rp-state))
                (b* (((mv res-term ?dont-rw ?rp-state)
                      (rp-rw-meta-rule term meta-fnc-name dont-rw context limit rp-state state)))
                  (rp-termp res-term))))
@@ -708,7 +710,9 @@
                            (rp-evlt term a))))))
 
     (defthm rp-rw-preprocessor-valid-rp-termp
-      (implies (rp-termp term)
+      (implies (and (rp-termp term)
+                    (rp-term-listp context)
+                    (rp-statep rp-state))
                (b* ((res-term (rp-rw-preprocessor term context rp-state state)))
                  (rp-termp res-term))))
 
@@ -727,7 +731,9 @@
                            (rp-evlt term a))))))
 
     (defthm rp-rw-postprocessor-valid-rp-termp
-      (implies (rp-termp term)
+      (implies (and (rp-termp term)
+                    (rp-term-listp context)
+                    (rp-statep rp-state))
                (b* ((res-term
                      (rp-rw-postprocessor term context rp-state state)))
                  (rp-termp res-term)))))

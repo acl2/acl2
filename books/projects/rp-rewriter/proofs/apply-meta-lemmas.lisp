@@ -63,7 +63,9 @@
            :in-theory (e/d (rp-rw-meta-rule-main) ()))))
 
 (defthm rp-rw-meta-rule-main-valid-rp-termp
-  (implies (and (rp-termp term))
+  (implies (and (rp-termp term)
+                (rp-term-listp context)
+                (rp-statep rp-state))
            (b* (((mv ?term-changed res-term ?dont-rw ?rp-state)
                  (rp-rw-meta-rule-main term rule dont-rw context limit rp-state state)))
              (rp-termp res-term)))

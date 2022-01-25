@@ -644,11 +644,13 @@ RP-Rewriter will throw an eligible error.</p>"
 
 (defmacro rp-cl (&key (new-synps 'nil)
                       (runes 'nil)
-                      (RUNES-OUTSIDE-IN 'nil)) ;
+                      (runes-outside-in 'nil)
+                      (cases 'nil)) ;
   `(rp-rewriter
     clause
     (make rp-cl-hints
-          :runes-outside-in ',RUNES-OUTSIDE-IN
+          :cases ,cases
+          :runes-outside-in ',runes-outside-in
           :runes ',runes #|,(if rules-override
           rules-override
           `(append (let ((world (w state))) (current-theory :here))
@@ -656,6 +658,14 @@ RP-Rewriter will throw an eligible error.</p>"
           )||#
           :new-synps ,new-synps)
     rp-state state))
+
+(defun untranslate-lst (lst iff-flg world)
+  (declare (xargs :mode :program))
+  (if (atom lst)
+      nil
+    (cons (untranslate (car lst) iff-flg world)
+          (untranslate-lst (cdr lst) iff-flg world))))
+
 
 (defmacro def-rp-thm (name term
                            &key
@@ -669,9 +679,12 @@ RP-Rewriter will throw an eligible error.</p>"
                            (runes 'nil)
                            (runes-outside-in 'nil);; when nil, runes will be read from
                            ;; rp-rules table
+                           (cases 'nil)
                            )
   `(make-event
-    (b* ((- (check-if-clause-processor-up-to-date (w state)))
+    (b* ((world (w state))
+         (- (check-if-clause-processor-up-to-date world))
+         (cases ',cases #|(untranslate-lst ',cases t world)|#)
          (body `(with-output
                   :stack :pop
                   :on (acl2::summary acl2::event acl2::error)
@@ -679,14 +692,15 @@ RP-Rewriter will throw an eligible error.</p>"
                   :summary-off (:other-than acl2::time acl2::rules)
                   (def-rp-rule ,',name ,',term
                     :rule-classes ,',rule-classes
-                    :hints (("Goal"
+                    :hints (("goal"
                              :do-not-induct t
                              :rw-cache-state nil
                              :do-not '(preprocess generalize fertilize)
                              :clause-processor
                              (rp-cl :runes ,,runes
                                     :runes-outside-in ,,runes-outside-in
-                                    :new-synps ,',new-synps)))))))
+                                    :new-synps ,',new-synps
+                                    :cases ',cases)))))))
       ,(if (or disable-meta-rules
                enable-meta-rules
                enable-rules
