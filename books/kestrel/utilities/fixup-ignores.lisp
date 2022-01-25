@@ -32,12 +32,7 @@
                               (plist-worldp fake-wrld))
                   :mode :program ;; because we call translate-term-with-defaults
                   ))
-  (b* (((mv ctx msg-or-translated-body)
-        (translate-term-with-defaults body 'fixup-ignores-with-fake-world fake-wrld) ;pass a better context
-        )
-       ((when ctx) ;; check for translation error
-        (er hard? 'fixup-ignores-with-fake-world "Failed to translate ~X01. ~@2." body nil msg-or-translated-body))
-       (translated-body msg-or-translated-body)
+  (b* ((translated-body (translate-term-allowing-ignored-vars body 'fixup-ignores-with-fake-world fake-wrld))
        (formals-mentioned (free-vars-in-term translated-body))
        (ignored-formals (set-difference-eq formals formals-mentioned))
        (declares (remove-declares 'ignore declares))
