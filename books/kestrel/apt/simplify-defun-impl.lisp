@@ -3005,6 +3005,10 @@
       :on error
       (progn
         (defattach-system
+         acl2::simplifiable-mv-nth-p
+         ,(or (cdr (assoc-eq 'acl2::simplifiable-mv-nth-p alist))
+              'acl2::constant-nil-function-arity-0))
+        (defattach-system
          too-many-ifs-pre-rewrite
          ,(or (cdr (assoc-eq 'too-many-ifs-pre-rewrite alist))
               'too-many-ifs-pre-rewrite-noop))
