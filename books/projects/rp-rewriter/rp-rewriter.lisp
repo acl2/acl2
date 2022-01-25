@@ -1214,27 +1214,26 @@ returns (mv rule rules-rest bindings rp-context)"
                      (eq (car term) 'quote)
                      (eq (car term) 'falist)))
            (mv term rp-state))
-          ;; if the term is an "if" statement don't try to rewrite but branch.
-          ((when (is-if term))
-           (b* (((mv if-res rp-state)
-                 (rp-rw-if term dont-rw context iff-flg hyp-flg
-                           (1-  limit) rp-state state)))
-             (mv (rp-check-context if-res context iff-flg) rp-state)))
 
-          ;; rewrite the subterm
-          ((mv subterms rp-state)
-           (if (is-hide term)
-               (mv (cdr term) rp-state)
-             (rp-rw-subterms (cdr term) (dont-rw-cdr dont-rw)
-                             context hyp-flg (1- limit) rp-state state)))
+          ((mv term rp-state)
+           (cond ((is-if term)
+                  ;; if the term is an "if" statement, rewrite branches accordingly.
+                  (b* (((mv if-res rp-state)
+                        (rp-rw-if term dont-rw context iff-flg hyp-flg
+                                  (1-  limit) rp-state state)))
+                    (mv if-res rp-state)))
+                 ((is-hide term)
+                  (mv term rp-state))
+                 (t (b* (((mv subterms rp-state)
+                          (rp-rw-subterms (cdr term) (dont-rw-cdr dont-rw)
+                                          context hyp-flg (1- limit) rp-state
+                                          state))
+                         ;; check if it is a cw or hard-error statements.
+                         (- (rp-rw-check-hard-error-or-cw term rp-state))
+                         (term (cons-with-hint (car term) subterms term)))
+                      (mv term rp-state)))))
 
-          ;; put back the term together after subterm is rewritten
-          (term (cons-with-hint (car term) subterms term))
-
-          ;; check if it is a cw or hard-error statements.
-          (- (rp-rw-check-hard-error-or-cw term rp-state))
-
-          ;; if the subterm is only a list of quotep's, then run ex-counterpart
+          ;; if the subterms are  quotep's, then run ex-counterpart
           ((mv term rp-state)
            (rp-ex-counterpart term rp-state state))
           ((when (or (atom term)

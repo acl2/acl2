@@ -1846,6 +1846,22 @@
 (def-rp-rule integerp--
   (integerp (-- x)))
 
+(def-rp-rule bit-of-of-bits
+  (implies (and (natp index)
+                (natp start)
+                (natp size)
+                (integerp x))
+           (equal (bit-of (svl::bits x start size) index)
+                  (svl::bits (svl::bits x start size) index 1)))
+  :hints (("Goal"
+           :use ((:instance BITS-IS-BIT-OF
+                            (num (svl::bits x start size))
+                            (start index)))
+           :in-theory (e/d (BITS-IS-BIT-OF)
+                           (
+                            +-is-sum
+                            SVL::BITS-OF-BITS-1)))))
+
 (bump-all-meta-rules)
 
 ;;(bump-down-rp-rule (:META medw-compress-meta . equal))
