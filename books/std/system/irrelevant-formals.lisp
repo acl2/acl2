@@ -6,6 +6,8 @@
 
 (include-book "xdoc/top" :dir :system)
 
+(include-book "kestrel/utilities/tables" :dir :system)
+
 (program)
 
 (defun translate1-simple-cmp (lst ctx wrld state-vars acc)
@@ -80,7 +82,9 @@
 ; entry in the acl2-defaults-table.
 
   (er-let*-cmp
-   ((fives
+   ((wrld (value-cmp
+           (table-programmatic 'acl2-defaults-table :ignore-ok t wrld)))
+    (fives
 
 ; As noted in ACL2 source function chk-acceptable-defuns, fives is a list of
 ; five-tuples each of the form (name args doc edcls body).

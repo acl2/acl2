@@ -1301,13 +1301,22 @@
   (or (and (consp x)
            (not (eq (car x) 'quote))
            (true-listp x)
-           (cond ((eq (car x) 'mv)
+           (cond ((eq (car x) 'if)
+                  (let ((n (uterm-values-len (caddr x) wrld)))
+                    (if (= n 1)
+                        (uterm-values-len (cadddr x) wrld)
+                      n)))
+                 ((eq (car x) 'mv)
                   (length (cdr x)))
-                 ((eq (car x) 'let)
+
+; The next two cases are inspired by maybe-convert-to.
+
+                 ((or (member-eq (car x)
+                                 '(let let* mv-let return-last prog2$ mbe))
+                      (rassoc-eq (car x) *initial-return-last-table*))
                   (uterm-values-len (car (last x)) wrld))
-
-; Keep the following code in sync with stobjs-out.
-
+                 ((member-eq (car x) '(ec-call time$))
+                  (uterm-values-len (cadr x) wrld))
                  ((or (not (symbolp (car x)))
                       (member-eq (car x) *stobjs-out-invalid*))
                   1)
