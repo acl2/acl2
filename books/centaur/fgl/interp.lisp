@@ -4536,6 +4536,19 @@
              :induct (len x))))
 
 
+   (local (defthm fgl-ev-dumb-formula-to-clause-correct
+            (iff (fgl-ev (disjoin (cmr::dumb-formula-to-clause x)) a)
+                 (fgl-ev x a))
+            :hints (("goal" :use ((:instance
+                                   (:functional-instance
+                                    cmr::dumb-formula-to-clause-correct
+                                    (cmr::flatten-ev fgl-ev)
+                                    (cmr::flatten-ev-list fgl-ev-list))
+                                   (x x) (a a)))
+              :in-theory (enable fgl-ev-of-fncall-args
+                                 fgl-ev-of-bad-fncall
+                                 fgl-ev-of-nonsymbol-atom)))))
+
    (define my-by-hint-cp ((clause pseudo-term-listp)
                           (hint)
                           state)
@@ -4545,7 +4558,7 @@
           (thm (meta-extract-formula hint state))
           ((unless (pseudo-termp thm))
            (value (list clause)))
-          (thm-clause (dumb-formula-to-clause (acl2::beta-reduce-full thm)))
+          (thm-clause (cmr::dumb-formula-to-clause (acl2::beta-reduce-full thm)))
           (reduced-clause (acl2::beta-reduce-full-list clause)))
        (if (equal reduced-clause thm-clause)
            (value nil)
@@ -4564,11 +4577,11 @@
                 (fgl-ev (disjoin clause) a))
        :hints (("goal" :use ((:instance fgl-ev-of-disjoin-beta-reduce-full-list
                               (x clause))
-                             (:instance dumb-formula-to-clause-correct
+                             (:instance cmr::dumb-formula-to-clause-correct
                               (x (acl2::beta-reduce-full (meta-extract-formula hint state)))))
                 :in-theory (disable ;; FGL-EV-META-EXTRACT-FORMULA
-                                    dumb-formula-to-clause-correct
-                                    fgl-ev-of-disjoin-beta-reduce-full-list)))
+                            cmr::dumb-formula-to-clause-correct
+                            fgl-ev-of-disjoin-beta-reduce-full-list)))
        :rule-classes :clause-processor))))
 
 (local (defun fgl-interp-default-hint
