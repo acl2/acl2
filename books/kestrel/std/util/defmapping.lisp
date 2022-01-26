@@ -1,6 +1,6 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -201,11 +201,11 @@
 
 (define defmapping-filter-call ((call pseudo-event-formp))
   :guard (and (>= (len call) 6)
-              (eq 'defmapping (car call)))
+              (member-eq (car call) '(defmapping defiso defsurj definj)))
   :returns (call$ "A @(tsee pseudo-event-formp).")
   :verify-guards nil
   :short "Remove any @(':print') and @(':show-only') inputs
-          from a call of @(tsee defmapping)."
+          from a call of @(tsee defmapping) or its wrappers."
   :long
   (xdoc::topstring-p
    "As explained in the documentation,
