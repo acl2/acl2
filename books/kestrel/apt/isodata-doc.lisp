@@ -597,7 +597,6 @@
       ";; :predicate is nil,"
       ";; m = 1,"
       ";; and isomaps includes :result1 (or :result):"
-      ""
       "(defun new (x1 ... xn)"
       "  (if (mbt$ (and (newp1 x1)"
       "                 ..."
