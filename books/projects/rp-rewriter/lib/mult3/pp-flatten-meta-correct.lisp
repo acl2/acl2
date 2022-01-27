@@ -168,14 +168,13 @@
                              dummy-arith-lemma-1)
                             (+-IS-SUM))))))
 
-(local
- (defthm valid-sc-subterms-merge-sorted-and$-lists
-   (implies (and (valid-sc-subterms lst1 a)
-                 (valid-sc-subterms lst2 a))
-            (valid-sc-subterms (merge-sorted-and$-lists lst1 lst2) a))
-   :hints (("Goal"
-            :induct (merge-sorted-and$-lists lst1 lst2)
-            :in-theory (e/d (merge-sorted-and$-lists) ())))))
+(defthm valid-sc-subterms-merge-sorted-and$-lists
+  (implies (and (valid-sc-subterms lst1 a)
+                (valid-sc-subterms lst2 a))
+           (valid-sc-subterms (merge-sorted-and$-lists lst1 lst2) a))
+  :hints (("Goal"
+           :induct (merge-sorted-and$-lists lst1 lst2)
+           :in-theory (e/d (merge-sorted-and$-lists) ()))))
 
 (encapsulate nil
   (local
@@ -284,7 +283,6 @@
                             is-rp
                             is-if)
                            ()))))
-
 
 
 (defret pp-flatten-returns-valid-sc
@@ -746,11 +744,7 @@
 
 (progn
   (local
-   (defun bit-listp (lst)
-     (if (atom lst)
-         (equal lst nil)
-       (and (bitp (car lst))
-            (bit-listp (cdr lst))))))
+   (in-theory (enable bit-listp)))
 
   (local
    (defun bit-list-listp (lst)
@@ -2780,7 +2774,6 @@
             :in-theory (e/d* (regular-eval-lemmas)
                              ())))))
 
-
 (defthm valid-sc-subterms-of-negate-lst
   (implies (valid-sc-subterms lst a)
            (valid-sc-subterms (negate-lst lst enabled) a))
@@ -2828,7 +2821,7 @@
            :do-not-induct t
            :in-theory (e/d (NEGATE-LST
                             negate-lst-aux)
-                           ())))) 
+                           ()))))
 
 #|(defthm sum-list-eval-of-append-wog
   (equal (sum-list-eval (append-wog x y) a)
@@ -2875,7 +2868,7 @@
                              (:REWRITE CONSP-RP-TRANS-LST)
                              (:TYPE-PRESCRIPTION O<)
                              (:REWRITE
-                                REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                              REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              (:REWRITE ACL2::O-P-O-INFP-CAR)
                              (:REWRITE VALID-SC-SUBTERMS-OF-CDR)
                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
@@ -2900,7 +2893,6 @@
                              rp-evlt-of-ex-from-rp
                              ;;is-falist
                              rp-termp)))))
-
 
 ;; A MAIN LEMMA
 (defret pp-flatten-correct-lemma

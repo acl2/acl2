@@ -55,7 +55,6 @@
 (local
  (include-book "lemmas"))
 
-
 ;;(value-triple (clear-memoize-tables))
 (attach-meta-fncs svl-mult-rules)
 
@@ -83,6 +82,281 @@
   use-qr-lemmas
   :disabled t))
 
+(progn
+  (define 4vec-?*-of-with-bitp-cond-syn-check (term lst)
+    :hints (("Goal"
+             :in-theory (e/d ()
+                             (+-IS-SUM))))
+    (cond (lst
+           (or (atom term)
+               (and (4vec-?*-of-with-bitp-cond-syn-check (car term) nil)
+                    (4vec-?*-of-with-bitp-cond-syn-check (cdr term) t))))
+          (t (case-match term
+               (('sv::4vec-rsh ('quote x) y)
+                (if (and (integerp x)
+                         (> x 60000))
+                    nil
+                  (4vec-?*-of-with-bitp-cond-syn-check y nil)))
+               (& (or (atom term)
+                      (and (atom (car term))
+                           (4vec-?*-of-with-bitp-cond-syn-check (cdr term)
+                                                                t)))))))
+    )
+
+  (def-rp-rule 4vec-?*-of-with-bitp-cond
+    (implies (and (bitp x)
+                  (integerp y)
+                  (integerp z)
+                  (syntaxp (and (4vec-?*-of-with-bitp-cond-syn-check y nil)
+                                (4vec-?*-of-with-bitp-cond-syn-check z nil))))
+             (equal (sv::4vec-?* (-- x) y z)
+                    (svl::4vec-concat 1
+                                      (sv::4vec-?* x
+                                                   (sv::4vec-part-select 0 1 y)
+                                                   (sv::4vec-part-select 0 1 z))
+                                      (sv::4vec-?* (-- x)
+                                                   (sv::4vec-rsh 1 y)
+                                                   (sv::4vec-rsh 1 z)))))
+
+    :hints (("Goal"
+             :use ((:instance svl::4vec-?*-of-with-bitp-cond
+                              (svl::x x)
+                              (svl::y y)
+                              (svl::z z)))
+             :in-theory (e/d (--) (svl::4vec-?*-of-with-bitp-cond)))))
+
+  (def-rp-rule 4vec-?*-of-bits-with--cond
+    (implies (and (bitp x)
+                  (bitp y)
+                  (bitp z))
+             (equal (sv::4vec-?* (-- x) y z)
+                    (sv::4vec-?* x y z)))
+    :hints (("Goal"
+             :in-theory (e/d (bitp) ())))))
+
+(def-rp-rule 4VEC-SYMWILDEQ-of-1-with-bitp
+  (implies (bitp x)
+           (equal (sv::4VEC-SYMWILDEQ 1 x)
+                  (-- x)))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
+
+(def-rp-rule$ t nil
+  logcar-to-bits
+  (implies (integerp x)
+           (equal (acl2::logcar x)
+                  (svl::bits x 0 1)))
+  :hints (("Goal"
+           :in-theory (e/d (BIT-OF
+                            SVL::BITS
+                            SV::4VEC-CONCAT
+                            SV::4VEC->UPPER
+                            SV::4VEC->LOWER
+                            SV::4VEC-PART-SELECT)
+                           (BITS-IS-BIT-OF
+                            SVL::EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1)))))
+
+(def-rp-rule$ t nil
+  logcdr-to-4vec-rsh
+  (implies (integerp x)
+           (equal (acl2::logcdr x)
+                  (sv::4vec-rsh 1 x)))
+  :hints (("Goal"
+           :in-theory (e/d (sv::4vec-rsh
+                            SV::4VEC->UPPER
+                            SV::4VEC->LOWER
+                            SV::4VEC-SHIFT-CORE)
+                           ()))))
+
+(def-rp-rule bits-with-zero-size
+  (implies (integerp start)
+           (equal (svl::bits x start 0)
+                  0))
+  :hints (("Goal"
+           :in-theory (e/d (svl::bits
+                            SV::4VEC->UPPER
+                            SV::4VEC->LOWER
+                            SV::4VEC-PART-SELECT)
+                           ()))))
+
+(progn
+  (def-rp-rule 4vec-==-with-constant
+    (implies (and (integerp x)
+                  (posp y)
+                  (syntaxp (or (integerp y)
+                               (and (quotep y)
+                                    (integerp (unquote y))))))
+             (equal (sv::4vec-== x y)
+                    (-- (sv::4vec-bitand (if (equal (acl2::logcar y) 1)
+                                             (acl2::logcar x)
+                                           (svl::4vec-bitnot$ 1 (acl2::logcar x)))
+                                         (-- (sv::4vec-== (acl2::logcdr x)
+                                                          (acl2::logcdr y)))))))
+    :hints (("Goal"
+             :use ((:instance svl::4vec-==-with-constant
+                              (svl::x x)
+                              (svl::y y)))
+             :in-theory (e/d (--)
+                             (svl::4vec-==-with-constant)))))
+
+
+  (def-rp-rule 4vec-==-with-bits-and-zero
+    (implies (and (integerp x)
+                  (posp size)
+                  (natp start))
+             (equal (sv::4vec-== (svl::bits x start size) 0)
+                    (-- (sv::4vec-bitand (svl::4vec-bitnot$ 1 (svl::bits x start 1))
+                                         (-- (sv::4vec-== (svl::bits x (1+ start)
+                                                                     (1- size))
+                                                          0))))))
+    :hints (("goal"
+             :use ((:instance svl::4vec-==-with-constant
+                              (svl::x (svl::bits x start size))
+                              (svl::y 0)))
+             :in-theory (e/d (logcar-to-bits
+                              logcdr-to-4vec-rsh
+                              --)
+                             (+-IS-SUM
+                              (:definition acl2::ifloor$inline)
+                              (:definition acl2::imod$inline)
+                              (:definition acl2::logcar$inline)
+                              (:definition acl2::logcdr$inline)
+                              (:definition floor))))))
+
+  (def-rp-rule 4vec-==-with-concat-and-zero
+    (implies (and (integerp x)
+                  (integerp y)
+                  (posp size))
+             (equal (sv::4vec-== (svl::4vec-concat$ size x y) 0)
+                    (-- (sv::4vec-bitand (svl::4vec-bitnot$ 1 (svl::bits x 0 1))
+                                         (-- (sv::4vec-== (sv::4vec-rsh 1 (svl::4vec-concat$ size x y))
+                                                          0))))))
+    :hints (("goal"
+             :cases ((>= size 2))
+             :expand ((SVL::4VEC-BITNOT$ 1 (SVL::4VEC-CONCAT$ SIZE X Y)))
+             ;;:expand ((SVL::4VEC-CONCAT$ SIZE X Y))
+             :use ((:instance svl::4vec-==-with-constant
+                              (svl::x (svl::4vec-concat$ size x y))
+                              (svl::y 0)))
+             :in-theory (e/d (logcar-to-bits
+                              SV::4VEC->lower
+                              SVL::4VEC-BITNOT$
+                              ;;sv::4vec-concat
+                              SV::4VEC->UPPER
+                              logcdr-to-4vec-rsh
+                              ;;SVL::4VEC-CONCAT$
+                              --
+                              SVL::BITS-OF-CONCAT-1-NO-SYNTAXP)
+                             (+-IS-SUM
+                              (:definition acl2::ifloor$inline)
+                              (:definition acl2::imod$inline)
+                              (:definition acl2::logcar$inline)
+                              (:definition acl2::logcdr$inline)
+                              (:definition floor))))))
+
+  (def-rp-rule 4vec-==-with-bit-of
+    (implies (and (integerp x)
+                  (natp start))
+             (and (equal (sv::4vec-== (bit-of x start) 0)
+                         (-- (svl::4vec-bitnot$ 1 (bit-of x start))))
+                  (equal (sv::4vec-== (bit-of x start) 1)
+                         (-- (bit-of x start)))))
+    :hints (("Goal"
+             :expand ((bit-of x start))
+             :in-theory (e/d () ())))))
+
+(progn
+  (def-rp-rule 4VEC-SYMWILDEQ-with-constant
+    (implies (and (integerp x)
+                  (posp y)
+                  (syntaxp (or (integerp y)
+                               (and (quotep y)
+                                    (integerp (unquote y))))))
+             (equal (sv::4vec-symwildeq x y)
+                    (-- (sv::4vec-bitand
+                         (if (equal (acl2::logcar y) 1)
+                             (acl2::logcar x)
+                           (svl::4vec-bitnot$ 1 (acl2::logcar x)))
+                         (-- (sv::4vec-symwildeq (acl2::logcdr x)
+                                                 (acl2::logcdr
+                                                  y)))))))
+    :hints (("Goal"
+             :use ((:instance svl::4VEC-SYMWILDEQ-with-constant
+                              (svl::x x)
+                              (svl::y y)))
+             :in-theory (e/d* (--)
+                              (svl::4VEC-SYMWILDEQ-with-constant
+                               (:DEFINITION FLOOR)
+
+                               (:DEFINITION ACL2::IFLOOR$INLINE)
+                               (:DEFINITION ACL2::IMOD$INLINE)
+                               (:DEFINITION ACL2::LOGCAR$INLINE)
+                               (:DEFINITION ACL2::LOGCDR$INLINE))))))
+
+  (def-rp-rule 4vec-symwildeq-with-bits-and-zero
+    (implies (and (integerp x)
+                  (posp size)
+                  (natp start))
+             (equal (sv::4vec-symwildeq (svl::bits x start size) 0)
+                    (-- (sv::4vec-bitand (svl::4vec-bitnot$ 1 (svl::bits x start 1))
+                                         (-- (sv::4vec-symwildeq (svl::bits x (1+ start)
+                                                                            (1- size))
+                                                                 0))))))
+    :hints (("Goal"
+             :use ((:instance svl::4VEC-SYMWILDEQ-with-constant
+                              (svl::x (svl::bits x start size))
+                              (svl::y 0)))
+             :cases ((>= size 2))
+             :in-theory (e/d (logcar-to-bits
+                              logcdr-to-4vec-rsh
+                              --)
+                             (+-IS-SUM
+                              (:definition acl2::ifloor$inline)
+                              (:definition acl2::imod$inline)
+                              (:definition acl2::logcar$inline)
+                              (:definition acl2::logcdr$inline)
+                              (:definition floor))))))
+
+  (def-rp-rule 4vec-symwildeq-with-concat$-and-zero
+    (implies (and (integerp x)
+                  (integerp y)
+                  (posp size))
+             (equal (sv::4vec-symwildeq (svl::4vec-concat$ size x y) 0)
+                    (-- (sv::4vec-bitand (svl::4vec-bitnot$ 1 (svl::bits x 0 1))
+                                         (-- (sv::4vec-symwildeq (sv::4vec-rsh 1
+                                                                               (svl::4vec-concat$ size x y))
+                                                                 0))))))
+    :hints (("goal"
+             :cases ((>= size 2))
+             :expand ((SVL::4VEC-BITNOT$ 1 (SVL::4VEC-CONCAT$ SIZE X Y)))
+             ;;:expand ((SVL::4VEC-CONCAT$ SIZE X Y))
+             :use ((:instance svl::4VEC-SYMWILDEQ-with-constant
+                              (svl::x (svl::4vec-concat$ size x y))
+                              (svl::y 0)))
+             :in-theory (e/d (logcar-to-bits
+                              SV::4VEC->lower
+                              SVL::4VEC-BITNOT$
+                              ;;sv::4vec-concat
+                              SV::4VEC->UPPER
+                              logcdr-to-4vec-rsh
+                              ;;SVL::4VEC-CONCAT$
+                              --
+                              SVL::BITS-OF-CONCAT-1-NO-SYNTAXP)
+                             (+-IS-SUM
+                              (:definition acl2::ifloor$inline)
+                              (:definition acl2::imod$inline)
+                              (:definition acl2::logcar$inline)
+                              (:definition acl2::logcdr$inline)
+                              (:definition floor))))))
+
+  (def-rp-rule 4vec-symwildeq-with-bitp
+    (implies (and (bitp x))
+             (and (equal (sv::4vec-symwildeq x 0)
+                         (-- (svl::4vec-bitnot$ 1 x)))
+                  (equal (sv::4vec-symwildeq x 1)
+                         (-- x))))
+    :hints (("Goal"
+             :in-theory (e/d (bitp) ())))))
 
 (def-rp-rule bits-of---bitp-neg
   (implies (bitp x)
@@ -176,7 +450,6 @@
              (equal (bit-of num start)
                     (svl::bits num start 1)))))
 
-
 (def-rp-rule bits-of-bit-of-out-of-range
   (implies (and (posp start)
                 (natp size))
@@ -195,7 +468,6 @@
                             (:TYPE-PRESCRIPTION BIT-OF))))
           ("Subgoal 2"
            :in-theory (e/d () ()))))
-
 
 (def-rp-rule 4vec-rsh-of-bit-of-out-of-range
   (implies (posp amount)
@@ -238,8 +510,6 @@
              :in-theory (e/d (bitp) ())))))
 
 
-
-
 (progn
   (encapsulate
     nil
@@ -267,11 +537,11 @@
                                 SV::4VEC-ZERO-EXT
                                 )
                                (mod2-is-m2
-                                
+
                                 SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
                                 +-IS-SUM
                                 floor2-if-f2))))))
-  
+
   (def-rp-rule 4vec-bitand-is-binary-and-when-bitp
     (implies (and (bitp x)
                   (bitp y))
@@ -766,21 +1036,21 @@
            :in-theory (e/d (bitp) ()))))
 
 (rp::def-rp-rule
- bits-of-c-when-bit-when-start>0
- (implies (and (bitp (rp::c hash-code x y z))
-               (posp start))
-          (equal (svl::bits (rp::c hash-code x y z) start 1)
-                 0))
- :hints (("Goal"
-          :in-theory (e/d (bitp) ()))))
+  bits-of-c-when-bit-when-start>0
+  (implies (and (bitp (rp::c hash-code x y z))
+                (posp start))
+           (equal (svl::bits (rp::c hash-code x y z) start 1)
+                  0))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
 
 (rp::def-rp-rule
- bits-of-c-when-bit-when-start-0
- (implies (and (bitp (rp::c hash-code x y z)))
-          (equal (svl::bits (rp::c hash-code x y z) 0 1)
-                 (rp::c  hash-code x y z)))
- :hints (("Goal"
-          :in-theory (e/d (bitp) ()))))
+  bits-of-c-when-bit-when-start-0
+  (implies (and (bitp (rp::c hash-code x y z)))
+           (equal (svl::bits (rp::c hash-code x y z) 0 1)
+                  (rp::c  hash-code x y z)))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
 
 (defthm bits-of-c-when-bit-when-start-0-side-cond
   (implies (and (bitp (rp::c hash-code x y z)))
@@ -791,21 +1061,21 @@
               bits-of-c-when-bit-when-start-0-side-cond)
 
 (rp::def-rp-rule
- bits-of-s-c-res-when-bit-when-start>0
- (implies (and (bitp (rp::s-c-res x y z))
-               (posp start))
-          (equal (svl::bits (rp::s-c-res x y z) start 1)
-                 0))
- :hints (("Goal"
-          :in-theory (e/d (bitp) ()))))
+  bits-of-s-c-res-when-bit-when-start>0
+  (implies (and (bitp (rp::s-c-res x y z))
+                (posp start))
+           (equal (svl::bits (rp::s-c-res x y z) start 1)
+                  0))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
 
 (rp::def-rp-rule
- bits-of-s-c-res-when-bit-when-start=0
- (implies (and (bitp (rp::s-c-res x y z)))
-          (equal (svl::bits (rp::s-c-res x y z) 0 1)
-                 (rp::s-c-res x y z)))
- :hints (("Goal"
-          :in-theory (e/d (bitp) ()))))
+  bits-of-s-c-res-when-bit-when-start=0
+  (implies (and (bitp (rp::s-c-res x y z)))
+           (equal (svl::bits (rp::s-c-res x y z) 0 1)
+                  (rp::s-c-res x y z)))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
 
 (defthm
   bits-of-s-c-res-when-bit-when-start=0-side-cond
@@ -876,8 +1146,6 @@
                               (a (* a b))))
              :in-theory (e/d () ())))))
 
-
-
 (def-rp-rule nth-of-cons
   (and (equal (nth 0 (cons a b)) a)
        (implies (posp index)
@@ -888,8 +1156,6 @@
   (equal (integer-listp (cons a b))
          (and (integerp a)
               (integer-listp b))))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; For when definitions of ha and fa modules are replaced with + sign:
@@ -904,37 +1170,35 @@
 ;; probably a part  of a full-adder, so  I convert that to fa  spec.  For other
 ;; adder types, other rewrite rules might be necessary.
 
-
-
 ;;;;;;;
 
 ;; First catch that strange case of 4vec-plus-chains
 
 (local
  (defthm integerp-4vec-adder
-     (implies (and (natp size)
-                   (integerp x)
-                   (integerp y)
-                   (integerp carry-in))
-              (integerp (4vec-adder x y carry-in size)))
+   (implies (and (natp size)
+                 (integerp x)
+                 (integerp y)
+                 (integerp carry-in))
+            (integerp (4vec-adder x y carry-in size)))
    :rule-classes (:rewrite :type-prescription)
    :hints (("Goal"
             :in-theory (e/d (4VEC-ADDER) ())))))
 
 (local
  (defthm integerp-bits
-     (implies (and (natp start)
-                   (natp size)
-                   (integerp x))
-              (integerp (svl::bits x start size)))
+   (implies (and (natp start)
+                 (natp size)
+                 (integerp x))
+            (integerp (svl::bits x start size)))
    :rule-classes (:type-prescription :rewrite)))
 
 (local
  (defthm 4vec-part-select-start=0-for-integers-is-loghead
-     (implies (and (natp size)
-                   (integerp x))
-              (equal (sv::4vec-part-select 0 size x)
-                     (loghead size x)))
+   (implies (and (natp size)
+                 (integerp x))
+            (equal (sv::4vec-part-select 0 size x)
+                   (loghead size x)))
    :hints (("Goal"
             :in-theory (e/d (sv::4vec-part-select
                              SV::4VEC-CONCAT
@@ -943,22 +1207,21 @@
                              SV::4VEC->lower)
                             ())))))
 
-
 (encapsulate
-    nil
-    (local
-     (use-arithmetic-5 t))
+  nil
+  (local
+   (use-arithmetic-5 t))
 
   (def-rp-rule$ t nil unsigned-byte-p-redefined-with-loghead
-      (implies (natp size)
-               (equal (unsigned-byte-p size x)
-                      (and (integerp x)
-                           (equal x (loghead size x)))
-                      #|(and (hide (unsigned-byte-p size x))
-                           (integerp x)
-                           (equal (ash x (- size)) 0))|#))
-      :hints (("Goal"
-               :expand ((hide (unsigned-byte-p size x)))
+    (implies (natp size)
+             (equal (unsigned-byte-p size x)
+                    (and (integerp x)
+                         (equal x (loghead size x)))
+                    #|(and (hide (unsigned-byte-p size x))
+                    (integerp x)
+                    (equal (ash x (- size)) 0))|#))
+    :hints (("Goal"
+             :expand ((hide (unsigned-byte-p size x)))
              :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
                               (:REWRITE ACL2::FLOOR-ZERO . 1)
                               (:REWRITE MINUS-OF-MINUS)
@@ -968,12 +1231,12 @@
                               (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
                               (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
                              ()))))
-  
+
   (def-rp-rule ash-implies-unsigned-byte-p
-      (implies (and (integerp x)
-                    (natp size)
-                    (equal (ash x (- size)) 0))
-               (unsigned-byte-p size x))
+    (implies (and (integerp x)
+                  (natp size)
+                  (equal (ash x (- size)) 0))
+             (unsigned-byte-p size x))
     :hints (("Goal"
              :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
                               (:REWRITE ACL2::FLOOR-ZERO . 1)
@@ -987,29 +1250,29 @@
 
 (local
  (encapsulate
-     nil
+   nil
 
-     (local
-      (defthmd insert-loghead-to-plusp-lemma-1
-          (implies (and (integerp x)
-                        (<= x max1)
-                        (integerp y)
-                        (<= y max2)
-                        (integerp z)
-                        (<= z max3)
-                        )
-                   (<= (+ x y z) (+ max1 max2 max3)))
-        :otf-flg t
-        :hints (("Goal"
-                 :in-theory (e/d* ()
-                                  (+-is-sum))))))
+   (local
+    (defthmd insert-loghead-to-plusp-lemma-1
+      (implies (and (integerp x)
+                    (<= x max1)
+                    (integerp y)
+                    (<= y max2)
+                    (integerp z)
+                    (<= z max3)
+                    )
+               (<= (+ x y z) (+ max1 max2 max3)))
+      :otf-flg t
+      :hints (("Goal"
+               :in-theory (e/d* ()
+                                (+-is-sum))))))
 
    (local
     (defthmd <=-to-<-for-integers
-        (implies (and (integerp x)
-                      (integerp y))
-                 (equal (<= x y)
-                        (< x (1+ y))))
+      (implies (and (integerp x)
+                    (integerp y))
+               (equal (<= x y)
+                      (< x (1+ y))))
       :rule-classes (:rewrite)
       :hints (("Goal"
                :in-theory (e/d ()
@@ -1017,30 +1280,29 @@
 
    (local
     (defthmd insert-loghead-to-plusp-lemma-2
-        (implies (natp size)
-                 (equal (+ (EXPT 2 SIZE) (EXPT 2 SIZE))
-                        (EXPT 2 (1+ SIZE))))
+      (implies (natp size)
+               (equal (+ (EXPT 2 SIZE) (EXPT 2 SIZE))
+                      (EXPT 2 (1+ SIZE))))
       :hints (("Goal"
                :in-theory (e/d () (+-is-sum))))))
 
    (local
     (defthmd insert-loghead-to-plusp-lemma-3
-        (implies (natp size)
-                 (equal (* 2 (EXPT 2 SIZE))
-                        (EXPT 2 (1+ SIZE))))
+      (implies (natp size)
+               (equal (* 2 (EXPT 2 SIZE))
+                      (EXPT 2 (1+ SIZE))))
       :hints (("Goal"
                :in-theory (e/d () (+-is-sum))))))
 
    (local
     (use-arithmetic-5 t))
 
-
    (defthmd insert-loghead-to-plusp-lemma
-       (implies (and (unsigned-byte-p size x)
-                     (unsigned-byte-p size y)
-                     (unsigned-byte-p 1 z))
-                (unsigned-byte-p (1+ size)
-                                 (+ x y z)))
+     (implies (and (unsigned-byte-p size x)
+                   (unsigned-byte-p size y)
+                   (unsigned-byte-p 1 z))
+              (unsigned-byte-p (1+ size)
+                               (+ x y z)))
      :otf-flg t
      :hints (("Goal"
               :do-not-induct t
@@ -1060,16 +1322,16 @@
                                insert-loghead-to-plusp-lemma-1)))))
 
    (defthmd remove-loghead
-       (implies (unsigned-byte-p size x)
-                (equal (loghead size x)
-                       x)))
+     (implies (unsigned-byte-p size x)
+              (equal (loghead size x)
+                     x)))
 
    (defthmd remove-loghead-from-plus
-       (implies (and (unsigned-byte-p size x)
-                     (unsigned-byte-p size y)
-                     (unsigned-byte-p 1 z))
-                (equal (loghead (1+ size) (+ x y z))
-                       (+ x y z)))
+     (implies (and (unsigned-byte-p size x)
+                   (unsigned-byte-p size y)
+                   (unsigned-byte-p 1 z))
+              (equal (loghead (1+ size) (+ x y z))
+                     (+ x y z)))
      :hints (("Goal"
               :do-not-induct t
               :use ((:instance remove-loghead
@@ -1078,101 +1340,96 @@
                     (:instance insert-loghead-to-plusp-lemma))
               :in-theory (e/d ()
                               (+-is-sum)))))))
-                                
 
 (local
  (defthmd
-     4vec-adder-is-2vec-adder
-     (implies (and (integerp x)
-                   (integerp y)
-                   (integerp carry-in)
-                   (natp size))
-              (equal (4vec-adder x y carry-in size)
-                     (2vec-adder x y carry-in size)))
+   4vec-adder-is-2vec-adder
+   (implies (and (integerp x)
+                 (integerp y)
+                 (integerp carry-in)
+                 (natp size))
+            (equal (4vec-adder x y carry-in size)
+                   (2vec-adder x y carry-in size)))
    :hints
    (("goal" :in-theory (e/d (2vec-adder-is-4vec-adder) nil)))))
 
-
 (def-rp-rule 4vec-plus-chain-1
-     (implies
-      (and (bitp carry-in)
-           (unsigned-byte-p (1- size) x)
-           (unsigned-byte-p (1- size) y)
-           (posp size))
-      (and (equal (sv::4vec-plus (sv::4vec-concat
-                                  size
-                                  (sv::4vec-part-select 0 size (sv::4vec-plus x y))
-                                  0)
-                                 carry-in)
-                  (svl::4vec-plus++ x y carry-in size))
-           (equal (sv::4vec-plus (sv::4vec-concat
-                                  size
-                                  (sv::4vec-plus x y)
-                                  0)
-                                 carry-in)
-                  (svl::4vec-plus++ x y carry-in size))
-           (equal (sv::4vec-plus (sv::4vec-part-select 0 size (sv::4vec-plus x y))
-                                 carry-in)
-                  (svl::4vec-plus++ x y carry-in size))
-           ))
-   :otf-flg t
-   :hints (("Goal"
-            :use ((:instance remove-loghead-from-plus
-                             (size (1- size))
-                             (z 0))
-                  (:instance remove-loghead-from-plus
-                             (size (1- size))
-                             (z carry-in))
-                  (:instance loghead-of-+-is-2vec-adder-lemma
-                             (carry carry-in)))
-            :do-not-induct t
-            ;;:induct (2VEC-ADDER X Y carry-in SIZE)
-            :in-theory (e/d (SVL::4VEC-CONCAT$-OF-TERM2=0
-                             
-                             4VEC-ADDER-IS-2VEC-ADDER
-                             
-                             SV::4VEC-PLUS
-                             BITOPS::LOGHEAD-OF-LOGHEAD-2
-                             SV::2VEC
-                             ;;loghead
-                             ;;(:induction 2VEC-ADDER)
-                             SVL::BITS
-                             ;;bitp
-                             SV::4VEC
-                             ;;SV::4VEC-PART-SELECT
-                             2VEC-ADDER
-                             SV::4VEC->UPPER
-                             SV::4VEC->LOWER)
-                            (4vec-adder-opener-size>0
-                             ACL2::POSP-REDEFINITION
-                             unsigned-byte-p-redefined-with-loghead
-                             ;; UNSIGNED-BYTE-P-TO-ASH-FORM
-                             2vec-adder-is-4vec-adder
-                             unsigned-byte-p
-                             ash
-                             loghead
-                             f2
-                             m2
-                             bit-of
-                             ;;ACL2::LIFIX$INLINE
-                             +-is-sum
-                             LOGHEAD-OF-+-IS-2VEC-ADDER-WITHOUT-CARRY
-                             loghead-of-+-is-2vec-adder-lemma
-                             loghead-of-+-is-2vec-adder
-                             2vec-adder-is-4vec-adder
-                             )))))
+  (implies
+   (and (bitp carry-in)
+        (unsigned-byte-p (1- size) x)
+        (unsigned-byte-p (1- size) y)
+        (posp size))
+   (and (equal (sv::4vec-plus (sv::4vec-concat
+                               size
+                               (sv::4vec-part-select 0 size (sv::4vec-plus x y))
+                               0)
+                              carry-in)
+               (svl::4vec-plus++ x y carry-in size))
+        (equal (sv::4vec-plus (sv::4vec-concat
+                               size
+                               (sv::4vec-plus x y)
+                               0)
+                              carry-in)
+               (svl::4vec-plus++ x y carry-in size))
+        (equal (sv::4vec-plus (sv::4vec-part-select 0 size (sv::4vec-plus x y))
+                              carry-in)
+               (svl::4vec-plus++ x y carry-in size))
+        ))
+  :otf-flg t
+  :hints (("Goal"
+           :use ((:instance remove-loghead-from-plus
+                            (size (1- size))
+                            (z 0))
+                 (:instance remove-loghead-from-plus
+                            (size (1- size))
+                            (z carry-in))
+                 (:instance loghead-of-+-is-2vec-adder-lemma
+                            (carry carry-in)))
+           :do-not-induct t
+           ;;:induct (2VEC-ADDER X Y carry-in SIZE)
+           :in-theory (e/d (SVL::4VEC-CONCAT$-OF-TERM2=0
+
+                            4VEC-ADDER-IS-2VEC-ADDER
+
+                            SV::4VEC-PLUS
+                            BITOPS::LOGHEAD-OF-LOGHEAD-2
+                            SV::2VEC
+                            ;;loghead
+                            ;;(:induction 2VEC-ADDER)
+                            SVL::BITS
+                            ;;bitp
+                            SV::4VEC
+                            ;;SV::4VEC-PART-SELECT
+                            2VEC-ADDER
+                            SV::4VEC->UPPER
+                            SV::4VEC->LOWER)
+                           (4vec-adder-opener-size>0
+                            ACL2::POSP-REDEFINITION
+                            unsigned-byte-p-redefined-with-loghead
+                            ;; UNSIGNED-BYTE-P-TO-ASH-FORM
+                            2vec-adder-is-4vec-adder
+                            unsigned-byte-p
+                            ash
+                            loghead
+                            f2
+                            m2
+                            bit-of
+                            ;;ACL2::LIFIX$INLINE
+                            +-is-sum
+                            LOGHEAD-OF-+-IS-2VEC-ADDER-WITHOUT-CARRY
+                            loghead-of-+-is-2vec-adder-lemma
+                            loghead-of-+-is-2vec-adder
+                            2vec-adder-is-4vec-adder
+                            )))))
 
 (rp::add-rp-rule rp::4vec-plus-chain-1 :outside-in :both)
 
 ;;;;;;;
 
-
-
 (defun temp-ha-spec (x y)
   (svl::4vec-list (ss x y)
                   (cc x y)
                   0))
-
 
 (progn
   (local
@@ -1183,7 +1440,7 @@
                   (bitp y)
                   (posp size)
                   (integerp start)
-                  (> start 1)) 
+                  (> start 1))
              (equal (svl::bits (temp-ha-spec x y)
                                start size)
                     0))
@@ -1219,7 +1476,6 @@
                               sv::4vec->lower
                               sv::4vec-concat)
                              (+-is-sum)))))
-  
 
   (def-rp-rule
     4vec-plus-of-bits-to-temp-ha-spec-2
@@ -1237,7 +1493,7 @@
                               sv::4vec->lower
                               sv::4vec-concat)
                              (+-is-sum)))))
-  
+
   (def-rp-rule
     4vec-plus-of-bits-to-temp-ha-spec-3
     (implies (and (bitp x)
@@ -1257,9 +1513,7 @@
                               sv::4vec-concat)
                              (+-is-sum)))))
 
-  
 
-  
   (def-rp-rule
     4vec-plus-rule-for-fa
     (implies (and (bitp x)
@@ -1320,13 +1574,12 @@
                               sv::4vec-concat)
                              (+-is-sum)))))
 
-
   (local
    (defthm 4vec-concat-of-bitp
-       (implies (and (posp size)
-                     (bitp x))
-                (equal (sv::4vec-concat size x 0)
-                       x))
+     (implies (and (posp size)
+                   (bitp x))
+              (equal (sv::4vec-concat size x 0)
+                     x))
      :hints (("Goal"
               :in-theory (e/d (sv::4vec-concat
                                SV::4VEC->UPPER
@@ -1335,8 +1588,8 @@
 
   (local
    (defthm bitp-of-bits-0-1
-       (implies (integerp x)
-                (bitp (svl::bits x 0 1)))
+     (implies (integerp x)
+              (bitp (svl::bits x 0 1)))
      :hints (("Goal"
               :expand ((SV::4VEC-CONCAT 1 X 0))
               :in-theory (e/d (svl::bits
@@ -1344,10 +1597,10 @@
                                SV::4VEC->UPPER
                                sv::4vec-part-select)
                               ())))))
-  
+
   (def-rp-rule 4vec-concat$-of-temp-ha-spec
-      (implies (and (integerp size)
-                    (> size 1))
+    (implies (and (integerp size)
+                  (> size 1))
              (equal (svl::4vec-concat$ size
                                        (temp-ha-spec x y)
                                        0)
@@ -1369,7 +1622,7 @@
              (equal (svl::bits (temp-ha-spec x y)
                                0 size)
                     (temp-ha-spec x y)))
-    :otf-flg t 
+    :otf-flg t
     :hints (("goal"
              :in-theory (e/d (bitp
                               SV::4VEC-PART-SELECT
@@ -1410,64 +1663,57 @@
                 (integerp y))
            (integerp (temp-ha-spec x y))))
 
-
 (def-rp-rule sign-ext-compress
- (implies (bitp x)
-          (and (equal (svl::4vec-concat$ 1 x (rp::-- x))
-                      (rp::-- x))
-               (equal (logapp 1 x (rp::-- x))
-                      (rp::-- x))
-               (equal (svl::4vec-concat$ 1 x (unary-- x))
-                      (rp::-- x))))
- :hints (("Goal"
-          :in-theory (e/d (bitp) ()))))
+  (implies (bitp x)
+           (and (equal (svl::4vec-concat$ 1 x (rp::-- x))
+                       (rp::-- x))
+                (equal (logapp 1 x (rp::-- x))
+                       (rp::-- x))
+                (equal (svl::4vec-concat$ 1 x (unary-- x))
+                       (rp::-- x))))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
 ;;;;;;;;;;;;;;;;;;;
-
-
 
 
 ;;;;;;;;;;;;;;;;;;;;
 
 
-
-
 (def-rp-rule 4vec-rsh-of-binary-fncs
-    (implies (posp size)
-             (and (equal (sv::4vec-rsh size (binary-or x y))
-                         0)
-                  (equal (sv::4vec-rsh size (binary-and x y))
-                         0)
-                  (equal (sv::4vec-rsh size (binary-xor x y))
-                         0)
-                  (equal (sv::4vec-rsh size (binary-? x y z))
-                         0)
-                  (equal (sv::4vec-rsh size (binary-not x))
-                         0))))
-
-
+  (implies (posp size)
+           (and (equal (sv::4vec-rsh size (binary-or x y))
+                       0)
+                (equal (sv::4vec-rsh size (binary-and x y))
+                       0)
+                (equal (sv::4vec-rsh size (binary-xor x y))
+                       0)
+                (equal (sv::4vec-rsh size (binary-? x y z))
+                       0)
+                (equal (sv::4vec-rsh size (binary-not x))
+                       0))))
 
 (def-rp-rule 4vec-==-of-binary-fncs-with-1
-     (implies t
-              (and (equal (SV::4VEC-== 1 (binary-or x y))
-                          (-- (binary-or x y)))
-                   (equal (SV::4VEC-== (binary-or x y) 1)
-                          (-- (binary-or x y)))
-                   (equal (SV::4VEC-== 1 (binary-and x y))
-                          (-- (binary-and x y)))
-                   (equal (SV::4VEC-== (binary-and x y) 1)
-                          (-- (binary-and x y)))
-                   (equal (SV::4VEC-== 1 (binary-xor x y))
-                          (-- (binary-xor x y)))
-                   (equal (SV::4VEC-== (binary-xor x y) 1)
-                          (-- (binary-xor x y)))
-                   (equal (SV::4VEC-== 1 (binary-not x))
-                          (-- (binary-not x)))
-                   (equal (SV::4VEC-== (binary-not x) 1)
-                          (-- (binary-not x)))
-                   (equal (SV::4VEC-== 1 (binary-? x y z))
-                          (-- (binary-? x y z)))
-                   (equal (SV::4VEC-== (binary-? x y z) 1)
-                          (-- (binary-? x y z)))))
+  (implies t
+           (and (equal (SV::4VEC-== 1 (binary-or x y))
+                       (-- (binary-or x y)))
+                (equal (SV::4VEC-== (binary-or x y) 1)
+                       (-- (binary-or x y)))
+                (equal (SV::4VEC-== 1 (binary-and x y))
+                       (-- (binary-and x y)))
+                (equal (SV::4VEC-== (binary-and x y) 1)
+                       (-- (binary-and x y)))
+                (equal (SV::4VEC-== 1 (binary-xor x y))
+                       (-- (binary-xor x y)))
+                (equal (SV::4VEC-== (binary-xor x y) 1)
+                       (-- (binary-xor x y)))
+                (equal (SV::4VEC-== 1 (binary-not x))
+                       (-- (binary-not x)))
+                (equal (SV::4VEC-== (binary-not x) 1)
+                       (-- (binary-not x)))
+                (equal (SV::4VEC-== 1 (binary-? x y z))
+                       (-- (binary-? x y z)))
+                (equal (SV::4VEC-== (binary-? x y z) 1)
+                       (-- (binary-? x y z)))))
   :otf-flg t
   :hints (("Goal"
            :use ((:instance (:TYPE-PRESCRIPTION BIT-FIX))
@@ -1491,9 +1737,46 @@
   (equal (sv::svex-alist-eval-for-symbolic x y z)
          (sv::svex-alist-eval x y)))
 
-
 (rp::add-rp-rule acl2::fast-logext-fn)
 
+(define saturate-for-rp ((num integerp)
+                         (num-size posp)
+                         (dest-size posp)
+                         (signed booleanp))
+  :verify-guards nil
+  (cond ((>= dest-size num-size)
+         (loghead dest-size num))
+        (signed
+         (sv::4vec-?* (sv::4vec-== (svl::bits num (1- num-size) 1) 1)
+                      (sv::4vec-?* (sv::4vec-== (svl::bits num (1- dest-size)
+                                                           (- num-size
+                                                              dest-size))
+                                                (svl::bits -1 0
+                                                           (- num-size
+                                                              dest-size)))
+                                   (loghead dest-size num)
+                                   (loghead dest-size
+                                            (- (expt 2 (1- dest-size)))))
+                      (sv::4vec-?* (sv::4vec-== (svl::bits num (1- dest-size)
+                                                           (- num-size
+                                                              dest-size))
+                                                0)
+                                   (loghead dest-size num)
+                                   (1- (expt 2 (1- dest-size))))))
+        (t (sv::4vec-?* (sv::4vec-== (svl::bits num dest-size (- num-size dest-size)) 0)
+                        (loghead dest-size num)
+                        (1- (expt 2 dest-size)))))
+  ///
+  (rp::add-rp-rule saturate-for-rp))
+
+(def-rp-rule 4vec-==-of=bitp-and-constant-bitp
+  (implies (bitp x)
+           (and (equal (sv::4vec-== x 0)
+                       (-- (binary-not x)))
+                (equal (sv::4vec-== x 1)
+                       (-- x))))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
 
 (encapsulate
   nil
@@ -1521,10 +1804,100 @@
                               floor2-if-f2
                               ))))))
 
+
+
+(def-rp-rule 4vec-bitor-of---
+  (implies (and (bitp x)
+                (bitp y))
+           (equal (sv::4vec-bitor (-- x)
+                                  (-- y))
+                  (-- (binary-or x y))))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
+
+(def-rp-rule bits-of---=of-bitp
+  (implies (and (natp start)
+                (bitp x))
+           (equal (svl::bits (-- x) start 1)
+                  x))
+  :hints (("Goal"
+           :in-theory (e/d (svl::bits
+                            bitp)
+                           ()))))
+
+(def-rp-rule bit-of-of---
+  (implies (and (bitp x)
+                (natp index))
+           (equal (bit-of (-- x) index)
+                  x))
+  :hints (("Goal"
+           :in-theory (e/d (bitp
+                            bit-of)
+                           ()))))
+
+(def-rp-rule integerp-of-binary-fncs
+  (and (integerp (binary-or x y))
+       (integerp (binary-xor x y))
+       (integerp (binary-and x y))
+       (integerp (binary-? x y z))
+       (integerp (binary-not x))
+       (integerp (bit-of x y))))
+
+(def-rp-rule integerp--
+  (integerp (-- x)))
+
+(def-rp-rule bit-of-of-bits
+  (implies (and (natp index)
+                (natp start)
+                (natp size)
+                (integerp x))
+           (equal (bit-of (svl::bits x start size) index)
+                  (svl::bits (svl::bits x start size) index 1)))
+  :hints (("Goal"
+           :use ((:instance BITS-IS-BIT-OF
+                            (num (svl::bits x start size))
+                            (start index)))
+           :in-theory (e/d (BITS-IS-BIT-OF)
+                           (
+                            +-is-sum
+                            SVL::BITS-OF-BITS-1)))))
+
 (bump-all-meta-rules)
 
 ;;(bump-down-rp-rule (:META medw-compress-meta . equal))
 ;;(bump-down-rp-rule (:META make-sc-fgl-ready-meta-main . equal))
 
-
-
+#|(bump-rules ;;(:meta hons-acons-meta . hons-acons)
+;;(:meta fast-alist-free-meta . fast-alist-free)
+;;(:meta hons-get-meta . hons-get)
+;;(:meta assoc-eq-vals-meta . assoc-eq-vals)
+;;(:meta rp-equal-meta . equal)
+;;(:meta rp-equal-cnt-meta . equal)
+;;(:meta mv-nth-meta . mv-nth)
+;;(:meta implies-meta . implies)
+;;(:meta cons-to-list-meta . cons-to-list)
+;;(:meta list-to-cons-meta . list-to-cons)
+(:meta svl::bits-of-meta-fn
+. sv::4vec-part-select)
+(:meta svl::bits-of-meta-fn . svl::bits)
+(:meta svl::concat-meta . svl::4vec-concat$)
+(:meta svl::concat-meta . sv::4vec-concat)
+(:meta svl::svexl-node-eval-wog-meta-main
+. svl::svexl-node-eval-wog)
+(:meta svl::svex-eval-wog-meta-main
+. svl::svex-eval-wog)
+(:meta svl::svex-alist-eval-meta
+. sv::svex-alist-eval)
+(:meta svl::4vec-rsh-of-meta . sv::4vec-rsh)
+(:meta rp-equal-iter-pp+-meta . equal)
+(:meta resolve-adder-and-order
+. merge-adder-and)
+(:meta resolve-adder-sum-order
+. merge-adder-b+)
+(:meta adder-mux-meta . adder-mux)
+(:meta sort-sum-meta . sort-sum)
+(:meta s-c-spec-meta . s-spec)
+(:meta s-c-spec-meta . c-spec)
+(:meta s-c-spec-meta . s-c-spec)
+(:meta s-c-spec-meta . c-s-spec)
+(:meta unpack-booth-meta . unpack-booth))|#

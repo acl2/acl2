@@ -36,7 +36,6 @@
 ; Original Author(s):
 ; Mertcan Temel         <mert@utexas.edu>
 
-
 ; Lemmas regarding the meta rules that could be added to the rewriter.
 
 (in-package "RP")
@@ -56,7 +55,7 @@
                 (rp-formula-checks state)
                 (rp-statep rp-state))
            (b* (((mv ?term-changed res-term ?dont-rw ?res-rp-state)
-                 (rp-rw-meta-rule-main term rule dont-rw context rp-state state)))
+                 (rp-rw-meta-rule-main term rule dont-rw context limit rp-state state)))
              (and (valid-sc res-term a)
                   (equal (rp-evlt res-term a)
                          (rp-evlt term a)))))
@@ -64,31 +63,30 @@
            :in-theory (e/d (rp-rw-meta-rule-main) ()))))
 
 (defthm rp-rw-meta-rule-main-valid-rp-termp
-  (implies (and (rp-termp term))
+  (implies (and (rp-termp term)
+                (rp-term-listp context)
+                (rp-statep rp-state))
            (b* (((mv ?term-changed res-term ?dont-rw ?rp-state)
-                 (rp-rw-meta-rule-main term rule dont-rw context rp-state state)))
+                 (rp-rw-meta-rule-main term rule dont-rw context limit rp-state state)))
              (rp-termp res-term)))
   :hints (("Goal"
            :in-theory (e/d (rp-rw-meta-rule-main) ()))))
 
-
 (defthm rp-rw-meta-rule-main-valid-dont-rw-syntaxp
   (implies t
            (b* (((mv ?term-changed ?res-term ?dont-rw ?rp-state)
-                 (rp-rw-meta-rule-main term rule dont-rw context rp-state state)))
+                 (rp-rw-meta-rule-main term rule dont-rw context limit rp-state state)))
              (dont-rw-syntaxp dont-rw)))
   :hints (("Goal"
            :in-theory (e/d (rp-rw-meta-rule-main) ()))))
 
-
 (defthm rp-rw-meta-rule-main-valid-rp-state-preservedp
   (implies (rp-statep rp-state)
            (b* (((mv ?term-changed ?res-term ?dont-rw res-rp-state)
-                 (rp-rw-meta-rule-main term rule dont-rw context rp-state state)))
+                 (rp-rw-meta-rule-main term rule dont-rw context limit rp-state state)))
              (rp-state-preservedp rp-state res-rp-state)))
   :hints (("Goal"
            :in-theory (e/d (rp-rw-meta-rule-main) ()))))
-
 
 #|(defthm rp-statep-rp-rw-meta-rule-main
   (implies (rp-statep rp-state)
@@ -108,7 +106,8 @@
 
 (defthm valid-rp-state-syntaxp-rp-rw-meta-rule-main
   (implies (valid-rp-state-syntaxp rp-state)
-           (valid-rp-state-syntaxp (mv-nth 3 (rp-rw-meta-rule-main term rule dont-rw context rp-state state))))
+           (valid-rp-state-syntaxp (mv-nth 3 (rp-rw-meta-rule-main term rule
+                                                                   dont-rw context limit rp-state state))))
   :hints (("Goal"
            :in-theory (e/d (rp-rw-meta-rule-main
                             ;;rp-stat-add-to-rules-used-meta-cnt
@@ -119,7 +118,8 @@
 (defthm valid-rp-statep-rp-rw-meta-rule-main
   (implies (and (valid-rp-statep rp-state)
                 (rp-statep rp-state))
-           (valid-rp-statep (mv-nth 3 (rp-rw-meta-rule-main term rule dont-rw context rp-state state))))
+           (valid-rp-statep (mv-nth 3 (rp-rw-meta-rule-main term rule dont-rw
+                                                            context limit rp-state state))))
   :hints (("Goal"
            :in-theory (e/d (;;rp-stat-add-to-rules-used-meta-cnt
                             ;;RP-STATE-PUSH-META-TO-RW-STACK

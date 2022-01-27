@@ -103,11 +103,11 @@
   )||#
 
 (defthm-valid-sc
-  (defthm not-include-rp-means-valid-sc
+  (defthmd not-include-rp-means-valid-sc
     (implies (not (include-fnc term 'rp))
              (and (valid-sc term a)))
     :flag valid-sc)
-  (defthm not-include-rp-means-valid-sc-lst
+  (defthmd not-include-rp-means-valid-sc-lst
     (implies (not (include-fnc-subterms subterms 'rp))
              (and (valid-sc-subterms subterms a)))
     :flag valid-sc-subterms)
@@ -116,11 +116,11 @@
                             valid-sc-nt) ()))))
 
 (defthm-valid-sc-nt
-  (defthm not-include-rp-means-valid-sc-nt
+  (defthmd not-include-rp-means-valid-sc-nt
     (implies (not (include-fnc term 'rp))
              (and (valid-sc-nt term a)))
     :flag valid-sc-nt)
-  (defthm not-include-rp-means-valid-sc-nt-subterms
+  (defthmd not-include-rp-means-valid-sc-nt-subterms
     (implies (not (include-fnc-subterms subterms 'rp))
              (and (valid-sc-nt-subterms subterms a)))
     :flag valid-sc-nt-subterms)
@@ -262,7 +262,9 @@
            (valid-sc-nt (rp-rhs rule) a))
   :hints (("Goal"
            :use (:instance valid-rulep-sk-necc)
-           :in-theory (e/d (valid-rulep)
+           :in-theory (e/d (valid-rulep
+                            not-include-rp-means-valid-sc
+                            not-include-rp-means-valid-sc-nt)
                            (valid-sc
                             rp-rhs
                             rp-hyp
@@ -469,6 +471,33 @@
            (valid-rulesp subrules))
   :hints (("Goal"
            :in-theory (disable valid-rulep))))
+
+(defthm-ex-from-rp-all2
+  (defthm valid-sc-ex-from-rp-all2
+    (valid-sc (ex-from-rp-all2 term) a)
+    :flag ex-from-rp-all2)
+  (defthm valid-sc-subterms-ex-from-rp-all2-lst
+    (valid-sc-subterms (ex-from-rp-all2-lst lst) a)
+    :flag ex-from-rp-all2-lst)
+  :hints (("Goal"
+           :do-not-induct t
+           
+           :expand (VALID-SC (CONS (CAR TERM)
+                         (EX-FROM-RP-ALL2-LST (CDR TERM)))
+                   A)
+           :in-theory (e/d (
+                            EX-FROM-RP-ALL2
+                            IS-RP-LOOSE
+                            is-rp
+                            is-if
+                            ;;rp-termp-ex-from-rp-all2-lemma
+                            ex-from-rp-all2-lst
+                            )
+                           (ex-from-rp
+                            ;;FALIST-CONSISTENT
+                            RP-TERMP-EX-FROM-RP
+                            RP-TERMP-CONS-CAR-TERM-SUBTERMS
+                            )))))
 
 (encapsulate
   nil

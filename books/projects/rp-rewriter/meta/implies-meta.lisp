@@ -98,7 +98,7 @@
 
 (local
  (defret rp-evlt-of-<fn>
-   (implies t
+   (implies (rp-termp term)
             (and (equal (rp-evlt res-term a)
                         (rp-evlt term a))))
    :fn implies-meta

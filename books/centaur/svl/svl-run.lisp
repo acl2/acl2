@@ -27,7 +27,7 @@
 
 (include-book "type-defs")
 
-(include-book "bits-sbits-defs")
+(include-book "fnc-defs")
 
 (include-book "svex-eval-wog")
 

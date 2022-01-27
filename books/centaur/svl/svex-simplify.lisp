@@ -33,6 +33,10 @@
 
 (include-book "svex-simplify-rule-list")
 
+(include-book "centaur/sv/svex/vars" :dir :system)
+
+(include-book "std/lists/flatten" :dir :system)
+
 (local
  (include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system))
 
@@ -41,6 +45,25 @@
 
 (local
  (in-theory (disable (:definition rp::rp-rw))))
+
+(local
+ (in-theory (disable (:DEFINITION SET-DIFFERENCE-EQUAL)
+                     (:DEFINITION MEMBER-EQUAL)
+                     (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP)
+                     (:DEFINITION ALWAYS$)
+                     (:DEFINITION TRUE-LISTP)
+                     (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+                     (:DEFINITION ACL2::APPLY$-BADGEP)
+                     (:DEFINITION RP::RP-TERMP)
+                     (:REWRITE
+                      ACL2::TRUE-LIST-LISTP-IMPLIES-ALWAYS$-TRUE-LISTP)
+                     (:DEFINITION TRUE-LIST-LISTP)
+                     (:DEFINITION RP::RP-TERM-LISTP)
+                     (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP)
+                     (:REWRITE ACL2::APPLY$-SYMBOL-ARITY-1)
+                     (:REWRITE ACL2::APPLY$-PRIMITIVE)
+                     (:META ACL2::APPLY$-PRIM-META-FN-CORRECT)
+                     (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))))
 
 #|(defrec svex-simplify-preloaded
   (exc-rules rules rules-outside-in)
@@ -186,10 +209,12 @@
     ;; (('svl::4vec-bitor$ size x y)   `(partsel 0 ,size (sv::bitor ,x ,y)))
     ;; (('svl::4vec-bitand$ size x y)  `(partsel 0 ,size (sv::bitand ,x ,y)))
     ;; (('svl::4vec-bitxor$ size x y)  `(partsel 0 ,size (sv::bitxor ,x ,y)))
-    (('svl::4vec-bitnot$ size x)  (mv nil (hons-copy `(partsel 0 ,size (sv::bitnot ,x)))))
-    (('svl::4vec-plus$ size x y)  (mv nil (hons-copy `(partsel 0 ,size (+ ,x ,y)))))
-    (('svl::bits val s w)         (mv nil (list 'sv::partsel s w val)))
-    (('svl::sbits s w new old)    (mv nil (list 'sv::partinst s w old new)))
+    (('svl::4vec-bitnot$ size x)  (mv nil (hons-list 'sv::partsel 0 size
+                                                     (hons-list 'sv::bitnot x))))
+    (('svl::4vec-plus$ size x y)  (mv nil (hons-list 'sv::partsel 0 size
+                                                     (hons-list '+ x y))))
+    (('svl::bits val s w)         (mv nil (hons-list 'sv::partsel s w val)))
+    (('svl::sbits s w new old)    (mv nil (hons-list 'sv::partinst s w old new)))
     (('svl::4vec-concat$ & & &)   (mv nil (hons 'sv::concat   (cdr term))))
     (('sv::4vec-fix$inline &)     (mv nil (hons 'id            (cdr term))))
     (('svl::4vec-fix-wog &)       (mv nil (hons 'id           (cdr term))))
@@ -234,10 +259,15 @@
     (('sv::4vec-pow & &)          (mv nil (hons 'sv::pow      (cdr term))))
     (('4vec-? & & &)              (mv nil (hons 'sv::?        (cdr term))))
     (('4vec-?* & & &)             (mv nil (hons 'sv::?*       (cdr term))))
+    (('4vec-?! & & &)             (mv nil (hons 'sv::?!       (cdr term))))
+    (('4vec-?-raw & & &)          (mv nil (hons 'sv::?        (cdr term))))
+    (('4vec-?*-raw & & &)         (mv nil (hons 'sv::?*       (cdr term))))
+    (('4vec-?!-raw & & &)         (mv nil (hons 'sv::?!       (cdr term))))
     (('sv::4vec-bit? & & &)       (mv nil (hons 'sv::bit?     (cdr term))))
     (('4vec-part-select & & &)    (mv nil (hons 'partsel      (cdr term))))
     (('4vec-part-install & & & &) (mv nil (hons 'sv::partinst (cdr term))))
-    (('sv::4vec-bit?! & & &)      (mv nil (hons 'sv::bit?! (cdr term))))
+    (('sv::4vec-bit?! & & &)      (mv nil (hons 'sv::bit?!    (cdr term))))
+    (('SV::4VEC-===* & &)         (mv nil (hons 'sv::===*     (cdr term))))
     (('svex-env-fastlookup-wog & &)  (mv nil (cadr term)))
     (& (progn$
         (cw "ATTENTION! Cannot match ~p0 with ~p1 arguments to any ~
@@ -314,19 +344,22 @@
                       (mv t 0))))
            ((and (quotep term)
                  (consp (cdr term)))
-            (let ((ud (unquote term)))
-              (cond ((and (atom ud)
-                          (svexl-node-p ud))
-                     (mv nil ud))
-                    ((4vec-p ud)
-                     (mv nil (sv::svex-quote ud)))
-                    ((svex-p term)
-                     (mv nil term))
-                    (t
-                     (progn$
-                      (cw "ATTENTION! unexpected term ~p0. This quoted term
+            (b* ((ud (unquote term))
+                 ((mv err res)
+                  (cond ((and (atom ud)
+                              (svexl-node-p ud))
+                         (mv nil ud))
+                        ((4vec-p ud)
+                         (mv nil (sv::svex-quote ud)))
+                        ((svex-p term)
+                         (mv nil term))
+                        (t
+                         (progn$
+                          (cw "ATTENTION! unexpected term ~p0. This quoted term
    does not satisfy svex-p ~%" term)
-                      (mv t 0))))))
+                          (mv t 0)))))
+                 (res (hons-copy res)))
+              (mv err res)))
            ((case-match term
               (('svex-env-fastlookup-wog ('quote var) env)
                (and (sv::svar-p var)
@@ -334,7 +367,19 @@
               (('sv::svex-env-fastlookup ('quote var) env)
                (and (sv::svar-p var)
                     (equal (rp::ex-from-rp env) 'svex-env))))
-            (mv nil (unquote (cadr term))))
+            (mv nil (hons-copy (unquote (cadr term)))))
+           ((case-match term
+              (('if ('equal & ''0) & &)
+               t
+               #|(case-match x
+                 (('rp ''bitp &) t)
+                 (('rp ''integerp &) t))|#))
+            (b* (((mv err1 test) (4vec-to-svex (cadr (cadr term)) svexl-node-flg memoize-flg))
+                 ((mv err2 else) (4vec-to-svex (caddr term) svexl-node-flg memoize-flg))
+                 ((mv err3 then) (4vec-to-svex (cadddr term) svexl-node-flg
+                                               memoize-flg))
+                 ((mv err4 fin) (to-svex-fnc (hons-list 'sv::4vec-?* test then else))))
+              (mv (or err1 err2 err3 err4) fin)))
            ((and svexl-node-flg
                  (case-match term
                    (('svex-env-fastlookup-wog ('quote var) env)
@@ -343,11 +388,11 @@
                    (('sv::svex-env-fastlookup ('quote var) env)
                     (and (natp var)
                          (equal (rp::ex-from-rp env) 'node-env)))))
-            (mv nil `(:node ,(unquote (cadr term)))))
+            (mv nil (hons-list ':node (hons-copy (unquote (cadr term))))))
            (t (b* ((fnc (car term))
                    ((mv err1 args) (4vec-to-svex-lst (cdr term) svexl-node-flg
                                                      memoize-flg))
-                   ((mv err2 res) (to-svex-fnc (hons fnc args))))
+                   ((mv err2 res) (to-svex-fnc (cons fnc args))))
                 (mv (or err1 err2)
                     res))))))
 
@@ -482,44 +527,462 @@
                              rp::rp-statep) ())))
    :rule-classes :rewrite))
 
+(defwarrant rp::cons-count)
+(verify-guards rp::cons-count)
 
 (progn
+  (local
+   (in-theory (disable ;;acl2::remove-duplicates-equal-of-append
+               remove-duplicates-equal)))
+
+  (local
+   (defthm integer-listp-remove-duplicates
+     (implies (integer-listp x)
+              (integer-listp (remove-duplicates x)))))
+
+  (local
+   (defthm integer-listp-remove-duplicates-equal
+     (implies (integer-listp x)
+              (integer-listp (remove-duplicates-equal x)))
+     :hints (("Goal"
+              :in-theory (e/d (remove-duplicates-equal) ())))))
+
+  (local
+   (defthm integer-listp-append
+     (implies (and (integer-listp x)
+                   (integer-listp y))
+              (integer-listp (append x y)))))
+
+  (local
+   (defthm eqlable-listp-when-integer-listp
+     (implies (integer-listp x)
+              (eqlable-listp x))))
+
+  (local
+   (defthm integer-listp-SET-DIFFERENCE-EQUAL
+     (implies (integer-listp x)
+              (integer-listp (set-difference-equal x y)))
+     :hints (("Goal"
+              :in-theory (e/d (set-difference-equal) ())))))
+
+  (local
+   (in-theory (disable RP::APPLY$-CONS-COUNT)))
+
+  (local
+   (defthm
+     rp::apply$-cons-count-2
+     (implies (rp::apply$-warrant-cons-count)
+              (and (equal (badge 'cons-count)
+                          '(acl2::apply$-badge 1 1 . t))
+                   (equal (apply$ 'cons-count args)
+                          (cons-count (car args)))))
+     :hints
+     (("goal"
+       :use rp::apply$-warrant-cons-count-necc
+       :expand ((:free (acl2::x)
+                       (hide (badge acl2::x))))
+       :in-theory (e/d (badge apply$)
+                       (rp::apply$-warrant-cons-count-necc)))))))
+
+
+
+(defthm svl::svex-env-fastlookup-wog-hons-acons-opener-2
+  (implies (syntaxp (and (or (quotep x)
+                             (integerp x))
+                         (or (quotep y)
+                             (integerp y))))
+           (equal (svex-env-fastlookup-wog x (hons-acons y val rest))
+                  (if (equal x y)
+                      val
+                    (svex-env-fastlookup-wog x rest))))
+  :hints (("Goal"
+           :expand (svex-env-fastlookup-wog x (hons-acons y val rest))
+           :in-theory (e/d (SVEX-ENV-FASTLOOKUP-WOG) ()))))
+
+(rp::add-rp-rule svl::svex-env-fastlookup-wog-hons-acons-opener-2)
+(add-svex-simplify-rule svl::svex-env-fastlookup-wog-hons-acons-opener-2)
+
+(define cons-count-compare ((term)
+                            (cnt natp))
+  :returns (rem natp :hyp (natp cnt))
+  (cond ((zp cnt) cnt)
+        ((atom term)
+         (- cnt 1))
+        (t
+         (b* ((cnt (cons-count-compare (car term) cnt))
+              ((when (zp cnt)) cnt)
+              (cnt (cons-count-compare (cdr term) cnt)))
+           cnt)))
+  ///
+  (defret integerp-cons-count-compare
+    (implies (integerp cnt)
+             (integerp rem))))
+
+(progn
+  (defines svexl-node-get-all-node-references
+    :verify-guards nil
+
+    (define svexl-node-get-all-node-references ((x svexl-node-p))
+      :measure (SVEXL-NODE-COUNT X)
+      :returns (res integer-listp)
+      (SVEXL-NODE-CASE
+       x
+       :VAR nil
+       :QUOTE nil
+       :NODE (list X.NODE-ID)
+       :CALL (svexl-nodelist-get-all-node-references X.ARGS)))
+    (define svexl-nodelist-get-all-node-references ((lst SVEXL-NODELIST-P))
+      :measure (SVEXL-NODELIST-COUNT lst)
+      :returns (res integer-listp)
+      (if (atom lst)
+          nil
+        (b* ((res1 (svexl-node-get-all-node-references (car lst)))
+             (res2 (svexl-nodelist-get-all-node-references (cdr lst))))
+          (append res1 res2))))
+    ///
+    (verify-guards svexl-node-get-all-node-references))
+
+  (defwarrant SVEXL-NODE-GET-ALL-NODE-REFERENCES)
+
+  (define svexl-node-simplify-add-integerp-to-context
+    ((node svexl-node-p)
+     (subnodeids integer-listp)
+     (node-integerp-alist alistp)
+     (node-array svexl-node-array-p)
+     (context))
+
+    :verify-guards nil
+    :prepwork
+    (
+     (local
+      (defthm rp-term-listp-of-append
+        (implies (and (rp::rp-term-listp x)
+                      (rp::rp-term-listp y))
+                 (rp::rp-term-listp (append x y)))
+        :hints (("Goal"
+                 :do-not-induct t
+                 :induct (append x y)
+                 :in-theory (e/d (rp::rp-term-listp
+                                  append)
+                                 ())))))
+     (in-theory (disable apply$-svexl-node-get-all-node-references))
+     (defthm
+       apply$-svexl-node-get-all-node-references-2
+       (implies
+        (apply$-warrant-svexl-node-get-all-node-references)
+        (and
+         (equal (badge 'svexl-node-get-all-node-references)
+                '(acl2::apply$-badge 1 1 . t))
+         (equal (apply$ 'svexl-node-get-all-node-references
+                        args)
+                (svexl-node-get-all-node-references (car args)))))
+       :hints
+       (("goal"
+         :use apply$-warrant-svexl-node-get-all-node-references-necc
+         :expand ((:free (acl2::x)
+                         (hide (badge acl2::x))))
+         :in-theory (e/d (badge apply$)
+                         (apply$-warrant-svexl-node-get-all-node-references-necc)))))
+
+     (local
+      (defthm rp-term-listp-of-collect$+
+        (implies t
+                 (rp::rp-term-listp (collect$+ (LAMBDA$ (ACL2::LOOP$-GVARS ACL2::LOOP$-IVARS)
+                                                        (LIST 'INTEGERP
+                                                              (LIST* 'SVEX-ENV-FASTLOOKUP-WOG
+                                                                     (LIST 'QUOTE (CAR ACL2::LOOP$-IVARS))
+                                                                     '(NODE-ENV))))
+                                               nil something)))
+        :hints (("Goal"
+                 :in-theory (e/d (rp::rp-term-listp
+                                  rp::RP-TERMP)
+                                 ())))))
+
+     (local
+      (in-theory (disable (:REWRITE ACL2::BETA-REDUCTION)
+                          (:DEFINITION ACL2::APPLY$-BADGEP)
+                          (:DEFINITION ALWAYS$)
+                          (:DEFINITION WHEN$+)
+                          (:REWRITE ACL2::APPLY$-PRIMITIVE)
+                          (:META ACL2::APPLY$-PRIM-META-FN-CORRECT)
+                          ACL2::APPLY$-SYMBOL-ARITY-1)))
+     )
+    :returns
+    (res rp::rp-term-listp :hyp (rp::rp-term-listp context))
+    (b* ((node-references1 (remove-duplicates
+                            (svexl-node-get-all-node-references node)))
+         (node-references1 (set-difference$ node-references1 subnodeids))
+
+         (node-references2
+          (loop$ for id in subnodeids collect
+                 :guard (or (not (hons-get id node-array))
+                            (svexl-node-p (cdr (hons-get id node-array))))
+                 (b* ((entry (hons-get id node-array)))
+                   (and entry
+                        (svexl-node-get-all-node-references (cdr entry))))))
+         (node-references2 (acl2::flatten node-references2))
+         (node-references2 (and (integer-listp node-references2)
+                                node-references2))
+
+         (node-references (remove-duplicates
+                           (append node-references1
+                                   node-references2)))
+
+         (new-context
+          (loop$ for x in node-references
+                 when (let ((entry (hons-get x node-integerp-alist)))
+                        (and entry (cdr entry)))
+                 collect
+                 `(integerp (svex-env-fastlookup-wog ',x node-env))))
+         (context (append new-context context)))
+      context)
+    ///
+
+    (verify-guards svexl-node-simplify-add-integerp-to-context
+      :hints (("Goal"
+               :do-not-induct t
+               :in-theory (e/d (TRUE-LIST-LISTP) ())))))
+
+  (define svexl-node-simplify-get-subnode-ids-aux ((node-ids integer-listp)
+                                                   (complete-node-array
+                                                    svexl-node-array-p)
+                                                   (cons-count-limit natp))
+    :measure (acl2-count node-ids)
+    :returns (mv (node-references integer-listp
+                                  :hyp (integer-listp node-ids))
+                 (rem-cons-count-limit natp
+                                       :hyp (natp cons-count-limit)))
+    (if (atom node-ids)
+        (mv nil cons-count-limit)
+      (b* ((entry (hons-get (car node-ids) complete-node-array))
+           ((unless entry) (mv nil cons-count-limit))
+           (cons-count-limit (cons-count-compare (cdr entry) cons-count-limit))
+           ((when (zp cons-count-limit))
+            (mv (list (car node-ids)) cons-count-limit))
+           ((mv rest cons-count-limit)
+            (svexl-node-simplify-get-subnode-ids-aux
+             (cdr node-ids)
+             complete-node-array
+             cons-count-limit)))
+        (mv (cons (car node-ids)
+                  rest)
+            cons-count-limit))))
+
+  #|(define svexl-node-simplify-get-subnode-ids-sumaux ((node-ids integer-listp)
+  (complete-node-array svexl-node-array-p))
+  :returns (res natp)
+
+  (nfix
+  (loop$ for x in node-ids sum
+  (b* ((cnode (hons-get x complete-node-array)))
+  (if cnode (rp::cons-count (cdr cnode)) 0)))))|#
+
+  (defines svexl-node-simplify-get-subnode-ids
+    (define svexl-node-simplify-get-subnode-ids ((node svexl-node-p)
+                                                 (added-node-ids
+                                                  integer-listp)
+                                                 &key
+                                                 ((complete-node-array
+                                                   svexl-node-array-p)
+                                                  'complete-node-array)
+                                                 ((cons-count-limit natp)
+                                                  'cons-count-limit)
+                                                 ((counter natp)
+                                                  '(1- counter)))
+      :verify-guards nil
+      :measure (nfix counter)
+      :returns (mv (node-references integer-listp
+                                    :hyp (integer-listp added-node-ids))
+                   (rem-cons-count-limit natp
+                                         :hyp (natp cons-count-limit)))
+
+      (b* (((when (zp counter)) (mv added-node-ids 0))
+           ((when (zp cons-count-limit)) (mv added-node-ids 0))
+           (node-references (remove-duplicates
+                             (svexl-node-get-all-node-references node)))
+           (node-references (set-difference$ node-references
+                                             added-node-ids))
+           ;;(cons-count-limit (cons-count-compare node cons-count-limit))
+           ((when (zp cons-count-limit)) (mv added-node-ids 0))
+
+           ((mv node-references cons-count-limit)
+            (svexl-node-simplify-get-subnode-ids-aux node-references
+                                                     complete-node-array
+                                                     cons-count-limit))
+           (added-node-ids (append node-references added-node-ids))
+           ((when (zp cons-count-limit)) (mv added-node-ids 0))
+           ((mv rest-node-refs cons-count-limit)
+            (svexl-nodelist-simplify-get-subnode-ids node-references
+                                                     added-node-ids)))
+        (mv (remove-duplicates (append added-node-ids
+                                       rest-node-refs))
+            cons-count-limit)))
+    (define svexl-nodelist-simplify-get-subnode-ids ((node-ids integer-listp)
+                                                     (added-node-ids integer-listp)
+                                                     &key
+                                                     ((complete-node-array
+                                                       svexl-node-array-p)
+                                                      'complete-node-array)
+                                                     ((cons-count-limit natp)
+                                                      'cons-count-limit)
+                                                     ((counter natp)
+                                                      '(1- counter)))
+      :measure (nfix counter)
+      :returns (mv (node-references integer-listp :hyp (integer-listp added-node-ids))
+                   (rem-cons-count-limit natp
+                                         :hyp (natp cons-count-limit)))
+      (b* (((when (zp counter)) (mv added-node-ids cons-count-limit))
+           ((when (atom node-ids)) (mv added-node-ids cons-count-limit))
+           (cnode (hons-get (car node-ids) complete-node-array))
+           ((unless cnode) (mv added-node-ids cons-count-limit))
+           (cnode (cdr cnode))
+           ((mv node-refs1 cons-count-limit)
+            (svexl-node-simplify-get-subnode-ids cnode
+                                                 added-node-ids))
+           ((when (zp cons-count-limit)) (mv node-refs1 cons-count-limit))
+           ((mv node-refs2 cons-count-limit)
+            (svexl-nodelist-simplify-get-subnode-ids (cdr node-ids)
+                                                     node-refs1)))
+        (mv node-refs2
+            cons-count-limit)))
+    ///
+    (local
+     (defthm dummy-guard-lemma
+       (implies (and (integer-listp x)
+                     (integer-listp y))
+                (not (stringp (append x y))))))
+    (verify-guards svexl-nodelist-simplify-get-subnode-ids-fn
+      :otf-flg t
+      :hints (("Goal"
+               :do-not-induct t
+               :in-theory (e/d ()
+                               ((:FORWARD-CHAINING ACL2::ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP)
+                                (:FORWARD-CHAINING INTEGER-LISTP-FORWARD-TO-RATIONAL-LISTP)
+                                (:FORWARD-CHAINING ACL2::RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP)
+                                (:FORWARD-CHAINING CHARACTER-LISTP-COERCE)
+                                (:FORWARD-CHAINING CHARACTER-LISTP-FORWARD-TO-EQLABLE-LISTP)
+                                STR::COERCE-TO-LIST-REMOVAL
+                                STR::COERCE-TO-STRING-REMOVAL))))))
+
   (define svexl-node-simplify ((node svexl-node-p)
                                (context)
+                               (node-integerp-alist alistp)
                                &key
                                (state 'state)
+                               ((cons-count-limit natp)
+                                'cons-count-limit)
+                               ((complete-node-array svexl-node-array-p)
+                                'complete-node-array)
                                (rp::rp-state 'rp::rp-state))
+    (declare (ignorable complete-node-array))
     :guard (and (RP::VALID-RP-STATE-SYNTAXP RP::RP-STATE)
                 (rp::context-syntaxp context))
     :returns (mv (node-new svexl-node-p)
+                 (integerp booleanp)
                  (rp::rp-state-res RP::VALID-RP-STATE-SYNTAXP :hyp (RP::VALID-RP-STATE-SYNTAXP
                                                                     rp::rp-state)))
     :prepwork
     ((local
-      (in-theory (e/d () (rp::rp-statep
-                          unsigned-byte-p
-                          rp::rw-step-limit
-                          rp::preprocess-then-rp-rw))))
+      (in-theory (e/d (rp::rp-termp
+                       RP::RP-TERM-LISTP)
+                      (rp::rp-statep
+                       unsigned-byte-p
+                       rp::rw-step-limit
+                       rp::preprocess-then-rp-rw))))
      (local
       (include-book "projects/rp-rewriter/proofs/rp-correct" :dir :system))
 
      (local
-      (include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system)))
+      (include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system))
 
-    (b* ((term `(svexl-node-eval-wog ',node
-                                     (rp::rp 'node-env-p node-env)
+     (local
+      (defthm integer-listp-of-MERGE-LEXORDER
+        (implies (and (integer-listp x)
+                      (integer-listp y)
+                      (integer-listp acc))
+                 (integer-listp (acl2::MERGE-LEXORDER x y acc)))))
+
+     (local
+      (defthm integer-listp-evens
+        (implies (integer-listp x)
+                 (integer-listp (evens x)))
+        :hints (("Goal"
+                 :induct (evens x)
+                 :in-theory (e/d (evens) ())))))
+
+     (defthm integer-listp-of-MERGE-SORT-LEXORDER
+       (implies (integer-listp x)
+                (integer-listp (acl2::MERGE-SORT-LEXORDER x))))
+
+     (local
+      (defthm dummy-guard-lemma
+        (implies (integer-listp x)
+                 (not (stringp x))))))
+
+    (b* (((mv subnodeids &)
+          (svexl-node-simplify-get-subnode-ids node
+                                               nil
+                                               :counter (expt 2 30)))
+         (subnodeids (acl2::merge-sort-lexorder (remove-duplicates subnodeids)))
+
+         ;;(- (and (not subnodeids)
+         ;;        (cw "no subnodeid node: ~p0 ~%" node)))
+
+         ;;(- (cw "subnodeids: ~p0 ~%" subnodeids))
+
+         (context (svexl-node-simplify-add-integerp-to-context node
+                                                               subnodeids
+                                                               node-integerp-alist
+                                                               complete-node-array
+                                                               context))
+
+         (term `(svexl-node-eval-wog ',node
+                                     (svexl-nodeids-eval-wog
+                                      ',subnodeids
+                                      ',complete-node-array
+                                      (rp::rp 'node-env-p node-env)
+                                      (rp::rp 'sv::svex-env-p svex-env))
                                      (rp::rp 'sv::svex-env-p svex-env)))
+
+
          ((mv rw rp::rp-state)
           (rp::rp-rw
-           term nil context nil nil (rp::rw-step-limit rp::rp-state) rp::rp-state state))
+           term nil context nil nil (rp::rw-step-limit rp::rp-state)
+           rp::rp-state state))
+
+         #|((mv rw rp::rp-state)
+          (rp::rp-rw
+           rw nil context nil nil (rp::rw-step-limit rp::rp-state) rp::rp-state
+           state))|#
+         
+         ((mv integerp rp::rp-state)
+          (rp::rp-rw
+           `(integerp ,rw) `(nil t) context t nil (rp::rw-step-limit rp::rp-state)
+           rp::rp-state state))
+
+         ;; (- (cw "node: ~p0 ~%" node))
+         ;; (- (cw "subnodeids : ~p0 ~%" subnodeids))
+         ;; (- (fmt-to-comment-window "input-term : ~p0 ~%"
+         ;;                           (pairlis2 acl2::*base-10-chars* (list term))
+         ;;                           0 '(nil 5 6 nil) nil))
+         ;; (- (FMT-TO-COMMENT-WINDOW "rewritten-term : ~p0 ~%"
+         ;;                           (PAIRLIS2 ACL2::*BASE-10-CHARS* (LIST RW))
+         ;;                           0 '(nil 5 6 nil) NIL))
+         ;; (- (and (> (len subnodeids) 10)
+         ;;         (hard-error 'dsdsdsd "" nil)))
+         ;; (- (cw "~%~%"))
+
+         (integerp (and (quotep integerp) (not (equal integerp ''nil))))
          (- (clear-memoize-table '4vec-to-svex))
          ((mv err node-new) (4vec-to-svex rw t nil))
          (- (and err
                  (hard-error
                   'svexl-node-simplify
                   "4vec-to-svex returned an error for the term: ~p0 ~%"
-                  (list (cons #\0 rw))))))
-      (mv node-new rp::rp-state)))
+                  (list (cons #\0 rw)))))
+
+         )
+      (mv node-new integerp rp::rp-state)))
 
   (define svexl-nodelist-simplify ((nodelist svexl-nodelist-p)
                                    (context)
@@ -539,12 +1002,14 @@
       (include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system))
 
      (local
-      (in-theory (e/d () (rp::rp-statep
-                          unsigned-byte-p
-                          rp::rw-step-limit
-                          rp::preprocess-then-rp-rw
-                          (:DEFINITION RP::RULES-ALISTP)
-                          RP::RULE-SYNTAXP)))))
+      (in-theory (e/d (RP::RP-TERMP
+                       RP::RP-TERM-LISTP)
+                      (rp::rp-statep
+                       unsigned-byte-p
+                       rp::rw-step-limit
+                       rp::preprocess-then-rp-rw
+                       (:DEFINITION RP::RULES-ALISTP)
+                       RP::RULE-SYNTAXP)))))
 
     (b* ((term `(svexl-nodelist-eval-wog ',nodelist
                                          (rp::rp 'node-env-p node-env)
@@ -555,19 +1020,26 @@
          ((mv err node-new) (4vec-to-svex-termlist rw t nil))
          (- (and err
                  (hard-error
-                  'svexl-node-simplify
+                  'svexl-nodelist-simplify
                   "4vec-to-svex returned an error for the term: ~p0 ~%"
                   (list (cons #\0 rw))))))
       (mv node-new rp::rp-state)))
 
   (define svex-simplify-linearize-aux ((svexl-node-array svexl-node-array-p)
-
                                        (context)
                                        &key
+                                       ((verbose booleanp)
+                                        'verbose)
+                                       ((cons-count-limit natp)
+                                        'cons-count-limit)
+                                       ((complete-node-array
+                                         svexl-node-array-p)
+                                        'complete-node-array)
                                        (state 'state)
                                        (rp::rp-state 'rp::rp-state))
     :returns (mv (svexl-new svexl-node-array-p :hyp (svexl-node-array-p
                                                      svexl-node-array))
+                 (integerp-alist alistp)
                  (rp::rp-state-res RP::VALID-RP-STATE-SYNTAXP :hyp (RP::VALID-RP-STATE-SYNTAXP
                                                                     rp::rp-state)))
     :verify-guards nil
@@ -580,25 +1052,45 @@
                       (rp::rp-statep
                        rp::preprocess-then-rp-rw)))))
     (if (atom svexl-node-array)
-        (mv nil rp::rp-state)
-      (b* ((node (cdar svexl-node-array))
-           ((mv node rp::rp-state)
-            (svexl-node-simplify node  context))
-           ((mv rest rp::rp-state)
-            (svex-simplify-linearize-aux (cdr svexl-node-array)  context)))
-        (mv (acons (caar svexl-node-array) node rest)
+        (mv nil nil rp::rp-state)
+      (b* (((mv rest rest-integerp rp::rp-state)
+            (svex-simplify-linearize-aux (cdr svexl-node-array)  context))
+
+           (node-id (caar svexl-node-array))
+           (- (b* (((unless verbose) nil)
+                   (total-size (nfix (and complete-node-array
+                                          (caar complete-node-array))))
+                   (i (floor total-size 20))
+                   ((when (< i 2)) nil)
+                   (j (mod node-id i)))
+                (and (eql j 0)
+                     (cw "SVL::svex-simplify-linearize progress: ~p0\% ~%" (* 5 (floor node-id i))))))
+
+           (node (cdar svexl-node-array))
+           ((mv node integerp rp::rp-state)
+            (svexl-node-simplify node context rest-integerp)))
+
+        (mv (acons node-id node rest)
+            (hons-acons node-id integerp rest-integerp)
             rp::rp-state)))
     ///
     (local
      (defthm lemma1
        (implies (svexl-node-array-p svexl-node-array)
                 (alistp svexl-node-array))))
-    (verify-guards svex-simplify-linearize-aux-fn))
+    (verify-guards svex-simplify-linearize-aux-fn
+      :hints (("Goal"
+               :in-theory (e/d ()
+                               (mod
+                                floor))))))
 
   (define svex-simplify-linearize ((svex svex-p)
-
                                    (context)
                                    &key
+                                   ((verbose booleanp)
+                                    'verbose)
+                                   ((cons-count-limit natp)
+                                    'cons-count-limit)
                                    (state 'state)
                                    (rp::rp-state 'rp::rp-state))
     :guard (and (RP::VALID-RP-STATE-SYNTAXP RP::RP-STATE)
@@ -608,21 +1100,33 @@
                  (rp::rp-state-res RP::VALID-RP-STATE-SYNTAXP :hyp (RP::VALID-RP-STATE-SYNTAXP
                                                                     rp::rp-state)))
     (b* ((svexl (svex-to-svexl svex))
+         (- (and verbose (cw "There are ~p0 nodes ~%"
+                             (if (and (consp (svexl->node-array svexl))
+                                      (consp (car (svexl->node-array svexl))))
+                                 (caar (svexl->node-array svexl))
+                               0))))
          (node-array (svexl->node-array svexl))
-         ((mv node-array rp::rp-state)
-          (svex-simplify-linearize-aux node-array  context))
+         (?complete-node-array (make-fast-alist node-array))
+         ((mv node-array ?integerp-alist rp::rp-state)
+          (svex-simplify-linearize-aux node-array context))
+         #|(- (cw "integerp-alist: ~p0 ~%" integerp-alist))|#
          (top-node (svexl->top-node svexl))
-         ((mv top-node rp::rp-state)
-          (svexl-node-simplify top-node  context)))
+         ((mv top-node & rp::rp-state)
+          (svexl-node-simplify top-node context integerp-alist))
+         (- (fast-alist-clean complete-node-array))
+         (- (fast-alist-clean integerp-alist)))
       (mv (make-svexl
            :node-array node-array
            :top-node top-node)
           rp::rp-state)))
 
   (define svexlist-simplify-linearize ((svexlist svexlist-p)
-
                                        (context)
                                        &key
+                                       ((verbose booleanp)
+                                        'verbose)
+                                       ((cons-count-limit natp)
+                                        'cons-count-limit)
                                        (state 'state)
                                        (rp::rp-state 'rp::rp-state))
     :guard (and (RP::VALID-RP-STATE-SYNTAXP RP::RP-STATE)
@@ -633,28 +1137,17 @@
                                                                     rp::rp-state)))
     (b* ((svexllist (svexlist-to-svexllist svexlist))
          (node-array (svexllist->node-array svexllist))
+         (?complete-node-array (make-fast-alist node-array))
          (top-node (svexllist->top-nodelist svexllist))
-         ((mv node-array rp::rp-state)
+         ((mv node-array & rp::rp-state)
           (svex-simplify-linearize-aux node-array  context))
          ((mv top-node rp::rp-state)
-          (svexl-nodelist-simplify top-node  context)))
+          (svexl-nodelist-simplify top-node  context))
+         (- (fast-alist-clean complete-node-array)))
       (mv (make-svexllist
            :node-array node-array
            :top-nodelist top-node)
           rp::rp-state))))
-
-(define cons-count-compare ((term)
-                            (cnt natp))
-  (cond ((zp cnt) cnt)
-        ((atom term)
-         (- cnt 1))
-        (t
-         (b* ((cnt (cons-count-compare (car term) cnt))
-              ((when (zp cnt)) cnt)
-              (cnt (cons-count-compare (cdr term) cnt)))
-           cnt))))
-
-
 
 (local
  (defthm RP::rp-statep-of-UPDATE-NOT-SIMPLIFIED-ACTION
@@ -689,29 +1182,28 @@
                               RP::VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP)
                              (:DEFINITION RP::VALID-RULESP)
                              (:DEFINITION
-                                                            RP::VALID-RULEP)
+                              RP::VALID-RULEP)
                              (:DEFINITION RP::VALID-RULEP-SK)))))))
 
 #!RP
 (local
  (defthm UNSIGNED-BYTE-P-and-natp-of-rw-step-limit
-  (implies (rp-statep rp-state)
-           (and (UNSIGNED-BYTE-P 58 (RW-STEP-LIMIT RP-STATE))
-                (NATP (RW-STEP-LIMIT RP-STATE))))
-  :hints (("Goal"
-           :in-theory (e/d (rp-statep
-                            rw-step-limitp)
-                           ())))))
+   (implies (rp-statep rp-state)
+            (and (UNSIGNED-BYTE-P 58 (RW-STEP-LIMIT RP-STATE))
+                 (NATP (RW-STEP-LIMIT RP-STATE))))
+   :hints (("Goal"
+            :in-theory (e/d (rp-statep
+                             rw-step-limitp)
+                            ())))))
 
 #!RP
 (local
  (defthm VALID-RP-STATE-SYNTAXP-implies-rp-statep
-  (implies (VALID-RP-STATE-SYNTAXP rp-state)
-           (rp-statep rp-state))
-  :hints (("Goal"
-           :in-theory (e/d (VALID-RP-STATE-SYNTAXP)
-                           ())))))
-
+   (implies (VALID-RP-STATE-SYNTAXP rp-state)
+            (rp-statep rp-state))
+   :hints (("Goal"
+            :in-theory (e/d (VALID-RP-STATE-SYNTAXP)
+                            ())))))
 
 (define svex-simplify-to-4vec ((svex svex-p)
                                &key
@@ -722,7 +1214,10 @@
                                (runes 'nil)
                                (runes-outside-in 'nil)
                                (reload-rules 't)
-                               (only-local 'nil))
+                               (only-local 'nil)
+                               (vars-are-integer 'nil)
+                               ((verbose booleanp)
+                                'nil))
 
   :stobjs (state rp::rp-state)
   :returns (mv (rw)
@@ -739,7 +1234,9 @@
    (local
     (include-book "projects/rp-rewriter/proofs/extract-formula-lemmas" :dir :system))
    (local
-    (in-theory (e/d ()
+    (in-theory (e/d (rp::rp-termp
+                     TRUE-LIST-LISTP
+                     rp::rp-term-listp)
                     (rp::rules-alistp
                      state-p
                      rp::rp-statep
@@ -783,14 +1280,26 @@
                  *svex-simplify-meta-rules-outside-in*
                  runes-outside-in))
           (mv nil nil)))
-       
-       (rp::rp-state (if reload-rules (rp::rp-state-init-rules runes runes-outside-in nil
-                                                               rp::rp-state state)
+
+       (rp::rp-state (if reload-rules
+                         (rp::rp-state-init-rules runes runes-outside-in nil
+                                                  rp::rp-state state
+                                                  :ruleset 'svex-simplify-rules)
                        rp::rp-state))
 
-       (term `(svex-eval-wog ',svex (rp::rp 'sv::svex-env-p svex-env)))
+       (svex-env `(rp::rp 'sv::svex-env-p svex-env))
 
+       (term `(svex-eval-wog ',svex ,svex-env))
 
+       (context (if vars-are-integer
+                    (b* ((vars (sv::svex-vars svex)))
+                      (append
+                       context
+                       (loop$ for var in vars collect
+                              `(integerp (svex-env-fastlookup-wog ',var
+                                                                  ,svex-env)))))
+                  context))
+       (context (if (rp::context-syntaxp context) context nil))
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
          context nil nil nil (rp::rw-step-limit rp::rp-state)  rp::rp-state state))
@@ -798,10 +1307,12 @@
 
        ((mv svexl rp::rp-state)
         (if linearize
-            (svex-simplify-linearize svex context)
+            (svex-simplify-linearize svex context
+                                     :cons-count-limit
+                                     (nfix only-local))
           (mv nil rp::rp-state)))
        (term (if linearize
-                 `(svexl-eval-wog ',svexl (rp::rp 'sv::svex-env-p svex-env))
+                 `(svexl-eval-wog ',svexl ,svex-env)
                term))
 
        ((mv rw rp::rp-state)
@@ -826,7 +1337,10 @@
                                    (reload-rules 't)
                                    (runes 'nil)
                                    (runes-outside-in 'nil)
-                                   (only-local 'nil))
+                                   (only-local 'nil)
+                                   (vars-are-integer 'nil)
+                                   ((verbose booleanp)
+                                    'nil))
 
   :stobjs (state rp::rp-state)
   :returns (mv (rw)
@@ -843,14 +1357,16 @@
    (local
     (include-book "projects/rp-rewriter/proofs/extract-formula-lemmas" :dir :system))
    (local
-    (in-theory (e/d ()
+    (in-theory (e/d (rp::rp-termp
+                     TRUE-LIST-LISTP
+                     rp::rp-term-listp)
                     (rp::rules-alistp
                      state-p
                      rp::rp-statep
                      rp::not-simplified-action
                      rp::update-not-simplified-action
                      rp::preprocess-then-rp-rw
-                     
+
                      rp::rw-step-limit
                      table-alist
                      (:type-prescription natp-rp-rw-step-limit)
@@ -865,7 +1381,7 @@
   :guard (and (or reload-rules
                   (RP::VALID-RP-STATE-SYNTAXP rp::rp-state))
               (or (rp::context-syntaxp context)
-                  (cw "ATTENTION!  Given context must satisfy rp::context-syntaxp ~%")))
+                  (cw "WARNING!  Given context must satisfy rp::context-syntaxp ~%")))
 
   (b* ((- (and reload-rules (rp::check-if-clause-processor-up-to-date (w state))))
        (linearize (or only-local
@@ -885,29 +1401,43 @@
                  *svex-simplify-meta-rules-outside-in*
                  runes-outside-in))
           (mv nil nil)))
-       
+
        (rp::rp-state (if reload-rules (rp::rp-state-new-run rp::rp-state) rp::rp-state))
        (rp::rp-state (if reload-rules (rp::rp-state-init-rules runes runes-outside-in nil
-                                                               rp::rp-state state)
+                                                               rp::rp-state
+                                                               state
+                                                               :ruleset 'svex-simplify-rules)
                        rp::rp-state))
-       
 
-       (term `(svexlist-eval-wog ',svexlist (rp::rp 'sv::svex-env-p svex-env)))
+       (svex-env `(rp::rp 'sv::svex-env-p svex-env))
 
-       
+       (term `(svexlist-eval-wog ',svexlist ,svex-env))
+
+       (context (if vars-are-integer
+                    (b* ((vars (sv::svexlist-vars svexlist)))
+                      (append
+                       context
+                       (loop$ for var in vars collect
+                              `(integerp (svex-env-fastlookup-wog ',var
+                                                                  ,svex-env)))))
+                  context))
+       ;; for guards:
+       (context (if (rp::context-syntaxp context) context nil))
 
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
-         context nil nil nil (rp::rw-step-limit rp::rp-state) 
-          rp::rp-state state))
+         context nil nil nil (rp::rw-step-limit rp::rp-state)
+         rp::rp-state state))
+
        (context (if (rp::context-syntaxp context) context nil))
 
        ((mv svexllist rp::rp-state)
         (if linearize
-            (svexlist-simplify-linearize svexlist context)
+            (svexlist-simplify-linearize svexlist context
+                                         :cons-count-limit (nfix only-local))
           (mv nil rp::rp-state)))
        (term (if linearize
-                 `(svexllist-eval-wog ',svexllist (rp::rp 'sv::svex-env-p svex-env))
+                 `(svexllist-eval-wog ',svexllist ,svex-env)
                term))
 
        ((mv rw rp::rp-state)
@@ -980,6 +1510,9 @@ simplified term ~%"
                        (reload-rules 't)
                        (linearize ':auto)
                        (only-local 'nil)
+                       (vars-are-integer 'nil)
+                       ((verbose booleanp)
+                        'nil)
                        )
   :parents (acl2::svl rp::rp-rewriter/applications)
   :short "Try to simplify an sv::svex structure with @(see rp::rp-rewriter) using
@@ -1079,7 +1612,9 @@ local nodes in SVEXL will be simplified.
                                :runes runes
                                :reload-rules reload-rules
                                :linearize linearize
-                               :only-local only-local))
+                               :only-local only-local
+                               :vars-are-integer vars-are-integer
+                               :verbose verbose))
        (- (clear-memoize-table '4vec-to-svex))
        ((mv err svex-res)
         (if only-local
@@ -1103,6 +1638,9 @@ svex equivalent. Read above for the printed messages. ~p0 ~%"
                            (reload-rules 't)
                            (linearize ':auto)
                            (only-local 'nil)
+                           (vars-are-integer 'nil)
+                           ((verbose booleanp)
+                            'nil)
                            )
   :parents (svex-simplify)
   :short "Try to simplify an sv::svexlist structure with rp::RP-Rewriter using
@@ -1116,7 +1654,7 @@ svex equivalent. Read above for the printed messages. ~p0 ~%"
                                      (rp::rp-statep rp::rp-state)
                                    (RP::VALID-RP-STATE-SYNTAXP rp::rp-state))))
   :guard (and (or reload-rules
-                  (RP::VALID-RP-STATE-SYNTAXP rp::rp-state))
+                  (rp::valid-rp-state-syntaxp rp::rp-state))
               (or (rp::context-syntaxp context)
                   (cw "ATTENTION!  Given context must satisfy rp::context-syntaxp ~%")))
   (b* ((linearize (if (eq linearize ':auto)
@@ -1129,7 +1667,9 @@ svex equivalent. Read above for the printed messages. ~p0 ~%"
                                    :runes runes
                                    :reload-rules reload-rules
                                    :linearize linearize
-                                   :only-local only-local))
+                                   :only-local only-local
+                                   :vars-are-integer vars-are-integer
+                                   :verbose verbose))
        ((mv err svexlist-res)
         (if only-local
             (locally-simplified-to-svexlist rw)

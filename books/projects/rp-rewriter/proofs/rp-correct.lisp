@@ -382,6 +382,12 @@
                                RP-TERMP
                                TRUE-LISTP
                                beta-search-reduce))))
+
+   (defthm valid-sc-subterms-nil
+     (VALID-SC-SUBTERMS NIL A)
+     :hints (("Goal"
+              :expand (VALID-SC-SUBTERMS nil a)
+              :in-theory (e/d () ()))))
     
 
    (defthm preprocess-then-rp-rw-is-correct-lemma
@@ -553,10 +559,12 @@
              (iff (rp-evl (mv-nth 0 (preprocess-then-rp-rw term rp-state state)) a)
                   (rp-evl term a)))
     :hints (("Goal"
+             :use ((:instance preprocess-then-rp-rw-is-correct-lemma))
              :do-not-induct t
-             :in-theory (e/d ()
+             :in-theory (e/d (not-include-rp-means-valid-sc)
                              (rp-rw
                               preprocess-then-rp-rw
+                              preprocess-then-rp-rw-is-correct-lemma
                               valid-rules-alistp
                               valid-termp
                               remove-return-last

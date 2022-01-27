@@ -233,145 +233,175 @@
                                    acl2::member-equal-newvar-components-1)))))
   (b* ((orig-term term)
        (term (rp::ex-from-rp term)))
-    (cond ((is-sbits term)
-           (b* ((s-start (cadr (cadr term)))
-                (s-size (cadr (caddr term)))
-                (val (cadddr term))
-                (old-val (caddr (cddr term))))
-             (cond
-              ((or (<= (+ start size) s-start) ;;case5
-                   (<= (+ s-start s-size) start))
-               (bits-meta-fn-aux old-val start size))
-              ((and (<= (+ start size) ;;case4
-                        (+ s-start s-size))
-                    (<= s-start start))
-               (bits-meta-fn-aux val (- start s-start) size))
-              ((and (< start s-start) ;;case 3
-                    (< s-start (+ start size))
-                    (<= (+ start size)
-                        (+ s-start s-size)))
-               (b* (((mv rest-term rest-dontrw)
-                     (bits-meta-fn-aux old-val start (- s-start start)))
-                    ((mv rest-term2 rest-dontrw2)
-                     (bits-meta-fn-aux val 0 (+ start size (- s-start)))))
-                 (mv `(4vec-concat$ ',(- s-start start)
-                                    ,rest-term
-                                    ,rest-term2)
-                     `(nil t
-                           ,rest-dontrw
-                           ,rest-dontrw2))))
-              ((and (<= s-start start) ;;case 2
-                    (< start (+ s-start s-size))
-                    (< (+ s-start s-size)
-                       (+ start size)))
-               (b* (((mv rest-term rest-dontrw)
-                     (bits-meta-fn-aux val
-                                       (- start s-start)
-                                       (+ s-size s-start (- start))))
-                    ((mv rest-term2 rest-dontrw2)
-                     (bits-meta-fn-aux old-val
-                                       (+ s-start s-size)
-                                       (+ size start (- (+ s-start s-size))))))
-                 (mv `(4vec-concat$
-                       ',(+ s-size s-start (- start))
-                       ,rest-term
-                       ,rest-term2)
-                     `(nil
-                       t
-                       ,rest-dontrw
-                       ,rest-dontrw2))))
-              ((and (< start s-start) ;;case 1
-                    (< (+ s-start s-size)
-                       (+ start size)))
-               (b* (((mv rest-term2 rest-dont-rw2)
-                     (bits-meta-fn-aux old-val start (- s-start start)))
-                    ((mv rest-term3 rest-dont-rw3)
-                     (bits-meta-fn-aux val 0 s-size))
-                    ((mv rest-term4 rest-dont-rw4)
-                     (bits-meta-fn-aux old-val
-                                       (+ s-start s-size)
-                                       (- (+ start size) (+ s-start s-size)))))
-                 (mv `(4vec-concat$ ',(- s-start start)
-                                    ,rest-term2
-                                    (4vec-concat$ ',s-size ,rest-term3 ,rest-term4))
-                     `(nil t
-                           ,rest-dont-rw2
-                           (nil t ,rest-dont-rw3 ,rest-dont-rw4)))))
-              (t
-               (progn$
-                (cw "unexpected instance of bits of sbits ~%")
-                (hard-error 'bits-meta-fn-aux "error" nil)
-                (mv `(bits ,term ',start ',size) nil))))))
-          ((is-4vec-rsh term)
-           (b* ((rsh-size (cadr (cadr term)))
-                (val (caddr term)))
-             (bits-meta-fn-aux val (+ start rsh-size) size)))
-          ((is-4vec-concat$ term)
-           (b* ((c-size (cadr (cadr term)))
-                (term1 (caddr term))
-                (term2 (cadddr term)))
-             (cond
-              ((<= c-size start) ;;case 2
-               (bits-meta-fn-aux term2 (- start c-size) size))
-              ((and (< start c-size) ;; case 3
-                    (< c-size (+ start size)))
-               (b* (((mv rest-term1 rest-dontrw1)
-                     (bits-meta-fn-aux term1 start (- c-size start)))
-                    ((mv rest-term2 rest-dontrw2)
-                     (bits-meta-fn-aux term2 0 (- size (- c-size start)))))
-                 (mv `(4vec-concat$ ',(- c-size start)
-                                    ,rest-term1
-                                    ,rest-term2)
-                     `(nil t
-                           ,rest-dontrw1
-                           ,rest-dontrw2))))
-              ((<= (+ start size) c-size)
-               (bits-meta-fn-aux term1 start size))
-              (t
-               (progn$
-                (cw "unexpected instance of bits of 4vec-concat$ ~%")
-                (hard-error 'bits-meta-fn-aux "error" nil)
-                (mv `(bits ,term ',start ',size) nil))))))
-          ((is-4vec-bitnot term)
-           (b* ((x (cadr term))
-                ((mv rest rest-dontrw)
-                 (bits-meta-fn-aux x start size)))
-             (mv `(4vec-bitnot$ ',size ,rest)
-                 `(nil t ,rest-dontrw))))
-          ((is-bits term)
-           (b* ((x (cadr term))
-                (start1 start)
-                (size1 size)
-                (start2 (cadr (caddr term)))
-                (size2 (cadr (cadddr term))))
-             (cond
-              ((< start1 size2)
-               (bits-meta-fn-aux x
-                                 (+ start1 start2)
-                                 (min size1 (- size2 start1))))
-              (t (mv ''0 t)))))
-          ((is-bitand/or/xor term)
-           (b* ((fnc (car term))
-                (term1 (cadr term))
-                (term2 (caddr term))
-                ((mv rest1 dont-rw1)
-                 (bits-meta-fn-aux term1 start size))
-                ((mv rest2 dont-rw2)
-                 (bits-meta-fn-aux term2 start size)))
-             (mv (cons-with-hint fnc
-                                 (cons-with-hint rest1
-                                                 (cons-with-hint rest2 nil (cddr
-                                                                            term))
-                                                 (cdr term))
-                                 term)
-                 `(nil ,dont-rw1 ,dont-rw2))))
-          ((is-bits-0-pos-size-of-a-bitp orig-term start size)
-           (mv orig-term t))
-          ((is-bits-pos-start-of-a-bitp orig-term start size)
-           (mv ''0 t))
-          (t
-           (mv `(bits ,orig-term ',start ',size)
-               `(nil t t t))))))
+    (cond
+     ((atom term)
+      (mv `(bits ,orig-term ',start ',size)
+          `(nil t t t)))
+     ((is-sbits term)
+      (b* ((s-start (cadr (cadr term)))
+           (s-size (cadr (caddr term)))
+           (val (cadddr term))
+           (old-val (caddr (cddr term))))
+        (cond
+         ((or (<= (+ start size) s-start) ;;case5
+              (<= (+ s-start s-size) start))
+          (bits-meta-fn-aux old-val start size))
+         ((and (<= (+ start size) ;;case4
+                   (+ s-start s-size))
+               (<= s-start start))
+          (bits-meta-fn-aux val (- start s-start) size))
+         ((and (< start s-start) ;;case 3
+               (< s-start (+ start size))
+               (<= (+ start size)
+                   (+ s-start s-size)))
+          (b* (((mv rest-term rest-dontrw)
+                (bits-meta-fn-aux old-val start (- s-start start)))
+               ((mv rest-term2 rest-dontrw2)
+                (bits-meta-fn-aux val 0 (+ start size (- s-start)))))
+            (mv `(4vec-concat$ ',(- s-start start)
+                               ,rest-term
+                               ,rest-term2)
+                `(nil t
+                      ,rest-dontrw
+                      ,rest-dontrw2))))
+         ((and (<= s-start start) ;;case 2
+               (< start (+ s-start s-size))
+               (< (+ s-start s-size)
+                  (+ start size)))
+          (b* (((mv rest-term rest-dontrw)
+                (bits-meta-fn-aux val
+                                  (- start s-start)
+                                  (+ s-size s-start (- start))))
+               ((mv rest-term2 rest-dontrw2)
+                (bits-meta-fn-aux old-val
+                                  (+ s-start s-size)
+                                  (+ size start (- (+ s-start s-size))))))
+            (mv `(4vec-concat$
+                  ',(+ s-size s-start (- start))
+                  ,rest-term
+                  ,rest-term2)
+                `(nil
+                  t
+                  ,rest-dontrw
+                  ,rest-dontrw2))))
+         ((and (< start s-start) ;;case 1
+               (< (+ s-start s-size)
+                  (+ start size)))
+          (b* (((mv rest-term2 rest-dont-rw2)
+                (bits-meta-fn-aux old-val start (- s-start start)))
+               ((mv rest-term3 rest-dont-rw3)
+                (bits-meta-fn-aux val 0 s-size))
+               ((mv rest-term4 rest-dont-rw4)
+                (bits-meta-fn-aux old-val
+                                  (+ s-start s-size)
+                                  (- (+ start size) (+ s-start s-size)))))
+            (mv `(4vec-concat$ ',(- s-start start)
+                               ,rest-term2
+                               (4vec-concat$ ',s-size ,rest-term3 ,rest-term4))
+                `(nil t
+                      ,rest-dont-rw2
+                      (nil t ,rest-dont-rw3 ,rest-dont-rw4)))))
+         (t
+          (progn$
+           (cw "unexpected instance of bits of sbits ~%")
+           (hard-error 'bits-meta-fn-aux "error" nil)
+           (mv `(bits ,term ',start ',size) nil))))))
+     ((is-4vec-rsh term)
+      (b* ((rsh-size (cadr (cadr term)))
+           (val (caddr term)))
+        (bits-meta-fn-aux val (+ start rsh-size) size)))
+     ((is-4vec-concat$ term)
+      (b* ((c-size (cadr (cadr term)))
+           (term1 (caddr term))
+           (term2 (cadddr term)))
+        (cond
+         ((<= c-size start) ;;case 2
+          (bits-meta-fn-aux term2 (- start c-size) size))
+         ((and (< start c-size) ;; case 3
+               (< c-size (+ start size)))
+          (b* (((mv rest-term1 rest-dontrw1)
+                (bits-meta-fn-aux term1 start (- c-size start)))
+               ((mv rest-term2 rest-dontrw2)
+                (bits-meta-fn-aux term2 0 (- size (- c-size start)))))
+            (mv `(4vec-concat$ ',(- c-size start)
+                               ,rest-term1
+                               ,rest-term2)
+                `(nil t
+                      ,rest-dontrw1
+                      ,rest-dontrw2))))
+         ((<= (+ start size) c-size)
+          (bits-meta-fn-aux term1 start size))
+         (t
+          (progn$
+           (cw "unexpected instance of bits of 4vec-concat$ ~%")
+           (hard-error 'bits-meta-fn-aux "error" nil)
+           (mv `(bits ,term ',start ',size) nil))))))
+     ((is-4vec-bitnot term)
+      (b* ((x (cadr term))
+           ((mv rest rest-dontrw)
+            (bits-meta-fn-aux x start size)))
+        (mv `(4vec-bitnot$ ',size ,rest)
+            `(nil t ,rest-dontrw))))
+     ((is-bits term)
+      (b* ((x (cadr term))
+           (start1 start)
+           (size1 size)
+           (start2 (cadr (caddr term)))
+           (size2 (cadr (cadddr term))))
+        (cond
+         ((< start1 size2)
+          (bits-meta-fn-aux x
+                            (+ start1 start2)
+                            (min size1 (- size2 start1))))
+         (t (mv ''0 t)))))
+     ((is-bitand/or/xor term)
+      (b* ((fnc (car term))
+           (term1 (cadr term))
+           (term2 (caddr term))
+           ((mv rest1 dont-rw1)
+            (bits-meta-fn-aux term1 start size))
+           ((mv rest2 dont-rw2)
+            (bits-meta-fn-aux term2 start size)))
+        (mv (cons-with-hint fnc
+                            (cons-with-hint rest1
+                                            (cons-with-hint rest2 nil (cddr
+                                                                       term))
+                                            (cdr term))
+                            term)
+            `(nil ,dont-rw1 ,dont-rw2))))
+
+     ((and (or (equal (car term) 'sv::4vec-?*)
+               (equal (car term) 'sv::4vec-?)
+               (equal (car term) 'sv::4vec-?!))
+           (equal-len (cdr term) 3))
+      (b* ((fn (car term))
+           (args (cdr term))
+           (test (first args))
+           ((mv then dont-rw1) (bits-meta-fn-aux (second args) start size))
+           ((mv else dont-rw2) (bits-meta-fn-aux (third args) start size)))
+        (mv (cons-with-hint
+             fn
+             (cons-with-hint
+              test
+              (cons-with-hint
+               then
+               (cons-with-hint
+                else
+                nil
+                (cdddr term))
+               (cddr term))
+              (cdr term))
+             term)
+            `(nil t ,dont-rw1 ,dont-rw2))))
+              
+
+     ((is-bits-0-pos-size-of-a-bitp orig-term start size)
+      (mv orig-term t))
+     ((is-bits-pos-start-of-a-bitp orig-term start size)
+      (mv ''0 t))
+     (t
+      (mv `(bits ,orig-term ',start ',size)
+          `(nil t t t))))))
 
 (define bits-meta-fn-aux-can-change (val start size)
   :inline t
@@ -383,7 +413,11 @@
             (is-4vec-bitnot val)
             (is-4vec-concat$ val)
             (is-4vec-rsh val)
-            (is-sbits val)))))
+            (is-sbits val)
+            (and (consp val)
+                 (or (equal (car val) 'sv::4vec-?)
+                     (equal (car val) 'sv::4vec-?!)
+                     (equal (car val) 'sv::4vec-?*)))))))
 
 (define bits-of-meta-fn (term)
   (case-match term
@@ -464,6 +498,9 @@
     :gag-mode nil
     (rp::def-formula-checks bits-of-formula-checks
                             (bits sbits
+                                  sv::4VEC-?*
+                                  sv::4VEC-?
+                                  sv::4VEC-?!
                                   4vec-concat
                                   4vec-rsh
                                   sv::4vec-bitxor
@@ -554,7 +591,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; valid-sc lemmas
 
-(local
+#|(local
  (defthm
    rp::valid-sc-caddddr
    (implies (and (consp rp::term)
@@ -569,7 +606,7 @@
             (rp::valid-sc (car (cddddr rp::term)) rp::a))
    :hints
    (("goal" :in-theory (e/d (rp::ex-from-rp rp::is-if rp::is-rp)
-                            nil)))))
+                            nil)))))|#
 
 (local
  (defthm valid-sc-concat$-meta-aux
@@ -582,6 +619,7 @@
             :do-not-induct t
             :in-theory (e/d (concat$-meta-aux
                              rp::is-rp rp::is-if
+                             
                              natp) ())))))
 
 (local
@@ -596,7 +634,7 @@
             :in-theory (e/d (bits-meta-fn-aux
                              is-bits-0-pos-size-of-a-bitp
                              is-bits-pos-start-of-a-bitp
-                             rp::is-rp rp::is-if
+                             rp::is-rp rp::is-if 
                              natp)
                             (rp::falist-consistent
                              ifix
@@ -609,14 +647,22 @@
    (implies (rp::valid-sc term a)
             (rp::valid-sc (mv-nth 0 (bits-of-meta-fn term)) a))
    :hints (("Goal"
-            :in-theory (e/d (bits-of-meta-fn rp::is-rp rp::is-if) ())))))
+            :in-theory (e/d (bits-of-meta-fn
+                             rp::is-rp
+                             rp::is-if
+                             )
+                            ())))))
 
 (local
  (defthm valid-sc-of-concat-meta
    (implies (rp::valid-sc term a)
             (rp::valid-sc (mv-nth 0 (concat-meta term)) a))
    :hints (("Goal"
-            :in-theory (e/d (concat-meta rp::is-if rp::is-rp) ())))))
+            :in-theory (e/d (concat-meta
+                             rp::is-if
+                             rp::is-rp
+                             )
+                            ())))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; dont-rw sytnaxp lemmas
@@ -708,26 +754,24 @@
                              (RP::RP-EVLT-OF-EX-FROM-RP
                               rp-trans))))))
 
-
-
 (local
  (defthm HAS-BITP-SIDE-COND-lemma
-  (implies (and (rp-evl-meta-extract-global-facts)
-                (rp::valid-sc term a)
-                (HAS-BITP-SIDE-COND TERM))
-           (and (bitp (rp-evlt term a))
-                ;;(bitp (rp-evl term a))
-                ))
-  :hints (("Goal"
-           :induct (HAS-BITP-SIDE-COND TERM)
-           :do-not-induct t
-           :in-theory (e/d (HAS-BITP-SIDE-COND
-                            rp::is-if
-                            RP::VALID-SC-SINGLE-STEP
-                            rp::is-rp
-                            RP::VALID-SC
-                            )
-                           (bitp))))))
+   (implies (and (rp-evl-meta-extract-global-facts)
+                 (rp::valid-sc term a)
+                 (HAS-BITP-SIDE-COND TERM))
+            (and (bitp (rp-evlt term a))
+                 ;;(bitp (rp-evl term a))
+                 ))
+   :hints (("Goal"
+            :induct (HAS-BITP-SIDE-COND TERM)
+            :do-not-induct t
+            :in-theory (e/d (HAS-BITP-SIDE-COND
+                             rp::is-if
+                             RP::VALID-SC-SINGLE-STEP
+                             rp::is-rp
+                             RP::VALID-SC
+                             )
+                            (bitp))))))
 
 (local
  (defthm bits-meta-fn-aux-correct-lemma1
@@ -746,8 +790,6 @@
                              RP::IS-RP
                              is-bits-0-pos-size-of-a-bitp)
                             (rp::valid-sc))))))
-
-
 
 (local
  (defthm bits-meta-fn-aux-correct-lemma2
@@ -789,6 +831,17 @@
    :hints (("Goal"
             :in-theory (e/d (is-bits-0-pos-size-of-a-bitp) ())))))
 
+
+(local
+ (rp::create-regular-eval-lemma 4VEC-?* 3 bits-of-formula-checks))
+
+(local
+ (rp::create-regular-eval-lemma sv::4VEC-? 3 bits-of-formula-checks))
+
+(local
+ (rp::create-regular-eval-lemma sv::4VEC-?! 3 bits-of-formula-checks))
+
+
 (local
  (defthm bits-meta-fn-aux-correct
    (implies
@@ -800,8 +853,8 @@
     (equal (rp-evlt (mv-nth 0 (bits-meta-fn-aux term start size)) a)
            (rp-evlt `(bits ,term ',start ',size) a)))
 ;:otf-flg t
-   :hints (("Subgoal *1/10"
-            :use ((:instance bits-meta-fn-aux-correct-lemma1)))
+   :hints (#|("Subgoal *1/10"
+            :use ((:instance bits-meta-fn-aux-correct-lemma1)))|#
            ("Goal"
             :induct (bits-meta-fn-aux term start size)
             :do-not-induct t
@@ -814,6 +867,7 @@
                               IS-BITAND/OR/XOR
                               rp::is-rp rp::is-if
                               rp::regular-eval-lemmas
+                              rp::regular-eval-lemmas-with-ex-from-rp
                               rp-evlt-of-ex-from-rp-reverse
                               natp)
                              (RP::RP-EVLT-OF-EX-FROM-RP
@@ -948,7 +1002,6 @@
                                 :trig-fnc 'sv::4vec-concat
                                 :dont-rw t
                                 :valid-syntax t)))||#
-
 
 (rp::add-meta-rule
  :meta-fnc bits-of-meta-fn

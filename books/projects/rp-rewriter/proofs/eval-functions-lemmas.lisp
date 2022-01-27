@@ -155,13 +155,14 @@
 (defthm valid-sc-cadr
   (IMPLIES (AND
             (CONSP term)
-            (Not (EQUAL (CAR term) 'if))
-            (Not (EQUAL (CAR term) 'rp))
+            ;;(Not (EQUAL (CAR term) 'if))
+            ;;(Not (EQUAL (CAR term) 'rp))
             (Not (EQUAL (CAR term) 'quote))
             (CONSP (CDR term))
             (VALID-SC TERM A))
            (VALID-SC (CADR term) A))
   :hints (("Goal"
+           :expand ((VALID-SC TERM A))
            :in-theory (e/d (ex-from-rp
                             is-if
                             is-rp) ()))))
@@ -169,15 +170,18 @@
 (defthm valid-sc-caddr
   (IMPLIES (AND
             (CONSP term)
-            (Not (EQUAL (CAR term) 'if))
-            (Not (EQUAL (CAR term) 'rp))
+            (not (EQUAL (CAR term) 'if))
+            ;;(Not (EQUAL (CAR term) 'rp))
             (Not (EQUAL (CAR term) 'quote))
             (CONSP (CDR term))
             (CONSP (CDdR term))
             (VALID-SC TERM A))
            (VALID-SC (CADdR term) A))
   :hints (("Goal"
+           :cases ((is-rp term))
+           :expand ((VALID-SC TERM A))
            :in-theory (e/d (ex-from-rp
+                            valid-sc-single-step
                             is-if
                             is-rp) ()))))
 
@@ -185,14 +189,15 @@
   (IMPLIES (AND
             (CONSP term)
             (Not (EQUAL (CAR term) 'if))
-            (Not (EQUAL (CAR term) 'rp))
+            ;;(Not (EQUAL (CAR term) 'rp))
             (Not (EQUAL (CAR term) 'quote))
             (CONSP (CDR term))
             (CONSP (CDdR term))
             (CONSP (CDddR term))
             (VALID-SC TERM A))
-           (VALID-SC (CAdDdR term) A))
+           (valid-sc (cadddr term) A))
   :hints (("Goal"
+           :expand ((VALID-SC TERM A))
            :in-theory (e/d (ex-from-rp
                             is-if
                             is-rp) ()))))
@@ -200,8 +205,8 @@
 (defthm valid-sc-caddddr
   (IMPLIES (AND
             (CONSP term)
-            (Not (EQUAL (CAR term) 'if))
-            (Not (EQUAL (CAR term) 'rp))
+            ;;(Not (EQUAL (CAR term) 'if))
+            ;;(Not (EQUAL (CAR term) 'rp))
             (Not (EQUAL (CAR term) 'quote))
             (CONSP (CDR term))
             (CONSP (CDdR term))
@@ -210,6 +215,7 @@
             (VALID-SC TERM A))
            (VALID-SC (CAr (cddDdR term)) A))
   :hints (("Goal"
+           :expand ((VALID-SC TERM A))
            :in-theory (e/d (ex-from-rp
                             is-if
                             is-rp) ()))))
@@ -239,3 +245,9 @@
                         (rp-evlt-lst (cdr acl2::x-lst)
                                      acl2::a))))
   :hints (("goal" :expand ((rp-trans acl2::x-lst)))))
+
+(defthm valid-sc-of-openly-quoted
+  (valid-sc (list 'quote x) a)
+  :hints (("Goal"
+           :expand (valid-sc (list 'quote x) a)
+           :in-theory (e/d (is-rp is-if) ()))))

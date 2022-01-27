@@ -396,6 +396,24 @@
            (t (and (rp-termp (car lst))
                    (rp-term-listp (cdr lst)))))))
 
+  (define rp-term-fix (term)
+    (if (rp-termp term)
+        term
+      ''nil)
+    ///
+    (defthm rp-termp-rp-term-fix
+      (rp-termp (rp-term-fix term))
+      :rule-classes :type-prescription))
+
+  (define rp-term-list-fix (term)
+    (if (rp-term-listp term)
+        term
+      nil)
+    ///
+    (defthm rp-term-listp-rp-term-list-fix
+      (rp-term-listp (rp-term-list-fix term))
+      :rule-classes :type-prescription))
+  
   (defun rp-term-list-listp (lst)
     (declare (xargs :guard t))
     (if (atom lst)
@@ -662,24 +680,33 @@
 (define dumb-negate-lit2 (term)
   :enabled t
   :inline t
+  :returns (mv new-term dont-rw)
   (cond ((atom term)
-         (acl2::fcons-term* 'not term))
+         (mv (acl2::fcons-term* 'not term)
+             `(nil t)))
         ((acl2::fquotep term)
-         (cond ((equal term ''nil)
-                ''t)
-               (t ''nil)))
-        ((case-match term (('not &) t) (& nil))
-         (acl2::fargn term 1))
-        ((and (case-match term (('equal & &) t) (& nil))
+         (mv (cond ((equal term ''nil)
+                    ''t)
+                   (t ''nil))
+             t))
+        ((case-match term (('not &) t))
+         (mv (acl2::fargn term 1) t))
+        ((case-match term (('if & then ''nil) (nonnil-p then)))
+         (mv (acl2::fcons-term* 'not (acl2::fargn term 1))
+             `(nil t)))
+        ((case-match term (('if & ''nil else) (nonnil-p else)))
+         (mv (acl2::fargn term 1) t))
+        ((and (case-match term (('equal & &) t))
               (or (equal (acl2::fargn term 2)
                          ''nil)
                   (equal (acl2::fargn term 1)
                          ''nil)))
-         (if (equal (acl2::fargn term 2)
-                    ''nil)
-             (acl2::fargn term 1)
-           (acl2::fargn term 2)))
-        (t (acl2::fcons-term* 'not term))))
+         (mv (if (equal (acl2::fargn term 2)
+                        ''nil)
+                 (acl2::fargn term 1)
+               (acl2::fargn term 2))
+             t))
+        (t (mv (acl2::fcons-term* 'not term) `(nil t)))))
 
 (encapsulate
   nil
@@ -1255,14 +1282,14 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
             (and (equal warning ':err)
                  (hard-error
                   'rule-syntaxp
-                  "Error  is issued for: ~%
+                  "Read the above messages. Error  is issued for: ~%
  rp-rune: ~p0 ~% rp-hyp: ~p1 ~% rp-lhs: ~p2 ~% rp-rhs ~p3 ~%"
                   (list (cons #\0 (rp-rune rule))
                         (cons #\1 (rp-hyp rule))
                         (cons #\2 (rp-lhs rule))
                         (cons #\3 (rp-rhs rule)))))
             (and warning
-                 (cw "Warning in rp::rule-syntaxp is issued for: ~%
+                 (cw "Read the above messages. Warning in rp::rule-syntaxp is issued for: ~%
  rp-rune: ~p0 ~% rp-hyp: ~p1 ~% rp-lhs: ~p2 ~% rp-rhs ~p3 ~%"
                      (rp-rune rule)
                      (rp-hyp rule)
@@ -1744,6 +1771,8 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
   (not-simplified-action :type (satisfies symbolp) :initially :error)
 
+  (casesplitter-cases :type (satisfies rp-term-listp) :initially nil)
+
   :inline t)
 
 
@@ -1766,7 +1795,8 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (defund rp-state-new-run (rp-state)
   (declare (xargs :stobjs (rp-state)))
-  (b* ((rp-state (rules-used-clear rp-state))
+  (b* ((rp-state (update-casesplitter-cases nil rp-state))
+       (rp-state (rules-used-clear rp-state))
        (rp-state (update-rw-stack-size 0 rp-state))
        (rp-state (update-rw-stack nil rp-state))
        (rp-state (update-rule-frame-cnts nil rp-state)))

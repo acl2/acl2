@@ -1,9 +1,7 @@
-; RP-REWRITER
-
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2019, Regents of the University of Texas
+; Copyright (C) 2020, Regents of the University of Texas
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -38,13 +36,58 @@
 
 (in-package "RP")
 
-(include-book "hons-acons-meta")
-(include-book "fast-alist-free-meta")
-(include-book "hons-get-meta")
-(include-book "equal-meta")
-(include-book "mv-nth-meta")
-(include-book "implies-meta")
-(include-book "cons-to-list-meta")
-(include-book "casesplitter")
+(include-book "../meta-rule-macros")
 
-(attach-meta-fncs built-in-metas)
+(include-book "../misc")
+
+(local
+ (include-book "../proofs/aux-function-lemmas"))
+
+(local
+ (include-book "../proofs/proof-function-lemmas"))
+
+(define casesplitter-aux ((term rp-termp)
+                          (cases rp-term-listp))
+  :returns (res-term rp-termp :hyp (and (rp-termp term)
+                                        (rp-term-listp cases)))
+  (if (atom cases)
+      term
+    (casesplitter-aux `(if ,(car cases)
+                           ,term
+                         ,term)
+                      (cdr cases))))
+
+(define casesplitter ((term rp-termp)
+                      (rp-state))
+  :guard-hints (("Goal"
+                 :in-theory (e/d (RP-STATEP) ())))
+  :stobjs (rp-state)
+  (b* ((cases (casesplitter-cases rp-state))
+       (cases (ex-from-rp-all2-lst cases)))
+    (casesplitter-aux term cases)))
+
+
+
+(local
+ (defret casesplitter-aux-correct
+   (implies (and (valid-sc term a)
+                 (valid-sc-subterms cases a))
+            (and (valid-sc res-term a)
+                 (equal (rp-evlt res-term a)
+                        (rp-evlt term a))))
+   :fn casesplitter-aux
+   :hints (("Goal"
+            :in-theory (e/d (casesplitter-aux
+                             is-if
+                             is-rp
+                             )
+                            ())))))
+
+
+(add-preprocessor
+ :processor-fnc casesplitter
+ :hints (("Goal"
+          :in-theory (e/d (casesplitter
+                           RP-STATEP)
+                          ()))))
+                  

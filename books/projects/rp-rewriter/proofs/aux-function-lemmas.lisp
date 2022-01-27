@@ -122,9 +122,10 @@
              :in-theory (e/d (is-lambda is-lambda-strict lambda-exp-free-p LAMBDA-EXP-FREE-LISTP )
                              ())))))
 
-(defthm rp-termp-dumb-negate-lit2
+(defret rp-termp-dumb-negate-lit2
   (implies (rp-termp term)
-           (rp-termp (dumb-negate-lit2 term)))
+           (rp-termp new-term))
+  :fn dumb-negate-lit2
   :hints (("goal" :in-theory (enable rp-term-listp
                                      dumb-negate-lit2))))
 
@@ -1133,6 +1134,31 @@
     (defthm rp-term-listp-ex-from-rp-all2-lst
         (implies (rp-term-listp lst)
                  (rp-term-listp (ex-from-rp-all2-lst lst)))
+      :flag ex-from-rp-all2-lst)
+  :hints (("Goal"
+           :do-not-induct t
+           :expand (RP-TERMP (EX-FROM-RP TERM))
+           :in-theory (e/d (
+                            EX-FROM-RP-ALL2
+                            IS-RP-LOOSE
+                            is-rp
+                            ;;rp-termp-ex-from-rp-all2-lemma
+                            ex-from-rp-all2-lst
+                            )
+                           (ex-from-rp
+                            ;;FALIST-CONSISTENT
+                            RP-TERMP-EX-FROM-RP
+                            RP-TERMP-CONS-CAR-TERM-SUBTERMS
+                            )))))
+
+(defthm-ex-from-rp-all2
+    (defthm ex-from-rp-all2-not-include-rp
+        (implies (rp-termp term)
+                 (not (include-fnc (ex-from-rp-all2 term) 'rp)))
+      :flag ex-from-rp-all2)
+    (defthm ex-from-rp-all2-lst-not-include-rp
+        (implies (rp-term-listp lst)
+                 (not (include-fnc-subterms (ex-from-rp-all2-lst lst) 'rp)))
       :flag ex-from-rp-all2-lst)
   :hints (("Goal"
            :do-not-induct t

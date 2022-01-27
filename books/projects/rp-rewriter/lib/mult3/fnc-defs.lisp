@@ -186,6 +186,25 @@
     (implies (bitp x)
              (equal (bit-fix x) x))))
 
+(define bit-listp (lst)
+  (if (atom lst)
+      (equal lst nil)
+    (and (bitp (car lst))
+         (bit-listp (cdr lst)))))
+
+(define bit-fix-lst (lst)
+  (if (atom lst)
+      nil
+      (cons (bit-fix (car lst))
+            (bit-fix-lst (cdr lst))))
+  ///
+  (defthm bit-fix-lst-opener
+    (implies (bit-listp lst)
+             (equal (bit-fix-lst lst)
+                    lst))
+    :hints (("Goal"
+             :in-theory (e/d (bit-listp) ())))))
+
 (define binary-not (bit)
   (- 1 (bit-fix bit))
   ///
@@ -1147,6 +1166,8 @@
     :returns (res rp-termp :hyp (rp-termp term))
     :inline t
     (create-list-instance (negate-lst (list-to-lst term) enabled))))
+
+
 
 (encapsulate
   nil

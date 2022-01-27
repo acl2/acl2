@@ -36,7 +36,9 @@
 
 (def-rp-rule
  svex-env-fastlookup-wog-def
- (implies (syntaxp (consp (rp::ex-from-rp env)))
+ (implies (syntaxp (and (consp (rp::ex-from-rp env))
+                        (not (equal (car (rp::ex-from-rp env))
+                                    'hons-acons))))
           (equal (svex-env-fastlookup-wog var env)
                  (let* ((look (hons-get var env)))
                    (if look (cdr look) (sv::4vec-x)))))
