@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -712,7 +712,7 @@
       "                        (forthn update1-xn<(back1 x1),"
       "                                           ...,"
       "                                           (backn xn)>))"
-      "                   (mv (forth_r1 y1) ... (forth_rm ym))),"
+      "                   (mv (back_r1 y1) ... (back_rm ym))),"
       "                 ..."
       "                 (mv-let (y1 ... ym)"
       "                   (new (forth1 updater-x1<(back1 x1),"
@@ -722,7 +722,7 @@
       "                        (forthn updater-xn<(back1 x1),"
       "                                           ...,"
       "                                           (backn xn)>))"
-      "                   (mv (forth_r1 y1) ... (forth_rm ym)))>"
+      "                   (mv (back_r1 y1) ... (back_rm ym)))>"
       "        (mv (forth_r1 y1) ... (forth_rm ym)))"
       "    (mv nil ... nil)))")
      (xdoc::p
