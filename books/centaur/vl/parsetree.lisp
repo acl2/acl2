@@ -3912,7 +3912,13 @@ be non-sliceable, at least if it's an input.</p>"
    (atts     vl-atts-p)
    (comments vl-commentmap-p)
    (virtualp booleanp :rule-classes :type-prescription)
-   (lifetime vl-lifetime-p))
+   (lifetime vl-lifetime-p)
+   (paramdecls vl-paramdecllist-p)
+   (fundecls vl-fundecllist-p)
+   (taskdecls vl-taskdecllist-p)
+   (vardecls vl-vardecllist-p)
+   (imports vl-importlist-p)
+   (typedefs vl-typedeflist-p))
   :long "BOZO incomplete stub -- we don't really support classes yet."
   :extra-binder-names (loc))
 

@@ -29,10 +29,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "datatypes")
+(include-book "expressions")
 (include-book "paramdecls")
 (include-book "imports")
-(include-book "classes") ;; just for vl-maybe-parse-lifetime
+;; (include-book "classes") ;; just for vl-maybe-parse-lifetime
 (include-book "../descriptions")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "tools/do-not" :dir :system))
@@ -368,6 +368,27 @@ out some duplication and indirection:</p>
        (return ret)))
 
 
+
+
+(defparser vl-maybe-parse-lifetime ()
+  :parents (parser)
+  :short "Match an optional @('lifetime') for SystemVerilog-2012."
+  :long "<p>Grammar:</p>
+         @({
+              lifetime ::= 'static' | 'automatic'
+         })"
+  :result (vl-lifetime-p val)
+  :resultp-of-nil t
+  :fails gracefully
+  :count strong-on-value
+  (seq tokstream
+        (when (vl-is-token? :vl-kwd-static)
+          (:= (vl-match))
+          (return :vl-static))
+        (when (vl-is-token? :vl-kwd-automatic)
+          (:= (vl-match))
+          (return :vl-automatic))
+        (return nil)))
 
 ; -------------------------------------------------------------------------
 ;

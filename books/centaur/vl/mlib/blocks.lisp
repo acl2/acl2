@@ -33,6 +33,8 @@
 ;; (include-book "expr-tools")
 (include-book "../parsetree")
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable (tau-system))))
+
 
 (defsection genblob
   :parents (mlib)
@@ -56,6 +58,7 @@ hassle.</p>
 (defenum vl-scopetype-p
   (:vl-module
    :vl-interface
+   :vl-class
    :vl-fundecl
    :vl-taskdecl
    :vl-blockstmt
@@ -270,6 +273,9 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
            ;; things in genblobs that are not in interfaces
            '(gateinst fwdtypedef covergroup))))
 
+(defconst *vl-class/genblob-fields*
+  '(vardecl paramdecl fundecl taskdecl typedef))
+
 (make-event
  `(define vl-module->genblob
     :short "Convert most of a module into a @(see vl-genblob)."
@@ -313,6 +319,28 @@ fields can be reinstalled into the interface using @(see vl-genblob->interface).
           '(:__elts__ x.__elts__)
           (vl-typenames-to-tmplsubsts
            *vl-interface/genblob-fields*))))))
+
+(make-event
+ `(define vl-class->genblob
+    :short "Convert most of a class into a @(see vl-genblob)."
+    ((x vl-class-p))
+    :returns (genblob vl-genblob-p)
+    :long "<p>Certain fields of a @(see vl-class) aren't also fields of a
+@(see vl-genblob), for instance, a genblob doesn't have warnings, a name,
+location information, etc.</p>
+
+<p>But aside from these fields, most of a class can be extracted and turned
+into a genblob for easy processing.  After processing the blob, the updated
+fields can be reinstalled into the class using @(see vl-genblob->class).</p>"
+
+    (b* (((vl-class x)))
+      (make-vl-genblob
+       :id x.name
+       :scopetype :vl-class
+       ,@(template-append
+          '(:__elts__ x.__elts__)
+          (vl-typenames-to-tmplsubsts
+           *vl-class/genblob-fields*))))))
 
 (define vl-genblock->genblob ((x vl-genblock-p))
   :short "Convert a @(see vl-genblock) into a @(see vl-genblob)."
@@ -374,6 +402,26 @@ etc., are overwritten with whatever is in the genblob.</p>"
                            '(:__elts__ x.__elts__)
                            (vl-typenames-to-tmplsubsts
                             *vl-module/genblob-fields*))))))
+
+(make-event
+ `(define vl-genblob->class
+    :short "Install fields from a @(see vl-genblob) into a class."
+    ((x vl-genblob-p)
+     (orig vl-class-p))
+    :returns (new-mod vl-class-p)
+    :long "<p>See @(see vl-class->genblob).  This is the companion operation
+which takes the fields from the genblob and sticks them back into a class.</p>
+
+<p>Certain fields of the class, like its warnings, name, and location
+information, aren't affected.  But the real fields like modinsts, assigns,
+etc., are overwritten with whatever is in the genblob.</p>"
+
+    (b* (((vl-genblob x)))
+      (change-vl-class orig
+                        ,@(template-append
+                           '(:__elts__ x.__elts__)
+                           (vl-typenames-to-tmplsubsts
+                            *vl-class/genblob-fields*))))))
 
 (make-event
  `(define vl-genblob->interface

@@ -1427,6 +1427,29 @@
 
 
 
+(progn
+
+ (defconst *param-class-funcall-tests*
+  (list
+
+   (make-exprtest :input "myclass#(a,b)::foo(1)"
+                  :expect '(:vl-funcall nil (:scope "myclass" ((id "a") (id "b")) "foo") 1))
+
+   (make-exprtest :input "myclass#(.a(1),.b(2))::foo(1)"
+                  :expect '(:vl-funcall nil (:scope "myclass" (("a" . 1) ("b" . 2)) "foo") 1))
+
+   (make-exprtest :input "myclass#(.a(logic [3:0]),.b(2))::foo(1)"
+                  :expect '(:vl-funcall nil (:scope "myclass" (("a" :vl-logic unsigned (:range 3 0)) ("b" . 2)) "foo") 1))))
+
+ (make-event
+  (progn$
+   (run-exprtests *param-class-funcall-tests*
+                  :config (make-vl-loadconfig :edition :system-verilog-2012))
+   '(value-triple :success))))
+
+
+
+
 #||
 (run-exprtests
  (list    (make-exprtest :input "$unit::bar" :expect '(:vl-scope nil (key :vl-$unit) (hid "bar"))))

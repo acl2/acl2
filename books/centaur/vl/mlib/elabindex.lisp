@@ -165,6 +165,7 @@ recursively, which we don't support for now anyway.)</p>")
 
 (deftagsum vl-elabkey
   (:package ((name stringp)) :hons t)
+  (:class   ((name stringp)) :hons t)
   (:item    ((name stringp)) :hons t)
   (:index   ((val  integerp)) :hons t
    :short "Index for a generate loop subblock.")
@@ -234,6 +235,10 @@ recursively, which we don't support for now anyway.)</p>")
   :returns (subscope (iff (vl-elabscope-p subscope) subscope))
   (vl-elabscope-subscope (vl-elabkey-package name) x))
 
+(define vl-elabscope-class-subscope ((name stringp) (x vl-elabscope-p))
+  :returns (subscope (iff (vl-elabscope-p subscope) subscope))
+  (vl-elabscope-subscope (vl-elabkey-class name) x))
+
 (define vl-elabscope-def-subscope ((name stringp) (x vl-elabscope-p))
   :returns (subscope (iff (vl-elabscope-p subscope) subscope))
   (vl-elabscope-subscope (vl-elabkey-def name) x))
@@ -267,6 +272,10 @@ recursively, which we don't support for now anyway.)</p>")
 (define vl-elabscope-update-package-subscope ((name stringp) (val vl-elabscope-p) (x vl-elabscope-p))
   :returns (new-x vl-elabscope-p)
   (vl-elabscope-update-subscope (vl-elabkey-package name) val x))
+
+(define vl-elabscope-update-class-subscope ((name stringp) (val vl-elabscope-p) (x vl-elabscope-p))
+  :returns (new-x vl-elabscope-p)
+  (vl-elabscope-update-subscope (vl-elabkey-class name) val x))
 
 
 
@@ -357,6 +366,9 @@ are empty.</p>")
         (:vl-package
          (and (stringp name)
               (vl-elabkey-package name)))
+        (:vl-class
+         (and (stringp name)
+              (vl-elabkey-class name)))
         (otherwise nil))))
 
   (define vl-elabscopes-push-anon ((scope vl-elabscope-p)

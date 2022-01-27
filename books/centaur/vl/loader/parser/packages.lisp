@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "elements")
-(include-book "classes")
+;; (include-book "classes")
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc parse-packages

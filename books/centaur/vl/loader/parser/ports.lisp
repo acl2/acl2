@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "nets")
-(include-book "datatypes")
+(include-book "expressions")
 (include-book "../../mlib/port-tools") ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
 

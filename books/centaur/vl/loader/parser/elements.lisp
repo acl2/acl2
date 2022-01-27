@@ -41,11 +41,16 @@
 (include-book "asserts")
 (include-book "dpi")
 (include-book "clocking")
-(include-book "classes")
+;; (include-book "classes")
 (include-book "covergroups")
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
 
+
+(local (in-theory (disable acl2::lower-bound-of-len-when-sublistp
+                           acl2::len-when-prefixp
+                           not
+                           acl2::len-when-atom)))
 
 
 
@@ -306,6 +311,407 @@ rules:</p>
                     (not err))))
   :hints(("Goal" :in-theory (enable vl-parse-type-declaration))))
 
+
+
+;;; ====================================================================
+;;; CLASS DECLARATION PARSING
+;;; ====================================================================
+
+
+
+(defparser vl-parse-0+-class-item-qualifiers (atts)
+  :guard (vl-atts-p atts)
+  :result (vl-atts-p val)
+  :resultp-of-nil t
+  :fails gracefully
+  :count weak
+  (seq tokstream
+   (when (vl-is-token? :vl-kwd-pure)
+     (:= (vl-match))
+     (:= (vl-match-token :vl-kwd-virtual))
+     (return-raw (vl-parse-0+-class-item-qualifiers (cons '("VL_PURE_VIRTUAL") atts))))
+   (when (vl-is-token? :vl-kwd-virtual)
+     (:= (vl-match))
+     (return-raw (vl-parse-0+-class-item-qualifiers (cons '("VL_VIRTUAL") atts))))
+   (when (vl-is-token? :vl-kwd-static)
+     (:= (vl-match))
+     (return-raw (vl-parse-0+-class-item-qualifiers (cons '("VL_STATIC") atts))))
+   (when (vl-is-token? :vl-kwd-protected)
+     (:= (vl-match))
+     (return-raw (vl-parse-0+-class-item-qualifiers (cons '("VL_PROTECTED") atts))))
+   (when (vl-is-token? :vl-kwd-local)
+     (:= (vl-match))
+     (return-raw (vl-parse-0+-class-item-qualifiers (cons '("VL_LOCAL") atts))))
+   (return atts)))
+
+(encapsulate nil
+  (local (in-theory (enable vl-is-token?)))
+  (local (in-theory (disable MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
+                             VL-PARSE-EXPRESSION-EOF-VL-PARSE-0+-ATTRIBUTE-INSTANCES
+                             double-containment
+                             acl2::subsetp-when-atom-left
+                             acl2::subsetp-when-atom-right
+                             acl2::lower-bound-of-len-when-sublistp
+                             acl2::len-when-prefixp
+                             acl2::len-when-atom
+                             default-car)))
+
+  (local (defthm vl-modelement-p-when-vl-blockitem-p
+           (implies (vl-blockitem-p x)
+                    (vl-modelement-p x))
+           :hints(("Goal" :in-theory (enable vl-blockitem-p
+                                             vl-modelement-p)))))
+
+  ;; (local (defthm vl-modelement-p-when-vl-description-p
+  ;;          (implies (vl-description-p x)
+  ;;                   (vl-modelement-p x))
+  ;;          :hints(("Goal" :in-theory (enable vl-description-p vl-modelement-p)))))
+
+  (local (defthm vl-modelementlist-p-when-vl-blockitemlist-p
+           (implies (vl-blockitemlist-p x)
+                    (vl-modelementlist-p x))
+           :hints(("Goal" :induct (len x)))))
+
+  (defparser vl-parse-class-element-aux (atts)
+    :guard (vl-atts-p atts)
+    :result (vl-modelementlist-p val)
+    :resultp-of-nil t
+    :true-listp t
+    :fails gracefully
+    :count strong
+    (b* ((tokens (vl-tokstream->tokens))
+         ((when (atom tokens))
+          (vl-parse-error "Unexpected EOF."))
+         (type1 (vl-token->type (car tokens)))
+         ;; ((when (eq type1 :vl-kwd-specify))
+         ;;  (if atts
+         ;;      (vl-parse-error "'specify' is not allowed to have attributes.")
+         ;;    (vl-parse-specify-block)))
+         ((when (or (eq type1 :vl-kwd-parameter)
+                    (eq type1 :vl-kwd-localparam)))
+          (seq tokstream
+               ;; BOZO local parameters aren't allowed in some contexts, but we don't currently
+               ;; have a good way to prohibit them.
+               (ret := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-parameter :vl-kwd-localparam)))
+               (:= (vl-match-token :vl-semi))
+               (return ret)))
+         ;; ((when (eq type1 :vl-kwd-specparam))
+         ;;  (vl-parse-specparam-declaration atts))
+         ;; ((when (member type1 *vl-netdecltypes-kwds*))
+         ;;  (seq tokstream
+         ;;        ((assigns . decls) := (vl-parse-net-declaration atts))
+         ;;        ;; Note: this order is important, the decls have to come first
+         ;;        ;; or we'll try to infer implicit nets from the assigns.
+         ;;        (return (append decls assigns))))
+         ;; ((when (member type1 *vl-gate-type-keywords*))
+         ;;  (vl-parse-gate-instantiation atts))
+         ;; ((when (eq type1 :vl-kwd-genvar))
+         ;;  (vl-parse-genvar-declaration atts))
+         ((when (eq type1 :vl-kwd-task))
+          (vl-parse-task-declaration atts))
+         ((when (eq type1 :vl-kwd-function))
+          (vl-parse-function-declaration atts))
+
+         ((when (eq type1 :vl-kwd-typedef))
+          (seq tokstream
+                (typedef := (vl-parse-type-declaration atts))
+                (return (list typedef))))
+
+         ((when (eq type1 :vl-kwd-import))
+          (seq tokstream
+               (when (vl-plausible-start-of-package-import-p)
+                 (imports := (vl-parse-package-import-declaration atts))
+                 (return imports))
+               ;; Otherwise maybe it's a DPI import.
+               (dpiimport := (vl-parse-dpi-import atts))
+               (return (list dpiimport))))
+
+         ((when (eq type1 :vl-semi))
+          ;; SystemVerilog-2012 seems to allow allows empty items to occur most anywhere:
+          ;;
+          ;;    package_or_generate_item_declaration ::= .... | ';'
+          ;;
+          ;; And these are allowed all over, e.g., in module_or_generate_item,
+          ;; interface_or_generate_item.  We'll match these but just throw them
+          ;; away.  This maybe isn't quite right, as it throws away the attributes
+          ;; that are associated with the semicolon, but it seems unlikely that
+          ;; we will care about that.
+          (seq tokstream
+               (:= (vl-match))
+               (return nil)))
+
+         ((when (and (eq type1 :vl-sysidtoken)
+                     (vl-elaborate-system-task-function-p (car tokens))))
+          (seq tokstream
+               (task := (vl-parse-elaborate-system-task))
+               (return (list task)))))
+
+
+      ;; SystemVerilog -- BOZO haven't thought this through very thoroughly, but it's
+      ;; probably a fine starting place.
+      (vl-parse-block-item-declaration-noatts atts))))
+
+
+
+(defparser vl-parse-class-element ()
+  :result (vl-modelementlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (atts := (vl-parse-0+-attribute-instances))
+       (atts := (vl-parse-0+-class-item-qualifiers atts))
+       (return-raw
+        (vl-parse-class-element-aux atts))))
+
+
+
+(defparser vl-parse-class-elements-until-endclass ()
+  :result (vl-modelementlist-p val)
+  :resultp-of-nil t
+  :fails gracefully
+  :count weak
+  ;; Similar to UDPs, but we don't have to check for Verilog-2005 because
+  ;; classes only exist in SystemVerilog-2012.
+  (seq tokstream
+       (when (atom (vl-tokstream->tokens))
+         (return-raw (vl-parse-error "Unexpected EOF.")))
+       (unless (vl-is-token? :vl-kwd-endclass)
+         
+          (first := (vl-parse-class-element))
+          (rest := (vl-parse-class-elements-until-endclass))
+          (return (append first rest)))
+        (return nil)))
+
+(define vl-class-element-warn ((x vl-modelement-p))
+  :returns (warnings vl-warninglist-p)
+  (b* ((warnings nil)
+       (x (vl-modelement-fix x)))
+    (case (tag x)
+      (:vl-fundecl (if (assoc-equal "VL_STATIC" (vl-fundecl->atts x))
+                       (ok)
+                     (warn :type :vl-class-non-static-declaration
+                           :msg "~a: Non-static function declarations in classes are not supported~%"
+                           :args (list x))))
+      ((:vl-taskdecl
+        :vl-paramdecl
+        :vl-typedef
+        :vl-property
+        :vl-sequence)
+       (ok))
+      (:vl-vardecl (warn :Type :vl-class-variable-declaration
+                         :msg "~a: Variable declarations in classes are not yet supported~%"
+                         :args (list x)))
+      (t (fatal :type :vl-class-unexpected-element
+                :msg "~a: Unexpected element type in class."
+                :args (list x)))))
+  ///
+  (defret true-listp-of-<fn>
+    (true-listp warnings)
+    :rule-classes :type-prescription))
+
+(define vl-class-elementlist-warn ((x vl-modelementlist-p))
+  :returns (warnings vl-warninglist-p)
+  (if (atom x)
+      nil
+    (let ((warnings (vl-class-element-warn (car x))))
+      (mbe :logic (append warnings (vl-class-elementlist-warn (cdr x)))
+           :exec
+           (if warnings
+               (append warnings (vl-class-elementlist-warn (cdr x)))
+             (vl-class-elementlist-warn (cdr x)))))))
+
+
+;; class_type ::=
+;;     ps_class_identifier [ parameter_value_assignment ]
+;;      { :: class_identifier [ parameter_value_assignment ] }
+
+(defparser vl-parse-class-type ()
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (:= (vl-match-token :vl-idtoken))
+       (when (vl-is-token? :vl-pound)
+         (:= (vl-parse-parameter-value-assignment)))
+       (when (vl-is-token? :vl-scope)
+         (:= (vl-match))
+         (:= (vl-parse-class-type)))
+       (return nil)))
+
+
+;;  extends class_type [ ( list_of_arguments ) ]
+;; (we've already read the 'extends')
+;; where
+;; class_type ::=
+;;     ps_class_identifier [ parameter_value_assignment ]
+;;      { :: class_identifier [ parameter_value_assignment ] }
+(defparser vl-parse-extends-class-type ()
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (:= (vl-parse-class-type))
+       (when (vl-is-token? :vl-lparen)
+         (:= (vl-match))
+         (when (vl-is-token? :vl-rparen)
+           (:= (vl-match))
+           (return nil))
+         (:= (vl-parse-call-plainargs))
+         (:= (vl-parse-call-namedargs))
+         (:= (vl-match-token :vl-rparen)))
+       (return nil)))
+
+
+
+;;  implements interface_class_type { , interface_class_type } ] ;
+;; (we've already read the 'implements')
+;; where
+;; interface_class_type ::= ps_class_identifier [ parameter_value_assignment ]
+(defparser vl-parse-1+-interface-class-types ()
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (:= (vl-match-token :vl-idtoken))
+       (when (vl-is-token? :vl-pound)
+         (:= (vl-parse-parameter-value-assignment)))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (:= (vl-parse-1+-interface-class-types)))
+       (return nil)))
+
+
+
+
+(defparser vl-parse-class-declaration-main (atts)
+  :guard (vl-atts-p atts)
+  :result (vl-class-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (b* ((orig-warnings (vl-parsestate->warnings (vl-tokstream->pstate)))
+       (tokstream (vl-tokstream-update-pstate
+                   (change-vl-parsestate (vl-tokstream->pstate) :warnings nil))))
+    (seq tokstream
+         (virtual := (vl-maybe-match-token :vl-kwd-virtual))
+         (:= (vl-match-token :vl-kwd-class))
+         (lifetime := (vl-maybe-parse-lifetime))
+         (name := (vl-match-token :vl-idtoken))
+         (paramports := (vl-parse-module-parameter-port-list-2012))
+         (when (vl-is-token? :vl-kwd-extends)
+           (:= (vl-match))
+           (:= (vl-parse-warning 'vl-class-extends-unsupported
+                                 "Extends and Implements keywords are currently unsupported"))
+           (:= (vl-parse-extends-class-type)))
+         (when (vl-is-token? :vl-kwd-implements)
+           (:= (vl-match))
+           (:= (vl-parse-warning 'vl-class-implements-unsupported
+                                 "Extends and Implements keywords are currently unsupported"))
+           (:= (vl-parse-1+-interface-class-types)))
+         (:= (vl-match-token :vl-semi))
+         (elems := (vl-parse-class-elements-until-endclass))
+         (endkwd := (vl-match-token :vl-kwd-endclass))
+         (:= (vl-parse-endblock-name (vl-idtoken->name name) "class/endclass"))
+         (return-raw
+          (b* ((warnings (append (vl-class-elementlist-warn elems)
+                                 (vl-parsestate->warnings (vl-tokstream->pstate))))
+               (tokstream (vl-tokstream-update-pstate
+                           (change-vl-parsestate (vl-tokstream->pstate) :warnings orig-warnings)))
+               ((vl-genblob c) (vl-sort-genelements (vl-modelementlist->genelements elems))))
+            (mv nil
+                (make-vl-class
+                 :name (vl-idtoken->name name)
+                 :atts atts
+                 :virtualp (and virtual t)
+                 :lifetime lifetime
+                 :paramdecls (append-without-guard paramports c.paramdecls)
+                 :fundecls c.fundecls
+                 :taskdecls c.taskdecls
+                 :vardecls c.vardecls
+                 :imports c.imports
+                 :typedefs c.typedefs
+                 :warnings warnings
+                 :minloc (vl-token->loc name)
+                 :maxloc (vl-token->loc endkwd))
+                tokstream))))))
+
+(defparser vl-skip-through-endclass ()
+  :result (vl-endinfo-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+        (unless (vl-is-token? :vl-kwd-endclass)
+          (:s= (vl-match-any))
+          (info := (vl-skip-through-endclass))
+          (return info))
+        ;; Now we're at endclass
+        (end := (vl-match))
+        (unless (and (vl-is-token? :vl-colon)
+                     (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+          (return (make-vl-endinfo :name nil
+                                   :loc (vl-token->loc end))))
+        (:= (vl-match))
+        (id := (vl-match-token :vl-idtoken))
+        (return (make-vl-endinfo :name (vl-idtoken->name id)
+                                 :loc (vl-token->loc id)))))
+
+(defparser vl-parse-class-declaration (atts)
+  :guard (vl-atts-p atts)
+  :result (vl-class-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (b* ((backup (vl-tokstream-save))
+       ((mv err class tokstream)
+        (vl-parse-class-declaration-main atts))
+       ((unless err)
+        (mv err class tokstream))
+       (new-tokens (vl-tokstream->tokens))
+       (tokstream (vl-tokstream-restore backup))
+       ((mv err2 class tokstream)
+        ;; Failed to parse the whole class.  Try again to at least get the name...
+        (seq tokstream
+             (:= (vl-maybe-match-token :vl-kwd-virtual))
+             (:= (vl-match-token :vl-kwd-class))
+             (:= (vl-maybe-parse-lifetime))
+             (name := (vl-match-token :vl-idtoken))
+             (endinfo := (vl-skip-through-endclass))
+             (when (and (vl-endinfo->name endinfo)
+                        (not (equal (vl-idtoken->name name)
+                                    (vl-endinfo->name endinfo))))
+               (return-raw
+                (mv (make-vl-warning :type :vl-parse-error
+                                     :msg "At ~a0: mismatched ~s1 names: ~s2 vs. ~s3."
+                                     :args (list (vl-endinfo->loc endinfo)
+                                                 "class/endclass"
+                                                 name
+                                                 (vl-endinfo->name endinfo)))
+                    nil
+                    tokstream)))
+             (return
+              (make-vl-class
+               :name (vl-idtoken->name name)
+               :minloc (vl-token->loc name)
+               :maxloc (vl-endinfo->loc endinfo)
+               :warnings (list err
+                               (make-vl-warning :type :vl-parse-error
+                                                :msg "[[ Remaining ]]: ~s0 ~s1.~%"
+                                                :args (list (vl-tokenlist->string-with-spaces
+                                                             (take (min 4 (len new-tokens)) (list-fix new-tokens)))
+                                                            (if (> (len new-tokens) 4) "..." ""))
+                                                :fatalp t))))))
+       ((unless err2)
+        (mv nil class tokstream)))
+    (mv err2 nil tokstream)))
+       
+
+
+;;; ====================================================================
+;;; MODULE ELEMENT PARSING
+;;; ====================================================================
+
+
+
 (encapsulate nil
   (local (in-theory (enable vl-is-token?)))
   (local (in-theory (disable MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
@@ -545,6 +951,8 @@ rules:</p>
         (atts := (vl-parse-0+-attribute-instances))
         (return-raw
          (vl-parse-modelement-aux atts))))
+
+
 
 
 

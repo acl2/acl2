@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "datatypes")
+(include-book "expressions")
 (include-book "../../parsetree")
 (local (include-book "../../util/arithmetic"))
 
@@ -167,6 +167,19 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
     (progn$ (impossible)
             (vl-paramtype-fix x))))
 
+(local (defthmd vl-dimension-p-when-vl-range-p
+         (implies (vl-range-p x)
+                  (vl-dimension-p x))
+         :hints(("Goal" :expand ((vl-dimension-p x)))
+                (and stable-under-simplificationp
+                     '(:expand ((vl-range-p x) (tag x)))))))
+
+(local (defthm vl-dimensionlist-p-when-vl-rangelist-p
+         (implies (vl-rangelist-p x)
+                  (vl-dimensionlist-p x))
+         :hints(("Goal" :in-theory (enable vl-dimension-p-when-vl-range-p
+                                           vl-rangelist-p
+                                           vl-dimensionlist-p)))))
 
 (defparser vl-parse-param-assignment (atts localp type)
   ;; Verilog-2005:       param_assignment ::= identifier = mintypmax_expression
