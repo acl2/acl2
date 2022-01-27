@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -597,13 +597,15 @@
       ";; :predicate is nil,"
       ";; m = 1,"
       ";; and isomaps includes :result1 (or :result):"
-      ""
       "(defun new (x1 ... xn)"
       "  (if (mbt$ (and (newp1 x1)"
       "                 ..."
       "                 (newpn xn)))"
       "      (forth_r1 old-body<(back1 x1),...,(backn xn)>)"
       "    nil))"
+      ";; where forth_r1 is actually pushed into"
+      ";; the 'if' branches of old-body if it starts with 'if',"
+      ";; and recursively into their 'if' branches (if any)"
       ""
       ";; when old is not recursive,"
       ";; :predicate is nil,"
@@ -693,6 +695,9 @@
       "                                                  ...,"
       "                                                  (backn xn)>)))>)"
       "    nil))"
+      ";; where forth_r1 is actually pushed into"
+      ";; the 'if' branches of old-body if it starts with 'if',"
+      ";; and recursively into their 'if' branches (if any)"
       ""
       ";; when old is recursive,"
       ";; :predicate is nil,"
@@ -712,7 +717,7 @@
       "                        (forthn update1-xn<(back1 x1),"
       "                                           ...,"
       "                                           (backn xn)>))"
-      "                   (mv (forth_r1 y1) ... (forth_rm ym))),"
+      "                   (mv (back_r1 y1) ... (back_rm ym))),"
       "                 ..."
       "                 (mv-let (y1 ... ym)"
       "                   (new (forth1 updater-x1<(back1 x1),"
@@ -722,7 +727,7 @@
       "                        (forthn updater-xn<(back1 x1),"
       "                                           ...,"
       "                                           (backn xn)>))"
-      "                   (mv (forth_r1 y1) ... (forth_rm ym)))>"
+      "                   (mv (back_r1 y1) ... (back_rm ym)))>"
       "        (mv (forth_r1 y1) ... (forth_rm ym)))"
       "    (mv nil ... nil)))")
      (xdoc::p
