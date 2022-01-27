@@ -609,7 +609,7 @@ rules:</p>
            (:= (vl-parse-1+-interface-class-types)))
          (:= (vl-match-token :vl-semi))
          (elems := (vl-parse-class-elements-until-endclass))
-         (endkwd := (vl-match-token :vl-kwd-endmodule))
+         (endkwd := (vl-match-token :vl-kwd-endclass))
          (:= (vl-parse-endblock-name (vl-idtoken->name name) "class/endclass"))
          (return-raw
           (b* ((warnings (append (vl-class-elementlist-warn elems)

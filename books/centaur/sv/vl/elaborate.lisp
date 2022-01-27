@@ -167,7 +167,9 @@ information is stored in the elabindex before translating the expression.</p>")
               (vl-modinst vl-modinst-elaborate-aux)
               (vl-always vl-always-elaborate-aux)
               (vl-atts   :skip))
-    :type-fns ((vl-datatype vl-datatype-elaborate-fn)
+    :type-fns ((vl-class :skip) ;; don't bother with classes inside anything else for now
+               (vl-classlist :skip)
+               (vl-datatype vl-datatype-elaborate-fn)
                (vl-typedef vl-typedef-elaborate-fn)
                (vl-fundecl vl-fundecl-elaborate-fn)
                (vl-paramdecl vl-paramdecl-elaborate-fn)
@@ -201,7 +203,8 @@ information is stored in the elabindex before translating the expression.</p>")
     :field-fns ((atts :skip)
                 (mods :skip)
                 (interfaces :skip)
-                (packages :skip))
+                (packages :skip)
+                (classes :skip))
 
   :fnname-template <type>-elaborate)
 
@@ -280,10 +283,45 @@ information is stored in the elabindex before translating the expression.</p>")
    :rule-classes :linear
    :fn vl-call-type-disambiguate))
 
+
+(local (include-book "centaur/meta/resolve-flag-cp" :dir :system))
+(local (defun big-mutrec-default-hint
+           #!acl2 (fnname id wait-til-stablep world)
+           (declare (xargs :mode :program))
+           ;; copied mostly from just-expand.lisp, just-expand-mrec-default-hint,
+           ;; added resolve-flags-cp and do-not-induct before expanding
+           #!acl2
+           (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
+                (equal '(1) (acl2::access acl2::clause-id id :pool-lst))
+                (let* ((fns (acl2::recursivep fnname t world))
+                       (flags (strip-cdrs (acl2::flag-alist fnname world)))
+                       (expand-hints (just-expand-cp-parse-hints
+                                      (just-expand-mrec-expanders fns world)
+                                      world)))
+                  `(:computed-hint-replacement
+                    ('(:clause-processor (mark-expands-cp clause '(t t ,expand-hints)))
+                     ;; (cmr::call-urewrite-clause-proc)
+                     ;; '(:clause-processor cmr::dumb-flatten-clause-proc)
+                     ;; '(:clause-processor (cmr::let-abstract-lits-clause-proc clause 'xxx))
+                     (and (or (not ',wait-til-stablep) stable-under-simplificationp)
+                          (expand-marked)))
+                    :in-theory (disable . ,fns)
+                    :do-not-induct t
+                    :clause-processor (cmr::resolve-flags-cp
+                                       clause
+                                       ',(cons 'vl::flag flags)))))))
+
+
+(local (table std::default-hints-table
+              'fty::deffixequiv-mutual
+              '((big-mutrec-default-hint 'fty::fnname id nil world))))
+
 (fty::defvisitor-multi vl-elaborate
   :defines-args (:ruler-extenders :all
                  ;; :measure-debug t
                  ;; :guard-debug t
+                 :flag-hints ((big-mutrec-default-hint 'vl-expr-elaborate-fn id nil world))
+                 :returns-hints ((big-mutrec-default-hint 'vl-expr-elaborate-fn id nil world))
                  )
 
   ;; Note about avoiding measure troubles in this mutual recursion.  Start here
@@ -1602,7 +1640,7 @@ information is stored in the elabindex before translating the expression.</p>")
 
 (fty::defvisitors vl-design-elaborate-aux-deps
   :template elaborate
-  :dep-types (vl-package vl-module vl-interface vl-design))
+  :dep-types (vl-package vl-module vl-class vl-interface vl-design))
 
 (fty::defvisitor vl-design-elaborate-aux
   :template elaborate

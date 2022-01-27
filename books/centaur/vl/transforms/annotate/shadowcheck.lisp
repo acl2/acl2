@@ -286,6 +286,7 @@ the named blocks within any if/case/loop generate constructs.</p>"
         (:vl-blockscope nil)
         (:vl-design     nil)
         (:vl-package    nil)
+        (:vl-class      nil)
         (:vl-scopeinfo  nil)
         (otherwise      (impossible)))))
 

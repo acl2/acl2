@@ -293,6 +293,8 @@ other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
               genvar
               (genelement :name blockname :maybe-stringp t :sum-type t :acc generates)
               (interfaceport :acc ifports))
+      (class (:import)
+             paramdecl vardecl fundecl taskdecl typedef)
       (genblob (:import)
                vardecl paramdecl fundecl taskdecl typedef dpiimport
                (modinst :name instname :maybe-stringp t)
@@ -321,6 +323,13 @@ at the top level.  However, if we ever want to allow, e.g., nested modules,
 then we will need to extend this.</p>"
     '((design ()
               (module :acc mods) udp interface program
+              (class :acc classes))))
+
+  (defval *vl-scopes->classes*
+    :short "Information about which scopes can contain classes."
+    :long "<p>If we ever want to allow classes to be nested in
+other kinds of scopes (e.g., compilation units?) we could add them here.</p>"
+    '((design ()
               (class :acc classes))))
 
   (defval *vl-scopes->portdecls*
@@ -880,6 +889,16 @@ in it, such as a function, task, or block statement."
                    '__items__ 'package 'vl-package-p 'package))
                substs))))
 
+(make-event ;; Definition of vl-design-scope-find-class vl-design-scope-class-alist
+ (b* ((substs (scopes->tmplsubsts *vl-scopes->classes*)))
+   `(progn . ,(template-proj
+               '(make-event
+                 (def-scopetype-find
+                   '__type__
+                   (:@ :import t) (:@ (not :import) nil)
+                   '__items__ 'class 'vl-class-p 'class))
+               substs))))
+
 
 (make-event ;; Definitions of e.g. vl-module-scope-find-item and vl-module-scope-item-alist
  (b* ((substs (scopes->tmplsubsts *vl-scopes->items*)))
@@ -990,7 +1009,7 @@ be very cheap in the single-threaded case.</p>"
       (:vl-blockscope (vl-blockscope->scopetype x))
       (:vl-scopeinfo (vl-scopeinfo->scopetype x))
       (otherwise
-       ;; (:vl-interface :vl-module :vl-design :vl-package
+       ;; (:vl-interface :vl-module :vl-design :vl-package :vl-class)
        tag))))
 
 (define vl-scope->id ((x vl-scope-p))
@@ -1002,6 +1021,7 @@ be very cheap in the single-threaded case.</p>"
       (:vl-genblob    (vl-genblob->id x))
       (:vl-blockscope (vl-blockscope->name x))
       (:vl-package    (vl-package->name x))
+      (:vl-class      (vl-class->name x))
       (:vl-scopeinfo  (vl-scopeinfo->id x))
       ;; bozo does this make sense?
       (:vl-design     "Design Root")
@@ -1769,6 +1789,14 @@ be very cheap in the single-threaded case.</p>"
   (define vl-scope-find-portdecl-fast ...)
 ||#
  (def-vl-scope-find *vl-scopes->portdecls* 'portdecl 'portdecl nil))
+
+(make-event
+#||
+  (define vl-scope-find-class ...)
+  (define vl-scope-class-alist ...)
+  (define vl-scope-find-class-fast ...)
+||#
+ (def-vl-scope-find *vl-scopes->classes* 'class 'class t))
 
 
 
