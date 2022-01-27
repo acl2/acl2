@@ -386,7 +386,7 @@
       Otherwise, erroneous computations may occur."))
 
    (xdoc::desc
-    "@(':no-aij-types') &mdash; deafult @('nil')"
+    "@(':no-aij-types') &mdash; default @('nil')"
     (xdoc::p
      "Specifies whether the generated code
       should not make use of the AIJ types:")
