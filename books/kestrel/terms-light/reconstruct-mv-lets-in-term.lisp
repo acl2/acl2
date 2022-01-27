@@ -1,6 +1,6 @@
 ; A tool to turn 'mv-nth of mv-list' terms into mv-lets
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -9,6 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; STATUS: In-progress
 
 (include-book "restore-mv-in-branches")
 (include-book "kestrel/utilities/forms" :dir :system)
@@ -60,7 +62,7 @@
 
 ;; Try to determine names for the return values of FN, which should return
 ;; multiple values.
-(defun return-names-of-fn (fn wrld)
+(defund return-names-of-fn (fn wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (not (member-eq fn *stobjs-out-invalid*))
                               (plist-worldp wrld))))
@@ -73,8 +75,12 @@
              (names (return-names-of-term body)))
         (if (not names)
             (prog2$ (cw "WARNING: Could not find names for the return values of ~x0.  Using default names.~%" fn)
-                    (fresh-var-names 0 'v nil))
+                    (fresh-var-names num-return-values 'v nil))
           names)))))
+
+(defthm true-listp-of-return-names-of-fn
+  (true-listp (return-names-of-fn fn wrld))
+  :hints (("Goal" :in-theory (enable return-names-of-fn))))
 
 ;; Apply MV-LET to TERM, which should return RETURNED-VAL-COUNT values and,
 ;; within the MV-LET, return the value corresponding to RETURNED-VAL-NUM.
@@ -104,7 +110,7 @@
             (er hard? 'apply-mv-let-to-term "Unsupported term: ~x0." term) ;todo: add support for these?
           (let ((fn-value-count (num-return-values-of-fn fn wrld)))
             (if (not (equal fn-value-count returned-val-count))
-                (er hard? 'apply-mv-let-to-term "Expected ~x0 to return ~x1 values, but it returns." term returned-val-count fn-value-count)
+                (er hard? 'apply-mv-let-to-term "Expected ~x0 to return ~x1 values, but it returns ~x2 values." term returned-val-count fn-value-count)
               (let* ((return-val-names (return-names-of-fn fn wrld))
                      ;; the one value that gets returned by the whole term:
                      (returned-val-name (nth returned-val-num return-val-names)))
@@ -142,6 +148,7 @@
                                    (unquote (farg1 term))
                                    (unquote (farg1 (farg2 term)))
                                    wrld)
+           ;; TODO: Dive into IFs?  Other constructs?
            ;; just rebuild the function call:
            `(,fn ,@new-args))))))
 
