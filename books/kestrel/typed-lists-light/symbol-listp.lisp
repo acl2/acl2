@@ -97,6 +97,12 @@
            (symbol-listp (reverse x)))
   :hints (("Goal" :in-theory (enable reverse))))
 
+;; matches the version in std
+(defthm symbol-listp-of-remove-equal
+  (implies (symbol-listp x)
+           (symbol-listp (remove-equal a x)))
+  :hints (("Goal" :in-theory (enable remove-equal))))
+
 ;this matches something in STD
 (defthm true-listp-when-symbol-listp
   (implies (symbol-listp x)
