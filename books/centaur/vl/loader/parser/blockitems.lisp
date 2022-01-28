@@ -791,7 +791,8 @@ out some duplication and indirection:</p>
        (return (make-vl-letdecl :name (vl-idtoken->name name)
                                 :portdecls ports
                                 :expr expr
-                                :atts atts))))
+                                :atts atts
+                                :loc (vl-token->loc name)))))
 
                            
 (defparser vl-2012-parse-block-item-declaration-noatts (atts)

@@ -1437,7 +1437,9 @@ explicit declarations.</p>")
       (:vl-vardecl   (vl-shadowcheck-vardecl   x st warnings))
       (:vl-import    (vl-shadowcheck-import    x st warnings))
       (:vl-paramdecl (vl-shadowcheck-paramdecl x st warnings))
-      (otherwise     (vl-shadowcheck-typedef   x st warnings)))))
+      (:vl-typedef     (vl-shadowcheck-typedef   x st warnings))
+      (otherwise   ;; skip letdecl
+       (mv (vl-shadowcheck-state-fix st) (vl-warninglist-fix warnings))))))
 
 (define vl-shadowcheck-blockitemlist ((x        vl-blockitemlist-p)
                                       (st       vl-shadowcheck-state-p)
@@ -1759,7 +1761,7 @@ explicit declarations.</p>")
        ((when (eq tag :vl-class))      (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-covergroup)) (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-elabtask))   (mv st warnings)) ;; BOZO figure out what we want to do here.
-       )
+       ((when (eq tag :vl-letdecl))    (mv st warnings)));; BOZO figure out what we want to do here.
     (impossible)
     (mv st warnings)))
 

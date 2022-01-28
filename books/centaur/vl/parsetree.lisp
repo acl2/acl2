@@ -2175,7 +2175,12 @@ endmodule
   ((name stringp "name being defined")
    (portdecls vl-portdecllist-p "ports of the let")
    (expr vl-expr-p)
-   (atts vl-atts-p)))
+   (atts vl-atts-p)
+   (loc vl-location-p)))
+
+(fty::deflist vl-letdecllist
+  :elt-type vl-letdecl
+  :elementp-of-nil nil)
 
 
 (deftranssum vl-blockitem
@@ -4025,6 +4030,7 @@ be non-sliceable, at least if it's an input.</p>"
       class
       covergroup
       elabtask
+      letdecl
       ))
 
   (local (defun typenames-to-tags (x)

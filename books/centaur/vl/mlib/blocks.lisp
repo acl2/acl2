@@ -264,14 +264,14 @@ sorting the elements by type; see @(see vl-sort-genelements).</p>
           (set-difference-eq
            *vl-modelement-typenames*
            ;; things in genblobs that are not in modules
-           '(fwdtypedef modport))))
+           '(fwdtypedef modport letdecl))))
 
 (defconst *vl-interface/genblob-fields*
   (append '(generate port) ;; extra things that are not modelements
           (set-difference-eq
            *vl-modelement-typenames*
            ;; things in genblobs that are not in interfaces
-           '(gateinst fwdtypedef covergroup))))
+           '(gateinst fwdtypedef covergroup letdecl))))
 
 (defconst *vl-class/genblob-fields*
   '(vardecl paramdecl fundecl taskdecl typedef))

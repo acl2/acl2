@@ -1394,6 +1394,7 @@ returns a @(see vl-genblock).</li>
     (:vl-class      "class declaration")
     (:vl-covergroup "covergroup")
     (:vl-elabtask   "elaborate (e.g., $fatal, ...) system task")
+    (:vl-letdecl    "let declaration")
     (otherwise      (progn$ (impossible)
                             "invalid"))))
 
