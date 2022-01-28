@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -82,9 +82,9 @@
 
 
 ;deprecate!
-(defun bind-newsize2-to-unsigned-term-size (x)
+(defun bind-newsize2-to-bv-term-size (x)
   (declare (xargs :guard (pseudo-termp x)))
-  (let ((newsize (unsigned-term-size x)))
+  (let ((newsize (bv-term-size x)))
     (if (natp newsize)
         (acons 'newsize2
                (list 'quote newsize)
@@ -94,8 +94,8 @@
 ;the complication here is because of how we associate bvcat...
 ;restrict to when y is a bvcat?
 (defthm plus-bvcat-with-0
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize y) (newsize))
-                (bind-free (bind-newsize2-to-unsigned-term-size x) (newsize2))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
+                (bind-free (bind-newsize2-to-bv-term-size x) (newsize2))
                 (equal 0 (bvchop newsize2 y))
                 (natp newsize)
                 (< 1 newsize)
@@ -111,8 +111,8 @@
                             NATP-WHEN-UNSIGNED-BYTE-P-SIZE-ARG)))))
 
 (defthm plus-bvcat-with-0-alt
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize y) (newsize))
-                (bind-free (bind-newsize2-to-unsigned-term-size x) (newsize2))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
+                (bind-free (bind-newsize2-to-bv-term-size x) (newsize2))
                 (equal 0 (bvchop newsize2 y))
                 (natp newsize)
                 (< 1 newsize)
@@ -159,7 +159,7 @@
 ;bozo drop some hyps
 
 (defthm slice-tighten-top
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (<= newsize high) ; prevents loops
                 (force (unsigned-byte-p-forced newsize x))
                 (natp low)
@@ -563,7 +563,7 @@
 ;rename
 (DEFTHM <-LEMMA-FOR-KNOWN-OPERATORS-alt-non-dag
   (IMPLIES (AND (syntaxp (QUOTEP K))
-                (bind-free (bind-var-to-unsigned-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (<= (+ -1 (EXPT 2 XSIZE)) K)
                 (UNSIGNED-BYTE-P XSIZE X))
            (not (< K X)))
@@ -580,7 +580,7 @@
 
 (DEFTHM <-LEMMA-FOR-KNOWN-OPERATORS-NON-DAG
   (IMPLIES (AND (SYNTAXP (QUOTEP K))
-                (BIND-FREE (BIND-VAR-TO-UNSIGNED-TERM-SIZE 'XSIZE
+                (BIND-FREE (BIND-VAR-TO-BV-TERM-SIZE 'XSIZE
                                                            X))
                 (<= (EXPT 2 XSIZE) K)
                 (UNSIGNED-BYTE-P XSIZE X))
@@ -2611,7 +2611,7 @@
 ;gen the 0?
 ;gen
 (defthm sbvlt-of-0-when-shorter2
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (< xsize 32)
                 (natp xsize)
                 (force (unsigned-byte-p-forced xsize x))
@@ -2984,8 +2984,8 @@
 ;where should this go? it needs stuff from bv-syntax.lisp
 ;rename to -bind-free
 (defthmd mod-becomes-bvmod-better
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x))
-                (bind-free (bind-var-to-unsigned-term-size 'ysize y))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'ysize y))
                 (force (unsigned-byte-p-forced xsize x))
                 (force (unsigned-byte-p-forced ysize y))
 ;(natp xsize) ;drop
@@ -3130,7 +3130,7 @@
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthm slice-too-high-is-0-cheap
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 ;make sure it's not nil:
                 (natp newsize) ;newsize continues to be a bad name for uses like this...
                 (natp low)
@@ -3143,7 +3143,7 @@
 ;yikes this doubles the number of occurrences of y...
 
 (defthmd bvor-of-large-and-small
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< newsize n)
                 (force (unsigned-byte-p newsize x))
                 (natp n)
@@ -3161,7 +3161,7 @@
                                                          NATP-WHEN-UNSIGNED-BYTE-P-SIZE-ARG)))))
 
 (defthm bvor-cat-extra-bit-alt
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (<= newsize lowsize)
                 (< lowsize size)
                 (natp size)

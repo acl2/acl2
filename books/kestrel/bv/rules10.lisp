@@ -1,6 +1,7 @@
 ; More rules about bit vectors
 ;
 ; Copyright (C) 2017-2021 Kestrel Technology, LLC
+; Copyright (C) 2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -139,8 +140,8 @@
                                    bvchop-1-becomes-getbit
                                    MOD-OF-EXPT-OF-2)))))
 (defthm logand-becomes-bvand
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'size x))
-;                (bind-free (bind-var-to-unsigned-term-size 'size y))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
+;                (bind-free (bind-var-to-bv-term-size 'size y))
                 (unsigned-byte-p size x)
 ;               (unsigned-byte-p size y)
                 (natp y)
@@ -164,7 +165,7 @@
 
 (defthm ash-negative-becomes-slice
   (implies (and (< n 0)
-                (bind-free (bind-var-to-unsigned-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (unsigned-byte-p xsize x)
                 (<= (- n) xsize)
                 (integerp n)
@@ -318,7 +319,7 @@
 
 
 (defthm ash-becomes-bvcat
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x)) ;only works for constant size?
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x)) ;only works for constant size?
                 (force (unsigned-byte-p xsize x))
                 (natp amt))
            (equal (ash x amt)

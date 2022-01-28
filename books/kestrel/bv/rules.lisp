@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -3821,7 +3821,7 @@
 ;;   :hints (("Goal" :in-theory (enable))))
 
 (defthmd logtail-becomes-slice-bind-free
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (integerp newsize)
                 (unsigned-byte-p-forced newsize x)
                 (natp n)
@@ -3940,7 +3940,7 @@
 
 ;bozo think more about this...
 (defthmd bvxor-with-smaller-arg-1-special
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize y) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (syntaxp (quotep newsize))
                 (syntaxp (not (quotep n)))
                 (<= newsize n) ;even when they are equal we prefer to apply this rule?
@@ -3959,7 +3959,7 @@
 
 ; superseded by the trim rules?
 (defthmd bvxor-tighten-arg1
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (syntaxp (quotep size))
                 (< size newsize)
                 (natp size))
@@ -3969,7 +3969,7 @@
 
 ; superseded by the trim rules?
 (defthmd bvxor-tighten-arg2
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize y) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (syntaxp (quotep size))
                 (< size newsize)
                 (natp size))
@@ -3981,7 +3981,7 @@
 
 ;bozo more like this?
 (defthm bvxor-with-smaller-arg-2
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize y) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (< newsize n)
                 (natp newsize)
                 (natp n)
@@ -3995,7 +3995,7 @@
            :in-theory (enable SLICE-TOO-HIGH-IS-0 unsigned-byte-p-forced))))
 
 (defthmd bvxor-with-smaller-arg-1
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize y) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (< newsize n)
                 (natp newsize)
                 (natp n)
@@ -4010,7 +4010,7 @@
            :in-theory (enable SLICE-TOO-HIGH-IS-0 unsigned-byte-p-forced))))
 
 (defthm bvcat-tighten-upper-size
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize highval) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize highval) (newsize))
                 (< newsize highsize)
                 (natp newsize)
                 (natp highsize)
@@ -4023,7 +4023,7 @@
                             )))))
 
 (defthm getbit-too-high-cheap
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 ;;make sure it's not nil:
                 ;drop this hyp:
                 (natp newsize) ;newsize continues to be a bad name for uses like this...
@@ -4076,7 +4076,7 @@
 ;BOZO lots more rules like this
 ;rename?
 (defthm bvxor-trim-arg1
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'innersize x) (innersize))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize x) (innersize))
                 (> innersize outersize) ;only fire if strictly greater
                 (natp outersize)
                 (integerp x)
@@ -4088,7 +4088,7 @@
 
 ;rename?
 (defthm bvxor-trim-arg2
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'innersize y) (innersize))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize y) (innersize))
                 (> innersize outersize) ;only fire if strictly greater
                 (natp outersize)
                 (integerp x)
@@ -4099,7 +4099,7 @@
   :hints (("Goal" :in-theory (enable bvxor trim))))
 
 (defthm bvif-trim-arg1
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'innersize x) (innersize)) ;bozo newsize is a bad name
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize x) (innersize)) ;bozo newsize is a bad name
                 (> innersize outersize) ;only fire if strictly greater
                 (natp outersize)
                 (integerp x)
@@ -4110,7 +4110,7 @@
   :hints (("Goal" :in-theory (enable bvif trim))))
 
 (defthm bvif-trim-arg2
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'innersize y) (innersize)) ;bozo newsize is a bad name
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize y) (innersize)) ;bozo newsize is a bad name
                 (> innersize outersize) ;only fire if strictly greater
                 (natp outersize)
                 (integerp x)
@@ -4124,7 +4124,7 @@
 
 ;watch out for loops
 (defthm bvcat-tighten-high-arg
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'newsize highval) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'newsize highval) (newsize))
                 (syntaxp (quotep highsize))
                 (< highsize newsize)
                 (natp highsize)
@@ -4139,7 +4139,7 @@
   :hints (("Goal" :in-theory (enable bvcat-of-bvchop-high trim))))
 
 (defthm bvcat-tighten-low-arg
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'newsize lowval) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'newsize lowval) (newsize))
                 (syntaxp (quotep lowsize))
                 (< lowsize newsize)
                 (natp highsize)
@@ -4178,8 +4178,8 @@
 (defthmd bit-blast-3
   (implies (and (syntaxp (and (member-eq (car x) *trimmable-operators*)
 ;                               (member-eq (car y) *trimmable-operators*)
-                              (equal 3 (unsigned-term-size x))
-;(equal 8 (unsigned-term-size y))
+                              (equal 3 (bv-term-size x))
+;(equal 8 (bv-term-size y))
                               ))
                 (unsigned-byte-p 3 x)
                 (unsigned-byte-p 3 y))
@@ -4193,7 +4193,7 @@
 ;try to keep more bit-blast rules on; maybe that's what we want - we've already rewritten to RHS and LHS separately...
 (defthmd bit-blast-4
   (implies (and (syntaxp (and (member-eq (car x) *trimmable-operators*)
-                              (equal 4 (unsigned-term-size x))
+                              (equal 4 (bv-term-size x))
                               ))
                 (force (unsigned-byte-p-forced 4 x)))
            (equal (equal x y)
@@ -4208,8 +4208,8 @@
 (defthmd bit-blast-8
   (implies (and (syntaxp (and (member-eq (car x) *trimmable-operators*)
                               (member-eq (car y) *trimmable-operators*)
-                              (equal 8 (unsigned-term-size x))
-                              (equal 8 (unsigned-term-size y))))
+                              (equal 8 (bv-term-size x))
+                              (equal 8 (bv-term-size y))))
                 (unsigned-byte-p 8 x)
                 (unsigned-byte-p 8 y))
            (equal (equal x y)
@@ -4226,8 +4226,8 @@
 (defthmd bit-blast-31
   (implies (and (syntaxp (and (member-eq (car x) *trimmable-operators*)
                               (member-eq (car y) *trimmable-operators*)
-                              (equal 31 (unsigned-term-size x))
-                              (equal 31 (unsigned-term-size y))))
+                              (equal 31 (bv-term-size x))
+                              (equal 31 (bv-term-size y))))
 
                 (unsigned-byte-p 31 x)
                 (unsigned-byte-p 31 y))
@@ -4268,8 +4268,8 @@
 (defthmd bit-blast-32
   (implies (and (syntaxp (and (member-eq (car x) *trimmable-operators*)
                               (member-eq (car y) *trimmable-operators*)
-                              (equal 32 (unsigned-term-size x))
-                              (equal 32 (unsigned-term-size y))))
+                              (equal 32 (bv-term-size x))
+                              (equal 32 (bv-term-size y))))
 
                 (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
@@ -4313,8 +4313,8 @@
 (defthmd bit-blast-7
   (implies (and (syntaxp (and (member-eq (car x) *trimmable-operators*)
                               (member-eq (car y) *trimmable-operators*)
-                              (equal 7 (unsigned-term-size x))
-                              (equal 7 (unsigned-term-size y))))
+                              (equal 7 (bv-term-size x))
+                              (equal 7 (bv-term-size y))))
                 (unsigned-byte-p 7 x)
                 (unsigned-byte-p 7 y))
            (equal (equal x y)
@@ -5767,7 +5767,7 @@
 ;-alt version?
 ;disable?
 (defthm bvxor-tighten
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< newsize oldsize)
                 (unsigned-byte-p-forced newsize x)
                 (unsigned-byte-p newsize y)
@@ -5778,7 +5778,7 @@
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvxor))))
 
 (defthm bvor-tighten
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< newsize oldsize)
                 (unsigned-byte-p-forced newsize x)
                 (unsigned-byte-p newsize y)
@@ -5929,8 +5929,8 @@
 
 ;do we still need this?
 (defthm bvmod-tighten
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x))
-                (bind-free (bind-var-to-unsigned-term-size 'ysize y))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'ysize y))
                 (< (max xsize ysize) size)
                 (force (unsigned-byte-p-forced xsize x))
                 (force (unsigned-byte-p-forced ysize y))
@@ -6946,7 +6946,7 @@
 ;drop special cases of this rule?
 (defthm bvlt-when-bound
   (implies (and (syntaxp (quotep k))
-                (bind-free (bind-var-to-unsigned-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (< xsize size)
                 (natp size)
                 (bvle size (expt 2 xsize) k)
@@ -7363,8 +7363,8 @@
   :hints (("Goal" :in-theory (enable bvsx getbit-when-equal-of-constant-and-bvchop))))
 
 (defthm rewrite-bv-equality-when-sizes-dont-match-1
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'x-size x) (x-size))
-                (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'y-size y) (y-size))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'x-size x) (x-size))
+                (bind-free (bind-var-to-bv-term-size-if-trimmable 'y-size y) (y-size))
                 (syntaxp (and (not (quotep x))
                               (not (quotep y))))
                 (< x-size y-size)
@@ -7381,8 +7381,8 @@
            :use (:instance rewrite-bv-equality-when-sizes-dont-match-core))))
 
 (defthm rewrite-bv-equality-when-sizes-dont-match-2
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'x-size x) (x-size))
-                (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'y-size y) (y-size))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'x-size x) (x-size))
+                (bind-free (bind-var-to-bv-term-size-if-trimmable 'y-size y) (y-size))
                 (syntaxp (and (not (quotep x))
                               (not (quotep y))))
                 (< x-size y-size)
@@ -7713,7 +7713,7 @@
                                   (collect-constants-times-equal)))))
 
 (defthm bvsx-too-high-syntactic
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x) (xsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
                 (< xsize old-size)
                 (natp old-size)
                 (<= old-size new-size)

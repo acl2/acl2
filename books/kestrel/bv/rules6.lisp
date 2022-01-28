@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,8 +27,8 @@
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
 
 (defthm bvmult-tighten
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x))
-                (bind-free (bind-var-to-unsigned-term-size 'ysize y))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'ysize y))
                 (< (+ xsize ysize) size)
                 (natp size)
                 (force (unsigned-byte-p-forced xsize x))
@@ -39,7 +39,7 @@
   :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P-FORCED bvmult))))
 
 (defthmd floor-when-usb-bind-free
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x) (xsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
                 (natp n)
                 (unsigned-byte-p-forced xsize x))
            (equal (floor x (expt 2 n))
@@ -573,7 +573,7 @@
                                   (logxor-bvchop-bvchop)))))
 
 (defthm slice-too-high-of-bvmult-with-usb1
-  (implies (and (syntaxp (equal 1 (unsigned-term-size x)))
+  (implies (and (syntaxp (equal 1 (bv-term-size x)))
                 (unsigned-byte-p low k)
                 (unsigned-byte-p 1 x)
                 (natp size)
@@ -589,7 +589,7 @@
 ;bozo handle this even though the sizes don't match (BVXOR 8 x (bvcat 6 z 1 y))
 
 (defthm bvmult-with-usb1
-  (implies (and (syntaxp (equal 1 (unsigned-term-size x)))
+  (implies (and (syntaxp (equal 1 (bv-term-size x)))
 ;                (unsigned-byte-p n k)
                 (unsigned-byte-p 1 x)
                 (natp size)
@@ -675,7 +675,7 @@
 (in-theory (enable bvxor-trim-arg1 bvxor-trim-arg2))
 
 (defthmd bvmult-pad-arg1
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< newsize size)
                 (natp size)
                 (natp newsize)
@@ -691,7 +691,7 @@
 
 ;bozo do one like this for every operator?
 (defthmd bvmult-pad-arg2
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize y) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (< newsize size)
                 (natp size)
                 (natp newsize)
@@ -710,7 +710,7 @@
 
 ;bozo more like this for other ops (some may exist and need to be turned on)
 (defthm bvmult-trim-arg1
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< size newsize)
                 (natp size)
                 (integerp newsize))
@@ -721,7 +721,7 @@
                                    bvmult-pad-arg2)))))
 
 (defthm bvmult-trim-arg2
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize y) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (< size newsize)
                 (natp size)
                 (integerp newsize))
@@ -743,7 +743,7 @@
 ;after this fires, the associativity rule should fire too
 ;bozo make a high version
 (defthmd bvcat-pad-low
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize lowval) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize lowval) (newsize))
                 (unsigned-byte-p newsize lowval)
                 (< newsize lowsize)
                 (natp lowsize)
@@ -762,7 +762,7 @@
                                    )))))
 
 (defthmd bvcat-pad-high
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize highval) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize highval) (newsize))
                 (unsigned-byte-p newsize highval)
                 (< newsize highsize)
                 (natp highsize)
@@ -781,7 +781,7 @@
 
 
 (defthmd bvif-pad-arg-1-with-zeros
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< newsize size)
                 (unsigned-byte-p newsize x)
                 (integerp x)
@@ -795,7 +795,7 @@
                                    bvmult-pad-arg2)))))
 
 (defthmd bvif-pad-arg-2-with-zeros
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize y) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (< newsize size)
                 (unsigned-byte-p newsize y)
                 (integerp x)
@@ -877,7 +877,7 @@
 ))
 
 (defthm logext-trim-arg
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< size newsize)
                 (natp size)
                 (< 0 size)
@@ -887,7 +887,7 @@
                   (logext size (bvchop size x)))))
 
 (defthmd bvxor-pad-arg1
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize x) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< newsize size)
                 (natp size)
                 (natp newsize)
@@ -905,7 +905,7 @@
                                    )))))
 
 (defthmd bvxor-pad-arg2
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'newsize y) (newsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (< newsize size)
                 (natp size)
                 (natp newsize)
@@ -943,8 +943,8 @@
   :hints (("Goal" :in-theory (enable natp))))
 
 (defthmd plus-becomes-bvplus
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x))
-                (bind-free (bind-var-to-unsigned-term-size 'ysize y))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'ysize y))
                 (force (unsigned-byte-p-forced xsize x))
                 (force (unsigned-byte-p-forced ysize y))
                 (posp xsize))
@@ -962,7 +962,7 @@
 
 (defthmd plus-becomes-bvplus-arg1-free
   (implies (and (unsigned-byte-p xsize x)
-                (bind-free (bind-var-to-unsigned-term-size 'ysize y))
+                (bind-free (bind-var-to-bv-term-size 'ysize y))
                 (force (unsigned-byte-p-forced ysize y))
                 (posp xsize))
            (equal (+ x y)
@@ -972,7 +972,7 @@
 
 (defthmd plus-becomes-bvplus-arg2-free
   (implies (and (unsigned-byte-p xsize x)
-                (bind-free (bind-var-to-unsigned-term-size 'ysize y))
+                (bind-free (bind-var-to-bv-term-size 'ysize y))
                 (force (unsigned-byte-p-forced ysize y))
                 (posp xsize))
            (equal (+ y x)

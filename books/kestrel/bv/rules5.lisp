@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -28,7 +28,7 @@
 
 ;move
 (defthm bvminus-trim-arg1
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< size xsize)
                 (natp size)
                 (posp xsize))

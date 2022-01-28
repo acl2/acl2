@@ -1,7 +1,7 @@
 ; Mixed rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -19,7 +19,7 @@
 (include-book "sbvlt")
 (include-book "logext")
 (include-book "unsigned-byte-p-forced")
-(include-book "bv-syntax") ; for bind-var-to-unsigned-term-size
+(include-book "bv-syntax") ; for bind-var-to-bv-term-size
 (local (include-book "rules")) ;for logtail-of-minus
 (local (include-book "bvcat")) ;for bvchop-32-split-hack
 (local (include-book "logtail"))
@@ -108,7 +108,7 @@
 
 ;i think we may need this to split into cases - but maybe delay that?
 (defthm bvuminus-when-smaller-bind-free
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'free x))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'free x))
                 (< free size)
                 (natp size)
                 (force (unsigned-byte-p-forced free x)))

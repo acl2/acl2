@@ -63,8 +63,7 @@
 ;TODO: Could make a faster version restricted to trimmable terms?
 ;TODO: Compare to get-type-of-bv-expr-axe.
 ;; Returns a natural number, or nil.
-;; todo: rename bv-term-size
-(defun unsigned-term-size (term)
+(defun bv-term-size (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (variablep term)
       nil
@@ -108,8 +107,8 @@
                       (unquote (farg3 term)))
                  nil))
         ;; todo: drop this case?
-        (myif (let ((arg2size (unsigned-term-size (farg2 term)))
-                    (arg3size (unsigned-term-size (farg3 term))))
+        (myif (let ((arg2size (bv-term-size (farg2 term)))
+                    (arg3size (bv-term-size (farg3 term))))
                 (if (equal arg2size arg3size)
                     arg2size
                   nil)))
@@ -117,30 +116,29 @@
 
 ;; just to check:
 (thm
- (or (natp (unsigned-term-size term))
-     (null (unsigned-term-size term))))
+ (or (natp (bv-term-size term))
+     (null (bv-term-size term))))
 
-;todo: rename unsigned-term -> bv
-(defun bind-var-to-unsigned-term-size (var term)
+(defun bind-var-to-bv-term-size (var term)
   (declare (xargs :guard (pseudo-termp term)))
-  (let ((size (unsigned-term-size term)))
+  (let ((size (bv-term-size term)))
     (if (natp size)
         (acons var
-               (list 'quote size) ;todo: don't re-quote here given that unsigned-term-size unquotes
+               (list 'quote size) ;todo: don't re-quote here given that bv-term-size unquotes
                nil)
       nil)))
 
 ;fixme use this more?
 ;speed this up?
 ;todo: make a version restricted to non-arithmetic ops?
-(defun bind-var-to-unsigned-term-size-if-trimmable (var-name term)
+(defun bind-var-to-bv-term-size-if-trimmable (var-name term)
   (declare (xargs :guard (and (symbolp var-name)
                               (pseudo-termp term))))
   (if (atom term)
       nil
     (if (or (quotep term)
             (member-eq (ffn-symb term) *trimmable-operators*))
-        (bind-var-to-unsigned-term-size var-name term)
+        (bind-var-to-bv-term-size var-name term)
       nil)))
 
 (defund term-should-be-trimmed2-helper (width term operators)
@@ -166,7 +164,7 @@
              ;;                    (and (eq 'bv-array-read (ffn-symb term))
              ;;                         (quotep (farg4 term)))
              )
-         (let ((size (unsigned-term-size term)))
+         (let ((size (bv-term-size term)))
            (and (natp size)
                 (< width size))))))
 

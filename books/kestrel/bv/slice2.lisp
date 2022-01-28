@@ -1,7 +1,7 @@
 ; More rules about slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -59,7 +59,7 @@
 ;ex: (UNSIGNED-BYTE-P 8 (BVXOR 9 X$0 X$1))
 ;not sure where this should go
 (defthm rewrite-unsigned-byte-p-when-term-size-is-larger
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'x-size x) (x-size))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'x-size x) (x-size))
                 (< n x-size)
                 (natp n)
                 (force (natp x-size))
