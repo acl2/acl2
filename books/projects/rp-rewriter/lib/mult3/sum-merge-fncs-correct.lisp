@@ -357,7 +357,7 @@
                              (:REWRITE
                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
                              (:REWRITE RP-EVL-OF-RP-EQUAL-LOOSE)
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                              (:DEFINITION RP-EQUAL-LOOSE)
                              (:REWRITE
                               REGULAR-RP-EVL-OF_BINARY-APPEND_WHEN_MULT-FORMULA-CHECKS)

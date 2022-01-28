@@ -7,7 +7,7 @@
 
 (in-package "ACL2")
 
-(include-book "projects/apply/top" :dir :system)
+(include-book "projects/apply/loop" :dir :system)
 (include-book "std/testing/must-eval-to" :dir :system)
 
 ; The book projects/apply/definductor-tests.lisp contains many (pathological)

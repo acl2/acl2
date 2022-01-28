@@ -276,7 +276,7 @@
                              (:REWRITE
                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
                              (:REWRITE RP-EVL-OF-RP-EQUAL-LOOSE)
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                              (:DEFINITION RP-EQUAL-LOOSE)
                              (:REWRITE
                               REGULAR-RP-EVL-OF_BINARY-APPEND_WHEN_MULT-FORMULA-CHECKS)
@@ -1341,7 +1341,7 @@
                             is-if is-rp)
                            (rp-termp
                             (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                             (:DEFINITION RP-TERM-LISTP)
                             (:REWRITE IS-IF-RP-TERMP)
@@ -2084,7 +2084,7 @@
                             SWAPPED-2)
                            (to-SWAPPED-2
                             (:DEFINITION EVAL-AND-ALL)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-LST)
                             rp-termp
                             (:DEFINITION INCLUDE-FNC)
@@ -3122,7 +3122,7 @@
                             (:REWRITE DEFAULT-CAR)
                             (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                             (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:DEFINITION ACL2::APPLY$-BADGEP)
 ;(:REWRITE VALID-SC-CADR)
                             (:REWRITE EX-FROM-SYNP-LEMMA1)
@@ -3315,7 +3315,7 @@
                                (:DEFINITION EVAL-AND-ALL)
                                (:DEFINITION RP-TERM-LISTP)
                                (:DEFINITION TRUE-LISTP)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:DEFINITION QUOTEP)
                                natp
                                bitp
@@ -3440,7 +3440,7 @@
                              (:REWRITE RP-EVL-OF-UNARY---CALL)
                              (:DEFINITION INCLUDE-FNC)
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                              (:DEFINITION INCLUDE-FNC-SUBTERMS)
                              (:TYPE-PRESCRIPTION EX-FROM-SYNP)
                              (:TYPE-PRESCRIPTION INCLUDE-FNC)

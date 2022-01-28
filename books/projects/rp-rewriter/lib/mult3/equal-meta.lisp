@@ -204,8 +204,8 @@
                               (EVL-OF-EXTRACT-FROM-RP-LOOSE
                                (:REWRITE DEFAULT-CAR)
                                (:REWRITE RP-EVL-OF-RP-EQUAL2-SUBTERMS)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)(:DEFINITION
-                                                               RP-EQUAL-SUBTERMS)
+;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+                               (:DEFINITION RP-EQUAL-SUBTERMS)
                                (:REWRITE
                                 RP-EQUAL-SUBTERMS-IMPLIES-RP-EQUAL2-SUBTERMS)
                                (:DEFINITION RP-EQUAL2-SUBTERMS)

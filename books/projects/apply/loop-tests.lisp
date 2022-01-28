@@ -7,7 +7,7 @@
 
 (in-package "ACL2")
 
-(include-book "projects/apply/top" :dir :system)
+(include-book "projects/apply/loop" :dir :system)
 (include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/testing/assert-bang-stobj" :dir :system)
 (include-book "std/testing/must-fail" :dir :system)
@@ -803,6 +803,8 @@
 ; (FROM 1 TO 1000000 IS 999999 STEPS)
 
 ; Here is an example of lexicographic do loop$:
+
+(include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
 (defun do-loop-lex (x0 y0)
   (loop$ with x = x0

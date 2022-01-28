@@ -359,8 +359,7 @@
                                 (:DEFINITION FALIST-SYNTAXP)
                                 (:TYPE-PRESCRIPTION O<)
                                 (:TYPE-PRESCRIPTION RP-TERMP)
-                                (:REWRITE ACL2::O-P-O-INFP-CAR)
-                                
+;;                                (:REWRITE ACL2::O-P-O-INFP-CAR)
                                 (:TYPE-PRESCRIPTION O-P)
                                 (:REWRITE DEFAULT-CDR)
                                 (:REWRITE DEFAULT-CAR)))))))

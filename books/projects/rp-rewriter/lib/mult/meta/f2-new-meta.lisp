@@ -881,7 +881,7 @@
                                f2 m2 sum
                                type-fix
                                (:TYPE-PRESCRIPTION B+)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:TYPE-PRESCRIPTION RP-EQUAL)
                                (:TYPE-PRESCRIPTION TYPE-FIX)
                                (:TYPE-PRESCRIPTION F2-META-FORMULA-CHECKS)
@@ -1110,7 +1110,7 @@
                :in-theory (e/d (f2-meta-fix-pps-aux
                                 ex-from-rp-loose-is-ex-from-rp)
                                (rp-equal
-                                (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                                (:REWRITE ACL2::O-P-O-INFP-CAR)
                                 (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                                 (:REWRITE VALID-SC-EX-FROM-RP-2)
                                 (:DEFINITION EVAL-AND-ALL)
