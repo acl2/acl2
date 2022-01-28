@@ -893,6 +893,7 @@ elements.")
 (def-vl-immdeps-list vl-sequencelist vl-sequence :ctxp nil)
 
 
+
 (def-vl-immdeps vl-modelement
   :prepwork ((local (in-theory (enable vl-modelement-p
                                        tag-reasoning))))
@@ -930,6 +931,7 @@ elements.")
     (:vl-elabtask      ans) ;; BOZO figure out what to do here -- also update module/package/interface-immdeps!!
     (:vl-assertion     (vl-assertion-top-immdeps x ans))
     (:vl-cassertion    (vl-cassertion-top-immdeps x ans))
+    (:vl-letdecl       ans) ;; BOZO figure out what to do here -- also update module/package/interface-immdeps!!
     (otherwise         (vl-modport-immdeps x ans))))
 
 

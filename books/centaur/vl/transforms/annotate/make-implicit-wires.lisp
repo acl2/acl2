@@ -610,7 +610,8 @@ Our version of VCS says this isn't yet implemented.</li>
        (name (case (tag x)
                (:vl-vardecl   (vl-vardecl->name x))
                (:vl-paramdecl (vl-paramdecl->name x))
-               (otherwise     (vl-typedef->name x))))
+               (:vl-typedef     (vl-typedef->name x))
+               (t   (vl-letdecl->name x))))
        (decls (hons-acons name nil (vl-implicitst->decls st)))
        (st    (change-vl-implicitst st :decls decls)))
     (mv (ok) st)))
@@ -770,6 +771,7 @@ Our version of VCS says this isn't yet implemented.</li>
                   ;; SystemVerilog-2012 Section 25.5 (page 718): "modport
                   ;; declarations shall not implicitly declare new ports"
                   (eq tag :vl-modport)
+                  (eq tag :vl-letdecl)
                   ))
         ;; These have their own names but there's no additional implicit wires to
         ;; be introduced by them, so just extend decls.
@@ -784,7 +786,8 @@ Our version of VCS says this isn't yet implemented.</li>
                          (:vl-typedef    (vl-typedef->name item))
                          (:vl-fwdtypedef (vl-fwdtypedef->name item))
                          (:vl-genvar     (vl-genvar->name item))
-                         (:vl-modport    (vl-modport->name item))))
+                         (:vl-modport    (vl-modport->name item))
+                         (:vl-letdecl    (vl-letdecl->name item))))
              (decls    (hons-acons name nil (vl-implicitst->decls st)))
              (st       (change-vl-implicitst st :decls decls)))
           (mv (ok) st impitems))))

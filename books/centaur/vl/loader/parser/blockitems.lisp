@@ -733,6 +733,68 @@ out some duplication and indirection:</p>
                (vl-parse-error "Block item declarations are not allowed to have initial values.")
              (mv nil elements tokstream))))))
 
+
+(defparser vl-parse-1+-let-ports ()
+  :result (vl-portdecllist-p val)
+  :true-listp t
+  :elementp-of-nil t
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (atts := (vl-parse-0+-attribute-instances))
+       (type := (if (and (vl-is-token? :vl-idtoken)
+                         (vl-lookahead-is-some-token? '(:vl-comma :vl-rparen :vl-equalsign)
+                                                      (cdr (vl-tokstream->tokens))))
+                    (vl-parse-datatype-or-implicit)
+                  (mv nil *vl-plain-old-logic-type* ;; might be wrong
+                      tokstream)))
+       (id := (vl-match-token :vl-idtoken))
+       (when (vl-is-token? :vl-equalsign)
+         (expr := (vl-parse-expression)))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-1+-let-ports)))
+       (return (cons (make-vl-portdecl :name (vl-idtoken->name id)
+                                       :loc (vl-token->loc id)
+                                       :dir :vl-input
+                                       :type type
+                                       :default expr
+                                       :atts atts)
+                     rest))))
+
+(defparser vl-parse-0+-let-ports ()
+  :result (vl-portdecllist-p val)
+  :true-listp t
+  :elementp-of-nil t
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (when (vl-is-token? :vl-rparen)
+         (return nil))
+       (return-raw (vl-parse-1+-let-ports))))
+
+
+(defparser vl-parse-let-declaration (atts)
+  :guard (vl-atts-p atts)
+  :result (vl-letdecl-p val)
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (:= (vl-match-token :vl-kwd-let))
+       (name := (vl-match-token :vl-idtoken))
+       (when (vl-is-token? :vl-lparen)
+         (:= (vl-match))
+         (ports := (vl-parse-0+-let-ports))
+         (:= (vl-match-token :vl-rparen)))
+       (:= (vl-match-token :vl-equalsign))
+       (expr := (vl-parse-expression))
+       (return (make-vl-letdecl :name (vl-idtoken->name name)
+                                :portdecls ports
+                                :expr expr
+                                :atts atts
+                                :loc (vl-token->loc name)))))
+
+                           
 (defparser vl-2012-parse-block-item-declaration-noatts (atts)
   :short "Match a whole @('block_item_declaration'), except for any attributes,
           for SystemVerilog-2012."
@@ -798,6 +860,10 @@ out some duplication and indirection:</p>
           (return-raw (if (eq (tag ans) :vl-typedef)
                           (mv nil (list ans) tokstream)
                         (vl-parse-error "Not implemented: forward typedefs as block items."))))
+
+        (when (vl-is-token? :vl-kwd-let)
+          (ans := (vl-parse-let-declaration atts))
+          (return ans))
 
           ;; Otherwise, we are presumably in the data_declaration case.  Eventually we will
         ;; need to extend this to handle typedefs, etc., but for now we'll at least
