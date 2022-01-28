@@ -19,7 +19,7 @@
 
 ;; Returns (mv erp term).
 ;todo: rename?
-(defun letify-term (term)
+(defun letify-term-via-dag (term)
   (if (quotep term)
       (mv (erp-nil) term)
     (mv-let (erp dag)
