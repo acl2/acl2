@@ -109,6 +109,7 @@ interface_ansi_header ::=
                                               :vl-dpiexport
                                               :vl-bind
                                               :vl-class
+                                              :vl-letdecl
                                               ;; covergroups?  not sure -- if you add them, add them to the parsetree,
                                               ;; here, below, and remove them from the excluded fields in
                                               ;; *vl-interface/genblob-fields* in mlib/blocks.lisp
