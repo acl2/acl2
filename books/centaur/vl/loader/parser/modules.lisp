@@ -88,6 +88,7 @@
                                               :vl-class
                                               :vl-covergroup
                                               :vl-elabtask
+                                              :vl-letdecl
                                               )))
        (warnings
         (if (not bad-item)

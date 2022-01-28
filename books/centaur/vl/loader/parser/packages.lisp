@@ -223,7 +223,7 @@
                                                                  :vl-import
                                                                  ;; :vl-fwdtypedef -- not allowed
                                                                  ;; :vl-modport    -- not allowed
-
+                                                                 :vl-letdecl
                                                                  ;; Don't get confused by assertion_item_declaration;
                                                                  ;; :vl-assertion is not allowed and
                                                                  ;; :vl-cassertion is not allowed either.
