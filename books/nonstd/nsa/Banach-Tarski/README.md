@@ -10,7 +10,7 @@ free-group.lisp: A free group of 3-d matrices of rank 2.
 rotations.lisp: 3-d rotation and its properties. Containts proof for the every element
 		of the free group is a 3-d rotation.
 
-hausdorff-paradox-1.lisp: Contains the proof of the equivalence between different partitions of S^2 minus the set of the set of poles.
+hausdorff-paradox-1.lisp: Contains the proof of the equivalence between different partitions of S^2 minus the set of poles.
 
 hausdorff-paradox-2.lisp: Proof for the set of poles is countable.
 
