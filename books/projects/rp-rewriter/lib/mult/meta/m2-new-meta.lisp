@@ -568,14 +568,14 @@
                                 (:REWRITE RP-EQUAL-SUBTERMS-REFLEXIVE)
                                 (:REWRITE RP-EQUAL-REFLEXIVE)
                                 (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                                (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                                (:REWRITE ACL2::O-P-O-INFP-CAR)
                                 (:DEFINITION ACL2::APPLY$-BADGEP)
                                 (:TYPE-PRESCRIPTION VALID-SC)
                                 (:TYPE-PRESCRIPTION RP-TERMP)
                                 (:REWRITE IS-RP-PSEUDO-TERMP)
                                 (:REWRITE
                                  ACL2::INTEGER-LISTP-IMPLIES-INTEGERP)
-                                (:REWRITE ACL2::O-P-DEF-O-FINP-1)
+;;                                (:REWRITE ACL2::O-P-DEF-O-FINP-1)
                                 valid-sc
                                 rp-termp
                                 ex-from-rp
@@ -894,7 +894,7 @@
                                (:REWRITE IS-IF-RP-TERMP)
                                (:REWRITE
                                 ACL2::INTEGER-LISTP-IMPLIES-INTEGERP)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                                (:REWRITE ACL2::PREFER-POSITIVE-ADDENDS-EQUAL)
                                (:TYPE-PRESCRIPTION RP-EQUAL)

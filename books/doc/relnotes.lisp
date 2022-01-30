@@ -147,6 +147,45 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "@(tsee Apply$) and @(tsee loop$) libraries")
+
+   (xdoc::p
+    "@('[books]/projects/apply/') has changed significantly.  In previous
+     versions of ACL2 there was one user-level book on that directory,
+     @('top.lisp').")
+
+   (xdoc::p
+    "Now there are three: @('apply.lisp'), @('loop.lisp'), and @('top.lisp').
+     The first is most appropriate if you are using @('apply$') but not
+     @('loop$').  The second is most appropriate if you are using @('loop$').
+     Since @('loop$') uses @('apply$'), the second book includes the first.
+     The new @('top.lisp') includes both @('apply.lisp') and @('loop.lisp') and
+     thus is equivalent to @('loop.lisp').")
+
+   (xdoc::p
+    "The old @('top.lisp') included many books that were not explicitly
+     concerned with @('apply$') or @('loop$'), including")
+
+   (xdoc::p
+    "@('[books]/ordinals/lexicographic-ordering-without-arithmetic.lisp'),<br/>
+     @('[books]/sorting/perm.lisp'),<br/>
+     @('[books]/sorting/term-ordered-perms.lisp'),<br/>
+     @('[books]/sorting/convert-perm-to-how-many.lisp'), and<br/>
+     @('[books]/sorting/merge-sort-term-order.lisp').")
+
+   (xdoc::p
+    "Furthermore, these books were included non-locally so that their rules
+     were added when @('top.lisp') was included.  Now they are local to
+     @('top.lisp') and @('loop.lisp').  This means that user books dependent on
+     the old @('top.lisp') might mention or depend on rules that are no longer
+     available when the new @('top.lisp') is included.")
+
+   (xdoc::p
+    "Finally, the new @('loop.lisp') defines three theory constants that may be
+     of use.  See the comment in @('loop.lisp').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "apt::apt" "APT Library"))
 
    (xdoc::p

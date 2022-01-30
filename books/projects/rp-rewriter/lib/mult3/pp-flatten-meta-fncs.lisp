@@ -899,6 +899,8 @@
              (cons cur
                    (pp-lists-to-term-pp-lst (cdr lst))))))))
 
+(local (include-book "ordinals/ordinals-without-arithmetic" :dir :system))
+
 (define pp-remove-extraneous-sc (term)
   :returns (res-term pp-term-p :hyp (pp-term-p term)
                      :hints (("Goal"
@@ -1103,7 +1105,7 @@
                                    (:DEFINITION MEMBER-EQUAL)
                                    (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                                    (:REWRITE DEFAULT-CDR)
-                                   (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
+;;                                   (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
                                    (:REWRITE
                                     ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
                                    (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 2))))))
@@ -1351,7 +1353,7 @@
                            ((:DEFINITION FALIST-CONSISTENT)
 
                             (:DEFINITION FALIST-CONSISTENT-AUX)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE IS-IF-RP-TERMP)
                             (:TYPE-PRESCRIPTION RP-TERMP)
                             (:TYPE-PRESCRIPTION O<)
@@ -1375,7 +1377,7 @@
                             (:linear acl2::apply$-badgep-properties . 2)
                             (:definition true-listp)
                             (:rewrite is-if-rp-termp)
-                            (:rewrite acl2::o-p-o-infp-car)
+;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:rewrite is-rp-pseudo-termp)
                             (:rewrite atom-rp-termp-is-symbolp)
                             falist-consistent

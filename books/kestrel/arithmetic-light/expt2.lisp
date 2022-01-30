@@ -191,3 +191,10 @@
                 (integerp size))
            (<= (expt 2 size) (expt 2 (+ -1 free))))
   :rule-classes ((:linear)))
+
+(defthm unsigned-byte-p-of-+-of--1-and-expt
+  (implies (integerp i)
+           (equal (unsigned-byte-p size (+ -1 (expt 2 i)))
+                  (and (natp size)
+                       (<= 0 i)
+                       (<= i size)))))

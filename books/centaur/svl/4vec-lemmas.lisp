@@ -4415,8 +4415,8 @@
                                (:type-prescription o<)
                                (:type-prescription acl2::logcdr-type)
                                (:type-prescription acl2::logcar$inline)
-                               (:forward-chaining
-                                acl2::|a <= b & ~(a = b)  =>  a < b|)
+;;                               (:forward-chaining
+;;                                acl2::|a <= b & ~(a = b)  =>  a < b|)
                                (:rewrite default-<-1)
                                (:rewrite default-<-2)
                                (:rewrite bitops::logand-with-negated-bitmask)))))))

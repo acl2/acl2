@@ -25,6 +25,10 @@
 
 ; (depends-on "build/first-order-like-terms-and-out-arities.certdep" :dir :system)
 
+; (i-am-here) The lexicographic-ordering-without-arithmetic book may not be necessary here but
+; may be necessary for acl2-devel... or not.  Check it out.
+
+#+acl2-devel
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
 #-acl2-devel

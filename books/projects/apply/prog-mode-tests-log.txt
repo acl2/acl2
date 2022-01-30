@@ -13,13 +13,13 @@ ACL2 !>>(F-PUT-GLOBAL 'TRACE-CO
                       (@ STANDARD-CO)
                       STATE)
 <state>
-ACL2 !>>(INCLUDE-BOOK "projects/apply/top"
+ACL2 !>>(INCLUDE-BOOK "projects/apply/loop"
                       :DIR :SYSTEM)
 
 Summary
-Form:  ( INCLUDE-BOOK "projects/apply/top" ...)
+Form:  ( INCLUDE-BOOK "projects/apply/loop" ...)
 Rules: NIL
- "[books]/projects/apply/top.lisp"
+ "[books]/projects/apply/loop.lisp"
 ACL2 !>>(DEFCONST
          *TESTS*
          '((TRACE$ HELLO)
@@ -1631,7 +1631,6 @@ ACL2 Error in ( THM ...):  See :DOC failure.
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER1 JOHN)
-  2> (ACL2_*1*_ACL2::CALLER1 JOHN)
 Goal'
 
 ([ A key checkpoint:
@@ -1668,7 +1667,6 @@ ACL2 Error in ( THM ...):  See :DOC failure.
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER2 JOHN)
-  2> (ACL2_*1*_ACL2::CALLER2 JOHN)
 Goal'
 Goal''
 
@@ -2224,7 +2222,6 @@ ACL2 Error in ( THM ...):  See :DOC failure.
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER1 JOHN)
-  2> (ACL2_*1*_ACL2::CALLER1 JOHN)
 Goal'
 
 ([ A key checkpoint:
@@ -2261,7 +2258,6 @@ ACL2 Error in ( THM ...):  See :DOC failure.
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER2 JOHN)
-  2> (ACL2_*1*_ACL2::CALLER2 JOHN)
 Goal'
 Goal''
 
@@ -2852,10 +2848,9 @@ Rules: ((:EXECUTABLE-COUNTERPART CAR)
 Proof succeeded.
 ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER1 JOHN)
-  2> (ACL2_*1*_ACL2::CALLER1 JOHN)
 Goal'
-    3> (ACL2_*1*_ACL2::HELLO JOHN)
-    <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+  2> (ACL2_*1*_ACL2::HELLO JOHN)
+  <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
 Forcing Round 1 is pending (caused first by Goal').
 
@@ -2908,10 +2903,9 @@ ACL2 Error in ( THM ...):  See :DOC failure.
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER2 JOHN)
-  2> (ACL2_*1*_ACL2::CALLER2 JOHN)
 Goal'
-    3> (ACL2_*1*_ACL2::HELLO JOHN)
-    <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+  2> (ACL2_*1*_ACL2::HELLO JOHN)
+  <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
 Forcing Round 1 is pending (caused first by Goal').
 
@@ -3592,13 +3586,11 @@ Proof succeeded.
 ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER1 JOHN)
   2> (CALLER1 JOHN)
-    3> (ACL2_*1*_ACL2::CALLER1 JOHN)
-      4> (CALLER1 JOHN)
 Goal'
-        5> (ACL2_*1*_ACL2::HELLO JOHN)
-          6> (HELLO JOHN)
-          <6 (HELLO (HI JOHN))
-        <5 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+    3> (ACL2_*1*_ACL2::HELLO JOHN)
+      4> (HELLO JOHN)
+      <4 (HELLO (HI JOHN))
+    <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
 Forcing Round 1 is pending (caused first by Goal').
 
@@ -3652,13 +3644,11 @@ ACL2 Error in ( THM ...):  See :DOC failure.
 ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER2 JOHN)
   2> (CALLER2 JOHN)
-    3> (ACL2_*1*_ACL2::CALLER2 JOHN)
-      4> (CALLER2 JOHN)
 Goal'
-        5> (ACL2_*1*_ACL2::HELLO JOHN)
-          6> (HELLO JOHN)
-          <6 (HELLO (HI JOHN))
-        <5 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+    3> (ACL2_*1*_ACL2::HELLO JOHN)
+      4> (HELLO JOHN)
+      <4 (HELLO (HI JOHN))
+    <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
 Forcing Round 1 is pending (caused first by Goal').
 
@@ -5026,16 +5016,13 @@ RUN-THIS-VERSION-3 is compliant with Common Lisp.
 
 Summary
 Form:  ( VERIFY-GUARDS RUN-THIS-VERSION-3)
-Rules: ((:DEFINITION NOT)
-        (:DEFINITION SYNP)
+Rules: ((:DEFINITION MEMBER-EQUAL)
+        (:DEFINITION NOT)
         (:EXECUTABLE-COUNTERPART APPLY$-GUARD)
-        (:EXECUTABLE-COUNTERPART APPLY$-PRIMP)
+        (:EXECUTABLE-COUNTERPART CONSP)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
-        (:META APPLY$-PRIM-META-FN-CORRECT)
-        (:REWRITE ALWAYS$-SINGLETON)
-        (:REWRITE APPLY$-PRIMITIVE)
         (:REWRITE CAR-CONS)
-        (:REWRITE PLAIN-UQI-SYMBOL-LISTP))
+        (:REWRITE CDR-CONS))
  RUN-THIS-VERSION-3
 ACL2 !>>(THM (EQUAL (RUN-THIS-VERSION-3 'JOHN)
                     '((HI JOHN))))

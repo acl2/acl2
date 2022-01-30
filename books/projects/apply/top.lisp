@@ -7,7 +7,5 @@
 
 (in-package "ACL2")
 
-(include-book "base")
+(include-book "apply")
 (include-book "loop")
-(include-book "definductor")
-(include-book "relink-fancy-scion")

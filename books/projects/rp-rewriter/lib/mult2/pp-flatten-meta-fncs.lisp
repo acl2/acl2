@@ -949,7 +949,7 @@
                             (:linear acl2::apply$-badgep-properties . 2)
                             (:definition true-listp)
                             (:rewrite is-if-rp-termp)
-                            (:rewrite acl2::o-p-o-infp-car)
+;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:rewrite is-rp-pseudo-termp)
                             (:rewrite atom-rp-termp-is-symbolp)
                             falist-consistent

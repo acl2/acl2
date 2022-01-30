@@ -353,7 +353,7 @@
 
                                (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                                (:TYPE-PRESCRIPTION ALISTP)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:DEFINITION SUBSETP-EQUAL)
                                (:REWRITE VALID-SC-CADR)
                                (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
