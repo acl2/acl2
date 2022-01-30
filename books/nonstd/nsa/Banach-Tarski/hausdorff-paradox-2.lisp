@@ -1,14 +1,14 @@
 ; Banach-Tarski theorem
 ;
 ; Proof of the Hausdorff paradox (part 2).
-; Book contains the proof that the set D is countable.
+; Proof for the set of poles is countable.
 ;
 ;
-; Copyright (C) 2021 University of Wyoming
+; Copyright (C) 2022 University of Wyoming
 ;
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 ;
-; Main Authors: Jagadish Bapanapally (jagadishb285@gmail.com)
+; Main Author: Jagadish Bapanapally (jagadishb285@gmail.com)
 ;
 ; Contributing Authors:
 ;   Ruben Gamboa (ruben@uwyo.edu)

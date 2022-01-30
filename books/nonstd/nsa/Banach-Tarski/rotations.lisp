@@ -1,15 +1,15 @@
 ; Banach-Tarski theorem
 ;
-; Proof that every element of the free group is a rotation in R^3.
+; Proof for the every element of the free group is a rotation in R^3.
 ;
 ;
-; Copyright (C) 2021 University of Wyoming
+; Copyright (C) 2022 University of Wyoming
 ;
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 ;
-; Main Authors: Jagadish Bapanapally (jagadishb285@gmail.com)
+; Main Author: Jagadish Bapanapally (jagadishb285@gmail.com)
 ;
-; Contributing Authors:
+; Contributing Author:
 ;   Ruben Gamboa (ruben@uwyo.edu)
 
 (in-package "ACL2")
@@ -157,13 +157,22 @@
    )
  )
 
+(defthmd array2p-r3-m-inverse-1
+  (implies (r3-matrixp m)
+           (array2p :fake-name (r3-m-inverse m)))
+  :hints (("goal"
+           :use ((:instance array2p-r3-m-inverse))
+           :in-theory nil
+           :do-not-induct t
+           )))
+
 (encapsulate
   ()
 
   (local (include-book "arithmetic-5/top" :dir :system))
 
-  ;; Thanks to Eric McCarthy (mccarthy@kestrel.edu), Alessandro Coglio (coglio@kestrel.edu),
-  ;; and Eric Smith (eric.smith@kestrel.edu) for assisting me in proving the below lemma.
+  ;; thanks to eric mccarthy (mccarthy@kestrel.edu), alessandro coglio (coglio@kestrel.edu),
+  ;; and eric smith (eric.smith@kestrel.edu) for assisting me in proving the below lemma.
 
   (defthm r3-m-inverse-=
     (implies (r3-matrixp m)
@@ -310,6 +319,14 @@
                   (:instance r3-m-inverse-= (m m))
                   (:instance array2p-r3-m-inverse (m m)))
             ))))
+
+(defthmd r3-matrixp-m-inverse-1
+  (implies (r3-matrixp m)
+           (r3-matrixp (r3-m-inverse m)))
+  :hints (("goal"
+           :use ((:instance r3-matrixp-m-inverse))
+           :in-theory nil
+           )))
 
 (local
  (defthm compress21-lemma
@@ -715,7 +732,7 @@
   (defthmd m*id=m
     (implies (r3-matrixp m1)
              (m-= (m-* m1 (id-rotation)) m1))
-    :hints (("Goal"
+    :hints (("goal"
              :use ((:instance lemma1))
              :in-theory nil
              )))
@@ -734,7 +751,7 @@
   (defthmd id*m=m
     (implies (r3-matrixp m1)
              (m-= (m-* (id-rotation) m1) m1))
-    :hints (("Goal"
+    :hints (("goal"
              :use ((:instance lemma2))
              :in-theory nil
              )))
@@ -847,6 +864,53 @@
              ))
     )
   )
+
+(defthmd m1=m2=>det-m1-det-m2
+  (implies (and (r3-matrixp m1)
+                (r3-matrixp m2)
+                (m-= m1 m2))
+           (equal (r3-m-determinant m1) (r3-m-determinant m2)))
+  :hints (("goal"
+           :in-theory (e/d (m-=) (aref2))
+           )))
+
+(defthmd rot-m=>rot-m-inv-1
+  (implies (acl2-numberp x)
+           (equal (* x 1) x)))
+
+(defthmd rot-m=>rot-m-inv
+  (implies (r3-rotationp m)
+           (r3-rotationp (r3-m-inverse m)))
+  :hints (("goal"
+           :use ((:instance r3-rotationp)
+                 (:instance r3-rotationp (m (r3-m-inverse m)))
+                 (:instance r3-matrixp-m-inverse-1 (m m))
+                 (:instance det-lemma (m1 (r3-m-inverse m)) (m2 m))
+                 (:instance base-rotations (x (acl2-sqrt 2)))
+                 (:instance r3-rotationp (m (id-rotation)))
+                 (:instance m-*-m-inverse-m)
+                 (:instance m1=m2=>det-m1-det-m2
+                            (m1 (m-* (r3-m-inverse m) m))
+                            (m2 (id-rotation)))
+                 (:instance r3-matrixp-m1*m2-is-r3-matrixp
+                            (m1 (r3-m-inverse m))
+                            (m2 m))
+                 (:instance realp-r3-m-determinant
+                            (m (r3-m-inverse m)))
+                 (:instance rot-m=>rot-m-inv-1 (x (r3-m-determinant (r3-m-inverse m))))
+                 (:instance m1*m2=i (m2 m) (m1 (r3-m-inverse m)))
+                 (:instance m-=-implies-m-=-m-trans-1
+                            (m (r3-m-inverse m))
+                            (m-equiv (m-trans m)))
+                 (:instance m-=-is-an-equivalence
+                            (x (r3-m-inverse (r3-m-inverse m)))
+                            (y m)
+                            (z (m-trans (r3-m-inverse m))))
+                 (:instance idempotency-of-m-trans-array2p (m m) (name :fake-name))
+                 (:instance r3-matrixp (m m))
+                 )
+           :in-theory nil
+           )))
 
 (defthmd reducedwordp-charlistp
   (implies (and (character-listp w)
