@@ -1136,6 +1136,12 @@ for each usertype is stored in the res field.</p>"
                    :args (list x.name))
             "" nil elabindex ledger))
 
+       (warnings (vl-warninglist-fix warnings))
+       ((wmv ok warnings x.params elabindex)
+        (vl-maybe-paramargs-elaborate x.params elabindex :reclimit 100))
+       ((unless ok)
+        (mv nil warnings "" nil elabindex ledger))
+       
        ((vl-class class))
        
        (elabindex (vl-elabindex-traverse class-ss (list (vl-elabinstruction-root))))
@@ -1580,9 +1586,10 @@ for each usertype is stored in the res field.</p>"
                                       :modinsts new-insts))
            (elabindex (vl-elabindex-push new-x1))
            
-           ((wmv ?ok warnings new-non-scopeitem-blob elabindex)
-            (vl-genblob-elaborate non-scopeitem-blob elabindex :reclimit config.elab-limit))
-
+           ;; ((wmv ?ok warnings new-non-scopeitem-blob elabindex)
+           ;;  (vl-genblob-elaborate non-scopeitem-blob elabindex :reclimit config.elab-limit))
+           (new-non-scopeitem-blob non-scopeitem-blob)
+           
            (new-x (vl-genblob-rejoin-scopeitems new-x1 new-non-scopeitem-blob))
 
            (elabindex (vl-elabindex-undo))
@@ -2125,6 +2132,139 @@ for each usertype is stored in the res field.</p>"
     (mv class keylist elabindex ledger)))
 
 
+(def-genblob-transform vl-genblob-finish-unparam (elabindex
+                                                     (warnings vl-warninglist-p)
+                                                     (config vl-simpconfig-p))
+  :returns ((warnings vl-warninglist-p)
+            elabindex
+            ;; implicitly
+            ;; (new-x vl-genblob-p)
+            )
+  :apply-to-generates vl-generates-finish-unparam
+  (b* (((vl-genblob x) (vl-genblob-fix x))
+       ((vl-simpconfig config))
+       (elabindex (vl-elabindex-push x))
+       ((mv scopeitem-blob non-scopeitem-blob)
+        (vl-genblob-split-scopeitems x))
+
+       ;; Shouldn't matter whether we do this before or after the generates
+       ((wmv ?ok1 warnings new-non-scopeitem-blob elabindex)
+        (vl-genblob-elaborate non-scopeitem-blob elabindex :reclimit config.elab-limit))
+
+       ((mv warnings elabindex new-generates)
+        (vl-generates-finish-unparam x.generates elabindex warnings config))
+
+       (elabindex (vl-elabindex-undo))
+       (new-scopeitem-blob (change-vl-genblob scopeitem-blob :generates new-generates))
+
+       (new-x (vl-genblob-rejoin-scopeitems new-scopeitem-blob new-non-scopeitem-blob))
+       ;; update the record for this genblob in the elabindex
+       (elabindex (vl-elabindex-push new-x))
+       (elabindex (vl-elabindex-undo)))
+    (mv warnings elabindex new-x)))
+
+
+
+(define vl-finish-unparameterized-module
+  ((x vl-module-p)
+   (elabindex "at global level")
+   &key
+   ((config vl-simpconfig-p) 'config))
+  :returns (mv (new-mod vl-module-p)
+               (new-elabindex))
+  (b* (((vl-module x))
+       (warnings x.warnings)
+
+       (blob (vl-module->genblob x))
+       ((wmv warnings elabindex new-blob
+             :ctx x.name)
+        ;; use wmv instead of accumulator in order to add context to new warnings
+        (vl-genblob-finish-unparam blob elabindex nil config))
+       (mod (vl-genblob->module new-blob x))
+       (mod (change-vl-module mod :warnings warnings)))
+    (mv mod elabindex)))
+
+(define vl-finish-unparameterized-modules ((x vl-modulelist-p) elabindex
+                                           &key ((config vl-simpconfig-p) 'config))
+  :returns (mv (new-x vl-modulelist-p)
+               (new-elabindex))
+  (if (atom x)
+      (mv nil elabindex)
+    (b* (((mv x1 elabindex) (vl-finish-unparameterized-module (car x) elabindex))
+         ((mv rest elabindex) (vl-finish-unparameterized-modules (cdr x) elabindex)))
+      (mv (cons x1 rest) elabindex))))
+
+
+(define vl-finish-unparameterized-interface
+  ((x vl-interface-p)
+   (elabindex "at global level")
+   &key
+   ((config vl-simpconfig-p) 'config))
+  :returns (mv (new-mod vl-interface-p)
+               (new-elabindex))
+  (b* (((vl-interface x))
+       (warnings x.warnings)
+
+       (blob (vl-interface->genblob x))
+       ((wmv warnings elabindex new-blob
+             :ctx x.name)
+        ;; use wmv instead of accumulator in order to add context to new warnings
+        (vl-genblob-finish-unparam blob elabindex nil config))
+       (mod (vl-genblob->interface new-blob x))
+       (mod (change-vl-interface mod :warnings warnings))
+       ;; update the record for this in the elabindex
+       (elabindex (vl-elabindex-push mod))
+       (elabindex (vl-elabindex-undo)))
+    (mv mod elabindex)))
+
+(define vl-finish-unparameterized-interfaces ((x vl-interfacelist-p) elabindex
+                                           &key ((config vl-simpconfig-p) 'config))
+  :returns (mv (new-x vl-interfacelist-p)
+               (new-elabindex))
+  (if (atom x)
+      (mv nil elabindex)
+    (b* (((mv x1 elabindex) (vl-finish-unparameterized-interface (car x) elabindex))
+         ((mv rest elabindex) (vl-finish-unparameterized-interfaces (cdr x) elabindex)))
+      (mv (cons x1 rest) elabindex))))
+
+
+(define vl-finish-unparameterized-class
+  ((x vl-class-p)
+   (elabindex "at global level")
+   &key
+   ((config vl-simpconfig-p) 'config))
+  :returns (mv (new-mod vl-class-p)
+               (new-elabindex))
+  (b* (((vl-class x))
+       (warnings x.warnings)
+
+       (blob (vl-class->genblob x))
+       ((wmv warnings elabindex new-blob
+             :ctx x.name)
+        ;; use wmv instead of accumulator in order to add context to new warnings
+        (vl-genblob-finish-unparam blob elabindex nil config))
+       (mod (vl-genblob->class new-blob x))
+       (mod (change-vl-class mod :warnings warnings))
+       ;; update the record for this in the elabindex
+       (elabindex (vl-elabindex-push mod))
+       (elabindex (vl-elabindex-undo)))
+    (mv mod elabindex)))
+
+(define vl-finish-unparameterized-classes ((x vl-classlist-p) elabindex
+                                           &key ((config vl-simpconfig-p) 'config))
+  :returns (mv (new-x vl-classlist-p)
+               (new-elabindex))
+  (if (atom x)
+      (mv nil elabindex)
+    (b* (((mv x1 elabindex) (vl-finish-unparameterized-class (car x) elabindex))
+         ((mv rest elabindex) (vl-finish-unparameterized-classes (cdr x) elabindex)))
+      (mv (cons x1 rest) elabindex))))
+       
+
+
+
+
+
 (fty::defalist vl-unparam-donelist :key-type vl-unparam-instkey)
 
 
@@ -2207,7 +2347,17 @@ for each usertype is stored in the res field.</p>"
              (vl-create-unparameterized-module mod sig.newname sig.final-params sig.final-ports elabindex ledger))))
 
          ((mv warnings new-mods new-ifaces new-classes donelist elabindex ledger)
-          (vl-unparameterize-main-list sigalist donelist (1- depthlimit) elabindex ledger)))
+          (vl-unparameterize-main-list sigalist donelist (1- depthlimit) elabindex ledger))
+
+         ;; ((mv new-mod elabindex)
+         ;;  (case (tag mod)
+         ;;    (:vl-interface
+         ;;     (vl-finish-unparameterized-interface new-mod elabindex))
+         ;;    (:vl-class
+         ;;     (vl-finish-unparameterized-class new-mod elabindex))
+         ;;    (t ;; :vl-module
+         ;;     (vl-finish-unparameterized-module new-mod elabindex))))
+         )
       (mv warnings
           (if (eq (tag mod) :vl-module) (cons new-mod new-mods) new-mods)
           (if (eq (tag mod) :vl-interface) (cons new-mod new-ifaces) new-ifaces)
@@ -2752,12 +2902,26 @@ scopestacks.</p>"
        ((wmv warnings new-mods new-ifaces new-classes donelist elabindex ledger)
         (vl-unparameterize-main-list top-sigs nil 1000 elabindex ledger))
 
-       (new-x (change-vl-design x
+       (new-x1 (change-vl-design x
                                 :warnings warnings
                                 :mods new-mods
                                 :interfaces new-ifaces
                                 :classes new-classes
-                                :packages new-packages)))
+                                :packages new-packages))
+       ;; We've unparameterized the parts of the
+       ;; mods/interfaces/classes/packages that could possibly be referenced
+       ;; from another place.  Now we go through one last time and elaborate
+       ;; the parts that were skipped over before (always blocks, assignments).
+       ;; In particular, this is needed to resolve calls of parameterized
+       ;; classes' static methods from module assigns/alwayses, etc.
+       (elabindex (vl-elabindex-init new-x1))
+       ((mv final-mods elabindex) (vl-finish-unparameterized-modules new-mods elabindex))
+       ((mv final-ifaces elabindex) (vl-finish-unparameterized-interfaces new-ifaces elabindex))
+       ((mv final-classes elabindex) (vl-finish-unparameterized-classes new-classes elabindex))
+       (new-x (change-vl-design new-x1
+                                :mods final-mods
+                                :interfaces final-ifaces
+                                :classes final-classes)))
 
     (fast-alist-free donelist)
     (vl-free-namedb (vl-unparam-ledger->ndb ledger))

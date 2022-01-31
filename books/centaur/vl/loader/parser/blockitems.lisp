@@ -745,9 +745,9 @@ out some duplication and indirection:</p>
        (type := (if (and (vl-is-token? :vl-idtoken)
                          (vl-lookahead-is-some-token? '(:vl-comma :vl-rparen :vl-equalsign)
                                                       (cdr (vl-tokstream->tokens))))
-                    (vl-parse-datatype-or-implicit)
-                  (mv nil *vl-plain-old-logic-type* ;; might be wrong
-                      tokstream)))
+                    (mv nil *vl-plain-old-logic-type* ;; might be wrong
+                        tokstream)
+                  (vl-parse-datatype-or-implicit)))
        (id := (vl-match-token :vl-idtoken))
        (when (vl-is-token? :vl-equalsign)
          (expr := (vl-parse-expression)))
@@ -832,8 +832,6 @@ out some duplication and indirection:</p>
   (seq tokstream
         (when (vl-is-token? :vl-kwd-bind)
           (return-raw (vl-parse-error "overload declarations (\"bind ...\") are not yet supported")))
-        (when (vl-is-token? :vl-kwd-let)
-          (return-raw (vl-parse-error "let declarations are not yet supported")))
         (when (vl-is-some-token? '(:vl-kwd-localparam :vl-kwd-parameter))
           ;; Do not eat the token.
           (elems := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-localparam :vl-kwd-parameter)))
@@ -863,7 +861,7 @@ out some duplication and indirection:</p>
 
         (when (vl-is-token? :vl-kwd-let)
           (ans := (vl-parse-let-declaration atts))
-          (return ans))
+          (return (list ans)))
 
           ;; Otherwise, we are presumably in the data_declaration case.  Eventually we will
         ;; need to extend this to handle typedefs, etc., but for now we'll at least

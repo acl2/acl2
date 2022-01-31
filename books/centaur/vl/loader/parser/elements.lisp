@@ -877,9 +877,6 @@ rules:</p>
                (disable := (vl-parse-defaultdisable atts))
                (return (list disable))))
 
-         ((when (eq type1 :vl-kwd-let))
-          (vl-parse-error "BOZO not yet implemented: let declarations"))
-
          ((when (eq type1 :vl-kwd-bind))
           (seq tokstream
                (bind := (vl-parse-bind-directive atts))

@@ -4833,14 +4833,16 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
     (b* ((vttree nil)
          (elabindex (vl-elabindex-push (vl-genblob-fix x)))
-         ((vl-genblob x))
          ((vl-simpconfig config))
-         ((wvmv ?ok vttree ?new-x elabindex)
-          ;; new-x isn't really relevant since we've already run
-          ;; unparameterization before; we're just doing this to generate the
-          ;; tables.
-          (vl-genblob-elaborate x elabindex
-                                :reclimit config.elab-limit))
+         (orig-generates (vl-genblob->generates x))
+         ;; ((wvmv ?ok vttree elab-x elabindex)
+         ;;  ;; new-x isn't really relevant since we've already run
+         ;;  ;; unparameterization before; we're just doing this to generate the
+         ;;  ;; tables.
+         ;;  (vl-genblob-elaborate (make -vl-genblob x :generates nil)
+         ;;                        elabindex
+         ;;                        :reclimit config.elab-limit))
+         ((vl-genblob x)) ;; elab-x)
          (elabindex (vl-elabindex-sync-scopes))
          (ss (vl-elabindex->ss))
          (scopes (vl-elabindex->scopes))
@@ -4878,7 +4880,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
          ((wvmv vttree modalist gen-insts gen-wires gen-aliases gen-width elabindex)
           (vl-generates->svex-modules
-           x.generates elabindex modname config modalist
+           orig-generates elabindex modname config modalist
            (maybe-nat interfacep (+ vars-width insts-width ifports-width))))
 
          (totalwidth (+ vars-width insts-width ifports-width gen-width))

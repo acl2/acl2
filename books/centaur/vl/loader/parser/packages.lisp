@@ -231,6 +231,7 @@
                                                                  :vl-dpiimport
                                                                  :vl-dpiexport
                                                                  :vl-class
+                                                                 :vl-property
                                                                  )))
                           (warnings
                            (if (not bad-item)
