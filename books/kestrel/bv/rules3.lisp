@@ -3112,7 +3112,7 @@
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthmd bvnot-trim-all
-  (implies (and (syntaxp (term-should-be-trimmed2 size x 'all))
+  (implies (and (syntaxp (term-should-be-trimmed size x ':all))
                 (natp size))
            (equal (bvnot size x)
                   (bvnot size (trim size x))))

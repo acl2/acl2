@@ -7169,7 +7169,9 @@
   (f-put-global 'global-enabled-structure
                 (initial-global-enabled-structure "ENABLED-ARRAY-")
                 *the-live-state*)
-  (f-put-ld-specials *initial-ld-special-bindings* *the-live-state*)
+  (f-put-ld-specials *initial-ld-special-bindings*
+                     nil ; no changes to useless-runes (not an LD special)
+                     *the-live-state*)
 
 ; The next set-w will avail itself of the empty frame left above.
 
@@ -7358,6 +7360,7 @@
     (standard-co . ,*standard-co*)
     (proofs-co . ,*standard-co*)
     (current-package . "ACL2")
+    (useless-runes . nil)
     (ld-skip-proofsp . ,ld-skip-proofsp)
     (ld-redefinition-action . nil)
     (ld-prompt . ,(if ld-skip-proofsp nil t))
@@ -8582,7 +8585,9 @@
 ; LDs above make reference to some of them so they must be bound).
 ; But the LD above changes them so we now initialize them again.
 
-     (f-put-ld-specials *initial-ld-special-bindings* *the-live-state*)
+     (f-put-ld-specials *initial-ld-special-bindings*
+                        nil ; no changes to useless-runes (not an LD special)
+                        *the-live-state*)
 
 ; We now check certain invariants, for example, that we have defined certain
 ; built-in constants correctly.

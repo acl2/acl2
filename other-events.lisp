@@ -16019,18 +16019,67 @@
                       (cons obj acc))))))))
    state))
 
-(defun read-useless-runes (full-book-name envp useless-runes-r/w val ctx state)
+(defun useless-runes-env-info (useless-runes-r/w useless-runes-r/w-p ldp state)
 
-; Envp and val come from function useless-runes-value: val is a rational number
-; from -1 to 1 inclusive whose absolute value indicates the fraction of runes
-; to collect from the appropriate @useless-runes.lsp file for each event (a
-; negative number indicates that it's OK if that file does not exist) and envp
-; is the value of environment variable ACL2_USELESS_RUNES when that supplies
+; We return an error triple whose value is either nil, indicating that the
+; useless-runes value does not come from an environment variable, or else a
+; triple (var val . val-ld) where: var is an environment variable (either
+; ACL2_USELESS_RUNES or ACL2_USELESS_RUNES_LD); val is the value of that
+; variable (a non-empty string); and val-ld is the value of
+; ACL2_USELESS_RUNES_LD when that value is string-equal to "CERT" and thus
+; points to ACL2_USELESS_RUNES, else is nil.
+
+  (cond
+   ((and useless-runes-r/w-p
+         (or (null useless-runes-r/w)
+             ldp))
+
+; If :useless-runes was supplied explicitly as nil to certify-book, or was
+; supplied as any value to ld, then ignore environment variabless.
+
+    (value nil))
+   ((null ldp)
+    (er-let* ((val (getenv! "ACL2_USELESS_RUNES" state))  )
+      (value (and val (list* "ACL2_USELESS_RUNES" val nil)))))
+   (t (er-let* ((val-ld (getenv! "ACL2_USELESS_RUNES_LD" state))
+                (val (getenv! "ACL2_USELESS_RUNES" state)))
+        (cond
+         ((string-equal val-ld "CERT")
+          (value (and val (list* "ACL2_USELESS_RUNES" val val-ld))))
+         (t
+          (value (and val-ld (list* "ACL2_USELESS_RUNES_LD" val-ld nil)))))))))
+
+(defun useless-runes-source-msg (env-info useless-runes-r/w ldp)
+  (cond (env-info
+         (let ((val (car env-info))
+               (var (cadr env-info))
+               (val-ld (cddr env-info)))
+           (msg "the value ~x0 of environment variable ~s1~@2"
+                val var
+                (if val-ld
+                    (assert$
+                     ldp
+                     (msg " (because environment variable ~
+                           ACL2_USELESS_RUNES_LD has value ~s0)"
+                          val-ld))
+                  ""))))
+        (t (msg "~x0 keyword option :useless-runes ~x1"
+                (if ldp 'ld 'certify-book)
+                useless-runes-r/w))))
+
+(defun read-useless-runes (full-book-name env-info useless-runes-r/w val ldp
+                                          ctx state)
+
+; Env-info and val come from function useless-runes-value: val is a rational
+; number from -1 to 1 inclusive whose absolute value indicates the fraction of
+; runes to collect from the appropriate @useless-runes.lsp file for each event
+; (a negative number indicates that it's OK if that file does not exist); and
+; env-info, which is only used for error reporting, indicates the source of
 ; val.
 
-; This function returns an error triple whose value is a fast-alist mapping each
-; key, a name, to a list of lists of runes.  The call of read-file causes an
-; error if the @useless-runes.lsp file doesn't exist (or isn't readable).
+; This function returns an error triple whose value is a fast-alist mapping
+; each key, a name, to a list of lists of runes.  The call of read-file causes
+; an error if the @useless-runes.lsp file doesn't exist (or isn't readable).
 
 ; We copy code from read-file, but avoid that funciton so that we can fail
 ; silently.
@@ -16039,18 +16088,19 @@
 ; ACL2 reads a @useless-runes.lsp file, there isn't a reader error due to an
 ; unknown package.  One way we could have done this is to read the
 ; @useless-runes.lsp on demand, getting the next form for each event, rather
-; than to read the entire file early in the certification process as we do now.
-; That would work fine initially: the next name would match the next name of a
-; defun(s), defthm, or verify-guards event, and by then the corresponding list
-; of runes would use only known packages.  But imagine what happens as, over
-; time, the book is edited to rearrange, add, or remove events.  The
-; @useless-runes.lsp would be much less tolerant of those changes than it is
-; during the implemented approach, which is to use with-packages-unhidden to
-; "unhide" hidden packages from the book's portcullis, so that we can (we
-; think) get all packages from sub-books before reading the @useless-runes.lsp.
-; Those packages are logically there anyhow after reading the portcullis
-; commands -- it's just a courtesy to the user to cause errors when an
-; operation (especially symbol-package-name) relies on a hidden package.
+; than to read the entire file early in the certification or ld process as we
+; do now.  That would work fine initially: the next name would match the next
+; name of a defun(s), defthm, or verify-guards event, and by then the
+; corresponding list of runes would use only known packages.  But imagine what
+; happens as, over time, the book is edited to rearrange, add, or remove
+; events.  The @useless-runes.lsp would be much less tolerant of those changes
+; than it is during the implemented approach, which is to use
+; with-packages-unhidden to "unhide" hidden packages from the book's
+; portcullis, so that we can (we think) get all packages from sub-books before
+; reading the @useless-runes.lsp.  Those packages are logically there anyhow
+; after reading the portcullis commands -- it's just a courtesy to the user to
+; cause errors when an operation (especially symbol-package-name) relies on a
+; hidden package.
 
   (assert$
    (and (rationalp val)
@@ -16066,7 +16116,8 @@
                  (read-file-iterate-safe channel nil state)
                  (pprogn (io? event nil state
                               (useless-runes-filename)
-                              (fms! "Note: Consulting useless-runes file, ~s0."
+                              (fms! "; Note: Consulting useless-runes ~
+                                     file,~|; ~s0."
                                     (list (cons #\0 useless-runes-filename))
                                     (standard-co state) state nil))
                          (close-input-channel channel state)
@@ -16075,45 +16126,48 @@
                                               ctx state))))
               ((< val 0) (value nil))
               (t (er soft ctx
-                     "Unable to open file ~x0 for reading useless-runes data ~
-                      (as specified by ~@1); see :DOC useless-runes."
+                     "Unable to open file ~x0 for reading useless-runes data, ~
+                      as specified by ~@1; see :DOC useless-runes."
                      useless-runes-filename
-                     (if envp
-                         (msg "the value ~x0 of environment variable ~
-                               ACL2_USELESS_RUNES"
-                              envp)
-                       (msg "certify-book option :useless-runes ~x0"
-                            useless-runes-r/w))))))))))
+                     (useless-runes-source-msg env-info
+                                               useless-runes-r/w
+                                               ldp)))))))))
 
-(defun free-useless-runes-info (certify-book-info state)
-  (let ((useless-runes-info (access certify-book-info certify-book-info
-                                    :useless-runes-info)))
-    (case-match useless-runes-info
-      (('FAST-ALIST . fal) (prog2$ (fast-alist-free fal) state))
-      (('CHANNEL chan . &) (close-output-channel chan state))
-      (& (prog2$ (or (null useless-runes-info)
-                     (er hard 'free-useless-runes-info
-                         "Implementation error: Unexpected value of ~
-                          useless-runes-info, ~x0"
-                         useless-runes-info))
-                 state)))))
+(defun free-useless-runes (useless-runes state)
+  (cond
+   ((null useless-runes) state)
+   (t (case (access useless-runes useless-runes :tag)
+        (FAST-ALIST
+         (prog2$ (fast-alist-free (access useless-runes useless-runes :data))
+                 state))
+        (CHANNEL
+         (close-output-channel (car (access useless-runes useless-runes :data))
+                               state))
+        (t (prog2$ (er hard 'free-useless-runes
+                       "Implementation error: Unexpected value of ~
+                        useless-runes, ~x0"
+                       useless-runes)
+                   state))))))
 
-(defun useless-runes-value (useless-runes-r/w useless-runes-r/w-p ctx state)
+(defun useless-runes-value (useless-runes-r/w useless-runes-r/w-p
+                                              ldp ctx state)
 
-; Useless-runes-r/w is the value given to certify-book option :useless-runes,
-; if any; useless-runes-r/w-p is true when that option is supplied, else nil.
+; Useless-runes-r/w is the value supplied with option :useless-runes of
+; certify-book (when ldp is nil) or ld (when ldp is t), if that is supplied;
+; useless-runes-r/w-p is true when that option is supplied, else nil.
 
-; We return an error triple whose value is a pair (envp . val), where: envp is
-; the value of environment variable ACL2_USELESS_RUNES if that is responsible
-; for the value, val, else nil; and val is WRITE, nil, or a non-zero rational
-; between -1 and 1 inclusive whose absolute value represents the fraction of
-; the useless runes for a given event that should be kept disabled.  (An
-; exception is that the value may be nil, which represents envp = val = nil.)
-; A negative number indicates that the @useless-runes.lsp need not exist, while
-; a positive number results in an error if that file does not exist.
+; We return an error triple whose value is a pair (env-info . val), where:
+; env-info indicates the role of environment variables responsible for the
+; value, val, if any -- see useless-runes-env-info -- else nil; and val is
+; WRITE, nil, or a non-zero rational between -1 and 1 inclusive whose absolute
+; value represents the fraction of the useless-runes for a given event that
+; should be kept disabled.  An exception is that the "pair" may be nil, which
+; represents env-info = val = nil.  A negative number indicates that the
+; @useless-runes.lsp need not exist, while a positive number results in an
+; error if that file does not exist.
 
-; (We could allow 0 but that would mean the same as nil, which could perhaps
-; lead to confusion somehow.)
+; (We could allow 0 for val, but that would mean the same as nil, and we
+; prefer not to have two values that mean the same thing.)
 
 ; We ignore useless-runes info in ACL2(r), by making it seem that the call to
 ; certify-book always includes ":useless-runes nil".  If we decide later not to
@@ -16129,112 +16183,186 @@
         (useless-runes-r/w-p
          #+non-standard-analysis t
          #-non-standard-analysis useless-runes-r/w-p))
-    (er-let* ((str
+    (er-let* ((env-info (useless-runes-env-info useless-runes-r/w
+                                                useless-runes-r/w-p
+                                                ldp
+                                                state)))
+      (mv-let (env-var env-val val-ld)
+        (cond (env-info (mv (car env-info) (cadr env-info) (cddr env-info)))
+              (t (mv nil nil nil)))
+        (cond
+         ((and env-info
+               (string-equal env-val "WRITE")
+               (not ldp))
 
-; If :useless-runes nil was supplied explicitly to certify-book, then ignore
-; the value of the indicated environment variable.  Otherwise the environment
-; variable takes priority over the value of :useless-runes.
+; A value of "write" from an environment variable takes priority over a non-nil
+; :useless-runes option of certify-book.
 
-               (if (and useless-runes-r/w-p (null useless-runes-r/w))
-                   (value nil)
-                 (getenv! "ACL2_USELESS_RUNES" state))))
-      (cond
-       ((and str
-             (string-equal str "WRITE"))
+          (value (cons env-info 'write)))
+         (t
+          (case useless-runes-r/w
+            (:write (value (cons nil 'write)))
+            (:read  (value (cons nil 1)))
+            (:read? (value (cons nil -1)))
+            ((nil)
+             (cond
+              (useless-runes-r/w-p (value nil)) ; honor an explicit nil value
+              ((or (null env-info)
+                   (string-equal env-val "NIL"))
+               (value nil))
+              ((or (string-equal env-val "READ")
+                   (equal env-val "100"))
+               (value (cons env-info 1)))
+              ((or (string-equal env-val "READ?")
+                   (equal env-val "-100"))
+               (value (cons env-info -1)))
+              (t ; read a number between 1 and 99
+               (let* ((len (length env-val))
+                      (sign (if (and (not (zerop len))
+                                     (eql (char env-val 0) #\-))
+                                1
+                              0))
+                      (str (if (int= sign 1)
+                               (subseq env-val 1 len)
+                             env-val))
+                      (len2 (if (int= sign 1)
+                                (1- len)
+                              len))
+                      (percent (and (or (int= len2 1)
+                                        (int= len2 2))
+                                    (all-digits-p (coerce str 'list) 10)
+                                    (decimal-string-to-number str len2 0))))
+                 (cond (percent (value
+                                 (cons env-info
+                                       (/ percent
+                                          (if (int= sign 1) -100 100)))))
+                       (t (er soft ctx
+                              "Illegal value ~x0 for environment variable ~
+                               ~@1.  See :DOC useless-runes."
+                              env-val
+                              (cond
+                               (val-ld
+                                (assert$
+                                 ldp
+                                 (msg " (because environment variable ~
+                                       ACL2_USELESS_RUNES_LD has value ~s0)"
+                                      val-ld)))
+                               (t env-var)))))))))
+            (t ; should be an integer value
+             (cond
+              ((and (integerp useless-runes-r/w)
+                    (not (zerop useless-runes-r/w))
+                    (<= -100 useless-runes-r/w)
+                    (<= useless-runes-r/w 100))
+               (value (cons nil (/ useless-runes-r/w 100))))
+              (t (er soft ctx
+                     "Illegal value ~x0 for certify-book parameter ~
+                      :USELESS-RUNES.  See :DOC useless-runes."
+                     useless-runes-r/w)))))))))))
 
-; A value of "write" for the environment variable takes priority over the value
-; of the :useless-runes option of certify-book.
+(defun initial-useless-runes (full-book-name useless-runes-r/w
+                                             useless-runes-r/w-p
+                                             ldp ctx state)
 
-        (value (cons str 'write)))
-       (t
-        (case useless-runes-r/w
-          (:write (value (cons nil 'write)))
-          (:read  (value (cons nil 1)))
-          (:read? (value (cons nil -1)))
-          ((nil)
-           (cond
-            (useless-runes-r/w-p (value nil)) ; honor an explicit nil value
-            ((null str) (value nil))
-            ((or (string-equal str "READ")
-                 (equal str "100"))
-             (value (cons str 1)))
-            ((or (string-equal str "READ?")
-                 (equal str "-100"))
-             (value (cons str -1)))
-            (t ; read a number between 1 and 99
-             (let* ((len (length str))
-                    (sign (if (and (not (zerop len))
-                                   (eql (char str 0) #\-))
-                              1
-                            0))
-                    (str2 (if (int= sign 1)
-                              (subseq str 1 len)
-                            str))
-                    (len2 (if (int= sign 1)
-                              (1- len)
-                            len))
-                    (percent (and (or (int= len2 1)
-                                      (int= len2 2))
-                                  (all-digits-p (coerce str2 'list) 10)
-                                  (decimal-string-to-number str2 len2 0))))
-               (cond (percent (value
-                               (cons str
-                                     (/ percent
-                                        (if (int= sign 1) -100 100)))))
-                     (t (er soft ctx
-                            "Illegal value ~x0 for environment variable ~
-                             ACL2_USELESS_RUNES.  See :DOC useless-runes."
-                            str)))))))
-          (t ; should be an integer value
-           (cond
-            ((and (integerp useless-runes-r/w)
-                  (not (zerop useless-runes-r/w))
-                  (<= -100 useless-runes-r/w)
-                  (<= useless-runes-r/w 100))
-             (value (cons nil (/ useless-runes-r/w 100))))
-            (t (er soft ctx
-                   "Illegal value ~x0 for certify-book parameter ~
-                    :USELESS-RUNES.  See :DOC useless-runes."
-                   useless-runes-r/w))))))))))
+; This function is called only for initializing the state global 'useless-runes
+; for a call of certify-book or ld.  When it does so, it opens a suitable
+; channel in the 'write case, and it reads in the fast-alist in the 'read case.
 
-(defun useless-runes-info (full-book-name useless-runes-r/w useless-runes-r/w-p
-                                          ctx state)
-  (er-let* ((pair (useless-runes-value useless-runes-r/w useless-runes-r/w-p
-                                       ctx state)))
-    (let ((envp (car pair))
-          (val (cdr pair)))
-      (cond
-       ((null val) (value nil))
-       ((eq val 'write)
-        (let ((useless-runes-filename (useless-runes-filename full-book-name)))
-          (mv-let (chan state)
-            (open-output-channel useless-runes-filename :character state)
-            (cond
-             ((null chan)
-              (er soft ctx
-                  "Unable to open file ~x0 for writing useless runes data (as ~
-                   specified by ~@1); see :DOC useless-runes."
-                  useless-runes-filename
-                  (if envp
-                      (msg "the value ~x0 of environment variable ~
-                            ACL2_USELESS_RUNES"
-                           envp)
-                    (msg "certify-book option :useless-runes ~x0"
-                         useless-runes-r/w))))
-             (t (value `(CHANNEL ,chan
-                                 ,@(strip-cars
-                                    (known-package-alist state)))))))))
-       (t
-        (assert$
-         (and (rationalp val)
-              (<= -1 val)
-              (not (zerop val))
-              (<= val 1))
-         (er-let* ((fal (read-useless-runes full-book-name
-                                            envp
-                                            useless-runes-r/w
-                                            val ctx state)))
-           (value `(FAST-ALIST . ,fal)))))))))
+  (let ((bookp (and (stringp full-book-name)
+                    (let ((len (length full-book-name)))
+                      (and (< 5 len)
+                           (terminal-substringp
+                            ".lisp" full-book-name 4 (1- len)))))))
+    (cond
+     ((not (or useless-runes-r/w-p
+               bookp))
+
+; Since the :useless-runes keyword argument was not supplied, and since the
+; filename argument is not a string ending in ".lisp", we don't consult the
+; environment.
+
+      (value nil))
+     (t
+      (er-let* ((pair (useless-runes-value useless-runes-r/w useless-runes-r/w-p
+                                           ldp ctx state))
+                (env-info (value (car pair)))
+                (val (value (cdr pair)))
+                (full-book-name
+                 (cond ((or (null val) ; then full-book-name is irrelevant
+                            (not ldp))
+                        (value full-book-name))
+                       (bookp
+                        (value (extend-pathname
+                                (f-get-global 'connected-book-directory state)
+                                full-book-name
+                                state)))
+                       (t ; hence useless-runes-r/w-p is true
+                        (er soft ctx
+                            "A non-nil :useless-runes argument is only ~
+                             permitted for a call of ~x0 when the first ~
+                             argument is a string ending in \".lisp\".  But ~
+                             the first argument is ~x1."
+                            'ld full-book-name)))))
+        (cond
+         ((null val) (value nil))
+         ((eq val 'write)
+          (let ((useless-runes-filename (useless-runes-filename full-book-name)))
+            (mv-let (chan state)
+              (open-output-channel useless-runes-filename :character state)
+              (cond
+               ((null chan)
+                (er soft ctx
+                    "Unable to open file ~x0 for writing useless-runes data (as ~
+                 specified by ~@1); see :DOC useless-runes."
+                    useless-runes-filename
+                    (useless-runes-source-msg env-info useless-runes-r/w ldp)))
+               (t (value (make useless-runes
+                               :tag 'CHANNEL
+                               :data (cons chan
+                                           (strip-cars
+                                            (known-package-alist state)))
+                               :full-book-name full-book-name)))))))
+         (t
+          (assert$
+           (and (rationalp val)
+                (<= -1 val)
+                (not (zerop val))
+                (<= val 1))
+           (er-let* ((fal (read-useless-runes full-book-name
+                                              env-info
+                                              useless-runes-r/w
+                                              val ldp ctx state)))
+             (value (make useless-runes
+                          :tag 'FAST-ALIST
+                          :data fal
+                          :full-book-name full-book-name)))))))))))
+
+(defun maybe-refresh-useless-runes (useless-runes)
+
+; This function is called by f-put-ld-specials to restore useless-runes after
+; completion of a subsidiary call of ld or certify-book.  It's not clear that
+; this is necessary, but we play it safe in case the fast-alist has somehow
+; been stolen.
+
+  (cond ((and useless-runes
+              (eq (access useless-runes useless-runes :tag)
+                  'FAST-ALIST))
+         (change useless-runes useless-runes
+                 :data
+                 (make-fast-alist (access useless-runes useless-runes :data))))
+        (t useless-runes)))
+
+(defun update-useless-runes (useless-runes state)
+
+; Call this when the value of state global 'useless-runes is to be replaced
+; with the given useless-runes (a useless-runes record or nil) with no further
+; use of the old value.
+
+  (pprogn (free-useless-runes (f-get-global 'useless-runes state)
+                              state)
+          (f-put-global 'useless-runes
+                        (maybe-refresh-useless-runes useless-runes)
+                        state)))
 
 (defun certify-book-fn (user-book-name k compile-flg defaxioms-okp
                                        skip-proofs-okp ttags ttagsx ttagsxp
@@ -16403,11 +16531,6 @@
                                 ctx state))
                         (certify-book-info-0
                          (value (make certify-book-info
-
-; We fill in the :useless-runes-alist field below, after ensuring that all
-; portcullis commands have been run (consider the case k=t), so that packages
-; are all available.
-
                                       :full-book-name full-book-name
                                       :cert-op cert-op
                                       :include-book-phase nil))))
@@ -16467,11 +16590,19 @@
                              suspect-book-action-alist cert-op k ctx state))
                            (portcullis-cmds0 (value (access cert-obj cert-obj
                                                             :cmds)))
-                           (useless-runes-info
-                            (useless-runes-info full-book-name
-                                                useless-runes-r/w
-                                                useless-runes-r/w-p
-                                                ctx state))
+                           (old-useless-runes
+                            (value (f-get-global 'useless-runes state)))
+                           (useless-runes
+
+
+; By now, we should have ensured that all portcullis commands have been run
+; (consider the case of certify-book with k=t), so that packages are all
+; available.
+
+                            (initial-useless-runes full-book-name
+                                                   useless-runes-r/w
+                                                   useless-runes-r/w-p
+                                                   nil ctx state))
                            (ignore (cond (write-port
                                           (write-port-file full-book-name
                                                            portcullis-cmds0
@@ -16482,14 +16613,9 @@
                           (wrld1-known-package-alist
                            (global-val 'known-package-alist wrld1))
                           (acl2x-file
-                           (convert-book-name-to-acl2x-name full-book-name))
-                          (certify-book-info-1
-                           (change certify-book-info certify-book-info-0
-                                   :useless-runes-info useless-runes-info)))
+                           (convert-book-name-to-acl2x-name full-book-name)))
                      (pprogn
-                      (f-put-global 'certify-book-info
-                                    certify-book-info-1
-                                    state)
+                      (f-put-global 'useless-runes useless-runes state)
                       (io? event nil state
                            (full-book-name cert-op)
                            (fms "CERTIFICATION ATTEMPT~@0 FOR ~x1~%~s2~%~%*~ ~
@@ -16845,15 +16971,8 @@
                                     (fast-alist-free-cert-data-on-exit
                                      cert-data-pass1-saved
                                      (pprogn
-                                      (free-useless-runes-info
-                                       certify-book-info-1 state)
-                                      (f-put-global 'certify-book-info
-                                                    (change
-                                                     certify-book-info
-                                                     certify-book-info-1
-                                                     :useless-runes-info nil
-                                                     :include-book-phase t)
-                                                    state)
+                                      (update-useless-runes old-useless-runes
+                                                            state)
                                       (assert$
                                        (listp index/old-wrld)
                                        (print-certify-book-step-3

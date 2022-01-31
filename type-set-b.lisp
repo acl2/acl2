@@ -1450,45 +1450,75 @@
     (& nil)))
 
 (defrec certify-book-info
-
-; The useless-runes-info field is first here because that is the field that
-; changes the most often, in the case that we are using data from the
-; @useless-runes.lsp file.  It can have any of the following forms; a
-; capitalized symbol indicates that exact symbol in the "ACL2" package.
-
-; NIL
-;   We are not doing anything with useless-runes.
-
-; (CHANNEL chan . pkg-names)
-;   Chan is an output channel for writing to the @useless-runes.lsp file.
-;   Pkg-names lists the known package names in the certification world,
-;   including those that are hidden.
-
-; (FAST-ALIST . fal)
-;   Fal is a fast-alist, each of whose pairs associates an event name (a
-;   symbol) with a list of "useless" runes for that event.
-
-; (THEORY . augmented-theory)
-;   Augmented-theory is associated with the current event in the global
-;   fast-alist.
-
-  (useless-runes-info include-book-phase cert-op . full-book-name)
+  (include-book-phase cert-op . full-book-name)
   nil) ; could replace with t sometime
 
+(defrec useless-runes
+
+; Essay on Useless-runes
+
+; See :doc useless-runes for background.  Here we describe the useless-runes
+; record and a bit about how it comes into play.
+
+; The value of state global 'useless-runes has useless-runes record type when
+; that value is non-nil.  Each :tag value has corresponding associated :data,
+; as shown below.  The :full-book-name is a full pathname of the relevant .lisp
+; file.
+
+; :tag = CHANNEL -- used for writing useless-runes
+
+;   Then :data is (chan . pkg-names), where chan is an output channel for
+;   writing to the @useless-runes.lsp file, and pkg-names lists the known
+;   package names in the certification world, including those that are hidden.
+
+; :tag = FAST-ALIST -- associates names with data from useless-runes file
+
+;   Then :data is a fast-alist, each of whose pairs associates an event name (a
+;   symbol) with a list of lists of "useless" runes for that event.  It's a
+;   list of lists, rather than a list, because an event name may occur more
+;   than once in a book, e.g., for a defun followed by a verify-guards.  We'll
+;   pop one list of runes from the associated list of lists every time we
+;   process a given event name.
+
+; :tag = THEORY -- useless-runes data for a single event
+
+;   Then :data is an augmented runic theory associated with the current event
+;   in the global fast-alist.
+
+  (tag data . full-book-name)
+
+; The "cheap" flag below is nil because the flow is a bit odd for state global
+; 'useless-runes, so we are programming defensively.  Continuing with the
+; Essay, let's discuss that flow.
+
+; First, chk-acceptable-ld-fn is called in ld-fn0 (and, logically, in ld-fn1).
+; Its subroutine, chk-acceptable-ld-fn1, converts the original useless-runes
+; value (whether via :useless-runes argument or environment variable) to a
+; useless-runes record.
+
+; Then, f-put-ld-specials updates state global useless-runes with that
+; useless-runes record or, when appropriate, nil.  That function is called when
+; ld gets going in ld-fn-body and also when cleaning up at the end.  At this
+; point the existing useless-runes structure is freed.
+
+; Note that when ld-fn-alist is called with its bind-flg argument set to nil,
+; it binds state global 'useless-runes to nil in the alist.  The point is to
+; avoid using environment variables in system-level calls of ld-fn, as when
+; loading acl2-customization files.  This is OK because the user calls ld, not
+; ld-fn, and ld sets the bind-flg to t.
+
+  nil)
+
 (defun active-useless-runes (state)
-  (let ((certify-book-info (f-get-global 'certify-book-info state)))
-    (and certify-book-info
-         (let ((useless-runes-info (and certify-book-info
-                                        (access certify-book-info
-                                                certify-book-info
-                                                :useless-runes-info))))
-           (and (eq (car useless-runes-info) 'THEORY)
-                (cdr useless-runes-info))))))
+  (let ((useless-runes (f-get-global 'useless-runes state)))
+    (and useless-runes
+         (and (eq (access useless-runes useless-runes :tag) 'THEORY)
+              (access useless-runes useless-runes :data)))))
 
 (defun useless-runes-filename (full-book-name)
 
-; This is analogous to expansion-filename, but for the file containing useless
-; rune information.  See expansion-filename.
+; This is analogous to expansion-filename, but for the file containing
+; useless-runes information.  See expansion-filename.
 
   (let ((len (length full-book-name))
         (posn (search *directory-separator-string* full-book-name
@@ -1515,14 +1545,14 @@
 
 (defun active-useless-runes-filename (state)
 
-; This is analogous to expansion-filename, but for the file containing useless
-; rune information.  See expansion-filename.  NOTE: This function does not
-; check that the resulting file actually exists!
+; This is analogous to expansion-filename, but for the file containing
+; useless-runes information.  See expansion-filename.  NOTE: This function does
+; not check that the resulting file actually exists!
 
-  (let* ((info (f-get-global 'certify-book-info state)))
-    (and info
+  (let ((useless-runes (f-get-global 'useless-runes state)))
+    (and useless-runes
          (useless-runes-filename
-          (access certify-book-info info :full-book-name)))))
+          (access useless-runes useless-runes :full-book-name)))))
 
 (defun@par chk-theory-invariant1 (theory-expr ens invariant-alist errp-acc ctx
                                               state)

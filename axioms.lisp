@@ -14686,6 +14686,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; save n worlds for undoing undos.  If n is 0, no undoing of undos is possible.
 ; If n is 1, the last undo can be undone.
 
+    (useless-runes . nil)
     (user-home-dir . nil) ; set first time entering lp
     (verbose-theory-warning . t)
     (verify-termination-on-raw-program-okp . (apply$-lambda apply$-prim))
@@ -15494,9 +15495,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defconst *initial-ld-special-bindings*
 
+; Warning: Keep this in sync with f-get-ld-specials,
+; chk-acceptable-ld-fn1-pair, *initial-ld-special-bindings*, ld-alist-raw,
+; wormhole, and ld.
+
 ; This alist is used by initialize-acl2 to set the initial values of the LD
 ; specials.  It is assumed by reset-ld-specials that the first three are the
-; channels.
+; channels.  There are no entries for current-package or useless-runes, even
+; though these correspond to LD keyword arguments, because they are not LD
+; specials.
 
   `((standard-oi . ,*standard-oi*)
     (standard-co . ,*standard-co*)
@@ -21606,6 +21613,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;   ld-skip-proofsp ;;; used in macro skip-proofs; treat bogus values as t
     ld-redefinition-action
     current-package
+    useless-runes
     standard-oi
     standard-co
     proofs-co
