@@ -160,6 +160,7 @@
 
 (defund term-should-be-trimmed-axe-helper (width term operators dag-array)
   (declare (xargs :guard (and (natp width)
+                              (member-eq operators '(all non-arithmetic))
                               (or (myquotep term)
                                   (and (natp term)
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term)))))))
@@ -189,9 +190,11 @@
 ;OPERATORS should be 'all or 'non-arithmetic
 ;maybe we should add the option to not trim logical ops?  but that's not as dangerous as trimming arithmetic ops...
 (defund term-should-be-trimmed-axe (quoted-width term operators dag-array)
-  (declare (xargs :guard (or (myquotep term)
-                             (and (natp term)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))))
+  (declare (xargs :guard (and (or (myquotep term)
+                                  (and (natp term)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))
+                              ;; (member-equal operators '('all 'non-arithmetic)) ;todo: why are these quoted?
+                              )))
   (if (not (and (myquotep quoted-width)
                 (natp (unquote quoted-width)) ;check natp or posp?
                 (or (equal operators ''all)
@@ -212,9 +215,11 @@
 ;adds 1 to QUOTED-WIDTH;
 ;for (slice 7 0 x) the relevant width to consider is 8, not 7.  likewise for (getbit 7 x).
 (defund term-should-be-trimmed-axe-plus-one (quoted-width term operators dag-array)
-  (declare (xargs :guard (or (myquotep term)
-                             (and (natp term)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))))
+  (declare (xargs :guard (and (or (myquotep term)
+                                  (and (natp term)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))
+                              ;; (member-equal operators '('all 'non-arithmetic)) ;todo: why are these quoted?
+                              )))
   (if (not (and (myquotep quoted-width)
                 (natp (unquote quoted-width))
                 (or (equal operators ''all)

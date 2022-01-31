@@ -141,10 +141,10 @@
         (bind-var-to-bv-term-size var-name term)
       nil)))
 
-(defund term-should-be-trimmed2-helper (width term operators)
+(defund term-should-be-trimmed-helper (width term operators)
   (declare (xargs :guard (and (natp width)
                               (pseudo-termp term)
-                              (member-eq operators '(all non-arithmetic)))))
+                              (member-eq operators '(:all :non-arithmetic)))))
   (if (quotep term)
       (or (not (natp (unquote term)))
           ;;(< width (integer-length (unquote term)))
@@ -169,14 +169,14 @@
                 (< width size))))))
 
 ;TODO: Does this functionality already exist?
-;OPERATORS should be 'all or 'non-arithmetic
+;OPERATORS should be ':all or ':non-arithmetic
 ;maybe we should add the option to not trim logical ops?  but that's not as dangerous as trimming arithmetic ops...
-(defund term-should-be-trimmed2 (quoted-width term operators)
+(defund term-should-be-trimmed (quoted-width term operators)
   (declare (xargs :guard (and (myquotep quoted-width)
                               (natp (unquote quoted-width))
                               (pseudo-termp term)
-                              (member-eq operators '(all non-arithmetic)))))
+                              (member-eq operators '(:all :non-arithmetic)))))
   (if (not (quotep quoted-width)) ;check natp or posp?
       nil                         ;; warning or error?
     (let ((width (unquote quoted-width)))
-      (term-should-be-trimmed2-helper width term operators))))
+      (term-should-be-trimmed-helper width term operators))))
