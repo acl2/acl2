@@ -1,6 +1,6 @@
 ; Syntheto Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,12 +19,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc syntheto
-  :parents (kestrel-books)
+  :parents (acl2::kestrel-books)
   :short "An ACL2 library for the Syntheto language."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Syntheto is a front-end language for ACL2 and "
+    "Syntheto is a surface language for ACL2 and "
     (xdoc::seetopic "apt::apt" "APT")
     ", aimed at a wider range of users than typical ACL2 and APT experts.")
    (xdoc::p
@@ -38,7 +38,7 @@
      that correspond very closely to the Syntheto abstract syntax.
      These macros can be bidirectionally translated
      to/from non-ACL2 representations of the Syntheto abstract syntax.
-     In particular, this will be used in an IDE for Syntheto
+     In particular, this is used in an IDE for Syntheto
      that Vanderbilt University is developing
      in collaboration with Kestrel Institute.")
    (xdoc::p
