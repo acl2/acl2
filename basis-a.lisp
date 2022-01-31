@@ -502,6 +502,7 @@
 (defmacro wormhole (name entry-lambda input form
                          &key
                          (current-package 'same current-packagep)
+                         (useless-runes 'same useless-runesp)
                          (ld-skip-proofsp 'same ld-skip-proofspp)
                          (ld-redefinition-action 'save ld-redefinition-actionp)
                          (ld-prompt ''wormhole-prompt)
@@ -515,6 +516,11 @@
                          (ld-query-control-alist 'same ld-query-control-alistp)
                          (ld-verbose 'same ld-verbosep)
                          (ld-user-stobjs-modified-warning ':same))
+
+; Warning: Keep this in sync with f-get-ld-specials, f-put-ld-specials,
+; *initial-ld-special-bindings*, ld-alist-raw, chk-acceptable-ld-fn1-pair, and
+; ld.
+
   `(with-wormhole-lock
     (prog2$
      (wormhole-eval ,name ,entry-lambda
@@ -531,6 +537,9 @@
        ,@(append
           (if current-packagep
               (list `(cons 'current-package ,current-package))
+            nil)
+          (if useless-runesp
+              (list `(cons 'useless-runes ,useless-runes))
             nil)
           (if ld-skip-proofspp
               (list `(cons 'ld-skip-proofsp ,ld-skip-proofsp))

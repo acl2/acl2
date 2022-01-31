@@ -3968,7 +3968,7 @@
             deferred-ttag-notes       ;;; see comment immediately above
             deferred-ttag-notes-saved ;;; see comment immediately above
 
-            certify-book-info         ;;; need effect from with-useless-runes
+            useless-runes             ;;; need changes from with-useless-runes
 
 ; The following two are protected a different way; see
 ; protect-system-state-globals.
