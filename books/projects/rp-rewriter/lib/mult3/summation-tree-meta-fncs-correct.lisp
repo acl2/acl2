@@ -477,7 +477,7 @@
                             (:REWRITE VALID-SC-EX-FROM-RP-2)
                             (:DEFINITION EVAL-AND-ALL)
                             (:DEFINITION NFIX)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE DEFAULT-*-2)
                             (:REWRITE LT-TO-GT)
                             (:DEFINITION TRANS-LIST)
@@ -648,7 +648,7 @@
                             )
                            (rp-evlt-of-ex-from-rp
                             f2-of-times2
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:TYPE-PRESCRIPTION VALID-SC)
                             (:REWRITE VALID-SC-WHEN-SINGLE-C-P)
                             (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
@@ -761,7 +761,7 @@
                              ;; VALID-SC-SUBTERMS-CONS
                              (:DEFINITION SUM-LIST-EVAL)
                              (:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                              (:REWRITE DEFAULT-CAR)
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
                              (:DEFINITION VALID-SC-SUBTERMS)
@@ -1012,7 +1012,7 @@
                            (ex-from-rp
                             (:DEFINITION VALID-SC)
                             (:DEFINITION EVAL-AND-ALL)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE EX-FROM-SYNP-LEMMA1)
                             (:DEFINITION TRANS-LIST)
                             rp-evlt-of-ex-from-rp
@@ -1216,7 +1216,7 @@
 
                             ;;(:DEFINITION VALID-SC)
                             ;;(:DEFINITION SUM-LIST-EVAL)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:TYPE-PRESCRIPTION BINARY-SUM)
                             (:TYPE-PRESCRIPTION VALID-SC)
                             (:REWRITE GET-MAX-MIN-VAL-CORRECT)
@@ -1337,7 +1337,7 @@
                                (:DEFINITION EVAL-AND-ALL)
                                (:DEFINITION IS-RP$INLINE)
                                (:REWRITE DEFAULT-CDR)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
                                (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                                HAS-BITP-RP
@@ -1485,7 +1485,7 @@
                             (:DEFINITION IS-SYNP$INLINE)
                             (:REWRITE
                              RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
                             (:TYPE-PRESCRIPTION RP-TRANS-LST)
                             (:TYPE-PRESCRIPTION --)
@@ -1686,7 +1686,7 @@
                             (:REWRITE DEFAULT-CDR)
                             (:REWRITE RP-EQUAL-IS-SYMMETRIC)
                             (:REWRITE DEFAULT-CAR)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             valid-sc)))))
 
 (defret s-pattern2-reduce-correct-valid-sc
@@ -1893,7 +1893,7 @@
                             (:DEFINITION RP-TRANS)
                             (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                             (:REWRITE VALID-SC-CADR)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
                             (:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
                             ;;(:REWRITE VALID-SC-CADDR)
@@ -2174,7 +2174,7 @@
                              (:REWRITE DEFAULT-CAR)
                              (:TYPE-PRESCRIPTION SUM-LIST)
                              (:TYPE-PRESCRIPTION O-FINP)
-                             (:REWRITE ACL2::O-FIRST-EXPT-O-INFP)
+;;                             (:REWRITE ACL2::O-FIRST-EXPT-O-INFP)
                              (:REWRITE LTE-AND-GTE-IMPLIES)
                              (:REWRITE LT-TO-GT)
                              (:REWRITE RP-EVL-OF-ZP-CALL)
@@ -2864,7 +2864,7 @@
                              lte-implies-0)
                             (c-pattern1-reduce-correct
                              (:DEFINITION VALID-SC-SUBTERMS)
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                              (:TYPE-PRESCRIPTION VALID-SC-SUBTERMS)
                              get-max-min-val-correct
                              sum-comm-1
@@ -4047,7 +4047,7 @@
                             (:REWRITE MINUS-OF-SUM)
                             (:REWRITE EX-FROM-SYNP-LEMMA1)
                             (:DEFINITION IS-SYNP$INLINE)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE
                              RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
                             (:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
@@ -4228,7 +4228,7 @@
                             (:REWRITE MINUS-OF-SUM)
                             (:REWRITE EX-FROM-SYNP-LEMMA1)
                             (:DEFINITION IS-SYNP$INLINE)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE
                              RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
                             (:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
@@ -4482,7 +4482,7 @@
                             (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
                             (:TYPE-PRESCRIPTION INCLUDE-FNC)
                             (:REWRITE ACL2::FN-CHECK-DEF-NOT-QUOTE)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:TYPE-PRESCRIPTION MULT-FORMULA-CHECKS)
                             (:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
                             (:REWRITE DEFAULT-CDR)
@@ -4766,7 +4766,7 @@
                            (valid-sc
                             ;;(:DEFINITION SUM-LIST-EVAL)
                             (:TYPE-PRESCRIPTION BINARY-M2-CHAIN)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE DEFAULT-CAR)
                             include-fnc
                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
@@ -4896,7 +4896,7 @@
                             (:REWRITE VALID-SC-SUBTERMS-CONS)
                             (:DEFINITION SUM-LIST-EVAL)
                             (:TYPE-PRESCRIPTION BINARY-M2-CHAIN)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE DEFAULT-CAR)
                             include-fnc
                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
@@ -5491,7 +5491,7 @@
                              (:TYPE-PRESCRIPTION VALID-SC)
                              (:TYPE-PRESCRIPTION RP-TERM-LISTP)
                              (:DEFINITION NEW-SUM-MERGE-AUX)
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
 
                              rp-trans
                              ;;rp-evlt-of-ex-from-rp

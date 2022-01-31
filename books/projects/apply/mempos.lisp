@@ -7,7 +7,7 @@
 
 (in-package "ACL2")
 
-(include-book "projects/apply/top" :dir :system)
+(include-book "projects/apply/loop" :dir :system)
 
 ; This book rewrites
 ; (member-equal newvar lst)

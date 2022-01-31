@@ -4,6 +4,7 @@
 
 (in-package "ACL2")
 
+
 (include-book "projects/apply/top" :dir :system)
 
 ; The Little Test - Code7 passes Little Test
@@ -35,6 +36,31 @@
   (loop$ for i of-type integer in ilst
          as  x of-type rational in xlst
          sum :guard (symp c) (+ (isq i) (rsq x) (ssq c))))
+
+
+(defthm true-listp-make-list-ac
+  (equal (true-listp (make-list-ac n val ac))
+         (true-listp ac))
+  :rule-classes
+  ((:rewrite)
+   (:type-prescription :corollary
+    (implies (true-listp ac)
+             (true-listp (make-list-ac n val ac))))))
+
+(defthm integer-listp-make-list-ac
+  (implies (and (integerp x)
+                (integer-listp ac))
+           (integer-listp (make-list-ac n x ac))))
+
+(defthm acl2-number-listp-make-list-ac
+  (implies (and (acl2-numberp x)
+                (acl2-number-listp ac))
+           (acl2-number-listp (make-list-ac n x ac))))
+
+(defthm rational-listp-make-list-ac
+  (implies (and (rationalp x)
+                (rational-listp ac))
+           (rational-listp (make-list-ac n x ac))))
 
 
 ; The Big Test -- Code7 passes the Big Test

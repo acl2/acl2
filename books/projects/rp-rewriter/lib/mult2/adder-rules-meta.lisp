@@ -1165,7 +1165,7 @@
                              (:rewrite valid-sc-caddr)
                              (:rewrite valid-sc-cadddr)
                              (:rewrite default-car)
-                             (:rewrite acl2::o-p-o-infp-car)
+;;                             (:rewrite acl2::o-p-o-infp-car)
                              rp-termp)))))
 
 (defret adder-mux-meta-is-correct

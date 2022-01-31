@@ -39,6 +39,41 @@
 (include-book "projects/apply/top" :dir :system)
 (include-book "sorting/isort" :dir :system)
 
+; Once upon a time, projects/apply/top included some rules about subsets.  But
+; more recently those rules were not exported from top.  But this book
+; inadvently exploited them.  Here are the relevant results previously
+; inherited from top.
+
+(defthm subsetp-reflexive-lemma
+  (implies (subsetp a (cdr b))
+           (subsetp a b)))
+
+(defthm subsetp-reflexive
+  (subsetp a a))
+
+(defthm transitivity-of-subsetp-equal
+  (implies (and (subsetp-equal a b) (subsetp-equal b c))
+           (subsetp-equal a c)))
+
+(defun set-equalp (x y)
+  (and (subsetp-equal x y)
+       (subsetp-equal y x)))
+
+(defequiv set-equalp)
+
+(defthm equal-subsetp-equal
+  (equal (equal (subsetp-equal a b) (subsetp-equal c d))
+         (iff (subsetp-equal a b) (subsetp-equal c d))))
+
+(defcong set-equalp equal (subsetp-equal x y) 1)
+(defcong set-equalp equal (subsetp-equal x y) 2)
+
+(defthm member-equal-remove-duplicates-equal
+  (iff (member-equal x (remove-duplicates-equal l))
+       (member-equal x l)))
+
+; That ends the relevant rules previously inherited from top.
+
 ; The following events define drop-dups-and-sort and prove that it maintains
 ; set-equalp.  We do not yet create any :rewrite-quoted-constant rules!
 ; We're just setting the stage.

@@ -207,7 +207,7 @@
                            (;;valid-rp-statep
                             update-rule-frame-cnts
                             (:definition valid-sc-nt)
-                            (:rewrite acl2::o-p-o-infp-car)
+;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             rp-statep
                             rule-frame-cnts
@@ -249,7 +249,7 @@
                             rule-list-syntaxp
                             update-rule-frame-cnts
                             (:definition valid-sc-nt)
-                            (:rewrite acl2::o-p-o-infp-car)
+;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             rp-statep
                             rule-frame-cnts
@@ -290,10 +290,10 @@
                            (rp-statep
                             ;;update-rules-used
                             (:definition valid-sc-nt)
-                            (:rewrite acl2::o-p-o-infp-car)
+;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             (:rewrite default-cdr)
-                            (:rewrite acl2::o-p-def-o-finp-1)
+;;                            (:rewrite acl2::o-p-def-o-finp-1)
                             (:type-prescription o-p)
                             (:definition rp-hyp$inline)
                             (:definition count-used-rules-flg)
@@ -328,10 +328,10 @@
                            (rp-statep
                             ;;update-rules-used
                             (:definition valid-sc-nt)
-                            (:rewrite acl2::o-p-o-infp-car)
+;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             (:rewrite default-cdr)
-                            (:rewrite acl2::o-p-def-o-finp-1)
+;;                            (:rewrite acl2::o-p-def-o-finp-1)
                             (:type-prescription o-p)
                             (:definition rp-hyp$inline)
                             (:definition count-used-rules-flg)
@@ -423,10 +423,10 @@
                             RULES-USED-BOUNDP
                             ;;update-rules-used
                             (:definition valid-sc-nt)
-                            (:rewrite acl2::o-p-o-infp-car)
+;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             (:rewrite default-cdr)
-                            (:rewrite acl2::o-p-def-o-finp-1)
+;;                            (:rewrite acl2::o-p-def-o-finp-1)
                             (:type-prescription o-p)
                             (:definition rp-hyp$inline)
                             (:definition count-used-rules-flg)
@@ -531,10 +531,10 @@
                             RULES-USED-BOUNDP
                             ;;update-rules-used
                             (:definition valid-sc-nt)
-                            (:rewrite acl2::o-p-o-infp-car)
+;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             (:rewrite default-cdr)
-                            (:rewrite acl2::o-p-def-o-finp-1)
+;;                            (:rewrite acl2::o-p-def-o-finp-1)
                             (:type-prescription o-p)
                             (:definition rp-hyp$inline)
                             (:definition count-used-rules-flg)

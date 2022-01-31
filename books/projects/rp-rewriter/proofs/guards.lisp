@@ -641,7 +641,7 @@
                         (:DEFINITION INCLUDE-FNC)
                         (:REWRITE RP-EVL-OF-RP-EQUAL2)
                         (:DEFINITION RP-EQUAL2)
-                        (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                        (:REWRITE ACL2::O-P-O-INFP-CAR)
                         (:DEFINITION QUOTEP)
                         (:REWRITE RP-EQUAL-IMPLIES-RP-EQUAL2)
                         (:REWRITE LEMMA11)
