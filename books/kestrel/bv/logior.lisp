@@ -330,8 +330,8 @@
                 (< j 256)
                 (natp j))
            (< (logior i j) 256))
-  :hints (("Goal" :use (:instance  <-of-logior-and-expt-of-2 (n 8))
-           :in-theory (disable  <-of-logior-and-expt-of-2))))
+  :hints (("Goal" :use (:instance <-of-logior-and-expt-of-2 (n 8))
+           :in-theory (disable <-of-logior-and-expt-of-2))))
 
 (defthm signed-byte-p-of-logior
   (implies (and (signed-byte-p size i)
