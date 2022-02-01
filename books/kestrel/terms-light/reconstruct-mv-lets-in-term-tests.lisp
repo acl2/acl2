@@ -30,3 +30,16 @@
 ;;                    (foo x)
 ;;                    (declare (ignore v1))
 ;;                    v0)))
+
+;; TODO: Get this to work:
+;; (deftest
+;;   ;; multi-valued:
+;;   (defun foo (x) (mv x x)) ;todo: weird error if this is missing
+;;   (assert-equal (reconstruct-mv-lets-in-term
+;;                  '(+ (mv-nth '0 (mv-list '2 (foo x)))
+;;                      (mv-nth '1 (mv-list '2 (foo x))))
+;;                  (w state))
+;;                 ;; catches the return values of the call of FOO using mv-let:
+;;                 ' (MV-LET (V0 V1)
+;;                     (FOO X)
+;;                     (+ v0 v1))))
