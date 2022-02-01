@@ -47,7 +47,8 @@
       #x10FFFF)
   :hints (("Goal" :in-theory (e/d (combine-utf-16-surrogates
                                    <-of-ash-arg1)
-                                  (<-of-logior-and-expt-of-2))
+                                  (<-of-logior-and-expt-of-2
+                                   <-of-logior-when-constant))
            :use (:instance <-of-logior-and-expt-of-2
                            (n 20)
                            (i (LOGAND 1023 LOW-SURROGATE))
