@@ -1,6 +1,6 @@
 ; Documentation for the Kestrel Books
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -45,6 +45,7 @@
 (include-book "solidity/top")
 (include-book "std/top")
 (include-book "strings-light/doc")
+;; (include-book "syntheto/top")
 (include-book "typed-lists-light/doc")
 (include-book "utilities/top")
 (include-book "utilities/ubi-doc")

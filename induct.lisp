@@ -2730,25 +2730,27 @@
       ((assoc-eq :in-theory hint-settings)
        (let* ((theory0 (cdr (assoc-eq :in-theory hint-settings)))
               (theory1 (augment-runic-theory theory0 wrld))
-              (useless-runes (active-useless-runes state))
-              (old-ens (access rewrite-constant rcnst :current-enabled-structure))
-              (theory (if (and useless-runes
+              (active-useless-runes (active-useless-runes state))
+              (old-ens (access rewrite-constant rcnst
+                               :current-enabled-structure))
+              (theory
+               (if (and active-useless-runes
 
 ; The following two conditions are just an optimization.  If old-ens is (ens
-; state), then presumably useless-runes was already subtracted and we don't
-; need to subtract that list again.  We check the name first since that should
-; be fastest: when the names are EQ, very likely the two enabled-structures are
-; EQ.
+; state), then presumably active-useless-runes was already subtracted and we
+; don't need to subtract that list again.  We check the name first since that
+; should be fastest: when the names are EQ, very likely the two
+; enabled-structures are EQ.
 
-                               (eq (access enabled-structure old-ens
-                                           :array-name)
-                                   (access enabled-structure (ens state)
-                                           :array-name))
-                               (equal old-ens (ens state)))
-                          (set-difference-augmented-theories theory1
-                                                             useless-runes
-                                                             nil)
-                        theory1)))
+                        (eq (access enabled-structure old-ens
+                                    :array-name)
+                            (access enabled-structure (ens state)
+                                    :array-name))
+                        (equal old-ens (ens state)))
+                   (set-difference-augmented-theories theory1
+                                                      active-useless-runes
+                                                      nil)
+                 theory1)))
          (load-theory-into-enabled-structure@par
           :from-hint
           theory
