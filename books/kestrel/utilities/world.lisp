@@ -447,6 +447,18 @@
                 (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world defuns-acc (cons symb defthms-acc))
               (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world defuns-acc defthms-acc))))))))
 
+(defthm symbol-listp-of-mv-nth-0-of-defuns-and-defthms-in-world
+  (implies (and (plist-worldp world)
+                (symbol-listp defuns-acc))
+           (symbol-listp (mv-nth 0 (defuns-and-defthms-in-world world triple-to-stop-at whole-world defuns-acc defthms-acc))))
+  :hints (("Goal" :in-theory (enable defuns-and-defthms-in-world))))
+
+(defthm symbol-listp-of-mv-nth-1-of-defuns-and-defthms-in-world
+  (implies (and (plist-worldp world)
+                (symbol-listp defthms-acc))
+           (symbol-listp (mv-nth 1 (defuns-and-defthms-in-world world triple-to-stop-at whole-world defuns-acc defthms-acc))))
+  :hints (("Goal" :in-theory (enable defuns-and-defthms-in-world))))
+
 ;; Extracts the triples that represent defthms in WORLD.  If
 ;; MAYBE-TRIPLE-TO-STOP-AT is nil, or is not a triple in WORLD, all of the
 ;; defthm triples are returned.  Otherwise, only triples newer than
