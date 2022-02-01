@@ -3472,14 +3472,6 @@
 ;;            (UPDATE-SUBRANGE
 ;;                 2 6 vals2 lst)))
 
-;todo: move
-(defthm update-nth-of-append
-  (equal (update-nth n val (append x y))
-         (if (< (nfix n) (len x))
-             (append (update-nth n val x) y)
-           (append x (update-nth (- n (len x)) val y))))
-  :hints (("Goal" :in-theory (enable equal-of-append))))
-
 (defthm update-nth-of-UPDATE-SUBRANGE-last
   (implies (and (equal (+ 1 n (- m)) (len vals))
                 (natp m)
