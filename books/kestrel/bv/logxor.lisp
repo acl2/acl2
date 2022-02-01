@@ -156,3 +156,12 @@
                 (signed-byte-p size j))
            (signed-byte-p size (logxor i j)))
   :hints (("Goal" :in-theory (e/d (logxor) (signed-byte-p)))))
+
+(defthm <-of-logxor-and-expt
+  (implies (and (< i (expt 2 n))
+                (< j (expt 2 n))
+                (natp i)
+                (natp j)
+                (natp n))
+           (< (logxor i j) (expt 2 n)))
+  :hints (("goal" :in-theory (enable logxor logeqv logorc1))))
