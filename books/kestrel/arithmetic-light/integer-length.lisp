@@ -212,6 +212,12 @@
            (not (< x (expt 2 (+ -1 (integer-length x))))))
   :hints (("Goal" :in-theory (enable integer-length))))
 
+(defthm <-of-expt-of-one-less-of-integer-length-linear
+  (implies (posp x)
+           (not (< x (expt 2 (+ -1 (integer-length x))))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable integer-length))))
+
 (defthm <-of-integer-length-arg1
   (implies (and (syntaxp (not (and (quotep n) (< 1000 (unquote n))))) ;prevent huge calls to EXPT
                 (posp x)
