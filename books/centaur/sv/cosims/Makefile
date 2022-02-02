@@ -96,7 +96,25 @@ FAILING_TEST_TARGETS := \
   paramtypes4/ok \
   param3/ok \
   iface_basic7/ok \
-  pluscolon/ok
+  pluscolon/ok \
+  bin_inside1/ok \
+  bin_inside2/ok \
+  bin_inside3/ok \
+  stream3/ok \
+  stream4/ok
+
+# VL/SV is in several ways more conservative than VCS when instance
+# port expressions don't match the port sizes.  
+
+# The inside operator in VL/SV follows the old VCS behavior in that it
+# compares the test element pairwise with each set element, whereas
+# new versions of VCS instead match the NCV behavior of
+# extending/signing all elements together before comparing.
+
+# Streaming concatenations as LHSes are broken in that if the assigned
+# expression's size is greater than the number of bits in the LHS, the
+# least-significant bits will be used, whereas the spec says the
+# most-significant bits will be used.
 
 SPECFILES := $(wildcard */spec.sv)
 TESTS := $(patsubst %/spec.sv,%,$(SPECFILES))
@@ -129,7 +147,7 @@ IV_PAT :=
 endif
 
 # %/ok : %/outputs.ncv.data %/outputs.vcs.data %/outputs.iv.data cosim-core
-%/ok : $(NCV_PAT) $(VCS_PAT) $(IV_PAT)
+%/ok : $(NCV_PAT) $(VCS_PAT) $(IV_PAT) cosim-core
 	@echo "Making $*/ok"
 	@rm -f $*.ok $*/cosim.out
 	COSIM_TESTDIR=$* $(STARTJOB) -c "./cosim-core < run.lsp &> $*/cosim.out"

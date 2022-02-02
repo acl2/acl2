@@ -303,7 +303,7 @@ with, we can safely remove @('plus') from our module list.</p>")
                   (vl-paramdecllist-alist
                    (vl-paramdecllist-remove-defaults formals)
                    (vl-scopeinfo->locals scopeinfo)))))
-       ((mv ok warnings final-paramdecls elabindex)
+       ((mv ok warnings final-paramdecls elabindex) ;; note: elabindex back to being in module scope
         (vl-scopeinfo-resolve-params
          overrides scopeinfo-with-empty-params elabindex outer-ss outer-scope-path nil warnings)))
     (mv ok warnings elabindex
@@ -1153,7 +1153,7 @@ for each usertype is stored in the res field.</p>"
         (if (or (not x.params) (vl-paramargs-empty-p x.params))
             elabindex
           (b* ((scopes (vl-elabscopes-update-subscope
-                        (vl-elabkey-def x.name)
+                        (vl-elabkey-class x.name)
                         (make-vl-elabscope)
                         (vl-elabindex->scopes))))
             (vl-elabindex-update-scopes scopes))))
@@ -1206,13 +1206,13 @@ for each usertype is stored in the res field.</p>"
        ;; new module name, and clobbering the info associated with the
        ;; unmangled name.
        (scopes (vl-elabindex->scopes))
-       (class-scope (vl-elabscopes-subscope (vl-elabkey-def x.name)
+       (class-scope (vl-elabscopes-subscope (vl-elabkey-class x.name)
                                             (vl-elabindex->scopes)))
        ;; Do it in this order in case x.name and sig.newname are the same!
        (scopes (b* (((unless class-scope) scopes)
-                    (scopes (vl-elabscopes-update-subscope (vl-elabkey-def x.name)
+                    (scopes (vl-elabscopes-update-subscope (vl-elabkey-class x.name)
                                                            (make-vl-elabscope) scopes)))
-                 (vl-elabscopes-update-subscope (vl-elabkey-def sig.newname)
+                 (vl-elabscopes-update-subscope (vl-elabkey-class sig.newname)
                                                 class-scope scopes)))
        (elabindex (vl-elabindex-update-scopes scopes elabindex))
        ;; Go back to original instantiating scope.
