@@ -439,6 +439,11 @@
  <li>Verify guards of functions in
  @('tools/execution/exec-loaders/elf/').</li>
 
+<li>Add support for exception handling.
+Currently the occurence of an exception in the model
+just stores some information in the x86 state stobj,
+and the step function does nothing when that information is present.</li>
+
  </ul>
 
  <h3>Wishlist</h3>
