@@ -9765,6 +9765,166 @@
                              body)
                 (append actuals extra-body-vars))))
 
+(defmacro cmp-to-error-triple (form)
+
+; Here we convert a context-message pair (see the Essay on Context-message
+; Pairs) to an error triple, printing an error message if one is called for.
+
+; Keep in sync with cmp-to-error-triple@par.
+
+  `(mv-let (ctx msg-or-val)
+           ,form
+           (cond (ctx (cond (msg-or-val
+                             (assert$ (not (eq ctx t))
+                                      (er soft ctx "~@0" msg-or-val)))
+                            (t (silent-error state))))
+                 (t (value msg-or-val)))))
+
+#+acl2-par
+(defmacro cmp-to-error-triple@par (form)
+
+; Here we convert a context-message pair (see the Essay on Context-message
+; Pairs) to the #+acl2-par version of an error triple, printing an error
+; message if one is called for.
+
+; Keep in sync with cmp-to-error-triple.
+
+  `(mv-let (ctx msg-or-val)
+           ,form
+           (cond (ctx (cond (msg-or-val
+                             (assert$ (not (eq ctx t))
+                                      (er@par soft ctx "~@0" msg-or-val)))
+                            (t (mv@par t nil state))))
+                 (t (value@par msg-or-val)))))
+
+(defmacro cmp-to-error-double (form)
+
+; This is a variant of cmp-to-error-triple that returns (mv erp val) rather
+; than (mv erp val state).
+
+  `(mv-let (ctx msg-or-val)
+           ,form
+           (cond (ctx (prog2$ (cond (msg-or-val
+                                     (assert$ (not (eq ctx t))
+                                              (error-fms-cw
+                                               nil ctx "~@0"
+                                               (list (cons #\0 msg-or-val)))))
+                                    (t nil))
+                              (mv t nil)))
+                 (t (mv nil msg-or-val)))))
+
+(defmacro cmp-and-value-to-error-quadruple (form)
+
+; We convert a context-message pair and an extra-value (see the Essay on
+; Context-message Pairs) to an error quadruple (mv t value extra-value state),
+; printing an error message if one is called for.
+
+; Keep in sync with cmp-and-value-to-error-quadruple@par.
+
+  `(mv-let (ctx msg-or-val extra-value)
+           ,form
+           (cond
+            (ctx (cond (msg-or-val
+                        (assert$ (not (eq ctx t))
+                                 (mv-let (erp val state)
+                                         (er soft ctx "~@0"
+                                             msg-or-val)
+                                         (declare (ignore erp val))
+                                         (mv t nil extra-value state))))
+                       (t (mv t nil extra-value state))))
+            (t (mv nil msg-or-val extra-value state)))))
+
+#+acl2-par
+(defmacro cmp-and-value-to-error-quadruple@par (form)
+
+; We convert a context-message pair and an extra value (see the Essay on
+; Context-message Pairs) to the #+acl2-par version of an error quadruple,
+; printing an error message if one is called for.
+
+; Keep in sync with cmp-and-value-to-error-quadruple.
+
+  `(mv-let (ctx msg-or-val extra-value)
+           ,form
+           (cond
+            (ctx (cond (msg-or-val
+                        (assert$ (not (eq ctx t))
+                                 (mv-let (erp val)
+                                         (er@par soft ctx "~@0" msg-or-val)
+                                         (declare (ignore erp val))
+                                         (mv t nil extra-value))))
+                       (t (mv t nil extra-value))))
+            (t (mv nil msg-or-val extra-value)))))
+
+(defun er-cmp-fn (ctx msg)
+
+; Warning: Keep in sync with trans-er.  For an explanation, see the
+; corresponding warning in trans-er.
+
+  (declare (xargs :guard t))
+  (mv ctx msg))
+
+(defmacro er-cmp (ctx str &rest args)
+
+; Warning: Keep in sync with trans-er.  For an explanation, see the
+; corresponding warning in trans-er.
+
+  `(er-cmp-fn ,ctx (msg ,str ,@args)))
+
+(defmacro value-cmp (x)
+  `(mv nil ,x))
+
+(defun er-progn-fn-cmp (lst)
+
+; Warning: Keep this in sync with er-progn-fn.
+
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        ((endp (cdr lst)) (car lst))
+        (t (list 'mv-let
+                 '(er-progn-not-to-be-used-elsewhere-ctx
+                   er-progn-not-to-be-used-elsewhere-msg)
+                 (car lst)
+; Avoid possible warning after optimized compilation:
+                 '(declare (ignorable er-progn-not-to-be-used-elsewhere-msg))
+                 (list 'if
+                       'er-progn-not-to-be-used-elsewhere-ctx
+                       '(mv er-progn-not-to-be-used-elsewhere-ctx
+                            er-progn-not-to-be-used-elsewhere-msg)
+                       (list 'check-vars-not-free
+                             '(er-progn-not-to-be-used-elsewhere-ctx
+                               er-progn-not-to-be-used-elsewhere-msg)
+                             (er-progn-fn-cmp (cdr lst))))))))
+
+(defmacro er-progn-cmp (&rest lst)
+  (declare (xargs :guard (and (true-listp lst)
+                              lst)))
+  (er-progn-fn-cmp lst))
+
+(defmacro er-let*-cmp (alist body)
+
+; Warning: Keep this in sync with er-let*.
+
+; This macro introduces the variable er-let-star-use-nowhere-else.
+; The user who uses that variable in his forms is likely to be
+; disappointed by the fact that we rebind it.
+
+  (declare (xargs :guard (and (doublet-listp alist)
+                              (symbol-alistp alist))))
+  (cond ((null alist)
+         (list 'check-vars-not-free
+               '(er-let-star-use-nowhere-else)
+               body))
+        (t (list 'mv-let
+                 (list 'er-let-star-use-nowhere-else
+                       (caar alist))
+                 (cadar alist)
+                 (list 'cond
+                       (list 'er-let-star-use-nowhere-else
+                             (list 'mv
+                                   'er-let-star-use-nowhere-else
+                                   (caar alist)))
+                       (list t (list 'er-let*-cmp (cdr alist) body)))))))
+
 (defun cmp-do-body-setq (x twvts term)
 
 ; X is of the form (setq var val).
@@ -9834,14 +9994,34 @@
              ``ersatz'' symbols: ~&1.  Please contact the ACL2 implementors."
             x bad))))
 
-(defun cmp-do-body-1 (x twvts aterm vars)
+(defun collect-nontrivial-formals-in-set (formals actuals vars)
+
+; Formals and actuals are in one-one correspondence.
+
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (true-listp actuals)
+                              (= (length formals) (length actuals))
+                              (symbol-listp vars))))
+  (cond ((endp formals) nil)
+        ((or (eq (car formals) (car actuals))
+             (not (member-eq (car formals) vars)))
+         (collect-nontrivial-formals-in-set (cdr formals) (cdr actuals) vars))
+        (t (cons (car formals)
+                 (collect-nontrivial-formals-in-set (cdr formals)
+                                                    (cdr actuals)
+                                                    vars)))))
+
+(defun cmp-do-body-1 (x twvts aterm vars wrld)
 
 ; This function carries out the algorithm described in the Algorithm
 ; Description given in a comment in cmp-do-body, on the given x, twvts, and
 ; vars as described there.  See that comment for relevant background.
 
+; We return a context-message pair: (mv nil term) in the normal case, but (mv t
+; msg) in the error case.
+
 ; Here, aterm is a term representing an alist formed by mapping each quoted
-; variable in vars to that variable.  We return a term representing the alist
+; variable in vars to that variable.  The term returned represents the alist
 ; produced by SETQ and MV-SETQ forms encountered during the evaluation of x
 ; with respect to the alist corresponding to aterm.  Our intention is to
 ; represent a pass through the do-body, x, by apply$ing the corresponding do-fn
@@ -9851,151 +10031,206 @@
   (cond
    ((or (variablep x)
         (fquotep x))
-    (cmp-do-body-exit nil *nil* aterm))
+    (value-cmp (cmp-do-body-exit nil *nil* aterm)))
    ((flambda-applicationp x)
-    (let ((beta-reduced (subcor-var (lambda-formals (ffn-symb x))
-                                    (fargs x)
-                                    (lambda-body (ffn-symb x)))))
-      (cmp-do-body-1 beta-reduced twvts aterm vars)))
+    (let ((body (lambda-body (ffn-symb x))))
+      (cond ((ersatz-symbols t body)
+             (let* ((formals (lambda-formals (ffn-symb x)))
+                    (actuals (fargs x))
+                    (bad
+                     (collect-nontrivial-formals-in-set formals actuals vars)))
+               (cond
+                (bad
+ ; See example bad-var in community book books/projects/apply/loop-tests.lisp.
+                 (er-cmp t
+                         "The variable~#0~[ ~&0 is~/s ~&0 are~] illegally ~
+                          bound in the enclosing expression ~x1.  This is ~
+                          illegal because no bound variable may occur free in ~
+                          its enclosing DO loop$ expression.  See :DOC ~
+                          do-loop$."
+                         bad
+                         (untranslate-do-body x wrld)))
+                (t (er-let*-cmp ((val
+                                  (cmp-do-body-1 (lambda-body (ffn-symb x))
+                                                 twvts aterm vars wrld)))
+                     (value-cmp (make-lambda-term
+                                 (lambda-formals (ffn-symb x))
+                                 (fargs x)
+                                 val)))))))
+            (t (value-cmp (prog2$-call x
+                                       (cmp-do-body-exit nil *nil* aterm)))))))
    (t (case (ffn-symb x)
         (IF
          (cond
           ((and (not (ersatz-symbols t (fargn x 2)))
                 (not (ersatz-symbols t (fargn x 3))))
-           (prog2$-call x
-                        (cmp-do-body-exit nil *nil* aterm)))
+           (value-cmp (prog2$-call x
+                                   (cmp-do-body-exit nil *nil* aterm))))
           (t
-           (fcons-term* 'IF
-                        (fargn x 1)
-                        (cmp-do-body-1 (fargn x 2) twvts aterm vars)
-                        (cmp-do-body-1 (fargn x 3) twvts aterm vars)))))
+           (er-let*-cmp ((arg2
+                          (cmp-do-body-1 (fargn x 2) twvts aterm vars wrld))
+                         (arg3
+                          (cmp-do-body-1 (fargn x 3) twvts aterm vars wrld)))
+             (value-cmp (fcons-term* 'IF (fargn x 1) arg2 arg3))))))
         (return-last
-         (cond
-          ((equal (fargn x 1) ''progn)
+         (prog2$
+          (chk-no-ersatz-symbols-p (fargn x 2) 'cmp-do-body-1)
+          (cond
+           ((not (ersatz-symbols t (fargn x 3)))
+            (value-cmp (prog2$-call
+                        x
+                        (cmp-do-body-exit nil *nil* aterm))))
+           ((equal (fargn x 1) ''progn)
 
-; We are looking at a subterm of a well-formed-do-body, possibly beta-reduced.
-; It is appropriate to place the relevant dcl-guardians above the alist that we
-; are building.
+; This could be a prog2$ call with dcl-guardians coming from a LET.  We are
+; looking at a subterm of a well-formed-do-body, so (regardless of what we are
+; looking at) it is appropriate to place the prog2$ call (possibly for
+; dcl-guardians) above the alist that we are building.
 
-           (prog2$
-            (chk-no-ersatz-symbols-p (fargn x 2) 'cmp-do-body-1)
-            (prog2$-call
-             (fargn x 2)
-             (cmp-do-body-1 (fargn x 3) twvts aterm vars))))
-          (t
+            (er-let*-cmp ((arg3
+                           (cmp-do-body-1 (fargn x 3) twvts aterm vars wrld)))
+              (value-cmp (prog2$-call
+                          (fargn x 2)
+                          arg3))))
+           (t
 
 ; This is presumably impossible since we are exploring a well-formed do-body.
 
-           (er hard 'cmp-do-body-1
-               "Implementation error: unexpected term, ~x0.  Please contact ~
-                the ACL2 implementors."
-               x))))
+            (er-cmp t
+                    "Implementation error: unexpected term, ~x0.  Please ~
+                     contact the ACL2 implementors."
+                    x)))))
         (ersatz-loop-finish
-         (cmp-do-body-exit :loop-finish *nil* aterm))
+         (value-cmp (cmp-do-body-exit :loop-finish *nil* aterm)))
         (ersatz-return
-         (cmp-do-body-exit :return (fargn x 1) aterm))
+         (value-cmp (cmp-do-body-exit :return (fargn x 1) aterm)))
         (ersatz-setq
-         (cmp-do-body-exit nil
-                           *nil*
-                           (cmp-do-body-setq x twvts aterm)))
+         (value-cmp (cmp-do-body-exit nil
+                                      *nil*
+                                      (cmp-do-body-setq x twvts aterm))))
         (ersatz-mv-setq
-         (cmp-do-body-exit nil
-                           *nil*
-                           (cmp-do-body-mv-setq x vars twvts aterm)))
+         (value-cmp (cmp-do-body-exit nil
+                                      *nil*
+                                      (cmp-do-body-mv-setq x vars twvts
+                                                           aterm))))
         (ersatz-prog2
          (let ((x1 (fargn x 1))
                (x2 (fargn x 2)))
            (cond
             ((or (variablep x1)
                  (fquotep x1))
-             (cmp-do-body-1 x2 twvts aterm vars))
+             (cmp-do-body-1 x2 twvts aterm vars wrld))
             ((flambda-applicationp x1)
-             (let ((beta-reduced (subcor-var (lambda-formals (ffn-symb x1))
-                                             (fargs x1)
-                                             (lambda-body (ffn-symb x1)))))
-               (cmp-do-body-1 (fcons-term* 'ersatz-prog2 beta-reduced x2)
-                              twvts aterm vars)))
+             (let ((body (lambda-body (ffn-symb x1))))
+               (cond
+                ((ersatz-symbols t body)
+
+; We lift the lambda above the ersatz-prog2.  This may seem dangerous, because
+; of the possibility of capturing its variables in x2.  However, that cannot
+; happen, because of the check we make above that any lambda formal bound to
+; other than itself must not be in vars, which includes all free variables of
+; the enclosing DO body.  Of course we might be lifting lambdas as well out of
+; x2, leaving a new x2 in which those lambda formals are free in x2 -- but
+; those variables would be bound immediately above by the lambda formal that
+; had been in x2, hence not subject to the bound variables lifted from x1.
+
+                 (cmp-do-body-1 (make-lambda-term
+                                 (lambda-formals (ffn-symb x1))
+                                 (fargs x1)
+                                 (fcons-term* 'ersatz-prog2 body x2))
+                                twvts aterm vars wrld))
+                (t
+                 (er-let*-cmp ((arg2 (cmp-do-body-1 x2 twvts aterm vars wrld)))
+                   (value-cmp (prog2$-call x1 arg2)))))))
             (t
              (case (ffn-symb x1)
                (IF
                 (cond
                  ((and (not (ersatz-symbols t (fargn x1 2)))
                        (not (ersatz-symbols t (fargn x1 3))))
-                  (prog2$-call x1
-                               (cmp-do-body-1 x2 twvts aterm vars)))
-                 (t (fcons-term* 'IF
-                                 (fargn x1 1)
-                                 (cmp-do-body-1 (fcons-term* 'ersatz-prog2
-                                                             (fargn x1 2)
-                                                             x2)
-                                                twvts aterm vars)
-                                 (cmp-do-body-1 (fcons-term* 'ersatz-prog2
-                                                             (fargn x1 3)
-                                                             x2)
-                                                twvts aterm vars)))))
+                  (er-let*-cmp ((arg2
+                                 (cmp-do-body-1 x2 twvts aterm vars wrld)))
+                    (value-cmp (prog2$-call x1 arg2))))
+                 (t (er-let*-cmp ((arg2 (cmp-do-body-1
+                                         (fcons-term* 'ersatz-prog2
+                                                      (fargn x1 2)
+                                                      x2)
+                                         twvts aterm vars wrld))
+                                  (arg3 (cmp-do-body-1
+                                         (fcons-term* 'ersatz-prog2
+                                                      (fargn x1 3)
+                                                      x2)
+                                         twvts aterm vars wrld)))
+                      (value-cmp (fcons-term* 'IF (fargn x1 1) arg2 arg3))))))
                (return-last
-                (cond
-                 ((equal (fargn x1 1) ''progn)
+                (prog2$
+                 (chk-no-ersatz-symbols-p (fargn x1 2) 'cmp-do-body-1)
+                 (cond
+                  ((not (ersatz-symbols t (fargn x1 3)))
+                   (er-let*-cmp ((arg2
+                                  (cmp-do-body-1 x2 twvts aterm vars wrld)))
+                     (value-cmp (prog2$-call x1 arg2))))
+                  ((equal (fargn x1 1) ''progn)
 
-; We are looking at a subterm of a well-formed-do-body.  It is appropriate to
-; place the relevant dcl-guardians above the alist that we are building.  We
-; expect that the first argument of this prog2$ call is free of ersatz symbols;
-; otherwise a well-formed DO body would see a call here of ersatz-prog2, not
-; return-last.
+; This could be a prog2$ call with dcl-guardians coming from a LET.  We are
+; looking at a subterm of a well-formed-do-body, possibly beta-reduced, so
+; (regardless of what we are looking at) it is appropriate to place the prog2$
+; call (possibly for dcl-guardians) above the alist that we are building.
 
-                  (prog2$
-                   (chk-no-ersatz-symbols-p (fargn x1 2) 'cmp-do-body-1)
-                   (prog2$-call
-                    (fargn x1 2)
-                    (cmp-do-body-1 (fcons-term* 'ersatz-prog2
-                                                (fargn x1 3)
-                                                x2)
-                                   twvts aterm vars))))
-                 (t
+                   (er-let*-cmp ((arg2 (cmp-do-body-1
+                                        (fcons-term* 'ersatz-prog2
+                                                     (fargn x1 3)
+                                                     x2)
+                                        twvts aterm vars wrld)))
+                     (value-cmp (prog2$-call
+                                 (fargn x1 2)
+                                 arg2))))
+                  (t
 
 ; This is presumably impossible since we are exploring a well-formed do-body.
 
-                  (er hard 'cmp-do-body-1
-                      "Implementation error: unexpected term, ~x0.  Please ~
-                      contact the ACL2 implementors."
-                      x))))
+                   (er-cmp 'cmp-do-body-1
+                           "Implementation error: unexpected term, ~x0.  ~
+                            Please contact the ACL2 implementors."
+                           x)))))
                (ersatz-prog2 ; then right-associate
                 (cmp-do-body-1 (fcons-term* 'ersatz-prog2
                                             (fargn x1 1)
                                             (fcons-term* 'ersatz-prog2
                                                          (fargn x1 2)
                                                          x2))
-                               twvts aterm vars))
+                               twvts aterm vars wrld))
                (ersatz-loop-finish
-                (cmp-do-body-exit :loop-finish *nil* aterm))
+                (value-cmp (cmp-do-body-exit :loop-finish *nil* aterm)))
                (ersatz-return
-                (cmp-do-body-exit :return (fargn x1 1) aterm))
+                (value-cmp (cmp-do-body-exit :return (fargn x1 1) aterm)))
                (ersatz-setq
-                (cmp-do-body-setq x1
-                                  twvts
-                                  (cmp-do-body-1 x2 twvts aterm vars)))
+                (er-let*-cmp ((arg2
+                               (cmp-do-body-1 x2 twvts aterm vars wrld)))
+                  (value-cmp (cmp-do-body-setq x1 twvts arg2))))
                (ersatz-mv-setq
-                (cmp-do-body-mv-setq x1 vars twvts
-                                     (cmp-do-body-1 x2 twvts aterm vars)))
+                (er-let*-cmp ((arg2
+                               (cmp-do-body-1 x2 twvts aterm vars wrld)))
+                  (value-cmp (cmp-do-body-mv-setq x1 vars twvts arg2))))
                (otherwise
-                (prog2$-call
-                 x1
-                 (cmp-do-body-1 x2 twvts aterm vars))))))))
+                (er-let*-cmp ((arg2 (cmp-do-body-1 x2 twvts aterm vars wrld)))
+                  (value-cmp (prog2$-call x1 arg2)))))))))
         (otherwise
-         (prog2$-call
-          x
-          (cmp-do-body-exit nil *nil* aterm)))))))
+         (value-cmp (prog2$-call
+                     x
+                     (cmp-do-body-exit nil *nil* aterm))))))))
 
-(defun cmp-do-body (x twvts vars)
+(defun cmp-do-body (x twvts vars wrld)
 
 ; X is a well-formed do-body with respect to the settable variables of the
 ; containing loop$ (the cars of the twvts tuples).  Twvts is a list of tuples
 ; of the form (var type-spec type-pred init-val), where type-pred and init-val
-; are fully translated.  We compile x into a term free of ersatz symbols as
-; explained in the Algorithm Description below; in short, that term represents
-; the alist produced by evaluating the SETQ and MV-SETQ forms in x, suitable
-; for embedding in a lambda$ (with appropriate interfacing).  We return that
-; compiled form of x.
+; are fully translated.  Vars is the list of all variables encountered in the
+; original DO loop$ expression.  We compile x into a term free of ersatz
+; symbols as explained in the Algorithm Description below; in short, that term
+; represents the alist produced by evaluating the SETQ and MV-SETQ forms in x,
+; suitable for embedding in a lambda$ (with appropriate interfacing).  We
+; return that compiled form of x.
 
 ; Since the type-specs in twvts are known to the Common Lisp compiler, they
 ; must be enforced on every SETQ and MV-SETQ, by adding the corresponding
@@ -10018,7 +10253,9 @@
 ; The algorithm is implemented by cmp-do-body-1 (called below).  It sweeps
 ; through the translated term, down through the IF-tree and lambdas
 ; (beta-reducing them).  Subterms that contain no ersatz function call have no
-; effect on the alist.  Calls of ersatz-prog2 are normalized by
+; effect on the alist, though we use prog2$ calls to execute those subterms,
+; both so that guard verification sees them and so that side effects from cw
+; and such will be observed.  Calls of ersatz-prog2 are normalized by
 ; right-associating them and lifting IFs.  Calls of ersatz-return and
 ; ersatz-loop-finish terminate appropriately.  Calls of ersatz-setq and
 ; ersatz-mv-setq modify the alist by creating suitable let bindings, which are
@@ -10027,9 +10264,10 @@
 ; (cons 'x x) (cons 'y y))), while (ersatz-prog2 (ersatz-setq x (foo y))
 ; <rest>) generates something like (let ((x (foo y))) <compilation of rest>).
 ; Correctness depends on prohibiting the input term from having let bindings of
-; WITH-bound variables and stobjs in the input that will shadow the let
-; bindings generated as mentioned above.  Imagine, for example, that the user
-; writes a DO loop$ body containing the following subterm.
+; WITH-bound variables, or even variables in vars, and stobjs in the input that
+; will shadow the let bindings generated as mentioned above.  Imagine, for
+; example, that the user writes a DO loop$ body containing the following
+; subterm.
 
 ;   (prog2 (let ((x 17)) (setq x 23))
 ;          (return x)
@@ -10046,7 +10284,7 @@
 ; effects of SETQ and MV-SETQ rather than using substitution.  The reason is
 ; the need for stobj manipulations to be single-threaded, since DO$ calls are
 ; executed.  (Only guard-verified code using Common Lisp loop calls.)  Consider
-; the followign code from the function do-loop-single-threaded-check in
+; the following code from the function do-loop-single-threaded-check in
 ; community book books/projects/apply/loop-tests.lisp.
 
 ;   (progn (setq st
@@ -10083,10 +10321,12 @@
 ; Execution of this form would return an incorrect result because update-fld is
 ; called twice.
 
-  (cmp-do-body-1 x
-                 twvts
-                 (cmp-do-body-alist vars)
-                 vars))
+  (mv-let (erp val)
+    (cmp-do-body-1 x twvts
+                   (cmp-do-body-alist vars)
+                   vars wrld)
+    (cond (erp (cons :fail val))
+          (t val))))
 
 ; Now we create the lambda$ term that runs the compiled do-body term.
 
@@ -10363,166 +10603,6 @@
 
 (defun silent-error (state)
   (mv t nil state))
-
-(defmacro cmp-to-error-triple (form)
-
-; Here we convert a context-message pair (see the Essay on Context-message
-; Pairs) to an error triple, printing an error message if one is called for.
-
-; Keep in sync with cmp-to-error-triple@par.
-
-  `(mv-let (ctx msg-or-val)
-           ,form
-           (cond (ctx (cond (msg-or-val
-                             (assert$ (not (eq ctx t))
-                                      (er soft ctx "~@0" msg-or-val)))
-                            (t (silent-error state))))
-                 (t (value msg-or-val)))))
-
-#+acl2-par
-(defmacro cmp-to-error-triple@par (form)
-
-; Here we convert a context-message pair (see the Essay on Context-message
-; Pairs) to the #+acl2-par version of an error triple, printing an error
-; message if one is called for.
-
-; Keep in sync with cmp-to-error-triple.
-
-  `(mv-let (ctx msg-or-val)
-           ,form
-           (cond (ctx (cond (msg-or-val
-                             (assert$ (not (eq ctx t))
-                                      (er@par soft ctx "~@0" msg-or-val)))
-                            (t (mv@par t nil state))))
-                 (t (value@par msg-or-val)))))
-
-(defmacro cmp-to-error-double (form)
-
-; This is a variant of cmp-to-error-triple that returns (mv erp val) rather
-; than (mv erp val state).
-
-  `(mv-let (ctx msg-or-val)
-           ,form
-           (cond (ctx (prog2$ (cond (msg-or-val
-                                     (assert$ (not (eq ctx t))
-                                              (error-fms-cw
-                                               nil ctx "~@0"
-                                               (list (cons #\0 msg-or-val)))))
-                                    (t nil))
-                              (mv t nil)))
-                 (t (mv nil msg-or-val)))))
-
-(defmacro cmp-and-value-to-error-quadruple (form)
-
-; We convert a context-message pair and an extra-value (see the Essay on
-; Context-message Pairs) to an error quadruple (mv t value extra-value state),
-; printing an error message if one is called for.
-
-; Keep in sync with cmp-and-value-to-error-quadruple@par.
-
-  `(mv-let (ctx msg-or-val extra-value)
-           ,form
-           (cond
-            (ctx (cond (msg-or-val
-                        (assert$ (not (eq ctx t))
-                                 (mv-let (erp val state)
-                                         (er soft ctx "~@0"
-                                             msg-or-val)
-                                         (declare (ignore erp val))
-                                         (mv t nil extra-value state))))
-                       (t (mv t nil extra-value state))))
-            (t (mv nil msg-or-val extra-value state)))))
-
-#+acl2-par
-(defmacro cmp-and-value-to-error-quadruple@par (form)
-
-; We convert a context-message pair and an extra value (see the Essay on
-; Context-message Pairs) to the #+acl2-par version of an error quadruple,
-; printing an error message if one is called for.
-
-; Keep in sync with cmp-and-value-to-error-quadruple.
-
-  `(mv-let (ctx msg-or-val extra-value)
-           ,form
-           (cond
-            (ctx (cond (msg-or-val
-                        (assert$ (not (eq ctx t))
-                                 (mv-let (erp val)
-                                         (er@par soft ctx "~@0" msg-or-val)
-                                         (declare (ignore erp val))
-                                         (mv t nil extra-value))))
-                       (t (mv t nil extra-value))))
-            (t (mv nil msg-or-val extra-value)))))
-
-(defun er-cmp-fn (ctx msg)
-
-; Warning: Keep in sync with trans-er.  For an explanation, see the
-; corresponding warning in trans-er.
-
-  (declare (xargs :guard t))
-  (mv ctx msg))
-
-(defmacro er-cmp (ctx str &rest args)
-
-; Warning: Keep in sync with trans-er.  For an explanation, see the
-; corresponding warning in trans-er.
-
-  `(er-cmp-fn ,ctx (msg ,str ,@args)))
-
-(defmacro value-cmp (x)
-  `(mv nil ,x))
-
-(defun er-progn-fn-cmp (lst)
-
-; Warning: Keep this in sync with er-progn-fn.
-
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) nil)
-        ((endp (cdr lst)) (car lst))
-        (t (list 'mv-let
-                 '(er-progn-not-to-be-used-elsewhere-ctx
-                   er-progn-not-to-be-used-elsewhere-msg)
-                 (car lst)
-; Avoid possible warning after optimized compilation:
-                 '(declare (ignorable er-progn-not-to-be-used-elsewhere-msg))
-                 (list 'if
-                       'er-progn-not-to-be-used-elsewhere-ctx
-                       '(mv er-progn-not-to-be-used-elsewhere-ctx
-                            er-progn-not-to-be-used-elsewhere-msg)
-                       (list 'check-vars-not-free
-                             '(er-progn-not-to-be-used-elsewhere-ctx
-                               er-progn-not-to-be-used-elsewhere-msg)
-                             (er-progn-fn-cmp (cdr lst))))))))
-
-(defmacro er-progn-cmp (&rest lst)
-  (declare (xargs :guard (and (true-listp lst)
-                              lst)))
-  (er-progn-fn-cmp lst))
-
-(defmacro er-let*-cmp (alist body)
-
-; Warning: Keep this in sync with er-let*.
-
-; This macro introduces the variable er-let-star-use-nowhere-else.
-; The user who uses that variable in his forms is likely to be
-; disappointed by the fact that we rebind it.
-
-  (declare (xargs :guard (and (doublet-listp alist)
-                              (symbol-alistp alist))))
-  (cond ((null alist)
-         (list 'check-vars-not-free
-               '(er-let-star-use-nowhere-else)
-               body))
-        (t (list 'mv-let
-                 (list 'er-let-star-use-nowhere-else
-                       (caar alist))
-                 (cadar alist)
-                 (list 'cond
-                       (list 'er-let-star-use-nowhere-else
-                             (list 'mv
-                                   'er-let-star-use-nowhere-else
-                                   (caar alist)))
-                       (list t (list 'er-let*-cmp (cdr alist) body)))))))
 
 (defun warning1-cw (ctx summary str alist wrld state-vars)
 
@@ -20293,20 +20373,25 @@
                                        loop$."
                                       msg))
                           (t
-                           (let ((do-body-term
-                                  (cmp-do-body translated-do-body
-                                               twvts
-                                               vars))
+                           (let ((do-body-term (cmp-do-body translated-do-body
+                                                            twvts vars wrld))
                                  (measure-term
                                   (if mform
                                       translated-mform
                                     (guess-do-body-measure
                                      translated-do-body)))
-                                 (fin-body-term
-                                  (cmp-do-body translated-fin-body
-                                               twvts
-                                               vars)))
+                                 (fin-body-term (cmp-do-body
+                                                 translated-fin-body
+                                                 twvts vars wrld)))
                              (cond
+                              ((eq (car do-body-term) :fail)
+                               (trans-er+? cform x ctx
+                                           "~@0"
+                                           (cdr do-body-term)))
+                              ((eq (car fin-body-term) :fail)
+                               (trans-er+? cform x ctx
+                                           "~@0"
+                                           (cdr fin-body-term)))
                               ((eq measure-term nil)
                                (trans-er+? cform x ctx
                                            "No :MEASURE was provided after ~
