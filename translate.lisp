@@ -9207,7 +9207,7 @@
     (let* ((formals (lambda-formals (ffn-symb x)))
            (body (lambda-body (ffn-symb x)))
            (actuals (fargs x))
-           (body1 (replace-ersatz-functions (fargn body 2))))
+           (body1 (replace-ersatz-functions body)))
       (cons (list 'lambda formals body1)
             (replace-ersatz-functions-list actuals))))
    ((ersatz-functionp (ffn-symb x))
@@ -9306,32 +9306,16 @@
 ; case we also insist that every exit is via a RETURN statement.
 
   (cond
-   ((and (consp finallyp)
-         (or (variablep x)
-             (fquotep x)
-             (not (member-eq (ffn-symb x)
-                             '(ersatz-return if ersatz-loop-finish
-                                             ersatz-prog2)))))
-    (mv nil
-        (msg "the FINALLY clause in a DO loop$ must exit using solely RETURN ~
-              expressions when the :VALUES is other than (NIL).  In this case ~
-              :VALUES is ~x0 yet the FINALLY clause may exit with the ~
-              expression, ~x1."
-             finallyp
-             (let ((expr (untranslate-do-body x wrld)))
-               (cond ((and (consp expr)
-                           (eq (car expr) 'list))
-                      (cons 'mv (cdr expr)))
-                     (t expr))))))
-   ((variablep x)
-    (mv t nil))
-   ((fquotep x)
-    (mv t nil))
    ((flambda-applicationp x)
     (let ((body (lambda-body (ffn-symb x))))
       (cond
-       ((null (ersatz-symbols t body))
-; This is a perfectly normal ACL2 lambda application.
+       ((and (not (consp finallyp))
+             (null (ersatz-symbols t body)))
+
+; This is a perfectly normal ACL2 lambda application.  The multiple-values case
+; (where (consp finallyp)) is handled separately, since we need a RETURN in
+; that case.
+
         (mv t nil))
        (t (let ((bad-fns (ersatz-symbols-list :rename (fargs x))))
             (cond
@@ -9359,6 +9343,32 @@
                                        true-body
                                        settable-vars
                                        wrld)))))))))))
+   ((and (consp finallyp)
+         (or (variablep x)
+             (fquotep x)
+             (not (member-eq (ffn-symb x)
+                             '(ersatz-return if ersatz-prog2)))))
+    (mv nil
+        (let ((expr (untranslate-do-body x wrld)))
+          (msg "the FINALLY clause in a DO loop$ must exit using solely ~
+                RETURN expressions when the :VALUES is other than (NIL).  In ~
+                this case :VALUES is ~x0 yet the FINALLY clause may exit ~
+                with~@1 the expression, ~x2."
+               finallyp
+               (cond ((and (consp expr)
+                           (eq (car expr) 'list))
+
+; The user might be expecting (mv ...) but will see (list ...).  But we don't
+; want to convert (list ...) to (mv ...), because maybe the user really wrote
+; (list ...)!
+
+                      " (logically)")
+                     (t ""))
+               expr))))
+   ((variablep x)
+    (mv t nil))
+   ((fquotep x)
+    (mv t nil))
    (t (case (ffn-symb x)
         (IF
          (let ((bad-fns (ersatz-symbols :rename (fargn x 1))))
@@ -9816,6 +9826,14 @@
                        term+)
      (list mbody))))
 
+(defun chk-no-ersatz-symbols-p (x ctx)
+  (let ((bad (ersatz-symbols nil x)))
+    (or (null bad)
+        (er hard ctx
+            "Implementation error: the term ~x0 unexpectedly contains ~
+             ``ersatz'' symbols: ~&1.  Please contact the ACL2 implementors."
+            x bad))))
+
 (defun cmp-do-body-1 (x twvts aterm vars)
 
 ; This function carries out the algorithm described in the Algorithm
@@ -9832,10 +9850,7 @@
 
   (cond
    ((or (variablep x)
-        (fquotep x)
-        (and (eq (ffn-symb x) 'IF)
-             (not (ersatz-symbols t (fargn x 2)))
-             (not (ersatz-symbols t (fargn x 3)))))
+        (fquotep x))
     (cmp-do-body-exit nil *nil* aterm))
    ((flambda-applicationp x)
     (let ((beta-reduced (subcor-var (lambda-formals (ffn-symb x))
@@ -9844,9 +9859,37 @@
       (cmp-do-body-1 beta-reduced twvts aterm vars)))
    (t (case (ffn-symb x)
         (IF
-         `(IF ,(fargn x 1)
-              ,(cmp-do-body-1 (fargn x 2) twvts aterm vars)
-              ,(cmp-do-body-1 (fargn x 3) twvts aterm vars)))
+         (cond
+          ((and (not (ersatz-symbols t (fargn x 2)))
+                (not (ersatz-symbols t (fargn x 3))))
+           (prog2$-call x
+                        (cmp-do-body-exit nil *nil* aterm)))
+          (t
+           (fcons-term* 'IF
+                        (fargn x 1)
+                        (cmp-do-body-1 (fargn x 2) twvts aterm vars)
+                        (cmp-do-body-1 (fargn x 3) twvts aterm vars)))))
+        (return-last
+         (cond
+          ((equal (fargn x 1) ''progn)
+
+; We are looking at a subterm of a well-formed-do-body, possibly beta-reduced.
+; It is appropriate to place the relevant dcl-guardians above the alist that we
+; are building.
+
+           (prog2$
+            (chk-no-ersatz-symbols-p (fargn x 2) 'cmp-do-body-1)
+            (prog2$-call
+             (fargn x 2)
+             (cmp-do-body-1 (fargn x 3) twvts aterm vars))))
+          (t
+
+; This is presumably impossible since we are exploring a well-formed do-body.
+
+           (er hard 'cmp-do-body-1
+               "Implementation error: unexpected term, ~x0.  Please contact ~
+                the ACL2 implementors."
+               x))))
         (ersatz-loop-finish
          (cmp-do-body-exit :loop-finish *nil* aterm))
         (ersatz-return
@@ -9864,23 +9907,64 @@
                (x2 (fargn x 2)))
            (cond
             ((or (variablep x1)
-                 (fquotep x1)
-                 (and (eq (ffn-symb x1) 'IF)
-                      (not (ersatz-symbols t (fargn x1 2)))
-                      (not (ersatz-symbols t (fargn x1 3)))))
+                 (fquotep x1))
              (cmp-do-body-1 x2 twvts aterm vars))
+            ((flambda-applicationp x1)
+             (let ((beta-reduced (subcor-var (lambda-formals (ffn-symb x1))
+                                             (fargs x1)
+                                             (lambda-body (ffn-symb x1)))))
+               (cmp-do-body-1 (fcons-term* 'ersatz-prog2 beta-reduced x2)
+                              twvts aterm vars)))
             (t
              (case (ffn-symb x1)
                (IF
-                `(IF ,(fargn x1 1)
-                     ,(cmp-do-body-1 `(ersatz-prog2 ,(fargn x1 2) ,x2)
-                                     twvts aterm vars)
-                     ,(cmp-do-body-1 `(ersatz-prog2 ,(fargn x1 3) ,x2)
-                                     twvts aterm vars)))
+                (cond
+                 ((and (not (ersatz-symbols t (fargn x1 2)))
+                       (not (ersatz-symbols t (fargn x1 3))))
+                  (prog2$-call x1
+                               (cmp-do-body-1 x2 twvts aterm vars)))
+                 (t (fcons-term* 'IF
+                                 (fargn x1 1)
+                                 (cmp-do-body-1 (fcons-term* 'ersatz-prog2
+                                                             (fargn x1 2)
+                                                             x2)
+                                                twvts aterm vars)
+                                 (cmp-do-body-1 (fcons-term* 'ersatz-prog2
+                                                             (fargn x1 3)
+                                                             x2)
+                                                twvts aterm vars)))))
+               (return-last
+                (cond
+                 ((equal (fargn x1 1) ''progn)
+
+; We are looking at a subterm of a well-formed-do-body.  It is appropriate to
+; place the relevant dcl-guardians above the alist that we are building.  We
+; expect that the first argument of this prog2$ call is free of ersatz symbols;
+; otherwise a well-formed DO body would see a call here of ersatz-prog2, not
+; return-last.
+
+                  (prog2$
+                   (chk-no-ersatz-symbols-p (fargn x1 2) 'cmp-do-body-1)
+                   (prog2$-call
+                    (fargn x1 2)
+                    (cmp-do-body-1 (fcons-term* 'ersatz-prog2
+                                                (fargn x1 3)
+                                                x2)
+                                   twvts aterm vars))))
+                 (t
+
+; This is presumably impossible since we are exploring a well-formed do-body.
+
+                  (er hard 'cmp-do-body-1
+                      "Implementation error: unexpected term, ~x0.  Please ~
+                      contact the ACL2 implementors."
+                      x))))
                (ersatz-prog2 ; then right-associate
-                (cmp-do-body-1 `(ersatz-prog2 ,(fargn x1 1)
-                                              (ersatz-prog2 ,(fargn x1 2)
-                                                            ,x2))
+                (cmp-do-body-1 (fcons-term* 'ersatz-prog2
+                                            (fargn x1 1)
+                                            (fcons-term* 'ersatz-prog2
+                                                         (fargn x1 2)
+                                                         x2))
                                twvts aterm vars))
                (ersatz-loop-finish
                 (cmp-do-body-exit :loop-finish *nil* aterm))
@@ -9894,9 +9978,13 @@
                 (cmp-do-body-mv-setq x1 vars twvts
                                      (cmp-do-body-1 x2 twvts aterm vars)))
                (otherwise
-                (cmp-do-body-1 x2 twvts aterm vars)))))))
+                (prog2$-call
+                 x1
+                 (cmp-do-body-1 x2 twvts aterm vars))))))))
         (otherwise
-         (cmp-do-body-exit nil *nil* aterm))))))
+         (prog2$-call
+          x
+          (cmp-do-body-exit nil *nil* aterm)))))))
 
 (defun cmp-do-body (x twvts vars)
 

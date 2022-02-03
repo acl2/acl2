@@ -2495,3 +2495,143 @@ scope containing (SETQ ANS ANS2).
                        (1 . 1)
                        (A . A)
                        (B . B))))
+
+; Some more improvements for DO loop$ expressions were made on 2/2/2022.  The
+; tests below behave better after those improvements.
+
+; This failed before 2/2/2022 (bad translation, so measure allegedly failed to
+; decrease).
+(assert-event
+ (equal (loop$ with temp = '(1 2 3)
+               with ans  = 0
+               do
+               :measure (acl2-count temp)
+               (if (endp temp)
+                   (loop-finish)
+                 (let ((xxx (car temp)))
+                   (declare (type integer xxx))
+                   (progn (setq ans (+ xxx ans))
+                          (setq temp (cdr temp)))))
+               finally (return ans))
+        6))
+
+; This loop$ returned 0 before 2/2/2022.
+(assert-event
+ (equal (loop$ with temp = '(1 2 3)
+               with ans  = 0
+               do
+               :measure (acl2-count temp)
+               (if (endp temp)
+                   (loop-finish)
+                 (progn (let ((xxx (car temp)))
+                          (declare (type integer xxx))
+                          (setq ans (+ xxx ans)))
+                        (setq temp (cdr temp))))
+               finally (return ans))
+        6))
+
+; The next set of definitions are ones that shouldn't guard-verify.  But guard
+; verification succeeded because the translation of DO loop$ expressions tended
+; to throw away expressions that had no effect on the alist being built but
+; could cause guard violations.  The generated proof obligations for guard
+; failed to account for those expressions, leading to successful guard
+; verification yet runtime guard violatios.  Starting 2/2/2022, guard proof
+; obligations require proving (CONSP (CDR (ASSOC-EQ-SAFE 'Y ALIST))), which
+; (happily) fails to prove.
+
+(defun$ my-car (x) (declare (xargs :guard (consp x))) (car x))
+
+; Insert my-car call that should cause guard verification to fail.
+(must-fail
+(defun do-loop2-alternative1-bad (lst y)
+   (declare (xargs :guard (nat-listp lst)))
+   (loop$ with temp = lst
+          with ans = 0
+          do
+          :guard (and (nat-listp temp)
+                      (integerp ans))
+          (if (endp temp)
+              (return ans)
+              (progn (setq ans (+ (car temp) ans))
+	             (my-car y)
+                     (setq temp (cdr temp))))))
+)
+; Raw Lisp error from (my-car 7) when the above was admitted:
+; (do-loop2-alternative1-bad '(4) 7)
+
+; Simpler example: This guard verified before 2/2/2022
+(must-fail
+(defun gv1 (lst y)
+  (declare (xargs :guard t))
+  (loop$ with temp = lst
+	 do
+	 (if (atom temp)
+	     (return temp)
+	   (progn (my-car y)
+		  (setq temp (cdr temp))))))
+)
+; Raw Lisp error before 2/2/2022 from (my-car 7) when the above was admitted:
+; (gv1 '(3) 7)
+
+(must-fail
+(defun gv2 (lst y)
+  (declare (xargs :guard t))
+  (loop$ with temp = lst
+	 do
+	 (if (atom temp)
+	     (return temp)
+	   (progn (my-car y)
+		  (setq temp (cdr temp))))))
+)
+; Raw Lisp error before 2/2/2022 from (my-car 7) when the above was admitted:
+; (gv2 '(3) 7)
+
+(must-fail
+(defun gv3 ()
+  (declare (xargs :guard t))
+  (loop$ with y = 7 do
+	 (loop-finish)
+         finally (my-car y)))
+)
+; Raw Lisp error before 2/2/2022 from (my-car 7) when the above was admitted:
+; (gv3)
+
+(must-fail
+(defun gv4 ()
+  (declare (xargs :guard t))
+  (loop$ with y = 7 do
+	 (loop-finish)
+         finally (if (my-car y) 3 4)))
+)
+; Raw Lisp error before 2/2/2022 from (my-car 7) when the above was admitted:
+; (gv4)
+
+; The following prints once per iteration starting 2/2/2022.  Previously it
+; didn't print at all until it was guard-verified.
+(defun loop-prints-print-cw ()
+  (loop$ with x = '(a b c)
+         do
+         (if (atom x)
+             (return x)
+           (progn (cw "Next: ~x0~%" (car x))
+                  (setq x (cdr x))))))
+(assert-event (null (loop-prints-print-cw)))
+
+; Error message should be clear (but it wasn't before 2/2/2022):
+(must-fail
+(defun bad-finally ()
+  (declare (xargs :guard t))
+  (loop$ with y = 7 do
+         :values (nil nil)
+         (loop-finish)
+         finally (let ((x 17)) (list x y))))
+)
+
+; This is fine.
+(defun finally-cw ()
+  (loop$ with y = 7 do
+         (loop-finish)
+         finally (let ((x 17)) (cw "(list x y) = ~x0~%" (list x y)))))
+; The following should print "(list x y) = (17 7)", but didn't before 2/2/2022.
+(assert-event (null (finally-cw)))
+
