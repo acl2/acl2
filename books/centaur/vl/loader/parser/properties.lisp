@@ -785,7 +785,7 @@ expression in the parens without any edge specifier.</li>
 
   (defparser vl-parse-property-low-prec-unary ()
     :short "Match a property expr beginning with a low precedence unary operator 
-            -- i.e. those with lower precedence than impl operators such as |->"
+            -- i.e. those with lower precedence than impl operators such as @('|->')"
     ;; NOTE: Before this change (and the user of this below in vl-parse-not-property-expr)
     ;; we could't parse e.g.  'foo |-> s_eventually bar'.
     :measure (two-nats-measure (vl-tokstream-measure) 0)
