@@ -40,9 +40,10 @@
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
-(local (include-book "projects/apply/loop" :dir :system))
-;(local (include-book "projects/apply/top" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
+
+(local (include-book "projects/apply/loop" :dir :system))
+(local (in-theory (disable acl2::loop-book-theory)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1385,6 +1386,7 @@
                               collect (pack '* i))))
         (mv nil nil 0 nil)))
     (mv t wrapper n wrapped))
+  :prepwork ((local (in-theory (enable acl2::loop-book-theory))))
   ///
 
   (defret pseudo-term-count-of-atc-check-declar/assign-n-wrapped
