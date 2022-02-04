@@ -595,6 +595,10 @@ my ($max_mem, $max_time, $includes, $book_pbs) = scan_source_file("$file.lisp");
 $max_mem = $max_mem ? ($max_mem + 3) : 4;
 $max_time = $max_time || 240;
 
+$ENV{"CERT_MAX_MEM"} = $max_mem;
+$ENV{"CERT_MAX_TIME"} = $max_time;
+$ENV{"CERT_GOALFILE"} = $goal;
+
 # Get the certification instructions from foo.acl2 or cert.acl2, if either
 # exists, or make a generic certify-book command.
 my $acl2file = (-f "$file.acl2") ? "$file.acl2"
@@ -729,7 +733,7 @@ write_whole_file($lisptmp, $instrs);
     }
 
     write_whole_file($shtmp, $shinsts);
-
+chmod(0750,$shtmp);
 
 # Run it!  ------------------------------------------------
 
