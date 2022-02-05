@@ -3242,7 +3242,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is used both by @(tsee check-function-definition)
-     and by @(tsee check-function-definition-in-recursion).")
+     and by @(tsee check-function-definition-list).")
    (xdoc::p
     "At the top level, the context has no
      types being defined,
@@ -3252,7 +3252,7 @@
      obligation hypotheses.
      But the caller of this function,
      either  @(tsee check-function-definition)
-     or @(tsee check-function-definition-in-recursion),
+     or @(tsee check-function-definition-list),
      extends the context component for the functions being defined;
      thus, this function definition's header is always in the context.
      This motivates the extra guard condition of this ACL2 function.")

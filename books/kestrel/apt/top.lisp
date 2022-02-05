@@ -38,3 +38,5 @@
 (include-book "solve-method-acl2-rewriter")
 
 (include-book "tailrec")
+
+(include-book "wrap-output")

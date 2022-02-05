@@ -52,6 +52,8 @@
 (include-book "tailrec")
 (include-book "tailrec-doc")
 
+(include-book "wrap-output")
+
 ; (depends-on "images/apt-logo.png")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

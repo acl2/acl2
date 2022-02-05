@@ -83,8 +83,6 @@ mutually recursive.</p>
 
 <p>where @('free-1'), ..., @('free-k') are free variables possibly introduced in @('wrapper') if it is a lambda term.</p>
 
-<p>This transformation is in some sense the dual of @(see wrap-input).</p>
-
 <h3>Example Scenarios</h3>
 
 <ul>
@@ -138,7 +136,11 @@ functions that axe has lifted).</li>
 })
 
 
-<p>TODO: Add check: For now, the wrapper should only be over one variable.</p>")
+<p>TODO: Add check: For now, the wrapper should only be over one variable.</p>"
+
+  ;; TODO: When wrap-input is added to community books, restore the following:
+  ;; <p>This transformation is in some sense the dual of @(see wrap-input).</p>
+  )
 
 (defun untranslated-lambdap (x)
   (declare (xargs :guard t))
