@@ -2635,3 +2635,55 @@ scope containing (SETQ ANS ANS2).
 ; The following should print "(list x y) = (17 7)", but didn't before 2/2/2022.
 (assert-event (null (finally-cw)))
 
+; This failed at one point.
+(defun formerly-hard-error-1 (lst)
+  (loop$ with temp = lst with ans = nil
+         do
+         (if (atom temp)
+             (return ans)
+           (progn (ec-call (nth 0 ans))
+                  (setq ans (cons (car temp) ans))
+                  (setq temp (cdr temp))))))
+
+; This can give the wrong answer when our algorithm updates the evolving alist
+; using the let-binding below.  That's why, in source function cmp-do-body-1,
+; we disallow bindings of variables occurring free in the DO loop$, not merely
+; the with-bound variables.
+(must-fail
+(defun bad-var (lst)
+  (loop$ with temp = lst with ans = nil
+         do
+         (if (atom temp)
+             (return ans)
+           (let ((lst (and (consp lst) (cdr lst))))
+             (progn (setq ans (list* lst (car temp) ans))
+                    (setq temp (cdr temp)))))))
+)
+
+(defun bad-var-fixed (lst)
+  (loop$ with temp = lst with ans = nil
+         do
+         (if (atom temp)
+             (return ans)
+           (let ((lst2 (and (consp lst) (cdr lst))))
+             (progn (setq ans (list* lst2 (car temp) ans))
+                    (setq temp (cdr temp)))))))
+(assert-event
+ (equal
+  (bad-var-fixed '(1 2 3))
+  '((2 3) 3 (2 3) 2 (2 3) 1)))
+
+; The following failed when we simply beta-reduced the let.
+(assert-event
+ (equal
+  (loop$ with lst = '(a b c)
+         with blk-index = 0
+         with row-index = 1
+         do
+         (let ((temp (nth blk-index lst)))
+           (progn (setq lst (update-nth blk-index row-index lst))
+                  (setq lst (update-nth row-index temp lst))
+                  (loop-finish)))
+         finally
+         (return lst))
+  '(1 A C)))
