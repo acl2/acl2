@@ -916,6 +916,8 @@
            (ignorable rev-lines))
   (b* (((mv pos-after-line int-list)
         (lrat-flg-int-list-until-0 str len pos nil cnt))
+       ((when (null int-list))
+        (er hard? 'parse-cnf-file "Line ~x0 contains no data." line-num))
        ((unless (integerp pos-after-line)) nil)
        ((unless (< pos-after-line len)) nil)
 
