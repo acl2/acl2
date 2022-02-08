@@ -10,43 +10,61 @@
 
 (in-package "ACL2")
 
-;; TODO: Conside JSON encoding the result (see books/centaur/bridge/to-json.lisp).
-
 (include-book "world")
+(include-book "centaur/bridge/to-json" :dir :system)
 
-(defun print-rule-classes (rule-classes)
+(defund print-rule-classes (rule-classes)
   (declare (xargs :guard (true-listp rule-classes)))
   (if (endp rule-classes)
       nil
-    (let* ((rule-class (first rule-classes))
-           ;; todo: consider not doing this:
-           (rule-class (if (consp rule-class) (car rule-class) rule-class))
-           )
+    (let ((rule-class (first rule-classes)))
       (prog2$ (cw "~x0 " rule-class)
               (print-rule-classes (rest rule-classes))))))
 
-(defun print-defthm-info (defthm-names wrld)
+(defund strip-rule-class-names (rule-classes)
+  (declare (xargs :guard (true-listp rule-classes)))
+  (if (endp rule-classes)
+      nil
+    (let ((rule-class (first rule-classes)))
+      (cons (if (consp rule-class) (car rule-class) rule-class)
+            (strip-rule-class-names (rest rule-classes))))))
+
+(defund print-defthm-info (defthm-names as-jsonp wrld)
   (declare (xargs :guard (and (symbol-listp defthm-names)
+                              (booleanp as-jsonp)
                               (plist-worldp wrld))))
   (if (endp defthm-names)
       nil
     (let* ((defthm-name (first defthm-names))
            (defthm-body (defthm-body defthm-name wrld))
-           (rule-classes (defthm-rule-classes defthm-name wrld)))
-      (progn$ (cw "Name: ~x0~%" defthm-name)
-              (cw "Body: ~x0~%" defthm-body)
-              (cw "Rule-classes: (" rule-classes)
-              (print-rule-classes rule-classes)
-              (cw ")~%~%")
-              (print-defthm-info (rest defthm-names) wrld)))))
+           (rule-classes (defthm-rule-classes defthm-name wrld))
+           ;; todo: consider not doing this:
+           (rule-classes (strip-rule-class-names rule-classes)))
+      (if as-jsonp
+          ;; TODO: Print empty rule-classes as [] rather than NIL?
+          (let ((form (acons :name defthm-name
+                             (acons :body defthm-body
+                                    (acons :rule-classes rule-classes
+                                           nil)))))
+            (progn$ (cw "~s0~%" (bridge::json-encode form))
+                    (print-defthm-info (rest defthm-names) as-jsonp wrld)))
+        (progn$ (cw "Name: ~x0~%" defthm-name)
+                (cw "Body: ")
+                (cw "~x0~%" defthm-body)
+                (cw "Rule-classes: (")
+                (print-rule-classes rule-classes)
+                (cw ")~%~%")
+                (print-defthm-info (rest defthm-names) as-jsonp wrld))))))
 
-(defun print-all-theorems (wrld)
-  (declare (xargs :guard (plist-worldp wrld)))
+(defun print-all-theorems (as-jsonp wrld)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (booleanp as-jsonp))))
   (mv-let (defun-names defthm-names)
     (defuns-and-defthms-in-world wrld nil wrld nil nil)
     (declare (ignore defun-names)) ; todo: don't compute
-    (print-defthm-info defthm-names wrld)))
+    (print-defthm-info defthm-names as-jsonp wrld)))
 
 ;; Example of how to call the tool:
 ;; (include-book "../arithmetic-light/top") ; a book that includes some theorems
-;; (print-all-theorems (w state)) ; print all theorems in the current ACL2 session
+;; (print-all-theorems nil (w state)) ; print all theorems in the current ACL2 session
+;; (print-all-theorems t (w state)) ; print all theorems in the current ACL2 session, as JSON
