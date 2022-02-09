@@ -14,10 +14,10 @@ hausdorff-paradox-1.lisp: Contains the proof of the equivalence between differen
 
 hausdorff-paradox-2.lisp: Proof for the set of poles is countable.
 
-countable-set.lisp: Contains proof for the cartesain product of two countable sets is countable.
+countable-sets.lisp: Contains proof for the cartesain product of two countable sets is countable.
 
 banach-tarski-s2.lisp: Proof of the Banach-Tarski theorem on S^2.
 
-banach-tarski-b-0.lisp: Proof of the Banach-Tarski theorem on the unit ball except for the orogin.
+banach-tarski-b-0.lisp: Proof of the Banach-Tarski theorem on the unit ball except for the origin.
 
 banach-tarski.lisp: Proof of the Banach-Tarski theorem on the unit ball.
