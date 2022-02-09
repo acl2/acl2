@@ -1,6 +1,6 @@
 ; Renaming functions in untranslated terms
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,7 +25,7 @@
 ;; The point of this utility is to preserve as much of the structure of the
 ;; term (macro calls, named constants, lets, etc.) as possible.
 
-;; TODO: Add tests
+;; See tests in rename-functions-tests.lisp.
 
 ;; move
 ;; Returns the acl2-defaults-table as an alist.
@@ -217,6 +217,8 @@
 (mutual-recursion
  ;; Renames all function calls in TERM according to ALIST.  WRLD must contain real or fake info (at least 'formals
  ;; properties) for the cdrs of ALIST, so we can translate terms mentioning them.
+ ;; TODO: Consider generalizing what happens when we find the matching function (e.g., generate some specific term using the args, such as a wrapped call of a new function)
+ ;; Perhaps even try to match a pattern with the old call and apply the resulting unify subst to another pattern (but need rebust code for sublis on untranslated terms).
  (defun rename-functions-in-untranslated-term-aux (term
                                                    alist ; the renaming to apply
                                                    permissivep ;whether, when TERM fails to translate, we should simply return it unchanged (used when applying a heuristic)
@@ -304,7 +306,7 @@
                 (if (macro-namep fn wrld)
                     ;; It's a macro we don't have special handling for:
                     ;; First, we check the translation of the term to see whether it mentions any of the functions to be replaced:
-                    (if (not (intersection-eq (strip-cars alist) (all-fnnames translated-term)))
+                    (if (not (intersection-eq (strip-cars alist) (all-fnnames translated-term))) ; todo: optimize this.  do it sooner?
                         ;; No name to be replaced appears in the translation of TERM, so we can just return TERM (this will be more
                         ;; readable than its translation):
                         term
