@@ -18,7 +18,7 @@
 (include-book "../utilities/doublets2")
 (include-book "kestrel/utilities/translate" :dir :system)
 ;(include-book "kestrel/utilities/forms" :dir :system) ; for farg1, etc.
-(include-book "kestrel/utilities/terms" :dir :system) ;for rename-fns, todo
+(include-book "kestrel/utilities/terms" :dir :system) ;for rename-fns, todo reduce
 (include-book "kestrel/std/system/macro-namep" :dir :system)
 (include-book "kestrel/utilities/magic-macroexpand1-dollar" :dir :system)
 
@@ -26,6 +26,17 @@
 ;; term (macro calls, named constants, lets, etc.) as possible.
 
 ;; See tests in rename-functions-tests.lisp.
+
+;move
+;clash
+;similar to flatten
+;; Doesn't require the lists to be true-lists
+(defun append-all2 (lists)
+  (declare (xargs :guard (true-listp lists)))
+  (if (endp lists)
+      nil
+    (append (true-list-fix (first lists))
+            (append-all2 (rest lists)))))
 
 ;; move
 ;; Returns the acl2-defaults-table as an alist.
@@ -66,16 +77,6 @@
     ;; TREE must be a cons:
     (cons (replace-symbols-in-tree (car tree) alist)
           (replace-symbols-in-tree (cdr tree) alist))))
-
-;move
-;clash
-;similar to flatten
-(defun append-all2 (lists)
-  (declare (xargs :guard (true-listp lists)))
-  (if (endp lists)
-      nil
-    (append (true-list-fix (first lists))
-            (append-all2 (rest lists)))))
 
 ;; Replace the terms in the CLAUSES with the corresponding NEW-TERMS, which
 ;; come in order and correspond to the terms in the existing CLAUSES.  Note
@@ -377,7 +378,7 @@
                                              wrld
                                              state))
 
-(defund rename-functions-in-untranslated-term (term ; and untranslated term
+(defund rename-functions-in-untranslated-term (term ; an untranslated term
                                                function-renaming ; the renaming to apply
                                                state ; needed for magic-macroexpand (why?)
                                                )
@@ -391,10 +392,8 @@
                                         (fn-arities (strip-cars function-renaming) wrld)))
          ;; New fns from the renaming may appear in TERM, but they are not yet
          ;; in the world, so we make this fake world:
-         (fake-wrld (add-fake-fns-to-world new-fns-arity-alist wrld))
-         )
+         (fake-wrld (add-fake-fns-to-world new-fns-arity-alist wrld)))
     (rename-functions-in-untranslated-term-with-fake-world term
                                                            function-renaming ; the renaming to apply
                                                            fake-wrld ; contains real for fake entries for all functions in TERM
-                                                           state
-                                                           )))
+                                                           state)))
