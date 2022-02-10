@@ -49,16 +49,6 @@
            (acons :ignore-ok t (acl2-defaults-table-alist wrld))
            wrld))
 
-;; Throws an error if macroexpansion fails.  Returns the term with one macro call now expanded.
-(defund magic-macroexpand1$$ (term ctx wrld state)
-  (declare (xargs :mode :program
-                  :stobjs state))
-  (b* ((- (cw "NOTE: Macroexpanding non-supported call ~x0.~%" term))
-       ((mv erp term-expanded-one-step) (magic-macroexpand1$ term ctx wrld state))
-       ;; Can this ever happen, given that we translated the term above?
-       ((when erp) (er hard? 'rename-functions-in-untranslated-term-aux "Failed to macroexpand term: ~x0." term)))
-    term-expanded-one-step))
-
 ;; Dumb replacement, without trying to determine whether symbols are vars,
 ;; function names, stuff passed to macros, etc.  TODO: Maybe stop if 'QUOTE is
 ;; encountered?
@@ -275,7 +265,7 @@
                              ,@(rename-functions-in-untranslated-terms-aux result-forms alist permissivep (+ -1 count) wrld state)))
                        ;; Not a supported b*, so macroexpand one step and try again:
                        (prog2$
-                        (cw "NOTE: Macroexpanding non-supported b* form: ~x0.~%" term)
+                        (cw "NOTE: Macroexpanding non-supported b* form: ~x0.~%" term) ; suppress?
                         (rename-functions-in-untranslated-term-aux (magic-macroexpand1$$ term 'rename-functions-in-untranslated-term-aux wrld state)
                                                                    alist permissivep (+ -1 count) wrld state)))))
                (cond ;; (cond <clauses>)
@@ -331,8 +321,10 @@
                                 ;; The term with processed args translates to the right thing, so use it (will be more readable than if we expand the macro call):
                                 term-with-translated-args
                               ;; None of the above worked, so macroexpand one step and try again:
-                              (rename-functions-in-untranslated-term-aux (magic-macroexpand1$$ term 'rename-functions-in-untranslated-term-aux wrld state)
-                                                                         alist permissivep (+ -1 count) wrld state))))))
+                              (prog2$
+                               (cw "NOTE: Macroexpanding non-supported form: ~x0.~%" term) ; suppress?
+                               (rename-functions-in-untranslated-term-aux (magic-macroexpand1$$ term 'rename-functions-in-untranslated-term-aux wrld state)
+                                                                          alist permissivep (+ -1 count) wrld state)))))))
                   ;; It's a function or lambda application:
                   (let* ((args (fargs term))
                          (args (rename-functions-in-untranslated-terms-aux args alist permissivep (+ -1 count) wrld state))
