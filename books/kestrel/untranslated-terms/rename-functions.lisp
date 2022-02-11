@@ -26,6 +26,7 @@
                  (member-equal fn (STRIP-CARS alist)))
             (NATP (CDR (ASSOC-EQUAL fn alist))))))
 
+;; Returns a list of forms of the form (<function> :arg1 ... :argn).
 (defun make-calls-on-args-keywords (fns fn-arity-alist)
   (declare (xargs :guard (and (symbol-listp fns)
                               (symbol-alistp fn-arity-alist)
@@ -38,6 +39,8 @@
       (cons (cons fn (make-arg-keywords arity))
             (make-calls-on-args-keywords (rest fns) fn-arity-alist)))))
 
+;; Rename functions according to function-renaming.  This calls replace-calls-in-untranslated-term
+;; using an alist that maps each function to a form of the form (<new-fn> :arg1 ... :argn).
 (defund rename-functions-in-untranslated-term (term ; an untranslated term
                                                function-renaming ; the renaming to apply
                                                state ; needed for magic-macroexpand (why?)
