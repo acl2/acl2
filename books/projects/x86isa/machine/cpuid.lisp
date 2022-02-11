@@ -35,9 +35,11 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@gmail.com>
+; Contributing Author:
+; Alessandro Coglio   <coglio@kestrel.edu>
 
 (in-package "X86ISA")
-(include-book "state") ;; Need x86p for cpuid-flag-fn
+(include-book "state")
 (include-book "cpuid-constants")
 
 ;; Macros and functions used by utilities in dispatch.lisp to create opcode
@@ -70,8 +72,6 @@
   <li>@('bit'): relevant LSB of @('reg') (0-63)</li>
 
   <li>@('width'): width of the flag field of the output register</li>
-
-  <li>@('x86'): the x86 state </li>
  </ol>
 
  <p>The only constraint about the return value of this function is
@@ -88,6 +88,40 @@
  <p>We also provide macros the following macros to access CPUID feature flags
  conveniently.</p>
 
+ <p>This constrained function used to take the x86 state as additional argument.
+ This allowed the CPUID features to depend on the state,
+ and potentially to change during execution.
+ However, this was causing the generation of proof goals
+ involving potentially different CPUID feature values
+ before and after any operation on the x86 state,
+ because even innocuous operations like writing to a register
+ give different x86 states and thus potentially different CPUID features.
+ It seems clear that most, if not all, CPUID features
+ should be independent from the x86 state;
+ it is yet unclear whether a few of them might depend on the state.
+ However, if they may change from one state to the other,
+ it seems reasonable for that to happen via particular explicit operations.
+ Since none of the state transitions covered by our formal model
+ causes any changes to CPUID features
+ (not because we ignore the potential change in our modeling,
+ but because the parts of the Intel and AMD documentation
+ that our modeled state transitions are based on
+ neither say nor imply anything about CPUID feature changes),
+ it seemed safe to remove the x86 state from this function's arguments.
+ An oddity of having the x86 state as an argument is that
+ the x86 state argument may have its own values in EAX, ECX, etc.,
+ which may differ from the corresponding values passed to the function,
+ which has explicit parameters for those;
+ there is nothing really wrong with this,
+ but it is a sort of redundancy in the inputs of these function
+ and a potential inconsistency between their values as arguments
+ and the corresponding values in the x86 state,
+ and therefore not fully satisfactory.
+ If we ever find that some CPUID features may change during execution,
+ we will extend the model of the x86 state with
+ information about the current values of those features,
+ and we will amend this constrained function to read them from the state.</p>
+
  @(call cpuid-flag)
 
  @(call feature-flag)"
@@ -96,8 +130,8 @@
 
   (encapsulate
 
-    (((cpuid-flag-fn * * * * * x86) => *
-      :formals (eax ecx reg bit width x86)
+    (((cpuid-flag-fn * * * * *) => *
+      :formals (eax ecx reg bit width)
       :guard (and (unsigned-byte-p 32 eax)
                   (unsigned-byte-p 32 ecx)
                   (or (equal reg #.*eax*)
@@ -106,24 +140,22 @@
                       (equal reg #.*edx*))
                   (unsigned-byte-p 6 bit)
                   (posp width)
-                  (<= width 32)
-                  (x86p x86))))
+                  (<= width 32))))
 
     (local
-     (defun cpuid-flag-fn (eax ecx reg bit width x86)
+     (defun cpuid-flag-fn (eax ecx reg bit width)
        (declare
-        (ignorable eax ecx reg bit width x86)
-        (xargs :stobjs x86
-               :guard (and (natp width) (x86p x86))))
+        (ignorable eax ecx reg bit width)
+        (xargs :guard (and (natp width))))
        (loghead width 1)))
 
     (defthm natp-cpuid-flag-fn
-      (natp (cpuid-flag-fn eax ecx reg bit width x86))
+      (natp (cpuid-flag-fn eax ecx reg bit width))
       :rule-classes (:type-prescription))
 
     (defthm unsigned-byte-width-of-cpuid-flag-fn
       (implies (posp width)
-               (unsigned-byte-p width (cpuid-flag-fn eax ecx reg bit width x86)))))
+               (unsigned-byte-p width (cpuid-flag-fn eax ecx reg bit width)))))
 
   (define default-cpuid-flag-fn ((eax  :type (unsigned-byte 32))
                                  (ecx  :type (unsigned-byte 32))
@@ -132,14 +164,13 @@
                                             (equal reg #.*ecx*)
                                             (equal reg #.*edx*)))
                                  (bit   :type (integer 0 63))
-                                 (width :type (integer 1 32))
-                                 x86)
+                                 (width :type (integer 1 32)))
     :ignore-ok t
 
     ;; Let's have everything enabled by default, just to see what breaks and when.
 
     (case eax
-      
+
       (#ux8000_0008
        (case reg
          (#.*eax*
@@ -169,9 +200,7 @@
                         (bit '0)
                         ;; Width of the CPUID field of the output
                         ;; register, 1 by default
-                        (width '1)
-                        ;; x86 state
-                        (x86 'x86))
+                        (width '1))
     ;; CPUID:
 
     ;; 64-bit input:
@@ -180,9 +209,9 @@
     ;; 256-bit output:
     ;; 64 bits each of eax, ebx, ecx, edx
 
-    (list 'cpuid-flag-fn eax ecx reg bit width x86))
+    (list 'cpuid-flag-fn eax ecx reg bit width))
 
-  (define feature-flag (feature-flag x86)
+  (define feature-flag (feature-flag)
     (declare (xargs :guard (member-equal feature-flag *supported-feature-flags*)))
 
     ;; Source: Intel Vol. 2A, Table 3-8 (Information Returned by CPUID instruction)
@@ -379,14 +408,14 @@
   (assert-event
    ;; The default attachment is the reason why the following is true.
    ;; TODO: Parameterize the model w.r.t. these flags.
-   (and (equal (feature-flag :maxphyaddr x86) 52)
-        (equal (feature-flag :linearaddr x86) 48)))
+   (and (equal (feature-flag :maxphyaddr) 52)
+        (equal (feature-flag :linearaddr) 48)))
 
-  (define feature-flags (features x86)
+  (define feature-flags (features)
     :guard (subset-equal features *supported-feature-flags*)
-    :guard-hints (("Goal" :in-theory (e/d (subset-equal) (x86p))))
+    :guard-hints (("Goal" :in-theory (enable subset-equal)))
     (cond ((atom features) 1)
-          ((eql (feature-flag (first features) x86) 0) 0)
-          (t (feature-flags (rest features) x86)))))
+          ((eql (feature-flag (first features)) 0) 0)
+          (t (feature-flags (rest features))))))
 
 ;; ----------------------------------------------------------------------
