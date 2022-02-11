@@ -11,4 +11,5 @@
 (in-package "ACL2")
 
 (include-book "rename-functions")
+(include-book "helpers")
 (include-book "add-conjunct-to-uterm")
