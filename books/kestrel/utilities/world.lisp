@@ -220,16 +220,16 @@
 ;; If NAME is non-recursive, return nil.
 ;; TODO: Use get-clique instead?  But it needs to be fully lifted to :logic mode.
 ;; TODO: Is the order here guaranteed to be the order of functions in the clique?
-(defund fn-recursive-partners (name state)
-  (declare (xargs :stobjs (state)
-                  :guard (symbolp name)))
-  (let ((partners (getpropc name 'recursivep)))
+(defund fn-recursive-partners (name wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))))
+  (let ((partners (getpropc name 'recursivep nil wrld)))
     (if (not (symbol-listp partners))
-        (er hard? 'fn-recursive-partners "The recursive partners of ~x0 are ill-formed." name)
+        (er hard? 'fn-recursive-partners "The recursive partners of ~x0 are unknown or ill-formed." name)
       partners)))
 
 (defthm symbol-listp-of-fn-recursive-partners
-  (symbol-listp (fn-recursive-partners fn state))
+  (symbol-listp (fn-recursive-partners fn wrld))
   :hints (("Goal" :in-theory (enable fn-recursive-partners))))
 
 ;todo: just take wrld
