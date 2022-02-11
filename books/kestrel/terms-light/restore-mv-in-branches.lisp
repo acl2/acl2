@@ -51,7 +51,7 @@
     (let ((fn (ffn-symb term)))
       (if (or (eq 'quote fn)
               (eq 'cons fn))
-          (if (not (and (syntactic-true-listp term)
+          (if (not (and (syntactic-explicit-true-listp term) ; weaken?
                         (= (syntactic-length term) num-values)))
               (er hard? 'restore-mv-in-branches "Failed to restore ~x0 to a term with ~x1 values." term num-values)
             `(mv ,@(syntactic-list-elements term)))

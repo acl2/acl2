@@ -752,7 +752,7 @@
 
             x86isa::create-canonical-address-list-1
 
-            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric
+            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb
             x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
             x86isa::canonical-address-listp-of-cons
             x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
