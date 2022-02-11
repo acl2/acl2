@@ -918,10 +918,10 @@
            (not (memberp a (take n lst))))
   :hints (("Goal" :in-theory (enable take))))
 
-(defun sub1-sub1-cdr-induct (m n lst)
-  (if (zp n)
-      (list m n lst)
-    (sub1-sub1-cdr-induct (+ -1 m) (+ -1 n) (cdr lst))))
+;; (defun sub1-sub1-cdr-induct (m n lst)
+;;   (if (zp n)
+;;       (list m n lst)
+;;     (sub1-sub1-cdr-induct (+ -1 m) (+ -1 n) (cdr lst))))
 
 (defthm nth-of-take-too-high
   (implies (and (<= m n)
@@ -930,7 +930,7 @@
            (equal (nth n (take m data))
                   nil))
   :hints (("Goal"
-           :induct (sub1-sub1-cdr-induct m n data)
+;           :induct (sub1-sub1-cdr-induct m n data)
            :in-theory (e/d (take ;list::nth-of-cons
                             )
                            (;update-nth-becomes-update-nth2-extend-gen

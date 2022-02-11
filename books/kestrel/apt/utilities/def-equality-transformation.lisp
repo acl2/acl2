@@ -58,7 +58,7 @@
 
 ;; Returns an event
 (defun def-equality-transformation-fn (name
-                                       function-body-transformer ; args must be exactly: fn, untranslated-body, wrld, and then the transform-specific-args
+                                       function-body-transformer ; args must be exactly: fn, untranslated-body, state, and then the transform-specific-args
                                        transform-specific-required-args ;arguments to function-body-transformer
                                        transform-specific-keyword-args-and-defaults ;arguments to function-body-transformer
                                        enables ; used for each function (currently)
@@ -91,7 +91,7 @@
        (transform-specific-arg-names (append transform-specific-required-args
                                              (strip-cars transform-specific-keyword-args-and-defaults)))
        (function-body-transformer-formals (fn-formals function-body-transformer wrld))
-       (expected-function-body-transformer-formals (append '(fn untranslated-body wrld) transform-specific-arg-names))
+       (expected-function-body-transformer-formals (append '(fn untranslated-body state) transform-specific-arg-names))
        ((when (not (equal function-body-transformer-formals
                           expected-function-body-transformer-formals)))
         (er hard? 'def-equality-transformation-fn "The function body transformer, ~x0, has formals ~x1 but it must have formals ~x2."
@@ -194,7 +194,7 @@
                 ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
                 ;; We should clear them out here and set them if needed in ,event-generator-name
                 ;; Here we actually make the change to the body:
-                (body (,function-body-transformer fn body wrld ,@transform-specific-arg-names))
+                (body (,function-body-transformer fn body state ,@transform-specific-arg-names))
                 ;; (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
                 ;;                                (fn-arities (strip-cars function-renaming) wrld)))
                 ;; ;; New fns from the renaming may appear as recursive calls, but they are not yet in the world:
@@ -499,7 +499,7 @@
     ))
 
 (defmacro def-equality-transformation (name ; name of the transformation to create
-                                       function-body-transformer ; args should be: function name, untranslated body, wrld, and then the transform-specific-args
+                                       function-body-transformer ; args should be: function name, untranslated body, state, and then the transform-specific-args
                                        transform-specific-required-args
                                        transform-specific-keyword-args-and-defaults ; a list of doublets containing arg names and quoted default values
                                        &key
@@ -536,13 +536,13 @@
 ;;;
 
 ;; The core function for copy-function (does nothing).
-;; Such functions always take: fn, untranslated-body, wrld, and then transformation-specific args (none for copy-function).
+;; Such functions always take: fn, untranslated-body, state, and then transformation-specific args (none for copy-function).
 (defun copy-function-function-body-transformer (fn
                                                 untranslated-body
-                                                wrld)
-  (declare (xargs :guard (and (symbolp fn)
-                              (plist-worldp wrld)))
-           (ignore fn wrld))
+                                                state)
+  (declare (xargs :guard (symbolp fn)
+                  :stobjs state)
+           (ignore fn state))
   untranslated-body)
 
 ;; Copy-function is needed by most other tranformations, because they call
