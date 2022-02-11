@@ -199,7 +199,7 @@ keyword, such as :rational, in the above examples. Such keywords are
 turned into recognizers by creating a regular symbol with a \"p\" at
 the end, e.g, :rational gets turned into rationalp (but :atom gets
 turned into atom). The generated symbols are in the ACL2s package. The
-more general mechanism is to specicy a recognizer using the (:r
+more general mechanism is to specify a recognizer using the (:r
 recognizer) form; an example is (:r complex/complex-rationalp) in the
 acl2-count2 definition above. In this way, you can also specify the
 package of the recognizer.  </p>
