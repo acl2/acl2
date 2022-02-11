@@ -2851,6 +2851,115 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define isodata-gen-new-to-list-of-mv-nth ((old$ symbolp)
+                                           (new$ symbolp)
+                                           (new-fn-unnorm-name symbolp)
+                                           (m natp)
+                                           (names-to-avoid symbol-listp)
+                                           (wrld plist-worldp))
+  :returns (mv (new-to-list-of-mv-nth-name "A @(tsee symbolp).")
+               (new-to-list-of-mv-nth-event "A @(tsee pseudo-event-formp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate a local theorem saying that a call of @('new')
+          can be decomposed via @(tsee mv-nth)s
+          and re-composed via @(tsee list)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is generated only if @('m') is 2 or more
+     (recall that @('m') is the number of results of @('new')).
+     This is used in the proof of the updated new-to-old theorem.")
+   (xdoc::p
+    "This could be proved more generally:
+     if @('x') is a true list of length @('m'),
+     @('x') is equal to @('(list (mv-nth 0 x) ... (mv-nth m-1 x))').
+     Here we generate an instance of this
+     where @('x') is a generic call of @('new').
+     This is a little easier than proving the generic one,
+     proving that the call of @('new') is a true list of length @('m'),
+     and instantiate the generic theorem:
+     the instantiation with the call of @('new')
+     is what we need for the new-to-old theorem proof.
+     The proof should always succeed in the theory consisting of
+     @('new') and @(tsee mv-nth);
+     if we find cases in which it does not,
+     we will implement finer-grained proofs here."))
+  (b* (((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'new-to-list-of-mv-nth
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (x1...xn (formals old$ wrld))
+       (new-call `(,new$ ,@x1...xn))
+       (mv-nth-terms (loop$ for i from 0 to (1- m)
+                            collect `(mv-nth ,i ,new-call)))
+       (formula `(equal ,new-call (list ,@mv-nth-terms)))
+       (hints `(("Goal" :in-theory '(,new$ ,new-fn-unnorm-name mv-nth))))
+       ((mv event &)
+        (evmac-generate-defthm name
+                               :formula formula
+                               :hints hints
+                               :enable nil)))
+    (mv name event names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-updated-new-to-old-thm
+  ((old$ symbolp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (new$ symbolp)
+   (new-to-old$ symbolp)
+   (new-to-list-of-mv-nth-name symbolp)
+   (names-to-avoid symbol-listp)
+   (wrld plist-worldp))
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate the updated @('new-to-old') theorem."
+  (b* (((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'old-to-new-better
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (x1...xn (formals old$ wrld))
+       (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps))
+       (back-of-x1...xn (isodata-gen-back-of-terms x1...xn arg-isomaps))
+       (old-call (fcons-term old$ back-of-x1...xn))
+       (new-call (fcons-term new$ x1...xn))
+       (m (len res-isomaps))
+       (consequent
+        (case m
+          (0 `(equal ,new-call ,old-call))
+          (1 (b* ((forth-res (isodata-isomap->forth (cdar res-isomaps)))
+                  (forth-of-old-call (apply-term* forth-res old-call)))
+               `(equal ,new-call ,forth-of-old-call)))
+          (t (b* ((y1...ym (isodata-gen-result-vars old$ m))
+                  (forth-of-y1...ym (isodata-gen-forth-of-terms y1...ym
+                                                                res-isomaps)))
+               `(equal ,new-call
+                       ,(make-mv-let-call 'mv y1...ym :all old-call
+                                          (fcons-term 'mv
+                                                      forth-of-y1...ym)))))))
+       (formula (implicate (conjoin newp-of-x1...xn)
+                           consequent))
+       (formula (untranslate formula t wrld))
+       (hints
+        (case m
+          (0 `(("Goal" :use ,new-to-old$)))
+          (1 `(("Goal" :use ,new-to-old$)))
+          (t `(("Goal" :use (,new-to-old$
+                             ,new-to-list-of-mv-nth-name))))))
+       ((mv event &)
+        (evmac-generate-defthm name
+                               :formula formula
+                               :hints hints
+                               :enable nil)))
+    (mv event names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define isodata-gen-old-to-new-thm-formula
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
@@ -3047,6 +3156,97 @@
                            :formula formula
                            :hints hints
                            :enable old-to-new-enable$)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-old-to-list-of-mv-nth ((old$ symbolp)
+                                           (old-fn-unnorm-name symbolp)
+                                           (m natp)
+                                           (names-to-avoid symbol-listp)
+                                           (wrld plist-worldp))
+  :returns (mv (old-to-list-of-mv-nth-name "A @(tsee symbolp).")
+               (old-to-list-of-mv-nth-event "A @(tsee pseudo-event-formp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate a local theorem saying that a call of @('old')
+          can be decomposed via @(tsee mv-nth)s
+          and re-composed via @(tsee list)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee isodata-gen-new-to-list-of-mv-nth)."))
+  (b* (((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'old-to-list-of-mv-nth
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (x1...xn (formals old$ wrld))
+       (old-call `(,old$ ,@x1...xn))
+       (mv-nth-terms (loop$ for i from 0 to (1- m)
+                            collect `(mv-nth ,i ,old-call)))
+       (formula `(equal ,old-call (list ,@mv-nth-terms)))
+       (hints `(("Goal" :in-theory '(,old$ ,old-fn-unnorm-name mv-nth))))
+       ((mv event &)
+        (evmac-generate-defthm name
+                               :formula formula
+                               :hints hints
+                               :enable nil)))
+    (mv name event names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-updated-old-to-new-thm
+  ((old$ symbolp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (new$ symbolp)
+   (old-to-new$ symbolp)
+   (old-to-list-of-mv-nth-name symbolp)
+   (names-to-avoid symbol-listp)
+   (wrld plist-worldp))
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate the updated @('old-to-new') theorem."
+  (b* (((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'old-to-new-better
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (x1...xn (formals old$ wrld))
+       (oldp-of-x1...xn (isodata-gen-oldp-of-terms x1...xn arg-isomaps))
+       (forth-of-x1...xn (isodata-gen-forth-of-terms x1...xn arg-isomaps))
+       (new-call (fcons-term new$ forth-of-x1...xn))
+       (old-call (fcons-term old$ x1...xn))
+       (m (len res-isomaps))
+       (consequent
+        (case m
+          (0 `(equal ,old-call ,new-call))
+          (1 (b* ((back-res (isodata-isomap->back (cdar res-isomaps)))
+                  (back-of-new-call (apply-term* back-res new-call)))
+               `(equal ,old-call ,back-of-new-call)))
+          (t (b* ((y1...ym (isodata-gen-result-vars old$ m))
+                  (back-of-y1...ym (isodata-gen-back-of-terms y1...ym
+                                                              res-isomaps)))
+               `(equal ,old-call
+                       ,(make-mv-let-call 'mv y1...ym :all new-call
+                                          (fcons-term 'mv
+                                                      back-of-y1...ym)))))))
+       (formula (implicate (conjoin oldp-of-x1...xn)
+                           consequent))
+       (formula (untranslate formula t wrld))
+       (hints
+        (case m
+          (0 `(("Goal" :use ,old-to-new$)))
+          (1 `(("Goal" :use ,old-to-new$)))
+          (t `(("Goal" :use (,old-to-new$
+                             ,old-to-list-of-mv-nth-name))))))
+       ((mv event &)
+        (evmac-generate-defthm name
+                               :formula formula
+                               :hints hints
+                               :enable nil)))
+    (mv event names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3809,6 +4009,7 @@
      a blank line is printed just before the @(tsee encapsulate),
      for visual separation."))
   (b* ((wrld (w state))
+       (m (len res-isomaps))
        (isomaps (append (strip-cdrs arg-isomaps)
                         (strip-cdrs res-isomaps)))
        (isomaps (remove-duplicates-equal isomaps))
@@ -3857,6 +4058,29 @@
                                     old-fn-unnorm-name
                                     new-fn-unnorm-name
                                     wrld))
+       ((mv new-to-list-of-mv-nth-name
+            new-to-list-of-mv-nth-event
+            names-to-avoid)
+        (if (>= m 2)
+            (isodata-gen-new-to-list-of-mv-nth old$
+                                               new$
+                                               new-fn-unnorm-name
+                                               m
+                                               names-to-avoid
+                                               wrld)
+          (mv nil nil names-to-avoid)))
+       ((mv updated-new-to-old-thm-event
+            names-to-avoid)
+        (if (>= m 2)
+            (isodata-gen-updated-new-to-old-thm old$
+                                                arg-isomaps
+                                                res-isomaps
+                                                new$
+                                                new-to-old$
+                                                new-to-list-of-mv-nth-name
+                                                names-to-avoid
+                                                wrld)
+          (mv nil names-to-avoid)))
        ((mv newp-of-new-thm-local-event?
             newp-of-new-thm-exported-event?)
         (if (consp res-isomaps)
@@ -3887,6 +4111,28 @@
                                     old-to-new-enable$
                                     new-to-old$
                                     wrld))
+       ((mv old-to-list-of-mv-nth-name
+            old-to-list-of-mv-nth-event
+            names-to-avoid)
+        (if (>= m 2)
+            (isodata-gen-old-to-list-of-mv-nth old$
+                                               old-fn-unnorm-name
+                                               m
+                                               names-to-avoid
+                                               wrld)
+          (mv nil nil names-to-avoid)))
+       ((mv updated-old-to-new-thm-event
+            &)
+        (if (>= m 2)
+            (isodata-gen-updated-old-to-new-thm old$
+                                                arg-isomaps
+                                                res-isomaps
+                                                new$
+                                                old-to-new$
+                                                old-to-list-of-mv-nth-name
+                                                names-to-avoid
+                                                wrld)
+          (mv nil names-to-avoid)))
        (new-fn-verify-guards-event? (and verify-guards$
                                          (list
                                           (isodata-gen-new-fn-verify-guards
@@ -3916,7 +4162,13 @@
                              ,new-fn-local-event
                              ,new-fn-unnorm-event
                              ,new-to-old-thm-local-event
+                             ,@(and (>= m 2)
+                                    (list new-to-list-of-mv-nth-event
+                                          updated-new-to-old-thm-event))
                              ,old-to-new-thm-local-event
+                             ,@(and (>= m 2)
+                                    (list old-to-list-of-mv-nth-event
+                                          updated-old-to-new-thm-event))
                              ,@newp-of-new-thm-local-event?
                              ,@new-fn-verify-guards-event?
                              ,new-fn-exported-event
