@@ -485,7 +485,7 @@
          :parents ,parents
          :short ,short
          :description ,description
-         :arg-descriptions ,(append '((fn "The name of the new function to transform.")
+         :arg-descriptions ,(append '((fn "The name of the function to transform.")
                                       (new-name "The name of the new function to be created.")
                                       (theorem-disabled "Whether to disable the 'becomes theorem'.")
                                       (function-disabled "Whether to disable the new function.")

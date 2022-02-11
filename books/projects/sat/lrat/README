@@ -65,3 +65,6 @@ ACL2_DIR/books/build/cert.pl --acl2 ACL2 -j 8 */*.lisp
 For example, Matt uses the following command.
 
 time /projects/acl2/acl2/books/build/cert.pl --acl2 acl2c -j 8 */*.lisp
+
+Note that DIMACS comments (lines starting with "c") are not supported
+in input cnf files.

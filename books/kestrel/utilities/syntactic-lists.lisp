@@ -26,6 +26,7 @@
 
 ;; Test whether TERM is syntactically a true-list: a nest of CONSes
 ;; terminating in a quoted true list (often 'nil).
+;; TODO: Rename since this actually lets us get the length and even the elements.  Then make a version that recognizes many more forms, like IF, or a call of a function whose body is a syntactic true-list.
 (defund syntactic-true-listp (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (variablep term)

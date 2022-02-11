@@ -87,9 +87,7 @@
   (equal (equal x (nthcdr n x))
          (or (zp n)
              (not x)))
-  :hints (("Goal" :in-theory (enable nthcdr))
-          ("subgoal *1/2"
-           :use (:instance not-equal-when-<-of-lens (y (nthcdr (+ -1 n) (cdr x)))))))
+  :hints (("Goal" :in-theory (enable nthcdr not-equal-when-<-of-lens))))
 
 (defthm nthcdr-when-equal-of-len
   (implies (and (equal (len x) k) ; k is a free var

@@ -898,7 +898,7 @@
   (("Goal"
     :induct (pos-to-eol+1 str len pos))))
 
-(defun cnf-str (str len pos cnt line-num rev-lines)
+(defun cnf-str (str len pos cnt line-num rev-lines file-name)
   (declare (xargs :guard (and (stringp str)
                               (natp pos)
                               (natp len)
@@ -914,8 +914,20 @@
                   :measure (acl2-count cnt)
                   )
            (ignorable rev-lines))
-  (b* (((mv pos-after-line int-list)
+  (b* (((when (eql (char str pos) #\c))
+        (er hard? 'parse-cnf-file
+            "Line ~x0 of file ~x1 starts with character `c', perhaps ~
+             indicating a DIMACS comment; but such lines are not supported by ~
+             this checker."
+            line-num
+            file-name))
+       ((mv pos-after-line int-list)
         (lrat-flg-int-list-until-0 str len pos nil cnt))
+       ((when (null int-list))
+        (er hard? 'parse-cnf-file
+            "Line ~x0 of file ~x1 contains no data."
+            line-num
+            file-name))
        ((unless (integerp pos-after-line)) nil)
        ((unless (< pos-after-line len)) nil)
 
@@ -931,7 +943,8 @@
        ((if (mbe :logic (zp cnt) :exec (<= cnt 0)))
         nil))
     (cnf-str str len pos-at-eol+1 (1- (u59 cnt)) (1+ line-num)
-             (cons int-list rev-lines))))
+             (cons int-list rev-lines)
+             file-name)))
 
 (in-theory (disable cnf-str))
 
@@ -946,7 +959,7 @@
        (len (length str))
        ((unless (lrat-guard str len 0)) NIL)
        (pos (pos-to-eol+1 str len 0))
-       (ans (cnf-str str len pos (1- len) 1 nil)))
+       (ans (cnf-str str len pos (1- len) 1 nil file-name)))
     ans))
 
 (defun parse-lrat-file (filename state)
