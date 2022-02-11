@@ -38,6 +38,7 @@
 (in-package "XDOC")
 (include-book "base")
 (include-book "book-thms")
+(include-book "full-escape-symbol")
 
 (defun bootstrap-revappend-chars-aux (x n xl y)
   (declare (xargs :mode :program)
@@ -57,28 +58,7 @@
            (type string x))
   (bootstrap-revappend-chars-aux x 0 (length x) acc))
 
-(defun bar-escape-chars (x)
-  (declare (xargs :mode :program))
-  (cond ((atom x)
-         nil)
-        ((eql (car x) #\|)
-         (list* #\\ #\| (bar-escape-chars (cdr x))))
-        (t
-         (cons (car x) (bar-escape-chars (cdr x))))))
 
-(defun bar-escape-string (x)
-  (declare (xargs :mode :program)
-           (type string x))
-  ;; Dumb optimization: don't need to escape anything unless there's a #\|
-  ;; somewhere.
-  (if (position #\| x)
-      (coerce (bar-escape-chars (coerce x 'list)) 'string)
-    x))
-
-(defun full-escape-symbol (x)
-  (declare (xargs :mode :program))
-  (concatenate 'string "|" (bar-escape-string (symbol-package-name x)) "|::|"
-               (bar-escape-string (symbol-name x)) "|"))
 
 (defun revappend-bar-escape-string (x n xl acc)
   (declare (xargs :mode :program)
@@ -504,29 +484,6 @@
       (concatenate-symbol-names (list ,@args))
       mksym-package-symbol)))
 
-
-;; Converts SYM to a string in such a way that it can be read back in as SYM.
-;; Always includes the package prefix and always puts vertical bars around the
-;; symbol (in case it has mixed case, or contains a space, or is something like
-;; the symbol '...).
-;; TODO: Avoid the vertical bars in common cases when appropriate (perhaps call
-;; needs-slashes, but consider that that function gives nil on "...").
-;; TODO: Add a package argument and avoid the package prefix for symbols in
-;; that package (will only be useful *if* we know what the package will be when
-;; the symbol is later read / parsed).
-(defund symbol-as-readable-string (sym)
-  (declare (xargs :guard (symbolp sym)))
-  (concatenate 'string
-               (symbol-package-name sym)
-               "::|"
-               (symbol-name sym)
-               "|"))
-;; Examples:
-;;(SYMBOL-AS-READABLE-STRING 'natp) gives "ACL2::|NATP|"
-;;(SYMBOL-AS-READABLE-STRING '|NAtp|) gives "ACL2::|NAtp|"
-;;(SYMBOL-AS-READABLE-STRING '|foo bar|) gives "ACL2::|foo bar|"
-;;(defpkg "FOO" nil) (SYMBOL-AS-READABLE-STRING 'foo::bar) gives "FOO::|BAR|"
-
 (defmacro defpointer (from to &optional keyword-p)
   (declare (xargs :guard (and (symbolp from) (symbolp to))))
   (let ((from-name (acl2::string-downcase (symbol-name         from))))
@@ -535,7 +492,7 @@
        :short ,(concatenate
                 'string
                 "See @(see "
-                (symbol-as-readable-string to)
+                (full-escape-symbol to)
                 ")"
                 (if keyword-p
                     (concatenate
