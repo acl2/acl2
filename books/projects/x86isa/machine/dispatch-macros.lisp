@@ -40,6 +40,7 @@
 (include-book "../utils/structures")
 (include-book "cpuid-constants")
 (include-book "cpuid")
+(include-book "state")
 
 (local (xdoc::set-default-parents 'opcode-maps))
 
@@ -202,10 +203,10 @@
   `(msri #.*ia32_efer-idx* x86))
 
 (defmacro feature-flag-macro (x)
-  `(feature-flag ,x x86))
+  `(feature-flag ,x))
 
 (defmacro feature-flags-macro (x)
-  `(feature-flags ,x x86))
+  `(feature-flags ,x))
 
 ;; ----------------------------------------------------------------------
 
@@ -320,7 +321,7 @@
    ((eq type-id :type-vex-gpr)
     ;; from table 2.5.1 from volume 2.. we only need to additionally check
     ;; the cpuid requirements:
-    (cond ((equal (feature-flags feature-flags x86) 0) :ud)))
+    (cond ((equal (feature-flags feature-flags) 0) :ud)))
    ((equal (cr0Bits->ts (cr0)) 1)
     :nm)
    ((and (not (member-eq type-id '(:type-22-7 :type-22-8 :type-22-9)))
@@ -335,7 +336,7 @@
 	;; Table 3-10 (Feature Information Returned in the ECX register)
 	;; Figure 3-8 (Feature Information Returned in the EDX register)
 	;; Table 3-11 (More on Feature Information Returned in the EDX register)
-	(equal (feature-flags feature-flags x86) 0))
+	(equal (feature-flags feature-flags) 0))
     :ud)))
 
 ;; ----------------------------------------------------------------------
