@@ -5475,6 +5475,10 @@
            :in-theory (e/d
                        (regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_and-list_when_mult-formula-checks
+                        regular-rp-evl-of_bit-of_when_mult-formula-checks_with-ex-from-rp
+                        regular-rp-evl-of_bit-of_when_mult-formula-checks
+                        regular-rp-evl-of_--_when_mult-formula-checks_with-ex-from-rp
+                        regular-rp-evl-of_--_when_mult-formula-checks
                         pp-radix8+-fix-aux-for-pp-lst
                         and-eval-for-pp-radix8+-fix;;-redef
                         and-lst-eval-for-pp-radix8+-fix)
@@ -5503,6 +5507,10 @@
            :in-theory (e/d
                        (regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_and-list_when_mult-formula-checks
+                        regular-rp-evl-of_bit-of_when_mult-formula-checks_with-ex-from-rp
+                        regular-rp-evl-of_bit-of_when_mult-formula-checks
+                        regular-rp-evl-of_--_when_mult-formula-checks_with-ex-from-rp
+                        regular-rp-evl-of_--_when_mult-formula-checks
                         pp-radix8+-fix-aux-for-pp-lst
                         and-eval-for-pp-radix8+-fix;;-redef
                         and-lst-eval-for-pp-radix8+-fix)
@@ -5519,7 +5527,7 @@
                         rp-evlt-of-ex-from-rp
                         rp-trans-lst)))))
 
-(defret pp-radix8+-fix-aux-for-pp-lst-bit-listp
+#|(defret pp-radix8+-fix-aux-for-pp-lst-bit-listp
   (implies (and valid
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
@@ -5532,6 +5540,10 @@
                        (bit-listp
                         regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_and-list_when_mult-formula-checks
+                        regular-rp-evl-of_bit-of_when_mult-formula-checks_with-ex-from-rp
+                        regular-rp-evl-of_bit-of_when_mult-formula-checks
+                        regular-rp-evl-of_--_when_mult-formula-checks_with-ex-from-rp
+                        regular-rp-evl-of_--_when_mult-formula-checks
                         pp-radix8+-fix-aux-for-pp-lst
                         and-eval-for-pp-radix8+-fix;;-redef
                         and-lst-eval-for-pp-radix8+-fix)
@@ -5546,7 +5558,11 @@
                         (:rewrite
                          rp-trans-is-term-when-list-is-absent)
                         rp-evlt-of-ex-from-rp
-                        rp-trans-lst)))))
+                        rp-trans-lst)))))|#
+
+(defthm valid-sc-of---
+  (equal (valid-sc (list '-- x) a)
+         (valid-sc x a)))
 
 (defret pp-radix8+-fix-aux-for-pp-lst-valid-sc
   (implies (and (valid-sc-subterms pp-lst a)
@@ -5558,6 +5574,7 @@
            :in-theory (e/d
                        (regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_and-list_when_mult-formula-checks
+                        
                         pp-radix8+-fix-aux-for-pp-lst
                         and-eval-for-pp-radix8+-fix;;-redef
                         and-lst-eval-for-pp-radix8+-fix)

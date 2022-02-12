@@ -308,6 +308,7 @@
 
 
 
+
 (progn
   (define pp-order-and-negated-termsp ((term1 rp-termp)
                                        (term2 rp-termp))
@@ -857,3 +858,77 @@
           coughed-pp-lst
           ;;(hons-copy coughed-lst)
           ))))||#
+
+
+(define shrinking-list-to-lst (term)
+  :returns (res rp-term-listp :hyp (rp-termp term))
+  (CASE-MATCH TERM
+    (('LIST . LST) LST)
+    (''NIL NIL)
+    (&    (HARD-ERROR 'LIST-INSTANCE-TO-LST
+                      "Unexpected list instance: ~p0 ~%"
+                      (LIST (CONS #\0 TERM))))))
+
+(define no-rep-p ((lst))
+  (if (atom lst)
+      t
+    (if (atom (cdr lst))
+        t
+      (and (not (equal (car lst) (cadr lst)))
+           (no-rep-p (cdr lst))))))
+
+
+(acl2::defines
+ ordered-s/c-p
+ :hints (("Goal"
+          :in-theory (e/d (measure-lemmas) ())))
+ :prepwork ((local
+             (include-book "lemmas"))
+            (local
+             (defthm dummy-lemma2
+               (IMPLIES (< (cons-count term1) (cons-count term2))
+                        (< (CONS-COUNT (SHRINKING-LIST-TO-LST term1))
+                           (CONS-COUNT TERM2)))
+               :hints (("Goal"
+                        :in-theory (e/d (SHRINKING-LIST-TO-LST
+                                         CONS-COUNT)
+                                        ()))))))
+ (define ordered-s/c-p ((term rp-termp))
+   :measure (cons-count term)
+   (b* ((term (ex-from-rp term)))
+     (case-match term
+       (('s & pp c)
+        (and (pp-lst-orderedp (shrinking-list-to-lst pp))
+             (no-rep-p (shrinking-list-to-lst pp))
+             (s-sum-ordered-listp (shrinking-list-to-lst c))
+             (no-rep-p (shrinking-list-to-lst c))
+             (ordered-s/c-p-lst (shrinking-list-to-lst c))))
+       (('c & s pp c)
+        (and (pp-lst-orderedp (shrinking-list-to-lst pp))
+             (no-rep-p (shrinking-list-to-lst pp))
+             (s-sum-ordered-listp (shrinking-list-to-lst s))
+             (no-rep-p (shrinking-list-to-lst s))
+             (s-sum-ordered-listp (shrinking-list-to-lst c))
+             (no-rep-p (shrinking-list-to-lst c))
+             (ordered-s/c-p-lst (shrinking-list-to-lst s))
+             (ordered-s/c-p-lst (shrinking-list-to-lst c))))
+       (('s-c-res s pp c)
+        (and (pp-lst-orderedp (shrinking-list-to-lst pp))
+             (s-sum-ordered-listp (shrinking-list-to-lst s))
+             (s-sum-ordered-listp (shrinking-list-to-lst c))
+             (ordered-s/c-p-lst (shrinking-list-to-lst s))
+             (ordered-s/c-p-lst (shrinking-list-to-lst c))))
+       (('-- term)
+        (ordered-s/c-p term))
+       (('quote &)
+        t)
+       (& (hard-error 'ordered-s/c-p
+                      "unexpected term: ~p0 ~%"
+                      (list (cons #\0 term)))))))
+ (define ordered-s/c-p-lst ((lst rp-term-listp))
+   :measure (cons-count lst)
+   (if (atom lst)
+       (equal lst nil)
+     (and (ordered-s/c-p (car lst))
+          (ordered-s/c-p-lst (cdr lst))))))
+      
