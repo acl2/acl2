@@ -371,6 +371,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA"))
+
+   (xdoc::p
+    "The dependency of CPUID features on the x86 state has been removed.
+     Now the CPUID features are arbitrary but fixed in the model.
+     See the documentation in the @(tsee x86isa::cpuid) topic for details.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "yul::yul" "Yul Library"))
 
    (xdoc::p
