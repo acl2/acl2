@@ -40,6 +40,7 @@
 (include-book "../utils/structures")
 (include-book "cpuid-constants")
 (include-book "cpuid")
+(include-book "state")
 
 (local (xdoc::set-default-parents 'opcode-maps))
 

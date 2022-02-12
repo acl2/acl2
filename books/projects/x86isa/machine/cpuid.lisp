@@ -39,8 +39,9 @@
 ; Alessandro Coglio   <coglio@kestrel.edu>
 
 (in-package "X86ISA")
-(include-book "state")
 (include-book "cpuid-constants")
+(include-book "std/util/define" :dir :system)
+(include-book "centaur/bitops/ihsext-basics" :dir :system)
 
 ;; Macros and functions used by utilities in dispatch.lisp to create opcode
 ;; dispatch functions
