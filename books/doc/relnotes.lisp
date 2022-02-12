@@ -197,6 +197,11 @@
      now accepts @(':guard') as a special value for its @('restriction') input,
      to specify the guard of the target function.")
 
+   (xdoc::p
+    "The @(tsee apt::isodata) transformation
+     now generates new-to-old and old-to-new theorems
+     of a more general and useful form.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
