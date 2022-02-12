@@ -27,7 +27,7 @@
             (NATP (CDR (ASSOC-EQUAL fn alist))))))
 
 ;; Returns a list of forms of the form (<function> :arg1 ... :argn).
-(defun make-calls-on-args-keywords (fns fn-arity-alist)
+(defund make-calls-on-args-keywords (fns fn-arity-alist)
   (declare (xargs :guard (and (symbol-listp fns)
                               (symbol-alistp fn-arity-alist)
                               (nat-listp (strip-cdrs fn-arity-alist))
