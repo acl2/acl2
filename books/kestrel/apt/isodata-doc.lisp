@@ -802,7 +802,7 @@
       ";; and isomaps includes :result1 (or :result):"
       "(implies (and (newp1 x1)"
       "              ..."
-      "              (newp1 xn))"
+      "              (newpn xn))"
       "         (equal (new x1 ... xn)"
       "                (forth_r1 (old (back1 x1) ... (backn xn)))))"
       ""
@@ -811,16 +811,11 @@
       ";; and isomaps includes some :resultj:"
       "(implies (and (newp1 x1)"
       "              ..."
-      "              (newp1 xn))"
-      "         (and (equal (mv-nth 0 (new x1 ... xn))"
-      "                     (forth_r1 (mv-nth 0 (old (back1 x1)"
-      "                                              ..."
-      "                                              (backn xn)))))"
-      "              ..."
-      "              (equal (mv-nth m-1 (new x1 ... xn))"
-      "                     (forth_rm (mv-nth m-1 (old (back1 x1)"
-      "                                                ..."
-      "                                                (backn xn)))))))")
+      "              (newpn xn))"
+      "         (equal (new x1 ... xn)"
+      "                (mv-let (y1 ... ym)"
+      "                  (old (back1 x1) ... (backn xn))"
+      "                  (mv (forth_r1 y1) ... (forth_rm ym)))))")
      (xdoc::p
       "In the " *isodata-design-notes* ",
        @('new-to-old') is denoted by
@@ -866,15 +861,10 @@
       "  (implies (and (oldp1 x1)"
       "                ..."
       "                (oldpn xn))"
-      "           (and (equal (mv-nth 0 (old x1 ... xn))"
-      "                       (back_r1 (mv-nth 0 (new (forth1 x1)"
-      "                                               ..."
-      "                                               (forthn xn)))))"
-      "                ..."
-      "                (equal (mv-nth m-1 (old x1 ... xn))"
-      "                       (back_rm (mv-nth m-1 (new (forth1 x1)"
-      "                                                 ..."
-      "                                                 (forthn xn))))))))")
+      "         (equal (old x1 ... xn)"
+      "                (mv-let (y1 ... ym)"
+      "                  (new (forth1 x1) ... (forthn xn))"
+      "                  (mv (back_r1 y1) ... (back_rm ym)))))")
      (xdoc::p
       "In the " *isodata-design-notes* ",
        @('old-to-new') is denoted by
