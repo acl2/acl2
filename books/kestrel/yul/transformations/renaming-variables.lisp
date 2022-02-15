@@ -605,6 +605,8 @@
       (block-renamevar (fundef->body old) (fundef->body new) ren))
     :measure (fundef-count old))
 
+  :flag-local nil
+
   :verify-guards nil ; done below
   ///
   (verify-guards statement-renamevar)
