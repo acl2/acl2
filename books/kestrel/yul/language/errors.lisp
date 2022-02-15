@@ -25,7 +25,9 @@
      An example is when a variable is referenced that is not accessible.")
    (xdoc::p
     "We use @(tsee fty::defresult) and companion utilities
-     to handle errors in our Yul formalization.")))
+     to handle errors in our Yul formalization."))
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
