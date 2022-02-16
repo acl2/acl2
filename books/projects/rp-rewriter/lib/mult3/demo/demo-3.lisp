@@ -79,12 +79,6 @@
 ;; for correctness proof of multiplier
 (include-book "projects/rp-rewriter/lib/mult3/svtv-top" :dir :system)
 
-;; "Stingy-pp-clean"  is one  of  the heuristics  that  improve the  proof-time
-;; performance for verification  of Booth encoded designs. This  is disabled by
-;; default as  it may potentially cause  proofs for some designs  to fail.  For
-;; the design  we are  working on,  this does  not happen.   So we  enable this
-;; heuristic with the event below.
-(enable-stingy-pp-clean t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Example-1: DT_SB4_HC_64_64_multgen.sv (64X64  SIGNED, BOOTH RADIX-4 ENCODED,

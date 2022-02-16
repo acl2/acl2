@@ -404,12 +404,15 @@
                  ((mv s-arg-lst0 pp-arg-lst c-arg-lst0)
                   (unpack-booth-process-pp-arg pp-arg))
 
+                 
+                 
+
                  ;; then unpack the c-args
                  (c-arg-lst (list-to-lst c-arg))
                  ((mv s-arg-lst pp-arg-lst2 c-arg-lst)
                   (unpack-booth-for-c-lst c-arg-lst))
                  ;; merge the new pp args derived from the c args
-                 (pp-arg-lst (pp-sum-merge-aux pp-arg-lst pp-arg-lst2))
+                 (pp-arg-lst (pp-sum-merge-lst-for-s pp-arg-lst pp-arg-lst2))
 
                  (& (or (pp-lst-orderedp pp-arg-lst)
                         (hard-error 'unpack-booth-for-s
@@ -417,14 +420,18 @@
 input:~p0~%output:~p1~%" (list (cons #\0 s-term)
                                (cons #\1 pp-arg-lst)))))
 
-                 (c-arg-lst (s-sum-merge-aux c-arg-lst0 c-arg-lst))
-                 (s-arg-lst (s-sum-merge-aux s-arg-lst0 s-arg-lst)) ;; no need to keep it sorted
+                 (c-arg-lst (sum-merge-lst-for-s c-arg-lst0 c-arg-lst))
+                 (s-arg-lst (sum-merge-lst-for-s s-arg-lst0 s-arg-lst)) ;; no need to keep it sorted
+                 
                  ((mv pp-arg-lst c-arg-lst)
-                  (s-of-s-fix-lst s-arg-lst pp-arg-lst c-arg-lst))
+                  (s-of-s-fix-lst (s-fix-pp-args-aux s-arg-lst)
+                                  (s-fix-pp-args-aux pp-arg-lst)
+                                  (s-fix-pp-args-aux c-arg-lst)
+                                  :clean-args t))
 
                  (- (cw "after s-of-s-fix-lst len of pp-arg-lst  ~p0, c-arg-lst ~p1. Unique: pp-arg-lst ~p2 c-arg-lst ~p3 ~%"
                         (len pp-arg-lst) (len c-arg-lst)
-                        (unique-e-count pp-arg-lst) (unique-e-count c-arg-lst)))
+                       "-" #|(unique-e-count pp-arg-lst)|# "-"#|(unique-e-count c-arg-lst)|#))
 
                  ;; (& (or (ordered-s/c-p-lst s-arg-lst)
 ;;                         (hard-error 'unpack-booth-for-s
@@ -443,7 +450,7 @@ input:~p0~%output:~p1~%" (list (cons #\0 s-term)
                  (- (cw "after s-fix-pp-args-aux len of pp-arg-lst  ~p0, ~
 c-arg-lst  ~p1. Unique: pp-arg-lst ~p2 c-arg-lst ~p3 ~%"
                         (len pp-arg-lst) (len c-arg-lst)
-                        (unique-e-count pp-arg-lst) (unique-e-count c-arg-lst)
+                        "-"#|(unique-e-count pp-arg-lst)|# "-"#|(unique-e-count c-arg-lst)|#
                         ))
 
                  ;; (& (or (pp-lst-orderedp pp-arg-lst)
@@ -554,7 +561,7 @@ c-arg-lst  ~p1. Unique: pp-arg-lst ~p2 c-arg-lst ~p3 ~%"
 
                  ;; cough out s-args
                  ((mv coughed-s-lst s-arg-lst)
-                  (c-fix-arg-aux s-arg-lst t))
+                  (c-fix-arg-aux s-arg-lst nil))
 
                  ((mv pp-arg-lst c-arg-lst
                       coughed-s-lst2 coughed-pp-lst2 coughed-c-lst2)
@@ -578,7 +585,7 @@ coughed-s-lst2 ~p2, coughed-pp-lst2 ~p3, coughed-c-lst2 ~p4. Unique pp-arg-lst ~
                  (- (cw "after c-fix-arg-aux len of pp-arg-lst  ~p0, c-arg-lst ~p1~
 , coughed-pp-lst ~p2, coughed-c-lst ~p3. Unique coughed-pp-lst ~p4~%" (len pp-arg-lst)
   (len c-arg-lst)
-  (len coughed-pp-lst) (len coughed-c-lst) (unique-e-count coughed-pp-lst)))
+  (len coughed-pp-lst) (len coughed-c-lst) "-"#|(unique-e-count coughed-pp-lst)|#))
 
                  #|(- (cw "create-c-instance args: s-arg-lst:~p0
                  pp-arg-lst:~p1 ; ;
@@ -720,12 +727,15 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
            (case-match subterm
              (('-- subterm) (mv subterm t))
              (& (mv subterm nil))))
+          (has-bitp (has-bitp-rp subterm))
           (subterm-orig subterm)
           (subterm (ex-from-rp subterm))
           ((when (or (binary-fnc-p subterm)
                      (bit-of-p subterm)))
            (mv term nil))
-          (subterm-orig (good-hons-copy subterm-orig))
+          ;;(subterm-orig (good-hons-copy subterm-orig))
+          (subterm-orig (hons-copy subterm-orig))
+          
           #|(- (or (good-s-chain subterm)
           (hard-error 'unpack-booth-meta
           "Not a good s chain ~p0~%"
@@ -755,28 +765,28 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
                                     "Unrecognized term ~p0 ~%"
                                     (list (cons #\0 subterm-orig)))
                         (mv (list subterm-orig) nil nil)))))
-          (& (or (ordered-s/c-p-lst c-res-lst)
-                 (hard-error 'unpack-booth-meta
-                             "unordered c-res-lst
-input:~p0~%output:~p1~%" (list (cons #\0 subterm)
-                               (cons #\1 c-res-lst)))))
-          (& (or (ordered-s/c-p-lst s-res-lst)
-                 (hard-error 'unpack-booth-meta
-                             "unordered s-res-lst
-input:~p0~%output:~p1~%" (list (cons #\0 subterm)
-                               (cons #\1 s-res-lst)))))
-          (& (or (pp-lst-orderedp pp-res-lst)
-                 (hard-error 'unpack-booth-meta
-                             "unordered pp-res-lst
-input:~p0~%output:~p1~%" (list (cons #\0 subterm)
-                               (cons #\1 pp-res-lst)))))
-          (res (create-s-c-res-instance s-res-lst pp-res-lst c-res-lst nil))
+          ;; (& (or (ordered-s/c-p-lst c-res-lst)
+;;                  (hard-error 'unpack-booth-meta
+;;                              "unordered c-res-lst
+;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
+;;                                (cons #\1 c-res-lst)))))
+;;           (& (or (ordered-s/c-p-lst s-res-lst)
+;;                  (hard-error 'unpack-booth-meta
+;;                              "unordered s-res-lst
+;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
+;;                                (cons #\1 s-res-lst)))))
+;;           (& (or (pp-lst-orderedp pp-res-lst)
+;;                  (hard-error 'unpack-booth-meta
+;;                              "unordered pp-res-lst
+;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
+;;                                (cons #\1 pp-res-lst)))))
+          (res (create-s-c-res-instance s-res-lst pp-res-lst c-res-lst has-bitp))
 
-          (& (or (ordered-s/c-p res)
-                 (hard-error 'unpack-booth-meta
-                             "unordered c-res-lst
-input:~p0~%output:~p1~%" (list (cons #\0 subterm)
-                               (cons #\1 res)))))
+          ;; (& (or (ordered-s/c-p res)
+;;                  (hard-error 'unpack-booth-meta
+;;                              "unordered c-res-lst
+;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
+;;                                (cons #\1 res)))))
 
           (res (if signed `(-- ,res) res)))
        (mv res t)))

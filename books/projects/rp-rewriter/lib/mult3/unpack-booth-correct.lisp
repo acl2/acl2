@@ -294,6 +294,33 @@
             :expand (HIDE (HAS-BITP-RP TERM))
             :in-theory (e/d () ())))))
 
+(defthm s-fix-pp-args-aux-correct-with-m2-chain
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+;(rp-term-listp pp-lst)
+                  )
+             (and (equal (m2-chain (sum-list-eval (s-fix-pp-args-aux pp-lst) a)
+                                   other)
+                         (m2 (sum (sum-list-eval pp-lst a) other)))
+                  (equal (m2-chain other (sum-list-eval (s-fix-pp-args-aux pp-lst) a))
+                         (m2 (sum (sum-list-eval pp-lst a) other)))))
+    :hints (("Goal"
+             :do-not-induct t
+             :use ((:instance s-fix-pp-args-aux-correct))
+             :in-theory (e/d* (m2-chain)
+                              ()))))
+
+
+(local
+ (defthm dummy-sum-cancel-lemma
+   (and (equal (sum (-- x) y x)
+               (sum y))
+        (equal (sum x y (-- x))
+               (sum y)))))
+
+
+
+
 (defret-mutual
   unpack-booth-for-s-correct
 
@@ -398,7 +425,8 @@
 
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d* (expand-sum-from-the-hyps
+           :in-theory (e/d* (m2-to-m2-chain
+                             expand-sum-from-the-hyps
                              binary-fnc-p
                              has-bitp-rp-force-insert
                              create-s-instance-correct-singled-out
@@ -433,7 +461,7 @@
                              (:REWRITE DEFAULT-CAR)
                              valid-sc-subterms
                              rp-term-listp
-
+                             bitp
                              (:REWRITE SUM-OF-NEGATED-ELEMENTS)
                              ;;(:REWRITE MINUS-OF-SUM)
                              F2-OF-MINUS-2
@@ -492,10 +520,16 @@
   ;;:otf-flg t
   :hints (("Goal"
            :do-not-induct t
+           :use ((:instance pp-has-bitp-rp-implies
+                            (term (CADR TERM)))
+                 (:instance pp-has-bitp-rp-implies
+                            (term (cadr (CADR TERM)))))
            :expand ((SUM-LIST-EVAL (LIST (CADR TERM)) A)
+                    
                     (SUM-LIST-EVAL (LIST (CADR (CADR TERM)))
                                    A))
            :in-theory (e/d* (unpack-booth-meta
+                             ;;has-bitp-rp-force-insert
                              UNPACK-BOOTH
                              S-C-RES
                              regular-rp-evl-of_unpack-booth_when_mult-formula-checks_with-ex-from-rp
@@ -505,6 +539,8 @@
                              (:REWRITE REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS)
                              )
                             (rp-termp
+                             pp-has-bitp-rp-implies
+                             bitp
                              RP-TRANS-OPENER-WHEN-LIST
                              RP-TRANS-OPENER
                              EVAL-AND-ALL

@@ -69,7 +69,7 @@
          (cur (ex-from-rp (car lst))))
       (case-match cur
         (('bit-of & ('quote x))
-         (mv (+ rest (* (1+ rest-size) (+ 1 (ifix x))))
+         (mv (+ rest (* (+ 5 rest-size) (+ 1 (ifix x))))
              (+ 55 rest-size)))
         (('s ('quote x) & &)
          (mv (+ rest (ifix x))
@@ -94,7 +94,7 @@
   :returns (hash integerp)
   (b* (((mv hash &)
         (and-list-hash-aux lst)))
-    (loghead 56 hash)
+    (logapp 4 (len lst) hash)
     ))
   #|(if (atom lst)
       0
