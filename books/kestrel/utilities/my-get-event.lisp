@@ -1,6 +1,6 @@
 ; A utility to get the (untranslated) event that introduced a function
 ;
-; Copyright (C) 2015-2020 Kestrel Institute
+; Copyright (C) 2015-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,7 @@
 ;; A tool to get the event (defun or mutual-recursion or defuns) corresponding
 ;; to a given name, in untranslated form.  This works better than the built-in
 ;; utility get-event (e.g., on built-in functions introduced in :program mode
-;; and later lifted to :logic mode), such as all-vars1.
+;; and later lifted to :logic mode, such as all-vars1).
 
 ;; TODO: If a function was introduced in :program mode and later lifted to
 ;; :logic mode, the result of my-get-event may contain :mode :program in the
