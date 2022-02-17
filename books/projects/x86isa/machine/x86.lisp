@@ -1090,7 +1090,8 @@
        (start-rip (the (signed-byte #.*max-linear-address-size*)
                     (read-*ip proc-mode x86)))
 
-       ((mv flg (the (unsigned-byte #.*prefixes-width*) prefixes)
+       ((mv flg
+            (the (unsigned-byte #.*prefixes-width*) prefixes)
             (the (unsigned-byte 8) rex-byte)
             x86)
         (get-prefixes proc-mode start-rip 0 0 15 x86))
