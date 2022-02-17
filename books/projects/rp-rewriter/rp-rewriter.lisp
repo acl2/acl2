@@ -304,13 +304,19 @@
   (if (atom context)
       term
     (let ((c (car context)))
-      (cond ((case-match c (('equal m &) (rp-equal m term)) (& nil))
+      (cond ((case-match c ((& m) (rp-equal-cnt m term 1)) (& nil))
+             (b* ((new-term `(rp ',(car c) ,term))
+                  (new-term (if (is-rp new-term) new-term term)))
+               (rp-check-context new-term  (cdr context) iff-flg)))
+            
+            ((case-match c (('equal m &) (rp-equal-cnt m term 1)) (& nil))
              (caddr c))
             ((and iff-flg (case-match c (('if m ''nil else)
                                          (and (nonnil-p else) (rp-equal m term)))))
              ''nil)
             ((and iff-flg (rp-equal-cnt c term 1))
              ''t)
+            
             (t
              (rp-check-context term (cdr context) iff-flg))))))
 
@@ -1272,18 +1278,32 @@ relieving the hypothesis for ~x1! You can disable this error by running:
       rp-state))
     ((eq (car term) 'quote)
      (mv term rp-state))
+    ((should-not-rw dont-rw);; exit right away if said to not rewrite
+     (mv term rp-state))
     ((zp limit)
      (b* ((rp-state (limit-reached-action rp-state))) 
        (mv term rp-state)))
+    ((is-rp$ term)
+     (b* (((mv new-term rp-state)
+           (rp-rw (caddr term)
+                  dont-rw context nil hyp-flg (1- limit) rp-state state)))
+       (mv (cons-with-hint (car term)
+                           (cons-with-hint (cadr term)
+                                           (cons-with-hint new-term
+                                                           nil
+                                                           (cddr term))
+                                           (cdr term))
+                           term)
+           rp-state)))
     (t
-     (b* (;; exit right away if said to not rewrite
-          ((when (should-not-rw dont-rw))
-           (mv term rp-state))
+     (b* (
           ;; update the term to see if it simplifies with respect to the
           ;; context
           ((when (and iff-flg
                       (check-if-relieved-with-rp term)))
            (mv ''t rp-state))
+
+          
 
           #|(term
           (rp-check-context term context iff-flg))||#
@@ -1467,7 +1487,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                  (rp-rw p nil nil
                         t nil step-limit rp-state state))
                 (context (rp-extract-context p))
-                (q (attach-sc-from-context context q))
+                ;;(q (attach-sc-from-context context q))
                 (context (attach-sc-from-context-lst context context))
 
                 (q (rp-rw-preprocessor q context rp-state state))

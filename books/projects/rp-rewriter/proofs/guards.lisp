@@ -629,6 +629,7 @@
                         dont-rw-syntaxp
                         TRUE-LISTP
                         QUOTEP
+                        is-rp-implies-fc
                         )
                        (
                         rp-termp

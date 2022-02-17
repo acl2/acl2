@@ -618,6 +618,11 @@
     (mbe :exec (ex-from-rp-loose term)
          :logic (ex-from-rp term)))
 
+  (defun-inline is-rp$ (term)
+    (declare (xargs :guard (rp-termp term)))
+    (mbe :exec (is-rp-loose term)
+         :logic (is-rp term)))
+    
   
   (defun extract-from-rp-with-context (term context)
     (declare (xargs :guard (rp-termp term)))

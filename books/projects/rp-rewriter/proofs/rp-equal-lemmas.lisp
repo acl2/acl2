@@ -1279,3 +1279,17 @@
 (defcong rp-equal equal (rp-evl term a) 1)
 
 (defcong rp-equal-subterms equal (rp-evlt-lst lst a) 1)
+
+
+(defthm rp-equal-of-rp
+  (implies (is-rp (cons 'rp x))
+           (and (equal (rp-equal y (cons 'rp x))
+                       (rp-equal y (cadr x)))
+                (equal (rp-equal (cons 'rp x) y)
+                       (rp-equal (cadr x) y))))
+  :hints (("Goal"
+           :Expand ((EX-FROM-RP-ALL (CONS 'RP X))
+                    (EX-FROM-RP (CONS 'RP X)))
+           :in-theory (e/d (rp-equal-alt-def
+                            ex-from-rp-all)
+                           ()))))
