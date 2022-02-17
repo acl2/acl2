@@ -52,8 +52,10 @@
                   (tterm (translate term t t t ctx wrld state)))
           (value (list* hints instructions tterm))))
        (cond
-        ((and erp with-translate-error)
-         (mv :translate-error :translate-error state))
+        (erp
+         (cond (with-translate-error
+                (mv :translate-error :translate-error state))
+               (t (silent-error state))))
         (t
          (state-global-let*
           ((abort-soft nil)) ; interrupts abort immediately to the top level
@@ -143,15 +145,23 @@
  &mdash; but of course warning and error messages may be suppressed, depending
  on @('with-output').</p>
 
- <p>@('Prove$') returns an @(see error-triple), @('(mv erp val state)'), where
- @('val') is @('t') when @('term') is successfully proved, else @('nil').  By
- default, @('erp') is non-@('nil') if the given @('term') or @('hints') have
- illegal syntax, in which case a suitable error message is printed; otherwise
- @('erp') is @('nil') and the error message is only printed if error output is
- turned on by the @(':with-output') argument.  That default behavior is
- overridden if @(':with-translate-error') is supplied a value of @('nil'); in
- that case, @('erp') is always @('nil') and error messages are suppressed
- unless the @(':with-output') argument is supplied and allows them.</p>
+ <p>@('Prove$') returns an @(see error-triple), @('(mv erp val state)'), where @('val') is @('t')
+ when term is successfully proved, else @('nil').  There are two ways that
+ an error might occur: when (a) the given term, hints, or
+ instructions have illegal syntax, or (b) when the proof attempt
+ fails, for example when a @(see step-limit) is exceeded.  @('Erp') is non-@('nil')
+ by default in case (a), and @('erp') is always @('nil') in case (b).  But @('erp')
+ is @('nil') in case (a) as well if @(':with-translate-error') is supplied a
+ value of @('nil').  Now consider when an error message is printed.  In
+ case (a), an error message is printed if and only if
+ @(':with-translate-error') is @('nil'), regardless of the @(':with-output')
+ argument.  In case (b), error output from the proof attempt is
+ printed if and only if @(':with-output') specifies that error output is
+ on; since @(':with-output') is @('(:off :all :gag-mode nil)') by default, such
+ error output is suppressed by default.  That error output, when
+ printed, is generally minimal: ``ACL2 Error in ( PROVE$ ...): See
+ :DOC failure.''  But it can be more informative, for example when a
+ @(see step-limit) is exceeded.</p>
 
  <p>Note that after evaluation of a @('prove$') call, you can evaluate the form
  @('(prover-steps-counted state)') to get the number of prover steps that were
