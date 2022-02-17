@@ -386,6 +386,10 @@
      Now the CPUID features are arbitrary but fixed in the model.
      See the documentation in the @(tsee x86isa::cpuid) topic for details.")
 
+   (xdoc::p
+    "Support has been added for the MOVD and MOVQ instruction variants
+     that move data from/to the XMM registers.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "yul::yul" "Yul Library"))
