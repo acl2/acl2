@@ -1,6 +1,6 @@
 ; Simple utilities about declares
 ;
-; Copyright (C) 2015-2020 Kestrel Institute
+; Copyright (C) 2015-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -415,19 +415,26 @@
     `(declare ,@other-declare-args
               (xargs ,@xargs-key-vals))))
 
-;If there is already a "verify-guards t", we remove it from the declares.
-;; TODO: Preserve more of the original order of things?
-;; TODO: Generalize to any xarg
-(defun set-verify-guards-in-declares (verify-guards declares)
-  (declare (xargs :guard (and (true-listp declares)
-                              (all-declarep declares)
-                              (member-eq verify-guards '(t nil)))))
+;; Sets the xarg named XARG to VAL in DECLARES.  If there is already an xarg
+;; named XARG, this removes it first.  TODO: Preserve more of the original
+;; order of things?
+(defun set-xarg-in-declares (xarg val declares)
+  (declare (xargs :guard (and (keywordp xarg)
+                              ;; can't easily contrain VAL here
+                              (true-listp declares)
+                              (all-declarep declares))))
   (let* ((xargs-key-vals (get-xargs-from-declares declares))
          (other-declare-args (get-non-xargs-from-declares declares))
-         (xargs-key-vals (clear-key-in-keyword-value-list :verify-guards xargs-key-vals))
-         (xargs-key-vals `(:verify-guards ,verify-guards ,@xargs-key-vals)))
+         (xargs-key-vals (clear-key-in-keyword-value-list xarg xargs-key-vals))
+         (xargs-key-vals (cons xarg (cons val xargs-key-vals))))
     `((declare ,@other-declare-args
                (xargs ,@xargs-key-vals)))))
+
+(defun set-verify-guards-in-declares (val declares)
+  (declare (xargs :guard (and (true-listp declares)
+                              (all-declarep declares)
+                              (member-eq val '(t nil)))))
+  (set-xarg-in-declares :verify-guards val declares))
 
 ;; todo: rename to set-verify-guards-nil
 (defund add-verify-guards-nil (declares)
@@ -451,6 +458,7 @@
            (all-declarep (add-verify-guards-t declares)))
   :hints (("Goal" :in-theory (enable add-verify-guards-t))))
 
+;; todo: call set-xarg-in-declares?
 (defun add-normalize-nil (declares)
   (declare (xargs :guard (and (true-listp declares)
                               (all-declarep declares))))
