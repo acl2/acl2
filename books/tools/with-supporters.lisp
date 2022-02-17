@@ -206,7 +206,7 @@
          ((atom (car events))
           (mv (er hard 'with-supporters
                   "An event must be a cons, but your first event was ~x0. ~
-                   Perhaps you intended to use :NAMES?")
+                   Perhaps you intended to use :NAMES?" (car events))
               nil))
          ((or (eq local-event :names)
               (member-eq :names (cdr events)))
