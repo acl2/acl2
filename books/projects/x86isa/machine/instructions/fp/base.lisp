@@ -35,6 +35,8 @@
 
 ; Original Author(s):
 ; Cuong Chau          <ckcuong@cs.utexas.edu>
+; Contributing Author(s):
+; Alessandro Coglio   <coglio@kestrel.edu>
 
 ;; All events beginning with the prefix RTL:: in this book are
 ;; imported from the RTL/REL11 library under the directory
@@ -65,11 +67,11 @@
 
 ;; ======================================================================
 
-(defmacro fp-max-exp         ()  `(1- (ash 1 exp-width)))
-(defmacro fp-inf-exp         ()  `(fp-max-exp))
-(defmacro fp-max-finite-exp  ()  `(- (ash 1 exp-width) 2))
-(defmacro fp-inf-frac        ()   0)
-(defmacro fp-max-frac        ()  `(1- (ash 1 frac-width)))
+(defmacro fp-max-exp         (exp-width)  `(1- (ash 1 ,exp-width)))
+(defmacro fp-inf-exp         (exp-width)  `(fp-max-exp ,exp-width))
+(defmacro fp-max-finite-exp  (exp-width)  `(- (ash 1 ,exp-width) 2))
+(defmacro fp-inf-frac        ()            0)
+(defmacro fp-max-frac        (frac-width) `(1- (ash 1 ,frac-width)))
 
 (defmacro rc-cases (&key rn rd ru rz other)
   `(case RC
@@ -85,14 +87,14 @@
                                    (frac-width posp))
   :short "Returns rounded sign, exponent, and fraction in case of overflow."
   (RC-cases
-   :rn  (mv sign (fp-inf-exp) (fp-inf-frac))
+   :rn  (mv sign (fp-inf-exp exp-width) (fp-inf-frac))
    :rd  (if (eql 0 sign)
-            (mv sign (fp-max-finite-exp) (fp-max-frac))
-          (mv sign (fp-inf-exp) (fp-inf-frac)))
+            (mv sign (fp-max-finite-exp exp-width) (fp-max-frac frac-width))
+          (mv sign (fp-inf-exp exp-width) (fp-inf-frac)))
    :ru  (if (eql 0 sign)
-            (mv sign (fp-inf-exp) (fp-inf-frac))
-          (mv sign (fp-max-finite-exp) (fp-max-frac)))
-   :rz  (mv sign (fp-max-finite-exp) (fp-max-frac))
+            (mv sign (fp-inf-exp exp-width) (fp-inf-frac))
+          (mv sign (fp-max-finite-exp exp-width) (fp-max-frac frac-width)))
+   :rz  (mv sign (fp-max-finite-exp exp-width) (fp-max-frac frac-width))
    ;; Should never get here.
    :other (mv       0               0               0))
   ///
@@ -258,7 +260,7 @@
          (expt 2 (- 1 bias)))))
    ;; Normal case
    ((and (< 0 exp)
-         (<= exp (fp-max-finite-exp)))
+         (<= exp (fp-max-finite-exp exp-width)))
     (let ((man (* (logior (ash 1 frac-width) frac)
                   (expt 2 (- frac-width)))))
       (* (if (eql sign 0) 1 -1)
