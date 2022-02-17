@@ -143,6 +143,16 @@
         nil
       (eq t (cadr verify-guards)))))
 
+;; Checker whether DEFUN has an explicit :mode :program.
+(defund defun-has-mode-programp (defun)
+  (declare (xargs :guard (defun-formp defun)
+                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+  (let* ((xargs (get-xargs-from-defun defun))
+         (mode (assoc-keyword :mode xargs)))
+    (if (not mode)
+        nil
+      (eq :program (cadr mode)))))
+
 ;; This assumes the verify-guard-eagerness is 1 (the usual value).
 (defun defun-demands-guard-verificationp (defun)
   (declare (xargs :guard (defun-formp defun)

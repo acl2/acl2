@@ -67,6 +67,15 @@
     (or (defun-has-a-guardp (first defuns))
         (any-defun-has-a-guardp (rest defuns)))))
 
+;; Looks for an explicit :mode :program xarg, which is appropriate when the
+;; default-defun-mode is :logic.
+(defun any-defun-has-mode-programp (defuns)
+  (declare (xargs :guard (all-defun-formp defuns)))
+  (if (atom defuns)
+      nil
+    (or (defun-has-mode-programp (first defuns))
+        (any-defun-has-mode-programp (rest defuns)))))
+
 (defun any-defun-has-verify-guards-nilp (defuns)
   (declare (xargs :guard (all-defun-formp defuns)))
   (if (atom defuns)
@@ -192,6 +201,13 @@
     (or (any-defun-has-verify-guards-tp defuns)
         (and (any-defun-has-a-guardp defuns)
              (not (any-defun-has-verify-guards-nilp defuns))))))
+
+;; Looks for an explicit :mode :program xarg, which is appropriate when the
+;; default-defun-mode is :logic.
+(defund mutual-recursion-has-mode-programp (mut-rec)
+  (declare (xargs :guard (mutual-recursion-formp mut-rec)))
+  (let ((defuns (cdr mut-rec)))
+    (any-defun-has-mode-programp defuns)))
 
 ;; This assumes the verify-guard-eagerness is 1 (the usual value).
 ;; This avoids leaving in an unnecessary :verify-guards t.
