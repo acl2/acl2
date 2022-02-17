@@ -606,7 +606,16 @@
 (verify-guards match-lhs-for-dont-rw)
 (verify-guards calculate-dont-rw$inline)
 
-
+(defret unsigned-byte-p-of-GET-LIMIT-FOR-HYP-RW
+  (implies (and (unsigned-byte-p 58 limit)
+                (not (zp limit))
+                ;;(rp-statep rp-state)
+                )
+           (unsigned-byte-p 58 res-limit))
+  :fn GET-LIMIT-FOR-HYP-RW
+  :hints (("Goal"
+           :in-theory (e/d (GET-LIMIT-FOR-HYP-RW
+                            RP-STATEP) ()))))
 
 
 

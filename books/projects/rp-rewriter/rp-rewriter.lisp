@@ -194,7 +194,7 @@
              (b* ((term-w/o-rp
                    (cond ((is-if term-w/o-rp)
                           ;; if it is an "if" instance, remove the side
-                          ;; conditions from the then and ele branches but not test. 
+                          ;; conditions from the then and ele branches but not test.
                           (cons-with-hint
                            'if
                            (cons-with-hint
@@ -973,6 +973,88 @@ returns (mv rule rules-rest bindings rp-context)"
              new-dont-rw))
           (t rhs/hyp))))
 
+
+(define limit-reached-action (rp-state)
+  :stobjs (rp-state)
+  :Returns (res-rp-state)
+  (b* ((backchaining-rule (backchaining-rule rp-state))
+       
+       (rp-state (if (weak-custom-rewrite-rule-P backchaining-rule)
+                     (rp-state-push-to-result-to-rw-stack backchaining-rule -1
+                                                          :backchain-limit-reached
+                                                          nil nil rp-state)
+                   rp-state))
+       (rw-limit-throws-error (rw-limit-throws-error rp-state))
+       ((unless rw-limit-throws-error) rp-state)
+       (- (rp-state-print-rules-used rp-state))
+       (- 
+        (if backchaining-rule
+            (hard-error 'rp-rewriter "Backchain limit of ~x0 exhausted when ~
+relieving the hypothesis for ~x1! You can disable this error by running:
+(rp::set-backchain-limit-throws-error nil). You can change the backchain-limit:
+(rp::set-backchain-limit new-limit). Or you can run: 
+(rp::update-rp-brr t rp::rp-state) to save the rewrite stack and see it with
+(rp::pp-rw-stack :omit '()
+                 :evisc-tuple (evisc-tuple 10 10 nil nil)
+                 :frames 100). ~%"
+                        (list (cons #\0 (rw-backchain-limit rp-state))
+                              (cons #\1
+                                    (if (weak-custom-rewrite-rule-P backchaining-rule)
+                                        (rp-rune backchaining-rule)
+                                      backchaining-rule))))
+          (hard-error 'rp-rewriter "Step limit of ~x0 exhausted! Either run 
+(rp::set-rw-step-limit new-limit) or 
+(rp::update-rp-brr t rp::rp-state) to save the rewrite stack and see it with
+(rp::pp-rw-stack :omit '()
+                 :evisc-tuple (evisc-tuple 10 10 nil nil)
+                 :frames 100). ~%"
+                      (list (cons #\0 (rw-step-limit rp-state)))))))
+    rp-state))
+
+
+(define get-limit-for-hyp-rw ((limit natp)
+                              rule
+                              rp-state)
+  :stobjs (rp-state)
+  :returns (mv (res-limit)
+               (backchain-starts booleanp :hyp (rp-statep rp-state))
+               (old-limit-error-setting booleanp :hyp (rp-statep rp-state))
+               (res-rp-state rp-statep :hyp (rp-statep rp-state)))
+  :prepwork ((local
+              (in-theory (e/d (rp-statep) ()))))
+  (b* ((backchain-limit (rw-backchain-limit rp-state))
+       (backchain-limit (mbe :exec backchain-limit :logic (nfix backchain-limit)))
+       (existing-backchaining-rule (backchaining-rule rp-state))
+       (limit (1- limit))
+       ((when (or (> backchain-limit limit)
+                  existing-backchaining-rule))
+        (progn$ (cw "existing-backchaining-rule ~p0 ~%"
+                    existing-backchaining-rule)
+                (cw "backchain-limit ~p0 ~%" backchain-limit)
+                (mv limit nil nil rp-state)))
+       (old-limit-error-setting (rw-limit-throws-error rp-state))
+       (rp-state (update-rw-limit-throws-error (rw-backchain-limit-throws-error rp-state) rp-state))
+       (rp-state (update-backchaining-rule rule rp-state)))
+    (mv backchain-limit t old-limit-error-setting rp-state))
+  ///
+
+  (defret smaller-limit-of-<fn>
+    (implies (not (zp limit))
+             (and (natp res-limit)
+                  (< res-limit limit)))))
+
+(define post-backchain-ops (backchain-ends
+                            (old-limit-error-setting booleanp)
+                            rp-state)
+  :stobjs (rp-state)
+  :returns (res-rp-state)
+  (b* (((unless backchain-ends) rp-state)
+       (rp-state (update-backchaining-rule nil rp-state))
+       (rp-state (update-rw-limit-throws-error old-limit-error-setting
+                                               rp-state)))
+    rp-state))
+
+
 (mutual-recursion
 
  ;; The big, main 4 mutually recursive functions that calls the above functions
@@ -997,11 +1079,13 @@ returns (mv rule rules-rest bindings rp-context)"
    (cond
     ((or (atom rules-for-term)
          (atom term)
-         (acl2::fquotep term)
-         (zp limit))
+         (acl2::fquotep term))
      (b* ((new-term (rp-check-context term context iff-flg))
           (dont-rw (if (not (equal new-term term)) t dont-rw)))
        (mv nil new-term dont-rw rp-state))) ;))
+    ((zp limit)
+     (b* ((rp-state (limit-reached-action rp-state))) 
+       (mv nil term dont-rw rp-state)))
     (t
      (b* (
           ((mv rule rules-for-term-rest var-bindings rp-context)
@@ -1027,25 +1111,31 @@ returns (mv rule rules-rest bindings rp-context)"
                                     var-bindings ;no-rp-var-bindings
                                     state))
           ((when (not synp-relieved))
-           (b* ((rp-state (rp-stat-add-to-rules-used rule 'failed-synp nil
+           (b* ((rp-state (rp-stat-add-to-rules-used rule :failed-synp nil
                                                      rp-state))
                 (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index
-                                                               'failed-synp nil nil rp-state)))
+                                                               :failed-synp nil nil rp-state)))
              (rp-rw-rule term dont-rw rules-for-term-rest context iff-flg
                          outside-in-flg  (1- limit) rp-state state)))
           (hyp (rp-apply-bindings (rp-hyp rule) var-bindings))
 
+
+          ((mv hyp-limit backchain-starts old-limit-error-setting rp-state)
+           (get-limit-for-hyp-rw limit rule rp-state))
+          
           ((mv hyp-rewritten rp-state)
            (rp-rw hyp
                   (calculate-dont-rw rule (rp-hyp rule) dont-rw outside-in-flg)
                   rp-context t t
-                  (1- limit) rp-state state))
+                  hyp-limit rp-state state))
 
+          (rp-state (post-backchain-ops backchain-starts old-limit-error-setting rp-state))
+          
           (hyp-relieved (nonnil-p hyp-rewritten))
           ((when (not hyp-relieved))
-           (b* ((rp-state (rp-stat-add-to-rules-used rule 'failed  nil rp-state))
+           (b* ((rp-state (rp-stat-add-to-rules-used rule :failed  nil rp-state))
                 (rp-state (rp-state-push-to-result-to-rw-stack rule
-                                                               stack-index 'failed nil nil
+                                                               stack-index :failed nil nil
                                                                rp-state)))
              (rp-rw-rule
               term dont-rw rules-for-term-rest context iff-flg outside-in-flg
@@ -1053,7 +1143,7 @@ returns (mv rule rules-rest bindings rp-context)"
           (term-res (rp-apply-bindings (rp-rhs rule) var-bindings))
           (rp-state (rp-stat-add-to-rules-used rule nil nil rp-state))
           (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index
-                                                         'success term
+                                                         :success term
                                                          term-res rp-state))
           (dont-rw (calculate-dont-rw rule (rp-rhs rule) dont-rw outside-in-flg)))
        (mv t term-res dont-rw rp-state)))))
@@ -1183,16 +1273,8 @@ returns (mv rule rules-rest bindings rp-context)"
     ((eq (car term) 'quote)
      (mv term rp-state))
     ((zp limit)
-     (progn$
-      (rp-state-print-rules-used rp-state)
-      (hard-error 'rp-rewriter "Step limit of ~x0 exhausted! Either run
-(rp::set-rw-step-limit new-limit) or
-(rp::update-rp-brr t rp::rp-state) to save the rewrite stack and see it with
-(rp::pp-rw-stack :omit '()
-                 :evisc-tuple (evisc-tuple 10 10 nil nil)
-                 :frames 100). ~%"
-                  (list (cons #\0 (rw-step-limit rp-state))))
-      (mv term rp-state)))
+     (b* ((rp-state (limit-reached-action rp-state))) 
+       (mv term rp-state)))
     (t
      (b* (;; exit right away if said to not rewrite
           ((when (should-not-rw dont-rw))

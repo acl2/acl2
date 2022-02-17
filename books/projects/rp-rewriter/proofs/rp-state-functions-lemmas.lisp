@@ -45,6 +45,49 @@
 (local
  (in-theory (enable rp-statep)))
 
+
+(defthm RULES-ALIST-OUTSIDE-IN-GET-of-update-nth
+  (implies (not (equal index *RULES-ALIST-OUTSIDE-IN-GET*))
+           (equal (RULES-ALIST-OUTSIDE-IN-GET key
+                                              (update-nth index something
+                                                          rp-state))
+                  (RULES-ALIST-OUTSIDE-IN-GET key
+                                              rp-state)))
+  :hints (("Goal"
+           :in-theory (e/d (RULES-ALIST-OUTSIDE-IN-GET) ()))))
+
+(defthm RULES-ALIST-inside-out-GET-of-update-nth
+  (implies (and (not (equal index *RULES-ALIST-inside-out-GET*))
+                (natp index)
+                )
+           (equal (RULES-ALIST-inside-out-GET key
+                                              (update-nth index something
+                                                          rp-state))
+                  (RULES-ALIST-inside-out-GET key
+                                              rp-state)))
+  :hints (("Goal"
+           :in-theory (e/d (RULES-ALIST-inside-out-GET
+                            zp)
+                           (rp-statep)))))
+
+
+(defthm valid-rp-statep-of-update-nth
+  (implies (and
+            (valid-rp-statep rp-state)
+            (natp index)
+            (not (equal index *RULES-ALIST-OUTSIDE-IN-GET*))
+            (not (equal index *RULES-ALIST-inside-out-GET*)))
+           (valid-rp-statep (update-nth index val rp-state)))
+  :hints (("Goal"
+           :expand ((VALID-RP-STATEP (UPDATE-NTH INDEX VAL RP-STATE)))
+           :do-not-induct t
+           :use ((:instance valid-rp-statep-necc
+                            (key (VALID-RP-STATEP-WITNESS (UPDATE-NTH INDEX VAL RP-STATE)))))
+           :in-theory (e/d (RULES-ALIST-OUTSIDE-IN-GET
+                            RULES-ALIST-inside-out-GET)
+                           (valid-rp-statep)))))
+
+
 (defthm rp-state-push-to-try-to-rw-stack-is-rp-statep
   (implies (rp-statep rp-state)
            (rp-statep (mv-nth 1 (rp-state-push-to-try-to-rw-stack rule var-bindings
@@ -582,7 +625,8 @@
                                 (update-casesplitter-cases cases rp-state2)))
   :hints (("Goal"
            :do-not-induct t
-           :expand (RP-STATE-PRESERVEDP-SK RP-STATE1 (UPDATE-NTH 12 CASES RP-STATE2))
+           :expand ((:free (x)
+                           (RP-STATE-PRESERVEDP-SK RP-STATE1 (UPDATE-NTH x CASES RP-STATE2))))
            :use ((:instance RP-STATEP-of-UPDATE-RW-STACK
                             (rp-state rp-state2))
                  (:instance RP-STATE-PRESERVEDP-SK-necc
@@ -597,3 +641,190 @@
                            (;;rp-statep
                             RP-STATEP-of-RULES-USED-PUT
                             rp-state-preservedp-sk)))))
+
+
+
+(defret rp-statep-of-limit-reached-action
+  (implies (rp-statep rp-state)
+           (rp-statep res-rp-state))
+  :fn limit-reached-action
+  :hints (("Goal"
+           :in-theory (e/d (limit-reached-action) ()))))
+
+(defret valid-rp-state-syntaxp-of-limit-reached-action
+  (implies (valid-rp-state-syntaxp rp-state)
+           (valid-rp-state-syntaxp res-rp-state))
+  :fn limit-reached-action
+  :hints (("Goal"
+           :in-theory (e/d (limit-reached-action) ()))))
+
+(defret valid-rp-statep-of-limit-reached-action
+  (implies (valid-rp-statep rp-state)
+           (valid-rp-statep res-rp-state))
+  :fn limit-reached-action
+  :hints (("Goal"
+           :in-theory (e/d (limit-reached-action) ()))))
+
+
+
+
+;;;;;;;;
+
+
+(defthm RULE-LIST-SYNTAXP-of-RULES-ALIST-OUTSIDE-IN-GET/inside-out-get
+  (implies (and (valid-rp-state-syntaxp rp-state)
+                (symbolp key))
+           (and (rule-list-syntaxp (RULES-ALIST-OUTSIDE-IN-GET key rp-state))
+                (rule-list-syntaxp (RULES-ALIST-inside-out-GET key rp-state))
+                ))
+  :hints (("Goal"
+           :use ((:instance VALID-RP-STATE-SYNTAXP-AUX-necc
+                            ))
+           :in-theory (e/d (valid-rp-state-syntaxp)
+                           ()))))
+
+
+
+
+(defret rp-statep-of-post-backchain-ops
+  (implies (and (rp-statep rp-state)
+                (booleanp old-limit-error-setting))
+           (rp-statep res-rp-state))
+  :fn post-backchain-ops
+  :hints (("Goal"
+           :in-theory (e/d (post-backchain-ops
+                            rp-statep)
+                           ()))))
+
+(defret valid-rp-statep-of-post-backchain-ops
+  (implies (valid-rp-statep rp-state)
+           (valid-rp-statep res-rp-state))
+  :fn post-backchain-ops
+  :hints (("Goal"
+           :use ((:instance
+                  valid-rp-statep-necc
+                  (key
+                   (valid-rp-statep-witness
+                    (POST-BACKCHAIN-OPS BACKCHAIN-ENDS OLD-LIMIT-ERROR-SETTING
+                                        RP-STATE)))))
+           :in-theory (e/d (post-backchain-ops
+                            RULES-ALIST-OUTSIDE-IN-GET
+                            RULES-ALIST-INSIDE-OUT-GET
+                            valid-rp-statep)
+                           (rp-statep)))))
+
+(defret valid-rp-state-syntaxp-of-post-backchain-ops
+  (implies (and (valid-rp-state-syntaxp rp-state)
+                (booleanp old-limit-error-setting))
+           (valid-rp-state-syntaxp res-rp-state))
+  :fn post-backchain-ops
+  :hints (("Goal"
+           :use ((:instance rp-statep-of-post-backchain-ops)
+                 (:instance
+                  valid-rp-state-syntaxp-aux-necc
+                  (key
+                   (valid-rp-state-syntaxp-aux-witness
+                    (POST-BACKCHAIN-OPS BACKCHAIN-ENDS OLD-LIMIT-ERROR-SETTING
+                                        RP-STATE)))))
+           :in-theory (e/d (post-backchain-ops
+                            valid-rp-state-syntaxp                        
+                            rp-statep)
+                           (valid-rp-statep
+                            rp-statep)))))
+
+
+
+
+(defret rp-statep-of-get-limit-for-hyp-rw
+  (implies (and (rp-statep rp-state))
+           (rp-statep res-rp-state))
+  :fn get-limit-for-hyp-rw
+  :hints (("Goal"
+           :in-theory (e/d (get-limit-for-hyp-rw
+                            rp-statep)
+                           ()))))
+
+(defret valid-rp-statep-of-get-limit-for-hyp-rw
+  (implies (valid-rp-statep rp-state)
+           (valid-rp-statep res-rp-state))
+  :fn get-limit-for-hyp-rw
+  :hints (("Goal"
+           :use ((:instance
+                  valid-rp-statep-necc
+                  (key
+                   (valid-rp-statep-witness
+                    (mv-nth 3 (GET-LIMIT-FOR-HYP-RW limit rule
+                                        RP-STATE))))))
+           :in-theory (e/d (get-limit-for-hyp-rw
+                            RULES-ALIST-OUTSIDE-IN-GET
+                            RULES-ALIST-INSIDE-OUT-GET
+                            valid-rp-statep)
+                           (rp-statep)))))
+
+(defret valid-rp-state-syntaxp-of-get-limit-for-hyp-rw
+  (implies (and (valid-rp-state-syntaxp rp-state)
+                (booleanp old-limit-error-setting))
+           (valid-rp-state-syntaxp res-rp-state))
+  :fn get-limit-for-hyp-rw
+  :hints (("Goal"
+           :use ((:instance rp-statep-of-get-limit-for-hyp-rw)
+                 (:instance
+                  valid-rp-state-syntaxp-aux-necc
+                  (key
+                   (valid-rp-state-syntaxp-aux-witness
+                    (GET-LIMIT-FOR-HYP-RW BACKCHAIN-ENDS OLD-LIMIT-ERROR-SETTING
+                                        RP-STATE)))))
+           :in-theory (e/d (get-limit-for-hyp-rw
+                            valid-rp-state-syntaxp                        
+                            rp-statep)
+                           (valid-rp-statep
+                            rp-statep)))))
+
+
+
+
+(defret rp-statep-of-INCREMENT-RW-STACK-SIZE
+  (implies (and (rp-statep rp-state))
+           (rp-statep res-rp-state))
+  :fn INCREMENT-RW-STACK-SIZE
+  :hints (("Goal"
+           :in-theory (e/d (INCREMENT-RW-STACK-SIZE
+                            rp-statep)
+                           ()))))
+
+(defret valid-rp-statep-of-INCREMENT-RW-STACK-SIZE
+  (implies (valid-rp-statep rp-state)
+           (valid-rp-statep res-rp-state))
+  :fn INCREMENT-RW-STACK-SIZE
+  :hints (("Goal"
+           :use ((:instance
+                  valid-rp-statep-necc
+                  (key
+                   (valid-rp-statep-witness
+                    (INCREMENT-RW-STACK-SIZE RP-STATE)))))
+           :in-theory (e/d (INCREMENT-RW-STACK-SIZE
+                            RULES-ALIST-OUTSIDE-IN-GET
+                            RULES-ALIST-INSIDE-OUT-GET
+                            valid-rp-statep)
+                           (rp-statep)))))
+
+(defret valid-rp-state-syntaxp-of-INCREMENT-RW-STACK-SIZE
+  (implies (and (valid-rp-state-syntaxp rp-state)
+                (booleanp old-limit-error-setting))
+           (valid-rp-state-syntaxp res-rp-state))
+  :fn INCREMENT-RW-STACK-SIZE
+  :hints (("Goal"
+           :use ((:instance rp-statep-of-INCREMENT-RW-STACK-SIZE)
+                 (:instance
+                  valid-rp-state-syntaxp-aux-necc
+                  (key
+                   (valid-rp-state-syntaxp-aux-witness
+                    (INCREMENT-RW-STACK-SIZE RP-STATE)))))
+           :in-theory (e/d (INCREMENT-RW-STACK-SIZE
+                            valid-rp-state-syntaxp                        
+                            rp-statep)
+                           (valid-rp-statep
+                            rp-statep)))))
+
+
+

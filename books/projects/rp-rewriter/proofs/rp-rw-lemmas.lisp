@@ -656,6 +656,8 @@
    rp-trans
    rp-trans-lst)))
 
+
+
 (encapsulate
   nil
 
@@ -676,25 +678,25 @@
     :on error
 
     (defthm-rp-rw
-      (defthm rp-rw-returns-valid-rp-statp
+      (defthm rp-rw-returns-valid-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
                   (mv-nth 1 (rp-rw term dont-rw context iff-flg hyp-flg limit rp-state state))))
         :flag rp-rw)
-      (defthm rp-rw-rule-retuns-valid-rp-statp
+      (defthm rp-rw-rule-retuns-valid-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
                   (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg limit rp-state state))))
         :flag rp-rw-rule)
 
-      (defthm rp-rw-if-retuns-valid-rp-statp
+      (defthm rp-rw-if-retuns-valid-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
                   (mv-nth 1 (rp-rw-if term dont-rw context iff-flg hyp-flg limit
                                       rp-state state))))
         :flag rp-rw-if)
 
-      (defthm rp-rw-subterms-retuns-valid-rp-statp
+      (defthm rp-rw-subterms-retuns-valid-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
                   (mv-nth 1 (rp-rw-subterms subterms dont-rw context hyp-flg limit
@@ -724,6 +726,12 @@
                                 SHOW-USED-RULES-FLG
                                 UPDATE-NTH
                                 RP-STAT-ADD-TO-RULES-USED)))))))
+
+
+
+
+
+
 
 (encapsulate
   nil
@@ -814,20 +822,20 @@
     :on error
 
     (defthm-rp-rw
-      (defthm rp-rw-returns-valid-rp-statep
+      (defthm rp-statep-of-rp-rw
         (implies (and (valid-rp-statep rp-state)
                       (rp-statep rp-state))
                  (valid-rp-statep
                   (mv-nth 1 (rp-rw term dont-rw context iff-flg hyp-flg limit rp-state state))))
         :flag rp-rw)
-      (defthm rp-rw-rule-retuns-valid-rp-statep
+      (defthm rp-statep-of-rp-rw-rule
         (implies (and (valid-rp-statep rp-state)
                       (rp-statep rp-state))
                  (valid-rp-statep
                   (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg limit rp-state state))))
         :flag rp-rw-rule)
 
-      (defthm rp-rw-if-retuns-valid-rp-statep
+      (defthm rp-statep-of-rp-rw-if-retuns
         (implies (and (valid-rp-statep rp-state)
                       (rp-statep rp-state))
                  (valid-rp-statep
@@ -835,7 +843,7 @@
                                       rp-state state))))
         :flag rp-rw-if)
 
-      (defthm rp-rw-subterms-retuns-valid-d-rp-statep
+      (defthm rp-statep-of-rp-rw-subterms
         (implies (and (valid-rp-statep rp-state)
                       (rp-statep rp-state))
                  (valid-rp-statep
