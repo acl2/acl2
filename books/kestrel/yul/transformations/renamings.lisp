@@ -128,3 +128,35 @@
                       (member-equal pair list))
                  (and (member-equal (car pair) (strip-cars list))
                       (member-equal (cdr pair) (strip-cdrs list)))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define renaming-old ((ren renamingp))
+  :short "Set of old variables in a renaming."
+  :returns (vars identifier-setp)
+  (mergesort (strip-cars (renaming->list ren)))
+  :hooks (:fix)
+  ///
+
+  (defruled old-var-in-renaming-old-when-in-renaming
+    (implies (member-equal (cons old-var new-var)
+                           (renaming->list ren))
+             (set::in old-var (renaming-old ren)))
+    :rule-classes :forward-chaining
+    :induct (len ren)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define renaming-new ((ren renamingp))
+  :short "Set of new variables in a renaming."
+  :returns (vars identifier-setp)
+  (mergesort (strip-cdrs (renaming->list ren)))
+  :hooks (:fix)
+  ///
+
+  (defruled new-var-in-renaming-new-when-in-renaming
+    (implies (member-equal (cons old-var new-var)
+                           (renaming->list ren))
+             (set::in new-var (renaming-new ren)))
+    :rule-classes :forward-chaining
+    :induct (len ren)))
