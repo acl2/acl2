@@ -125,8 +125,8 @@
          &key
          hints                 ; default nil
          instructions          ; default nil
-         ignore-ok             ; default taken from acl2-defaults-table
          otf-flg               ; default nil
+         ignore-ok             ; default taken from acl2-defaults-table
          with-output           ; default (:off :all :gag-mode nil)
          time-limit            ; default nil
          step-limit            ; default nil
