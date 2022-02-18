@@ -49,6 +49,7 @@
 (local
  (in-theory
   (disable
+   min
    (:rewrite atom-rp-termp-is-symbolp)
    hons-get
    rp-stat-add-to-rules-used
@@ -93,6 +94,12 @@
              (("Goal"
                :in-theory
                (disable QUOTEP
+                        DUMB-NEGATE-LIT2$INLINE
+                        NONNIL-P
+                        RP-EQUAL-CNT
+                        RP-EXTRACT-CONTEXT
+                        quotep
+                        min
                         (:DEFINITION RP-CHECK-CONTEXT)
                         (:DEFINITION LEN)
 
@@ -122,13 +129,46 @@
                         IS-NONNIL-FIX
                         nonnil-fix
                         dont-rw-if-fix
-
+                        min
                         RP-EX-COUNTERPART
                         rp-rw-rule-aux
                         UPDATE-NTH)))))
 
 (local
  (in-theory (disable context-syntaxp)))
+
+
+(defthm create-if-instance-correct
+  (equal (rp-evlt (create-if-instance cond r1 r2) a)
+         (rp-evlt `(if ,cond ,r1 ,r2) a))
+  :hints (("Goal"
+           :in-theory (e/d (create-if-instance) ()))))
+
+
+
+(defthm create-if-instance-valid-sc
+  (implies (valid-sc `(if ,cond ,r1 ,r2) a)
+           (valid-sc (create-if-instance cond r1 r2) a))
+  :hints (("Goal"
+           :in-theory (e/d (create-if-instance
+                            valid-sc
+                            is-if
+                            is-rp)
+                           ()))))
+
+(defthm create-if-instance-rp-termp
+  (implies (and (rp-termp cond)
+                (rp-termp r1)
+                (rp-termp r2))
+           (rp-termp (create-if-instance cond r1 r2)))
+  :hints (("Goal"
+           :in-theory (e/d (create-if-instance
+                            valid-sc
+                            is-if
+                            is-rp)
+                           ()))))
+
+
 
 (local
  (defthmd context-syntaxp-def
@@ -620,6 +660,9 @@
 (local
  (in-theory
   (disable
+
+   UPDATE-RW-LIMIT-THROWS-ERROR
+   rw-limit-throws-error
    ;;rp-meta-valid-syntax-listp
 
    ;;valid-rp-meta-rule-listp
@@ -719,6 +762,22 @@
    rp-trans-lst)))
 
 
+(local
+ (defthm UPDATE-RW-LIMIT-THROWS-ERROR-rp-statep
+   (implies (and (rp-statep rp-state)
+                 (booleanp x))
+            (rp-statep (update-rw-limit-throws-error x rp-state)))
+   :hints (("Goal"
+            :in-theory (e/d (rp-statep
+                             UPDATE-RW-LIMIT-THROWS-ERROR) ())))))
+
+(local
+ (defthm booleanp-rw-limit-throws-error
+   (implies (rp-statep rp-state)
+            (booleanp (rw-limit-throws-error rp-state)))
+   :hints (("Goal"
+            :in-theory (e/d (rp-statep
+                             rw-limit-throws-error) ())))))
 
 (encapsulate
   nil
@@ -729,36 +788,38 @@
                        VALID-RULES-ALISTP-IMPLIES-RULES-ALISTP
                        RP-TERM-LISTP-APPEND
                        RP-EXTRACT-CONTEXT
+                       ;;RP-STATE-PRESERVEDP-IMPLIES-RP-STATEP
                        RP-RW-RULE-AUX
+                       UPDATE-RW-LIMIT-THROWS-ERROR
                        IS-RP-PSEUDO-TERMP
                        IS-IF-RP-TERMP
                        IS-IF-RP-TERMP)))
 
   (with-output
     :off (warning event  prove  observation)
-    :gag-mode nil
+    :gag-mode :goals
     :on error
 
     (defthm-rp-rw
-      (defthm rp-rw-returns-valid-rp-statep
+      (defthm rp-rw-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
                   (mv-nth 1 (rp-rw term dont-rw context iff-flg hyp-flg limit rp-state state))))
         :flag rp-rw)
-      (defthm rp-rw-rule-retuns-valid-rp-statep
+      (defthm rp-rw-rule-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
                   (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg limit rp-state state))))
         :flag rp-rw-rule)
 
-      (defthm rp-rw-if-retuns-valid-rp-statep
+      (defthm rp-rw-if-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
                   (mv-nth 1 (rp-rw-if term dont-rw context iff-flg hyp-flg limit
                                       rp-state state))))
         :flag rp-rw-if)
 
-      (defthm rp-rw-subterms-retuns-valid-rp-statep
+      (defthm rp-rw-subterms-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
                   (mv-nth 1 (rp-rw-subterms subterms dont-rw context hyp-flg limit
@@ -787,13 +848,44 @@
                                (;;update-rules-used
                                 SHOW-USED-RULES-FLG
                                 UPDATE-NTH
+                                is-rp
+                                RW-LIMIT-THROWS-ERROR
+                                
                                 RP-STAT-ADD-TO-RULES-USED)))))))
 
 
 
 
+(defthm update-rw-limit-throws-error-valid-rp-state-syntaxp
+   (implies (and (valid-rp-state-syntaxp rp-state)
+                 (booleanp x))
+            (valid-rp-state-syntaxp (update-rw-limit-throws-error x rp-state)))         
+   :hints (("goal"
+            :do-not-induct t
+            :expand ((valid-rp-state-syntaxp rp-state))
+            :in-theory (e/d (rp-statep
+                             
+                             update-rw-limit-throws-error)
+                            (valid-rp-state-syntaxp-aux)))))
+
+(defthm update-rw-limit-throws-error-valid-rp-statep
+   (implies (valid-rp-statep rp-state)
+            (valid-rp-statep (update-rw-limit-throws-error x rp-state)))         
+   :hints (("goal"
+            :do-not-induct t
+            :expand ((valid-rp-statep rp-state))
+            :in-theory (e/d (rp-statep
+                             update-rw-limit-throws-error)
+                            (valid-rp-state-syntaxp-aux)))))
 
 
+#|(defthmd valid-sc-of-and-pattern
+  (implies (valid-sc `(if ,x ,y 'nil) a) 
+           (valid-sc `(if ,y ,x 'nil) a))
+  :hints (("Goal"
+           :in-theory (e/d (valid-sc
+                            is-rp
+                            is-if) ()))))|#
 
 (encapsulate
   nil
@@ -811,7 +903,7 @@
 
   (with-output
     :off (warning event  prove  observation)
-    :gag-mode nil
+    :gag-mode :goals
     :on error
 
     (defthm-rp-rw
@@ -880,7 +972,7 @@
 
   (with-output
     :off (warning event  prove  observation)
-    :gag-mode nil
+    :gag-mode :goals
     :on error
 
     (defthm-rp-rw
@@ -1961,6 +2053,7 @@
                               valid-sc-single-step-2
                               is-rp-implies-fc
                               rp-evlt-of-side-cond-eval-lemma
+                              RP-EQUAL-IMPLIES-EQUAL-RP-EVLT-1
                               )
                              (
                               rp-evl-of-quote

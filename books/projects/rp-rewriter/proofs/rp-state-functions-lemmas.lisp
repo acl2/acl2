@@ -87,6 +87,24 @@
                             RULES-ALIST-inside-out-GET)
                            (valid-rp-statep)))))
 
+(defthm valid-rp-state-syntaxp-of-update-nth
+  (implies (and
+            (natp index)
+            (valid-rp-state-syntaxp rp-state)
+            (rp-statep (update-nth index val rp-state))
+            (not (equal index *RULES-ALIST-OUTSIDE-IN-GET*))
+            (not (equal index *RULES-ALIST-inside-out-GET*)))
+           (valid-rp-state-syntaxp (update-nth index val rp-state)))
+  :hints (("Goal"
+           :expand ((valid-rp-state-syntaxp (UPDATE-NTH INDEX VAL RP-STATE))
+                    (VALID-RP-STATE-SYNTAXP RP-STATE))
+           :do-not-induct t
+           :use ((:instance VALID-RP-STATE-SYNTAXP-aux-necc
+                            (key (VALID-RP-STATE-SYNTAXP-AUX-WITNESS (UPDATE-NTH INDEX VAL RP-STATE)))))
+           :in-theory (e/d (RULES-ALIST-OUTSIDE-IN-GET
+                            RULES-ALIST-inside-out-GET)
+                           (valid-rp-statep)))))
+
 
 (defthm rp-state-push-to-try-to-rw-stack-is-rp-statep
   (implies (rp-statep rp-state)

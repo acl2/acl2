@@ -1062,6 +1062,40 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                                                rp-state)))
     rp-state))
 
+(define create-if-instance (cond r1 r2)
+  :inline t
+  :verify-guards nil
+  (cond ((equal cond ''nil)
+         r2)
+        ((nonnil-p cond)
+         r1)
+        ((rp-equal-cnt r1 r2 2)
+         (ex-from-rp-all2 r1))
+        (t `(if ,cond ,r1 ,r2))))
+
+
+(progn
+  (defthm min-of-limit
+     (implies (and (natp other)
+                   (not (zp limit)))
+              (and (< (min other (1- limit))
+                      limit)
+                   (< (min (1- limit) other)
+                      limit)
+                 
+                   (natp (min other (1- limit)))
+                   (natp (min (1- limit) other))))
+     :hints (("Goal"
+              :in-theory (e/d (min) ())))) 
+  (local
+   ;; disable for quick measure
+   (in-theory (disable min
+                       DUMB-NEGATE-LIT2$INLINE
+                       NONNIL-P
+                       RP-EQUAL-CNT
+                       RP-EXTRACT-CONTEXT
+                       quotep))))
+ 
 
 (mutual-recursion
 
@@ -1180,7 +1214,9 @@ relieving the hypothesis for ~x1! You can disable this error by running:
     ((zp limit)
      (mv term rp-state))
     ((is-if term)
-     (b* ((dont-rw (dont-rw-if-fix dont-rw)) ;;for guard
+     (b* ((current-rw-limit-throws-error (rw-limit-throws-error rp-state))
+          
+          (dont-rw (dont-rw-if-fix dont-rw)) ;;for guard
           ;; rewrite the condition first.
           ((mv cond-rw rp-state)
            (rp-rw (cadr term) (cadr dont-rw)
@@ -1198,10 +1234,13 @@ relieving the hypothesis for ~x1! You can disable this error by running:
            (rp-rw (caddr term) (caddr dont-rw)
                   context iff-flg hyp-flg
                   (1- limit) rp-state state))
+
+         
+          
           ;; cond is something other than ''t or ''nil
           ;; if in hyp-flg=1 (meaning a hyp is being rewritten), then stop
-          ;; trying to rewrite (for better proof-time performance) because the
-          ;; rest will probably be useless
+          ;; trying to rewrite (for better proof-time performance) because doing the
+          ;; rest is unnecessary
           ((when (and hyp-flg
                       (equal (cadddr term) ''nil)
                       ;; If this comes from a rule that resembles anything
@@ -1213,7 +1252,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                       ;; keep on going.
                       (not (include-fnc-subterms context 'if)) ;; CONSIDER REMOVING
                       ))
-           (mv `(if ,cond-rw ,(caddr term) ,(cadddr term)) rp-state))
+           (mv (create-if-instance cond-rw (caddr term) (cadddr term)) rp-state))
 
           ;; add to the
           ;; context to each subterm and simply them.
@@ -1223,6 +1262,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
            (rp-rw (caddr term) (caddr dont-rw)
                   r1-context iff-flg hyp-flg
                   (1- limit) rp-state state))
+          
           ((mv negated-cond-rw negated-cond-rw-dont-rw)
            (dumb-negate-lit2 cond-rw))
           ((mv negated-cond-rw rp-state)
@@ -1239,13 +1279,79 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                   r2-context iff-flg hyp-flg
                   (1- limit) rp-state state))
           ;; if the two subterms are equal, return them
+          ;; cannot use rp-equal because they cannot have different
+          ;; side-conditions.
+          ;; their rp-equal case is handled in create-if-instance
           ((when (equal r1 r2)) (mv r1 rp-state))
           ((when (and iff-flg
                       (nonnil-p r1)
                       (equal r2 ''nil)))
-           (mv cond-rw rp-state)))
+           (mv cond-rw rp-state))
+
+          ((when (and iff-flg
+                      (nonnil-p r2)
+                      (equal r1 ''nil)))
+           (mv negated-cond-rw rp-state))
+
+          ((when (and iff-flg
+                      (equal r2 ''nil)
+                      (not (cons-count-compare cond-rw 200))
+                      (not (cons-count-compare r1 200))))
+           ;; if we have an "and" pattern: (if cond r1 nil)
+           ;; then add r1 to the context, and try to rewrite cond again with a
+           ;; small limit.
+           ;; since we are flipping things around valid-sc gets messy, so keep
+           ;; things small so we can extract side-conds later.
+           ;; Explanation: if everything evaluated to nil. we'd lose some hyps
+           ;; in inductive cases since context will have nil eval'ed values. 
+           (b* ((rp-state (update-rw-limit-throws-error nil rp-state))
+                (if-rw-limit 200)
+                (r1 (ex-from-rp-all2 r1))
+                (cond-context (append (rp-extract-context r1)
+                                      context))
+                (cond-rw-orig cond-rw) 
+                ((mv cond-rw rp-state)
+                 (rp-rw cond-rw nil
+                        cond-context iff-flg hyp-flg
+                        (min (1- limit) if-rw-limit)
+                        rp-state state))
+                (rp-state (update-rw-limit-throws-error
+                           current-rw-limit-throws-error
+                           rp-state))
+                (cond-rw (if (equal cond-rw cond-rw-orig)
+                             cond-rw
+                           (ex-from-rp-all2 cond-rw))))
+             (mv (create-if-instance cond-rw r1 r2)
+                 rp-state)))
+
+          ((when (and iff-flg
+                      (equal r1 ''nil)
+                      (not (cons-count-compare cond-rw 200))
+                      (not (cons-count-compare r2 200)))) ; ;
+           ;; if  we  have  an  "and"  pattern:  (if  cond  nil  r2)  i.e.  (if ; ;
+           ;; negated-cond-rw r2  nil) then add r2  to the context, and  try to ; ;
+           ;; rewrite negated-cond-rw again with a small limit. ; ;
+           (b* ((rp-state (update-rw-limit-throws-error nil rp-state)) ; ;
+                (if-rw-limit 200)
+                (r2 (ex-from-rp-all2 r2))
+                (cond-context (append (rp-extract-context r2)
+                                      context))
+                (negated-cond-rw-orig negated-cond-rw)
+                ((mv negated-cond-rw rp-state)
+                 (rp-rw negated-cond-rw nil
+                        cond-context iff-flg hyp-flg
+                        (min (1- limit) if-rw-limit)
+                        rp-state state))
+                (rp-state (update-rw-limit-throws-error
+                           current-rw-limit-throws-error
+                           rp-state))
+                (negated-cond-rw (if (equal negated-cond-rw negated-cond-rw-orig)
+                                     negated-cond-rw
+                                   (ex-from-rp-all2 negated-cond-rw)))) ; ;
+             (mv (create-if-instance negated-cond-rw r2 r1) rp-state))))
+          
        ;; could not simplify, return the rewritten term.
-       (mv `(if ,cond-rw ,r1 ,r2) rp-state)))
+       (mv (create-if-instance cond-rw r1 r2) rp-state)))
     (t (mv term rp-state))))
 
  (defun rp-rw (term dont-rw context iff-flg hyp-flg limit rp-state state)
