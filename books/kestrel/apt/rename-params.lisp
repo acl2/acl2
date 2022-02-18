@@ -240,7 +240,7 @@
                ,becomes-theorem-to-export))
         ;; we are operating on a mutually recursive nest of functions:
         (b* ((ctx `(rename-params ,fn))
-             (fns (fn-recursive-partners fn state))
+             (fns (fn-recursive-partners fn (w state)))
              ;; Handle the :new-name arg:
              (new-name-alist ;this is an alist, but some values may be :auto
               (elaborate-mut-rec-option2 new-name :new-name fns ctx))
@@ -294,7 +294,7 @@
                                     (list param-renaming))))
        (param-renaming-alist (doublets-to-alist param-renaming-doublets))
        (fns (if (fn-mutually-recursivep fn state)
-                (fn-recursive-partners fn state) ;includes fn
+                (fn-recursive-partners fn (w state)) ;includes fn
               (list fn)))
        (existing-formals (formals-of-fns fns (w state)))
        ((when (not (subsetp-eq (strip-cars param-renaming-alist)

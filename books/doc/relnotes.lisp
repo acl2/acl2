@@ -369,6 +369,14 @@
      @('prove$') to return @('(mv nil nil state)').  Also if the given term and
      (if supplied) hints have illegal syntax, an error now occurs.")
 
+   (xdoc::p
+    "A new keyword option @(':ignore-ok') is now available for @(tsee
+     prove$).")
+
+   (xdoc::p
+    "Evaluation of @('prover-steps-counted state)') returns the prover steps
+     counted for the most recently completed event.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA"))
@@ -467,10 +475,6 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Miscellaneous")
-
-   (xdoc::p
-    "A new keyword option @(':ignore-ok') is now available for @(tsee
-     prove$).")
 
    ))
 

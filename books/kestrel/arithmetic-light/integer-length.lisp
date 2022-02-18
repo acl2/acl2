@@ -225,3 +225,13 @@
            (equal (< (integer-length x) n)
                   (< x (expt 2 (+ -1 n)))))
   :hints (("Goal" :in-theory (enable integer-length posp))))
+
+;; or move to expt2.lisp
+(defthm <-of-expt-2-and-constant
+  (implies (and (syntaxp (quotep k))
+                (integerp k) ;gen?
+                (natp i))
+           (equal (< (expt 2 i) k)
+                  (and (< 0 k)
+                       (not (equal k (expt 2 i)))
+                       (< i (integer-length k))))))

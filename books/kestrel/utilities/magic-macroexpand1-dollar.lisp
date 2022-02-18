@@ -27,24 +27,38 @@
 
 ;; Macroexpand the top-level macro in FORM (i.e., perform just one step of
 ;; expansion). FORM should be a call of a macro.  Returns (mv erp val).
-(defund magic-macroexpand1$ (form ctx world state)
+(defund magic-macroexpand1$ (form ctx wrld state)
   (declare (xargs :guard (and (consp form)
                               (true-listp form)
-                              ;; (symbolp (car form))
-                              (plist-worldp world)
-                              (macro-namep (car form) world)
-                              (pseudo-termp (fgetprop (car form) 'guard *t* world)) ;why?
+                              (plist-worldp wrld)
+                              (macro-namep (car form) wrld)
+                              (pseudo-termp (fgetprop (car form) 'guard *t* wrld)) ;why?
                               )
                   :stobjs state))
   (magic-macroexpand1 form
-                      (getpropc (car form) 'macro-body nil world)
+                      (getpropc (car form) 'macro-body nil wrld)
                       ctx
-                      world
+                      wrld
                       (default-state-vars t)
                       state))
 
 (defthm magic-macroexpand1$-normalize-context
   (implies (syntaxp (not (equal context ''fake-context)))
-           (equal (mv-nth 1 (magic-macroexpand1$ term context world state))
-                  (mv-nth 1 (magic-macroexpand1$ term 'fake-context world state))))
+           (equal (mv-nth 1 (magic-macroexpand1$ term context wrld state))
+                  (mv-nth 1 (magic-macroexpand1$ term 'fake-context wrld state))))
   :hints (("Goal" :in-theory (enable magic-macroexpand1$))))
+
+;; Macroexpands the top-level macro in FORM (i.e., perform just one step of
+;; expansion). FORM should be a call of a macro.  Returns the term with one
+;; macro call now expanded.  Throws an error if macroexpansion fails.
+(defund magic-macroexpand1$$ (form ctx wrld state)
+  (declare (xargs :guard (and (consp form)
+                              (true-listp form)
+                              (plist-worldp wrld)
+                              (macro-namep (car form) wrld)
+                              (pseudo-termp (fgetprop (car form) 'guard *t* wrld)) ;why?
+                              )
+                  :stobjs state))
+  (b* (((mv erp form-expanded-one-step) (magic-macroexpand1$ form ctx wrld state))
+       ((when erp) (er hard? ctx "Failed to macroexpand form: ~x0." form)))
+    form-expanded-one-step))

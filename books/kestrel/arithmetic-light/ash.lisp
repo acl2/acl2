@@ -31,6 +31,13 @@
 (defthm integerp-of-ash
   (integerp (ash i c)))
 
+(defthm equal-of-0-and-ash
+  (equal (equal 0 (ash i c))
+         (or (not (integerp i))
+             (and (<= 0 i)
+                  (< i (expt 2 (- c))))))
+  :hints (("Goal" :in-theory (enable ash))))
+
 (defthm <=-of-0-and-ash
   (implies (<= 0 i)
            (<= 0 (ash i c)))

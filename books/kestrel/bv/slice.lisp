@@ -1,7 +1,7 @@
 ; BV Library: slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -310,6 +310,18 @@
            :cases ((integerp (expt 2 (+ 1 high (- low))))) ;yuck!
            :in-theory (e/d (unsigned-byte-p)
                            (unsigned-byte-p-of-slice-gen)))))
+
+(defthm <-of-slice-and-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep high)
+                              (quotep low)))
+                (< (+ -1 (expt 2 (+ 1 high (- low)))) k)
+                (integerp high)
+                (integerp low)
+                (<= low high))
+           (< (slice high low x) k))
+  :hints (("Goal" :use (:instance slice-upper-bound-linear)
+           :in-theory (disable slice-upper-bound-linear))))
 
 (defthmd logtail-becomes-slice
   (implies (and (unsigned-byte-p m x) ;m is a free var

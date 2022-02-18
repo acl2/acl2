@@ -11,7 +11,7 @@
        (with-output! :on error ,form)
      ,form))
 
-(defun prove$-fn (term state hints otf-flg ignore-ok ignore-ok-p
+(defun prove$-fn (term state hints instructions otf-flg ignore-ok ignore-ok-p
                        with-translate-error)
 
 ; This function is based on thm-fn.  It returns (value t) if the proof
@@ -42,21 +42,37 @@
                                            hints
                                            (default-hints wrld)
                                            ctx wrld state))
+                  (instructions
+                   (cond ((and hints instructions)
+                          (er soft ctx
+                              "It is illegal to supply non-nil values for ~
+                               both :hints and :instructions."))
+                         (t (translate-instructions nil instructions ctx wrld
+                                                    state))))
                   (tterm (translate term t t t ctx wrld state)))
-          (value (cons hints tterm))))
+          (value (list* hints instructions tterm))))
        (cond
-        ((and erp with-translate-error)
-         (mv :translate-error :translate-error state))
-        (t (let ((hints (car val))
-                 (tterm (cdr val)))
-; known-stobjs = t (stobjs-out = t)
-             (state-global-let*
-              ((abort-soft nil)) ; interrupts abort immediately to the top level
+        (erp
+         (cond (with-translate-error
+                (mv :translate-error :translate-error state))
+               (t (silent-error state))))
+        (t
+         (state-global-let*
+          ((abort-soft nil)) ; interrupts abort immediately to the top level
+          (let ((hints (car val))
+                (instructions (cadr val))
+                (tterm (cddr val)))
+            (cond
+             (instructions
+              (er-progn
+               (pc-main tterm term nil nil instructions '(exit) t t state)
+               (if (goals) (silent-error state) (value :success))))
+             (t
               (prove tterm
                      (make-pspv ens wrld state
                                 :displayed-goal term
                                 :otf-flg otf-flg)
-                     hints ens wrld ctx state)))))))))
+                     hints ens wrld ctx state)))))))))))
 
 (defmacro prove$-return (form)
   `(mv-let (erp val state)
@@ -68,7 +84,7 @@
            (t (value t)))))
 
 (defmacro prove$ (term &key
-                       hints otf-flg
+                       hints instructions otf-flg
                        (with-output '(:off :all :gag-mode nil))
                        time-limit
                        step-limit
@@ -79,8 +95,8 @@
 ; (mv nil t state) if the proof is successful, otherwise (mv nil nil state).
 
   (declare (xargs :guard (member-eq ignore-ok '(t nil :warn))))
-  (let* ((form `(prove$-fn ,term state ,hints ,otf-flg ,ignore-ok ,ignore-ok-p
-                           ,with-translate-error))
+  (let* ((form `(prove$-fn ,term state ,hints ,instructions ,otf-flg
+                           ,ignore-ok ,ignore-ok-p ,with-translate-error))
          (form `(with-output! ,@with-output ,form))
          (form (if time-limit
                    `(with-prover-time-limit ,time-limit ,form)
@@ -108,8 +124,9 @@
  (prove$ term                  ; any term (translated or not)
          &key
          hints                 ; default nil
-         ignore-ok             ; default taken from acl2-defaults-table
+         instructions          ; default nil
          otf-flg               ; default nil
+         ignore-ok             ; default taken from acl2-defaults-table
          with-output           ; default (:off :all :gag-mode nil)
          time-limit            ; default nil
          step-limit            ; default nil
@@ -119,19 +136,34 @@
  <p>where all arguments except @('with-output') are evaluated.  The value of
  keyword @(':with-output'), if supplied, should be a list containing arguments
  one would give to the macro, @(tsee with-output), hence a list that satisfies
- @(tsee keyword-value-listp).  The @(tsee hints), @(tsee otf-flg), @(tsee
- time-limit), and @(tsee step-limit) arguments are as one would expect for
- calls of the prover.  The @('ignore-ok') option has the same effect as if
- @(see set-ignore-ok) were called with that same value, immediately preceding
- the call of @('prove$') &mdash; but of course warning and error messages may
- be suppressed, depending on @('with-output').</p>
+ @(tsee keyword-value-listp).  The @(tsee hints), @(tsee instructions), @(tsee
+ otf-flg), @(tsee time-limit), and @(tsee step-limit) arguments are as one
+ would expect for calls of the prover; see @(see defthm).  It is illegal to
+ supply non-@('nil') values for both @('hints') and @('instructions').  The
+ @('ignore-ok') option has the same effect as if @(see set-ignore-ok) were
+ called with that same value, immediately preceding the call of @('prove$')
+ &mdash; but of course warning and error messages may be suppressed, depending
+ on @('with-output').</p>
 
- <p>@('Prove$') returns an @(see error-triple), @('(mv erp val state)'), where
- @('val') is @('t') when @('term') is successfully proved, else @('nil').  By
- default, @('erp') is non-@('nil') if the given @('term') or @('hints') have
- illegal syntax, in which case a suitable error message is printed; otherwise
- @('erp') is @('nil') and the error message is only printed if error output is
- turned on by the @(':with-output') argument.  That default behavior is
- overridden if @(':with-translate-error') is supplied a value of @('nil'); in
- that case, @('erp') is always @('nil') and error messages are suppressed
- unless the @(':with-output') argument is supplied and allows them.</p>")
+ <p>@('Prove$') returns an @(see error-triple), @('(mv erp val state)'), where @('val') is @('t')
+ when term is successfully proved, else @('nil').  There are two ways that
+ an error might occur: when (a) the given term, hints, or
+ instructions have illegal syntax, or (b) when the proof attempt
+ fails, for example when a @(see step-limit) is exceeded.  @('Erp') is non-@('nil')
+ by default in case (a), and @('erp') is always @('nil') in case (b).  But @('erp')
+ is @('nil') in case (a) as well if @(':with-translate-error') is supplied a
+ value of @('nil').  Now consider when an error message is printed.  In
+ case (a), an error message is printed if and only if
+ @(':with-translate-error') is @('nil'), regardless of the @(':with-output')
+ argument.  In case (b), error output from the proof attempt is
+ printed if and only if @(':with-output') specifies that error output is
+ on; since @(':with-output') is @('(:off :all :gag-mode nil)') by default, such
+ error output is suppressed by default.  That error output, when
+ printed, is generally minimal: ``ACL2 Error in ( PROVE$ ...): See
+ :DOC failure.''  But it can be more informative, for example when a
+ @(see step-limit) is exceeded.</p>
+
+ <p>Note that after evaluation of a @('prove$') call, you can evaluate the form
+ @('(prover-steps-counted state)') to get the number of prover steps that were
+ taken &mdash; except, a negative number indicates a step-limit violation.  See
+ @(See prover-steps-counted).</p>")

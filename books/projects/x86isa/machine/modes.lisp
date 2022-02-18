@@ -85,7 +85,7 @@
   :short "Check whether we are in 64-bit mode."
   :long
   "<p>
-   Given the above modeling assumption stated in @(see x86-modes),
+   Given the modeling assumption stated in @(see x86-modes),
    this predicate discriminates between
    64-bit mode and the other two modes (collectively, 32-bit mode).
    Based on Intel manual, Mar'17, Vol. 3A, Sec. 2.2 (near Fig. 2-3),
@@ -168,8 +168,10 @@
 
 (define x86-operation-mode (x86)
   :short "Returns the current mode of operation of the x86 machine"
-  :long "<p>We only support 64-bit, Compatibility, and 32-bit Protected Modes
-  for now.</p>"
+  :long
+  "<p>We only support 64-bit, Compatibility, and 32-bit Protected Modes
+    for now.</p>
+   <p>See @(see x86-modes).</p>"
   :parents (x86-modes)
   :returns (mode natp :rule-classes (:type-prescription :rewrite))
   (cond ((64-bit-modep x86) #.*64-bit-mode*)

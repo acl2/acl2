@@ -336,6 +336,7 @@
   )
 
 ;; recognize a nest of conses ending in *nil*
+;todo: consider calling syntactic-explicit-true-listp
 (defun symbolic-listp (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (variablep term)
