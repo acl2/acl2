@@ -55,10 +55,10 @@
 
  <p>Note: Certain utilities, such as @(see prove$), are considered to be events
  for purposes of the discussion above; that is, they can be followed by
- evaluating @('(prover-steps-counted)') as described above.  Very technical
- note: the low-level ACL2 system macro @('with-ctx-summarized') may be used for
- this purpose, as in the definition of the function @('prove$-fn') that
- implements the @('prove$') macro.</p>")
+ evaluating @('(prover-steps-counted state)') as described above.  Very
+ technical note: the low-level ACL2 system macro @('with-ctx-summarized') may
+ be used for this purpose, as in the definition of the function @('prove$-fn')
+ that implements the @('prove$') macro.</p>")
 
 (defun prover-steps-counted (state)
   (declare (xargs :stobjs state
