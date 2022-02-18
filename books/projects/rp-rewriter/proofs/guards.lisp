@@ -68,7 +68,9 @@
   (verify-guards rp-equal)
   (verify-guards rp-equal-loose))
 
-(verify-guards rp-check-context)
+(verify-guards rp-check-context
+  :hints (("Goal"
+           :in-theory (e/d () ()))))
 
 (verify-guards rp-rw-relieve-synp-wrap)
 

@@ -203,7 +203,7 @@
 (defthm rp-termp-rp-check-context
   (implies (and (context-syntaxp context)
                 (rp-termp term))
-           (RP-TERMP (RP-CHECK-CONTEXT TERM CONTEXT IFF-FLG)))
+           (RP-TERMP (mv-nth 0 (rp-check-context term dont-rw context iff-flg))))
   :hints (("Goal" :in-theory (e/d
                               (context-syntaxp
                                rp-termp
@@ -462,7 +462,7 @@
    (and  (context-syntaxp context)
          iff-flg
          (eval-and-all context a))
-   (iff (rp-evlt (rp-check-context term context iff-flg) a)
+   (iff (rp-evlt (mv-nth 0 (rp-check-context term dont-rw context iff-flg)) a)
         (rp-evlt term a)))
   :hints (("Subgoal *1/3"
            :use ((:instance rp-evlt-of-rp-equal
@@ -485,8 +485,8 @@
                             (term1 term))))
           ("goal"
            :do-not-induct t
-           :induct (rp-check-context term context iff-flg)
-           :expand ((RP-CHECK-CONTEXT TERM CONTEXT IFF-FLG)
+           :induct (rp-check-context term dont-rw context iff-flg)
+           :expand ((rp-check-context term dont-rw context iff-flg) ;
                     (:free (x y) (IS-RP (LIST 'RP (cons 'QUOTE x) y))))
            :in-theory (e/d (rp-check-context
                             ;;RP-EVLT-OF-RP-EQUAL-2
@@ -525,7 +525,7 @@
    (and
     (context-syntaxp context)
     (eval-and-all context a))
-   (equal (rp-evlt (rp-check-context term context nil) a)
+   (equal (rp-evlt (mv-nth 0 (rp-check-context term dont-rw context nil)) a)
           (rp-evlt term a)))
   :hints (("Goal"
            :in-theory (e/d (rp-check-context
@@ -1413,11 +1413,11 @@
     (implies (and (valid-sc term a)
                   (eval-and-all context a)
                   (valid-sc-subterms context a))
-             (valid-sc (rp-check-context term context iff-flg) a))
+             (valid-sc (mv-nth 0 (rp-check-context term dont-rw context iff-flg)) a))
     :hints (("goal"
              :expand ()
              :do-not-induct t
-             :induct (rp-check-context term context iff-flg)
+             :induct (rp-check-context term dont-rw context iff-flg)
              :in-theory (e/d (rp-check-context
                               is-falist
                               is-rp

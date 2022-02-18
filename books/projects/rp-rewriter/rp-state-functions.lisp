@@ -57,7 +57,7 @@
   (defwarrant rule-result-comperator))
 
 (defmacro set-rw-step-limit (new-rw-limit)
-  (declare (xargs :guard (natp new-rw-limit)))
+  
   `(make-event
     (b* ((rp-state (rp::update-rw-step-limit ,new-rw-limit rp-state)))
       (mv nil `(value-triple `(rw-step-limit ,',,new-rw-limit)) state rp-state))))
@@ -75,7 +75,7 @@ which submits an event.
 
 
 (defmacro set-rp-backchain-limit (new-rw-limit)
-  (declare (xargs :guard (natp new-rw-limit)))
+  
   `(make-event
     (b* ((rp-state (rp::update-rw-backchain-limit ,new-rw-limit rp-state)))
       (mv nil `(value-triple `(rw-backchain-limit ,',,new-rw-limit)) state

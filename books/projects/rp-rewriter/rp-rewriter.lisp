@@ -293,32 +293,36 @@
   (defmacro rp-get-rules-for-term (fn-name rules)
     `(cdr (hons-get ,fn-name ,rules))))
 
-(defun rp-check-context (term context iff-flg)
+(defun rp-check-context (term dont-rw context iff-flg)
   (declare (xargs :mode :logic
                   :guard (and #|(context-syntaxp context)||#
+                          (rp-termp term)
+                          (rp-term-listp context)
                           (booleanp iff-flg))
                   :verify-guards nil))
   ;; Check if the term simplifies with given context.
   ;; Argument "context" is expected to have only clauses that define type or of the
   ;; form (equal x y)
   (if (atom context)
-      term
+      (mv term dont-rw)
     (let ((c (car context)))
       (cond ((case-match c ((& m) (rp-equal-cnt m term 1)) (& nil))
              (b* ((new-term `(rp ',(car c) ,term))
-                  (new-term (if (is-rp new-term) new-term term)))
-               (rp-check-context new-term  (cdr context) iff-flg)))
-            
+                  ((mv new-term dont-rw)
+                   (if (is-rp new-term)
+                       (mv new-term `(nil t ,dont-rw))
+                     (mv term dont-rw))))
+               (rp-check-context new-term dont-rw (cdr context) iff-flg)))
             ((case-match c (('equal m &) (rp-equal-cnt m term 1)) (& nil))
-             (caddr c))
+             (mv (caddr c) t))
             ((and iff-flg (case-match c (('if m ''nil else)
-                                         (and (nonnil-p else) (rp-equal m term)))))
-             ''nil)
+                                         (and (nonnil-p else)
+                                              (rp-equal-cnt m term 1)))))
+             (mv ''nil t))
             ((and iff-flg (rp-equal-cnt c term 1))
-             ''t)
-            
+             (mv ''t t))
             (t
-             (rp-check-context term (cdr context) iff-flg))))))
+             (rp-check-context term dont-rw (cdr context) iff-flg))))))
 
 (mutual-recursion
 
@@ -997,8 +1001,8 @@ returns (mv rule rules-rest bindings rp-context)"
         (if backchaining-rule
             (hard-error 'rp-rewriter "Backchain limit of ~x0 exhausted when ~
 relieving the hypothesis for ~x1! You can disable this error by running:
-(rp::set-backchain-limit-throws-error nil). You can change the backchain-limit:
-(rp::set-backchain-limit new-limit). Or you can run: 
+(rp::set-rp-backchain-limit-throws-error nil). You can change the backchain-limit:
+(rp::set-rp-backchain-limit new-limit). Or you can run: 
 (rp::update-rp-brr t rp::rp-state) to save the rewrite stack and see it with
 (rp::pp-rw-stack :omit '()
                  :evisc-tuple (evisc-tuple 10 10 nil nil)
@@ -1034,9 +1038,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
        (limit (1- limit))
        ((when (or (> backchain-limit limit)
                   existing-backchaining-rule))
-        (progn$ (cw "existing-backchaining-rule ~p0 ~%"
-                    existing-backchaining-rule)
-                (cw "backchain-limit ~p0 ~%" backchain-limit)
+        (progn$ 
                 (mv limit nil nil rp-state)))
        (old-limit-error-setting (rw-limit-throws-error rp-state))
        (rp-state (update-rw-limit-throws-error (rw-backchain-limit-throws-error rp-state) rp-state))
@@ -1086,8 +1088,9 @@ relieving the hypothesis for ~x1! You can disable this error by running:
     ((or (atom rules-for-term)
          (atom term)
          (acl2::fquotep term))
-     (b* ((new-term (rp-check-context term context iff-flg))
-          (dont-rw (if (not (equal new-term term)) t dont-rw)))
+     (b* (((mv new-term dont-rw) (rp-check-context term dont-rw context iff-flg))
+          ;;(dont-rw (if (not (equal new-term term)) t dont-rw))
+          )
        (mv nil new-term dont-rw rp-state))) ;))
     ((zp limit)
      (b* ((rp-state (limit-reached-action rp-state))) 
@@ -1097,8 +1100,9 @@ relieving the hypothesis for ~x1! You can disable this error by running:
           ((mv rule rules-for-term-rest var-bindings rp-context)
            (rp-rw-rule-aux term rules-for-term context iff-flg state))
           ((when (not rule)) ;; no rules found
-           (b* ((new-term (rp-check-context term context iff-flg))
-                (dont-rw (if (not (equal new-term term)) t dont-rw)))
+           (b* (((mv new-term dont-rw) (rp-check-context term dont-rw context iff-flg))
+                ;;(dont-rw (if (not (equal new-term term)) t dont-rw))
+                )
              (mv nil new-term dont-rw rp-state)))
 
           ((when (rp-rule-metap rule))
@@ -1274,7 +1278,9 @@ relieving the hypothesis for ~x1! You can disable this error by running:
    (cond
     ((atom term)
      (mv
-      (if (should-not-rw dont-rw) term (rp-check-context term context iff-flg))
+      (if (should-not-rw dont-rw) term (b* (((mv term &)
+                                             (rp-check-context term dont-rw context iff-flg)))
+                                         term))
       rp-state))
     ((eq (car term) 'quote)
      (mv term rp-state))
@@ -1284,9 +1290,14 @@ relieving the hypothesis for ~x1! You can disable this error by running:
      (b* ((rp-state (limit-reached-action rp-state))) 
        (mv term rp-state)))
     ((is-rp$ term)
-     (b* (((mv new-term rp-state)
+     (b* ((dont-rw (dont-rw-car
+                    (dont-rw-cdr
+                     (dont-rw-cdr dont-rw))))
+          ((mv new-term rp-state)
            (rp-rw (caddr term)
-                  dont-rw context nil hyp-flg (1- limit) rp-state state)))
+                  dont-rw context nil hyp-flg (1- limit) rp-state state))
+          ((when (quotep new-term))
+           (mv new-term rp-state)))
        (mv (cons-with-hint (car term)
                            (cons-with-hint (cadr term)
                                            (cons-with-hint new-term
@@ -1303,10 +1314,8 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                       (check-if-relieved-with-rp term)))
            (mv ''t rp-state))
 
-          
-
-          #|(term
-          (rp-check-context term context iff-flg))||#
+          #|((mv term dont-rw)
+           (rp-check-context term dont-rw context iff-flg))|#
 
           ((mv rule-rewritten-flg term dont-rw rp-state)
            (rp-rw-rule term dont-rw
@@ -1336,9 +1345,9 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                           (rp-rw-subterms (cdr term) (dont-rw-cdr dont-rw)
                                           context hyp-flg (1- limit) rp-state
                                           state))
+                         (term (cons-with-hint (car term) subterms term))
                          ;; check if it is a cw or hard-error statements.
-                         (- (rp-rw-check-hard-error-or-cw term rp-state))
-                         (term (cons-with-hint (car term) subterms term)))
+                         (- (rp-rw-check-hard-error-or-cw term rp-state)))
                       (mv term rp-state)))))
 
           ;; if the subterms are  quotep's, then run ex-counterpart
