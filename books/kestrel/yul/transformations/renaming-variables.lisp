@@ -212,6 +212,8 @@
       (expression-list-renamevar old.args new.args ren))
     :measure (funcall-count old))
 
+  :flag-local nil
+
   ///
 
   (fty::deffixequiv-mutual expressions-renamevar))
