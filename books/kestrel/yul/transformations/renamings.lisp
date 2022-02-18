@@ -78,7 +78,11 @@
                    nil)))
   :require (and (no-duplicatesp-equal (strip-cars list))
                 (no-duplicatesp-equal (strip-cdrs list)))
-  :pred renamingp)
+  :pred renamingp
+  ///
+
+  (defrule alistp-of-renaming->list
+    (alistp (renaming->list ren))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -86,3 +90,41 @@
   :short "Fixtype of errors and renamings."
   :ok renaming
   :pred renaming-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled renaming-pair-equality
+  :short "Theorem about pair equality in renamings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Two pairs in a renaming are equal if and only if
+     their @(tsee car)s or their @(tsee cdr)s are equal.
+     This is because there cannot be two distinct pairs
+     with the same @(tsee car) or @(tsee cdr)."))
+  (implies (and (member-equal pair1 (renaming->list ren))
+                (member-equal pair2 (renaming->list ren)))
+           (equal (equal pair1 pair2)
+                  (or (equal (car pair1)
+                             (car pair2))
+                      (equal (cdr pair1)
+                             (cdr pair2)))))
+  :use (:instance lemma (list (renaming->list ren)))
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (identifier-identifier-alistp list)
+                   (no-duplicatesp-equal (strip-cars list))
+                   (no-duplicatesp-equal (strip-cdrs list))
+                   (member-equal pair1 list)
+                   (member-equal pair2 list))
+              (equal (equal pair1 pair2)
+                     (or (equal (car pair1)
+                                (car pair2))
+                         (equal (cdr pair1)
+                                (cdr pair2)))))
+     :prep-lemmas
+     ((defrule lemma-lemma
+        (implies (and (identifier-identifier-alistp list)
+                      (member-equal pair list))
+                 (and (member-equal (car pair) (strip-cars list))
+                      (member-equal (cdr pair) (strip-cdrs list)))))))))
