@@ -99,6 +99,13 @@
   :ok identifier-list
   :pred identifier-list-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-resulterrp-when-identifier-listp
+  (implies (identifier-listp x)
+           (not (resulterrp x)))
+  :enable resulterrp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset identifier-set
