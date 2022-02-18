@@ -1,0 +1,5 @@
+(make-event (er-progn (set-deferred-ttag-notes t state)
+                      (value '(include-book "std/portcullis" :dir :system)))
+            :check-expansion t)
+
+; cert-flags: ? t :ttags :all
