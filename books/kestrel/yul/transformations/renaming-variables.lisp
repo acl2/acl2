@@ -304,7 +304,14 @@
        ((when (member-equal new (strip-cdrs list)))
         (err (list :new-var-already-in-scope old new (renaming-fix ren)))))
     (renaming (cons (cons old new) list)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule subsetp-equal-of-add-var-to-var-renaming
+    (b* ((ren1 (add-var-to-var-renaming old new ren)))
+      (implies (not (resulterrp ren1))
+               (subsetp-equal (renaming->list ren)
+                              (renaming->list ren1))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -326,7 +333,13 @@
 
   (defruled same-len-when-add-vars-to-var-renaming
     (implies (not (resulterrp (add-vars-to-var-renaming old new ren)))
-             (equal (len new) (len old)))))
+             (equal (len new) (len old))))
+
+  (defrule subsetp-equal-of-add-vars-to-var-renaming
+    (b* ((ren1 (add-vars-to-var-renaming old new ren)))
+      (implies (not (resulterrp ren1))
+               (subsetp-equal (renaming->list ren)
+                              (renaming->list ren1))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -639,7 +652,51 @@
     (implies (not (resulterrp (fundef-renamevar old new)))
              (equal (fundef->name new)
                     (fundef->name old)))
-    :expand (fundef-renamevar old new)))
+    :expand (fundef-renamevar old new))
+
+  (defthm-statements/blocks/cases/fundefs-renamevar-flag
+
+    (defthm subsetp-equal-of-statement-renamevar
+      (b* ((ren1 (statement-renamevar old new ren)))
+        (implies (not (resulterrp ren1))
+                 (subsetp-equal (renaming->list ren)
+                                (renaming->list ren1))))
+      :flag statement-renamevar)
+
+    (defthm subsetp-equal-of-statement-list-renamevar
+      (b* ((ren1 (statement-list-renamevar old new ren)))
+        (implies (not (resulterrp ren1))
+                 (subsetp-equal (renaming->list ren)
+                                (renaming->list ren1))))
+      :flag statement-list-renamevar)
+
+    (defthm subsetp-equal-of-block-renamevar
+      t
+      :rule-classes nil
+      :flag block-renamevar)
+
+    (defthm subsetp-equal-of-block-option-renamevar
+      t
+      :rule-classes nil
+      :flag block-option-renamevar)
+
+    (defthm subsetp-equal-of-swcase-renamevar
+      t
+      :rule-classes nil
+      :flag swcase-renamevar)
+
+    (defthm subsetp-equal-of-swcase-list-renamevar
+      t
+      :rule-classes nil
+      :flag swcase-list-renamevar)
+
+    (defthm subsetp-equal-of-fundef-renamevar
+      t
+      :rule-classes nil
+      :flag fundef-renamevar)
+
+    :hints (("Goal" :in-theory (enable statement-renamevar
+                                       statement-list-renamevar)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
