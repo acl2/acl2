@@ -338,7 +338,7 @@ Summary
 Form:  ( DEFSTOBJ ST4 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFSTOBJ ST4 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -373,7 +373,7 @@ Summary
 Form:  ( DEFSTOBJ ST4 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFSTOBJ ST4 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -493,10 +493,10 @@ Rules: NIL
 ACL2 !>>(MUST-NOT-TRANSLATE (SWAP-ST1-ST2 ST1 ST1))
 
 
-ACL2 Error in MUST-NOT-TRANSLATE:  The form ST1 is being used, as an
-argument to a call of SWAP-ST1-ST2, where the single-threaded object
-ST2 was expected, even though these are congruent stobjs.  See :DOC
-defstobj, in particular the discussion of congruent stobjs.  Note:
+ACL2 Error [Translate] in MUST-NOT-TRANSLATE:  The form ST1 is being
+used, as an argument to a call of SWAP-ST1-ST2, where the single-threaded
+object ST2 was expected, even though these are congruent stobjs.  See
+:DOC defstobj, in particular the discussion of congruent stobjs.  Note:
 this error occurred in the context (SWAP-ST1-ST2 ST1 ST1).
 
 
@@ -525,10 +525,11 @@ ACL2 !>>(MUST-NOT-TRANSLATE (MV-LET (ST1 ST2)
                                     (MV ST1 ST2)))
 
 
-ACL2 Error in MUST-NOT-TRANSLATE:  It is illegal to invoke SWAP-ST1-ST2
-here because of a signature mismatch.  This function call returns a
-result of shape (MV ST2 ST1) where a result of shape (MV ST1 ST2) is
-required.  Note:  this error occurred in the context (SWAP-ST1-ST2 ST1 ST2).
+ACL2 Error [Translate] in MUST-NOT-TRANSLATE:  It is illegal to invoke
+SWAP-ST1-ST2 here because of a signature mismatch.  This function call
+returns a result of shape (MV ST2 ST1) where a result of shape (MV ST1 ST2)
+is required.  Note:  this error occurred in the context 
+(SWAP-ST1-ST2 ST1 ST2).
 
 
 Summary
@@ -540,9 +541,9 @@ ACL2 !>>(MUST-NOT-TRANSLATE (MV-LET (ST2 ST1)
                                     (MV ST1 ST2)))
 
 
-ACL2 Error in MUST-NOT-TRANSLATE:  It is illegal to invoke SWAP-ST1-ST2
-here because of a signature mismatch.  This function call returns a
-result of shape (MV ST1 ST2) (after accounting for the replacement
+ACL2 Error [Translate] in MUST-NOT-TRANSLATE:  It is illegal to invoke
+SWAP-ST1-ST2 here because of a signature mismatch.  This function call
+returns a result of shape (MV ST1 ST2) (after accounting for the replacement
 of some input stobjs by congruent stobjs) where a result of shape 
 (MV ST2 ST1) is required.  Note:  this error occurred in the context
 (SWAP-ST1-ST2 ST2 ST1).
@@ -693,12 +694,12 @@ Warnings:  User-stobjs-modified
 ACL2 !>>(MUST-NOT-TRANSLATE (UPDATE3 3 'B))
 
 
-ACL2 Error in MUST-NOT-TRANSLATE:  The form 'B is being used, as an
-argument to a call of UPDATE3, where the single-threaded object ST2
-is required.  Note that the variable ST2 is required, not merely a
-term that returns such a single-threaded object, so you may need to
-bind ST2 with LET; see :DOC stobj.  Note:  this error occurred in the
-context (UPDATE3 3 'B).
+ACL2 Error [Translate] in MUST-NOT-TRANSLATE:  The form 'B is being
+used, as an argument to a call of UPDATE3, where the single-threaded
+object ST2 is required.  Note that the variable ST2 is required, not
+merely a term that returns such a single-threaded object, so you may
+need to bind ST2 with LET; see :DOC stobj.  Note:  this error occurred
+in the context (UPDATE3 3 'B).
 
 
 Summary
@@ -729,11 +730,11 @@ Rules: ((:TYPE-PRESCRIPTION UPDATE1))
 ACL2 !>>(MUST-NOT-TRANSLATE (UPDATE4 3 ST1 ST1))
 
 
-ACL2 Error in MUST-NOT-TRANSLATE:  The form ST1 is being used, as an
-argument to a call of UPDATE4, where the single-threaded object ST2
-was expected, even though these are congruent stobjs.  See :DOC defstobj,
-in particular the discussion of congruent stobjs.  Note:  this error
-occurred in the context (UPDATE4 3 ST1 ST1).
+ACL2 Error [Translate] in MUST-NOT-TRANSLATE:  The form ST1 is being
+used, as an argument to a call of UPDATE4, where the single-threaded
+object ST2 was expected, even though these are congruent stobjs.  See
+:DOC defstobj, in particular the discussion of congruent stobjs.  Note:
+this error occurred in the context (UPDATE4 3 ST1 ST1).
 
 
 Summary
@@ -873,16 +874,16 @@ ACL2 !>>(MUST-FAIL^ (DEFUN F (S$1)
                            (LET ((S$1 (UPDATE-FLD1 S$1 3))) S$1)))
 
 
-ACL2 Error in ( DEFUN F ...):  A single-threaded object, namely S$1,
-is being used where an ordinary object is expected.  Note:  this error
-occurred in the context (UPDATE-FLD1 S$1 3).
+ACL2 Error [Translate] in ( DEFUN F ...):  A single-threaded object,
+namely S$1, is being used where an ordinary object is expected.  Note:
+this error occurred in the context (UPDATE-FLD1 S$1 3).
 
 
 Summary
 Form:  ( DEFUN F ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN F ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -899,17 +900,17 @@ ACL2 !>>(MUST-FAIL^ (DEFUN F (X S$1)
                            (LIST (UPDATE-FLD1 S$1 X))))
 
 
-ACL2 Error in ( DEFUN F ...):  It is illegal to invoke UPDATE-FLD1
-here because of a signature mismatch.  This function call returns a
-result of shape S$1 where a result of shape * is required.  Note: 
-this error occurred in the context (UPDATE-FLD1 S$1 X).
+ACL2 Error [Translate] in ( DEFUN F ...):  It is illegal to invoke
+UPDATE-FLD1 here because of a signature mismatch.  This function call
+returns a result of shape S$1 where a result of shape * is required.
+Note:  this error occurred in the context (UPDATE-FLD1 S$1 X).
 
 
 Summary
 Form:  ( DEFUN F ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN F ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -926,16 +927,16 @@ ACL2 !>>(MUST-FAIL^ (DEFUN F (S$2)
                            (LET ((S$2 (UPDATE-FLD1 S$2 3))) S2)))
 
 
-ACL2 Error in ( DEFUN F ...):  A single-threaded object, namely S$2,
-is being used where an ordinary object is expected.  Note:  this error
-occurred in the context (UPDATE-FLD1 S$2 3).
+ACL2 Error [Translate] in ( DEFUN F ...):  A single-threaded object,
+namely S$2, is being used where an ordinary object is expected.  Note:
+this error occurred in the context (UPDATE-FLD1 S$2 3).
 
 
 Summary
 Form:  ( DEFUN F ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN F ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -953,16 +954,16 @@ ACL2 !>>(MUST-FAIL^ (DEFUN F (S$1 S$2)
                                 (MV S$1 S$2))))
 
 
-ACL2 Error in ( DEFUN F ...):  A single-threaded object, namely S$2,
-is being used where an ordinary object is expected.  Note:  this error
-occurred in the context (UPDATE-FLD1 S$2 3).
+ACL2 Error [Translate] in ( DEFUN F ...):  A single-threaded object,
+namely S$2, is being used where an ordinary object is expected.  Note:
+this error occurred in the context (UPDATE-FLD1 S$2 3).
 
 
 Summary
 Form:  ( DEFUN F ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN F ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -980,16 +981,16 @@ ACL2 !>>(MUST-FAIL^ (DEFUN F (S$1 S$2)
                                 (MV S$1 S$2))))
 
 
-ACL2 Error in ( DEFUN F ...):  A single-threaded object, namely S$1,
-is being used where an ordinary object is expected.  Note:  this error
-occurred in the context (UPDATE-FLD1 S$1 3).
+ACL2 Error [Translate] in ( DEFUN F ...):  A single-threaded object,
+namely S$1, is being used where an ordinary object is expected.  Note:
+this error occurred in the context (UPDATE-FLD1 S$1 3).
 
 
 Summary
 Form:  ( DEFUN F ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN F ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -1006,17 +1007,17 @@ ACL2 !>>(MUST-FAIL^ (DEFUN F (X S$2)
                            (LIST (UPDATE-FLD1 S$2 X))))
 
 
-ACL2 Error in ( DEFUN F ...):  It is illegal to invoke UPDATE-FLD1
-here because of a signature mismatch.  This function call returns a
-result of shape S$1 where a result of shape * is required.  Note: 
-this error occurred in the context (UPDATE-FLD1 S$2 X).
+ACL2 Error [Translate] in ( DEFUN F ...):  It is illegal to invoke
+UPDATE-FLD1 here because of a signature mismatch.  This function call
+returns a result of shape S$1 where a result of shape * is required.
+Note:  this error occurred in the context (UPDATE-FLD1 S$2 X).
 
 
 Summary
 Form:  ( DEFUN F ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN F ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -1033,18 +1034,18 @@ ACL2 !>>(MUST-FAIL^ (DEFUN F (X S$2)
                            (LIST (UPDATE-FLD1 X S$2))))
 
 
-ACL2 Error in ( DEFUN F ...):  It is illegal to invoke UPDATE-FLD1
-here because of a signature mismatch.  This function call returns a
-result of shape S$2 (after accounting for the replacement of some input
-stobjs by congruent stobjs) where a result of shape * is required.
-Note:  this error occurred in the context (UPDATE-FLD1 X S$2).
+ACL2 Error [Translate] in ( DEFUN F ...):  It is illegal to invoke
+UPDATE-FLD1 here because of a signature mismatch.  This function call
+returns a result of shape S$2 (after accounting for the replacement
+of some input stobjs by congruent stobjs) where a result of shape *
+is required.  Note:  this error occurred in the context (UPDATE-FLD1 X S$2).
 
 
 Summary
 Form:  ( DEFUN F ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN F ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -1062,17 +1063,17 @@ ACL2 !>>(MUST-FAIL^ (DEFUN F (S$1 S$3)
                                 (MV S$1 S$3))))
 
 
-ACL2 Error in ( DEFUN F ...):  It is illegal to invoke UPDATE-FLD1
-here because of a signature mismatch.  This function call returns a
-result of shape S$1 where a result of shape S$3 is required.  Note:
-this error occurred in the context (UPDATE-FLD1 S$1 3).
+ACL2 Error [Translate] in ( DEFUN F ...):  It is illegal to invoke
+UPDATE-FLD1 here because of a signature mismatch.  This function call
+returns a result of shape S$1 where a result of shape S$3 is required.
+Note:  this error occurred in the context (UPDATE-FLD1 S$1 3).
 
 
 Summary
 Form:  ( DEFUN F ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN F ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -1090,18 +1091,18 @@ ACL2 !>>(MUST-FAIL^ (DEFUN FOO (S$1 S$2)
                                 (MV S$1 S$2))))
 
 
-ACL2 Error in ( DEFUN FOO ...):  It is illegal to invoke UPDATE-FLD1
-here because of a signature mismatch.  This function call returns a
-result of shape S$2 (after accounting for the replacement of some input
-stobjs by congruent stobjs) where a result of shape S$1 is required.
-Note:  this error occurred in the context (UPDATE-FLD1 0 S$2).
+ACL2 Error [Translate] in ( DEFUN FOO ...):  It is illegal to invoke
+UPDATE-FLD1 here because of a signature mismatch.  This function call
+returns a result of shape S$2 (after accounting for the replacement
+of some input stobjs by congruent stobjs) where a result of shape S$1
+is required.  Note:  this error occurred in the context (UPDATE-FLD1 0 S$2).
 
 
 Summary
 Form:  ( DEFUN FOO ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN FOO ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN FOO ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -1137,19 +1138,19 @@ ACL2 !>>(MUST-FAIL^ (DEFUN BAR (S$2 S$3)
                            (LET ((S$3 (FOO S$2 S$3X))) S$3)))
 
 
-ACL2 Error in ( DEFUN BAR ...):  The form S$3X is being used, as an
-argument to a call of FOO, where the single-threaded object S$3 is
-required.  Note that the variable S$3 is required, not merely a term
-that returns such a single-threaded object, so you may need to bind
-S$3 with LET; see :DOC stobj.  Note:  this error occurred in the context
-(FOO S$2 S$3X).
+ACL2 Error [Translate] in ( DEFUN BAR ...):  The form S$3X is being
+used, as an argument to a call of FOO, where the single-threaded object
+S$3 is required.  Note that the variable S$3 is required, not merely
+a term that returns such a single-threaded object, so you may need
+to bind S$3 with LET; see :DOC stobj.  Note:  this error occurred in
+the context (FOO S$2 S$3X).
 
 
 Summary
 Form:  ( DEFUN BAR ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN BAR ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN BAR ...):  See :DOC failure.
 
 ******** FAILED ********
 

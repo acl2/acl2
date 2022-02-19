@@ -767,7 +767,7 @@
                                                  state))))
           (er-progn
            (cond (erp ; erp is a ctx, lst is a msg
-                  (er soft erp "~@0" lst))
+                  (er-soft erp "Translate" "~@0" lst))
                  (non-executablep
                   (chk-non-executable-bodies names arglists lst
                                              non-executablep (cdr names)

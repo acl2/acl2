@@ -9137,8 +9137,8 @@
                       t)
          (cond
           (erp #-acl2-loop-only
-               (progn (error-fms t user-untranslate (car val) (cdr val)
-                                 *the-live-state*)
+               (progn (error-fms t user-untranslate "Untranslate"
+                                 (car val) (cdr val) *the-live-state*)
                       (er hard 'untranslate
                           "Please fix ~x0 (see message above and see :doc ~
                            user-defined-functions-table)."
@@ -9165,8 +9165,8 @@
                       t)
          (cond
           (erp #-acl2-loop-only
-               (progn (error-fms t user-untranslate-lst (car val) (cdr val)
-                                 *the-live-state*)
+               (progn (error-fms t user-untranslate-lst "Untranslate"
+                                 (car val) (cdr val) *the-live-state*)
                       (er hard 'untranslate-lst
                           "Please fix ~x0 (see message above and see :doc ~
                            user-defined-functions-table)."
@@ -9765,23 +9765,24 @@
                              body)
                 (append actuals extra-body-vars))))
 
-(defmacro cmp-to-error-triple (form)
+(defmacro cmp-to-error-triple (form &optional summary)
 
 ; Here we convert a context-message pair (see the Essay on Context-message
 ; Pairs) to an error triple, printing an error message if one is called for.
 
 ; Keep in sync with cmp-to-error-triple@par.
 
+  (declare (xargs :guard (or (null summary) (stringp summary))))
   `(mv-let (ctx msg-or-val)
            ,form
            (cond (ctx (cond (msg-or-val
                              (assert$ (not (eq ctx t))
-                                      (er soft ctx "~@0" msg-or-val)))
+                                      (er-soft ctx ',summary "~@0" msg-or-val)))
                             (t (silent-error state))))
                  (t (value msg-or-val)))))
 
 #+acl2-par
-(defmacro cmp-to-error-triple@par (form)
+(defmacro cmp-to-error-triple@par (form &optional summary)
 
 ; Here we convert a context-message pair (see the Essay on Context-message
 ; Pairs) to the #+acl2-par version of an error triple, printing an error
@@ -9789,31 +9790,34 @@
 
 ; Keep in sync with cmp-to-error-triple.
 
+  (declare (xargs :guard (or (null summary) (stringp summary))))
   `(mv-let (ctx msg-or-val)
            ,form
            (cond (ctx (cond (msg-or-val
                              (assert$ (not (eq ctx t))
-                                      (er@par soft ctx "~@0" msg-or-val)))
+                                      (er-soft@par ctx ,summary "~@0"
+                                                   msg-or-val)))
                             (t (mv@par t nil state))))
                  (t (value@par msg-or-val)))))
 
-(defmacro cmp-to-error-double (form)
+(defmacro cmp-to-error-double (form &optional summary)
 
 ; This is a variant of cmp-to-error-triple that returns (mv erp val) rather
 ; than (mv erp val state).
 
+  (declare (xargs :guard (or (null summary) (stringp summary))))
   `(mv-let (ctx msg-or-val)
            ,form
            (cond (ctx (prog2$ (cond (msg-or-val
                                      (assert$ (not (eq ctx t))
                                               (error-fms-cw
-                                               nil ctx "~@0"
+                                               nil ctx ,summary "~@0"
                                                (list (cons #\0 msg-or-val)))))
                                     (t nil))
                               (mv t nil)))
                  (t (mv nil msg-or-val)))))
 
-(defmacro cmp-and-value-to-error-quadruple (form)
+(defmacro cmp-and-value-to-error-quadruple (form &optional summary)
 
 ; We convert a context-message pair and an extra-value (see the Essay on
 ; Context-message Pairs) to an error quadruple (mv t value extra-value state),
@@ -9821,21 +9825,22 @@
 
 ; Keep in sync with cmp-and-value-to-error-quadruple@par.
 
+  (declare (xargs :guard (or (null summary) (stringp summary))))
   `(mv-let (ctx msg-or-val extra-value)
            ,form
            (cond
             (ctx (cond (msg-or-val
                         (assert$ (not (eq ctx t))
                                  (mv-let (erp val state)
-                                         (er soft ctx "~@0"
-                                             msg-or-val)
+                                         (er-soft ctx ,summary "~@0"
+                                                  msg-or-val)
                                          (declare (ignore erp val))
                                          (mv t nil extra-value state))))
                        (t (mv t nil extra-value state))))
             (t (mv nil msg-or-val extra-value state)))))
 
 #+acl2-par
-(defmacro cmp-and-value-to-error-quadruple@par (form)
+(defmacro cmp-and-value-to-error-quadruple@par (form &optional summary)
 
 ; We convert a context-message pair and an extra value (see the Essay on
 ; Context-message Pairs) to the #+acl2-par version of an error quadruple,
@@ -9843,13 +9848,15 @@
 
 ; Keep in sync with cmp-and-value-to-error-quadruple.
 
+  (declare (xargs :guard (or (null summary) (stringp summary))))
   `(mv-let (ctx msg-or-val extra-value)
            ,form
            (cond
             (ctx (cond (msg-or-val
                         (assert$ (not (eq ctx t))
                                  (mv-let (erp val)
-                                         (er@par soft ctx "~@0" msg-or-val)
+                                         (er-soft@par ctx ,summary "~@0"
+                                                      msg-or-val)
                                          (declare (ignore erp val))
                                          (mv t nil extra-value))))
                        (t (mv t nil extra-value))))
@@ -22398,7 +22405,8 @@
 (defun@par translate1 (x stobjs-out bindings known-stobjs ctx w state)
   (cmp-and-value-to-error-quadruple@par
    (translate1-cmp x stobjs-out bindings known-stobjs ctx w
-                   (default-state-vars t))))
+                   (default-state-vars t))
+   "Translate"))
 
 (mutual-recursion
 
@@ -22515,7 +22523,8 @@
 
   (cmp-to-error-triple@par
    (translate-cmp x stobjs-out logic-modep known-stobjs ctx w
-                  (default-state-vars t))))
+                  (default-state-vars t))
+   "Translate"))
 
 (defun translatable-p (form stobjs-out bindings known-stobjs ctx wrld)
   (mv-let (erp val bindings)
@@ -22743,7 +22752,7 @@
 ; that might have arisen) so that all the errors that might be caused by this
 ; translation and evaluation are handled within this function.
 
-         (error1 ctx (car val) (cdr val) state))
+         (error1 ctx nil (car val) (cdr val) state))
         (t (mv nil
                (cons stobjs-out
                      (replace-stobjs stobjs-out val))
@@ -22790,7 +22799,7 @@
 ; Parallelism wart: check that the above comment is true and applicable in this
 ; function, even though we call ev-w instead of ev.
 
-         (error1@par ctx (car val) (cdr val) state))
+         (error1@par ctx nil (car val) (cdr val) state))
         (t (mv nil
                (cons stobjs-out
                      (replace-stobjs stobjs-out val)))))))))
@@ -23453,17 +23462,17 @@
 
                             (cond
                              (erp (pprogn
-                                   (error-fms nil ctx (car val) (cdr val)
-                                              state)
-                                   (er soft ctx
-                                       "~@0 could not be evaluated."
-                                       msg)))
+                                   (error-fms nil ctx "Translate"
+                                              (car val) (cdr val) state)
+                                   (er-soft ctx "Translate"
+                                            "~@0 could not be evaluated."
+                                            msg)))
                              (t (value (cons term val))))))
-                         (t (er soft ctx "~@0"
-                                (prohibition-of-loop$-and-lambda$-msg
-                                 ancestral-lambda$s))))))))))
+                         (t (er-soft ctx "~@0" "Translate"
+                                     (prohibition-of-loop$-and-lambda$-msg
+                                      ancestral-lambda$s))))))))))
 
-(defun error-fms-cw (hardp ctx str alist)
+(defun error-fms-cw (hardp ctx summary str alist)
 
 ; Note: Recall the imagined invariant on the wormhole-data of
 ; comment-window-io: it is an alist and any key that is string-equal to one of
@@ -23474,12 +23483,13 @@
   (wormhole 'comment-window-io
             '(lambda (whs)
                (set-wormhole-entry-code whs :ENTER))
-            (list hardp ctx str alist)
+            (list hardp ctx summary str alist)
             `(let ((hardp (nth 0 (@ wormhole-input)))
                    (ctx (nth 1 (@ wormhole-input)))
                    (str (nth 2 (@ wormhole-input)))
-                   (alist (nth 3 (@ wormhole-input))))
-               (pprogn (error-fms hardp ctx str alist state)
+                   (summary (nth 3 (@ wormhole-input)))
+                   (alist (nth 4 (@ wormhole-input))))
+               (pprogn (error-fms hardp ctx summary str alist state)
                        (value :q)))
             :ld-error-action :error ; for robustness; no error is expected
             :ld-verbose nil
@@ -23541,7 +23551,12 @@
                             safe-mode gc-off nil aok)
                       (cond
                        (erp (prog2$
-                             (error-fms-cw nil ctx (car val) (cdr val))
+
+; We use nil in the error-fms-cw call below for the summary, since we are not
+; controlling the summary string that will be used for the subsequent er-cmp.
+; Maybe with a little effort we could do better.
+
+                             (error-fms-cw nil ctx nil (car val) (cdr val))
                              (er-cmp ctx
                                      "~@0 could not be evaluated."
                                      msg)))

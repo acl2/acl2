@@ -108,6 +108,7 @@
 (defstub initialize-event-user (* * state) => state)
 (defstub finalize-event-user (* * state) => state)
 (defstub acl2x-expansion-alist (* state) => *)
+(defstub set-ld-history-entry-user-data (* * * state) => *)
 
 #+acl2-loop-only
 (partial-encapsulate

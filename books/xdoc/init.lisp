@@ -16,4 +16,12 @@
 
 (include-book "top")
 
+; We could use "depends-on", but we might as well simply include the books that
+; xdoc::colon-xdoc-init will be including.
+
+(include-book "xdoc/defxdoc-raw" :dir :system :ttags :all)
+(include-book "xdoc/topics" :dir :system)
+(include-book "system/doc/acl2-doc-wrap" :dir :system)
+(include-book "xdoc/display" :dir :system :ttags :all)
+
 (xdoc::colon-xdoc-init)

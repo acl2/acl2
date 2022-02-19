@@ -1156,7 +1156,7 @@
   (declare (xargs :guard (weak-ld-history-entry-p x)))
   (access ld-history-entry x :user-data))
 
-(defstub set-ld-history-entry-user-data (* * * state) => *)
+(defproxy set-ld-history-entry-user-data (* * * state) => *)
 
 (defun set-ld-history-entry-user-data-default (input error-flg stobjs-out/value
                                                  state)

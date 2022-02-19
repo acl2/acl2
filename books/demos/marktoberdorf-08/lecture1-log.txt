@@ -3004,7 +3004,7 @@ Subgoal *1/2''
          (EQUAL (ISORT (INSERT (CAR X) (ISORT (CDR X))))
                 (INSERT (CAR X) (ISORT (CDR X)))))
 
-ACL2 Error in ( DEFTHM ISORT-ISORT ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFTHM ISORT-ISORT ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 >>(PE 'ORDEREDP-ISORT)
@@ -6096,7 +6096,7 @@ Subgoal *1/2.6'
 Note: There are nine additional key checkpoints under a top-level induction.
 See :DOC set-checkpoint-summary-limit to change the number printed.
 
-ACL2 Error in ( DEFTHM TWINS-CORRECT ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFTHM TWINS-CORRECT ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 >>(DEFTHM MEMBER-HOW-MANY
@@ -8954,7 +8954,7 @@ Note: There are eight additional key checkpoints under a top-level
 induction.  See :DOC set-checkpoint-summary-limit to change the number
 printed.
 
-ACL2 Error in ( DEFTHM TWINS-CORRECT ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFTHM TWINS-CORRECT ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 >>(DEFTHM HOW-MANY-RM*
@@ -10105,7 +10105,7 @@ Subgoal *1/1.5'
          (EQUAL (+ 1 (HOW-MANY (CAR X) (CDR X)))
                 2))
 
-ACL2 Error in ( DEFTHM TWINS-CORRECT ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFTHM TWINS-CORRECT ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 >>(DEFTHM HOW-MANY-CDR-MEMBER

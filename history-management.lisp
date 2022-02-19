@@ -2427,14 +2427,12 @@
 (defun print-failure1 (erp ctx state)
   (let ((channel (proofs-co state)))
     (pprogn
-     (newline channel state)
-     (error-fms-channel nil ctx "~@0See :DOC failure."
+     (error-fms-channel nil ctx "Failure" "~@0See :DOC failure."
                         (list (cons #\0
                                     (if (tilde-@p erp)
                                         erp
                                       "")))
-                        channel state)
-     (newline channel state)
+                        channel state 1)
      (io? summary nil state (channel)
           (fms *proof-failure-string* nil channel state nil)))))
 
@@ -18540,11 +18538,12 @@
            (declare (ignore latches))
            (cond
             (erp (pprogn
-                  (error-fms nil ctx (car ev-result) (cdr ev-result) state)
-                  (er soft ctx
-                      "The TABLE :guard for ~x0 on the key ~x1 and value ~x2 ~
-                      could not be evaluated."
-                      name key val)))
+                  (error-fms nil ctx "Table-guard"
+                             (car ev-result) (cdr ev-result) state)
+                  (er-soft ctx "Table-guard"
+                           "The TABLE :guard for ~x0 on the key ~x1 and value ~
+                            ~x2 could not be evaluated."
+                           name key val)))
             ((if mvp (car ev-result) ev-result)
              (value nil))
             ((and mvp (cadr ev-result))

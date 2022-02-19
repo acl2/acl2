@@ -4956,7 +4956,34 @@
                             (fmt-ctx ctx col channel state)
                             (fmt1 ":  " nil col channel state nil)))))))
 
-(defun error-fms-channel (hardp ctx str alist channel state)
+(defun er-soft-off-p1 (summary wrld)
+
+; This function is used by er-soft to determine whether a given error should be
+; printed.
+
+  (declare (xargs :guard (and (or (null summary)
+                                  (and (stringp summary)
+                                       (standard-string-p summary)))
+                              (plist-worldp wrld)
+                              (standard-string-alistp
+                               (table-alist 'inhibit-er-soft-table wrld)))))
+  (and summary
+       (assoc-string-equal
+        summary
+        (table-alist 'inhibit-er-soft-table wrld))))
+
+(defun er-soft-off-p (summary state)
+  (declare (xargs :stobjs state
+                  :guard (and (or (null summary)
+                                  (and (stringp summary)
+                                       (standard-string-p summary)))
+                              (state-p state)
+                              (standard-string-alistp
+                               (table-alist 'inhibit-er-soft-table
+                                            (w state))))))
+  (er-soft-off-p1 summary (w state)))
+
+(defun error-fms-channel (hardp ctx summary str alist channel state newlines)
 
 ; This function prints the "ACL2 Error" banner and ctx, then the
 ; user's str and alist, and then two carriage returns.  It returns state.
@@ -4970,28 +4997,44 @@
 ; by our er macro.  We rewrote the function this way simply so we
 ; would not have to remember that some variables are special.
 
-  (mv-let (col state)
-          (fmt1 (if hardp
-                    "HARD ACL2 ERROR"
-                  "ACL2 Error")
-                nil 0 channel state nil)
-          (mv-let (col state)
-                  (fmt-in-ctx ctx col channel state)
-                  (fmt-abbrev str alist col channel state ""))))
+  (cond ((er-soft-off-p summary state)
+         state)
+        (t
+         (flet ((newlines (n channel state)
+                          (case n
+                            (0 state)
+                            (1 (newline channel state))
+                            (2 (pprogn (newline channel state)
+                                       (newline channel state)))
+                            (t (prog2$ (er hard 'error-fms-channel
+                                           "Error: The NEWLINES argument of ~
+                                            error-fms-channel must be 0, 1, ~
+                                            or 2, hence ~x0 is illegal."
+                                           n)
+                                       state)))))
+           (with-output-lock
+            (pprogn
+             (newlines newlines channel state)
+             (mv-let (col state)
+               (fmt1 (if hardp
+                         "HARD ACL2 ERROR~#0~[~/ [~s1]~]"
+                       "ACL2 Error~#0~[~/ [~s1]~]")
+                     (list (cons #\0 (if summary 1 0))
+                           (cons #\1 summary))
+                     0 channel state nil)
+               (mv-let (col state)
+                 (fmt-in-ctx ctx col channel state)
+                 (fmt-abbrev str alist col channel state "")))
+             (newlines newlines channel state)))))))
 
-(defun error-fms (hardp ctx str alist state)
+(defun error-fms (hardp ctx summary str alist state)
 
 ; See error-fms-channel.  Here we also print extra newlines.
 
 ; Keep in sync with error-fms-cw.
 
-  (with-output-lock
-   (let ((chan (f-get-global 'standard-co state)))
-     (pprogn (newline chan state)
-             (newline chan state)
-             (error-fms-channel hardp ctx str alist chan state)
-             (newline chan state)
-             (newline chan state)))))
+  (let ((chan (f-get-global 'standard-co state)))
+    (error-fms-channel hardp ctx summary str alist chan state 2)))
 
 #-acl2-loop-only
 (defvar *accumulated-warnings* nil)
@@ -5994,17 +6037,17 @@
        (member-eq token
                   (f-get-global 'inhibit-output-lst state))))
 
-(defun error1 (ctx str alist state)
+(defun error1 (ctx summary str alist state)
 
 ; Warning: Keep this in sync with error1-safe and error1@par.
 
   (pprogn
-   (io? error nil state (alist str ctx)
-        (error-fms nil ctx str alist state))
+   (io? error nil state (alist str ctx summary)
+        (error-fms nil ctx summary str alist state))
    (mv t nil state)))
 
 #+acl2-par
-(defun error1@par (ctx str alist state)
+(defun error1@par (ctx summary str alist state)
 
 ; Keep in sync with error1.  We accept state so that calls to error1 and
 ; error1@par look the same.
@@ -6012,8 +6055,8 @@
   (declare (ignore state))
   (prog2$
    (our-with-terminal-input ; probably not necessary because of (io? ... t ...)
-    (io? error t state (alist str ctx)
-         (error-fms nil ctx str alist state)
+    (io? error t state (alist str ctx summary)
+         (error-fms nil ctx summary str alist state)
          :chk-translatable nil))
    (mv@par t nil state)))
 
@@ -6025,7 +6068,7 @@
 
   (pprogn
    (io? error nil state (alist str ctx)
-        (error-fms nil ctx str alist state))
+        (error-fms nil ctx nil str alist state))
    (mv nil nil state)))
 
 (defconst *uninhibited-warning-summaries*
@@ -6252,6 +6295,14 @@
               'warning)))
     `(or (output-ignored-p ',tp state)
          (warning-off-p ,summary state))))
+
+(defmacro er-soft (context summary str &rest str-args)
+  (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
+    (list 'error1 context summary str alist 'state)))
+
+(defmacro er-soft@par (context summary str &rest str-args)
+  (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
+    (list 'error1@par context summary str alist 'state)))
 
 (defmacro observation1-body (commentp)
   `(io? observation ,commentp state

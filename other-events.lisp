@@ -24514,7 +24514,7 @@
          (er-cmp-fn-trace-form
           '(er-cmp-fn :entry ; body of error1, to avoid second break on error1
                       (pprogn (io? error nil state (ctx msg)
-                                   (error-fms nil ctx
+                                   (error-fms nil ctx nil
                                               "~|[Breaking on cmp error:]~|~@0"
                                               (list (cons #\0 msg))
                                               state))
@@ -30290,12 +30290,13 @@
 
                 nil))
    (error "~a" (channel-to-string
-                (error-fms-channel t ctx str alist chan
+                (error-fms-channel t ctx nil str alist chan
 
 ; Leave the following as state, not *the-live-state*, to avoid compiler
 ; warning.
 
-                                   state)
+                                   state
+                                   0)
                 chan nil nil t))))
 
 ; Essay on Memoization with Attachments

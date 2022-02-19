@@ -92,11 +92,12 @@ to give more specific messages for each recommended book.
                    (observation ctx "Book has not been included: ~x0" full-book-name)))
             (value nil))
            (cond ((stringp errmsg)
-                  (error1 ctx errmsg (list (cons #\b full-book-name)) state))
+                  (error1 ctx nil errmsg (list (cons #\b full-book-name)) state))
                  ((and (consp errmsg)
                        (stringp (car errmsg))
                        (alistp (cdr errmsg)))
                   (error1 ctx
+                          nil
                           (car errmsg)
                           (cons (cons #\b full-book-name)
                                 (cdr errmsg))
