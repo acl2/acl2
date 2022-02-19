@@ -6820,7 +6820,7 @@
     (INST "MOVD/Q"
           (OP :OP #xF6E :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(V Y) :OP2 '(E Y))
-          'NIL
+          '(X86-MOVD/MOVQ-TO-XMM)
           '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
     (INST "VMOVQ"
           (OP :OP #xF6E
@@ -8452,7 +8452,7 @@
     (INST "MOVD/Q"
           (OP :OP #xF7E :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(E Y) :OP2 '(V Y))
-          'NIL
+          '(X86-MOVD/MOVQ-FROM-XMM)
           '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
     (INST "MOVQ"
           (OP :OP #xF7E :PFX :F3 :FEAT '(:SSE2))
