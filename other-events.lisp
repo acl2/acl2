@@ -2656,6 +2656,21 @@
         (t (reverse (revappend-delete-augmented-runes-based-on-symbols1
                      pairs symbols ans)))))
 
+(defun current-theory-fn1 (wrld1 wrld)
+
+; See current-theory-fn.  Here, wrld is a given logical world for which we are
+; evaluating (current-theory name), where wrld1 is a tail of wrld ending with
+; an event-tuple.  This part of the current-theory code is factored out so that
+; tools can do their own computation of wrld1 rather than only computing it as
+; the current-theory as of some logical name.  We might do the same for other
+; functions, e.g., universal-theory-fn.
+
+  (let* ((redefined (collect-redefined wrld nil))
+         (wrld2 (putprop-x-lst1 redefined 'runic-mapping-pairs
+                                *acl2-property-unbound* wrld1)))
+    (assert$-runic-theoryp (current-theory1 wrld2 nil nil)
+                           wrld)))
+
 (defun current-theory-fn (logical-name wrld)
 
 ; Warning: Keep this in sync with union-current-theory-fn and
@@ -2666,18 +2681,14 @@
 
 ; See universal-theory-fn for an explanation of the production of wrld2.
 
-  (let* ((wrld1 (decode-logical-name logical-name wrld))
-         (redefined (collect-redefined wrld nil))
-         (wrld2 (putprop-x-lst1 redefined 'runic-mapping-pairs
-                                *acl2-property-unbound* wrld1)))
+  (let ((wrld1 (decode-logical-name logical-name wrld)))
     (prog2$
      (or wrld1
          (er hard 'current-theory
              "The name ~x0 was not found in the current ACL2 logical ~
               world; hence no current-theory can be computed for that name."
              logical-name))
-     (assert$-runic-theoryp (current-theory1 wrld2 nil nil)
-                            wrld))))
+     (current-theory-fn1 wrld1 wrld))))
 
 (defun current-theory1-augmented (lst ans redefined)
 
