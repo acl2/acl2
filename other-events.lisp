@@ -2665,6 +2665,8 @@
 ; the current-theory as of some logical name.  We might do the same for other
 ; functions, e.g., universal-theory-fn.
 
+; See universal-theory-fn for an explanation of the production of wrld2.
+
   (let* ((redefined (collect-redefined wrld nil))
          (wrld2 (putprop-x-lst1 redefined 'runic-mapping-pairs
                                 *acl2-property-unbound* wrld1)))
@@ -2678,8 +2680,6 @@
 
 ; We return the theory that was enabled in the world created by the
 ; event that introduced logical-name.
-
-; See universal-theory-fn for an explanation of the production of wrld2.
 
   (let ((wrld1 (decode-logical-name logical-name wrld)))
     (prog2$
