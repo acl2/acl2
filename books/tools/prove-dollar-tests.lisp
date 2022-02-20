@@ -106,7 +106,3 @@
 
 ; Error: bad term
 (must-fail (prove$ '(t)))
-
-(must-succeed-pi (er-let* ((val (prove$ '(t)
-                                        :with-translate-error nil)))
-                   (value (null val))))
