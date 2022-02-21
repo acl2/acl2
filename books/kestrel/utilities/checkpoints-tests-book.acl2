@@ -4,6 +4,7 @@
 ; Help dependency scanner.
 #||
 (include-book "checkpoints")
+(include-book "tools/prove-dollar" :dir :system)
 (depends-on "checkpoints-tests-input.lsp")
 (depends-on "checkpoints-tests-log.txt")
 ||#

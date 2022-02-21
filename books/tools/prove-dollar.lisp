@@ -6,10 +6,7 @@
 
 (include-book "xdoc/top" :dir :system)
 
-(defmacro with-error-output? (flg form)
-  `(if ,flg
-       (with-output! :on error ,form)
-     ,form))
+(include-book "kestrel/utilities/tables" :dir :system)
 
 (defun prove$-fn (term state hints instructions otf-flg ignore-ok ignore-ok-p
                        skip-proofs)
@@ -18,52 +15,59 @@
 ; proof succeeds, else (value nil).  It returns a soft error if there is a
 ; translation failure.
 
-; The step-limit mechanism is tricky, and seems to be responsible for allowing
-; this function to return (mv t nil state), which surprises me.
-
   (declare (xargs :mode :program :stobjs state))
-  (with-ctx-summarized
-   "( PROVE$ ...)"
-   (state-global-let*
-    ((abort-soft nil) ; interrupts abort immediately to the top level
-     (ld-skip-proofsp (if (eq skip-proofs :same)
-                          (ld-skip-proofsp state)
-                        skip-proofs)))
-    (er-let* ((wrld (value (cond ((null ignore-ok-p) (w state))
-                                 (t (putprop 'acl2-defaults-table
-                                             'table-alist
-                                             (acons :ignore-ok
-                                                    ignore-ok
-                                                    (table-alist
-                                                     'acl2-defaults-table
-                                                     (w state)))
-                                             (w state))))))
-              (tterm (translate term t t t ctx wrld state))
-              (instructions
-               (cond ((null instructions) (value nil))
-                     (hints (er soft ctx
-                                "It is illegal to supply non-nil values for ~
-                                 both :hints and :instructions to ~x0."
-                                'prove$))
-                     (t (translate-instructions nil instructions ctx wrld
-                                                state))))
-              (hints (translate-hints+ 'thm
-                                       hints
-                                       (and (null instructions)
-                                            (default-hints wrld))
-                                       ctx wrld state)))
-      (mv-let (erp val state)
-        (cond (instructions
-               (proof-builder nil tterm term nil instructions wrld state))
-              (t
-               (let ((ens (ens state)))
-                 (prove tterm
-                        (make-pspv ens wrld state
-                                   :displayed-goal term
-                                   :otf-flg otf-flg)
-                        hints ens wrld ctx state))))
-        (declare (ignore val))
-        (value (null erp)))))))
+  (let ((ctx "( PROVE$ ...)"))
+    (state-global-let*
+     ((abort-soft nil) ; interrupts abort immediately to the top level
+      (ld-skip-proofsp (if (eq skip-proofs :same)
+                           (ld-skip-proofsp state)
+                         skip-proofs)))
+     (er-let* ((wrld0 (value (w state)))
+               (wrld1 (value (cond ((null ignore-ok-p) wrld0)
+                                   (t (table-programmatic
+                                       'acl2-defaults-table :ignore-ok ignore-ok
+                                       wrld0)))))
+               (tterm (translate term t t t ctx wrld1 state))
+               (instructions
+                (cond ((null instructions) (value nil))
+                      (hints (er soft ctx
+                                 "It is illegal to supply non-nil values for ~
+                                  both :hints and :instructions to ~x0."
+                                 'prove$))
+                      (t (translate-instructions nil instructions ctx wrld1
+                                                 state))))
+               (hints (translate-hints+ 'thm
+                                        hints
+                                        (and (null instructions)
+                                             (default-hints wrld0))
+                                        ctx wrld1 state)))
+       (revert-world
+        (er-progn
+
+; The following is based on (set-inhibit-er-soft "Failure"), using with-output!
+; instead of with-output for legality in this context.
+
+         (with-output!
+           :off (event summary)
+           (table-fn 'inhibit-er-soft-table
+                     '("Failure" nil)
+                     state
+                     '(table inhibit-er-soft-table "Failure" nil)))
+         (mv-let (erp val state)
+           (let ((wrld (w state)))
+             (with-ctx-summarized
+              ctx
+              (cond (instructions
+                     (proof-builder nil tterm term nil instructions wrld state))
+                    (t
+                     (let ((ens (ens state)))
+                       (prove tterm
+                              (make-pspv ens wrld state
+                                         :displayed-goal term
+                                         :otf-flg otf-flg)
+                              hints ens wrld ctx state))))))
+           (declare (ignore val))
+           (value (null erp)))))))))
 
 (defmacro prove$ (term &key
                        hints instructions otf-flg
