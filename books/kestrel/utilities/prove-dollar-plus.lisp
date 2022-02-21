@@ -13,7 +13,6 @@
 ;; TODO: Add a way to return the failed subgoals
 
 (include-book "tools/prove-dollar" :dir :system)
-(include-book "tools/prover-steps-counted" :dir :system)
 
 ;; Returns (mv erp provedp failure-info state).
 (defun prove$+-fn (term
@@ -37,7 +36,7 @@
     (if erp
         (mv erp nil nil state)
       ;; no error (but may have failed to prove):
-      (let* ((prover-steps (prover-steps-counted state))
+      (let* ((prover-steps (last-prover-steps state))
              ;; replace nil, which can happen for very trivial theorems, with 0:
              (prover-steps (or prover-steps 0)))
         (if val
@@ -60,3 +59,7 @@
                    (otf-flg 'nil)
                    (step-limit 'nil))
   `(prove$+-fn ,term ,hints ,instructions ,otf-flg ,step-limit state))
+
+;; Tests:
+;; (prove$+ '(equal (car (cons x y)) x))
+;; (prove$+ '(equal (car (cons x y)) x) :step-limit 6)
