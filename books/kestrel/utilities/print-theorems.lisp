@@ -65,6 +65,8 @@
     (print-defthm-info defthm-names as-jsonp wrld)))
 
 ;; Example of how to call the tool:
-;; (include-book "../arithmetic-light/top") ; a book that includes some theorems
+;; (include-book "kestrel/utilities/print-theorems" :dir :system) ; include the tool
+;; (include-book "kestrel/arithmetic-light/top" :dir :system) ; example of a book that includes some theorems
 ;; (print-all-theorems nil (w state)) ; print all theorems in the current ACL2 session
+;; OR
 ;; (print-all-theorems t (w state)) ; print all theorems in the current ACL2 session, as JSON
