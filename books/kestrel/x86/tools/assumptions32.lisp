@@ -141,7 +141,7 @@
     (stack-segment-assumptions32 ',stack-slots x86)
     (code-and-stack-segments-separate x86) ;todo: allow this and other assumptions to be replaced by assumptions about a flat segmentation model
     (return-address-okp x86)))
-  ;; (let ((text-section-bytes (acl2::get-mach-o-code parsed-mach-o)) ;all the code, not just the given method
+  ;; (let ((text-section-bytes (acl2::get-mach-o-code parsed-mach-o)) ;all the code, not just the given subroutine
   ;;       (text-section-address (acl2::get-mach-o-code-address parsed-mach-o))
   ;;       (subroutine-address (acl2::subroutine-address-mach-o subroutine-name parsed-mach-o)))
   ;;   (standard-assumption-32 text-section-bytes
