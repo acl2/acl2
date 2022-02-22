@@ -31,7 +31,7 @@
 (in-package "XDOC")
 
 (defun bar-escape-chars (x)
-  (declare (xargs :mode :program))
+  (declare (xargs :guard (character-listp x)))
   (cond ((atom x)
          nil)
         ((eql (car x) #\|)
@@ -39,9 +39,13 @@
         (t
          (cons (car x) (bar-escape-chars (cdr x))))))
 
+(local
+ (defthm character-listp-of-bar-escape-chars
+   (implies (character-listp x)
+            (character-listp (bar-escape-chars x)))))
+
 (defun bar-escape-string (x)
-  (declare (xargs :mode :program)
-           (type string x))
+  (declare (type string x))
   ;; Dumb optimization: don't need to escape anything unless there's a #\|
   ;; somewhere.
   (if (position #\| x)
@@ -49,6 +53,6 @@
     x))
 
 (defun full-escape-symbol (x)
-  (declare (xargs :mode :program))
+  (declare (type symbol x))
   (concatenate 'string "|" (bar-escape-string (symbol-package-name x)) "|::|"
                (bar-escape-string (symbol-name x)) "|"))
