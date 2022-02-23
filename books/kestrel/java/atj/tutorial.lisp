@@ -2562,7 +2562,7 @@
     to build the ACL2 environment; see @(see atj-tutorial-deep) for details.")
 
   (xdoc::p
-   "The static analyzer in the @('Acl2Code') class
+   "The static initializer in the @('Acl2Code') class
     is followed by the same empty @('initialize()') method
     as in the deep embedding; see @(see atj-tutorial-deep) for details.
     However, unlike the deep embedding approach,
@@ -2831,7 +2831,7 @@
     However, all the generated methods still take and return
     inputs and outputs of type @('Acl2Value').
     Subsequent pages of this tutorial describe
-    how to generate methods with narrow argument and result types."))
+    how to generate methods with narrower argument and result types."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
