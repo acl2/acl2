@@ -94,7 +94,7 @@
        The file name must include a @('.c') extension."))
 
     (xdoc::desc
-     "@(':pretty-printin') &mdash; default @('nil')"
+     "@(':pretty-printing') &mdash; default @('nil')"
      (xdoc::p
       "Specifies options for how the generated C code is pretty-printed.")
      (xdoc::p
