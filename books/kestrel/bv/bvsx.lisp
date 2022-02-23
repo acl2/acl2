@@ -1,7 +1,7 @@
 ; Theorems about bvsx
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -81,8 +81,8 @@
            :cases ((equal (GETBIT (+ -1 n) X) 0) (equal (GETBIT (+ -1 n) X) 1)))))
 
 (defthm unsigned-byte-p-of-bvsx-simple
-  (implies (natp size)
-           (unsigned-byte-p size (bvsx size m x)))
+  (equal (unsigned-byte-p size (bvsx size m x))
+         (natp size))
   :hints (("Goal" :cases ((posp m))
            :in-theory (enable bvsx))))
 
