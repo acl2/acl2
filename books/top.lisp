@@ -279,7 +279,6 @@ book that depends on Glucose being installed.</p>")
 (include-book "tools/rewrite-dollar" :dir :system)
 (include-book "tools/open-trace-file-bang" :dir :system)
 (include-book "tools/prove-dollar" :dir :system)
-(include-book "tools/prover-steps-counted" :dir :system)
 (include-book "coi/util/rewrite-equiv" :dir :system)
 
 ;; This book memoizes several functions including translate11, translate11-lst,
