@@ -2821,9 +2821,10 @@
              ((unless (atc-affecting-term-for-let-p val prec-fns))
               (er-soft+ ctx t irr
                         "When generating C code for the function ~x0, ~
-                         we encountered an unwrapped term ~x1 ~
-                         to which a LET variable is bound ~
-                         that is neither an IF or a loop function call. ~
+                         we encountered a term ~x1, ~
+                         to which a LET variable is bound, ~
+                         tha is not wrapped by C::DECLAR or C::ASSIGN, ~
+                         and that is neither an IF or a loop function call. ~
                          This is disallowed."
                         fn val))
              ((er (list xform-items xform-type xform-limit))
