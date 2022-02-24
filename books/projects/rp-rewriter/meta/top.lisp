@@ -43,7 +43,7 @@
 (include-book "hons-get-meta")
 (include-book "equal-meta")
 (include-book "mv-nth-meta")
-(include-book "implies-meta")
+;;(include-book "implies-meta")
 (include-book "cons-to-list-meta")
 (include-book "casesplitter")
 

@@ -1884,3 +1884,5 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
     :rule-classes :forward-chaining))
 
 
+(define casesplit-from-context-trig (x)
+  x)

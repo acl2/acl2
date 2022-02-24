@@ -253,7 +253,12 @@ but instead you passed ~p0~%"
                          (valid-sc term a))))
 
          ,@(append (and valid-syntaxp
-                        `((implies (rp-termp term)
+                        `((implies (and (rp-termp term)
+                                        ,@(append (and (true-listp args)
+                                                       (member-equal 'context
+                                                                     args)
+                                                       `((rp-term-listp context)))))
+                                        
                                    (b* ((term-input term)
                                         (,returns
                                          (,meta-fnc . ,args)))

@@ -76,6 +76,7 @@
     (if . 3)
     (hide . 1)
     (implies . 2)
+    (casesplit-from-context-trig . 1)
     (cons . 2)
     (synp . 3)
     (return-last . 3)

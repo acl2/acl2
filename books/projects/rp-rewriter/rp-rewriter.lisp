@@ -1794,6 +1794,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                 ;;(context (attach-sc-from-context-lst context context))
 
                 (q (rp-rw-preprocessor q context rp-state state))
+                (q `(casesplit-from-context-trig ,q))
                 ((mv q rp-state)
                  (rp-rw q nil context t nil step-limit rp-state state))
                 (q (rp-rw-postprocessor q context rp-state state)))

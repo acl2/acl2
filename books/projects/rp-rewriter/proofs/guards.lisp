@@ -719,6 +719,42 @@
                             rw-step-limitp)
                            ()))))
 
+
+
+(local
+ (defthm rp-evlt-of-CASESPLIT-FROM-CONTEXT-TRIG
+   (and (equal (rp-evlt `(CASESPLIT-FROM-CONTEXT-TRIG ,x) a)
+               (rp-evlt x a))
+        (equal (rp-evl `(CASESPLIT-FROM-CONTEXT-TRIG ,x) a)
+               (rp-evl x a)))
+   :hints (("Goal"
+            :in-theory (e/d (CASESPLIT-FROM-CONTEXT-TRIG) ())))))
+
+
+
+
+
+(local
+ (defthm rp-termp-with-casesplit-from-context-trig
+   (iff (RP-TERMP (LIST 'CASESPLIT-FROM-CONTEXT-TRIG x))
+        (rp-termp x))
+   :hints (("Goal"
+            :in-theory (e/d (rp-termp
+                             RP-TERM-LISTP)
+                            ())))))
+
+(local
+ (defthm valid-sc-with-casesplit-from-context-trig
+   (equal (valid-sc (LIST 'CASESPLIT-FROM-CONTEXT-TRIG x) a)
+          (valid-sc x a))
+   :hints (("Goal"
+            :in-theory (e/d (valid-sc
+                             is-rp
+                             is-if)
+                            ())))))
+   
+
+
 (verify-guards preprocess-then-rp-rw
   :otf-flg t
   :hints (("goal"
