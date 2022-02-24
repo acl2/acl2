@@ -1206,3 +1206,9 @@
                             rp-termp-single-step) ()))))
 
 
+
+(defthm rp-term-listp-of-rev
+  (implies (rp-term-listp x)
+           (rp-term-listp (rev x)))
+  :hints (("Goal"
+           :in-theory (e/d (rev) ()))))

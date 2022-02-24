@@ -46,21 +46,21 @@
 (include-book "misc/untranslate-patterns" :dir :system)
 
 (define create-eval-fnc (fnc-alist)
-  :guard (fnc-alistp fnc-alist)
-  :enabled t
-  (if (atom fnc-alist)
-      nil
-    (cons
-     (cons (caar fnc-alist)
-           (sas 'a 0 (cdar fnc-alist)))
-     (create-eval-fnc (cdr fnc-alist)))))
+        :guard (fnc-alistp fnc-alist)
+        :enabled t
+        (if (atom fnc-alist)
+            nil
+          (cons
+           (cons (caar fnc-alist)
+                 (sas 'a 0 (cdar fnc-alist)))
+           (create-eval-fnc (cdr fnc-alist)))))
 
 (defmacro create-eval (fnc-alist &optional (eval-name 'big-evl) &key namedp)
   `(make-event
     `(defevaluator
-       ,',eval-name ,',(sa (symbol-name eval-name) '-lst)
-       ,(create-eval-fnc ,fnc-alist)
-       :namedp ,,namedp)))
+      ,',eval-name ,',(sa (symbol-name eval-name) '-lst)
+      ,(create-eval-fnc ,fnc-alist)
+      :namedp ,,namedp)))
 
 ;; (encapsulate
 ;;   (((foo) => *))
@@ -131,7 +131,6 @@
                :namedp t))
 
 (acl2::def-meta-extract rp-evl rp-evl-lst)
-
 
 (defmacro rp-evlt (term a)
   `(rp-evl (rp-trans ,term) ,a))
@@ -253,7 +252,9 @@
      (cond ((atom term) t)
            ((eq (car term) 'quote) t)
            ((is-if term)
-            (and (valid-sc (cadr term) a)
+            (and (or (valid-sc (cadr term) a)
+                     #|(and (not (rp-evlt (caddr term) a))
+                          (not (rp-evlt (cadddr term) a)))|#)
                  (if (rp-evlt (cadr term) a)
                      (valid-sc (caddr term) a)
                    (valid-sc (cadddr term) a))))
@@ -320,7 +321,6 @@
 
          ;(table rp-rw 'meta-defunsk ',sk-fnc-name)
 
-
          (defun-sk ,fnc-name (rule state-)
            (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)
                            :verify-guards nil))
@@ -366,11 +366,11 @@
 
 (progn
   (defun-sk evals-equal-sk (term1 term2)
-    (forall a
-            (implies (valid-sc term1 a)
-                     (and (valid-sc term2 a)
-                          (equal (rp-evlt term1 a)
-                                 (rp-evlt term2 a))))))
+            (forall a
+                    (implies (valid-sc term1 a)
+                             (and (valid-sc term2 a)
+                                  (equal (rp-evlt term1 a)
+                                         (rp-evlt term2 a))))))
   #|(defun-sk valid-rp-meta-rulep (rule state-)
   (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)
   :verify-guards nil))
@@ -398,7 +398,6 @@
   (and (valid-rp-meta-rulep (car rules) state)
   (valid-rp-meta-rule-listp (cdr rules) state))))||#)
 
-
 (defun eval-and-all-nt (lst a)
   (declare (xargs :guard (and (rp-term-listp lst) (alistp a))))
   (if (atom lst)
@@ -416,13 +415,14 @@
    (cond ((atom term) t)
          ((eq (car term) 'quote) t)
          ((is-if term)
-          (and (valid-sc-nt (cadr term) a)
-               (if (rp-evl (cadr term) a)
-                   (valid-sc-nt (caddr term) a)
-                 (valid-sc-nt (cadddr term) a))))
+          (and (or (valid-sc-nt (cadr term) a)
+                   #|(and (not (rp-evl (caddr term) a))
+                        (not (rp-evl (cadddr term) a)))|#)                  
+                (if (rp-evl (cadr term) a)
+                    (valid-sc-nt (caddr term) a)
+                  (valid-sc-nt (cadddr term) a))))
          ((is-rp term)
-          (and (eval-and-all-nt (context-from-rp term nil)
-                                a)
+          (and (eval-and-all-nt (context-from-rp term nil) a)
                (valid-sc-nt (ex-from-rp term) a)))
          (t (valid-sc-nt-subterms (cdr term) a))))
  (defun

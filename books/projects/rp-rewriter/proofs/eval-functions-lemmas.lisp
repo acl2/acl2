@@ -186,7 +186,7 @@
 (defthm valid-sc-cadr
   (IMPLIES (AND
             (CONSP term)
-            ;;(Not (EQUAL (CAR term) 'if))
+            (Not (EQUAL (CAR term) 'if))
             ;;(Not (EQUAL (CAR term) 'rp))
             (Not (EQUAL (CAR term) 'quote))
             (CONSP (CDR term))

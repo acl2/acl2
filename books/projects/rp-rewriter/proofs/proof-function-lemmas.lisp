@@ -449,7 +449,7 @@
                             rule-syntaxp
                             (:definition subsetp-equal))))))
 
-(defthm VALID-SC-and-is-if
+#|(defthm valid-sc-and-is-if
   (implies (and (is-if term)
                 (valid-sc term a))
            (and (valid-sc (cadr term) a)
@@ -460,7 +460,7 @@
   :hints (("Goal"
            :expand (valid-sc term a)
            :in-theory (e/d (is-if)
-                           (valid-sc)))))
+                           (valid-sc)))))|#
 
 
 
@@ -635,6 +635,7 @@
                     (valid-sc-subterms subterms a)))
     :flag valid-sc-subterms)
   :hints (("Goal"
+           :expand (VALID-SC-NT TERM A)
            :in-theory (e/d (EVAL-AND-ALL-NT-of-context-from-rp) ()))))
 
 
@@ -735,3 +736,14 @@
                             (:TYPE-PRESCRIPTION VALID-RULESP)
                             RP-STATEP)))))
 
+(defthm valid-sc-subterms-of-rev
+  (equal (valid-sc-subterms (rev x) a)
+         (valid-sc-subterms x a))
+  :hints (("Goal"
+           :in-theory (e/d (rev) ()))))
+
+(defthm eval-and-all-of-rev
+  (equal (eval-and-all (rev x) a)
+         (eval-and-all x a))
+  :hints (("Goal"
+           :in-theory (e/d (rev) ()))))
