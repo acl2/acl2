@@ -2022,8 +2022,14 @@
          (new-body (fsublis-fn-simple fn-simp-alist
                                       (access fn-simp-body-result result
                                               :body)))
-         (recursivep (or mut-rec-p ; always preserve mutual-recursion
-                         (ffnnamep fn-simp new-body)))
+         (recursivep
+
+; We always bind recursivep to true in the mutual-recursion case, so that
+; mutual-recursion is preserved.  Also, we rely on this in the binding of
+; new-def-event-pre-alt in fn-simp-defs.
+
+          (or mut-rec-p
+              (ffnnamep fn-simp new-body)))
          (fnsr (make-fnsr fn fn-simp
                           (and (not mut-rec-p) recursivep)
                           thyps wrld))
@@ -2458,6 +2464,21 @@
          fn-simp formals fn-ruler-extenders simp-guard
          simp-measure new-recursivep nil ; verify-guards
          old-normalize-pair simp-body t termination-hints))
+       (new-def-event-pre-alt
+
+; Note that new-recursivep is always true in the mutual-recursion case; see the
+; binding of recursivep in fn-simp-body.  This is important since eventually,
+; when in the mutual-recursion case we assemble a suitable event from
+; new-def-event-pre and new-def-event-pre-alt, we don't want
+; new-def-event-pre-alt, to be non-nil for some function symbols and nil for
+; others in the mutual-recursion nest.
+
+        (and new-recursivep
+            (sd-new-def-event ; same as above except without hints
+             (if non-executable 'defun-nx 'defun)
+             fn-simp formals fn-ruler-extenders simp-guard
+             simp-measure new-recursivep nil ; verify-guards
+             old-normalize-pair simp-body nil nil)))
        (new-def-event-show
         (sd-new-def-event defun? fn-simp formals fn-ruler-extenders simp-guard
                           simp-measure new-recursivep verify-guards-p
@@ -2485,12 +2506,13 @@
              `(verify-guards ,fn-simp)))
        (on-failure-msg
         (msg "Guard verification has failed for the new function, ~x0.  See ~
-              :DOC apt::simplify-failure for some ways to address this ~
-              failure."
+              :DOC apt::simplify-failure, and perhaps see output above, for ~
+              ideas about how to address this failure."
              fn-simp)))
     (value ; (defun defconst &optional in-theory)
      `(,body-result
        ,new-def-event-pre
+       ,new-def-event-pre-alt
        (make-event (let ((thy (merge-sort-lexorder
                                (union-equal
                                 ',(acl2::drop-fake-runes runes)
@@ -2762,6 +2784,7 @@
        (fn-simp-is-fn-name (fn-simp-is-fn-name fn fn-simp theorem-name wrld))
        ((er (list body-result
                   new-defun-pre ; (defun foo$1 ...)
+                  new-defun-pre-alt
                   runes-def     ; (defconst *foo-runes* ...)
                   before-vs-after-lemmas
                   verify-guards-form? new-defun-installed new-defun-show))
@@ -2786,6 +2809,7 @@
     (value
      `(,not-norm-event
        ,new-defun-pre
+       ,new-defun-pre-alt
        ,fn-hyps-def
        ,(and fn-hyps (cons fnc fn-hyps))
        ,runes-def
@@ -3152,32 +3176,34 @@
         (strip-nths 0 tuple-lst))
        (new-defun-pre-lst
         (strip-nths 1 tuple-lst))
-       (fn-hyps-def-lst
+       (new-defun-pre-alt-lst
         (strip-nths 2 tuple-lst))
+       (fn-hyps-def-lst
+        (strip-nths 3 tuple-lst))
        (fn-hyps-names-alist
-        (remove-nils (strip-nths 3 tuple-lst)))
+        (remove-nils (strip-nths 4 tuple-lst)))
        (runes-def-lst
-        (strip-nths 4 tuple-lst))
-       (before-vs-after-lemmas-lst
         (strip-nths 5 tuple-lst))
-       (fn-simp-is-fn-lemma-lst
+       (before-vs-after-lemmas-lst
         (strip-nths 6 tuple-lst))
-       (fn-simp-is-fn-lst
+       (fn-simp-is-fn-lemma-lst
         (strip-nths 7 tuple-lst))
-       (verify-guards-form?-lst
+       (fn-simp-is-fn-lst
         (strip-nths 8 tuple-lst))
-       (new-defun-installed-lst
+       (verify-guards-form?-lst
         (strip-nths 9 tuple-lst))
-       (new-defun-show-lst
+       (new-defun-installed-lst
         (strip-nths 10 tuple-lst))
-       (fnsr-lst
+       (new-defun-show-lst
         (strip-nths 11 tuple-lst))
-       (not-norm-event-names
+       (fnsr-lst
         (strip-nths 12 tuple-lst))
+       (not-norm-event-names
+        (strip-nths 13 tuple-lst))
        (fnsr (car fnsr-lst))
        (fnc (access fnsr fnsr :copy))
        (orig (access fnsr fnsr :orig))
-       (fnc-recursivep (nth 13 (car tuple-lst)))
+       (fnc-recursivep (nth 14 (car tuple-lst)))
        (all-before-vs-after-lemmas
         (append-lst before-vs-after-lemmas-lst))
        (fn-simp-is-fn-lemma-lst-with-hints
@@ -3190,6 +3216,10 @@
        (new-def-event-pre (if mut-rec-p
                               (cons 'mutual-recursion new-defun-pre-lst)
                             (car new-defun-pre-lst)))
+       (new-def-event-pre-alt (if mut-rec-p
+                                  (cons 'mutual-recursion
+                                        new-defun-pre-alt-lst)
+                                (car new-defun-pre-alt-lst)))
        (new-def-event-installed ; see comment below, where this is used
         (if mut-rec-p           ; (consp new-defun-installed-lst)
             (cons 'mutual-recursion new-defun-installed-lst)
@@ -3242,15 +3272,16 @@
              ,@(remove-nils fn-hyps-def-lst)
              ,@runes-def-lst
              (on-failure
-              ,new-def-event-pre
+              ,(orelse-verbosely new-def-event-pre
+                                 new-def-event-pre-alt
+                                 verbose)
               :ctx ,ctx
               :erp :condition-failed
               :val nil
-              :msg ,(msg "The following event has failed:~|~%~x0.~|~%The ~
-                          reason for the failure may become apparent if you ~
-                          call simplify again with the option, :print :info.  ~
-                          In general, see :DOC apt::simplify-failure for some ~
-                          ways to address failures."
+              :msg ,(msg "The measure theorem has failed for the ~
+                          event:~|~%~x0.~|~%See :DOC apt::simplify-failure, ~
+                          and perhaps see output above, for ideas about on ~
+                          how to address this failure."
                          new-def-event-pre))
              (encapsulate
                ()

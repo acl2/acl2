@@ -111,17 +111,18 @@
 
  <h3>Dealing with a guard verification failure</h3>
 
- <p>When @('(simplify FN ...)') fails at guard verification, then unless option
- @(':print nil') is supplied, an attempt to run @('(verify-guards fn)') will be
- made automatically, with prover output shown as though @(':print :all') had
+ <p>When @('(simplify FN ...)') fails to prove the measure theorem or verify
+ guards, then unless option @(':print nil') is supplied, an attempt to run
+ @('defun') or @('verify-guards') (respectively) will be made automatically,
+ without hints, and with prover output shown as though @(':print :all') had
  been supplied.  That way, you can look at checkpoints to come up with helpful
  rules, without having to run @('simplify') again (see @(see
  acl2::the-method)).</p>
 
- <p>Note that in some cases, there may be initial attempts at guard
- verification that use a somewhat sophisticated @(see acl2::proof-builder)
- macro, one that users are not expected to understand.  This explains why the
- retry mentioned above is simply @('(verify-guards fn)'), with no hints: this
+ <p>Note that in some cases, there may be initial attempts at proving the
+ measure theorem or guard obligation that use a somewhat sophisticated @(see
+ acl2::proof-builder) macro, one that users are not expected to understand.
+ This explains why the retry mentioned above does not use any hints: this
  supports your attempt to make adjustments so that guard verification will
  succed for your @('simplify') command.  It might be helpful to try one or more
  of the following approaches.</p>
@@ -129,18 +130,20 @@
  <ul>
 
  <li>Prove suitable rules, as noted above, towards removing the checkpoints.
- You may wish to specify @(':guard-hints nil') in your new call of
- @('simplify'), to match the call @('(verify-guards fn)') that generated the
- checkpoints that you considered.</li>
+ You may wish to specify explicitly @(':hints nil') or @(':guard-hints nil') in
+ your new call of @('simplify'), to match the call or @('defun') or
+ @('verify-guards') that generated the checkpoints that you considered.</li>
 
- <li>Provide a @(':guard-hints') option, @('(simplify FN :guard-hints ...)')
- that specifies a suitable theory and, perhaps, include @(':use (:guard-theorem
- FN)').</li>
+ <li>Provide a @(':hints') option (for the measure theorem) or
+ @(':guard-hints') option (for guard verification), @('(simplify FN :hitns
+ ... :guard-hints ...)'), that specifies a suitable theory and, perhaps,
+ include @(':use (:termination-theorem FN)') (for the measure theorem) or
+ @(':use (:guard-theorem FN)') (for guard verification).</li>
 
- <li>Delay guard verification with @('(simplify FN :verify-guards nil ...)').
- Then, after this @('simplify') completes successfully, call @(tsee
- verify-guards) on @('FN'), perhaps with suitable hints as suggested
- above.</li>
+ <li>If the failure is in guard verification, then you can delay guard
+ verification with @('(simplify FN :verify-guards nil ...)').  Then, after this
+ @('simplify') call completes successfully, call @(tsee verify-guards) on
+ @('FN'), perhaps with suitable hints as suggested above.</li>
 
  <li>If you use @(':print info') or @(':print :all'), you may see a message
  like the following.

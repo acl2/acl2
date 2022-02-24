@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -619,7 +619,7 @@
     "Furthermore, a type may be less than another type only if
      the ACL2 predicate denoted by the first ATJ type
      is a subset of the ACL2 predicate denoted by the second ATJ type;
-     this is necessary, but not sufficient condition.
+     this is a necessary but not sufficient condition.
      The reason for this necessary condition is that, in ATJ's type analysis,
      the types of the branches of an @(tsee if) are merged
      via the least upper bound operation for the partial order:

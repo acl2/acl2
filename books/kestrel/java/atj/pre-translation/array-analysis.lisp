@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -41,7 +41,7 @@
      The reason why this analysis should be carried before
      the variable reuse step
      is that this step may mark and differentiate array variables
-     that the analysis needs to ensure that the denote the same array
+     that the analysis needs to ensure that they denote the same array
      and that the array is treated single-threadedly.")
    (xdoc::p
     "This array analysis is similar to ACL2's stobj analysis
@@ -59,7 +59,7 @@
      that manipulate them.
      In contrast, (representations of) Java arrays in ACL2 functions
      do not have global names, but their names are local to the functions.
-     Consider a function @('f') that takes two arrays and as inputs
+     Consider a function @('f') that takes two arrays as inputs
      and returns them (possibly modified) as outputs,
      and a function @('g') that takes two array inputs @('a') and @('b')
      and calls @('g') with them:

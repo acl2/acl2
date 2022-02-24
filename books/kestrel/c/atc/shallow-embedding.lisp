@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -36,7 +36,7 @@
     " constitute a deep embedding of C in ACL2.
      The two are not separate:
      the deep embedding, specifically the dynamic semantics,
-     includes the shallow embedding.")
+     share concepts and code, e.g. the integer types and operations.")
    (xdoc::p
     "The file where this XDOC topic appears
      can be included by tools, such as APT transformations,
