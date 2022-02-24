@@ -9121,10 +9121,10 @@
 ; include-book-alists with equality on that component, not ``alist equality.''
 ; So we are NOT free to drop or rearrange keys in these annotations.
 
-; If the book is uncertified, the book-hash value is nil.  Otherwise it is a
-; checksum by default, but if the value of state global 'book-hash-alistp was
-; non-nil at certification time, then the book-hash value is an alist; see
-; function book-hash-alist and see :doc book-hash.
+; If the book is uncertified, the book-hash value is nil.  Otherwise it is an
+; alist by default, but if the value of state global 'book-hash-alistp was nil
+; at certification time, then the book-hash value is a checksum; see function
+; book-hash-alist and see :doc book-hash.
 
 ; Suppose the two alist arguments are each include-book-alists from different
 ; times.  We check that the first is a subset of the second, in the sense that
