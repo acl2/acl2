@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -290,7 +290,7 @@
     prints a message on the screen,
     returning @('nil') and continuing execution.
     But the ACL2 definitions of both of these example functions
-   just return @('nil').")
+    just return @('nil').")
 
   (xdoc::p
    "The program-mode functions
@@ -2562,7 +2562,7 @@
     to build the ACL2 environment; see @(see atj-tutorial-deep) for details.")
 
   (xdoc::p
-   "The static analyzer in the @('Acl2Code') class
+   "The static initializer in the @('Acl2Code') class
     is followed by the same empty @('initialize()') method
     as in the deep embedding; see @(see atj-tutorial-deep) for details.
     However, unlike the deep embedding approach,
@@ -2831,7 +2831,7 @@
     However, all the generated methods still take and return
     inputs and outputs of type @('Acl2Value').
     Subsequent pages of this tutorial describe
-    how to generate methods with narrow argument and result types."))
+    how to generate methods with narrower argument and result types."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
