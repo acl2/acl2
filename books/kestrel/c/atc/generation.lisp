@@ -2602,7 +2602,12 @@
              ((mv okp sub elem sub-type elem-type)
               (atc-check-array-write var val))
              ((when okp)
-              (b* (((unless (member-eq var affect))
+              (b* (((unless (eq wrapper? nil))
+                    (er-soft+ ctx t irr
+                              "The array write term ~x0 to which ~x1 is bound ~
+                               has the ~x2 wrapper, which is disallowed."
+                              val var wrapper?))
+                   ((unless (member-eq var affect))
                     (er-soft+ ctx t irr
                               "The array ~x0 is being written to, ~
                                but it is not among the variables ~x1 ~
