@@ -1882,3 +1882,5 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
     (implies (not (not* a))
              a)
     :rule-classes :forward-chaining))
+
+
