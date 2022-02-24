@@ -52,3 +52,8 @@
   (equal (bvashr width 0 shift-amount)
          0)
   :hints (("Goal" :in-theory (enable bvashr))))
+
+(defthm unsigned-byte-p-of-bvashr
+  (equal (unsigned-byte-p size (bvashr size x amt))
+         (natp size))
+  :hints (("Goal" :in-theory (enable bvshr))))

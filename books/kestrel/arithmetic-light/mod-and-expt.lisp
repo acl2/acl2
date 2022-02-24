@@ -180,3 +180,12 @@
   :hints (("Goal" :use (:instance mod-of-*-of-expt-and-expt-bound-helper
                                   (i (mod i (expt 2 size2))))
            :in-theory (disable mod-of-*-of-expt-and-expt-bound-helper))))
+
+;; shifting then chopping is the same as chopping then shifting
+(defthmd mod-of-*-of-expt-and-expt
+  (implies (and (integerp x)
+                (natp i)
+                (natp j))
+           (equal (mod (* x (expt 2 i)) (expt 2 j))
+                  (* (expt 2 i)
+                     (mod x (expt 2 (+ j (- i))))))))

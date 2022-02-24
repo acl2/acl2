@@ -61,9 +61,10 @@
   :hints (("Goal" :in-theory (enable bvshl))))
 
 
-;bozo shouldn't need the hyp?
+;bozo shouldn't need the first 2 hyps?
 (defthm unsigned-byte-p-of-bvshl
   (implies (and (natp amt)
-                (<= amt 32))
-           (unsigned-byte-p 32 (bvshl 32 x amt)))
+                (<= amt size)
+                (natp size))
+           (unsigned-byte-p size (bvshl size x amt)))
   :hints (("Goal" :in-theory (enable bvshl))))
