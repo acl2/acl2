@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -94,7 +94,7 @@
   (b* (((when (zp n)) (mv nil state))
        ;; record start time:
        ((mv start state) (read-run-time state))
-       ;; execute "in the logic", like AIJ:
+       ;; execute the call:
        (result (with-guard-checking gcheck (fact input)))
        ;; record end time:
        ((mv end state) (read-run-time state))
@@ -144,7 +144,7 @@
   (b* (((when (zp n)) (mv nil state))
        ;; record start time:
        ((mv start state) (read-run-time state))
-       ;; execute "in the logic", like AIJ:
+       ;; execute the call:
        (result (with-guard-checking gcheck (fib input)))
        ;; record end time:
        ((mv end state) (read-run-time state))
@@ -194,7 +194,7 @@
   (b* (((when (zp n)) (mv nil state))
        ;; record start time:
        ((mv start state) (read-run-time state))
-       ;; execute "in the logic", like AIJ:
+       ;; execute the call:
        (result (with-guard-checking gcheck (parse-grammar input)))
        ;; record end time:
        ((mv end state) (read-run-time state))
