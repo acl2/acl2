@@ -195,7 +195,7 @@
        ;; record start time:
        ((mv start state) (read-run-time state))
        ;; execute the call:
-       (result (with-guard-checking gcheck (parse-grammar input)))
+       (result (with-guard-checking gcheck (abnf::parse-grammar input)))
        ;; record end time:
        ((mv end state) (read-run-time state))
        ;; prevent unwanted Lisp compiler optimizations:

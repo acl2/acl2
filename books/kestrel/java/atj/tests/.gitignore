@@ -32,14 +32,8 @@ FibonacciShallowGuarded.java
 FibonacciShallowGuardedEnvironment.java
 FibonacciShallowGuardedTests.java
 
-ABNFDeepUnguarded.java
-ABNFDeepUnguardedEnvironment.java
-
 ABNFDeepGuarded.java
 ABNFDeepGuardedEnvironment.java
-
-ABNFShallowUnguarded.java
-ABNFShallowUnguardedEnvironment.java
 
 ABNFShallowGuarded.java
 ABNFShallowGuardedEnvironment.java

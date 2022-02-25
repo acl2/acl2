@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+ * Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
  * License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
  * Author: Alessandro Coglio (coglio@kestrel.edu)
  */
@@ -37,7 +37,7 @@ public class ABNFDeepGuardedTests {
                java.io.FileNotFoundException, java.io.IOException {
         System.out.print("Testing '" + testName + "'...");
         Acl2Value[] functionArguments = new Acl2Value[]{input};
-        Acl2Symbol functionName = Acl2Symbol.make("ACL2", "PARSE-GRAMMAR");
+        Acl2Symbol functionName = Acl2Symbol.make("ABNF", "PARSE-GRAMMAR");
         boolean pass = true;
         long[] times = n != 0 ? new long[n] : null;
         long minTime = 0;

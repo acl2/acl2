@@ -51,11 +51,7 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
 
 # test the ABNF parser:
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     ABNFDeepUnguardedTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
      ABNFDeepGuardedTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     ABNFShallowUnguardedTests 1
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
      ABNFShallowGuardedTests 1
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+ * Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
  * License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
  * Author: Alessandro Coglio (coglio@kestrel.edu)
  */
@@ -44,7 +44,7 @@ public class ABNFShallowGuardedTests {
         int i = 0;
         do {
             long startTime = System.currentTimeMillis();
-            Acl2Value resultJava = ABNFShallowGuarded.ACL2.parse_grammar(input);
+            Acl2Value resultJava = ABNFShallowGuarded.ABNF.parse_grammar(input);
             long endTime = System.currentTimeMillis();
             // we just check that the result is not nil:
             pass = pass && !Acl2Symbol.NIL.equals(resultJava);
