@@ -2147,7 +2147,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ; Generate Java code, without tests.
 ; Currently, attempting to generate tests
 ; for the grammar files ./abnf-files/*.txt
