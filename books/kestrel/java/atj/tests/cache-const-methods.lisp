@@ -38,12 +38,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(java::atj-main-function-type jarray-const () :jbyte[])
-
-(java::atj-main-function-type jarray-nonconst (:jint) :jbyte)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defconst *tests-deep-or-unguarded*
   `(("Const" (jarray-const))
     ("NonConst0" (jarray-nonconst ',(java::int-value 0)))
@@ -74,14 +68,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Specialize input and output types, for shallow embedding with guards.
+
+(java::atj-main-function-type jarray-const () :jbyte[])
+
+(java::atj-main-function-type jarray-nonconst (:jint) :jbyte)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate Java code, with tests.
+
 (java::atj jarray-const
            jarray-nonconst
            :deep t
            :guards nil
            :java-class "CacheConstMethodsDeepUnguarded"
            :tests *tests-deep-or-unguarded*)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (java::atj jarray-const
            jarray-nonconst
@@ -90,8 +92,6 @@
            :java-class "CacheConstMethodsDeepGuarded"
            :tests *tests-deep-or-unguarded*)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (java::atj jarray-const
            jarray-nonconst
            :deep nil
@@ -99,16 +99,12 @@
            :java-class "CacheConstMethodsShallowUnguarded"
            :tests *tests-deep-or-unguarded*)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (java::atj jarray-const
            jarray-nonconst
            :deep nil
            :guards t
            :java-class "CacheConstMethodsShallowGuarded"
            :tests *tests-shallow-and-guarded*)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (java::atj jarray-const
            jarray-nonconst

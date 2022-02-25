@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -9,6 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+(include-book "../atj" :ttags ((:open-output-channel!) (:oslib) (:quicklisp) :quicklisp.osicat))
 
 (include-book "std/strings/cat-base" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
@@ -1016,3 +1018,167 @@
           *string-append-tests*
           *len-tests*
           *char-tests*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate Java code, with tests.
+
+(java::atj characterp
+           stringp
+           symbolp
+           integerp
+           rationalp
+           complex-rationalp
+           consp
+           acl2-numberp
+           unary--
+           unary-/
+           binary-*
+           binary-+
+           char-code
+           code-char
+           coerce
+           intern-in-package-of-symbol
+           symbol-package-name
+           symbol-name
+           pkg-imports
+           pkg-witness
+           <
+           complex
+           realpart
+           imagpart
+           numerator
+           denominator
+           cons
+           car
+           cdr
+           equal
+           if
+           nonnegative-integer-quotient
+           string-append
+           len
+           char
+           :deep t
+           :guards nil
+           :java-class "NativesDeepUnguarded"
+           :tests *all-tests*)
+
+(java::atj characterp
+           stringp
+           symbolp
+           integerp
+           rationalp
+           complex-rationalp
+           consp
+           acl2-numberp
+           unary--
+           unary-/
+           binary-*
+           binary-+
+           char-code
+           code-char
+           coerce
+           intern-in-package-of-symbol
+           symbol-package-name
+           symbol-name
+           pkg-imports
+           pkg-witness
+           <
+           complex
+           realpart
+           imagpart
+           numerator
+           denominator
+           cons
+           car
+           cdr
+           equal
+           if
+           nonnegative-integer-quotient
+           string-append
+           len
+           char
+           :deep t
+           :guards t
+           :java-class "NativesDeepGuarded"
+           :tests *all-tests*)
+
+(java::atj characterp
+           stringp
+           symbolp
+           integerp
+           rationalp
+           complex-rationalp
+           consp
+           acl2-numberp
+           unary--
+           unary-/
+           binary-*
+           binary-+
+           char-code
+           code-char
+           coerce
+           intern-in-package-of-symbol
+           symbol-package-name
+           symbol-name
+           pkg-imports
+           pkg-witness
+           <
+           complex
+           realpart
+           imagpart
+           numerator
+           denominator
+           cons
+           car
+           cdr
+           equal
+           if
+           nonnegative-integer-quotient
+           string-append
+           len
+           char
+           :deep nil
+           :guards nil
+           :java-class "NativesShallowUnguarded"
+           :tests *all-tests*)
+
+(java::atj characterp
+           stringp
+           symbolp
+           integerp
+           rationalp
+           complex-rationalp
+           consp
+           acl2-numberp
+           unary--
+           unary-/
+           binary-*
+           binary-+
+           char-code
+           code-char
+           coerce
+           intern-in-package-of-symbol
+           symbol-package-name
+           symbol-name
+           pkg-imports
+           pkg-witness
+           <
+           complex
+           realpart
+           imagpart
+           numerator
+           denominator
+           cons
+           car
+           cdr
+           equal
+           if
+           nonnegative-integer-quotient
+           string-append
+           len
+           char
+           :deep nil
+           :guards t
+           :java-class "NativesShallowGuarded"
+           :tests *all-tests*)
