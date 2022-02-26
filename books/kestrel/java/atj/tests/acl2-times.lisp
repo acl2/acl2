@@ -218,6 +218,7 @@
   :returns (results)
   (b* (((when (zp m)) nil)
        (result (with-guard-checking gcheck (abnf::parse-grammar input)))
+       (result (consp result)) ; reduce memory to avoid garbage collection
        (results (run-abnf-calls input (1- m) gcheck)))
     (cons result results)))
 
