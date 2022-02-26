@@ -144,6 +144,24 @@ public class ABNFShallowGuardedTests {
         test_Parse(testName, input, n);
     }
 
+    private static void test_ParseJavaLexical(int n)
+        throws Acl2UndefinedPackageException,
+               java.io.FileNotFoundException, java.io.IOException {
+        String testName = "ParseJavaLexical";
+        Acl2Value input =
+            getInputFromFile("../../../java/language/lexical-grammar.txt");
+        test_Parse(testName, input, n);
+    }
+
+    private static void test_ParseJavaSyntactic(int n)
+        throws Acl2UndefinedPackageException,
+               java.io.FileNotFoundException, java.io.IOException {
+        String testName = "ParseJavaSyntactic";
+        Acl2Value input =
+            getInputFromFile("../../../java/language/syntactic-grammar.txt");
+        test_Parse(testName, input, n);
+    }
+
     public static void main(String[] args)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
@@ -163,6 +181,8 @@ public class ABNFShallowGuardedTests {
         test_ParseIMF(n);
         test_ParseSMTP(n);
         test_ParseIMAP(n);
+        test_ParseJavaLexical(n);
+        test_ParseJavaSyntactic(n);
         if (failures) {
             System.out.println("Some tests failed.");
             System.exit(1);

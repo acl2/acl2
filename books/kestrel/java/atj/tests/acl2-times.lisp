@@ -127,7 +127,6 @@
 ; and prints the resulting times.
 #|
 (run-fact-tests '(1000 5000 10000 50000 100000) 10 t state)
-(run-fact-tests '(1000 5000 10000 50000 100000) 10 :none state)
 |#
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -177,7 +176,6 @@
 ; and prints the resulting times.
 #|
 (run-fib-tests '(10 20 30 40) 10 t state)
-(run-fib-tests '(10 20 30 40) 10 :none state)
 |#
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -265,7 +263,15 @@
   (make-event
    (mv-let (nats state)
      (get-input-from-file "../../../abnf/imap-grammar.txt" state)
-     (value `(defconst *imap* ',nats)))))
+     (value `(defconst *imap* ',nats))))
+  (make-event
+   (mv-let (nats state)
+     (get-input-from-file "../../../java/language/lexical-grammar.txt" state)
+     (value `(defconst *java-lexical* ',nats))))
+  (make-event
+   (mv-let (nats state)
+     (get-input-from-file "../../../java/language/syntactic-grammar.txt" state)
+     (value `(defconst *java-syntactic* ',nats)))))
 
 ; Making a call like the following in the ACL2 shell
 ; runs the ABNF grammar parser on each input for the specified number of times
@@ -280,7 +286,9 @@
                       *http*
                       *imf*
                       *smtp*
-                      *imap*)
+                      *imap*
+                      *java-lexical*
+                      *java-syntactic*)
                 '(abnf-core
                   abnf-syntax
                   json
@@ -288,27 +296,10 @@
                   http
                   imf
                   smtp
-                  imap)
+                  imap
+                  java-lexical
+                  java-syntactic)
                 10
                 t
-                state)
-(run-abnf-tests (list *abnf-core*
-                      *abnf-syntax*
-                      *json*
-                      *uri*
-                      *http*
-                      *imf*
-                      *smtp*
-                      *imap*)
-                '(abnf-core
-                  abnf-syntax
-                  json
-                  uri
-                  http
-                  imf
-                  smtp
-                  imap)
-                10
-                :none
                 state)
 |#
