@@ -79,18 +79,18 @@ public class ABNFShallowGuardedTests {
         }
     }
 
-    private static void test_ParseABNFcore(int n)
+    private static void test_ParseABNFCore(int n)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
-        String testName = "ParseABNFcore";
+        String testName = "ParseABNFCore";
         Acl2Value input = getInputFromFile("../../../abnf/core-rules.txt");
         test_Parse(testName, input, n);
     }
 
-    private static void test_ParseABNFsyntax(int n)
+    private static void test_ParseABNFSyntax(int n)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
-        String testName = "ParseABNFsyntax";
+        String testName = "ParseABNFSyntax";
         Acl2Value input =
             getInputFromFile("../../../abnf/concrete-syntax-rules.txt");
         test_Parse(testName, input, n);
@@ -155,8 +155,8 @@ public class ABNFShallowGuardedTests {
             throw new IllegalArgumentException("There must be 0 or 1 arguments.");
         }
         ABNFShallowGuarded.initialize();
-        test_ParseABNFcore(n);
-        test_ParseABNFsyntax(n);
+        test_ParseABNFCore(n);
+        test_ParseABNFSyntax(n);
         test_ParseJSON(n);
         test_ParseURI(n);
         test_ParseHTTP(n);
