@@ -162,6 +162,15 @@ public class ABNFShallowGuardedTests {
         test_Parse(testName, input, n);
     }
 
+    private static void test_ParseYul(int n)
+        throws Acl2UndefinedPackageException,
+               java.io.FileNotFoundException, java.io.IOException {
+        String testName = "ParseYul";
+        Acl2Value input =
+            getInputFromFile("../../../yul/language/abnf-grammar-new.txt");
+        test_Parse(testName, input, n);
+    }
+
     public static void main(String[] args)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
@@ -183,6 +192,7 @@ public class ABNFShallowGuardedTests {
         test_ParseIMAP(n);
         test_ParseJavaLexical(n);
         test_ParseJavaSyntactic(n);
+        test_ParseYul(n);
         if (failures) {
             System.out.println("Some tests failed.");
             System.exit(1);

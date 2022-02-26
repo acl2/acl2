@@ -271,7 +271,11 @@
   (make-event
    (mv-let (nats state)
      (get-input-from-file "../../../java/language/syntactic-grammar.txt" state)
-     (value `(defconst *java-syntactic* ',nats)))))
+     (value `(defconst *java-syntactic* ',nats))))
+  (make-event
+   (mv-let (nats state)
+     (get-input-from-file "../../../yul/language/abnf-grammar-new.txt" state)
+     (value `(defconst *yul* ',nats)))))
 
 ; Making a call like the following in the ACL2 shell
 ; runs the ABNF grammar parser on each input for the specified number of times
@@ -288,7 +292,8 @@
                       *smtp*
                       *imap*
                       *java-lexical*
-                      *java-syntactic*)
+                      *java-syntactic*
+                      *yul*)
                 '(abnf-core
                   abnf-syntax
                   json
@@ -298,7 +303,8 @@
                   smtp
                   imap
                   java-lexical
-                  java-syntactic)
+                  java-syntactic
+                  yul)
                 10
                 t
                 state)
