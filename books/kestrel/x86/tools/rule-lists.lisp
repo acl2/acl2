@@ -1072,11 +1072,17 @@
      standard-assumptions-mach-o-64
      standard-assumptions-pe-64
      bytes-loaded-in-text-section-64
+     ;; Mach-O stuff:
      acl2::get-mach-o-code
      acl2::subroutine-address-mach-o
      acl2::get-mach-o-code-address
-     acl2::get-mach-o-segment
-     acl2::get-mach-o-section
+     acl2::get-mach-o-section-base-1
+     acl2::get-mach-o-section-base-2
+     acl2::get-mach-o-section-unroll
+     acl2::get-mach-o-segment-base-1
+     acl2::get-mach-o-segment-base-2
+     acl2::get-mach-o-segment-unroll-1
+     acl2::get-mach-o-segment-unroll-2
      acl2::get-symbol-entry-mach-o-base-1
      acl2::get-symbol-entry-mach-o-base-2
      acl2::get-symbol-entry-mach-o-unroll
@@ -1092,6 +1098,7 @@
      acl2::get-mach-o-load-command-base-1
      acl2::get-mach-o-load-command-base-2
      acl2::get-mach-o-load-command-unroll
+     ;; PE stuff:
      acl2::get-pe-sections
      acl2::get-pe-section
      acl2::get-pe-text-section
