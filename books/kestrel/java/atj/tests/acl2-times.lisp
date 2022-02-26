@@ -84,144 +84,183 @@
 
 ; Utilities to measure times for the factorial function.
 
-; Make N calls of the factorial function on INPUT,
-; printing the time taken by each call
-; and returning the list of the times for all the calls.
+; Make M calls of the factorial function on INPUT,
+; and return the list of results.
+; Each time measurement applies to M calls:
+; set M to 1 to measure the time of single calls,
+; or to larger values when the calls are fast
+; and longer measurement times are desired.
+(define run-fact-calls ((input natp) (m natp) gcheck)
+  :returns (results)
+  (b* (((when (zp m)) nil)
+       (result (with-guard-checking gcheck (fact input)))
+       (results (run-fact-calls input (1- m) gcheck)))
+    (cons result results)))
+
+; Make N * M calls of the factorial function on INPUT,
+; printing the time taken by each of the N sequences of M calls
+; and returning the list of the times for all the sequences of M calls.
 ; The GCHECK argument provides the guard checking settings.
-(define run-fact-test ((input natp) (n natp) gcheck state)
+(define run-fact-test ((input natp) (n natp) (m natp) gcheck state)
   :returns (mv times state)
   :verify-guards nil
   (b* (((when (zp n)) (mv nil state))
        ;; record start time:
        ((mv start state) (read-run-time state))
-       ;; execute the call:
-       (result (with-guard-checking gcheck (fact input)))
+       ;; execute the M calls:
+       (results (run-fact-calls input m gcheck))
        ;; record end time:
        ((mv end state) (read-run-time state))
        ;; prevent unwanted Lisp compiler optimizations:
-       ((when (zp result)) (mv nil state)) ; never happens
-       ;; print time for the call:
+       ((when (endp results)) (mv nil state)) ; never happens
+       ;; print time for the M calls:
        (time (- end start))
        (- (cw "  ~@0~%" (format-time time)))
-       ((mv times state) (run-fact-test input (1- n) gcheck state)))
+       ((mv times state) (run-fact-test input (1- n) m gcheck state)))
     (mv (cons time times) state)))
 
-; Make N calls of the factorial function on each element of INPUTS,
-; printing the time taken by each call
+; Make N * M calls of the factorial function on each element of INPUTS,
+; printing the time taken by each of the N sequences of M calls call
 ; and printing minimum, maximum, and average times for each input.
 ; The GCHECK argument provides the guard checking settings.
-(define run-fact-tests ((inputs nat-listp) (n natp) gcheck state)
+(define run-fact-tests ((inputs nat-listp) (n natp) (m natp) gcheck state)
   :returns state
   :verify-guards nil
   (b* (((when (endp inputs)) state)
        (input (car inputs))
        (- (cw "~%Times (in seconds) to run factorial on ~x0:~%" input))
-       ((mv times state) (run-fact-test input n gcheck state))
+       ((mv times state) (run-fact-test input n m gcheck state))
        (- (cw "Minimum: ~@0~%" (format-time (list-min times))))
        (- (cw "Average: ~@0~%" (format-time (list-avg times))))
        (- (cw "Maximum: ~@0~%" (format-time (list-max times)))))
-    (run-fact-tests (cdr inputs) n gcheck state)))
+    (run-fact-tests (cdr inputs) n m gcheck state)))
 
 ; Making a call like the following in the ACL2 shell
 ; runs the factorial function on each input for the specified number of times
 ; and prints the resulting times.
 #|
-(run-fact-tests '(1000 5000 10000 50000 100000) 10 t state)
+(run-fact-tests '(1000 5000 10000 50000 100000) 10 1 t state)
 |#
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Utilities to measure times for the Fibonacci function.
 
-; Make N calls of the Fibonacci function on INPUT,
-; printing the time taken by each call
+; Make M calls of the Fibonacci function on INPUT,
+; and return the list of results.
+; Each time measurement applies to M calls:
+; set M to 1 to measure the time of single calls,
+; or to larger values when the calls are fast
+; and longer measurement times are desired.
+(define run-fib-calls ((input natp) (m natp) gcheck)
+  :returns (results)
+  (b* (((when (zp m)) nil)
+       (result (with-guard-checking gcheck (fib input)))
+       (results (run-fib-calls input (1- m) gcheck)))
+    (cons result results)))
+
+; Make N * M calls of the Fibonacci function on INPUT,
+; printing the time taken by each of the N sequences of M calls
 ; and returning the list of the times for all the calls.
 ; The GCHECK argument provides the guard checking settings.
-(define run-fib-test ((input natp) (n natp) gcheck state)
+(define run-fib-test ((input natp) (n natp) (m natp) gcheck state)
   :returns (mv times state)
   :verify-guards nil
   (b* (((when (zp n)) (mv nil state))
        ;; record start time:
        ((mv start state) (read-run-time state))
-       ;; execute the call:
-       (result (with-guard-checking gcheck (fib input)))
+       ;; execute the M calls:
+       (results (run-fib-calls input m gcheck))
        ;; record end time:
        ((mv end state) (read-run-time state))
        ;; prevent unwanted Lisp compiler optimizations:
-       ((when (zp result)) (mv nil state)) ; never happens
-       ;; print time for the call:
+       ((when (endp results)) (mv nil state)) ; never happens
+       ;; print time for the M calls:
        (time (- end start))
        (- (cw "  ~@0~%" (format-time time)))
-       ((mv times state) (run-fib-test input (1- n) gcheck state)))
+       ((mv times state) (run-fib-test input (1- n) m gcheck state)))
     (mv (cons time times) state)))
 
 ; Make N calls of the Fibonacci function on each element of INPUTS,
-; printing the time taken by each call
+; printing the time taken by each of the N sequences of M calls call
 ; and printing minimum, maximum, and average times for each input.
 ; The GCHECK argument provides the guard checking settings.
-(define run-fib-tests ((inputs nat-listp) (n natp) gcheck state)
+(define run-fib-tests ((inputs nat-listp) (n natp) (m natp) gcheck state)
   :returns state
   :verify-guards nil
   (b* (((when (endp inputs)) state)
        (input (car inputs))
        (- (cw "~%Times (in seconds) to run Fibonacci on ~x0:~%" input))
-       ((mv times state) (run-fib-test input n gcheck state))
+       ((mv times state) (run-fib-test input n m gcheck state))
        (- (cw "Minimum: ~@0~%" (format-time (list-min times))))
        (- (cw "Average: ~@0~%" (format-time (list-avg times))))
        (- (cw "Maximum: ~@0~%" (format-time (list-max times)))))
-    (run-fib-tests (cdr inputs) n gcheck state)))
+    (run-fib-tests (cdr inputs) n m gcheck state)))
 
 ; Making a call like the following in the ACL2 shell
 ; runs the Fibonacci function on each input for the specified number of times
 ; and prints the resulting times.
 #|
-(run-fib-tests '(10 20 30 40) 10 t state)
+(run-fib-tests '(10 20 30 40) 10 1 t state)
 |#
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Utilities to measure times for the ABNF grammar parser.
 
-; Make N calls of the ABNF parser on INPUT,
-; printing the time taken by each call
+; Make M calls of the ABNF parser function on INPUT,
+; and return the list of results.
+; Each time measurement applies to M calls:
+; set M to 1 to measure the time of single calls,
+; or to larger values when the calls are fast
+; and longer measurement times are desired.
+(define run-abnf-calls ((input nat-listp) (m natp) gcheck)
+  :returns (results)
+  (b* (((when (zp m)) nil)
+       (result (with-guard-checking gcheck (abnf::parse-grammar input)))
+       (results (run-abnf-calls input (1- m) gcheck)))
+    (cons result results)))
+
+; Make N * M calls of the ABNF parser on INPUT,
+; printing the time taken by each of the N seequence of M calls
 ; and returning the list of the times for all the calls.
 ; The GCHECK argument provides the guard checking settings.
-(define run-abnf-test ((input nat-listp) (n natp) gcheck state)
+(define run-abnf-test ((input nat-listp) (n natp) (m natp) gcheck state)
   :returns (mv times state)
   :verify-guards nil
   (b* (((when (zp n)) (mv nil state))
        ;; record start time:
        ((mv start state) (read-run-time state))
-       ;; execute the call:
-       (result (with-guard-checking gcheck (abnf::parse-grammar input)))
+       ;; execute the M calls:
+       (results (run-abnf-calls input m gcheck))
        ;; record end time:
        ((mv end state) (read-run-time state))
        ;; prevent unwanted Lisp compiler optimizations:
-       ((when (natp result)) (mv nil state)) ; never happens
-       ;; print time for the call:
+       ((when (endp results)) (mv nil state)) ; never happens
+       ;; print time for the M calls:
        (time (- end start))
        (- (cw "  ~@0~%" (format-time time)))
-       ((mv times state) (run-abnf-test input (1- n) gcheck state)))
+       ((mv times state) (run-abnf-test input (1- n) m gcheck state)))
     (mv (cons time times) state)))
 
-; Make N calls of the ABNF parser on each element of INPUTS,
-; printing the time taken by each call
+; Make N * M calls of the ABNF parser on each element of INPUTS,
+; printing the time taken by each of the N seequence of M calls
 ; and printing minimum, maximum, and average times for each input.
 ; The GRAMMARS argument is just used for printing.
 ; The GCHECK argument provides the guard checking settings.
 (define run-abnf-tests
-  ((inputs true-listp) (grammars symbol-listp) (n natp) gcheck state)
+  ((inputs true-listp) (grammars symbol-listp) (n natp) (m natp) gcheck state)
   :returns state
   :verify-guards nil
   (b* (((when (endp inputs)) state)
        (input (car inputs))
        (- (cw "~%Times (in seconds) to run the parser ~
                on the ~x0 grammar:~%" (car grammars)))
-       ((mv times state) (run-abnf-test input n gcheck state))
+       ((mv times state) (run-abnf-test input n m gcheck state))
        (- (cw "Minimum: ~@0~%" (format-time (list-min times))))
        (- (cw "Average: ~@0~%" (format-time (list-avg times))))
        (- (cw "Maximum: ~@0~%" (format-time (list-max times)))))
-    (run-abnf-tests (cdr inputs) (cdr grammars) n gcheck state)))
+    (run-abnf-tests (cdr inputs) (cdr grammars) n m gcheck state)))
 
 ; The input to the ABNF grammar parser must be a list of natural numbers,
 ; read from some ABNF grammar file.
@@ -306,6 +345,7 @@
                   java-syntactic
                   yul)
                 10
+                1
                 t
                 state)
 |#
