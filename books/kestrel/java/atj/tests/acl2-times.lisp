@@ -236,8 +236,12 @@
 (progn
   (make-event
    (mv-let (nats state)
+     (get-input-from-file "../../../abnf/core-rules.txt" state)
+     (value `(defconst *abnf-core* ',nats))))
+  (make-event
+   (mv-let (nats state)
      (get-input-from-file "../../../abnf/concrete-syntax-rules.txt" state)
-     (value `(defconst *abnf* ',nats))))
+     (value `(defconst *abnf-syntax* ',nats))))
   (make-event
    (mv-let (nats state)
      (get-input-from-file "../../../abnf/json-grammar.txt" state)
@@ -269,13 +273,41 @@
 ; Note that the second argument must suitably "match" the first one
 ; (so that the printed messages make sense).
 #|
-(run-abnf-tests (list *abnf* *json* *uri* *http* *imf* *smtp* *imap*)
-                '(abnf json uri http imf smtp imap)
+(run-abnf-tests (list *abnf-core*
+                      *abnf-syntax*
+                      *json*
+                      *uri*
+                      *http*
+                      *imf*
+                      *smtp*
+                      *imap*)
+                '(abnf-core
+                  abnf-syntax
+                  json
+                  uri
+                  http
+                  imf
+                  smtp
+                  imap)
                 10
                 t
                 state)
-(run-abnf-tests (list *abnf* *json* *uri* *http* *imf* *smtp* *imap*)
-                '(abnf json uri http imf smtp imap)
+(run-abnf-tests (list *abnf-core*
+                      *abnf-syntax*
+                      *json*
+                      *uri*
+                      *http*
+                      *imf*
+                      *smtp*
+                      *imap*)
+                '(abnf-core
+                  abnf-syntax
+                  json
+                  uri
+                  http
+                  imf
+                  smtp
+                  imap)
                 10
                 :none
                 state)
