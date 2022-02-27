@@ -12,7 +12,7 @@
 
 ;; STATUS: In-progress
 
-(include-book "restore-mv-in-branches")
+;(include-book "restore-mv-in-branches")
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/utilities/fresh-names" :dir :system)
@@ -33,6 +33,28 @@
 ;; TODO: Also reconstruct lambdas with MV variables, such as the one that
 ;; results from :trans (mv-let (x y) (mv x y) (< x y)).
 
+(defund cons-nest-ending-in-nilp (x)
+  (declare (xargs :guard (pseudo-termp x)))
+  (if (not (consp x))
+      nil
+    (if (equal x *nil*)
+        t
+      (and (consp x)
+           (eq 'cons (ffn-symb x))
+           (= 2 (len (fargs x)))
+           (cons-nest-ending-in-nilp (farg2 x))))))
+
+(defund elements-of-cons-nest-ending-in-nil (x)
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (cons-nest-ending-in-nilp x))
+                  :hints (("Goal" :in-theory (enable cons-nest-ending-in-nilp)))
+                  :guard-hints (("Goal" :in-theory (enable cons-nest-ending-in-nilp)))))
+  (if (or (not (mbt (cons-nest-ending-in-nilp x))) ; for termination
+          (equal x *nil*))
+      nil
+    (cons (farg1 x)
+          (elements-of-cons-nest-ending-in-nil (farg2 x)))))
+
 ;; Analyze TERM, which should return multiple values, to try to determine names
 ;; to use for those values (e.g., if it has an if-branch that is (mv var1
 ;; var2), return (list var1 var2).  Returns nil upon failure.
@@ -49,12 +71,16 @@
                 (else-res (return-names-of-term (farg3 term))))
             ;; If either if branch gives a result, use it:
             (or then-res else-res)))
-      (if (and (call-of 'mv term) ; (mv var1 var2 ...)
-               (symbol-listp (fargs term))
-               (no-duplicatesp (fargs term)))
-          (fargs term)
-        nil ;fail
-        ))))
+      (if (flambda-applicationp term)
+          (return-names-of-term (lambda-body (ffn-symb term)))
+        (if (cons-nest-ending-in-nilp term) ;; a cons nest representing the translation of (mv <var1> ... <varn>)
+            (let ((vals (elements-of-cons-nest-ending-in-nil term)))
+              (if (and (symbol-listp vals)
+                       (no-duplicatesp-eq vals))
+                  vals
+                nil))
+          nil ;fail
+          )))))
 
 (defthm symbol-listp-of-return-names-of-term
   (symbol-listp (return-names-of-term term))
@@ -71,7 +97,7 @@
         (er hard? 'return-names-of-fn "Expected ~x0 to return multiple values, but it returns ~x1 value(s)." fn num-return-values)
       (let* ((body (fn-body fn t wrld))
              ;; Changes cons nests to mv calls:
-             (body (restore-mv-in-branches body (num-return-values-of-fn fn wrld) nil wrld))
+             ;; (body (restore-mv-in-branches body (num-return-values-of-fn fn wrld) nil wrld))
              (names (return-names-of-term body)))
         (if (not names)
             (prog2$ (cw "WARNING: Could not find names for the return values of ~x0.  Using default names.~%" fn)
