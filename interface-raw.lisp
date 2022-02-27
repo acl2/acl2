@@ -9174,8 +9174,8 @@
 ; A non-nil value of this variable indicates that we are to use the "book-hash"
 ; mechanism of storing an alist in the .cert file, instead of a numeric
 ; checksum.  Starting in June 2016, storing such an alist is the default.  That
-; default is defeated when the indicated environment variable is empty or (up
-; to case) "NIL".
+; default is defeated when the indicated environment variable has value (up to
+; case) "NIL".
 
                (let ((s (getenv$-raw "ACL2_BOOK_HASH_ALISTP")))
                  (or (null s) ; default case

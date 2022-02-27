@@ -49,6 +49,7 @@
 (include-book "typed-lists-light/doc")
 (include-book "utilities/top")
 (include-book "utilities/ubi-doc")
+(include-book "utilities/checkpoints-doc")
 (include-book "yul/top")
 (include-book "zcash/top")
 
