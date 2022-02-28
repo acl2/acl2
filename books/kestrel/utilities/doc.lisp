@@ -415,8 +415,7 @@
             macro-args))
        ((when (not (subsetp-eq macro-arg-names described-arg-names)))
         (er hard? 'defxdoc-for-macro-fn "No descriptions given for macro arguments, ~x0."
-            (set-difference-eq macro-arg-names described-arg-names)
-            macro-args))
+            (set-difference-eq macro-arg-names described-arg-names)))
        ;; The xdoc seems to be created in this package:
        (package (symbol-package-name name))
        ((mv required-args optional-args keyword-args)

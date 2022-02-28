@@ -177,7 +177,9 @@
               (if (eq 'pairlis2 fn)
                   (take (symbolic-length (farg2 term))
                         (symbolic-elements (farg1 term)))
-                (cw "Note: unable to get symbolic strip-cars of term ~x0.~%" term)))))))))
+                (if (consp fn)
+                    (symbolic-strip-cars (lambda-body fn))
+                  (cw "Note: unable to get symbolic strip-cars of term ~x0.~%" term))))))))))
 
 ;;test: (SYMBOLIC-STRIP-CARS '(CONS (CONS '#\0 'BLAH) 'NIL))
 
@@ -677,6 +679,7 @@
         (cw "(Skipping checking ~x0 for contradiction, since it's not entirely in :logic mode.)~%" ctx)
         state)
        ((mv erp res state)
+        ;; TODO: Suppress step-limit error output here:
         (prove$ `(not ,term) :step-limit step-limit))
        ((when erp)
         (er hard? 'check-for-contradiction "Error checking for contradiction in ~s0: ~X12." description term nil)
@@ -1196,3 +1199,9 @@
 ;; (set-ignore-ok t)
 ;; ... include your books here...
 ;; (acl2::run-linter :check-defuns nil :step-limit 100000 :suppress (:context :equality-variant :ground-term))
+
+;; to check functions:
+;; (include-book "kestrel/utilities/linter" :dir :system)
+;; (set-ignore-ok t)
+;; ... include your books here...
+;; (acl2::run-linter :check-defthms nil :step-limit 100000 :suppress (:context :equality-variant :ground-term))
