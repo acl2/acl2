@@ -411,7 +411,7 @@ following form sets that option:</p>
   ;;  :returns return-spec
   ;;  :returns (mv return-spec ... return-spec)
   ;; We require that return-value names are never MV, so we can just check for MV to
-  ;; tell thich kind of return spec we are dealing with.
+  ;; tell which kind of return spec we are dealing with.
   ;; This function just converts either form into a list of return specs
   ;; with no MV part.
   (declare (xargs :guard t))
@@ -429,7 +429,7 @@ following form sets that option:</p>
        ((when (eq (car x) 'mv))
         (if (true-listp (cdr x))
             (cdr x)
-          (raise "Error in ~x0: :returns must be nil-terminated." fnname x))))
+          (raise "Error in ~x0: :returns must be nil-terminated, but ~x1 is not." fnname x))))
     (list x)))
 
 (defun parse-returnspecs (fnname x world)
@@ -763,8 +763,7 @@ following form sets that option:</p>
   (declare (xargs :guard (subsetp-eq (strip-cars (keyval-list-to-kwd-alist args))
                                      ;; for now
                                      '(:hints-sub-returnnames))))
-  
+
   `(local
     (table define 'returnspec-config
            (keyval-list-to-kwd-alist (quote ,args)))))
-
