@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -9,6 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+(include-book "../atj" :ttags ((:open-output-channel!) (:oslib) (:quicklisp) :quicklisp.osicat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -59,3 +61,43 @@
     ("FactorialTail100" (fact-tail 100 1))
     ("FactorialTail1000" (fact-tail 1000 1))
     ("FactorialTail10000" (fact-tail 10000 1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Specialize input and output types, for shallow embedding with guards.
+
+(java::atj-main-function-type fact (:ainteger) :ainteger)
+
+(java::atj-main-function-type fact-tail (:ainteger :ainteger) :ainteger)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate Java code, with tests.
+
+(java::atj fact
+           fact-tail
+           :deep t
+           :guards nil
+           :java-class "FactorialDeepUnguarded"
+           :tests *fact-tests*)
+
+(java::atj fact
+           fact-tail
+           :deep t
+           :guards t
+           :java-class "FactorialDeepGuarded"
+           :tests *fact-tests*)
+
+(java::atj fact
+           fact-tail
+           :deep nil
+           :guards nil
+           :java-class "FactorialShallowUnguarded"
+           :tests *fact-tests*)
+
+(java::atj fact
+           fact-tail
+           :deep nil
+           :guards t
+           :java-class "FactorialShallowGuarded"
+           :tests *fact-tests*)
