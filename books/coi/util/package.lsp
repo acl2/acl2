@@ -66,3 +66,5 @@
           *common-lisp-symbols-from-main-lisp-package*))
 
 (ld "centaur/fty/package.lsp" :dir :system)
+
+(defpkg "LINEAR"  (append '(b* met met-list) *acl2-exports* *common-lisp-symbols-from-main-lisp-package*))

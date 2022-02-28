@@ -1,0 +1,5 @@
+(ld "coi/util/package.lsp" :dir :system)
+(ld "coi/quantification/package.lsp" :dir :system)
+(ld "centaur/fty/package.lsp" :dir :system)
+(ld "coi/util/package.lsp" :dir :system)
+(ld "coi/pattern-hint/package.lsp" :dir :system)
