@@ -4,7 +4,7 @@
 
 # Java Library
 #
-# Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+# Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 #
 # License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 #
@@ -51,11 +51,7 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
 
 # test the ABNF parser:
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     ABNFDeepUnguardedTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
      ABNFDeepGuardedTests 1
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     ABNFShallowUnguardedTests 1
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
      ABNFShallowGuardedTests 1
 
@@ -104,20 +100,19 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
 
 # test the no-AIJ-type functions
 # (without timings because they are very fast, all print as 0.000):
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G NoAIJTypesTests
+java -Xss1G NoAIJTypesTests
 
 # test the caching of nullar method results
 # (without timings because they are very fast, all print as 0.000):
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     CacheConstMethodDeepUnguardedTests
+     CacheConstMethodsDeepUnguardedTests
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     CacheConstMethodDeepGuardedTests
+     CacheConstMethodsDeepGuardedTests
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     CacheConstMethodShallowUnguardedTests
+     CacheConstMethodsShallowUnguardedTests
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     CacheConstMethodShallowGuardedTests
-java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
-     CacheConstMethodNoAIJTypesTests
+     CacheConstMethodsShallowGuardedTests
+java -Xss1G CacheConstMethodsNoAIJTypesTests
 
 # printed only if all the tests succeed:
 echo "" # blank line

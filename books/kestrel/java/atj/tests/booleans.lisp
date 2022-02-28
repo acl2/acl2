@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -9,6 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+(include-book "../atj" :ttags ((:open-output-channel!) (:oslib) (:quicklisp) :quicklisp.osicat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -120,3 +122,105 @@
     ("FromValue0" (fromvalue 'something))
     ("FromValue1" (fromvalue '(1 2 3)))
     ("FromValue2" (fromvalue "abc"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Specialize input and output types, for shallow embedding with guards.
+
+(java::atj-main-function-type negation (:aboolean) :aboolean)
+
+(java::atj-main-function-type conjunction (:aboolean :aboolean) :aboolean)
+
+(java::atj-main-function-type disjunction (:aboolean :aboolean) :aboolean)
+
+(java::atj-main-function-type equality (:aboolean :aboolean) :aboolean)
+
+(java::atj-main-function-type nonequality (:aboolean :aboolean) :aboolean)
+
+(java::atj-main-function-type project1 (:aboolean :aboolean) :aboolean)
+
+(java::atj-main-function-type project2 (:aboolean :aboolean) :aboolean)
+
+(java::atj-main-function-type addition
+                              (:aboolean :aboolean)
+                              (:aboolean :aboolean))
+
+(java::atj-main-function-type tosymbol (:aboolean) :astring)
+
+(java::atj-main-function-type fromsymbol (:asymbol) :aboolean)
+
+(java::atj-main-function-type tovalue (:aboolean :aboolean) :acons)
+
+(java::atj-main-function-type fromvalue (:avalue) :aboolean)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate Java code, with tests.
+
+(java::atj negation
+           conjunction
+           disjunction
+           equality
+           nonequality
+           project1
+           project2
+           addition
+           tosymbol
+           fromsymbol
+           tovalue
+           fromvalue
+           :deep t
+           :guards nil
+           :java-class "BooleansDeepUnguarded"
+           :tests *boolean-tests*)
+
+(java::atj negation
+           conjunction
+           disjunction
+           equality
+           nonequality
+           project1
+           project2
+           addition
+           tosymbol
+           fromsymbol
+           tovalue
+           fromvalue
+           :deep t
+           :guards t
+           :java-class "BooleansDeepGuarded"
+           :tests *boolean-tests*)
+
+(java::atj negation
+           conjunction
+           disjunction
+           equality
+           nonequality
+           project1
+           project2
+           addition
+           tosymbol
+           fromsymbol
+           tovalue
+           fromvalue
+           :deep nil
+           :guards nil
+           :java-class "BooleansShallowUnguarded"
+           :tests *boolean-tests*)
+
+(java::atj negation
+           conjunction
+           disjunction
+           equality
+           nonequality
+           project1
+           project2
+           addition
+           tosymbol
+           fromsymbol
+           tovalue
+           fromvalue
+           :deep nil
+           :guards t
+           :java-class "BooleansShallowGuarded"
+           :tests *boolean-tests*)

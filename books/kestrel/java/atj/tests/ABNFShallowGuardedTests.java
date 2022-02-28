@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+ * Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
  * License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
  * Author: Alessandro Coglio (coglio@kestrel.edu)
  */
@@ -32,7 +32,7 @@ public class ABNFShallowGuardedTests {
 
     private static boolean failures = false;
 
-    private static void test_Parse(String testName, Acl2Value input, int n)
+    private static void test_Parse(String testName, Acl2Value input, int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         System.out.print("Testing '" + testName + "'...");
@@ -43,8 +43,11 @@ public class ABNFShallowGuardedTests {
         long sumTime = 0;
         int i = 0;
         do {
+            Acl2Value resultJava = null;
             long startTime = System.currentTimeMillis();
-            Acl2Value resultJava = ABNFShallowGuarded.ACL2.parse_grammar(input);
+            for (int j = 0; j < m; ++j) {
+                resultJava = ABNFShallowGuarded.ABNF.parse_grammar(input);
+            }
             long endTime = System.currentTimeMillis();
             // we just check that the result is not nil:
             pass = pass && !Acl2Symbol.NIL.equals(resultJava);
@@ -79,80 +82,125 @@ public class ABNFShallowGuardedTests {
         }
     }
 
-    private static void test_ParseABNF(int n)
+    private static void test_ParseABNFCore(int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
-        String testName = "ParseABNF";
-        Acl2Value input = getInputFromFile("abnf-files/abnf.txt");
-        test_Parse(testName, input, n);
+        String testName = "ParseABNFCore";
+        Acl2Value input = getInputFromFile("../../../abnf/core-rules.txt");
+        test_Parse(testName, input, n, m);
     }
 
-    private static void test_ParseJSON(int n)
+    private static void test_ParseABNFSyntax(int n, int m)
+        throws Acl2UndefinedPackageException,
+               java.io.FileNotFoundException, java.io.IOException {
+        String testName = "ParseABNFSyntax";
+        Acl2Value input =
+            getInputFromFile("../../../abnf/concrete-syntax-rules.txt");
+        test_Parse(testName, input, n, m);
+    }
+
+    private static void test_ParseJSON(int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseJSON";
-        Acl2Value input = getInputFromFile("abnf-files/json.txt");
-        test_Parse(testName, input, n);
+        Acl2Value input = getInputFromFile("../../../abnf/json-grammar.txt");
+        test_Parse(testName, input, n, m);
     }
 
-    private static void test_ParseURI(int n)
+    private static void test_ParseURI(int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseURI";
-        Acl2Value input = getInputFromFile("abnf-files/uri.txt");
-        test_Parse(testName, input, n);
+        Acl2Value input = getInputFromFile("../../../abnf/uri-grammar.txt");
+        test_Parse(testName, input, n, m);
     }
 
-    private static void test_ParseHTTP(int n)
+    private static void test_ParseHTTP(int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseHTTP";
-        Acl2Value input = getInputFromFile("abnf-files/http.txt");
-        test_Parse(testName, input, n);
+        Acl2Value input = getInputFromFile("../../../abnf/http-grammar.txt");
+        test_Parse(testName, input, n, m);
     }
 
-    private static void test_ParseIMF(int n)
+    private static void test_ParseIMF(int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseIMF";
-        Acl2Value input = getInputFromFile("abnf-files/imf.txt");
-        test_Parse(testName, input, n);
+        Acl2Value input = getInputFromFile("../../../abnf/imf-grammar.txt");
+        test_Parse(testName, input, n, m);
     }
 
-    private static void test_ParseSMTP(int n)
+    private static void test_ParseSMTP(int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseSMTP";
-        Acl2Value input = getInputFromFile("abnf-files/smtp.txt");
-        test_Parse(testName, input, n);
+        Acl2Value input = getInputFromFile("../../../abnf/smtp-grammar.txt");
+        test_Parse(testName, input, n, m);
     }
 
-    private static void test_ParseIMAP(int n)
+    private static void test_ParseIMAP(int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseIMAP";
-        Acl2Value input = getInputFromFile("abnf-files/imap.txt");
-        test_Parse(testName, input, n);
+        Acl2Value input = getInputFromFile("../../../abnf/imap-grammar.txt");
+        test_Parse(testName, input, n, m);
+    }
+
+    private static void test_ParseJavaLexical(int n, int m)
+        throws Acl2UndefinedPackageException,
+               java.io.FileNotFoundException, java.io.IOException {
+        String testName = "ParseJavaLexical";
+        Acl2Value input =
+            getInputFromFile("../../../java/language/lexical-grammar.txt");
+        test_Parse(testName, input, n, m);
+    }
+
+    private static void test_ParseJavaSyntactic(int n, int m)
+        throws Acl2UndefinedPackageException,
+               java.io.FileNotFoundException, java.io.IOException {
+        String testName = "ParseJavaSyntactic";
+        Acl2Value input =
+            getInputFromFile("../../../java/language/syntactic-grammar.txt");
+        test_Parse(testName, input, n, m);
+    }
+
+    private static void test_ParseYul(int n, int m)
+        throws Acl2UndefinedPackageException,
+               java.io.FileNotFoundException, java.io.IOException {
+        String testName = "ParseYul";
+        Acl2Value input =
+            getInputFromFile("../../../yul/language/abnf-grammar-new.txt");
+        test_Parse(testName, input, n, m);
     }
 
     public static void main(String[] args)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         int n = 0;
-        if (args.length == 1) {
+        if (args.length >= 1) {
             n = Integer.parseInt(args[0]);
         }
-        if (args.length > 1) {
-            throw new IllegalArgumentException("There must be 0 or 1 arguments.");
+        int m = 1;
+        if (args.length >= 2) {
+            m = Integer.parseInt(args[1]);
+        }
+        if (args.length >= 3) {
+            throw new IllegalArgumentException
+                ("There must be 0 or 1 or 2 arguments.");
         }
         ABNFShallowGuarded.initialize();
-        test_ParseABNF(n);
-        test_ParseJSON(n);
-        test_ParseURI(n);
-        test_ParseHTTP(n);
-        test_ParseIMF(n);
-        test_ParseSMTP(n);
-        test_ParseIMAP(n);
+        test_ParseABNFCore(n, m);
+        test_ParseABNFSyntax(n, m);
+        test_ParseJSON(n, m);
+        test_ParseURI(n, m);
+        test_ParseHTTP(n, m);
+        test_ParseIMF(n, m);
+        test_ParseSMTP(n, m);
+        test_ParseIMAP(n, m);
+        test_ParseJavaLexical(n, m);
+        test_ParseJavaSyntactic(n, m);
+        test_ParseYul(n, m);
         if (failures) {
             System.out.println("Some tests failed.");
             System.exit(1);
