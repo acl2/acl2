@@ -658,7 +658,7 @@
                              (fsm base-fsm-p))
   :returns (result svex-env-p)
   (b* (((base-fsm fsm))
-       ((with-fast fsm.values initst))
+       ((with-fast fsm.values fsm.nextstate initst))
        (renamed-values (svtv-name-lhs-map-compose namemap fsm.values))
        ((with-fast renamed-values))
        (evaldata (make-svtv-evaldata :nextstate fsm.nextstate
@@ -693,7 +693,7 @@
                            (svtv-data->namemap svtv-data)
                            (svtv-data->cycle-fsm svtv-data))
     (b* ((phases (svtv-data->cycle-phases svtv-data)))
-      (svtv-fsm-run-probes (svtv-cycle-run-fsm-inputs ins phases)
+      (svtv-fsm-run-probes (make-fast-alist (svtv-cycle-run-fsm-inputs ins phases))
                            initst
                            (svtv-probealist-cycle-adjust probes phases)
                            (svtv-data->namemap svtv-data)
@@ -724,7 +724,8 @@
        (cycle-ins (svtv-fsm-run-input-envs
                    (take len rename-ins)
                    rename-overrides fsm)))
-    (svtv-data-run-cycle-fsm cycle-ins initst setup.probes)))
+    (with-fast-alist initst
+      (svtv-data-run-cycle-fsm cycle-ins initst setup.probes))))
 
 
 
