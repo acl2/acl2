@@ -1213,24 +1213,45 @@
    (use-arithmetic-5 t))
 
   (def-rp-rule$ t nil unsigned-byte-p-redefined-with-loghead
-    (implies (natp size)
-             (equal (unsigned-byte-p size x)
-                    (and (integerp x)
-                         (equal x (loghead size x)))
-                    #|(and (hide (unsigned-byte-p size x))
-                    (integerp x)
-                    (equal (ash x (- size)) 0))|#))
-    :hints (("Goal"
-             :expand ((hide (unsigned-byte-p size x)))
-             :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
-                              (:REWRITE ACL2::FLOOR-ZERO . 1)
-                              (:REWRITE MINUS-OF-MINUS)
-                              (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
-                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
-                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
-                              (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
-                              (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
-                             ()))))
+                (implies (natp size)
+                         (equal (unsigned-byte-p size x)
+                                (and (integerp x)
+                                     (equal x (loghead size x)))
+                                #|(and (hide (unsigned-byte-p size x))
+                                (integerp x) ; ; ; ;
+                                (equal (ash x (- size)) 0))|#))
+                :hints (("Goal"
+                         :expand ((hide (unsigned-byte-p size x)))
+                         :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
+                                          (:REWRITE ACL2::FLOOR-ZERO . 1)
+                                          (:REWRITE MINUS-OF-MINUS)
+                                          (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
+                                          (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
+                                          (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
+                                          (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
+                                          (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+                                         ()))))
+
+  (defthmd unsigned-byte-p-redefined-with-loghead-for-atom
+           (implies (and (natp size)
+                         (syntaxp (atom x)))
+                    (equal (unsigned-byte-p size x)
+                           (and (integerp x)
+                                (equal x (loghead size x)))
+                           #|(and (hide (unsigned-byte-p size x))
+                           (integerp x) ; ; ;
+                           (equal (ash x (- size)) 0))|#))
+           :hints (("Goal"
+                    :expand ((hide (unsigned-byte-p size x)))
+                    :in-theory (e/d ((:REWRITE ACL2::ASH-TO-FLOOR)
+                                     (:REWRITE ACL2::FLOOR-ZERO . 1)
+                                     (:REWRITE MINUS-OF-MINUS)
+                                     (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
+                                     (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
+                                     (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
+                                     (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
+                                     (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+                                    ()))))
 
   (def-rp-rule ash-implies-unsigned-byte-p
     (implies (and (integerp x)

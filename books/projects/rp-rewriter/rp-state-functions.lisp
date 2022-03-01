@@ -57,6 +57,7 @@
   (defwarrant rule-result-comperator))
 
 (defmacro set-rw-step-limit (new-rw-limit)
+  
   `(make-event
     (b* ((rp-state (rp::update-rw-step-limit ,new-rw-limit rp-state)))
       (mv nil `(value-triple `(rw-step-limit ,',,new-rw-limit)) state rp-state))))
@@ -72,6 +73,39 @@
 which submits an event.
 </p>")
 
+
+(defmacro set-rp-backchain-limit (new-rw-limit)
+  
+  `(make-event
+    (b* ((rp-state (rp::update-rw-backchain-limit ,new-rw-limit rp-state)))
+      (mv nil `(value-triple `(rw-backchain-limit ,',,new-rw-limit)) state
+          rp-state))))
+
+(defmacro set-rp-backchain-limit-throws-error (t/nil)
+  (declare (xargs :guard (booleanp t/nil)))
+  `(make-event
+    (b* ((rp-state (rp::update-rw-backchain-limit-throws-error ,t/nil rp-state)))
+      (mv nil `(value-triple `(rw-backchain-limit-throws-error ,',,t/nil)) state rp-state))))
+
+(xdoc::defxdoc
+ set-rp-backchain-limit
+ :parents (rp-utilities)
+ :short "Number of steps RP-Rewriter can take when rewriting the hypothesis of
+ a lemma"
+ :long "<p>  We have a different  step limit than (@see  set-rw-step-limit) when
+ rewriting  hypotheses   of  lemmas  that   may  be  applied  to   the  current
+ conjecture. This step limit can be changed with <code> @('(set-backchain-limit
+ <number>)')</code>.  It is  recomendeded to  select a  value far  smaller than
+ rw-step-limit   (see  (@see   set-rw-step-limit))  or   chose  a   very  large
+ rw-step-limit,  otherwise rw-step-limit  might override  it during  rewriting.
+ </p>")
+
+(xdoc::defxdoc
+ set-rp-backchain-limit-throws-error
+ :parents (rp-utilities set-rp-backchain-limit)
+ :short "Whether or not to throw an error when backchain-limit is reached"
+ :long "<p> (@ see set-backchain-limit)
+ </p>")
 
 (xdoc::defxdoc
  show-rules
@@ -253,7 +287,7 @@ which submits an event.
            (old-rw-stack (rw-stack rp-state))
            (new-rw-stack (acons index
                                 (list*
-                                 (cons ':type failed)
+                                 (list ':type failed)
                                  (list ':rune rune)
                                  (if new-term (list (list ':new-term new-term)
                                                     (list ':old-term old-term))
@@ -331,7 +365,7 @@ which submits an event.
         state
       (b* ((entry (car rw-stack))
            ((when (and only
-                       (not (or (member-equal (cdr (assoc-equal ':type (cdr entry)))
+                       (not (or (member-equal (cadr (assoc-equal ':type (cdr entry)))
                                               only)
                                 (member-equal (cadr (assoc-equal ':rune (cdr entry)))
                                               only)
@@ -484,7 +518,8 @@ untranslate). Default value = nil.
                           'rule-result-comperator))
 
 (define increment-rw-stack-size (rp-state)
-  (declare (xargs :stobjs (rp-state)))
+  :stobjs (rp-state)
+  :returns (res-rp-state)
   (if (rp-brr rp-state)
       (update-rw-stack-size (1+ (rw-stack-size rp-state)) rp-state)
     rp-state))

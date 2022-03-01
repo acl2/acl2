@@ -68,7 +68,11 @@
   (verify-guards rp-equal)
   (verify-guards rp-equal-loose))
 
-(verify-guards rp-check-context)
+(verify-guards rp-check-context
+  :hints (("Goal"
+           :in-theory (e/d () ()))))
+
+
 
 (verify-guards rp-rw-relieve-synp-wrap)
 
@@ -606,9 +610,27 @@
 (verify-guards match-lhs-for-dont-rw)
 (verify-guards calculate-dont-rw$inline)
 
+(local
+ (defret unsigned-byte-p-of-GET-LIMIT-FOR-HYP-RW
+   (implies (and (unsigned-byte-p 58 limit)
+                 (not (zp limit))
+                 ;;(rp-statep rp-state)
+                 )
+            (unsigned-byte-p 58 res-limit))
+   :fn GET-LIMIT-FOR-HYP-RW
+   :hints (("Goal"
+            :in-theory (e/d (GET-LIMIT-FOR-HYP-RW
+                             RP-STATEP) ())))))
 
 
+(verify-guards create-if-instance$inline)
 
+(local
+ (defthm booleanp-of-RW-LIMIT-THROWS-ERROR
+   (implies (rp-statep rp-state)
+            (BOOLEANP (RW-LIMIT-THROWS-ERROR RP-STATE)))
+   :hints (("Goal"
+            :in-theory (e/d (rp-statep) ())))))
 
 (verify-guards rp-rw
   :otf-flg nil
@@ -620,8 +642,11 @@
                         dont-rw-syntaxp
                         TRUE-LISTP
                         QUOTEP
+                        is-rp-implies-fc
                         )
                        (
+                        UPDATE-RW-LIMIT-THROWS-ERROR
+                        RW-LIMIT-THROWS-ERROR
                         rp-termp
                         rp-term-listp
                         (:DEFINITION VALID-RULESP)
@@ -693,6 +718,42 @@
            :in-theory (e/d (rp-statep
                             rw-step-limitp)
                            ()))))
+
+
+
+(local
+ (defthm rp-evlt-of-CASESPLIT-FROM-CONTEXT-TRIG
+   (and (equal (rp-evlt `(CASESPLIT-FROM-CONTEXT-TRIG ,x) a)
+               (rp-evlt x a))
+        (equal (rp-evl `(CASESPLIT-FROM-CONTEXT-TRIG ,x) a)
+               (rp-evl x a)))
+   :hints (("Goal"
+            :in-theory (e/d (CASESPLIT-FROM-CONTEXT-TRIG) ())))))
+
+
+
+
+
+(local
+ (defthm rp-termp-with-casesplit-from-context-trig
+   (iff (RP-TERMP (LIST 'CASESPLIT-FROM-CONTEXT-TRIG x))
+        (rp-termp x))
+   :hints (("Goal"
+            :in-theory (e/d (rp-termp
+                             RP-TERM-LISTP)
+                            ())))))
+
+(local
+ (defthm valid-sc-with-casesplit-from-context-trig
+   (equal (valid-sc (LIST 'CASESPLIT-FROM-CONTEXT-TRIG x) a)
+          (valid-sc x a))
+   :hints (("Goal"
+            :in-theory (e/d (valid-sc
+                             is-rp
+                             is-if)
+                            ())))))
+   
+
 
 (verify-guards preprocess-then-rp-rw
   :otf-flg t

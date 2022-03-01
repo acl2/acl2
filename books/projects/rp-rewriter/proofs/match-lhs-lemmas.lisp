@@ -511,13 +511,17 @@
    (defthm lemma6
      (implies (and (valid-sc term a)
                    (consp term)
-                   (is-if term))
+                   (is-if term)
+                   #|(case-split (not (AND (NOT (RP-EVLT (CADDR TERM) A))
+                                         (NOT (RP-EVLT (CADDDR TERM) A)))))|#)
               (valid-sc (cadr term) a))
      :hints (("Goal"
               :expand ((valid-sc term a))
               :in-theory (e/d (is-if
                                is-rp)
                               ())))))
+
+  
 
   (local
    (defthm lemma7
@@ -901,6 +905,23 @@
                                              rp-does-lhs-match
                                              rp-iff-flag)))))
 
+
+(defthm
+ valid-sc-of-cadr-when-is-if
+ (implies (and (valid-sc term a)
+               (consp term)
+               (consp (cdr term))
+               (not (EQUAL (CAR TERM) 'QUOTE))
+               #|(case-split (not (AND (NOT (RP-EVLT (CADDR TERM) A))
+               (NOT (RP-EVLT (CADDDR TERM) A)))))|#)
+          (valid-sc (cadr term) a))
+ :hints (("Goal"
+          :expand ((valid-sc term a))
+          :in-theory (e/d (is-if
+                           is-rp)
+                          ()))))
+
+
 (encapsulate
   nil
 
@@ -982,6 +1003,8 @@
                               (valid-sc-ex-from-rp-all2
 
                                EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP))))))
+
+  
 
   (defthm-rp-match-lhs
     (defthm valid-sc-rp-context-from-rp-match-lhs

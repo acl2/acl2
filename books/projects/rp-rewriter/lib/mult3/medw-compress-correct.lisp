@@ -608,7 +608,7 @@
                                floor2-if-f2
                                +-IS-SUM)))))
 
-   (defthm d2-of-repeated
+   (defthm d2-of-repeated-1
      (and (equal (d2 (sum a a b))
                  (sum a (d2 b)))
           (equal (d2 (sum a a))

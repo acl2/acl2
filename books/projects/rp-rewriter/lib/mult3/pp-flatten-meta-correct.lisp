@@ -3041,6 +3041,15 @@
                               (bitp
                                valid-sc))))))
 
+  (defthm rp-evlt-of-bitp
+    (implies (and (mult-formula-checks state)
+                  (rp-evl-meta-extract-global-facts))
+             (equal (RP-EVLT (LIST 'BITP x) A)
+                    (bitp (rp-evlt x a))))
+    :hints (("Goal"
+             :in-theory (e/d* (regular-eval-lemmas)
+                              ()))))
+
   (local
    (defret sort-sum-meta-aux-aux-returns-bit-list-listp
      (implies (and valid

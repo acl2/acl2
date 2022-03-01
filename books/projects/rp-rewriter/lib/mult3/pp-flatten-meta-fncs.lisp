@@ -57,23 +57,34 @@
  (in-theory (enable pp)))
 
 (define and-list-hash-aux (lst)
-  :returns (mv (hash integerp)
-               (rest-size natp))
+  :returns (mv (hash )
+               (rest-size ))
+  :verify-guards nil
+  :prepwork
+  ((local
+    (use-arith-5 t)))
   (if (atom lst)
       (mv 0 0)
     (b* (((mv rest rest-size) (and-list-hash-aux (cdr lst)))
          (cur (ex-from-rp (car lst))))
       (case-match cur
         (('bit-of & ('quote x))
-         (mv (logapp rest-size rest (+ 5 (ifix x)))
-             (+ 14 rest-size)))
+         (mv (+ rest (* (+ 5 rest-size) (+ 1 (ifix x))))
+             (+ 55 rest-size)))
         (('s ('quote x) & &)
          (mv (+ rest (ifix x))
-             (+ 14 rest-size)))
+             (+ 6 rest-size)))
         (('c ('quote x) & & &)
          (mv (+ rest (ifix x))
-             (+ 14 rest-size)))
-        (& (mv rest rest-size))))))
+             (+ 8 rest-size)))
+        (& (mv rest rest-size)))))
+  ///
+  (defret result-type-of-of-<fn>
+    (and (natp rest-size)
+         (acl2-numberp rest-size)
+         (integerp hash)
+         (acl2-numberp hash)))
+  (verify-guards and-list-hash-aux))
 
       ;; (if (equal rest 0)
       ;;     cur
@@ -83,7 +94,7 @@
   :returns (hash integerp)
   (b* (((mv hash &)
         (and-list-hash-aux lst)))
-    hash
+    (logapp 4 (len lst) hash)
     ))
   #|(if (atom lst)
       0

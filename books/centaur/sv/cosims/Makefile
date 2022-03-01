@@ -72,7 +72,6 @@ all: cosim-core symlinks
 # ------------------------------------------
 #  Test setup.
 FAILING_TEST_TARGETS := \
-  for-nba/ok \
   task/ok \
   task2/ok \
   case_wilds/ok \
@@ -94,14 +93,17 @@ FAILING_TEST_TARGETS := \
   float1/ok \
   paramtypes3/ok \
   paramtypes4/ok \
-  param3/ok \
   iface_basic7/ok \
   pluscolon/ok \
   bin_inside1/ok \
   bin_inside2/ok \
   bin_inside3/ok \
   stream3/ok \
-  stream4/ok
+  stream4/ok \
+  nonblkloop2/ok \
+  dynwrite/ok \
+  undriven/ok \
+  alwaysmulti/ok
 
 # VL/SV is in several ways more conservative than VCS when instance
 # port expressions don't match the port sizes.  

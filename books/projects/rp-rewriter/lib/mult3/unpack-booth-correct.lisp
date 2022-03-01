@@ -134,6 +134,12 @@
                             (b term2)))
            :in-theory (e/d (times2) ()))))
 
+(local
+ (defthm ex-from-rp-of-binary-fnc
+   (implies (binary-fnc-p x)
+            (equal (rp-evlt (ex-from-rp x) a)
+                   (rp-evlt x a)))))
+
 
 (local
  (defthm dummy-lemma-1
@@ -150,7 +156,8 @@
  (defthmd
    rp-evlt-of-ex-from-rp-reverse-2
    (implies (syntaxp (or (atom term)
-                         (not (include-fnc term 'ex-from-rp))))
+                         (and (not (include-fnc term 'ex-from-rp))
+                              (not (binary-fnc-p term)))))
             (equal (rp-evl (rp-trans term) a)
                    (rp-evl (rp-trans (ex-from-rp term))
                            a)))))
@@ -170,6 +177,8 @@
            :use ((:instance c-fix-arg-aux-correct))
            :in-theory (e/d () (c-fix-arg-aux-correct)))))
 
+
+
 (defret create-c-instance-is-correct-one-side
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -184,20 +193,185 @@
                                      (sum-list-eval c-lst a)))))))
   :fn create-c-instance)
 
+(local
+ (defthm f2-of-repeated
+   (equal (f2 (sum a a b))
+          (sum a (f2 b)))
+   :hints (("Goal"
+            :use ((:instance
+                   f2-of-times2-reverse (term a)
+                   (term2 b)))
+            :in-theory (e/d (times2)
+                            (F2-OF-TIMES2
+                             f2-of-times2-reverse))))))
+
+
+
+(local
+ (defthm --of-ifix
+     (equal (-- (ifix x))
+            (-- x))
+   :hints (("Goal"
+            :in-theory (e/d (--) ())))))
+
+
+(progn
+  (define sum-chain-smart-fn-aux (cl x)
+    (if (atom cl)
+        (mv nil nil)
+      (b* ((cur (car cl)))
+        (case-match cur
+          (('not ('equal a ('binary-sum y z)))
+           (if (equal a x)
+               (mv y z)
+             (sum-chain-smart-fn-aux (cdr cl) x)))
+          (&
+           (sum-chain-smart-fn-aux (cdr cl) x))))))
+
+  (define sum-chain-smart-fn (x mfc state)
+    :verify-guards nil
+    (declare (ignorable state))
+    (b* ( ;(ancestors  (mfc-ancestors mfc))
+         (rcnst (access acl2::metafunction-context mfc :rcnst))
+         (cl (access acl2::rewrite-constant rcnst :current-clause))
+         (?top-cl (access acl2::rewrite-constant rcnst :top-clause))
+         (cl (beta-search-reduce-subterms cl (expt 2 30)))
+         ((mv y z)
+          (sum-chain-smart-fn-aux cl x))
+         ;;(- (cw "x: ~p0 ~%" x))
+         ;;(- (cw "cl : ~p0 ~%" cl))
+         ;;(- (hard-error 'nil "" 'nil))
+         )
+      (if (and y z)
+          (progn$
+           #|(cw "Success ~%")|#
+           `((y . ,y)
+             (z . ,z)))
+        nil)))
+
+
+  (defthmd expand-sum-from-the-hyps
+    (implies (and (bind-free (sum-chain-smart-fn x mfc state)
+                             (y z))
+                  (equal x (sum y z)))
+             (and (equal (sum x other)
+                         (sum y other z))
+                  (equal (sum other x)
+                         (sum y other z))))))
+
+
+
+
+
+(defthm valid-sc-of-binary-fnc-p
+  (and (equal (valid-sc (cons 'binary-? x) a)
+              (valid-sc-subterms x a))
+       (equal (valid-sc (cons 'binary-xor x) a)
+              (valid-sc-subterms x a))
+       (equal (valid-sc (cons 'binary-and x) a)
+              (valid-sc-subterms x a))
+       (equal (valid-sc (cons 'binary-or x) a)
+              (valid-sc-subterms x a))
+       (equal (valid-sc (cons 'binary-not x) a)
+              (valid-sc-subterms x a)))
+  :hints (("Goal"
+           :in-theory (e/d (is-rp is-if) ()))))
+
+(local
+ (defthm rp-evlt-of-ex-from-rp-of-create-s-c-res-instance
+   (equal (rp-evlt (ex-from-rp (create-s-c-res-instance x1 x2 x3 x4)) a)
+          (rp-evlt (create-s-c-res-instance x1 x2 x3 x4) a))))
+
+(local
+ (defthmd has-bitp-rp-force-insert
+   (implies (and (rp-evl-meta-extract-global-facts :state state)
+                 (mult-formula-checks state)
+                 (valid-sc term a))
+            (equal (has-bitp-rp term)
+                   (and (hide (has-bitp-rp term))
+                        (bitp (rp-evlt term a)))))
+   :hints (("Goal"
+            :expand (HIDE (HAS-BITP-RP TERM))
+            :in-theory (e/d () ())))))
+
+(defthm s-fix-pp-args-aux-correct-with-m2-chain
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+;(rp-term-listp pp-lst)
+                  )
+             (and (equal (m2-chain (sum-list-eval (s-fix-pp-args-aux pp-lst) a)
+                                   other)
+                         (m2 (sum (sum-list-eval pp-lst a) other)))
+                  (equal (m2-chain other (sum-list-eval (s-fix-pp-args-aux pp-lst) a))
+                         (m2 (sum (sum-list-eval pp-lst a) other)))))
+    :hints (("Goal"
+             :do-not-induct t
+             :use ((:instance s-fix-pp-args-aux-correct))
+             :in-theory (e/d* (m2-chain)
+                              ()))))
+
+
+(local
+ (defthm dummy-sum-cancel-lemma
+   (and (equal (sum (-- x) y x)
+               (sum y))
+        (equal (sum x y (-- x))
+               (sum y)))))
+
+
 
 
 (defret-mutual
   unpack-booth-for-s-correct
+
+  (defret unpack-booth-buried-in-pp-correct
+    (implies (and
+              (rp-evl-meta-extract-global-facts :state state)
+              (mult-formula-checks state)
+              (valid-sc term a)
+              (rp-termp term))
+             (and (equal (rp-evlt res-term a)
+                         (rp-evlt term a))
+                  (valid-sc res-term a)))
+    :fn unpack-booth-buried-in-pp)
+
+  (defret unpack-booth-process-pp-arg-correct
+    (implies (and
+              (rp-evl-meta-extract-global-facts :state state)
+              (mult-formula-checks state)
+              (valid-sc  pp-arg a)
+              (rp-termp pp-arg))
+             (and (equal (sum-list-eval s-res-lst a)
+                         (sum 
+                              (-- (sum-list-eval pp-res-lst a))
+                              (-- (sum-list-eval c-res-lst a))
+                              (sum-list-eval (list-to-lst pp-arg) a)))
+                  (valid-sc-subterms c-res-lst a)
+                  (valid-sc-subterms pp-res-lst a)
+                  (valid-sc-subterms s-res-lst a)))
+    :fn unpack-booth-process-pp-arg)
+
+  (defret unpack-booth-buried-in-pp-lst-correct
+    (implies (and
+              (rp-evl-meta-extract-global-facts :state state)
+              (mult-formula-checks state)
+              (valid-sc-subterms  lst a)
+              (rp-term-listp lst))
+             (and (equal (sum-list-eval res-lst a)
+                         (sum-list-eval lst a))
+                  (valid-sc-subterms res-lst a)))
+    :fn unpack-booth-buried-in-pp-lst)
+  
   (defret unpack-booth-for-s-correct
     (implies (and
               (rp-evl-meta-extract-global-facts :state state)
               (mult-formula-checks state)
               (valid-sc  s-term a)
               (rp-termp s-term))
-             (and (equal (sum (sum-list-eval s-res-lst a)
-                              (sum-list-eval pp-res-lst a)
-                              (sum-list-eval c-res-lst a))
-                         (ifix (rp-evlt s-term a)))
+             (and (equal (sum-list-eval s-res-lst a)
+                         (sum (rp-evlt s-term a)
+                              (-- (sum-list-eval pp-res-lst a))
+                              (-- (sum-list-eval c-res-lst a))))
                   (valid-sc-subterms c-res-lst a)
                   (valid-sc-subterms pp-res-lst a)
                   (valid-sc-subterms s-res-lst a)))
@@ -209,10 +383,10 @@
               (mult-formula-checks state)
               (valid-sc-subterms  s-lst a)
               (rp-term-listp s-lst))
-             (and (equal (sum (sum-list-eval s-res-lst a)
-                              (sum-list-eval pp-res-lst a)
-                              (sum-list-eval c-res-lst a))
-                         (sum-list-eval s-lst a))
+             (and (equal (sum-list-eval s-res-lst a)
+                         (sum (-- (sum-list-eval pp-res-lst a))
+                              (-- (sum-list-eval c-res-lst a))
+                              (sum-list-eval s-lst a)))
                   (valid-sc-subterms c-res-lst a)
                   (valid-sc-subterms pp-res-lst a)
                   (valid-sc-subterms s-res-lst a)))
@@ -224,10 +398,10 @@
               (mult-formula-checks state)
               (valid-sc  c-term a)
               (rp-termp c-term))
-             (and (equal (sum (sum-list-eval s-res-lst a)
-                              (sum-list-eval pp-res-lst a)
-                              (sum-list-eval c-res-lst a))
-                         (ifix (rp-evlt c-term a)))
+             (and (equal (sum-list-eval s-res-lst a)
+                         (sum (-- (sum-list-eval pp-res-lst a))
+                              (-- (sum-list-eval c-res-lst a))
+                              (rp-evlt c-term a)))
                   (valid-sc-subterms c-res-lst a)
                   (valid-sc-subterms pp-res-lst a)
                   (valid-sc-subterms s-res-lst a)))
@@ -239,10 +413,11 @@
               (mult-formula-checks state)
               (valid-sc-subterms  c-lst a)
               (rp-term-listp c-lst))
-             (and (equal (sum (sum-list-eval s-res-lst a)
-                              (sum-list-eval pp-res-lst a)
-                              (sum-list-eval c-res-lst a))
-                         (sum-list-eval c-lst a))
+             (and (equal (sum-list-eval s-res-lst a)
+                         (sum 
+                          (-- (sum-list-eval pp-res-lst a))
+                          (-- (sum-list-eval c-res-lst a))
+                          (sum-list-eval c-lst a)))
                   (valid-sc-subterms c-res-lst a)
                   (valid-sc-subterms pp-res-lst a)
                   (valid-sc-subterms s-res-lst a)))
@@ -250,13 +425,31 @@
 
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d* (unpack-booth-for-c-lst
+           :in-theory (e/d* (m2-to-m2-chain
+                             expand-sum-from-the-hyps
+                             binary-fnc-p
+                             has-bitp-rp-force-insert
+                             create-s-instance-correct-singled-out
+                             unpack-booth-for-c-lst
                              unpack-booth-for-s-lst
                              unpack-booth-for-c
                              unpack-booth-for-s
+                             UNPACK-BOOTH-BURIED-IN-PP-LST
+                             unpack-booth-process-pp-arg
+                             unpack-booth-buried-in-pp
                              rp-evlt-of-ex-from-rp-reverse-2
                              ex-from-rp-when---
-                             f2-reverse-cough
+                             REGULAR-RP-EVL-OF_binary-?_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP
+                             REGULAR-RP-EVL-OF_binary-xor_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP
+                             REGULAR-RP-EVL-OF_binary-and_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP
+                             REGULAR-RP-EVL-OF_binary-or_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP
+                             REGULAR-RP-EVL-OF_binary-not_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP
+                               REGULAR-RP-EVL-OF_binary-?_WHEN_MULT-FORMULA-CHECKS
+                             REGULAR-RP-EVL-OF_binary-xor_WHEN_MULT-FORMULA-CHECKS
+                             REGULAR-RP-EVL-OF_binary-and_WHEN_MULT-FORMULA-CHECKS
+                              REGULAR-RP-EVL-OF_binary-or_WHEN_MULT-FORMULA-CHECKS
+                             REGULAR-RP-EVL-OF_binary-not_WHEN_MULT-FORMULA-CHECKS
+                             ;;f2-reverse-cough
                              (:REWRITE
                               REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              (:REWRITE
@@ -268,7 +461,7 @@
                              (:REWRITE DEFAULT-CAR)
                              valid-sc-subterms
                              rp-term-listp
-
+                             bitp
                              (:REWRITE SUM-OF-NEGATED-ELEMENTS)
                              ;;(:REWRITE MINUS-OF-SUM)
                              F2-OF-MINUS-2
@@ -282,7 +475,7 @@
                              rp-trans)))))
 
 
-(defret unpack-booth-for-c-lst-correct-with-other
+#|(defret unpack-booth-for-c-lst-correct-with-other
     (implies (and
               (rp-evl-meta-extract-global-facts :state state)
               (mult-formula-checks state)
@@ -311,14 +504,9 @@
                          (sum (sum-list-eval s-lst a)
                               other)
                   )))
-    :fn unpack-booth-for-s-lst)
+    :fn unpack-booth-for-s-lst)|#
 
-(local
- (defthm --of-ifix
-     (equal (-- (ifix x))
-            (-- x))
-   :hints (("Goal"
-            :in-theory (e/d (--) ())))))
+
 
 (defret unpack-booth-meta-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -332,11 +520,45 @@
   ;;:otf-flg t
   :hints (("Goal"
            :do-not-induct t
+           :use ((:instance pp-has-bitp-rp-implies
+                            (term (CADR TERM)))
+                 (:instance pp-has-bitp-rp-implies
+                            (term (cadr (CADR TERM)))))
+           :expand ((SUM-LIST-EVAL (LIST (CADR TERM)) A)
+                    
+                    (SUM-LIST-EVAL (LIST (CADR (CADR TERM)))
+                                   A))
            :in-theory (e/d* (unpack-booth-meta
+                             ;;has-bitp-rp-force-insert
                              UNPACK-BOOTH
                              S-C-RES
-                             regular-eval-lemmas-with-ex-from-rp
-                             regular-eval-lemmas)
+                             regular-rp-evl-of_unpack-booth_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_unpack-booth_when_mult-formula-checks
+                             regular-rp-evl-of_s-c-res_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_s-c-res_when_mult-formula-checks
+                             (:REWRITE REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS)
+                             )
                             (rp-termp
+                             pp-has-bitp-rp-implies
+                             bitp
+                             RP-TRANS-OPENER-WHEN-LIST
+                             RP-TRANS-OPENER
+                             EVAL-AND-ALL
+                             valid-sc
+                             ex-from-rp
+                             not-include-rp-means-valid-sc-lst
+                             not-include-rp-means-valid-sc
+                             NOT-INCLUDE-RP
+                             INCLUDE-FNC
+                             WHEN-EX-FROM-RP-IS-1
+                             SUM-OF-NEGATED-ELEMENTS
+                             EXPAND-SUM-FROM-THE-HYPS
+                             (:REWRITE SUM-CANCEL-COMMON)
+                             (:REWRITE MINUS-OF-MINUS)
+                             (:DEFINITION SUM-LIST-EVAL)
+                             nfix
+                             is-falist
+                             rp-trans
+                             rp-trans-lst
                              valid-sc)))))
   
