@@ -1,12 +1,15 @@
-;;  
+;;
 ;; Copyright (C) 2021, Collins Aerospace
 ;; All rights reserved.
-;; 
+;;
 ;; This software may be modified and distributed under the terms
 ;; of the 3-clause BSD license.  See the LICENSE file for details.
 ;;
 (in-package "ACL2")
 (include-book "datatypes")
+
+; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
+(set-waterfall-parallelism nil)
 
 ;; Event classification:
 ;;
@@ -69,7 +72,7 @@
 ;;
 ;; event-for-uav establishes when the appropriate next action
 ;; for a UAV is to change direction.
-;; 
+;;
 ;; =============================================================
 
 (def::un event-for-uav (i ens)
@@ -208,7 +211,7 @@
     :congruences ((ens uav-list-equiv)))
 
   )
-  
+
 (defthmd not-exists-uav-with-event-implies
   (implies
    (not (exists-uav-with-event ens))
@@ -318,7 +321,7 @@
   ;; some of the messy lemmas we ended up using to try to avoid
   ;; opening things up.  Not pretty. Sigh.
   ;;
-  
+
   (local (include-arithmetic))
 
   (def::un average (left right)
@@ -328,7 +331,7 @@
   (defthm average-x-x
     (equal (average x x)
            (rfix x)))
-  
+
   (defthm positive-average
     (implies
      (and
@@ -421,7 +424,7 @@
                     (* 2 dt))
                  (uav->location uavj))
           (equal dt (average (uav->location uavi) (uav->location uavj))))))
-  
+
   (defthmd rewrite-equality-into-average
     (implies
      (and
@@ -449,7 +452,7 @@
            (equal x y))
       (iff (equal (+ (- y) (average x y)) 0)
            (equal x y)))))
-  
+
   (defthmd rewrite-<-into-average
     (implies
      (rationalp dt)
@@ -483,8 +486,8 @@
                                         (* 1/2 y))
                                      (- (average x y) x))))))
 
-  
-  
+
+
   (defthmd reconstruct-average
     (implies
      (and (rationalp x) (rationalp y))
@@ -504,7 +507,7 @@
           (< B (- (AVERAGE LJ LI))))))
 
   (defthmd rewrite-<-into-average-alt-1
-    (implies 
+    (implies
      (rationalp dt)
      (iff (< (+ (* -2 dt)
                 (uav->location uavj))
@@ -518,7 +521,7 @@
                       (uav->location uavi))
                    dt)
               (< 0 dt))))))
-        
+
   (in-theory (enable rewrite-<-into-average
                      rewrite-<-into-average-alt-1
                      double-average-is-just-sum
@@ -543,10 +546,10 @@
          reconstruct-average-difference
          rewrite-equality-into-average
          )))
-  
+
 (defmacro in-average-theory ()
   `(in-theory (average-theory)))
-                
+
 (defmacro average-hint()
   `(and stable-under-simplificationp
         '(:in-theory (average-theory))))
@@ -566,7 +569,7 @@
 (defun tcar (list)
   (if (not (consp list)) nil
     (if (not (consp (cdr list))) (car list)
-      (tcar (cdr list)))))  
+      (tcar (cdr list)))))
 
 (defmacro local-preamble (&rest args)
   `(encapsulate
@@ -669,7 +672,7 @@
            ))
   :rule-classes ((:forward-chaining :trigger-terms ((IMPENDING-EVENT-FOR-UAV I ENS)
                                                     (event-for-uav i ens)))))
-                    
+
 (in-theory (disable impending-event-for-uav))
 
 (defthm not-pending-and-impending
@@ -831,7 +834,7 @@
        ((uav-id-equiv i (+ -1 (N)))
         (- (right-perimeter-boundary)
            (UAV->location uav)))
-       (t 
+       (t
         (let ((right (ith-uav (+ 1 i) ens)))
           ;; Abnormal conditon
           (if (< (UAV->location right) (UAV->location uav)) 0
@@ -897,7 +900,7 @@
 (in-theory (disable (:linear min-time-to-impact-for-uav-upper-bound-right)))
 (add-priority 1 (:linear min-time-to-impact-for-uav-upper-bound-right))
 
-(in-theory (disable MIN-TIME-TO-IMPACT-FOR-UAV))                                   
+(in-theory (disable MIN-TIME-TO-IMPACT-FOR-UAV))
 
 ;; ===================================================================
 
@@ -970,7 +973,7 @@
     (lte-min-time-to-impending-impact-event dt ens)
     (<= (nnrat-fix dx) (nnrat-fix dt)))
    (lte-min-time-to-impending-impact-event dx ens))
-  :hints (("GOal" 
+  :hints (("GOal"
            :expand (lte-min-time-to-impending-impact-event dx ens)
            :use (:instance lte-min-time-to-impending-impact-event-implication-1
                            (i (LTE-MIN-TIME-TO-IMPENDING-IMPACT-EVENT-WITNESS DX ENS)))
@@ -990,7 +993,7 @@
     ()
 
   (local (include-arithmetic))
-  
+
   (defthm degenerate-zed
     (implies
      (equal (N) 1)
@@ -1003,11 +1006,11 @@
                                        ith-uav))))
 
   )
-  
+
 (encapsulate
     ()
 
-     
+
   (local
    (defthm positive-min-time-to-impact-helper
      (implies
@@ -1025,7 +1028,7 @@
         (not (event-for-uav (1+ (uav-id-fix i)) ens)))
        )
       (< 0 (min-time-to-impact-for-uav i ens)))
-     :hints (("Goal" :in-theory (enable 
+     :hints (("Goal" :in-theory (enable
                                         MIN-TIME-TO-IMPACT-FOR-UAV
                                         equal-uav-id-fix-1-to-uav-id-equiv))
              (pattern::hint
@@ -1050,11 +1053,11 @@
                (not (event-for-uav i ens))
                (:syntaxp (or (quotep i) (symbolp i))))
               :expand ((event-for-uav i ens)))
-             
+
              (pattern::hint
               (not (event-for-uav i ens))
               :expand ((event-for-uav i ens)))
-             
+
              )))
 
   (defthm positive-min-time-to-impact-for-uav
@@ -1072,7 +1075,7 @@
               :use ((:instance not-exists-uav-with-event-implies
                                (i i))))
               ))
-  
+
   )
 
 (defthm force-equal-dt-rewrite
@@ -1116,18 +1119,18 @@
   (local
    (encapsulate
        ()
-     
+
      (defun next-positive-index (i ens)
        (declare (xargs :normalize nil))
        (if (< 0 (UAV->direction (ith-uav i ens))) (uav-id-fix i)
          (if (not (uav-id-p i)) -1
            (if (zp i) -1
              (next-positive-index (1- (uav-id-fix i)) ens)))))
-     
+
      (defthm next-positive-index-is-smaller
        (<= (next-positive-index i ens) (uav-id-fix i))
        :rule-classes (:rewrite :linear))
-     
+
      (defthm uav-id-p-next-positive-index
        (implies
         (< 0 (UAV->direction (ith-uav 0 ens)))
@@ -1141,7 +1144,7 @@
          (equal (UAV->direction (ith-uav k ens)) 1)
          (<= (uav-id-fix k) (uav-id-fix i)))
         (uav-id-p (next-positive-index i ens))))
-     
+
      (defthmd converging-uavs
        (implies
         (and
@@ -1149,7 +1152,7 @@
          (uav-id-p (next-positive-index i ens)))
         (and (< 0 (UAV->direction (ith-uav (next-positive-index i ens) ens)))
              (< (UAV->direction (ith-uav (+ 1 (next-positive-index i ens)) ens)) 0))))
-     
+
      (defthm next-positive-index-lower-bound
        (implies
         (and
@@ -1162,7 +1165,7 @@
        (implies
         (uav-id-p x)
         (acl2-numberp x)))
-     
+
      (defthm linear-what-we-want-to-say-about-ordered-location-list-p
        (implies
         (and
@@ -1173,7 +1176,7 @@
             (uav->location (ith-uav j list))))
        :rule-classes (:linear)
        :hints (("Goal" :in-theory (enable what-we-want-to-say-about-ordered-location-list-p))))
-          
+
      (defthmd difference-is-non-negative
        (implies
         (and
@@ -1241,7 +1244,7 @@
          (if (< (UAV->direction (ith-uav 0 ens)) 0)
              0
            (next-positive-index (+ -2 (N)) ens))))
-     
+
      (defthm pending-event-for-uav-pending-event-index-helper
        (impending-impact-event-for-uav (impending-event-index ens) ens)
        :hints (("Subgoal 3" :in-theory (enable IMPENDING-IMPACT-EVENT-FOR-UAV))
@@ -1256,14 +1259,14 @@
                ))
 
      ))
-  
+
   (def::signature impending-event-index (t) uav-id-p)
 
   (local (in-theory (disable impending-event-index)))
-  
+
   (defthm pending-event-for-uav-pending-event-index
     (impending-impact-event-for-uav (impending-event-index ens) ens))
-  
+
   )
 
 ;; break
@@ -1390,12 +1393,12 @@
        (
         ((next-impending-event-right * *) => *)
         )
-     
+
 
      (local
       (encapsulate
           ()
-        
+
         (defun next-negative-direction-right (i ens)
           (declare (xargs :measure (- (N) (uav-id-fix i))))
           (let* ((i (uav-id-fix i))
@@ -1407,13 +1410,13 @@
         (defthm next-negative-direction-right-lower-bound
           (<= (uav-id-fix i) (next-negative-direction-right i ens))
           :rule-classes (:linear))
-        
+
         (defthmd next-negative-direction-right-is-usually-bigger
           (iff (< (uav-id-fix i) (next-negative-direction-right i ens))
                (not (equal (uav-id-fix i) (+ -1 (N))))))
 
         (def::signature next-negative-direction-right (t t) uav-id-p)
-        
+
         (defthmd next-negative-direction-right-direction
           (implies
            (< 0 (uav->direction (ith-uav i ens)))
@@ -1421,12 +1424,12 @@
                (equal (next-negative-direction-right i ens) (+ -1 (N)))
              (and (< (uav->direction (ith-uav (next-negative-direction-right i ens) ens)) 0)
                   (< 0 (uav->direction (ith-uav (+ -1 (next-negative-direction-right i ens)) ens)))))))
-        
+
         (defun next-impending-event-right (i ens)
           (let ((j (next-negative-direction-right i ens)))
             (if (impending-event-for-uav j ens) j
               (+ -1 j))))
-        
+
         (defthm greater-than-implies-not-zero
           (implies
            (and
@@ -1493,7 +1496,7 @@
                                                   (j (+ -1 (next-impending-event-right i ens))))
                                        )))
                ))
-     
+
      (defthm impending-event-next-negative-direction-right
        (implies
         (and
@@ -1513,7 +1516,7 @@
                     '(:in-theory (enable IMPENDING-IMPACT-EVENT-FOR-UAV
                                          IMPENDING-EVENT-FOR-UAV)))
                ))
-     
+
      ))
 
   (defthm lte-min-time-to-impending-impact-event-bounded-by-location-right
@@ -1536,7 +1539,7 @@
              :use ((:instance lte-min-time-to-impending-impact-event-implication-1
                               (i (uav-id-fix (next-impending-event-right i ens))))))))
 
-  
+
   )
 
 ;; (defun bind-smallest-dt-in-clause (clause)
@@ -1569,11 +1572,11 @@
      ;; DAG -- this is really annoying (!)
      ;; (The proof broke when I added these rules)
      (local (in-theory (disable NATP-UAV-ID-FIX rationalp-location)))
-     
+
      (local
       (encapsulate
           ()
-        
+
         (defun next-negative-direction-left (i ens)
           (declare (xargs :measure (uav-id-fix i)))
           (let* ((i (uav-id-fix i))
@@ -1588,12 +1591,12 @@
           :rule-classes :linear)
 
         (local (in-theory (disable  LESS-THAN-ZERO-TO-UAV-ID-EQUIV)))
-        
+
         (defthmd next-negative-direction-left-is-usually-bigger
           (iff (< (next-negative-direction-left i ens) (uav-id-fix i))
                (not (equal (uav-id-fix i) 0))))
         (def::signature next-negative-direction-left (t t) uav-id-p)
-        
+
         (defthmd next-negative-direction-left-direction
           (implies
            (< (uav->direction (ith-uav i ens)) 0)
@@ -1601,12 +1604,12 @@
                (equal (next-negative-direction-left i ens) 0)
              (and (< 0 (uav->direction (ith-uav (next-negative-direction-left i ens) ens)))
                   (< (uav->direction (ith-uav (+ 1 (next-negative-direction-left i ens)) ens)) 0)))))
-        
+
         (defun next-impending-event-left (i ens)
           (let ((j (next-negative-direction-left i ens)))
             (if (impending-event-for-uav j ens) j
               (+ 1 j))))
-        
+
         (defthm less-tham-implies-not-N-1
           (implies
            (and
@@ -1639,7 +1642,7 @@
                                          uav-id-p
                                          )
                                         (EQUAL-UAV-ID-FIX-1-TO-UAV-ID-EQUIV))))))
-     
+
      (defthm min-time-to-impact-for-uav-next-impending-event-left-upper-bound
        (implies
         (and
@@ -1687,7 +1690,7 @@
                     '(:expand ((NEXT-NEGATIVE-DIRECTION-LEFT I ENS)
                                (IMPENDING-EVENT-FOR-UAV (+ -2 (N)) ENS))))
                ))
-     
+
      (defthm impending-event-next-negative-direction-left
        (implies
         (and
@@ -1706,7 +1709,7 @@
                     '(:in-theory (enable IMPENDING-IMPACT-EVENT-FOR-UAV
                                          IMPENDING-EVENT-FOR-UAV)))
                ))
-     
+
      ))
 
   (defthm lte-min-time-to-impending-impact-event-bounded-by-location-left
@@ -1729,5 +1732,5 @@
              :use ((:instance lte-min-time-to-impending-impact-event-implication-1
                               (i (uav-id-fix (next-impending-event-left i ens))))))))
 
-  
+
   )

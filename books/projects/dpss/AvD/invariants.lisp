@@ -1,12 +1,15 @@
-;;  
+;;
 ;; Copyright (C) 2021, Collins Aerospace
 ;; All rights reserved.
-;; 
+;;
 ;; This software may be modified and distributed under the terms
 ;; of the 3-clause BSD license.  See the LICENSE file for details.
 ;;
 (in-package "ACL2")
 (include-book "../Base/step-time")
+
+; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
+(set-waterfall-parallelism nil)
 
 ;; ===================================================================
 ;;
@@ -237,7 +240,7 @@
 
 
 (local-preamble
- 
+
  (with-average-theory
   (without-subsumption
    (defthmd have-met-Left-p-update-location-all-helper
@@ -288,7 +291,7 @@
  )
 
 (local-preamble
- 
+
  (with-average-theory
   (without-subsumption
    (defthmd have-met-Right-p-update-location-all-helper
@@ -350,14 +353,14 @@
       (or
        ;;              J
        ;; |--------|--------|
-       ;;            x< 
+       ;;            x<
        (and
         (< (UAV->direction (ith-uav j ens)) 0)
         (equal (UAV->location (ith-uav j ens))
                (UAV->location (ith-uav (+ -1 j) ens))))
        ;;              J
        ;; |--------|--------|
-       ;;        >    ^    <   
+       ;;        >    ^    <
        (and
         (not (equal (UAV->direction (ith-uav j ens))
                     (UAV->direction (ith-uav (+ -1 j) ens))))
@@ -365,7 +368,7 @@
             (- (UAV->location (ith-uav j ens)) (UAV-left-boundary (ith-uav j ens)))))
        ;;              J
        ;; |--------|--------|
-       ;;        >         > 
+       ;;        >         >
        (and
         (< 0 (UAV->direction (ith-uav j ens)))
         (< 0 (UAV->direction (ith-uav (+ -1 j) ens)))))))))
@@ -438,7 +441,7 @@
 
   (local (in-theory (disable have-met-Left-p JS-p-definition)))
   (local (in-theory (enable zp-min-time-to-impact-event-is-impact-event)))
-  
+
   (with-average-theory
    (defthmd JS-p-flip-on-events-helper
      (implies
@@ -466,10 +469,10 @@
                   '(:in-theory (enable have-met-Left-p JS-P-definition)))
              ;;(average-hint)
              )))
-   
-   
+
+
   )
-  
+
 (local-preamble
  (with-average-theory
  (local
@@ -500,7 +503,7 @@
                                          CHASING-NEIGHBOR-IS-NOT-IMPENDING-IMPACT-EVENT-FOR-UAV)
               :expand (:Free (ens) (JS-p I ens))
               :do-not-induct t)
-             
+
              (pattern::hint*
               location-pinching-rule
               ordering-rule
@@ -510,13 +513,13 @@
               expand-chasing-neighbor
               expand-min-time-to-impact-for-uav
               )
-             
+
              (and stable-under-simplificationp
                   '(:in-theory (enable have-met-Left-p JS-p-definition)))
-             
+
              ))
    ))
-  
+
  (defthm JS-p-update-location-all-invariant
    (implies
     (and
@@ -581,7 +584,7 @@
      ;; |--------|--------|
      ;;       >    ^    <
      (< 0 (UAV->direction (ith-uav (+ -1 j) ens)))))))
-  
+
 (def::un RIGHT-SYNCHRONIZED-p (j ens)
   (declare (xargs :fty ((uav-id uav-list) bool)))
   (implies
@@ -616,7 +619,7 @@
      ;; |--------|--------|
      ;;   >    ^    <
      (< (UAV->direction (ith-uav (+ 1 j) ens)) 0)))))
-  
+
 ;; LS is stronger than JS
 (defthmd LEFT-SYNCHRONIZED-implies-JS
   (implies
@@ -822,7 +825,7 @@
                                LEFT-SYNCHRONIZED-p)))))
 
 
- 
 
 
-        
+
+

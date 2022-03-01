@@ -1,13 +1,16 @@
-;;  
+;;
 ;; Copyright (C) 2021, Collins Aerospace
 ;; All rights reserved.
-;; 
+;;
 ;; This software may be modified and distributed under the terms
 ;; of the 3-clause BSD license.  See the LICENSE file for details.
 ;;
 (in-package "ACL2")
 (include-book "step-time")
 (include-book "coi/util/rewrite-equiv" :dir :system)
+
+; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
+(set-waterfall-parallelism nil)
 
 (in-theory (enable NOT-EXISTS-UAV-WITH-EVENT-FLIP-ON-EVENTS-EQUAL))
 (in-theory (disable FORCE-EQUAL-DT-REWRITE))
@@ -87,7 +90,7 @@
                                      FORCE-EQUAL-DT-REWRITE-2)
                                     nil)))
              )))
-   
+
    (defthm flip-uav-update-location-all
      (implies
       (and
@@ -171,7 +174,7 @@
                   (not (cw "expanding EVENT-FOR-UAV"))
                   '(:in-theory (enable EVENT-FOR-UAV)))
              )))
-  
+
   (defthm EVENT-FOR-UAV-UPDATE-LOCATION-ALL-lte
     (implies
      (and
@@ -212,7 +215,7 @@
                    (impending-event-for-uav i (flip-on-events ens)))
               (uav->flip (ith-uav i (VAL 1 (NEXT-STEP DT ENS))))
             (ith-uav i (VAL 1 (NEXT-STEP DT ENS))))))
-  :hints (("Goal" :in-theory (e/d (next-step) 
+  :hints (("Goal" :in-theory (e/d (next-step)
                                   (UPDATE-UAV-LOCATION
                                    EQUAL-OF-UAV)))))
 
@@ -272,14 +275,14 @@
   ;;
   ;; So .. the usual problem with forward-chaining
   ;; structure into the hypothesis applies.
-  ;; 
+  ;;
   :hints (("GOal" :in-theory (enable ESCORT-EVENT-FOR-UAV
                                      IMPACT-EVENT-FOR-UAV
                                      flip-uav
                                      location-linear
                                      right-boundary-is-ordered-linear
                                      MIN-TIME-TO-IMPACT-FOR-UAV))))
-         
+
 
 (defthmd zp-min-time-to-impact-event-when-impact-event-rewrite
   (implies (and (escort-condition ens)
@@ -302,7 +305,7 @@
        (MIN-TIME-TO-IMPACT-FOR-UAV I ens)))
   :rule-classes :linear)
 
-  
+
 (defthm always-smallest-min-time-to-impending-impact-is-smallest-better-trigger
   (implies
    (impending-event-for-uav k ens)
@@ -315,7 +318,7 @@
     ()
   (local (in-theory (disable min VAL-0-NEXT-STEP UPDATE-UAV-LOCATION equal-of-uav next-step)))
   (local (include-arithmetic))
-      
+
   (defthm ith-uav-step-time-update-location-all
     (implies
      (and
@@ -327,7 +330,7 @@
             (if (equal (nnrat-fix dt) 0)
                 (ith-uav i ens)
               (update-uav-location dt (flip-uav i ens)))))
-    :hints (("Goal" 
+    :hints (("Goal"
              :induct (step-time dt ens)
              :do-not-induct t)
             (and stable-under-simplificationp
@@ -350,7 +353,7 @@
              (nnrat-fix dt))))
   :hints (("Goal" :in-theory (enable smallest-impending-dt-index-properties
                                      ALWAYS-SMALLEST-MIN-TIME-TO-IMPENDING-IMPACT))))
- 
+
 (with-arithmetic
  (defthm okie-dokie
    (IMPLIES
@@ -507,20 +510,20 @@
 ;;         (iff (EQUAL (UAV->LOCATION UAV) (UAV->LOCATION (ITH-UAV I ENS)))
 ;;              (hide (rewrite-equiv (equal (UAV->LOCATION UAV) (UAV->LOCATION (ITH-UAV I ENS)))))))
 ;;        :hints (("Goal" :expand (:free (x) (hide x)))))
-     
+
 ;;      (defthmd hide-one-uav->id
 ;;        (equal (UPDATE-NTH (UAV->ID UAV) i ens)
 ;;               (update-nth (hide (UAV->ID UAV)) i ens))
 ;;        :hints (("Goal" :expand (:free (x) (hide x)))))
-     
-     
+
+
 ;;      (defthmd force-rewrite-2
 ;;        (iff (EQUAL (ORDERED-LOCATION-LIST-P-FIRST-WITNESS x) (UAV->ID UAV))
 ;;             (hide (rewrite-equiv (EQUAL (UAV->ID UAV) (ORDERED-LOCATION-LIST-P-FIRST-WITNESS x)))))
 ;;        :hints (("Goal" :expand (:free (x) (hide x)))))
 
 ;;      ))
-     
+
 ;;   (defthm wf-ensemble-raw-set-ith-uav
 ;;     (implies
 ;;      (and
@@ -655,7 +658,7 @@
                            (UPDATE-UAV-LOCATION
                             equal-of-uav))
           )))
-          
+
 (in-theory (disable ith-uav-STEP-TIME-UPDATE-LOCATION-ALL))
 
 ;; ===========================================================================
@@ -701,7 +704,7 @@
    (not (event-for-uav i ens)))
   :rule-classes (:forward-chaining)
   :hints (("Goal" :in-theory (enable ZP-MIN-TIME-TO-IMPACT-EVENT-IS-IMPACT-EVENT))))
-  
+
 (in-theory (disable UPDATE-UAV-LOCATION))
 ;; (in-theory (disable cellular-escort-event-for-uav
 ;;                     cellular-escort-event-for-uav-left
@@ -737,7 +740,7 @@
 ;;           (ESCORT-EVENT-FOR-UAV I ENS)))
 ;;   :hints (("Goal" :in-theory (enable CELLULARIZE-ESCORT-EVENT-FOR-UAV
 ;;                                      CELLULAR-ESCORT-EVENT-FOR-UAV))))
-   
+
 ;; (defthm uncellularize-ESCORT-EVENT-FOR-UAV-ith-uav-left
 ;;   (implies
 ;;    (and
@@ -750,7 +753,7 @@
 ;;           (ESCORT-EVENT-FOR-UAV I ENS)))
 ;;   :hints (("Goal" :in-theory (enable CELLULARIZE-ESCORT-EVENT-FOR-UAV
 ;;                                      CELLULAR-ESCORT-EVENT-FOR-UAV))))
-   
+
 (defthm uav->direction-update-uav-location
   (equal (UAV->DIRECTION (UPDATE-UAV-LOCATION dt uav))
          (uav->direction uav))
@@ -781,7 +784,7 @@
     ()
 
   (local (in-theory (disable next-step)))
-  
+
   (def::un time-to-impact (i dt ens)
     (declare (xargs :measure (step-time-measure dt ens)
                     :fty ((uav-id nnrat uav-list) nnrat)))
@@ -815,7 +818,7 @@
           (if (<= dt 0) t
             (metlist ((dt ens) (next-step dt ens))
               (lt-time-to-impact i dt ens)))))))
-  
+
   )
 
 (defthm time-to-impact-upper-bound
@@ -830,7 +833,7 @@
    (<= (nnrat-fix dt) (always-smallest-min-time-to-impending-impact ens)))
   :rule-classes (:forward-chaining
                  (:forward-chaining
-                  :corollary 
+                  :corollary
                   (implies
                    (EQUAL (NNRAT-FIX DT) (ALWAYS-SMALLEST-MIN-TIME-TO-IMPENDING-IMPACT ens))
                    (<= (nnrat-fix dt) (always-smallest-min-time-to-impending-impact ens))))))
@@ -994,7 +997,7 @@
     ()
 
   (local (in-theory (disable next-step)))
-  
+
   (def::un time-to-event (i dt ens)
     (declare (xargs :measure (step-time-measure dt ens)
                     :fty ((uav-id nnrat uav-list) nnrat)))
@@ -1031,7 +1034,7 @@
             (metlist ((dt ens) (next-step dt ens))
               (lt-time-to-event i dt ens)))))))
   )
-  
+
 (defthm ith-uav-step-time-lte-time-to-event
   (implies
    (and
@@ -1078,12 +1081,12 @@
                               (uav->Location (ith-uav i ens)))))
   :hints (("GOal" :in-theory (enable UPDATE-LOCATION-UAV))))
 
-(defthm uav-right-boundary-update-uav-location 
+(defthm uav-right-boundary-update-uav-location
   (equal (uav-right-boundary (update-uav-location dt uav))
          (uav-right-boundary uav))
   :hints (("Goal" :in-theory (enable update-uav-location))))
 
-(defthm uav-left-boundary-update-uav-location 
+(defthm uav-left-boundary-update-uav-location
   (equal (uav-left-boundary (update-uav-location dt uav))
          (uav-left-boundary uav))
   :hints (("Goal" :in-theory (enable UAV-LEFT-BOUNDARY
@@ -1237,7 +1240,7 @@
                             update-location-uav
                             introduce-flip-on-events-symbolp)
                            (step-time-flip-on-events)))))
-  
+
 ;; ==========================================================================
 
 (defthm time-to-event-is-bounded-by-distance-to-boundary-right
@@ -1277,9 +1280,9 @@
                             (i i)
                             (dt (ALWAYS-SMALLEST-MIN-TIME-TO-IMPENDING-IMPACT (FLIP-ON-EVENTS ENS)))
                             (ens (FLIP-ON-EVENTS ENS)))))
-                            
+
           ))
-   
+
 (defthm time-to-event-is-bounded-by-distance-to-boundary-left
   (implies
    (and
@@ -1315,8 +1318,8 @@
                             (dt (ALWAYS-SMALLEST-MIN-TIME-TO-IMPENDING-IMPACT (FLIP-ON-EVENTS ENS)))
                             (ens (FLIP-ON-EVENTS ENS)))))
           ))
-   
-   
+
+
 (with-arithmetic
  (defthmd not-lte-time-to-event-left
    (implies

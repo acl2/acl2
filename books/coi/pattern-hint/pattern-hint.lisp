@@ -1,7 +1,7 @@
-;;  
+;;
 ;; Copyright (C) 2021, Collins Aerospace
 ;; All rights reserved.
-;; 
+;;
 ;; This software may be modified and distributed under the terms
 ;; of the 3-clause BSD license.  See the LICENSE file for details.
 ;;
@@ -14,7 +14,7 @@
 ;; :hints ((pattern::hint
 ;;           (< x y)
 ;;           :use ((:instance helpful-lemma (a x) (b y))))
-;; 
+;;
 ;; the following subboal:
 ;;
 ;; (implies
@@ -32,7 +32,7 @@
 ;; :hints ((pattern::hint
 ;;           (<= x y)
 ;;           :use ((:instance helpful-lemma (a x) (b y))))
-;; 
+;;
 ;; it will result in a hint with two instances of helpful-lemma:
 ;;
 ;; :use ((:instance helpful-lemma (a x)       (b (foo x)))
@@ -50,6 +50,9 @@
 (include-book "pattern-hint-xdoc")
 
 (set-state-ok t)
+
+; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
+(set-waterfall-parallelism nil)
 
 (defun not-term (term)
   (case-match term
@@ -138,14 +141,14 @@
 ;;   (if (not (consp list)) nil
 ;;     (if (binding-member (car list) (cdr list))
 ;;         (uniquify-bindings (cdr list))
-;;       (cons (car list) 
+;;       (cons (car list)
 ;;             (uniquify-bindings (cdr list))))))
 
 (defun minus-bindings (blist blist0)
   (if (not (consp blist)) nil
     (if (member-equal (car blist) blist0)
         (minus-bindings (cdr blist) blist0)
-      (cons (car blist) 
+      (cons (car blist)
             (minus-bindings (cdr blist) blist0)))))
 
 ;; (defun << (x y) (not (lexorder y x)))
@@ -201,7 +204,7 @@
     (equal-to-all (car list) (cdr list))))
 
 (mutual-recursion
- 
+
  (defun unify-pattern-match-args-aux (pargs targs bindings)
    (if (and (consp pargs)
             (consp targs))
@@ -209,7 +212,7 @@
          (and bindings
               (unify-pattern-match-args-aux (cdr pargs) (cdr targs) bindings)))
      bindings))
- 
+
  (defun unify-pattern-match (pattern term bindings)
    (if (symbolp pattern)
        (acl2::let ((hit (assocx pattern bindings)))
@@ -224,13 +227,13 @@
  )
 
 (mutual-recursion
- 
+
  (defun all-unify-pattern-match-args-fn (pfn pargs targs bindings)
    (declare (xargs :mode :program))
    (if (not (consp targs)) nil
      (append (all-unify-pattern-match-term-fn pfn pargs (car targs) bindings)
              (all-unify-pattern-match-args-fn pfn pargs (cdr targs) bindings))))
- 
+
  (defun all-unify-pattern-match-term-fn (pfn pargs term bindings)
    (declare (xargs :mode :program))
    (and (consp term)
@@ -238,7 +241,7 @@
                         (unify-pattern-match-args-aux pargs (cdr term) bindings))))
           (append (and hit (list hit))
                   (all-unify-pattern-match-args-fn pfn pargs (cdr term) bindings)))))
-  
+
  )
 
 (defun all-unify-pattern-match-term (pattern term bindings)
@@ -380,7 +383,7 @@
 
  (defun filter-each-binding-by-pattern (exp clause blist state)
    (filter-each-binding-by-pattern-rec exp clause blist state))
- 
+
  (defun and-unify-pattern-match-expression-rec (elist clause blist state)
    (if (not (consp elist)) (value blist)
      (er-let* ((blist (filter-each-binding-by-pattern (car elist) clause blist state)))
@@ -405,7 +408,7 @@
      (er-let* ((blist (unify-pattern-match-expression (car elist) clause binding state)))
        (if blist (value blist)
          (first-unify-pattern-match-expression-rec (cdr elist) clause binding state)))))
- 
+
  (defun first-unify-pattern-match-expression (elist clause binding state)
    (first-unify-pattern-match-expression-rec elist clause binding state))
 
@@ -413,7 +416,7 @@
    (declare (ignorable fn))
    (er-let* ((blist (unify-pattern-match-expression body clause call-binding state)))
      (value (map-instantiate-soft-alist post blist))))
- 
+
 (defun unify-pattern-match-expression (exp clause binding state)
    (declare (xargs :mode :program))
    (case-match exp
@@ -528,7 +531,7 @@
 ;;       (:not expr)                              | ;; If expr does not generate a binding, continue
 ;;       (:commutes expr symbol-alist)            | ;; Treat the pairs of symbols in symbol-alist as "commuting" .. compute a binding that reflects that.
 ;;       (:replicate expr symbol-alist)           | ;; Compute a cartesian-product binding for each pair of symbols in symbol-alist.
-;;       ;; 
+;;       ;;
 ;;       (:syntaxp term)                          | ;; Instantiate and evaluate term.  If not nil, continue
 ;;       (:equal . term-list)                     | ;; If all instantiated terms are equal, continue
 ;;       (:bind-free term symbol-list)            | ;; Instantiate and evaluate term.  Bind each symbol in symbol-list to the values returned.
@@ -557,7 +560,7 @@
             (translate-term-list (cdr tlist) w)))))
 
 (mutual-recursion
- 
+
  (defun translate-expression-list (list w)
    (declare (xargs :mode :program))
    (if (not (consp list)) nil
@@ -634,17 +637,17 @@
         `(:term ,term)))
      (&
       (pseudo-trans exp w))))
- 
+
  )
 
 (mutual-recursion
- 
+
  (defun clausify-expression-list (list)
    (declare (xargs :mode :program))
    (if (not (consp list)) nil
      (cons (clausify-expression (car list))
            (clausify-expression-list (cdr list)))))
- 
+
  (defun clausify-expression (exp)
    (declare (xargs :mode :program))
    (case-match exp
@@ -682,7 +685,7 @@
      ((:bind-free . &) exp)
      (&
       (not-term exp))))
-  
+
  )
 
 #+joe
@@ -762,7 +765,7 @@
 ;; (via computed-hint-replacement)
 (defun run-opener-hint1 (flg n)  ; flg = stable-under-simplificationp
   (if flg
-      `(:computed-hint-replacement 
+      `(:computed-hint-replacement
          ((run-opener-hint1 stable-under-simplificationp ,(- n 1)))
         :in-theory (enable run-n+1)
         :restrict ((run-n+1 ((n ,n)))))
@@ -848,7 +851,7 @@
 ;; This means we will probably want an initial e/d theory.
 ;; Same may be true of :do-not hints.
 ;; :do-not '(preprocess)
-;; 
+;;
 (defun pattern-hint-list-fn-rec (blist hints hit res uses cases expansions restrictions etheory dtheory do-not susp clause state)
   (declare (xargs :mode :program))
   (if (not (and (consp blist) (consp hints))) (mv hit (revappend res nil) uses cases expansions restrictions etheory dtheory do-not state)
@@ -920,7 +923,7 @@
                  ;;(name   (or name 'un-named)))
        (list* name exp kwlist)))
     (& (list* nil `(:all) nil))))
-      
+
 (defun process-hints-list (hints wrld)
   (declare (xargs :mode :program))
   (if (not (consp hints)) nil
@@ -1049,7 +1052,7 @@
   (defstub foo (x) nil)
   (defstub goo (x) nil)
   (defstub alpha (x y) nil)
-  
+
   (defthm silly-rule
     (implies
      (and
@@ -1060,17 +1063,17 @@
 
   (defund beta (x) (equal x 0))
   (in-theory (disable (beta)))
-  
+
   (defund gamma (x y) (equal x y))
   (in-theory (disable (gamma)))
 
   (def::pattern-function :alpha (a)
     (alpha a b)
     :returns (b))
-  
+
   (defthm test-thm
     (implies
-     (and 
+     (and
       (foo 3)
       (alpha 7 9)
       (goo 5)
@@ -1109,10 +1112,10 @@
                      ))
     :expand ((beta x))
     :cases ((gamma x y)))
-    
+
   (defthm test-thm-2
     (implies
-     (and 
+     (and
       (foo 3)
       (alpha 7 9)
       (goo 5)
@@ -1125,7 +1128,7 @@
 
   (defthm test-thm-3
     (implies
-     (and 
+     (and
       (foo 3)
       (alpha 7 9)
       (goo 5)
@@ -1147,7 +1150,7 @@
     ()
   ;;   ba    bb
   ;;   |   |-----------------------
-  ;;       
+  ;;
   ;; (< (+ ba ca) (+ bb cb))
   ;; (< ba (+ bb (- cb ca)))
   ;; (< ba (+ bb (- cy cx)))
@@ -1168,13 +1171,13 @@
        (<= (- cb ca) (- cy cx) )
        ;; Conclusion
        (<= (+ ba cx) (+ bb cy))))))
-       
-      
+
+
   )
 
 (defun lte-check-fn (ca cb cx cy)
   (<= (- cb ca) (- cy cx)))
-                     
+
 (defun lte-check (ca cb cx cy)
   (acl2::let ((ca (cadr ca))
               (cb (cadr cb))
@@ -1197,7 +1200,7 @@
     (:call (acl2::base-offset y) (cy by))
     (:equal bx by)
     (:syntaxp (<= (cadr cx) (cadr cy))))))
-   
+
 (def::pattern-function acl2::lte-match ()
   (:or (< a b)
        ;;(equal a b) ;; sigh .. appears very expensive.
@@ -1220,7 +1223,7 @@
              ;; --------+----------------------------
              ;; (< w x) |    *
              ;; (< x y) |    *         *
-             ;; (< w z) |                        *         
+             ;; (< w z) |                        *
              ;;
              ;; DAG -- ah .. this logic must properly
              ;; handle base-offset conditions.
@@ -1236,7 +1239,7 @@
 
 ;;
 ;; bind-free functions must return a list of value lists
-;; 
+;;
 (defun expand-lte-match-default (xk x yk y)
   (declare (xargs :guard t))
   (list `((,xk . ,x) (,yk . ,y))))

@@ -1,7 +1,7 @@
-;;  
+;;
 ;; Copyright (C) 2021, Collins Aerospace
 ;; All rights reserved.
-;; 
+;;
 ;; This software may be modified and distributed under the terms
 ;; of the 3-clause BSD license.  See the LICENSE file for details.
 ;;
@@ -9,6 +9,9 @@
 (include-book "flip")
 (include-book "step")
 (include-book "coi/defung/defung" :dir :system)
+
+; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
+(set-waterfall-parallelism nil)
 
 (defthm equal-common-addend-reduction
   (implies
@@ -184,10 +187,10 @@
   (local
    (encapsulate
        ()
-     
+
      (defun-sk exists-impact-event (ens)
        (exists (i) (impact-event-for-uav i ens)))
-     
+
      (in-theory (disable exists-impact-event))
 
      (defthmd zp-always-smallest-min-time-to-impending-impact-to-exists-impact-event-helper
@@ -215,7 +218,7 @@
                                  smallest-impending-dt-index-properties)))
                )
        )
-     
+
      (defthm exists-uav-with-event-implies-exists-impact-event
        (implies
         (exists-uav-with-event ens)
@@ -224,7 +227,7 @@
        :hints (("GOal" :in-theory (enable exists-uav-with-event)
                 :use (:instance EXISTS-IMPACT-EVENT-suff
                                 (i (EXISTS-UAV-WITH-EVENT-WITNESS ENS))))))
-     
+
      (defthm exists-impact-event-implies-exists-uav-with-event
        (implies
         (and
@@ -255,7 +258,7 @@
                ))
 
      ))
-     
+
   (defthmd zp-always-smallest-min-time-to-impending-impact-to-exists-uav-with-event
     (implies
      (and
@@ -265,7 +268,7 @@
      (iff (equal (always-smallest-min-time-to-impending-impact ens) 0)
           (exists-uav-with-event ens)))
     :hints (("Goal" :in-theory (enable zp-always-smallest-min-time-to-impending-impact-to-exists-impact-event-helper))))
-    
+
   )
 
 (defthmd nnrat-equiv-always-smallest-min-time-to-impending-impact
@@ -276,7 +279,7 @@
         (not (< (always-smallest-min-time-to-impending-impact ens)
                 (min-time-to-impact-for-uav i ens)))))
   :hints (("goal" :in-theory (enable nnrat-equiv))))
-   
+
 (defthmd event-implies-zero-min-time
   (implies
    (and
@@ -289,7 +292,7 @@
                               event-for-uav
                               MIN-TIME-TO-IMPACT-FOR-UAV
                               ))))
-                              
+
 ;;
 ;; The other relevant events ..
 ;;
@@ -329,7 +332,7 @@
                     (+ 1 (step-time-measure dt ens)))))))))
 
   )
-              
+
 
 (verify-guards
  step-time-monadic
@@ -366,7 +369,7 @@
 
 (encapsulate
     ()
-  
+
   (local
    (defthm step-time-domain-uav-list-fix
      (implies
@@ -374,14 +377,14 @@
       (equal (step-time-domain dt ens)
              (step-time-domain dt (uav-list-fix ens))))
      :hints (("Goal" :expand (step-time-domain dt (uav-list-fix ens))))))
-   
+
   (defcong uav-list-equiv equal (step-time-domain dt ens) 2)
 
   )
 
 (encapsulate
     ()
-  
+
   (local
    (defthm step-time-domain-nnrat-fix
      (implies
@@ -389,14 +392,14 @@
       (equal (step-time-domain dt ens)
              (step-time-domain (nnrat-fix dt) ens)))
      :hints (("Goal" :expand (step-time-domain (nnrat-fix dt) ens)))))
-   
+
   (defcong nnrat-equiv equal (step-time-domain dt ens) 1)
 
   )
 
 (encapsulate
     ()
-  
+
   (local
    (defthm step-time-measure-uav-list-fix
      (implies
@@ -404,14 +407,14 @@
       (equal (step-time-measure dt ens)
              (step-time-measure dt (uav-list-fix ens))))
      :hints (("Goal" :expand (step-time-measure dt (uav-list-fix ens))))))
-   
+
   (defcong uav-list-equiv equal (step-time-measure dt ens) 2)
 
   )
 
 (encapsulate
     ()
-  
+
   (local
    (defthm step-time-measure-nnrat-fix
      (implies
@@ -419,14 +422,14 @@
       (equal (step-time-measure dt ens)
              (step-time-measure (nnrat-fix dt) ens)))
      :hints (("Goal" :expand (step-time-measure (nnrat-fix dt) ens)))))
-   
+
   (defcong nnrat-equiv equal (step-time-measure dt ens) 1)
 
   )
 
 (encapsulate
     ()
-  
+
   (local
    (defthm step-fix-nnrat-fix
      (implies
@@ -434,14 +437,14 @@
       (equal (step-time d1 ens)
              (step-time (nnrat-fix d1) ens)))
      :hints (("Goal" :expand (step-time (nnrat-fix d1) ens)))))
-   
+
   (defcong nnrat-equiv equal (step-time dt ens) 1)
 
   )
 
 (encapsulate
     ()
-  
+
   (local
    (defthm step-fix-nnrat-fix
      (implies
@@ -449,7 +452,7 @@
       (equal (step-time dt ens)
              (step-time dt (uav-list-fix ens))))
      :hints (("Goal" :expand (step-time dt (uav-list-fix ens))))))
-   
+
   (defcong uav-list-equiv equal (step-time dt ens) 2)
 
   )

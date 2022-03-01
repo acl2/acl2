@@ -1,7 +1,7 @@
-;;  
+;;
 ;; Copyright (C) 2021, Collins Aerospace
 ;; All rights reserved.
-;; 
+;;
 ;; This software may be modified and distributed under the terms
 ;; of the 3-clause BSD license.  See the LICENSE file for details.
 ;;
@@ -9,6 +9,10 @@
 
 (include-book "../Base/step-time-induction")
 (include-book "invariants")
+
+; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
+(set-waterfall-parallelism nil)
+
 ;; ===================================================================
 ;;
 ;; A mechanization of the AvD proof of DPSS-A bounded convergnece time
@@ -16,7 +20,7 @@
 ;; ===================================================================
 
 (in-theory (disable have-met-Right-p have-met-left-p))
-  
+
 (defthm have-met-left-p-after-time-to-event-TEE
   (implies
    (and
@@ -146,7 +150,7 @@
            :in-theory (disable all-have-met-left-implication)
            :use ((:instance all-have-met-left-implication
                             (i (ALL-have-met-LEFT-WITNESS (FLIP-ON-EVENTS ENS))))))))
-   
+
 (defthm all-have-met-left-update-location-all
   (implies
    (and
@@ -221,7 +225,7 @@
            :in-theory (disable all-have-met-right-implication)
            :use ((:instance all-have-met-right-implication
                             (i (ALL-have-met-RIGHT-WITNESS (FLIP-ON-EVENTS ENS))))))))
-   
+
 (defthm all-have-met-right-update-location-all
   (implies
    (and
@@ -411,7 +415,7 @@
     (
      ((not-LEFT-SYNCHRONIZED-p * *) => *)
      )
-  
+
   (local
    (def::un not-LEFT-SYNCHRONIZED-p (j ens)
      (declare (xargs :fty ((uav-id uav-list) bool)))
@@ -454,10 +458,10 @@
           (< (UAV->DIRECTION (ITH-UAV J ENS)) 0)
           (< (UAV->DIRECTION (ITH-UAV (+ -1 (UAV-ID-FIX J)) ENS)) 0)
           )))))
-   
+
    (encapsulate
        ()
-     
+
      (local (in-theory (enable have-met-LEFT-P LEFT-SYNCHRONIZED-P)))
 
      (defthmd not-left-synchronized-p-direction-implies-event
@@ -541,7 +545,7 @@
        ;;
        ;; |--------|--------|
        ;;        >  ^  <
-       ;;        J     
+       ;;        J
        ;;
        ;; |--------|--------|
        ;;     <      ^      >
@@ -846,7 +850,7 @@
            (and stable-under-simplificationp
                 '(:in-theory (enable REWRITE-LEFT-BOUNDARY-TO-RIGHT-BOUNDARY)))
            ))))
- 
+
  (defthm left-synchronized-p-time-to-left-synchronized
    (IMPLIES (AND (WF-ESCORT-P ENS)
                  (STEP-TIME-ALWAYS-TERMINATES)
@@ -998,7 +1002,7 @@
      (ALL-GTE-ARE-RIGHT-SYNCHRONIZED 0 ENS))
     (ALL-GTE-ARE-RIGHT-SYNCHRONIZED 1 ENS))
    :hints (("Goal" :expand (ALL-GTE-ARE-RIGHT-SYNCHRONIZED 0 ENS))))
- 
+
  (defthm all-gte-right-synchronized-time-to-right-synchronized
    (implies
     (and
@@ -1012,7 +1016,7 @@
    :hints (("Goal" :do-not-induct t
             :expand ((:free (ens) (ALL-GTE-ARE-RIGHT-SYNCHRONIZED (+ -1 (UAV-ID-FIX I)) ens))))))
  )
- 
+
 (def::un time-to-left-synchronized-all-rec (i ens)
   (declare (xargs :fty ((uav-id uav-list) nnrat)
                   :measure (uav-id-fix i)))
@@ -1037,7 +1041,7 @@
     (all-lte-are-left-synchronized (+ -1 (uav-id-fix i)) ens))
    (all-lte-are-left-synchronized i ens))
   :hints (("Goal" :expand (all-lte-are-left-synchronized i ens))))
-  
+
 (defthm all-gte-right-synchronized-helper
   (implies
    (and
@@ -1046,7 +1050,7 @@
     (all-gte-are-right-synchronized (+ 1 (uav-id-fix i)) ens))
    (all-gte-are-right-synchronized i ens))
   :hints (("Goal" :expand (all-gte-are-right-synchronized i ens))))
-  
+
 (defthm left-synchronized-p-all-rec
   (implies
    (and
@@ -1324,7 +1328,7 @@
    (all-left-synchronized (step-time dt ens)))
   :hints (("GOal" :expand (all-left-synchronized (step-time dt ens))
            :do-not-induct t)))
-   
+
 (defthm all-left-synchronized-time-to-left-synchronized-all
   (implies
    (and
@@ -1515,7 +1519,7 @@
     (all-left-synchronized ens)
     (all-right-synchronized ens))
    (event-for-uav i ens)))
-  
+
 (in-theory (disable LOCAL-SYNCHRONIZED-EVENT))
 
 (defthm synchronized-double-containment
@@ -1688,7 +1692,7 @@
   (ith-uav-id-equiv (step-to-right dt ens)
                     ens))
 
-(def::signature step-to-right (t synchronized) synchronized)  
+(def::signature step-to-right (t synchronized) synchronized)
 
 (include-book "tools/trivial-ancestors-check" :dir :system)
 (use-trivial-ancestors-check)
@@ -1704,7 +1708,7 @@
    (equal (uav->location (ith-uav i (step-to-right dt ens)))
           (+ (uav->location (ith-uav i ens))
              (nnrat-fix dt)))))
-         
+
 
 (defthm direction-step-to-right
   (implies
@@ -1807,7 +1811,7 @@
     (synchronized ens)
     (equal (converged-period i ens)
            (* 2 (one))))
-   :hints (("Goal" :in-theory (enable 
+   :hints (("Goal" :in-theory (enable
                                converged-period
                                width-of-segment-is-segment-length
                                one nnrat-p nnrat-fix seq2)))))
@@ -1860,7 +1864,7 @@
              :name expand-right-to-left
              :expand ((RIGHT-TO-LEFT-TIME I ENS)))
             )))
- 
+
  (defthmd ith-uav-step-time-location-converged-period
    (implies
     (synchronized ens)
@@ -1888,7 +1892,7 @@
                  '(:in-theory (current-theory :here)))
             (and stable-under-simplificationp
                  '(:in-theory (enable uav-extensionality))))))
- 
+
  (defthmd ith-uav-step-time-converged-period
    (implies
     (synchronized ens)
@@ -1914,12 +1918,12 @@
    :hints (("Goal" :in-theory '(FULLY-SYNCHRONIZED-IN-2T-1
                                 ITH-UAV-STEP-TIME-CONVERGED-PERIOD
                                 dpss-convergence))))
- 
+
  (defthm more-explicit-time
    (equal (+ (* 2 (TEE)) (* -1 (ONE)))
           (2TEE-1))
    :hints (("GOal" :in-theory (enable seq2))))
- 
+
  (defthm dpss-convergence-after-2T-1-helper
    (implies
     (and
@@ -1957,13 +1961,13 @@
     (syntaxp (equal (car ens) 'step-time))
     (equal (UAV->location (ith-uav i ens))
            (UAV->location (ith-uav i (flip-on-events ens))))))
- 
+
  (defthm flip-flip
    (implies
     (wf-ensemble ens)
     (equal (flip-on-events (flip-on-events ens))
            (flip-on-events ens))))
- 
+
  (defthm dpss-location-convergence-after-2T-1-helper
    (implies
     (and

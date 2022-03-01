@@ -1,13 +1,16 @@
-;;  
+;;
 ;; Copyright (C) 2021, Collins Aerospace
 ;; All rights reserved.
-;; 
+;;
 ;; This software may be modified and distributed under the terms
 ;; of the 3-clause BSD license.  See the LICENSE file for details.
 ;;
 (in-package "ACL2")
 (include-book "events")
 (include-book "coi/util/rewrite-equiv" :dir :system)
+
+; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
+(set-waterfall-parallelism nil)
 
 (in-theory (disable IMPENDING-ESCORT-FOR-UAV
                     (:rewrite IMPENDING-ESCORT-FOR-UAV-IMPLIES-IMPENDING-IMPACT-EVENT-FOR-UAV)
@@ -100,7 +103,7 @@
 ;;   (if (impending-impact-event-for-uav i ens)
 ;;       (min (min-time-to-impact-for-uav i ens) dt)
 ;;     (min (always-smallest-min-time-to-impending-impact ens) dt)))
-  
+
 (def::un update-location-rec (dt i ens)
   (declare (xargs :measure (uav-id-fix i)
                   :fty ((nnrat uav-id uav-list) uav-list)))
@@ -152,7 +155,7 @@
              :in-theory (enable ith-uav))))
 
   )
-  
+
 (def::und update-location-all (dt list)
   (declare (xargs :fty ((nnrat uav-list) uav-list)))
   (update-location-rec dt (1- (N)) list))
@@ -224,7 +227,7 @@
         (equal (* (UAV->DIRECTION x) DT)
                (if (< (UAV->DIRECTION x) 0) (- dt)
                  dt)))))
-  
+
 (defthm plus-0
   (implies
    (rationalp x)
@@ -251,7 +254,7 @@
 ;; steps that are larger than always-min-time.
 ;;
 ;; To do this we use step-time.  I don't know .. perhaps
-;; there 
+;; there
 ;;
 ;;
 ;; So it appears we cannot avoid escort condition here.
@@ -274,7 +277,7 @@
     (list i j)))
 
 (in-theory (enable UAV-LOCATION-FIX UAV-LOCATION-p))
-  
+
 (encapsulate
     ()
 
@@ -295,14 +298,14 @@
 
          ;;(not (event-for-uav i ens))
          ;;(not (event-for-uav (1+ (uav-id-fix i)) ens))
-         
+
          (implies
           (impending-impact-event-for-uav i ens)
           (<= (nnrat-fix dt) (min-time-to-impact-for-uav i ens)))
          (implies
           (impending-impact-event-for-uav (+ 1 (uav-id-fix i)) ens)
           (<= (nnrat-fix dt) (min-time-to-impact-for-uav (+ 1 (uav-id-fix i)) ens)))
-         
+
          (< (uav-id-fix i) (+ -1 (N))))
         (<= (uav->location (update-location-uav dt i ens))
             (uav->location (update-location-uav dt (+ 1 (uav-id-fix i)) ens))))
@@ -316,7 +319,7 @@
                 (pattern::hint
                  (not (impending-impact-event-for-uav i ens))
                  :expand ((impending-impact-event-for-uav i ens)))
-                (pattern::hint 
+                (pattern::hint
                  (:and (:replicate (:term (* x y)) (y x) (x y))
                        (:match x (UAV->DIRECTION uav))
                        (:keep uav))
@@ -333,7 +336,7 @@
                 )
                (average-hint)
                ))
-     
+
      (defthm ORDERED-LOCATION-UPDATE-LOCATION-helper
        (implies
         (and
@@ -354,10 +357,10 @@
                       (:instance lte-min-time-to-impending-impact-event-implication-1
                                  (i (+ 1 (uav-id-fix i))))
                       ))))
-     
+
 
      ))
-     
+
   (defthm ORDERED-LOCATION-UPDATE-LOCATION
     (implies
      (and
@@ -458,7 +461,7 @@
 
 ;; DAG -- and again ..
 ;;(in-theory (enable UAV-LOCATION-FIX uav-location-p))
-            
+
 (defthm p-is-right-perimeter
   (equal (uav-location-fix (p))
          (RIGHT-PERIMETER-BOUNDARY))
@@ -473,7 +476,7 @@
 
 (in-theory (enable equal-uav-id-fix-1-to-uav-id-equiv))
 
-;; DAG -- ugh 
+;; DAG -- ugh
 ;;(in-theory (enable UAV-LOCATION-FIX UAV-LOCATION-P))
 
 (def::pattern-hint daves-right-boundary-is-ordered-rule
@@ -513,7 +516,7 @@
                    (list ens)
                    (i iindex)
                    (j jindex))))
-   
+
 
 (defthm times-zero-condition
   (equal (* (if a 0 0) x) 0))
@@ -590,7 +593,7 @@
                                 uav-id-fix))
           (and stable-under-simplificationp
                '(:in-theory (current-theory :here)))))
-         
+
 (defthm degenerate-case-N-3
   (implies
    (case-split (uav-id-p (+ -3 (N))))
@@ -635,7 +638,7 @@
     (implies
      (impending-impact-event-for-uav i ens)
      (<= (nnrat-fix dt) (min-time-to-impact-for-uav i ens)))
-    
+
     )
    (iff (impending-escort-for-uav i (update-location-all dt ens))
         (impending-escort-for-uav i ens)))
@@ -674,7 +677,7 @@
     ()
 
   (in-theory (disable UAV-ID-FIX-UAV-ID-P))
-  
+
   (local (in-theory (disable ;;SIMPLIFY-SUMS-<
                              ;;|(< y (+ (- c) x))|
                              SINGLE-UAV-PERIMETER-ITH-INDEX
@@ -719,7 +722,7 @@
             )
     )
   )
-  
+
 (defthm min-time-to-impact-decreases-with-update-location
   (implies
    (and
@@ -782,10 +785,10 @@
            (hide (rewrite-equiv (equal (nnrat-fix dt) z)))))
      :hints (("Goal" :expand (:Free (x) (hide x))))))
 
-  ;; 
-  
-  
-  
+  ;;
+
+
+
   ;;(without-subsumption
    (local
     (defthm update-location-all-escort-condition-helper
@@ -796,7 +799,7 @@
        (lte-min-time-to-impending-impact-event dt ens))
       (escort-condition-p i j (update-location-all dt ens)))
      :rule-classes nil
-     :hints (("Goal" 
+     :hints (("Goal"
               :use ((:instance escort-condition-implies
                                (i i)
                                (j j))
@@ -828,7 +831,7 @@
              :use (:instance update-location-all-escort-condition-helper
                              (i (mv-nth 0 (ESCORT-CONDITION-WITNESS (UPDATE-LOCATION-ALL DT ENS))))
                              (j (mv-nth 1 (ESCORT-CONDITION-WITNESS (UPDATE-LOCATION-ALL DT ENS))))))))
-  
+
   )
 
 ;;
@@ -839,7 +842,7 @@
 
 ;;
 ;; The following rule failed to apply and
-;; reported that it could not establish 
+;; reported that it could not establish
 ;; (UAV-ID-EQUIV I (UAV-ID-FIX I))
 ;;
 (defthm adjacent-locations-never-smaller-minus
@@ -868,7 +871,7 @@
                                    (list ens)
                                    (i i)
                                    (j (+ 1 (UAV-ID-FIX I))))))))
-  
+
 ;; So .. this may be saying two different things.
 ;; We might want a strong version and a weak version.
 (defthm event-for-uav-update-location-all
@@ -1025,7 +1028,7 @@
            standard-hints
            ;;aux-hints
            )
-           
+
           ))
 
 (defthm escort-event-for-uav-from-impending-escort-event
@@ -1053,7 +1056,7 @@
            standard-hints
            ;;aux-hints
            )
-           
+
           ))
 
 (defthm not-event-for-uav-from-not-impending-impact-event
@@ -1109,41 +1112,41 @@
     ()
 
   (in-theory (disable min-time-to-impact-for-uav))
-  
+
   (defun-sk smallest-min-time-to-impact (i ens)
     (forall (j) (<= (min-time-to-impact-for-uav i ens) (min-time-to-impact-for-uav j ens))))
-  
+
   (in-theory (disable smallest-min-time-to-impact))
-  
+
   (local
    (defthm smallest-min-time-to-impact-implies
      (implies
       (smallest-min-time-to-impact i ens)
       (<= (min-time-to-impact-for-uav i ens) (min-time-to-impact-for-uav j ens)))
      :hints (("Goal" :use smallest-min-time-to-impact-necc))))
-  
+
   (defun-sk exists-uav-with-smallest-min-time-to-impact (ens)
     (exists (i) (smallest-min-time-to-impact i ens)))
-  
+
   (defthm exists-uav-with-smallest-min-time-to-impact-implies
     (implies
      (exists-uav-with-smallest-min-time-to-impact ens)
      (smallest-min-time-to-impact (exists-uav-with-smallest-min-time-to-impact-witness ens) ens)))
-  
+
   (in-theory (disable exists-uav-with-smallest-min-time-to-impact))
-  
+
   (defchoose uav-with-smallest-min-time-to-impact (i) (ens)
     (smallest-min-time-to-impact i ens))
-  
+
   (defthm exists-implies-witness
     (implies
      (exists-uav-with-smallest-min-time-to-impact ens)
      (smallest-min-time-to-impact (uav-with-smallest-min-time-to-impact ens) ens))
     :rule-classes nil
-    :hints (("Goal" 
+    :hints (("Goal"
              :use (:instance uav-with-smallest-min-time-to-impact
                              (i (EXISTS-UAV-WITH-SMALLEST-MIN-TIME-TO-IMPACT-witness ens))))))
-  
+
   (defthm uav-with-smallest-min-time-to-impact-property
     (implies
      (exists-uav-with-smallest-min-time-to-impact ens)

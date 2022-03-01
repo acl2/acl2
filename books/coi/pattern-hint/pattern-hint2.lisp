@@ -1,7 +1,7 @@
-;;  
+;;
 ;; Copyright (C) 2021, Collins Aerospace
 ;; All rights reserved.
-;; 
+;;
 ;; This software may be modified and distributed under the terms
 ;; of the 3-clause BSD license.  See the LICENSE file for details.
 ;;
@@ -13,6 +13,9 @@
 (include-book "coi/util/table" :dir :system)
 
 (set-state-ok t)
+
+; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
+(set-waterfall-parallelism nil)
 
 (defun not-term (term)
   (case-match term
@@ -101,14 +104,14 @@
 ;;   (if (not (consp list)) nil
 ;;     (if (binding-member (car list) (cdr list))
 ;;         (uniquify-bindings (cdr list))
-;;       (cons (car list) 
+;;       (cons (car list)
 ;;             (uniquify-bindings (cdr list))))))
 
 (defun minus-bindings (blist blist0)
   (if (not (consp blist)) nil
     (if (member-equal (car blist) blist0)
         (minus-bindings (cdr blist) blist0)
-      (cons (car blist) 
+      (cons (car blist)
             (minus-bindings (cdr blist) blist0)))))
 
 (defun << (x y) (not (lexorder y x)))
@@ -168,7 +171,7 @@
       (equal (symbol-name x) "_")))
 
 (mutual-recursion
- 
+
  (defun unify-pattern-match-args (pargs targs bindings)
    (if (and (consp pargs)
             (consp targs))
@@ -176,7 +179,7 @@
          (and bindings
               (unify-pattern-match-args (cdr pargs) (cdr targs) bindings)))
      bindings))
- 
+
  (defun unify-pattern-match (pattern term bindings)
    (if (symbolp pattern)
        (if (wildcard-p pattern) bindings
@@ -192,13 +195,13 @@
  )
 
 (mutual-recursion
- 
+
  (defun all-unify-pattern-match-args-fn (pfn pargs targs bindings)
    (declare (xargs :mode :program))
    (if (not (consp targs)) nil
      (append (all-unify-pattern-match-term-fn pfn pargs (car targs) bindings)
              (all-unify-pattern-match-args-fn pfn pargs (cdr targs) bindings))))
- 
+
  (defun all-unify-pattern-match-term-fn (pfn pargs term bindings)
    (declare (xargs :mode :program))
    (and (consp term)
@@ -206,7 +209,7 @@
                         (unify-pattern-match-args pargs (cdr term) bindings))))
           (append (and hit (list hit))
                   (all-unify-pattern-match-args-fn pfn pargs (cdr term) bindings)))))
-  
+
  )
 
 (defun all-unify-pattern-match-term (pattern term bindings)
@@ -377,7 +380,7 @@
              (let ((b2 (cons (list bkey cvalue) binding)))
                (append (all-transitive-bindings b2 blist alist)
                        (complete-all-transitive-bindings bkey (cdr blist2) binding blist alist)))))))))
- 
+
  (defun all-transitive-bindings (binding blist alist)
    (declare (xargs :mode :program))
    (if (not (consp alist)) (list binding)
@@ -403,7 +406,7 @@
                ;; Each blist2 is a complete binding ..
                (let ((blist2 (find-bindings akey bvalue blist)))
                  (complete-all-transitive-bindings bkey blist2 binding blist (cdr alist))))))))))
- 
+
  )
 
 (defun next-transitive-bindings (rst blist alist)
@@ -486,7 +489,7 @@
 ;; likely to contain duplicates.
 ;;
 ;; ((x a) (y b) (w c))
-;; 
+;;
 
 (defun duplicate-binding-list-by-class (x y classes blist0 res)
   (if (not (consp classes)) res
@@ -518,7 +521,7 @@
             (if (equal val left)
                 (revappend
                  (let ((binding (cons (list var right) binding)))
-                   (cons binding  
+                   (cons binding
                          (rewrite-binding left right (cdr vlist) binding)))
                  (rewrite-binding left right (cdr vlist) binding))
               (rewrite-binding left right (cdr vlist) binding))))))))
@@ -545,7 +548,7 @@
 
  (defun filter-each-binding-by-pattern (exp clause blist state)
    (filter-each-binding-by-pattern-rec exp clause blist state))
- 
+
  (defun and-unify-pattern-match-expression-rec (elist clause blist state)
    (if (not (consp elist)) (value blist)
      (er-let* ((blist (filter-each-binding-by-pattern (car elist) clause blist state)))
@@ -570,7 +573,7 @@
      (er-let* ((blist (unify-pattern-match-expression (car elist) clause binding state)))
        (if blist (value blist)
          (first-unify-pattern-match-expression-rec (cdr elist) clause binding state)))))
- 
+
  (defun first-unify-pattern-match-expression (elist clause binding state)
    (first-unify-pattern-match-expression-rec elist clause binding state))
 
@@ -578,7 +581,7 @@
    (declare (ignorable fn))
    (er-let* ((blist (unify-pattern-match-expression body clause call-binding state)))
      (value (map-instantiate-soft-alist post blist))))
- 
+
 (defun unify-pattern-match-expression (exp clause binding state)
    (declare (xargs :mode :program))
    (case-match exp
@@ -635,7 +638,7 @@
      ;; A simple cross product seems excessive in that it might contain many duplicates.
      ;;
      ;; What you really ought to do is normalization .. just like you are doing for
-     ;; 
+     ;;
      ;; Except you need a list of things you are rewriting.
      ;;
      ;; We assume that we are working under the cross-product of (x = y) and "a"
@@ -695,7 +698,7 @@
           (map-formals-to-actuals (cdr formals) (cdr actuals)))))
 
 (mutual-recursion
- 
+
  (defun translate-expression-list (list w)
    (declare (xargs :mode :program))
    (if (not (consp list)) nil
@@ -783,17 +786,17 @@
         `(:term ,exp)))
      (&
       (pseudo-trans exp w))))
- 
+
  )
 
 (mutual-recursion
- 
+
  (defun clausify-expression-list (list)
    (declare (xargs :mode :program))
    (if (not (consp list)) nil
      (cons (clausify-expression (car list))
            (clausify-expression-list (cdr list)))))
- 
+
  (defun clausify-expression (exp)
    (declare (xargs :mode :program))
    (case-match exp
@@ -834,7 +837,7 @@
      ((:bind-free . &) exp)
      (&
       (not-term exp))))
-  
+
  )
 
 #+joe
@@ -907,7 +910,7 @@
 ;; (via computed-hint-replacement)
 (defun run-opener-hint1 (flg n)  ; flg = stable-under-simplificationp
   (if flg
-      `(:computed-hint-replacement 
+      `(:computed-hint-replacement
          ((run-opener-hint1 stable-under-simplificationp ,(- n 1)))
         :in-theory (enable run-n+1)
         :restrict ((run-n+1 ((n ,n)))))
@@ -979,7 +982,7 @@
 ;; This means we will probably want an initial e/d theory.
 ;; Same may be true of :do-not hints.
 ;; :do-not '(preprocess)
-;; 
+;;
 (defun pattern-hint-list-fn-rec (blist hints hit res uses cases expansions restrictions etheory dtheory do-not clause state)
   (declare (xargs :mode :program))
   (if (not (and (consp blist) (consp hints))) (mv hit (revappend res nil) uses cases expansions restrictions etheory dtheory do-not state)
@@ -1046,7 +1049,7 @@
             (name   (or name 'un-named)))
        (list* name exp kwlist)))
     (& (list* 'un-named `(:all) nil))))
-      
+
 (defun process-hints-list (hints wrld)
   (declare (xargs :mode :program))
   (if (not (consp hints)) nil
@@ -1153,7 +1156,7 @@
   (defstub foo (x) nil)
   (defstub goo (x) nil)
   (defstub alpha (x y) nil)
-  
+
   (defthm silly-rule
     (implies
      (and
@@ -1164,17 +1167,17 @@
 
   (defund beta (x) (equal x 0))
   (in-theory (disable (beta)))
-  
+
   (defund gamma (x y) (equal x y))
   (in-theory (disable (gamma)))
 
   (def::pattern-function :alpha (a)
     (alpha a b)
     :returns (b))
-  
+
   (defthm test-thm
     (implies
-     (and 
+     (and
       (foo 3)
       (alpha 7 9)
       (goo 5)
@@ -1213,10 +1216,10 @@
                      ))
     :expand ((beta x))
     :cases ((gamma x y)))
-    
+
   (defthm test-thm-2
     (implies
-     (and 
+     (and
       (foo 3)
       (alpha 7 9)
       (goo 5)
@@ -1229,7 +1232,7 @@
 
   (defthm test-thm-3
     (implies
-     (and 
+     (and
       (foo 3)
       (alpha 7 9)
       (goo 5)
@@ -1251,7 +1254,7 @@
     ()
   ;;   ba    bb
   ;;   |   |-----------------------
-  ;;       
+  ;;
   ;; (< (+ ba ca) (+ bb cb))
   ;; (< ba (+ bb (- cb ca)))
   ;; (< ba (+ bb (- cy cx)))
@@ -1272,13 +1275,13 @@
        (<= (- cb ca) (- cy cx) )
        ;; Conclusion
        (<= (+ ba cx) (+ bb cy))))))
-       
-      
+
+
   )
 
 (defun lte-check-fn (ca cb cx cy)
   (<= (- cb ca) (- cy cx)))
-                     
+
 (defun lte-check (ca cb cx cy)
   (let ((ca (cadr ca))
         (cb (cadr cb))
@@ -1314,7 +1317,7 @@
              ;; --------+----------------------------
              ;; (< w x) |    *
              ;; (< x y) |    *         *
-             ;; (< w z) |                        *         
+             ;; (< w z) |                        *
              (:first (:and (:equal cc a)
                            (:equal  b c))
                      (:equal cc c))
@@ -1324,7 +1327,7 @@
 
 ;;
 ;; bind-free functions must return a list of value lists
-;; 
+;;
 (defun expand-lte-match-default (x y)
   (declare (xargs :guard t))
   (list (list x y)))

@@ -1,7 +1,7 @@
-;;  
+;;
 ;; Copyright (C) 2021, Collins Aerospace
 ;; All rights reserved.
-;; 
+;;
 ;; This software may be modified and distributed under the terms
 ;; of the 3-clause BSD license.  See the LICENSE file for details.
 ;;
@@ -9,6 +9,9 @@
 
 (include-book "../Base/flip")
 (include-book "../Base/step")
+
+; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
+(set-waterfall-parallelism nil)
 
 (local (in-theory (disable rewrite-<-into-average
                            rewrite-<-into-average-alt-1
@@ -39,7 +42,7 @@
       ;; If a UAV is inside of its segment moving left then it is
       ;; synchronized with its right neighbor until it reaches
       ;; its left segment boundary.
-      ;; 
+      ;;
       (and
        (< i (1- (N)))
        (< (uav->direction uav) 0)
@@ -70,7 +73,7 @@
       ;; being escorted by its left neighbor.  When departing its left
       ;; boundary and entering the segment, it is co-incident with its
       ;; left neighbor.
-      ;; 
+      ;;
       (and
        (< 0 i)
        (< 0 (uav->direction uav))
@@ -87,7 +90,7 @@
       ;; being escorted by its right neighbor.  When departing its right
       ;; boundary and entering the segment, it is co-incident with its
       ;; right neighbor.
-      ;; 
+      ;;
       (and
        (< i (1- (N)))
        (< (uav->direction uav) 0)
@@ -117,7 +120,7 @@
     ()
 
   (local (in-theory (disable EQUAL-UAV-ID-FIX-1-TO-UAV-ID-EQUIV)))
-  
+
   (defthm degenerate-alpha-0
     (iff (equal 1 (+ (* 1/2 (N)) (* -1/2 (UAV-ID-FIX I))))
          (if (uav-id-p (+ -2 (N)))
@@ -127,16 +130,16 @@
                                        uav-id-equiv
                                        uav-id-p
                                        uav-id-fix))))
-  
+
   (defthm degenerate-alpha-1
     (iff (UAV-ID-EQUIV 0 1)
          (equal (N) 1))
     :hints (("Goal" :in-theory (enable uav-id-equiv
                                        uav-id-p
                                        uav-id-fix))))
-  
+
   )
-  
+
 (encapsulate
     ()
 
@@ -148,7 +151,7 @@
     :hints (("GOal" :in-theory (enable right-perimeter-boundary segment-length))))
 
   )
-  
+
 (encapsulate
     ()
 
@@ -180,7 +183,7 @@
     :hints (("Goal" :do-not-induct t
              :in-theory (disable initially-synchronized-p)
              :expand (initial-synchronization (flip-on-events ens)))))
-  
+
 
   )
 
@@ -237,7 +240,7 @@
                location-pinching-rule
                escort-condition-implies
                )
-               
+
               )))
   )
 

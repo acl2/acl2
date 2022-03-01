@@ -1,12 +1,15 @@
-;;  
+;;
 ;; Copyright (C) 2021, Collins Aerospace
 ;; All rights reserved.
-;; 
+;;
 ;; This software may be modified and distributed under the terms
 ;; of the 3-clause BSD license.  See the LICENSE file for details.
 ;;
 (in-package "ACL2")
 (include-book "events")
+
+; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
+(set-waterfall-parallelism nil)
 
 ;; ===================================================================
 ;;
@@ -26,7 +29,7 @@
     ()
 
   (local (in-theory (enable UAV->flip)))
-  
+
   (defthm UAV->id-UAV->flip
     (equal (UAV->id (UAV->flip uav))
            (UAV->id uav)))
@@ -38,7 +41,7 @@
   (defthm UAV->location-UAV->flip
     (equal (UAV->location (UAV->flip uav))
            (UAV->location uav)))
-  
+
   )
 
 (def::und flip-uav (i ens)
@@ -159,7 +162,7 @@
          (UAV-right-boundary uav))
   :hints (("Goal" :in-theory (enable uav->flip UAV-LEFT-BOUNDARY
                                      uav-right-boundary))))
-                       
+
 (defthm uav->location-flip-auv
   (equal (uav->location (flip-uav i ens))
          (uav->location (ith-uav i ens)))
@@ -181,13 +184,13 @@
       (equal (len x) (N))
       (consp x))
      :rule-classes (:rewrite :forward-chaining)))
-  
+
   (local
    (defthm natp-implies-not-less-than-zero
      (implies
       (natp x)
       (not (< x 0)))))
-  
+
   (defthm ORDERED-LOCATION-LIST-P-FLIP-ON-EVENTS
     (implies
      (and
@@ -224,13 +227,13 @@
     (wf-ensemble ens))
    (escort-condition-p i j (flip-on-events ens)))
   :hints (("Goal" :do-not '(fertilize generalize)
-           
+
            :do-not-induct t)
           (and stable-under-simplificationp
                '(:in-theory (e/d (flip-uav
                                   equal-uav-id-fix-1-to-uav-id-equiv)
                                  nil)))
-          
+
           (and stable-under-simplificationp
                '(:in-theory (enable equal-uav-id-fix-1-to-uav-id-equiv
                                     location-linear
@@ -238,8 +241,8 @@
                                     ;;IMPLIES-UAV-ID-P
                                     UAV-ID-FIX-UAV-ID-P
                                     )))
-          
-                                 
+
+
           ))
 
 (encapsulate
@@ -265,7 +268,7 @@
   (def::signature flip-on-events (wf-ensemble) escort-condition)
 
   )
-  
+
 (def::signature flip-on-events (wf-ensemble) wf-ensemble)
 
 (defthm flip-on-events-invariants
