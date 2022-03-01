@@ -618,6 +618,11 @@
     (mbe :exec (ex-from-rp-loose term)
          :logic (ex-from-rp term)))
 
+  (defun-inline is-rp$ (term)
+    (declare (xargs :guard (rp-termp term)))
+    (mbe :exec (is-rp-loose term)
+         :logic (is-rp term)))
+    
   
   (defun extract-from-rp-with-context (term context)
     (declare (xargs :guard (rp-termp term)))
@@ -692,8 +697,8 @@
         ((case-match term (('not &) t))
          (mv (acl2::fargn term 1) t))
         ((case-match term (('if & then ''nil) (nonnil-p then)))
-         (mv (acl2::fcons-term* 'not (acl2::fargn term 1))
-             `(nil t)))
+         (mv `(if ,(acl2::fargn term 1) 'nil 't)
+             `(nil t t t)))
         ((case-match term (('if & ''nil else) (nonnil-p else)))
          (mv (acl2::fargn term 1) t))
         ((and (case-match term (('equal & &) t))
@@ -706,7 +711,7 @@
                  (acl2::fargn term 1)
                (acl2::fargn term 2))
              t))
-        (t (mv (acl2::fcons-term* 'not term) `(nil t)))))
+        (t (mv `(if ,term 'nil 't) `(nil t t t)))))
 
 (encapsulate
   nil
@@ -1768,6 +1773,11 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
   (rule-frame-cnts :type (satisfies alistp) :initially nil)
 
   (rw-step-limit :type (unsigned-byte 58) :initially 100000)
+  (rw-backchain-limit :type (unsigned-byte 58) :initially 1000)
+  (rw-backchain-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be set outside and read internally when starting to rewrite a hyp.
+  (rw-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be used
+  ;; only internally.
+  (backchaining-rule :type t :initially nil)
 
   (not-simplified-action :type (satisfies symbolp) :initially :error)
 
@@ -1795,7 +1805,9 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (defund rp-state-new-run (rp-state)
   (declare (xargs :stobjs (rp-state)))
-  (b* ((rp-state (update-casesplitter-cases nil rp-state))
+  (b* ((rp-state (update-rw-limit-throws-error t rp-state))
+       (rp-state (update-backchaining-rule nil rp-state))
+       (rp-state (update-casesplitter-cases nil rp-state))
        (rp-state (rules-used-clear rp-state))
        (rp-state (update-rw-stack-size 0 rp-state))
        (rp-state (update-rw-stack nil rp-state))
@@ -1858,3 +1870,19 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
        (rp-state-preservedp-sk old-rp-state
                                new-rp-state)))     
        
+
+(define not* (x)
+  (not x)
+  ///
+  (defthm not*-forward
+    (implies (not* x)
+             (not x))
+    :rule-classes :forward-chaining)
+  (defthm not-of-not*-forward
+    (implies (not (not* a))
+             a)
+    :rule-classes :forward-chaining))
+
+
+(define casesplit-from-context-trig (x)
+  x)

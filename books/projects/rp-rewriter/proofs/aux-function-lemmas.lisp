@@ -1175,3 +1175,40 @@
                             RP-TERMP-EX-FROM-RP
                             RP-TERMP-CONS-CAR-TERM-SUBTERMS
                             )))))
+
+
+(defthmd rp-termp-single-step
+  (implies (is-rp term)
+           (and (equal (rp-termp (list (car term)
+                                       (cadr term)
+                                       rest))
+                       (rp-termp rest))
+                (equal (rp-termp term)
+                       (rp-termp (caddr term)))))
+  :hints (("Goal"
+           :in-theory (e/d (is-rp) ()))))
+
+(defthm rp-termp-single-step-2
+  (implies (is-rp term)
+           (equal (rp-termp (list (car term)
+                                  (cadr term)
+                                  rest))
+                  (rp-termp rest)))
+  :hints (("Goal"
+           :in-theory (e/d (is-rp) ()))))
+
+(defthm rp-termp-single-step-3
+  (implies (and (is-rp term)
+                (rp-termp term))
+           (rp-termp (caddr term)))
+  :hints (("Goal"
+           :in-theory (e/d (is-rp
+                            rp-termp-single-step) ()))))
+
+
+
+(defthm rp-term-listp-of-rev
+  (implies (rp-term-listp x)
+           (rp-term-listp (rev x)))
+  :hints (("Goal"
+           :in-theory (e/d (rev) ()))))

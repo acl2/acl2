@@ -54,14 +54,6 @@
 ;; for ACL2(p)
 (set-waterfall-parallelism nil)
 
-;; "Stingy-pp-clean"  is one  of  the heuristics  that  improve the  proof-time
-;; performance for verification  of Booth encoded designs. This  is disabled by
-;; default as  it may potentially cause  proofs for some designs  to fail.  For
-;; the design  we are  working on,  this does  not happen.   So we  enable this
-;; heuristic  with the  event  below.   This gives  around  10% improvement  in
-;; proof-time performance for  64x64-bit multipliers, and a lot  more in larger
-;; designs.
-(enable-stingy-pp-clean t)
 
 ;; Events to read the multiplier design from file.
 (progn

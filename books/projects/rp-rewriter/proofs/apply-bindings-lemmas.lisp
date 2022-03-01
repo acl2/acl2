@@ -931,10 +931,13 @@
                res)||#)
             ((is-synp term) ''t)
             ((is-if term)
-             (AND (valid-sc-with-apply (cadr term) bindings a)
-                  (IF (rp-evlt (rp-apply-bindings (cadr term) bindings) a)
+             (and (or (valid-sc-with-apply (cadr term) bindings a)
+                      #|(and (not (rp-evlt (rp-apply-bindings (caddr term)
+                                                            bindings) a))
+                           (not (rp-evlt (rp-apply-bindings (cadddr term) bindings) a)))|#)
+                  (if (rp-evlt (rp-apply-bindings (cadr term) bindings) a)
                       (valid-sc-with-apply (caddr term) bindings a)
-                      (valid-sc-with-apply (CADDDR TERM) bindings A))))
+                    (valid-sc-with-apply (cadddr term) bindings a))))
             ((is-rp term)
              (and #|(eval-and-all (rp-apply-bindings-subterms (context-from-rp
                                                              term nil)
@@ -1000,6 +1003,7 @@
               :expand ((VALID-SC (RP-APPLY-BINDINGS TERM BINDINGS)
                                  A)
                        (:free (x y a) (VALID-SC (CONS x y) A)))
+              :do-not-induct t
               ;; :induct
               ;;  (FLAG-VALID-SC FLAG TERM SUBTERMS (bind-bindings (rp-trans-bindings bindings) a))
               :in-theory (e/d ()

@@ -138,6 +138,37 @@
              :expand ((VALID-SC TERM A))
              :in-theory (e/d (is-rp-implies-fc
                               is-if-implies-fc)
+                             ()))))
+
+  (defthm valid-sc-single-step-2
+    (implies (and ;(rp-termp term)
+                  (is-rp term))
+             (equal (valid-sc (list 'rp (cadr term) other) a)
+                    (and (rp-evlt `(,(cadr (cadr term)) ,other)  a)
+                         (valid-sc other a))))
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((VALID-SC TERM A))
+              
+             :in-theory (e/d (is-rp-implies-fc
+                              is-rp
+                              valid-sc-single-step
+                              is-if-implies-fc)
+                             ()))))
+
+  (defthm valid-sc-single-step-3
+    (implies (and (valid-sc term a)
+                  (is-rp term))
+             (valid-sc (caddr term) a))
+    :rule-classes :forward-chaining
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((VALID-SC TERM A))
+              
+             :in-theory (e/d (is-rp-implies-fc
+                              is-rp
+                              valid-sc-single-step
+                              is-if-implies-fc)
                              ())))))
 
 
@@ -155,7 +186,7 @@
 (defthm valid-sc-cadr
   (IMPLIES (AND
             (CONSP term)
-            ;;(Not (EQUAL (CAR term) 'if))
+            (Not (EQUAL (CAR term) 'if))
             ;;(Not (EQUAL (CAR term) 'rp))
             (Not (EQUAL (CAR term) 'quote))
             (CONSP (CDR term))
@@ -251,3 +282,13 @@
   :hints (("Goal"
            :expand (valid-sc (list 'quote x) a)
            :in-theory (e/d (is-rp is-if) ()))))
+
+
+(defthm rp-evlt-of-rp
+  (implies (is-rp (cons 'rp rest))
+           (equal (rp-evlt (cons 'rp rest) a)
+                  (rp-evlt (cadr rest) a)))
+  :hints (("Goal"
+           :Expand ((rp-trans (cons 'rp rest)))
+           :in-theory (e/d () ()))))
+

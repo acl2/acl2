@@ -289,15 +289,21 @@
 (def-rp-rule equal-sides-to-s
   (implies (and (bitp side1)
                 (bitp side2)
-                (syntaxp (and (or (and (not (equal side1 0))
+                (syntaxp (and (or (not (binary-fnc-p (ex-from-rp-loose side2)))
+                                  (and (not (equal side1 1))
+                                       (not (equal side1 ''1)))) ;; if a
+                              ;; binary-fnc equalized-to 1, don't get in here. 
+                              (or (not (binary-fnc-p (ex-from-rp-loose side1)))
+                                  (and (not (equal side2 1))
+                                       (not (equal side2 ''1))))
+                              
+                              (or (and (not (equal side1 0))
                                        (not (equal side1 ''0)))
                                   (and (unpack-booth-later-enabled)
-                                       (not (include-fnc side2 'and-list))
                                        (include-fnc side2 'binary-or)))
                               (or (and (not (equal side2 0))
                                        (not (equal side2 ''0)))
                                   (and (unpack-booth-later-enabled)
-                                       (not (include-fnc side1 'and-list))
                                        (include-fnc side1 'binary-or)))
                               
                               (or ;;(pp-has-bitp-rp side1)
@@ -319,7 +325,10 @@
                                   (bit-of-p (ex-from-rp-loose side2))
                                   (binary-fnc-p (ex-from-rp-loose side2)))||#)))
            (equal (equal side1 side2)
-                  (equal (unpack-booth (s-spec (list 2 side1 side2)))
+                  (equal (unpack-booth
+                          (s-spec (list 2
+                                       (unpack-booth side1)
+                                       (unpack-booth side2))))
                          0)))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
