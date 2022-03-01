@@ -1330,21 +1330,29 @@
     (implies (not err)
              (svtv-data$c->flatten-validp new-svtv-data))))
 
-
-(define svtv-data-compute-flatnorm (svtv-data)
-  :guard (and (svtv-data->flatten-validp svtv-data)
-              (not (svtv-data->phase-fsm-validp svtv-data)))
-  :returns new-svtv-data
+(define svtv-data-return-flatnorm (svtv-data)
+  :guard (svtv-data->flatten-validp svtv-data)
+  :returns (res flatnorm-res-p)
   (time$
    (b* ((flatten (svtv-data->flatten svtv-data))
         (flatnorm-setup (svtv-data->flatnorm-setup svtv-data)))
      (stobj-let ((aliases (svtv-data->aliases svtv-data)))
                 (assigns)
                 (svtv-normalize-assigns flatten aliases flatnorm-setup)
-                (b* ((svtv-data (update-svtv-data->flatnorm assigns svtv-data)))
-                  (update-svtv-data->flatnorm-validp t svtv-data))))
-   :msg "; Svtv-data flatnorm: ~st seconds, ~sa bytes.~%")
+                assigns))
+   :msg "; Svtv-data flatnorm: ~st seconds, ~sa bytes.~%"))
+
+(define svtv-data-compute-flatnorm (svtv-data)
+  :guard (and (svtv-data->flatten-validp svtv-data)
+              (not (svtv-data->phase-fsm-validp svtv-data)))
+  :guard-hints (("Goal" :in-theory (enable svtv-data-return-flatnorm)))
+  :returns new-svtv-data
+  (b* ((flatnorm (svtv-data-return-flatnorm svtv-data))
+       (svtv-data (update-svtv-data->flatnorm flatnorm svtv-data)))
+    (update-svtv-data->flatnorm-validp t svtv-data))
   ///
+  (local (in-theory (enable svtv-data-return-flatnorm)))
+  
   (defret <fn>-preserves-svtv-data$ap
     (implies (and (svtv-data$ap svtv-data)
                   (not (svtv-data$c->phase-fsm-validp svtv-data)))

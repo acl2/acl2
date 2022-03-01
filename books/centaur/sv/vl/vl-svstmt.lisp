@@ -1985,8 +1985,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                                   :args (list (sv::svex-quote (sv::2vec (sparseint-val mask)))
                                               rhs
                                               (svex-z)))))
-           (cons lhs
-                 (make-driver :value (svex-x) :strength 0))
+           ;; (cons lhs
+           ;;       (make-driver :value (svex-x) :strength 0))
            (svex-alist->assigns (cdr x) sizes masks)))
   ///
 
