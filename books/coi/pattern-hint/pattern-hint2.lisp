@@ -988,7 +988,7 @@
       (let ((binding0 (car blist)))
         (cond
          ((and do-not do-not0)
-          (mv-let (err value state) (error1 'pattern-hint "Multiple do-not hints: ~x0 ~x1" (acons #\0 do-not (acons #\1 do-not0 nil)) state)
+          (mv-let (err value state) (error1 'pattern-hint "" "Multiple do-not hints: ~x0 ~x1" (acons #\0 do-not (acons #\1 do-not0 nil)) state)
             (declare (ignore err value))
             (mv nil nil nil nil nil nil nil nil nil state)))
          (t
