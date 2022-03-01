@@ -3,12 +3,12 @@ Source files (not including doc.lisp):
   CODE LINES:
   150914 lines,   6722684 characters
   COMMENT LINES:
-   85259 lines,   5157258 characters
+   85259 lines,   5157252 characters
   BLANK LINES:
    35424 lines,     35424 characters
   TOTAL:
-  271597 lines,  11915366 characters
+  271597 lines,  11915360 characters
 ------------------------------------
 Documentation (file books/system/doc/acl2-doc.lisp):
-  138998 lines,   6156118 characters
+  138999 lines,   6156174 characters
 ------------------------------------
