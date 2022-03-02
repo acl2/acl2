@@ -9,6 +9,17 @@
 (include-book "cycle-check")
 (include-book "bounded-ords")
 
+; Matt K. mod: Avoid ACL2(p) error from (define in-p ...), "Fast alist
+; discipline violated in HONS-GET".  This happened repeatedly 2/28/2022 and
+; 3/1/2022 using either "make regression" or cert.pl with ACL2_CUSTOMIZATION
+; set to
+; <ACL2_directory>/acl2-customization-files/parallel-resource-based.lisp.  It
+; didn't happen when using certify-book directly after :ubt 1 and then
+; (set-waterfall-parallelism t) followed by (ld "wfo-thry.port") and then
+; (certify-book "wfo-thry" ? t :ttags :all :skip-proofs-okp t).  It's a
+; mystery....
+(set-waterfall-parallelism nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Theory connecting abstract graph to concrete relation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,9 +151,9 @@
          ;; the conclusion lemmas:
          (local
           (defthm bnl<=-bnl<-helper
-            (implies (and (natp b) 
-                          (bnlp x b) 
-                          (bnlp y b) 
+            (implies (and (natp b)
+                          (bnlp x b)
+                          (bnlp y b)
                           (not (bnl< x y b))
                           (bnl<= x y b))
                      (iff (equal x y) t))))
@@ -157,7 +168,7 @@
                  ;; really shouldn't get here.. probably should throw an error..
                  ;; but leaving this as just nil for incomparable ordering descriptors..
                  (t nil)))
-         
+
          (define ,w-ord<= ((dst-w w-ord-p) (src-w w-ord-p)
                            (dst node-p) (src node-p))
            :enabled t
@@ -169,7 +180,7 @@
                  ;; really shouldn't get here.. probably should throw an error..
                  ;; but leaving this as just nil for incomparable ordering descriptors..
                  (t nil)))
-         
+
          (define ,w-ords< ((dst-w w-ord-lst-p) (src-w w-ord-lst-p)
                            (dst node-p) (src node-p))
            :enabled t
@@ -178,12 +189,12 @@
                     (,w-ord< (first dst-w) (first src-w) dst src)
                     (and (,w-ord<= (first dst-w) (first src-w) dst src)
                          (,w-ords< (rest dst-w) (rest src-w) dst src)))))
-         
+
          (define ,build-bpll ((w w-ord-lst-p) x)
            :returns (r (bpllp r (,o-bnd)))
            :enabled t
            (cond ((endp w) ())
-                 ((natp (first w)) 
+                 ((natp (first w))
                   (cons (nat->bpl (first w) (,o-bnd))
                         (,build-bpll (rest w) x)))
                  (t
@@ -191,7 +202,7 @@
                         (,build-bpll (rest w) x)))))
 
          ;; prove first result that relates w-ords< to bnll< of the built bplls:
-         
+
          (defthm ,w-ords<-impl-bnll<
            (implies (and (,rel-p src dst)
                          (w-ord-lst-p dst-w)
@@ -203,36 +214,36 @@
                            (,build-bpll src-w src)
                            (,o-bnd)))
            :rule-classes nil)
-         
+
          ;; now define our omap checker which crawls over the omap ensuring that
          ;; w-ords in neighboring nodes satisfy w-ords<:
-         
+
          (define ,chk-omap-arc ((src node-p) (dst node-p) (m omap-p))
            :enabled t
            (,w-ords< (w-ords dst m) (w-ords src m) dst src))
-         
+
          (define ,chk-omap-node ((nxts arcs-p) (src node-p) (m omap-p))
            (or (endp nxts)
                (and (,chk-omap-arc src (first nxts) m)
                     (,chk-omap-node (rest nxts) src m))))
-         
+
          (define ,chk-omap ((nodes arcs-p) (m omap-p))
            (or (endp nodes)
                (and (,chk-omap-node (,nexts (first nodes)) (first nodes) m)
                     (,chk-omap (rest nodes) m))))
-         
+
          ;; pull together some results that chk-omap (along with assumptions)
          ;; ensures we can build a measure for all objects showing rel-p is
          ;; well-founded..
-         
+
          (define ,mk-bpll (x (m omap-p))
            :enabled t
            :returns (r (bpllp r (,o-bnd)))
            (,build-bpll (w-ords (,map-e x) m) x))
-         
+
          (defthm ,len-build-bpll
            (equal (len (,build-bpll w x)) (len w)))
-         
+
          (defthm ,max-omap-len-mk-bpll
            (<= (len (,mk-bpll x m)) (max-omap-len m))
            :hints (("Goal" :in-theory (enable ,mk-bpll)))
@@ -271,22 +282,22 @@
 
          ;; finally tidy up the omap validity check and export the two theorems
          ;; required to ensure termination:
-         
+
          (define ,valid-omap (m)
            (and (omap-p m)
                 (,chk-omap (,a-dom) m)))
 
          ;; these final two properties demonstrate that the relation is well-founded on
          ;; the concrete domain:
-         
+
          (defthm ,msr-is-ord-on-domp
            (o-p (,msr x m)))
-         
+
          (defthm ,relp-well-founded
            (implies (and (,valid-omap m)
                          (,rel-p x y))
                     (o< (,msr y m) (,msr x m)))
-           :hints (("Goal" 
+           :hints (("Goal"
                     :in-theory (e/d (,valid-omap) (bnll<-implies-o<-bnll->o))
                     :use ((:instance bnll<-implies-o<-bnll->o
                                      (x (,build-bpll (w-ords (,map-e y) m) y))
@@ -298,7 +309,7 @@
                                      (dst y)
                                      (src-w (w-ords (,map-e x) m))
                                      (dst-w (w-ords (,map-e y) m)))))))
-         
+
          ;; BUT, in addition to proving that we have met the requirements of showing that
          ;; there exists an e0-ordinal (in terms of ACL2 ordinals) which is strictly
          ;; decreasing, we also want to prove that we can transform the bpll ordinal that
@@ -307,7 +318,7 @@
 
          (define ,mk-bpl (x (m omap-p))
            (bpll->bpl (,mk-bpll x m) (max-omap-len m) (,o-bnd)))
-         
+
          (define ,bpl-bnd ((m omap-p))
            :returns (r natp)
            (* (max-omap-len m) (1+ (,o-bnd))))
@@ -315,18 +326,18 @@
          (defthm ,mk-bpll-becomes-bplp
            (implies (,valid-omap m)
                     (bplp (,mk-bpl x m) (,bpl-bnd m)))
-           :hints (("Goal" 
+           :hints (("Goal"
                     :in-theory (e/d (,valid-omap ,mk-bpl ,bpl-bnd) ())
                     :use ((:instance bpll->bpl-is-bplp
                                      (n (max-omap-len m))
                                      (b (,o-bnd))
                                      (x (,mk-bpll x m)))))))
-         
+
          (defthm ,mk-bpll-transfers-rel-p-bnl<
            (implies (and (,valid-omap m)
                          (,rel-p x y))
                     (bnl< (,mk-bpl y m) (,mk-bpl x m) (,bpl-bnd m)))
-           :hints (("Goal" 
+           :hints (("Goal"
                     :in-theory (e/d (,valid-omap ,mk-bpl ,bpl-bnd) ())
                     :use ((:instance bpll->bpl-is-bplp
                                      (n (max-omap-len m))
@@ -370,7 +381,7 @@
      (defun test-chk-ord-arc (src dst ord)
        (declare (ignore src dst ord))
        nil)))
-  
+
   (def-valid-wf-corr-assumption test)
 )
 (def-valid-wf-corr-conclusion test)

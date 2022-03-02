@@ -1122,8 +1122,7 @@
   (make ld-history-entry))
 
 (defun ld-history (state)
-  (declare (xargs :stobjs state
-                  :guard (f-boundp-global 'ld-history state)))
+  (declare (xargs :stobjs state))
   (f-get-global 'ld-history state))
 
 (defun ld-history-entry-input (x)
