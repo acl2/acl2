@@ -680,7 +680,7 @@
         state)
        ((mv erp res state)
         ;; TODO: Suppress step-limit error output here:
-        (prove$ `(not ,term) :step-limit step-limit))
+        (prove$ `(not ,term) :step-limit step-limit :ignore-ok t))
        ((when erp)
         (er hard? 'check-for-contradiction "Error checking for contradiction in ~s0: ~X12." description term nil)
         state))
@@ -769,7 +769,7 @@
           (check-for-implied-terms-aux ctx description (rest terms) all-terms step-limit state))
          (rest-terms (remove-equal term all-terms))
          ((mv erp res state)
-          (prove$ `(implies ,(make-conjunction-from-list rest-terms) ,term) :step-limit step-limit))
+          (prove$ `(implies ,(make-conjunction-from-list rest-terms) ,term) :step-limit step-limit :ignore-ok t))
          ((when erp)
           (er hard? 'check-for-implied-terms-aux "Error checking for implication in ~s0 in ~x1." description ctx)
           state)
@@ -841,7 +841,7 @@
       state
     (b* ((hyp (first hyps))
          ((mv erp res state)
-          (prove$ `(implies ,(make-conjunction-from-list (cons hyp other-hyps)) ,conclusion) :step-limit step-limit))
+          (prove$ `(implies ,(make-conjunction-from-list (cons hyp other-hyps)) ,conclusion) :step-limit step-limit :ignore-ok t))
          ((when erp)
           (er hard? 'try-to-prove-with-some-hyp "Error attempting to weaken a hyp ~x0 in ~x1 to ~x2." original-hyp ctx hyp)
           state)
@@ -859,7 +859,7 @@
     (b* ((hyp (first hyps))
          (other-hyps (remove-equal hyp all-hyps))
          ((mv erp res state)
-          (prove$ `(implies ,(make-conjunction-from-list other-hyps) ,conclusion) :step-limit step-limit))
+          (prove$ `(implies ,(make-conjunction-from-list other-hyps) ,conclusion) :step-limit step-limit :ignore-ok t))
          ((when erp)
           (er hard? 'check-for-droppable-hyps "Error attempting to drop hyp ~x0 in ~x1." hyp ctx)
           state)
@@ -943,7 +943,7 @@
   (declare (xargs :stobjs state :mode :program))
   (b* ((body-with-replacement (replace-subterm subterm new-var body))
        ((mv erp res state)
-        (prove$ body-with-replacement :step-limit step-limit))
+        (prove$ body-with-replacement :step-limit step-limit :ignore-ok t))
        ((when erp)
         (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
         state)
@@ -959,7 +959,7 @@
        (subterm-type-assumption (type-set-to-term subterm subterm-ts state))
        ;; (- (cw "(subterm type assumption for ~x0: ~x1)~%" subterm subterm-type-assumption))
        ((mv erp res state)
-        (prove$ `(implies ,subterm-type-assumption ,body-with-replacement) :step-limit step-limit))
+        (prove$ `(implies ,subterm-type-assumption ,body-with-replacement) :step-limit step-limit :ignore-ok t))
        ((when erp)
         (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
         state)
@@ -1196,12 +1196,10 @@
 
 ;; to check theorems:
 ;; (include-book "kestrel/utilities/linter" :dir :system)
-;; (set-ignore-ok t)
 ;; ... include your books here...
 ;; (acl2::run-linter :check-defuns nil :step-limit 100000 :suppress (:context :equality-variant :ground-term))
 
 ;; to check functions:
 ;; (include-book "kestrel/utilities/linter" :dir :system)
-;; (set-ignore-ok t)
 ;; ... include your books here...
 ;; (acl2::run-linter :check-defthms nil :step-limit 100000 :suppress (:context :equality-variant :ground-term))
