@@ -12,7 +12,7 @@
 
 ;; STATUS: In-progress
 
-(include-book "restore-mv-in-branches")
+;(include-book "restore-mv-in-branches")
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/utilities/fresh-names" :dir :system)
@@ -33,6 +33,30 @@
 ;; TODO: Also reconstruct lambdas with MV variables, such as the one that
 ;; results from :trans (mv-let (x y) (mv x y) (< x y)).
 
+(local (in-theory (disable function-symbolp)))
+
+(defund cons-nest-ending-in-nilp (x)
+  (declare (xargs :guard (pseudo-termp x)))
+  (if (not (consp x))
+      nil
+    (if (equal x *nil*)
+        t
+      (and (consp x)
+           (eq 'cons (ffn-symb x))
+           (= 2 (len (fargs x)))
+           (cons-nest-ending-in-nilp (farg2 x))))))
+
+(defund elements-of-cons-nest-ending-in-nil (x)
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (cons-nest-ending-in-nilp x))
+                  :hints (("Goal" :in-theory (enable cons-nest-ending-in-nilp)))
+                  :guard-hints (("Goal" :in-theory (enable cons-nest-ending-in-nilp)))))
+  (if (or (not (mbt (cons-nest-ending-in-nilp x))) ; for termination
+          (equal x *nil*))
+      nil
+    (cons (farg1 x)
+          (elements-of-cons-nest-ending-in-nil (farg2 x)))))
+
 ;; Analyze TERM, which should return multiple values, to try to determine names
 ;; to use for those values (e.g., if it has an if-branch that is (mv var1
 ;; var2), return (list var1 var2).  Returns nil upon failure.
@@ -49,12 +73,16 @@
                 (else-res (return-names-of-term (farg3 term))))
             ;; If either if branch gives a result, use it:
             (or then-res else-res)))
-      (if (and (call-of 'mv term) ; (mv var1 var2 ...)
-               (symbol-listp (fargs term))
-               (no-duplicatesp (fargs term)))
-          (fargs term)
-        nil ;fail
-        ))))
+      (if (flambda-applicationp term)
+          (return-names-of-term (lambda-body (ffn-symb term)))
+        (if (cons-nest-ending-in-nilp term) ;; a cons nest representing the translation of (mv <var1> ... <varn>)
+            (let ((vals (elements-of-cons-nest-ending-in-nil term)))
+              (if (and (symbol-listp vals)
+                       (no-duplicatesp-eq vals))
+                  vals
+                nil))
+          nil ;fail
+          )))))
 
 (defthm symbol-listp-of-return-names-of-term
   (symbol-listp (return-names-of-term term))
@@ -65,13 +93,14 @@
 (defund return-names-of-fn (fn wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (not (member-eq fn *stobjs-out-invalid*))
-                              (plist-worldp wrld))))
+                              (plist-worldp wrld)
+                              (function-symbolp fn wrld))))
   (let ((num-return-values (num-return-values-of-fn fn wrld)))
     (if (not (<= 2 num-return-values))
         (er hard? 'return-names-of-fn "Expected ~x0 to return multiple values, but it returns ~x1 value(s)." fn num-return-values)
       (let* ((body (fn-body fn t wrld))
              ;; Changes cons nests to mv calls:
-             (body (restore-mv-in-branches body (num-return-values-of-fn fn wrld) nil wrld))
+             ;; (body (restore-mv-in-branches body (num-return-values-of-fn fn wrld) nil wrld))
              (names (return-names-of-term body)))
         (if (not names)
             (prog2$ (cw "WARNING: Could not find names for the return values of ~x0.  Using default names.~%" fn)
@@ -82,11 +111,12 @@
   (true-listp (return-names-of-fn fn wrld))
   :hints (("Goal" :in-theory (enable return-names-of-fn))))
 
-;; Apply MV-LET to TERM, which should return RETURNED-VAL-COUNT values and,
-;; within the MV-LET, return the value corresponding to RETURNED-VAL-NUM.
-;; Preserve any outer lambdas in TERM to become outer lambdas of the result.
-;; For use when only a single one of the multiple values is returned.
-;; The result is not a translated term, since it may contain mv-let (and let):
+;; Apply MV-LET to catch the values returned by TERM, which should return
+;; RETURNED-VAL-COUNT values, and have the MV-LET return the value
+;; corresponding to RETURNED-VAL-NUM.  Preserve any outer lambdas in TERM to
+;; become outer lambdas of the result.  For use when only a single one of the
+;; multiple values is returned.  The result is not a translated term, since it
+;; may contain mv-let (and let):
 (defun apply-mv-let-to-term (term returned-val-num returned-val-count wrld)
   (declare (xargs :guard (and (pseudo-termp term)
                               (natp returned-val-num)
@@ -103,21 +133,24 @@
       (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
           `(let ,(alist-to-doublets (non-trivial-bindings (lambda-formals fn) (fargs term)))
              ,(apply-mv-let-to-term (lambda-body fn) returned-val-num returned-val-count wrld))
-          ;; `((lambda ,(lambda-formals fn) ,(apply-mv-let-to-term (lambda-body fn) returned-val-naum returned-val-count wrld))
+        ;; `((lambda ,(lambda-formals fn) ,(apply-mv-let-to-term (lambda-body fn) returned-val-naum returned-val-count wrld))
         ;;   ,@(fargs term))
         ;; we've reached the core term (TODO: What if it's an mv, or the translation of an mv?)
         (if (member-eq fn *stobjs-out-invalid*)
             (er hard? 'apply-mv-let-to-term "Unsupported term: ~x0." term) ;todo: add support for these?
-          (let ((fn-value-count (num-return-values-of-fn fn wrld)))
-            (if (not (equal fn-value-count returned-val-count))
-                (er hard? 'apply-mv-let-to-term "Expected ~x0 to return ~x1 values, but it returns ~x2 values." term returned-val-count fn-value-count)
-              (let* ((return-val-names (return-names-of-fn fn wrld))
-                     ;; the one value that gets returned by the whole term:
-                     (returned-val-name (nth returned-val-num return-val-names)))
-                `(mv-let ,return-val-names
-                   ,term
-                   (declare (ignore ,@(remove-equal returned-val-name return-val-names)))
-                   ,returned-val-name)))))))))
+          (if (not (function-symbolp fn wrld))
+              (er hard? 'apply-mv-let-to-term "Undefined function: ~x0." fn)
+            (let ((fn-value-count (num-return-values-of-fn fn wrld)))
+              (if (not (equal fn-value-count returned-val-count))
+                  (er hard? 'apply-mv-let-to-term "Expected ~x0 to return ~x1 values, but it returns ~x2 values." term returned-val-count fn-value-count)
+                (let* (;; try to generate nice names to catch the value returned:
+                       (return-val-names (return-names-of-fn fn wrld))
+                       ;; the one value that gets returned by the whole term:
+                       (returned-val-name (nth returned-val-num return-val-names)))
+                  `(mv-let ,return-val-names
+                     ,term
+                     (declare (ignore ,@(remove-equal returned-val-name return-val-names)))
+                     ,returned-val-name))))))))))
 
 (mutual-recursion
  ;; Note that the result is no longer a translated term (it contains mv-let and let).

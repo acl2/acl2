@@ -14,10 +14,11 @@
 ;; Check whether x is a strictly smaller term than y.  Note that term-order is
 ;; reflexive, so it is like a <= test.  So smaller-termp is like the
 ;; corresponding < test.
-(defun smaller-termp (x y)
+(defund smaller-termp (x y)
   (declare (xargs :guard (and (pseudo-termp x)
                               (pseudo-termp y))))
   (not (term-order y x)))
 
-(defthm booleanp-of-smaller-termp
+;; Only needed for Axe
+(defthmd booleanp-of-smaller-termp
   (booleanp (smaller-termp x y)))

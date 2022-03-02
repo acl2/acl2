@@ -187,8 +187,6 @@
 
 (acl2::defopeners ACL2::GET-SECTION-NUMBER-MACH-O-AUX)
 
-(acl2::defopeners ACL2::GET-MACH-O-LOAD-COMMAND)
-
 (acl2::defopeners ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX)
 
 (acl2::defopeners acl2::GET-PE-SECTION-aux)
