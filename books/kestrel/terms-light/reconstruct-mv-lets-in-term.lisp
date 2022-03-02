@@ -33,6 +33,8 @@
 ;; TODO: Also reconstruct lambdas with MV variables, such as the one that
 ;; results from :trans (mv-let (x y) (mv x y) (< x y)).
 
+;; TODO: Write some tests
+
 (local (in-theory (disable function-symbolp)))
 
 (defund cons-nest-ending-in-nilp (x)
@@ -152,7 +154,20 @@
                      (declare (ignore ,@(remove-equal returned-val-name return-val-names)))
                      ,returned-val-name))))))))))
 
+(defun mv-nth-of-mv-list-termp (term)
+  (declare (xargs :guard (and (pseudo-termp term))))
+  (and (call-of 'mv-nth term) ; example: (mv-nth '0 (mv-list '2 <multi-valued-term>))
+       (quotep (farg1 term))
+       (natp (unquote (farg1 term)))
+       (call-of 'mv-list (farg2 term))
+       (quotep (farg1 (farg2 term)))
+       (natp (unquote (farg1 (farg2 term))))
+       (<= 2 (unquote (farg1 (farg2 term))))
+       (< (unquote (farg1 term)) (unquote (farg1 (farg2 term))))))
+
 (mutual-recursion
+ ;; The input term is translated, so there won't be any mv-lets.
+ ;; TODO: Should we put back any translated mv-lets that we see?
  ;; Note that the result is no longer a translated term (it contains mv-let and let).
  (defund reconstruct-mv-lets-in-term (term wrld)
    (declare (xargs :guard (and (pseudo-termp term)
@@ -163,25 +178,20 @@
        term
      ;;it's a function call (maybe a lambda application):
      (let* ((fn (ffn-symb term))
+            ;; handle the args first:
             (new-args (reconstruct-mv-lets-in-terms (fargs term) wrld)))
        (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
            `(let ,(alist-to-doublets (non-trivial-bindings (lambda-formals fn) new-args))
               ,(reconstruct-mv-lets-in-term (lambda-body fn) wrld))
          ;; `((lambda ,(lambda-formals fn) ,(reconstruct-mv-lets-in-term (lambda-body fn) wrld))
          ;;   ,@new-args)
-         (if (and (call-of 'mv-nth term) ; example: (mv-nth '0 (mv-list '2 <multi-valued-term>))
-                  (quotep (farg1 term))
-                  (natp (unquote (farg1 term)))
-                  (call-of 'mv-list (farg2 term))
-                  (quotep (farg1 (farg2 term)))
-                  (natp (unquote (farg1 (farg2 term))))
-                  (<= 2 (unquote (farg1 (farg2 term))))
-                  (< (unquote (farg1 term)) (unquote (farg1 (farg2 term)))))
+         (if (mv-nth-of-mv-list-termp term)
              (apply-mv-let-to-term (farg2 (farg2 term))
                                    (unquote (farg1 term))
                                    (unquote (farg1 (farg2 term)))
                                    wrld)
            ;; TODO: Dive into IFs?  Other constructs?
+           ;; todo: see what letify does with may terms and must terms and consider doing that here)
            ;; just rebuild the function call:
            `(,fn ,@new-args))))))
 
