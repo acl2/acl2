@@ -18,6 +18,8 @@
 ;; it just tries enabling functions from the goal one at a time.)  For example,
 ;; try enabling pairs of functions from the goal.
 
+;; TODO: Don't try enabling functions that are already enabled.
+
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
@@ -27,6 +29,7 @@
                            ;;boundp-global
                            )))
 
+;move
 (defun weak-ld-history-entry-list-p (entries)
   (declare (xargs :guard t))
   (if (atom entries)
@@ -34,7 +37,40 @@
     (and (weak-ld-history-entry-p (first entries))
          (weak-ld-history-entry-list-p (rest entries)))))
 
-;; Returns (mv erp proved hints state)
+;move
+;; Returns the most recent THM or DEFTHM submitted by the user.
+(defund most-recent-theorem-aux (ld-history whole-ld-history)
+  (declare (xargs :guard (weak-ld-history-entry-list-p ld-history)))
+  (if (endp ld-history)
+      (er hard? 'most-recent-theorem-aux "Can't find a theorem in the history, which is ~x0" whole-ld-history)
+    (let* ((most-recent-command (first ld-history))
+           (most-recent-command-input (ld-history-entry-input most-recent-command)))
+      (if (not (consp most-recent-command-input))
+          ;; Skip any input that is an atom:
+          (most-recent-theorem-aux (rest ld-history) whole-ld-history)
+        (if (member-eq (car most-recent-command-input) '(thm defthm)) ;todo: support defrule, what about other kinds of proofs?
+            most-recent-command
+          ;; Keep looking:
+          (most-recent-theorem-aux (rest ld-history) whole-ld-history))))))
+
+;move
+;; Returns the most recent THM or DEFTHM submitted by the user.
+(defund most-recent-theorem (state)
+  (declare (xargs :stobjs state
+                  ;; is this implied by statep?:
+                  :guard (and (boundp-global 'ld-history state)
+                              (weak-ld-history-entry-list-p (get-global 'ld-history state)))))
+  (let ((ld-history (ld-history state)))
+    (most-recent-theorem-aux ld-history ld-history)))
+
+;; We are in multiple entry mode IFF the ld-history has length at least 2.
+(defund multiple-ld-history-entry-modep (state)
+  (declare (xargs :stobjs state
+                  :guard-hints (("Goal" :in-theory (enable state-p1))) ; todo: Drop?
+                  ))
+  (< 1 (len (ld-history state))))
+
+;; Returns (mv erp proved hints state).
 (defun try-enabling-functions (fns claim state)
   (declare (xargs :guard (symbol-listp fns)
                   :mode :program
@@ -66,33 +102,16 @@
         (mv nil t hints state)))
     (mv nil nil nil state)))
 
-(defun most-recent-theorem-aux (ld-history whole-ld-history)
-  (declare (xargs :guard (weak-ld-history-entry-list-p ld-history)))
-  (if (endp ld-history)
-      (er hard? 'most-recent-theorem-aux "Can't find a theorem in the history, which is ~x0" whole-ld-history)
-    (let* ((most-recent-command (ld-history-entry-input (first ld-history)))
-           (command-type (if (consp most-recent-command) ; for guards
-                             (car most-recent-command)
-                           'error)))
-      (if (member-eq command-type '(thm defthm))
-          most-recent-command
-        (most-recent-theorem-aux (rest ld-history) whole-ld-history)))))
-
-(defun most-recent-theorem (state)
-  (declare (xargs :stobjs state
-                  ;; is this implied by statep?:
-                  :guard (and (boundp-global 'ld-history state)
-                              (weak-ld-history-entry-list-p (get-global 'ld-history state)))))
-  (let ((ld-history (ld-history state)))
-    (most-recent-theorem-aux ld-history ld-history)))
-
 ;; Returns (mv erp event state).
 ;; The purpose of this is to print :hints that are likely to prove the last theorem that the user attempted.
 (defun h-fn (state)
   (declare (xargs :mode :program
                   :stobjs state))
-  (b* ((state (set-print-case :downcase state)) ; make all printing downcase
-       (most-recent-theorem (most-recent-theorem state))
+  (b* ((- (and (not (multiple-ld-history-entry-modep state))
+               (cw "WARNING: This tool can not see the full command history.  Execute (adjust-ld-history t state) to enable that.")
+               ))
+       (state (set-print-case :downcase state)) ; make all printing downcase
+       (most-recent-theorem (most-recent-theorem state)) ; can this be a defrule?
        (theorem-type (car most-recent-theorem))
        (body (if (eq 'thm theorem-type)
                  (second most-recent-theorem)
