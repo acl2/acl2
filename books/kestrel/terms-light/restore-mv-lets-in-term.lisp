@@ -181,6 +181,7 @@
             ;; handle the args first:
             (new-args (restore-mv-lets-in-terms (fargs term) wrld)))
        (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
+           ;; Apply to the body and turn the lambda into a let:
            `(let ,(alist-to-doublets (non-trivial-bindings (lambda-formals fn) new-args))
               ,(restore-mv-lets-in-term (lambda-body fn) wrld))
          ;; `((lambda ,(lambda-formals fn) ,(restore-mv-lets-in-term (lambda-body fn) wrld))
