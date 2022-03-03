@@ -44,3 +44,4 @@
 (include-book "serialize-lambdas-in-term")
 (include-book "let-bind-formals-in-calls")
 (include-book "restore-mv-lets-in-term")
+(include-book "substitute-unnecessary-lambda-vars")
