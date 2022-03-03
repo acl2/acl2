@@ -1,4 +1,4 @@
-; Tests of reconstruct-mv-lets-in-term
+; Tests of restore-mv-lets-in-term
 ;
 ; Copyright (C) 2022 Kestrel Institute
 ;
@@ -10,13 +10,13 @@
 
 (in-package "ACL2")
 
-(include-book "reconstruct-mv-lets-in-term")
+(include-book "restore-mv-lets-in-term")
 (include-book "kestrel/utilities/deftest" :dir :system)
 
 (deftest
   ;; multi-valued:
   (defun foo (x) (mv x x))
-  (assert-equal (reconstruct-mv-lets-in-term '(mv-nth '0 (mv-list '2 (foo x))) (w state))
+  (assert-equal (restore-mv-lets-in-term '(mv-nth '0 (mv-list '2 (foo x))) (w state))
                 ;; catches the return values of the call of FOO using mv-let:
                 '(mv-let (v0 v1)
                    (foo x)
@@ -25,7 +25,7 @@
 
 ;; TODO: Should this work?
 ;; (deftest
-;;   (assert-equal (reconstruct-mv-lets-in-term '(mv-nth '0 (mv-list '2 (cons x (cons y 'nil)))) (w state))
+;;   (assert-equal (restore-mv-lets-in-term '(mv-nth '0 (mv-list '2 (cons x (cons y 'nil)))) (w state))
 ;;                 '(mv-let (v0 v1)
 ;;                    (foo x)
 ;;                    (declare (ignore v1))
@@ -35,7 +35,7 @@
 ;; (deftest
 ;;   ;; multi-valued:
 ;;   (defun foo (x) (mv x x)) ;todo: weird error if this is missing
-;;   (assert-equal (reconstruct-mv-lets-in-term
+;;   (assert-equal (restore-mv-lets-in-term
 ;;                  '(+ (mv-nth '0 (mv-list '2 (foo x)))
 ;;                      (mv-nth '1 (mv-list '2 (foo x))))
 ;;                  (w state))
