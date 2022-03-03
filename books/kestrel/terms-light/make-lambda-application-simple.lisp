@@ -85,3 +85,8 @@
                 (equal (len actuals) (len formals)))
            (pseudo-termp (make-lambda-application-simple formals actuals body)))
   :hints (("Goal" :in-theory (enable make-lambda-application-simple))))
+
+;; (make-lambda-application-simple '(x y) '((+ '1 x) (+ '1 y)) '(cons x y))
+;; (make-lambda-application-simple '(x y) '((+ '1 x) (+ '1 y)) ''2) ; doesn't make a lambda
+;; (make-lambda-application-simple '(x y) '(x y) '(cons x y)) ; doesn't make a lambda
+;; (make-lambda-application-simple nil nil '(cons x y)) ; doesn't make a lambda
