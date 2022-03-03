@@ -15,6 +15,7 @@
 ;; trivially bound (that is, that is not bound to itself).  Trivial bindings
 ;; often arise because lambdas in ACL2 must be complete.
 
+(include-book "non-trivial-formals")
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -60,25 +61,6 @@
   (equal (len (mv-nth 1 (non-trivial-formals-and-args formals args)))
          (len (mv-nth 0 (non-trivial-formals-and-args formals args))))
   :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
-
-;; Returns the members of formals that don't correspond to themselves in the args.
-(defund non-trivial-formals (formals args)
-  (declare (xargs :guard (and (symbol-listp formals)
-                              (pseudo-term-listp args))))
-  (if (endp formals)
-      nil
-    (b* ((formal (first formals))
-         (arg (first args)))
-      (if (equal formal arg)
-          ;; skip since trivial:
-          (non-trivial-formals (rest formals) (rest args))
-        (cons formal (non-trivial-formals (rest formals) (rest args)))))))
-
-(defthm symbol-listp-of-non-trivial-formals
-  (implies (symbol-listp formals)
-           (symbol-listp (non-trivial-formals formals args)))
-  :hints (("Goal" :in-theory (enable non-trivial-formals))))
-
 
 (mutual-recursion
  ;; Gather all the vars that are bound in lambdas in TERM, except don't include

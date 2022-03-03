@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "all-quotep")
+(include-book "non-trivial-formals")
 (include-book "bound-vars-in-term")
 (include-book "let-vars-in-term")
 (include-book "free-vars-in-term")
