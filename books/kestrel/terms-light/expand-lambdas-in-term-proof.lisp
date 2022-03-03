@@ -1,6 +1,6 @@
 ; Proof of correctness of expand-lambdas-in-term
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -9,6 +9,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; This book proves that the meaning of terms (expressed wrt an evaluator) is
+;; preserved by expand-lambdas-in-term.
+
+;; TODO: Prove that the result is lambda-free.
 
 (include-book "expand-lambdas-in-term")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
@@ -29,11 +34,9 @@
 (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/alists-light/lookup-equal-lst" :dir :system))
 
-
-(local (in-theory (disable member-equal symbol-listp set-difference-equal PSEUDO-TERM-LISTP len
-                           STRIP-CADRS
-                           STRIP-CDRS)))
+(local (in-theory (disable member-equal symbol-listp set-difference-equal pseudo-term-listp len strip-cadrs strip-cdrs)))
 
 ;todo: automate some of this?
 
@@ -42,6 +45,13 @@
          (expand-lambdas-in-terms (cdr terms)))
   :hints (("Goal" :induct (len terms)
            :in-theory (enable (:i len) expand-lambdas-in-terms))))
+
+(defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs-gen
+  (implies (and (subsetp-equal (free-vars-in-term term) ; the alist binds all the vars, so any fee vars in the result come from the alist
+                               (strip-cars alist))
+                (subsetp-equal (free-vars-in-terms (strip-cdrs alist)) free))
+           (subsetp-equal (free-vars-in-term (sublis-var-simple alist term))
+                          free)))
 
 ;; TODO: Compare to make-lambda-term.
 ;; maybe just call this make-lambda?
@@ -64,6 +74,50 @@
            (pseudo-termp (wrap-term-in-lambda body lambda-formals args)))
   :hints (("Goal" :in-theory (enable wrap-term-in-lambda))))
 
+
+;; This is needed due to a deficiency in how defevaluator evaluates NIL, which
+;; is syntactically a variable although not a legal one:
+(mutual-recursion
+ (defun no-nils-in-termp (term)
+   (declare (xargs :guard (pseudo-termp term)))
+   (if (variablep term)
+       (not (equal term nil))
+     (let ((fn (ffn-symb term)))
+       (if (eq 'quote fn)
+           t
+         (and (no-nils-in-termsp (fargs term))
+              (if (consp fn)
+                  (no-nils-in-termp (lambda-body fn))
+                t))))))
+ (defun no-nils-in-termsp (terms)
+   (declare (xargs :guard (pseudo-term-listp terms)))
+   (if (endp terms)
+       t
+     (and (no-nils-in-termp (first terms))
+          (no-nils-in-termsp (rest terms))))))
+
+(defthm-flag-free-vars-in-term
+  (defthm not-member-equal-of-nil-and-free-vars-in-term
+    (implies (and (pseudo-termp term)
+                  (no-nils-in-termp term))
+             ;; This is weaker than (no-nils-in-termp term) because it doesn't
+             ;; check lambda bodies:
+             (not (member-equal nil (free-vars-in-term term))))
+    :flag free-vars-in-term)
+  (defthm not-member-equal-of-nil-and-free-vars-in-terms
+    (implies (and (pseudo-term-listp terms)
+                  (no-nils-in-termsp terms))
+             (not (member-equal nil (free-vars-in-terms terms))))
+    :flag free-vars-in-terms)
+  :hints (("Goal" :expand ((expand-lambdas-in-term terms)
+                           (FREE-VARS-IN-TERM TERM))
+           :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (expand-lambdas-in-term
+                            empty-eval-of-fncall-args
+                            free-vars-in-terms
+                            lambdas-closed-in-termp)
+                           (empty-eval-of-fncall-args-back)))))
+
 ;this holds for any evaluator?
 ;term may often be a var
 (defthmd empty-eval-of-cdr-of-assoc-equal
@@ -73,6 +127,33 @@
                                           (empty-eval-list (strip-cdrs alist)
                                                            a)))))
   :hints (("Goal" :in-theory (enable pairlis$ assoc-equal))))
+
+(local
+ (mutual-recursion
+  ;; The whole point of this is to recur on a different alist in the lambda case
+  (defund expand-lambdas-in-term-induct (term a)
+    (declare (xargs :measure (acl2-count term))
+             (irrelevant a))
+    (if (or (variablep term)
+            (fquotep term))
+        term
+      (let* ((args (fargs term))
+             (args (expand-lambdas-in-terms-induct args a))
+             (fn (ffn-symb term)))
+        (if (flambdap fn)
+            (let* ((lambda-body (expand-lambdas-in-term-induct (lambda-body fn)
+                                                               (pairlis$ (lambda-formals fn) (empty-eval-list args a)) ;note this!
+                                                               )))
+              (sublis-var-simple (pairlis$ (lambda-formals fn) args) lambda-body))
+          `(,fn ,@args)))))
+
+  (defund expand-lambdas-in-terms-induct (terms a)
+    (declare (xargs :measure (acl2-count terms))
+             (irrelevant a))
+    (if (endp terms)
+        nil
+      (cons (expand-lambdas-in-term-induct (first terms) a)
+            (expand-lambdas-in-terms-induct (rest terms) a))))))
 
 (defthm empty-eval-of-wrap-term-in-lambda-when-symbolp
   (implies (and (symbolp var)
@@ -91,8 +172,6 @@
                                      empty-eval-of-cdr-of-assoc-equal
                                      ))))
 
-;(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
-(local (include-book "kestrel/alists-light/lookup-equal-lst" :dir :system))
 
 ;this holds for any evaluator?
 (local
@@ -153,7 +232,6 @@
                       (cons key (cdr (assoc-equal key alist)))
                     nil)))
   :hints (("Goal" :in-theory (enable assoc-equal lookup-equal-lst pairlis$ LOOKUP-EQUAL)))))
-
 
 (local
  (defthm alists-equiv-on-of-pairlis$-of-lookup-equal-lst-same
@@ -283,31 +361,22 @@
                             set-difference-equal
                             empty-eval-of-fncall-args-back)))))
 
-
-
-
-(DEFTHM SUBSETP-EQUAL-OF-FREE-VARS-IN-TERM-OF-SUBLIS-VAR-SIMPLE-AND-FREE-VARS-IN-TERMS-OF-STRIP-CDRS-gen
-  (IMPLIES (and (SUBSETP-EQUAL (FREE-VARS-IN-TERM TERM)
-                               (STRIP-CARS ALIST))
-                (subsetp-equal (FREE-VARS-IN-TERMS (STRIP-CDRS ALIST)) free))
-           (SUBSETP-EQUAL (FREE-VARS-IN-TERM (SUBLIS-VAR-SIMPLE ALIST TERM))
-                          free)))
-
+;; Expanding lambdas does not introduce any new free vars.
 (defthm-flag-expand-lambdas-in-term
-  (defthm free-vars-in-term-of-expand-lambdas-in-term
+  (defthm subsetp-equal-of-free-vars-in-term-of-expand-lambdas-in-term
     (implies (and (pseudo-termp term)
-                  (LAMBDAS-CLOSED-IN-TERMP term))
+                  (lambdas-closed-in-termp term))
              (subsetp-equal (free-vars-in-term (expand-lambdas-in-term term))
                             (free-vars-in-term term)))
     :flag expand-lambdas-in-term)
-  (defthm free-vars-in-terms-of-expand-lambdas-in-terms
+  (defthm subsetp-equal-of-free-vars-in-terms-of-expand-lambdas-in-terms
     (implies (and (pseudo-term-listp terms)
-                  (LAMBDAS-CLOSED-IN-TERMsP terms))
+                  (lambdas-closed-in-termsp terms))
              (subsetp-equal (free-vars-in-terms (expand-lambdas-in-terms terms))
                             (free-vars-in-terms terms)))
     :flag expand-lambdas-in-terms)
   :hints (("Goal" :expand ((expand-lambdas-in-term terms)
-                           (FREE-VARS-IN-TERM TERM))
+                           (free-vars-in-term term))
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (expand-lambdas-in-term
                             empty-eval-of-fncall-args
@@ -315,14 +384,12 @@
                             lambdas-closed-in-termp)
                            (empty-eval-of-fncall-args-back)))))
 
-(defthm free-vars-in-term-of-expand-lambdas-in-term-gen
+(defthm subsetp-equal-of-free-vars-in-term-of-expand-lambdas-in-term-gen
   (implies (and (pseudo-termp term)
-                (LAMBDAS-CLOSED-IN-TERMP term)
-                (subsetp-equal (free-vars-in-term term) free)
-                )
+                (lambdas-closed-in-termp term)
+                (subsetp-equal (free-vars-in-term term) free))
            (subsetp-equal (free-vars-in-term (expand-lambdas-in-term term))
-                          free))
-  )
+                          free)))
 
 (defthm not-member-equal-of-free-var-in-term-of-expand-lambdas-in-term
   (implies (and (not (member-equal var (free-vars-in-term term)))
@@ -330,75 +397,6 @@
                 (lambdas-closed-in-termp term))
            (not (member-equal var (free-vars-in-term (expand-lambdas-in-term term))))))
 
-;; This is needed due to a deficiency in how deevaluator evaluates NIL, which
-;; is syntactically a variable although not a legal one:
-(mutual-recursion
- (defun no-nils-in-termp (term)
-   (declare (xargs :guard (pseudo-termp term)))
-   (if (variablep term)
-       (not (equal term nil))
-     (let ((fn (ffn-symb term)))
-       (if (eq 'quote fn)
-           t
-         (and (no-nils-in-termsp (fargs term))
-              (if (consp fn)
-                  (no-nils-in-termp (lambda-body fn))
-                t))))))
- (defun no-nils-in-termsp (terms)
-   (declare (xargs :guard (pseudo-term-listp terms)))
-   (if (endp terms)
-       t
-     (and (no-nils-in-termp (first terms))
-          (no-nils-in-termsp (rest terms))))))
-
-(defthm-flag-free-vars-in-term
-  (defthm not-member-equal-of-nil-and-free-vars-in-term
-    (implies (and (pseudo-termp term)
-                  (no-nils-in-termp term))
-             ;; This is weaker than (no-nils-in-termp term) because it doesn't
-             ;; check lambda bodies:
-             (not (member-equal nil (free-vars-in-term term))))
-    :flag free-vars-in-term)
-  (defthm not-member-equal-of-nil-and-free-vars-in-terms
-    (implies (and (pseudo-term-listp terms)
-                  (no-nils-in-termsp terms))
-             (not (member-equal nil (free-vars-in-terms terms))))
-    :flag free-vars-in-terms)
-  :hints (("Goal" :expand ((expand-lambdas-in-term terms)
-                           (FREE-VARS-IN-TERM TERM))
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (expand-lambdas-in-term
-                            empty-eval-of-fncall-args
-                            free-vars-in-terms
-                            lambdas-closed-in-termp)
-                           (empty-eval-of-fncall-args-back)))))
-
-(local
- (mutual-recursion
-  ;; The whole point of this is to recur on a different alist in the lambda case
-  (defund expand-lambdas-in-term-induct (term a)
-    (declare (xargs :measure (acl2-count term))
-             (irrelevant a))
-    (if (or (variablep term)
-            (fquotep term))
-        term
-      (let* ((args (fargs term))
-             (args (expand-lambdas-in-terms-induct args a))
-             (fn (ffn-symb term)))
-        (if (flambdap fn)
-            (let* ((lambda-body (expand-lambdas-in-term-induct (lambda-body fn)
-                                                               (pairlis$ (lambda-formals fn) (empty-eval-list args a)) ;note this!
-                                                               )))
-              (sublis-var-simple (pairlis$ (lambda-formals fn) args) lambda-body))
-          `(,fn ,@args)))))
-
-  (defund expand-lambdas-in-terms-induct (terms a)
-    (declare (xargs :measure (acl2-count terms))
-             (irrelevant a))
-    (if (endp terms)
-        nil
-      (cons (expand-lambdas-in-term-induct (first terms) a)
-            (expand-lambdas-in-terms-induct (rest terms) a))))))
 
 (local
  (make-flag expand-lambdas-in-term-induct))
