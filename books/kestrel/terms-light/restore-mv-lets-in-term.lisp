@@ -169,7 +169,7 @@
  ;; The input term is translated, so there won't be any mv-lets.
  ;; TODO: Should we put back any translated mv-lets that we see?
  ;; Note that the result is no longer a translated term (it contains mv-let and let).
- (defund reconstruct-mv-lets-in-term (term wrld)
+ (defund restore-mv-lets-in-term (term wrld)
    (declare (xargs :guard (and (pseudo-termp term)
                                (plist-worldp wrld))
                    :measure (acl2-count term)))
@@ -179,11 +179,11 @@
      ;;it's a function call (maybe a lambda application):
      (let* ((fn (ffn-symb term))
             ;; handle the args first:
-            (new-args (reconstruct-mv-lets-in-terms (fargs term) wrld)))
+            (new-args (restore-mv-lets-in-terms (fargs term) wrld)))
        (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
            `(let ,(alist-to-doublets (non-trivial-bindings (lambda-formals fn) new-args))
-              ,(reconstruct-mv-lets-in-term (lambda-body fn) wrld))
-         ;; `((lambda ,(lambda-formals fn) ,(reconstruct-mv-lets-in-term (lambda-body fn) wrld))
+              ,(restore-mv-lets-in-term (lambda-body fn) wrld))
+         ;; `((lambda ,(lambda-formals fn) ,(restore-mv-lets-in-term (lambda-body fn) wrld))
          ;;   ,@new-args)
          (if (mv-nth-of-mv-list-termp term)
              (apply-mv-let-to-term (farg2 (farg2 term))
@@ -195,11 +195,11 @@
            ;; just rebuild the function call:
            `(,fn ,@new-args))))))
 
- (defund reconstruct-mv-lets-in-terms (terms wrld)
+ (defund restore-mv-lets-in-terms (terms wrld)
    (declare (xargs :guard (and (pseudo-term-listp terms)
                                (plist-worldp wrld))
                    :measure (acl2-count terms)))
    (if (endp terms)
        nil
-     (cons (reconstruct-mv-lets-in-term (first terms) wrld)
-           (reconstruct-mv-lets-in-terms (rest terms) wrld)))))
+     (cons (restore-mv-lets-in-term (first terms) wrld)
+           (restore-mv-lets-in-terms (rest terms) wrld)))))
