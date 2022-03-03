@@ -1,4 +1,4 @@
-; A simple utility to make a lambda application
+; A simple utility to make a lambda application (does not drop ignored vars)
 ;
 ; Copyright (C) 2021-2022 Kestrel Institute
 ;
@@ -10,12 +10,15 @@
 
 (in-package "ACL2")
 
+;; See also make-lambda-application-simple
+
 (include-book "free-vars-in-term")
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;; Similar to make-lambda-term, but make-lambda-term is worse because of the accumulator in all-vars1.
+;; TODO: Don't make a lambda when FORMALS is nil.
 (defund make-lambda-term-simple (formals actuals body)
   (declare (xargs :guard (and (pseudo-termp body)
                               (symbol-listp formals)
