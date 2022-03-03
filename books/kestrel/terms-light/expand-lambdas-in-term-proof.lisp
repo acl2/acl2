@@ -16,6 +16,7 @@
 ;; TODO: Prove that the result is lambda-free.
 
 (include-book "expand-lambdas-in-term")
+(include-book "make-lambda-term-simple")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -53,25 +54,7 @@
            (subsetp-equal (free-vars-in-term (sublis-var-simple alist term))
                           free)))
 
-;; Similar to make-lambda-term, but make-lambda-term is worse because of the accumulator in all-vars1.
-(defund make-lambda-term-simple (formals actuals body)
-  (declare (xargs :guard (and (pseudo-termp body)
-                              (symbol-listp formals)
-                              (pseudo-term-listp actuals)
-                              (equal (len formals)
-                                     (len actuals)))))
-  (let* ((free-vars (free-vars-in-term body))
-         (extra-vars (set-difference-eq free-vars formals)))
-    ;; Binds the formals to their actuals and all other vars to themselves:
-    `((lambda ,(append formals extra-vars) ,body) ,@actuals ,@extra-vars)))
 
-(defthm pseudo-termp-of-make-lambda-term-simple
-  (implies (and (pseudo-termp body)
-                (symbol-listp formals)
-                (pseudo-term-listp actuals)
-                (equal (len actuals) (len formals)))
-           (pseudo-termp (make-lambda-term-simple formals actuals body)))
-  :hints (("Goal" :in-theory (enable make-lambda-term-simple))))
 
 
 ;; This is needed due to a deficiency in how defevaluator evaluates NIL, which
