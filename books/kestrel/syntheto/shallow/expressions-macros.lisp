@@ -288,8 +288,8 @@
 ;; However, this file is not yet dependent on types.lisp
 ;; Let's define the product type directly in ACL2.
 
-(FTY::DEFPROD SYNDEF::|acid4|
-	      ((SYNDEF::|id| INT))
-	      :TAG :|acid4|)
+(fty::defprod syndef::|acid4|
+	      ((syndef::|id| int))
+	      :tag :|acid4|)
 
 (assert-event (equal 3 (let ((syndef::|ai| (syndef::|MAKE-acid4| :|id| 3))) (s-prod-field-get "acid4" "id" (s-varref "ai") ))))

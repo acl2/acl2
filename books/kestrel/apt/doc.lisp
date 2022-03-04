@@ -52,6 +52,8 @@
 (include-book "tailrec")
 (include-book "tailrec-doc")
 
+(include-book "wrap-output")
+
 ; (depends-on "images/apt-logo.png")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -142,7 +144,8 @@
                             simplify-term-programmatic
                             solve
                             tailrec
-                            utilities))
+                            utilities
+                            wrap-output))
 
 (xdoc::add-resource-directory "kestrel-apt-images" "images")
 (xdoc::add-resource-directory "kestrel-apt-design-notes" "design-notes")
