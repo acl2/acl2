@@ -363,8 +363,9 @@ if (! $OPTIONS{"html"}) {
     print "Maximum parallelism: $max_parallel processes, from time $max_start_time to $max_end_time\n";
     print "Average level of parallelism: $avg_parallel.\n";
     if ($OPTIONS{"build_log"}) {
-	my $avg_lag = avg_lagtime($basecosts, $start_end_times);
-	print("Average lag time: $avg_lag\n");
+	(my $total_lag, my $avg_lag) = @{lagtime_stats($basecosts, $start_end_times)};
+	print("Total lag time: " . human_time($total_lag) . "\n");
+	print("Average lag time: " . human_time($avg_lag) . "\n");
     }
     print "Total time for all files: " . human_time($sum_parallel,0) . ".\n";
 }

@@ -52,7 +52,7 @@ parallelism_stats
 human_time
 read_build_log
 costs_from_start_end_times
-avg_lagtime
+lagtime_stats
 );
 
 
@@ -917,7 +917,7 @@ sub compute_savings
     return \%savings;
 }
 
-sub avg_lagtime {
+sub lagtime_stats {
     my ($basecosts, $start_end_times) = @_;
     my $total_lag = 0.0;
     my $count = 0;
@@ -930,8 +930,8 @@ sub avg_lagtime {
 	    $count += 1;
 	}
     }
-    if ($count != 0) {
-	return $total_lag / $count;
+    if ($count == 0) {
+	return [ 0, 0 ];
     }
-    return 0;
+    return [ $total_lag, $total_lag / $count ];
 }
