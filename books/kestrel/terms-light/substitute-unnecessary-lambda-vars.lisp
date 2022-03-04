@@ -18,13 +18,15 @@
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "free-vars-in-term")
 (include-book "sublis-var-simple")
+(include-book "non-trivial-formals")
 (local (include-book "kestrel/utilities/terms" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 
+;; TODO: Add tests, especially for lambdas
 (mutual-recursion
- ;; Count how many times VAR appears freely in TERM.
+ ;; Count how many times VAR appears freely in TERM (except look past trivial lambda bindings).
  (defun count-free-occurences-in-term (var term)
    (declare (xargs :guard (and (symbolp var)
                                (pseudo-termp term))))
@@ -34,9 +36,27 @@
          0)
      (if (fquotep term)
          0
-       ;; function call: count occurrences in args
-       ;; okay for lambdas since we are counting free occurrences only
-       (count-free-occurences-in-terms var (fargs term)))))
+       (if (consp (ffn-symb term))
+           ;; lambda:
+           (let* ((lambda-formals (lambda-formals (ffn-symb term)))
+                  (args (fargs term)))
+             (if (member-eq var lambda-formals)
+                 (if (member-eq var (non-trivial-formals lambda-formals args))
+                     ;; The var is a non-trivial lambda-formal, so count occs
+                     ;; in all the args but not in the body (because that var
+                     ;; in the body has a different meaning):
+                     (count-free-occurences-in-terms var (fargs term))
+                   ;; The var is a trivial lambda-formal, so count occs in the
+                   ;; other args and occs in the body (where the var has the
+                   ;; same meaning):
+                   (+ (count-free-occurences-in-terms var (fargs term))
+                      -1 ; for the trivial binding
+                      (count-free-occurences-in-term var (lambda-body (ffn-symb term)))))
+               ;; The var is not a lambda-formal, so count occs in the args
+               ;; (the var does not appear in the lambda body):
+               (count-free-occurences-in-terms var (fargs term))))
+         ;; normal function call: count occurrences in args
+         (count-free-occurences-in-terms var (fargs term))))))
 
  ;; Count how many times VAR appears freely in TERMS.
  (defun count-free-occurences-in-terms (var terms)
