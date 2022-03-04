@@ -169,6 +169,7 @@ sub max_dep_endtime {
     my $deps = cert_target_deps($depdb, $target);
     my $starttime = $begin_time;
     foreach my $dep (@$deps) {
+	# print("$target -> $dep\n");
 	$starttime = get_end_time_bounded($dep, $starttime, $start_end_times);
     }
     # print("max dep endtime " . $starttime . " target $target\n");
@@ -544,7 +545,24 @@ sub short_cert_name {
 
 }
 
-
+sub linepairs_to_str {
+    # input is a list of pairs [ linestart, linerest ]
+    # calculates the max linestart length and formats each line with
+    # linestart left-justified in a field of that length.
+    my ($linepairs) = @_;
+    my $ret = "";
+    my $maxwidth = 0;
+    foreach my $pair (@$linepairs) {
+	my $len = length($pair->[0]);
+	$maxwidth = ($maxwidth < $len) ? $len : $maxwidth;
+    }
+    my $filewidth = $maxwidth+1;
+    my $fmt = "%-${maxwidth}s%s";
+    foreach my $pair (@$linepairs) {
+	$ret .= sprintf($fmt, $pair->[0], $pair->[1]);
+    }
+    return $ret;
+}
 
 
 sub critical_path_report {
@@ -556,7 +574,7 @@ sub critical_path_report {
 
 
     my $ret;
-
+    my $linepairs;
     my $have_starttimes = scalar keys %$start_end_times;
     
     if ($htmlp) {
@@ -567,12 +585,11 @@ sub critical_path_report {
 	     . "<th>Cumulative</th>"
 	     . "</tr>\n";
     } else {
+	$ret = "Critical Path\n\n";
 	if ($have_starttimes) {
-	    $ret = "Critical Path\n\n"
-		. sprintf("%-50s %10s %10s %10s %10s %10s\n", "File", "Cumulative", "Time", "Speedup", "Remove", "Lag");
+	    $linepairs = [["File", sprintf("%10s %10s %10s %10s %10s\n", "Cumulative", "Time", "Speedup", "Remove", "Lag")]];
 	} else {
-	    $ret = "Critical Path\n\n"
-		. sprintf("%-50s %10s %10s %10s %10s\n", "File", "Cumulative", "Time", "Speedup", "Remove");
+	    $linepairs = [["File", sprintf("%10s %10s %10s %10s\n", "Cumulative", "Time", "Speedup", "Remove")]];
 	}
     }
 
@@ -602,6 +619,7 @@ sub critical_path_report {
 		 . "</tr>\n";
 	}
 	else {
+	    my $vals;
 	    if ($have_starttimes) {
 		# Selftime stores the difference between our end time
 		# and the latest end time of a dependency.
@@ -615,19 +633,21 @@ sub critical_path_report {
 		    $lagtime_total += $lagtime;
 		    $lagtime_pr = human_time($lagtime, 1);
 		}
-		$ret .= sprintf("%-50s %10s %10s %10s %10s %10s\n", $shortcert, $cumtime_pr, $selftime_pr, $spsav_pr, $remsav_pr, $lagtime_pr);
+		$vals = sprintf("%10s %10s %10s %10s %10s\n", $cumtime_pr, $selftime_pr, $spsav_pr, $remsav_pr, $lagtime_pr);
 	    } else {
-		$ret .= sprintf("%-50s %10s %10s %10s %10s\n", $shortcert, $cumtime_pr, $selftime_pr, $spsav_pr, $remsav_pr);
+		$vals = sprintf("%10s %10s %10s %10s\n", $cumtime_pr, $selftime_pr, $spsav_pr, $remsav_pr);
 	    }
+	    push(@$linepairs, [$shortcert, $vals]);
 	}
 	$count += 1;
 	$file = $filecosts->{"maxpath"};
     }
-
     if ($htmlp) {
 	$ret .= "</table>\n\n";
     }
     else {
+	# compute the width
+	$ret .= linepairs_to_str($linepairs);
 	if ($have_starttimes) {
 	    $ret .= "\n";
 	    $ret .= sprintf("Critical path total lagtime: %s\n", human_time($lagtime_total));
@@ -648,7 +668,7 @@ sub deepest_path_report {
 
 
     my $ret;
-
+    my $linepairs;
     if ($htmlp) {
 	$ret = "<table class=\"critpath_table\">\n"
 	     . "<tr class=\"critpath_head\">"
@@ -658,8 +678,8 @@ sub deepest_path_report {
 	     . "</tr>\n";
     }
     else {
-	$ret = "Deepest Path\n\n"
-	     . sprintf("%-50s %10s %10s %10s %10s\n", "File", "Cumulative", "Time", "Speedup", "Remove");
+	$ret = "Deepest Path\n\n";
+	$linepairs = [["File", sprintf("%10s %10s %10s %10s\n", "Cumulative", "Time", "Speedup", "Remove")]];
     }
 
     my $file = $topfile;
@@ -686,7 +706,8 @@ sub deepest_path_report {
 		 . "</tr>\n";
 	}
 	else {
-	    $ret .= sprintf("%-50s %10s %10s %10s %10s\n", $shortcert, $cumtime_pr, $selftime_pr, $spsav_pr, $remsav_pr);
+	    push(@$linepairs,
+		 [$shortcert, sprintf("%10s %10s %10s %10s\n", $cumtime_pr, $selftime_pr, $spsav_pr, $remsav_pr)]);
 	}
 
 	$file = $filecosts->{"maxdepthpath"};
@@ -696,6 +717,7 @@ sub deepest_path_report {
 	$ret .= "</table>\n\n";
     }
     else {
+	$ret .= linepairs_to_str($linepairs);
 	$ret .= "\n\n";
     }
 
@@ -725,6 +747,7 @@ sub individual_files_report {
 
     my @sorted = reverse sort { ($costs->{$a}->{"totaltime"} + 0.0) <=> ($costs->{$b}->{"totaltime"} + 0.0) } keys(%{$costs});
     my $ret;
+    my $linepairs;
     my $have_starttimes = scalar keys %$start_end_times;
     
     if ($htmlp) 
@@ -734,9 +757,9 @@ sub individual_files_report {
     } else {
 	$ret = "Individual File Times\n\n";
 	if ($have_starttimes) {
-	    $ret .= sprintf("%-50s %10s %10s %10s --->  %-50s\n", "File", "Cumulative", "Time", "Lag", "Dependency");
+	    $linepairs = [["File", sprintf("%10s %10s %10s --->  %-50s\n", "Cumulative", "Time", "Lag", "Dependency")]];
 	} else {
-	    $ret .= sprintf("%-50s %10s %10s  --->  %-50s\n", "File", "Cumulative", "Time", "Dependency");
+	    $linepairs = [["File", sprintf("%10s %10s  --->  %-50s\n", "Cumulative", "Time", "Dependency")]];
 	}
     }
 
@@ -761,6 +784,7 @@ sub individual_files_report {
 	    $ret .= "<td class=\"indiv_time_$timeclass\">$time</td>";
 	    $ret .= "</tr>\n";
 	} else {
+	    my $vals;
 	    if ($have_starttimes) {
 		# See comment about lagtime in critical_path_report
 		my $lagtime = "[Error]";
@@ -768,12 +792,11 @@ sub individual_files_report {
 		    ( my $start, my $end ) = @{$start_end_times->{$name}};
 		    $lagtime = human_time($basecosts->{$name} - ($end - $start), 1);
 		}
-		$ret .= sprintf("%-50s %10s %10s %10s --->  %-50s\n",
-				$shortname, $cumul, $time, $lagtime, $depname);
+		$vals = sprintf("%10s %10s %10s --->  %-50s\n", $cumul, $time, $lagtime, $depname);
 	    } else {
-		$ret .= sprintf("%-50s %10s %10s  --->  %-50s\n",
-				$shortname, $cumul, $time, $depname);
+		$vals = sprintf("%10s %10s  --->  %-50s\n", $cumul, $time, $depname);
 	    }
+	    push(@$linepairs, [$shortname, $vals]);
 	}
     }
     
@@ -781,6 +804,7 @@ sub individual_files_report {
     {
 	$ret .= "</table>\n\n";
     } else {
+	$ret .= linepairs_to_str($linepairs);
 	$ret .= "\n\n";
     }
 

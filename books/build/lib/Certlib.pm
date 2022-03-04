@@ -1462,29 +1462,32 @@ sub cert_target_deps {
     my ($depdb, $target) = @_;
     my $certinfo = $depdb->certdeps->{$target};
     if ($target =~ m{\.cert$}) {
-	my @deps = ();
-	my $bookdeps = $depdb->cert_bookdeps($target);
-	foreach my $dep (@$bookdeps) {
-	    push(@deps, $dep);
-	}
+	my @res = ();
+	my $deps = $depdb->cert_deps($target);
+	push(@res, @$deps);
 	if ($depdb->cert_get_param($target, "acl2x")) {
-	    push(@deps, cert_to_acl2x($target));
+	    push(@res, cert_to_acl2x($target));
 	} elsif ($depdb->cert_get_param($target, "pcert") || $pcert_all) {
-	    push(@deps, cert_to_pcert1($target));
+	    push(@res, cert_to_pcert1($target));
 	}
-	return \@deps;
+	return \@res;
     } elsif ($target =~ m{\.acl2x$}) {
-	return $depdb->cert_bookdeps($target =~ s/\.acl2x$/.cert/);
+	my @res = ();
+	(my $cert = $target) =~ s/\.acl2x$/\.cert/;
+	my $deps = $depdb->cert_deps($cert);
+	push(@res, @$deps);
+	return \@res;
     } elsif ($target =~ m{\.pcert1$}) {
-	return [ $target =~ s/\.pcert1$/\.pcert0/ ];
+	(my $pcert0 = $target) =~ s/\.pcert1$/\.pcert0/;
+	return [ $pcert0 ];
     } elsif ($target =~ m{\.pcert0$}) {
 	(my $cert = $target) =~ s/\.pcert0$/\.cert/;
-	my @deps = ();
-	my $bookdeps = $depdb->cert_bookdeps($cert);
-	foreach my $dep (@$bookdeps) {
-	    push(@deps, $depdb->cert_sequential_dep($dep));
+	my @res = ();
+	my $deps = $depdb->cert_deps($cert);
+	foreach my $dep (@$deps) {
+	    push(@res, $depdb->cert_sequential_dep($dep));
 	}
-	return \@deps;
+	return \@res;
     }
     return [];
 }
