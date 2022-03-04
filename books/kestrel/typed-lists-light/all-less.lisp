@@ -99,4 +99,4 @@
                 (natp n)
                 (< n (len l)))
            (< (nth n l) bound))
-  :hints (("Goal" :in-theory (e/d (all-< nth) ()))))
+  :hints (("Goal" :in-theory (enable all-< nth))))
