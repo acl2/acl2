@@ -61,7 +61,7 @@
            (equal (logapp lowsize lowval (bvif size test a b))
                   (BVCAT SIZE (BVIF SIZE TEST A B)
                          LOWSIZE LOWVAL)))
-  :hints (("Goal" :in-theory (e/d (bvcat bvif) ()))))
+  :hints (("Goal" :in-theory (enable bvcat bvif))))
 
 ;; (thm
 ;;  (implies (natp n)
@@ -132,7 +132,7 @@
                 (integerp y))
            (equal (bvcat size1 (bvxor size2 z y) lowsize x)
                   (bvcat size1 (bvxor size1 z y) lowsize x)))
-  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
+  :hints (("Goal" :in-theory (enable bvcat))))
 
 (defthm bvxor-of-slice-tighten
   (implies (and (<= size (- high low))
@@ -464,7 +464,7 @@
                 )
            (equal (bvcat highsize (logext size2 highval) lowsize lowval)
                   (bvcat highsize highval lowsize lowval)))
-  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
+  :hints (("Goal" :in-theory (enable bvcat))))
 
 ;mixes theories?
 (defthmd logtail-of-bvxor

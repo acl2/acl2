@@ -1393,8 +1393,8 @@
                  (integerp x))
             (equal (bvcat highsize y size (logext size x))
                    (bvcat highsize y size x)))
-   :hints (("Goal" :in-theory (e/d (bvcat ;bvchop-logapp
-                                    ) ()))))
+   :hints (("Goal" :in-theory (enable bvcat ;bvchop-logapp
+                                      ))))
 
 (defthm logapp-of-logext
    (implies (and (natp size2)
@@ -2078,7 +2078,7 @@
                 (integerp y))
            (equal (bvcat size1 (bvand size2 z y) lowsize x)
                   (bvcat size1 (bvand size1 z y) lowsize x)))
-  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
+  :hints (("Goal" :in-theory (enable bvcat))))
 
 ;use trim
 (defthm bvcat-of-bvor-tighten-2
@@ -2090,7 +2090,7 @@
                 (integerp y))
            (equal (bvcat size1 (bvor size2 z y) lowsize x)
                   (bvcat size1 (bvor size1 z y) lowsize x)))
-  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
+  :hints (("Goal" :in-theory (enable bvcat))))
 
 ;i'll leave this off, since it gets rid of bvand and is sort of scary
 ;bozo do i want to open from the top or the bottom?  which one is faster?
@@ -3159,7 +3159,7 @@
                 (natp low))
            (equal (* 4 (slice high low x))
                   (bvcat (+ high 1 (- low)) (slice high low x) 2 0)))
-  :hints (("Goal" :in-theory (e/d (logapp bvcat) ()))))
+  :hints (("Goal" :in-theory (enable logapp bvcat))))
 
 ;I don't think this is needed now, because of the built in rule SIGNED-BYTE-P-FORWARD-TO-INTEGERP
 ;; (defthm sbp-forward-to-integerp
@@ -5624,8 +5624,8 @@
                 (integerp size2))
            (equal (bvcat highsize (logext size2 highval) lowsize lowval)
                   (bvcat highsize highval lowsize lowval)))
-  :hints (("Goal" :in-theory (e/d (bvcat) ;yuck?
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvcat) ;yuck?
+           )))
 
 (defthm getbit-of-logext-high
   (implies (and (<= size n)
@@ -6576,8 +6576,7 @@
            (equal (< (BVCHOP (+ 1 HIGH) X) (EXPT 2 HIGH))
                   (not (EQUAL 1 (GETBIT HIGH X)))))
   :hints (("Goal" :use (:instance split-with-bvcat (x x) (hs 1) (ls high))
-           :in-theory (e/d (bvcat logapp) ())
-           )))
+           :in-theory (enable bvcat logapp))))
 
 (defthmd getbit-when-bvlt-of-small-helper
   (implies (and (bvlt (+ 1 size) x (expt 2 size))
@@ -7958,7 +7957,7 @@
                           (getbit (+ width (- amt)) x)
                         (getbit amt x))
                     0)))
-  :hints (("Goal" :in-theory (e/d (trim leftrotate) ()))))
+  :hints (("Goal" :in-theory (enable trim leftrotate))))
 
 (defthm bitand-of-leftrotate-arg1-trim
   (equal (bitand (leftrotate width amt x) y)
@@ -8060,7 +8059,7 @@
                   (unsigned-byte-p free x)))
   :hints (("Goal"
            :use (:instance split-with-bvcat (hs (- size free)) (ls free))
-           :in-theory (e/d () (equal-of-bvchop-and-bvchop-same)))))
+           :in-theory (disable equal-of-bvchop-and-bvchop-same))))
 
 (defthm unsigned-byte-p-of-slice-lemma
   (implies (and (unsigned-byte-p (+ n low) x)

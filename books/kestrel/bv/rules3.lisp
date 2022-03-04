@@ -78,7 +78,7 @@
                 (natp n))
            (equal (+ x (BVCAT m y n 0))
                   (bvcat m y n x)))
-  :hints (("Goal" :in-theory (e/d (BVCAT LOGAPP) ()))))
+  :hints (("Goal" :in-theory (enable BVCAT LOGAPP))))
 
 ;the complication here is because of how we associate bvcat...
 ;restrict to when y is a bvcat?
@@ -914,7 +914,7 @@
   (implies (integerp x)
            (equal (< (BVCAT 31 x 1 0) 64)
                   (< (bvchop 31 x) 32)))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp) ()))))
+  :hints (("Goal" :in-theory (enable bvcat logapp))))
 
 (defthm logext-64-bound-hack
   (implies (integerp x)
@@ -961,7 +961,7 @@
   (implies (integerp x)
            (equal (< (BVCAT 27 x 5 y) 64)
                   (< (bvchop 27 x) 2)))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp) ()))))
+  :hints (("Goal" :in-theory (enable bvcat logapp))))
 
 ;bozo more generally, turn if into bvif if we can figure out the sizes?
 (defthmd myif-of-constants-becomes-bvif
@@ -1898,8 +1898,7 @@
            (equal (< (bvcat 1 x lowsize y) k)
                   (and (equal (getbit 0 x) 0)
                        (< (bvchop lowsize y) k))))
-  :hints (("Goal" :in-theory (e/d (BVCAT LOGAPP bvchop
-                                         ) ()))))
+  :hints (("Goal" :in-theory (enable BVCAT LOGAPP bvchop))))
 
 
 (defthmd getbit-numeric-bound
@@ -2223,9 +2222,8 @@
   (implies (and (<= x 20)
                 (natp x))
            (not (< 43 (BVCAT '5 x '1 y))))
-  :hints (("Goal" :in-theory (e/d (bvcat LOGAPP bvchop-identity ;BAG::UNSIGNED-BYTE-P-FROM-BOUNDS
-                                         )
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvcat LOGAPP bvchop-identity ;BAG::UNSIGNED-BYTE-P-FROM-BOUNDS
+                                     ))))
 
 
 ;might be slow
