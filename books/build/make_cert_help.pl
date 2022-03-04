@@ -96,6 +96,25 @@ sub mytime {
     }
 }
 
+my $parseable_timestamps = 0;
+if ($ENV{'CERT_PL_PARSEABLE_TIMESTAMPS'}) {
+    $parseable_timestamps = 1;
+}
+
+sub timestr {
+    my ($stamp) = @_;
+    my $base = strftime('%d-%b-%Y %H:%M:%S',localtime $stamp);
+    if ($msectiming) {
+	$base = sprintf("%s.%03d", $base, ($stamp-int($stamp))*1000);
+    }
+    if ($parseable_timestamps) {
+	$base = sprintf("%s [%d.%03d]", $base, int($stamp), ($stamp-int($stamp))*1000);
+    }
+    return $base;
+}
+
+my $SCRIPT_START_TIME = mytime();
+
 binmode(STDOUT,':utf8');
 
 
@@ -526,7 +545,7 @@ my $full_file = File::Spec->rel2abs($TARGET);
 my $goal = "$file.$TARGETEXT";
 my $printgoal = path_export("$full_file.$TARGETEXT");
 
-print "Making $printgoal on " . strftime('%d-%b-%Y %H:%M:%S',localtime) . "\n";
+print "Making $printgoal on " . timestr($SCRIPT_START_TIME) . "\n";
 
 my $fulldir = File::Spec->canonpath(File::Spec->catpath($vol, $dir, ""));
 print "-- Entering directory $fulldir\n" if $DEBUG;
@@ -828,7 +847,12 @@ if ($success) {
 	$hostname = " " . extract_hostname_from_outfile($outfile);
     }
 
-    printf("%sBuilt %s (%.3fs%s)%s\n", $color, $printgoal, $ELAPSED, $hostname, $black);
+    my $endtime = "";
+    if (! $ENV{"CERT_PL_HIDE_ENDTIME"}) {
+	my $SCRIPT_END_TIME = mytime();
+	$endtime = sprintf(' at %s ', timestr($SCRIPT_END_TIME));
+    }
+    printf("%sBuilt %s (%.3fs%s)%s%s\n", $color, $printgoal, $ELAPSED, $hostname, $endtime, $black);
 
 } else {
     my $taskname = ($STEP eq "acl2x" || $STEP eq "acl2xskip") ? "ACL2X GENERATION" :
@@ -836,7 +860,7 @@ if ($success) {
 	($STEP eq "pcertify") ? "PROVISIONAL CERTIFICATION" :
 	($STEP eq "pcertifyplus") ? "PROVISIONAL CERTIFICATION+" :
 	($STEP eq "convert")  ? "PCERT0->PCERT1 CONVERSION" :
-	($STEP eq "complete") ? "PCERT1->CERT COMLETION" : "UNKNOWN";
+	($STEP eq "complete") ? "PCERT1->CERT COMPLETION" : "UNKNOWN";
     print "\n**$taskname FAILED** for $dir$file.lisp\n\n" .
         ($outfile ? `tail -300 $outfile | sed 's/^/   | /'` : "") .
         "\n**$taskname FAILED** for $dir$file.lisp\n\n";

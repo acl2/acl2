@@ -39,6 +39,7 @@ use File::Spec;
 use FindBin qw($RealBin);
 use lib "$RealBin/lib";
 use Storable qw(nstore retrieve);
+use Critpath;
 use Certlib;
 use Bookscan;
 
@@ -82,7 +83,8 @@ my $HELP_MESSAGE = "
        --nodepthpath Suppress max-depth path information.
        --nolist     Suppress individual-files list.
 
-       -r, --real   Toggle real time versus user+system
+       -r, --real   Toggle real time versus user+system (not relevant
+                    with --costs-file or --build-log options).
 
        --help       Print this help message and exit.
 
@@ -113,6 +115,13 @@ my $HELP_MESSAGE = "
                     written by write_costs).  Only really works
                     correctly if all targets/dependencies are the
                     same.
+
+       --build-log <filename>
+                    Read the start and end times for each file from a
+                    build log from cert.pl.  This allows computation
+                    of lag times. The build log must have been created
+                    with the CERT_PL_PARSEABLE_TIMESTAMPS environment
+                    variable set.
 
        -f, --from-file <filename>
                     This option may be given multiple times.  Instead
@@ -146,6 +155,7 @@ my %OPTIONS = (
   'pcert'   => $ENV{'ACL2_PCERT'},
   'write_costs' => 0,
   'costs_file' => 0,
+  'build_log' =>0,
   'pcert_all' => 0,
   'target_ext' => "cert",
 );
@@ -191,6 +201,7 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     "params=s"             => \$params_file,
 			     "write-costs|w=s" => \$OPTIONS{'write_costs'},
 			     "costs-file=s" => \$OPTIONS{'costs_file'},
+			     "build-log=s" => \$OPTIONS{'build_log'},
                              "pcert-all"    => \$certlib_opts{'pcert_all'},
                              "include-excludes"  => \$certlib_opts{'include_excludes'},
                              "target-ext|e=s"    => \$OPTIONS{'target_ext'},
@@ -283,9 +294,18 @@ if ($params_file && open (my $params, "<", $params_file)) {
 
 store_cache($cache, $cache_file);
 
+my $start_end_times = {};
+my $begin_time = 0;
+if ($OPTIONS{'build_log'}) {
+    ($begin_time, $start_end_times) = read_build_log($OPTIONS{'build_log'});
+}
+
 my $basecosts;
 if ($OPTIONS{'costs_file'}) {
     $basecosts = retrieve($OPTIONS{'costs_file'});
+} elsif ($OPTIONS{'build_log'}) {
+    $basecosts = {};
+    $basecosts = costs_from_start_end_times($depdb, $begin_time, $start_end_times, $basecosts);
 } else {
     $basecosts = {};
     read_costs($depdb, $basecosts, $warnings, $OPTIONS{'real'});
@@ -323,11 +343,11 @@ unless ($OPTIONS{'nowarn'}) {
 }
 
 unless ($OPTIONS{'nopath'}) {
-    print critical_path_report($costs, $basecosts, $savings, $topbook, $OPTIONS{"html"}, $OPTIONS{"short"});
+    print critical_path_report($costs, $basecosts, $start_end_times, $savings, $topbook, $OPTIONS{"html"}, $OPTIONS{"short"});
 }
 
 unless ($OPTIONS{'nolist'}) {
-    print individual_files_report($costs, $basecosts, $OPTIONS{"html"}, $OPTIONS{"short"});
+    print individual_files_report($costs, $basecosts, $start_end_times, $OPTIONS{"html"}, $OPTIONS{"short"});
 }
 
 unless ($OPTIONS{'nodepthpath'}) {
@@ -342,6 +362,10 @@ my ($max_parallel, $max_start_time, $max_end_time, $avg_parallel, $sum_parallel)
 if (! $OPTIONS{"html"}) {
     print "Maximum parallelism: $max_parallel processes, from time $max_start_time to $max_end_time\n";
     print "Average level of parallelism: $avg_parallel.\n";
+    if ($OPTIONS{"build_log"}) {
+	my $avg_lag = avg_lagtime($basecosts, $start_end_times);
+	print("Average lag time: $avg_lag\n");
+    }
     print "Total time for all files: " . human_time($sum_parallel,0) . ".\n";
 }
 

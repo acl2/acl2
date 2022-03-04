@@ -57,16 +57,6 @@ process_labels_and_targets
 add_deps
 propagate_reqparam
 to_cert_name
-read_costs
-compute_cost_paths
-find_most_expensive
-compute_savings
-warnings_report
-critical_path_report
-individual_files_report
-deepest_path_report
-parallelism_stats
-human_time
 cert_to_acl2x
 cert_to_pcert0
 cert_to_pcert1
@@ -77,10 +67,11 @@ collect_bottom_out_of_date
 collect_top_up_to_date
 collect_top_up_to_date_modulo_local
 collect_all_up_to_date
-write_timestamps
-read_timestamps
 to_source_name
 find_deps
+write_timestamps
+read_timestamps
+cert_target_deps
 );
 
 
@@ -152,32 +143,6 @@ sub certlib_set_opts {
     $force_out_of_date = $opts->{"force_out_of_date"};
 }
 
-
-
-
-sub human_time {
-
-# human_time(secs,shortp) returns a string describing the time taken in a
-# human-friendly format, e.g., 5.6 minutes, 10.3 hours, etc.  If shortp is
-# given, then we use, e.g., "min" instead of "minutes."
-
-    my $secs = shift;
-    my $shortp = shift;
-
-    if (! defined($secs) || $secs < 0.0) {
-	return "[Error]";
-    }
-
-    if ($secs < 60) {
-	return sprintf("%.1f %s", $secs, $shortp ? "sec" : "seconds");
-    }
-
-    if ($secs < 60 * 60) {
-	return sprintf("%.1f %s", ($secs / 60.0), $shortp ? "min" : "minutes");
-    }
-
-    return sprintf("%.2f %s", ($secs / (60 * 60)), $shortp ? "hr" : "hours");
-}
 
 
 my %abs_path_memo = ();
@@ -273,94 +238,6 @@ sub certlib_set_base_path {
 
 
 
-sub short_cert_name {
-
-# Given a path to some ACL2 book, e.g., foo/bar/baz/blah.cert, we produce 
-# a shortened version of the name, e.g., "baz/blah.cert".  Usually this is 
-# enough to identify the book, and keeps the noise of the path down to a 
-# minimum.
-
-    my $certfile = shift;
-    my $short = shift;
-
-    if ($short == -1) {
-	return $certfile;
-    }
-    
-    my $pos = length($certfile)+1;
-
-    while ($short > -1) {
-	$pos = rindex($certfile, "/", $pos-1);
-	if ($pos == -1) {
-	    return $certfile;
-	}
-	$short = $short-1;
-    }
-    return substr($certfile, $pos+1);
-
-}
-
-
-sub get_cert_time {
-
-# Given a .cert file, gets the total user + system time recorded in the
-# corresponding .time file.  If not found, prints a warning and returns 0.
-# Given an .acl2x file, gets the time recorded in the corresponding
-# .acl2x.time file.
-    my ($path, $warnings, $use_realtime) = @_;
-
-    $path =~ s/\.cert$/\.cert\.time/;
-    $path =~ s/\.pcert0$/\.pcert0\.time/;
-    $path =~ s/\.pcert1$/\.pcert1\.time/;
-    $path =~ s/\.acl2x$/\.acl2x\.time/;
-
-    if (open (my $timefile, "<", $path)) {
-
-	# The following while loop works for GNU time, but 
-	# we now prefer one that works with the POSIX standard instead.
-	# while (my $the_line = <$timefile>) {
-	#     my $regexp = "^([0-9]*\\.[0-9]*)user ([0-9]*\\.[0-9]*)system";
-	#     my @res = $the_line =~ m/$regexp/;
-	#     if (@res) {
-	# 	close $timefile;
-	# 	return 0.0 + $res[0] + $res[1];
-	#     }
-	
-	# Should we go by user+system or just real time?
-	my $usertime;
-	my $systime;
-	my $realtime;
-	while (my $the_line = <$timefile>) {
-	    my @res = $the_line =~ m/^(\S*)\s*([0-9]*)m([0-9]*\.[0-9]*)s/;
-	    if (@res) {
-		# print "$res[0]_$res[1]_$res[2]\n";
-		my $secs = 60*$res[1] + $res[2];
-		if ($res[0] eq "user") {
-		    $usertime = $secs;
-		} elsif ($res[0] eq "sys") {
-		    $systime = $secs;
-		} elsif ($res[0] eq "real") {
-		    $realtime = $secs;
-		}
-	    }
-	}
-	close $timefile;
-	if (!defined($usertime) || !defined($systime)) {
-	    push(@$warnings, "Corrupt timings in $path\n");
-	    return -1;
-	}
-	if ($use_realtime) {
-	    return 0.0 + $realtime;
-	} else {
-	    return 0.0 + $usertime + $systime;
-	}
-    } else {
-	# carp("Could not open $path: $!\n");
-	push(@$warnings, "Could not open $path: $!\n");
-	return -1;
-    }
-}
-
 sub cert_to_acl2x {
     my $cert = shift;
     (my $acl2x = $cert) =~ s/\.cert$/\.acl2x/;
@@ -380,479 +257,6 @@ sub cert_to_pcert1 {
 }
 
 
-
-sub read_costs {
-    my ($depdb, $basecosts, $warnings, $use_realtime) = @_;
-
-    foreach my $certfile (keys %{$depdb->certdeps}) {
-	$basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime);
-	if ($depdb->cert_get_param($certfile, "acl2x")) {
-	    my $acl2xfile = cert_to_acl2x($certfile);
-	    $basecosts->{$acl2xfile} = get_cert_time($acl2xfile, $warnings, $use_realtime);
-	} elsif ($depdb->cert_get_param($certfile, "pcert") || $pcert_all) {
-	    my $pcert1file = cert_to_pcert1($certfile);
-	    $basecosts->{$pcert1file} = get_cert_time($pcert1file, $warnings, $use_realtime);
-	    my $pcert0file = cert_to_pcert0($certfile);
-	    $basecosts->{$pcert0file} = get_cert_time($pcert0file, $warnings, $use_realtime);
-	}
-    }
-}
-
-sub find_most_expensive {
-    # horrible: updateds is either 1 or a reference to a hash holding the names of updated targets.
-    my ($files, $costs, $updateds) = @_;
-
-    my $most_expensive_file_total = 0;
-    my $most_expensive_file = 0;
-
-    foreach my $file (@{$files}) {
-	if ($file =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
-	    if (($updateds==1) || $updateds->{$file}) {
-		my $file_costs = $costs->{$file};
-		if ($file_costs) {
-		    my $this_file_total = $file_costs->{"totaltime"};
-		    if ($this_file_total > $most_expensive_file_total) {
-			$most_expensive_file = $file;
-			$most_expensive_file_total = $this_file_total;
-		    }
-		}
-	    }
-	}
-    }
-
-    return ($most_expensive_file, $most_expensive_file_total);
-}
-
-sub find_max_depth {
-    # horrible: updateds is either 1 or a reference to a hash holding the names of updated targets.
-    my ($files, $costs, $updateds) = @_;
-
-    my $deepest_file_total = 0;
-    my $deepest_file = 0;
-
-    foreach my $file (@{$files}) {
-	if ($file =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
-	    if (($updateds==1) || $updateds->{$file}) {
-		my $file_costs = $costs->{$file};
-		if ($file_costs) {
-		    my $this_file_depth = $file_costs->{"depth"};
-		    if ($this_file_depth > $deepest_file_total) {
-			$deepest_file = $file;
-			$deepest_file_total = $this_file_depth;
-		    }
-		}
-	    }
-	}
-    }
-
-    return ($deepest_file, $deepest_file_total);
-}
-
-sub compute_cost_paths_aux {
-    # horrible: updateds is either 1 or a reference to a hash holding the names of updated targets.
-    my ($target,$depdb,$basecosts,$costs,$updateds,$warnings) = @_;
-
-    if (exists $costs->{$target} || ! ($target =~ /\.(cert|acl2x|pcert0|pcert1)$/)) {
-	return $costs->{$target};
-    }
-
-    # put something in $costs->{$target} so that we don't loop
-    $costs->{$target} = 0;
-    # print("DFS starting for $target\n");
-
-    my $certtime = $basecosts->{$target};
-    if (! defined $certtime) {
-	# Probably the .lisp file doesn't exist
-	my %entry = ( "totaltime" => 0.0,
-		      "maxpath" => "ERROR",
-	              "depth" => 0,
-                      "maxdepthpath" => "ERROR");
-	$costs->{$target} = \%entry;
-	return $costs->{$target};
-    }
-    
-    my $targetdeps;
-    $targetdeps = [];
-    if ($target =~ /\.pcert0$/) {
-	## The dependencies are the dependencies of the cert file, but
-	## with each .cert replaced with the corresponding sequential_dep.
-	(my $certfile = $target) =~ s/\.pcert0$/\.cert/;
-	my $certdeps = $depdb->cert_deps($certfile);
-	foreach my $dep (@$certdeps) {
-	    my $deppcert = $depdb->cert_sequential_dep($dep);
-	    push(@$targetdeps, $deppcert);
-	}
-    } elsif ($target =~ /\.pcert1$/) {
-	(my $certfile = $target) =~ s/\.pcert1$/\.cert/;
-	(my $pcert0 = $target) =~ s/\.pcert1$/\.pcert0/;
-	push (@$targetdeps, $pcert0);
-    } elsif ($target =~ /\.acl2x$/) {
-	## The dependencies are the dependencies of the cert file.
-	(my $certfile = $target) =~ s/\.acl2x$/\.cert/;
-	my $certdeps = $depdb->cert_deps($certfile);
-	push(@$targetdeps, @$certdeps);
-    } else {
-	# $target =~ /\.cert$/
-	# Depends.
-	if ($depdb->cert_get_param($target, "acl2x")) {
-	    # If it's using the acl2x/two-pass, then depend only on the acl2x file.
-	    (my $acl2xfile = $target) =~ s/\.cert$/\.acl2x/;
-	    push (@$targetdeps, $acl2xfile);
-	} else {
-	    # otherwise, depend on its subbooks' certificates and the pcert1, if applicable.
-	    push (@$targetdeps, @{$depdb->cert_deps($target)});
-	    if ($depdb->cert_get_param($target, "pcert") || $pcert_all) {
-		(my $pcert1 = $target) =~ s/\.cert$/\.pcert1/;
-		push (@$targetdeps, $pcert1);
-	    }
-	}
-    }
-
-    my $most_expensive_dep = 0;
-    my $most_expensive_dep_total = 0;
-    my $updated = ($updateds==1) || $updateds->{$target} || 0;
-
-#    print "$target depends on @$targetdeps\n";
-    if (@$targetdeps) {
-	foreach my $dep (@$targetdeps) {
-	    if ($dep =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
-		my $this_dep_costs = compute_cost_paths_aux($dep, $depdb, $basecosts, $costs, $updateds, $warnings);
-		if (($updateds == 1) || $updateds->{$dep}) {
-		    if (! $this_dep_costs) {
-			if ($dep eq $target) {
-			    push(@{$warnings}, "Self-dependency in $dep");
-			} else {
-			    push(@{$warnings}, "Dependency loop involving $dep and $target");
-			}
-		    }
-		    $updated = 1;
-		}
-	    }
-	}
-    }
-    # if (! defined $most_expensive_dep_total) {
-    # 	carp("Most_expensive_dep undefined for $target\n");
-    # } elsif (! defined $certtime) {
-    # 	carp("Certtime undefined for $target\n");
-    # }
-    # print("DFS ending for $target -- updated $updated\n");
-
-    if ($updated) {
-	($most_expensive_dep, $most_expensive_dep_total) = find_most_expensive($targetdeps, $costs, $updateds);
-	(my $deepest_dep, my $dep_depth) = find_max_depth($targetdeps, $costs, $updateds);
-	my %entry = ( "totaltime" => $most_expensive_dep_total + $certtime, 
-		      "maxpath" => $most_expensive_dep,
-                      "depth" => $dep_depth + 1,
-	              "maxdepthpath" => $deepest_dep );
-	$costs->{$target} = \%entry;
-	if ($updateds != 1) {
-	    $updateds->{$target} = 1;
-	}
-	return $costs->{$target};
-    }
-}
-
-sub compute_cost_paths {
-    my ($depdb,$basecosts,$costs,$updateds,$warnings) = @_;
-    foreach my $certfile (keys %{$depdb->certdeps}) {
-	compute_cost_paths_aux($certfile, $depdb, $basecosts, $costs, $updateds, $warnings);
-    }
-    foreach my $certfile (keys %{$costs}) {
-	if ($costs->{$certfile} == 0) {
-	    delete $costs->{$certfile};
-	}
-    }
-}
-
-
-
-sub warnings_report {
-
-# warnings_report(warnings, htmlp) returns a string describing any warnings
-# which were encountered during the generation of the costs table, such as for
-# missing .time files.
-    my ($warnings,$htmlp) = @_;
-
-    unless (@$warnings) {
-	return "";
-    }
-
-    my $ret;
-
-    if ($htmlp) {
-	$ret = "<dl class=\"critpath_warnings\">\n"
-	     . "<dt>Warnings</dt>\n";
-	foreach (@$warnings) {
-	    chomp($_);
-	    $ret .= "<dd>$_</dd>\n";
-	}
-	$ret .= "</dl>\n\n";
-    }
-
-    else  {
-	$ret = "Warnings:\n\n";
-	foreach (@$warnings) {
-	    chomp($_);
-	    $ret .= "$_\n";
-	}
-	$ret .= "\n\n";
-    }
-
-    return $ret;
-}
-
-
-
-sub critical_path_report {
-
-# critical_path_report(costs,htmlp) returns a string describing the
-# critical path for file according to the costs_table, either in TEXT or HTML
-# format per the value of htmlp.
-    my ($costs,$basecosts,$savings,$topfile,$htmlp,$short) = @_;
-
-
-    my $ret;
-
-    if ($htmlp) {
-	$ret = "<table class=\"critpath_table\">\n"
-	     . "<tr class=\"critpath_head\">"
-	     . "<th>Critical Path</th>" 
-	     . "<th>Time</th>"
-	     . "<th>Cumulative</th>"
-	     . "</tr>\n";
-    }
-    else {
-	$ret = "Critical Path\n\n"
-	     . sprintf("%-50s %10s %10s %10s %10s\n", "File", "Cumulative", "Time", "Speedup", "Remove");
-    }
-
-    my $file = $topfile;
-    while ($file) 
-    {
-	my $filecosts = $costs->{$file};
-	my $shortcert = short_cert_name($file, $short);
-	my $selftime = $basecosts->{$file};
-	my $cumtime = $filecosts->{"totaltime"};
-	my $filesavings = $savings->{$file};
-	my $sp_savings = $filesavings->{"speedup"};
-	my $rem_savings = $filesavings->{"remove"};
-
-	my $selftime_pr = human_time($selftime, 1);
-	my $cumtime_pr = human_time($cumtime, 1);
-	my $spsav_pr = human_time($sp_savings, 1);
-	my $remsav_pr = human_time($rem_savings, 1);
-
-	if ($htmlp) {
-	    $ret .= "<tr class=\"critpath_row\">"
-	 	 . "<td class=\"critpath_name\">$shortcert</td>"
-		 . "<td class=\"critpath_self\">$selftime_pr</td>"
-		 . "<td class=\"critpath_total\">$cumtime_pr</td>"
-		 . "</tr>\n";
-	}
-	else {
-	    $ret .= sprintf("%-50s %10s %10s %10s %10s\n", $shortcert, $cumtime_pr, $selftime_pr, $spsav_pr, $remsav_pr);
-	}
-
-	$file = $filecosts->{"maxpath"};
-    }
-
-    if ($htmlp) {
-	$ret .= "</table>\n\n";
-    }
-    else {
-	$ret .= "\n\n";
-    }
-
-    return $ret;
-}
-
-sub deepest_path_report {
-
-# deepest_path_report(costs,htmlp) returns a string describing the
-# deepest path for file according to the costs_table, either in TEXT or HTML
-# format per the value of htmlp.
-    my ($costs,$basecosts,$savings,$topfile,$htmlp,$short) = @_;
-
-
-    my $ret;
-
-    if ($htmlp) {
-	$ret = "<table class=\"critpath_table\">\n"
-	     . "<tr class=\"critpath_head\">"
-	     . "<th>Deepest Path</th>" 
-	     . "<th>Time</th>"
-	     . "<th>Cumulative</th>"
-	     . "</tr>\n";
-    }
-    else {
-	$ret = "Deepest Path\n\n"
-	     . sprintf("%-50s %10s %10s %10s %10s\n", "File", "Cumulative", "Time", "Speedup", "Remove");
-    }
-
-    my $file = $topfile;
-    while ($file) 
-    {
-	my $filecosts = $costs->{$file};
-	my $shortcert = short_cert_name($file, $short);
-	my $selftime = $basecosts->{$file};
-	my $cumtime = $filecosts->{"totaltime"};
-	my $filesavings = $savings->{$file};
-	my $sp_savings = $filesavings->{"speedup"};
-	my $rem_savings = $filesavings->{"remove"};
-
-	my $selftime_pr = human_time($selftime, 1);
-	my $cumtime_pr = human_time($cumtime, 1);
-	my $spsav_pr = human_time($sp_savings, 1);
-	my $remsav_pr = human_time($rem_savings, 1);
-
-	if ($htmlp) {
-	    $ret .= "<tr class=\"critpath_row\">"
-	 	 . "<td class=\"critpath_name\">$shortcert</td>"
-		 . "<td class=\"critpath_self\">$selftime_pr</td>"
-		 . "<td class=\"critpath_total\">$cumtime_pr</td>"
-		 . "</tr>\n";
-	}
-	else {
-	    $ret .= sprintf("%-50s %10s %10s %10s %10s\n", $shortcert, $cumtime_pr, $selftime_pr, $spsav_pr, $remsav_pr);
-	}
-
-	$file = $filecosts->{"maxdepthpath"};
-    }
-
-    if ($htmlp) {
-	$ret .= "</table>\n\n";
-    }
-    else {
-	$ret .= "\n\n";
-    }
-
-    return $ret;
-}
-
-	
-sub classify_book_time {
-    
-# classify_book_time(secs) returns "low", "med", or "high".
-
-    my $time = shift;
-
-    return "err" if !$time;
-    return "low" if ($time < 30);
-    return "med" if ($time < 120);
-    return "high";
-}
-
-
-sub individual_files_report {
-
-# individual_files_report(costs,htmlp) returns a string describing the
-# self-times of each file in the costs_table, either in either TEXT or HTML
-# format, per the value of htmlp.
-    my ($costs,$basecosts,$htmlp,$short) = @_;
-
-    my @sorted = reverse sort { ($costs->{$a}->{"totaltime"} + 0.0) <=> ($costs->{$b}->{"totaltime"} + 0.0) } keys(%{$costs});
-    my $ret;
-    if ($htmlp) 
-    {
-	$ret = "<table class=\"indiv_table\">\n"
-	     . "<tr class=\"indiv_head\"><th>All Files</th> <th>Cumulative</th> <th>Self</th></tr>\n";
-    } else {
-	$ret = "Individual File Times\n\n";
-
-    }
-
-
-    foreach my $name (@sorted)
-    {
-	my $entry = $costs->{$name};
-	my $shortname = short_cert_name($name, $short);
-	my $cumul = human_time($entry->{"totaltime"}, 1);
-	my $time = human_time($basecosts->{$name}, 1);
-	my $depname = $entry->{"maxpath"} ? short_cert_name($entry->{"maxpath"}, $short) : "[None]";
-	my $timeclass = classify_book_time($basecosts->{$name});
-
-	if ($htmlp)
-	{
-	    $ret .= "<tr class=\"indiv_row\">";
-	    $ret .= "<td class=\"indiv_file\">";
-	    $ret .= "  <span class=\"indiv_file_name\">$shortname</span><br/>";
-	    $ret .= "  <span class=\"indiv_crit_dep\">--> $depname</span>";
-	    $ret .= "</td>";
-	    $ret .= "<td class=\"indiv_cumul\">$cumul</td>";
-	    $ret .= "<td class=\"indiv_time_$timeclass\">$time</td>";
-	    $ret .= "</tr>\n";
-	} else {
-	    $ret .= sprintf("%-50s %10s %10s  --->  %-50s\n",
-			    $shortname, $cumul, $time, $depname);
-	}
-    }
-    
-    if ($htmlp)
-    {
-	$ret .= "</table>\n\n";
-    } else {
-	$ret .= "\n\n";
-    }
-
-    return $ret;
-}   
-
-
-my $start = "start";
-my $end = "end";
-
-sub parallelism_stats {
-    my ($costs, $basecosts) = @_;
-
-    # costs: table mapping filename to totaltime, maxpath
-    # basecosts: table mapping filename to immediate cost
-
-    # collect up a list of key/val pairs (time, start_or_finish)
-    my @starts_ends = ();
-    my $running_total = 0;
-    foreach my $key (keys %$basecosts) {
-	my $selfcost = (exists $basecosts->{$key}) ? $basecosts->{$key} : 0.0 ;
-	$selfcost = ($selfcost >= 0) ? $selfcost : 0.0;
-	$running_total = $running_total + $selfcost;
-	my $totalcost = (exists $costs->{$key}) ? $costs->{$key}->{"totaltime"} : 0.0;
-	push (@starts_ends, [$totalcost-$selfcost, $start]);
-	push (@starts_ends, [$totalcost, $end]);
-    }
-
-    @starts_ends = sort { ( $a->[0] <=> $b->[0] ) || 
-			      (($a->[1] eq $start) ?
-			       (($b->[1] eq $start) ? 0 : 1) :
-			       (($b->[1] eq $start) ? -1 : 0)) } @starts_ends;
-
-
-
-    my $max_parallel = 0;
-    my $max_start_time = 0.0;
-    my $max_end_time = 0.0;
-    my $curr_parallel = 0;
-    my $lasttime = 0.0;
-    foreach my $entry (@starts_ends) {
-	(my $time, my $event) = @$entry;
-
-	if ($event eq $start) {
-	    $curr_parallel = $curr_parallel + 1;
-	} else {
-	    if ($curr_parallel > $max_parallel) {
-		$max_parallel = $curr_parallel;
-		$max_start_time = $lasttime;
-		$max_end_time = $time;
-	    }
-	    $curr_parallel = $curr_parallel - 1;
-	}
-	$lasttime = $time;
-    }
-    if ($curr_parallel != 0) {
-	print STDERR "Error: Ended with jobs still running??\n"
-    }
-    my $avg_parallel = ($lasttime != 0) ? $running_total / $lasttime : "???";
-
-    return ($max_parallel, $max_start_time, $max_end_time, $avg_parallel, $running_total);
-}
 
 
 
@@ -2023,54 +1427,6 @@ sub process_labels_and_targets {
 
 
 
-sub compute_savings
-{
-    my ($costs,$basecosts,$targets,$updateds,$debug,$depdb) = @_;
-
-    (my $topbook, my $topbook_cost) = find_most_expensive($targets, $costs, $updateds);
-
-    print "done topbook\n" if $debug;
-
-    my @critpath = ();
-    my $nxtbook = $topbook;
-    while ($nxtbook) {
-	push(@critpath, $nxtbook);
-	$nxtbook = $costs->{$nxtbook}->{"maxpath"};
-    }
-
-    my %savings = ();
-    foreach my $critfile (@critpath) {
-	print "critfile: $critfile\n" if $debug;
-	my $filebasecost = $basecosts->{$critfile};
-
-	# Get the max savings from speeding up the book:
-	# set the file base cost to 0 and recompute crit path.
-	my %tmpcosts = ();
-	my @tmpwarns = ();
-	$basecosts->{$critfile} = 0.0;
-	compute_cost_paths($depdb, $basecosts, \%tmpcosts, $updateds, \@tmpwarns);
-	(my $tmptop, my $tmptopcost) = find_most_expensive($targets, \%tmpcosts, $updateds);
-	my $speedup_savings = $topbook_cost - $tmptopcost;
-	$speedup_savings = $speedup_savings || 0.000001;
-
-	# Get the max savings from removing the book:
-	# set the file total cost to 0 and recompute crit path.
-	%tmpcosts = ();
-	$tmpcosts{$critfile} = 0;
-	compute_cost_paths($depdb, $basecosts, \%tmpcosts, $updateds, \@tmpwarns);
-	($tmptop, $tmptopcost) = find_most_expensive($targets, \%tmpcosts, $updateds);
-	my $remove_savings = $topbook_cost - $tmptopcost;
-	$remove_savings = $remove_savings || 0.000001;
-
-	my %entry = ( "speedup" => $speedup_savings,
-		      "remove" => $remove_savings );
-	$savings{$critfile} = \%entry;
-	$basecosts->{$critfile} = $filebasecost;
-    }
-
-    return \%savings;
-}
-
 sub store_cache {
     my ($cache, $fname) = @_;
     if ($fname) {
@@ -2099,6 +1455,39 @@ sub retrieve_cache {
     }
 }
 
+sub cert_target_deps {
+    # Returns the list of cert, pcert0, pcert1, acl2x files that a
+    # given file depends on, which itself may be a cert, pcert0,
+    # pcert1, or acl2x file.
+    my ($depdb, $target) = @_;
+    my $certinfo = $depdb->certdeps->{$target};
+    if ($target =~ m{\.cert$}) {
+	my @deps = ();
+	my $bookdeps = $depdb->cert_bookdeps($target);
+	foreach my $dep (@$bookdeps) {
+	    push(@deps, $dep);
+	}
+	if ($depdb->cert_get_param($target, "acl2x")) {
+	    push(@deps, cert_to_acl2x($target));
+	} elsif ($depdb->cert_get_param($target, "pcert") || $pcert_all) {
+	    push(@deps, cert_to_pcert1($target));
+	}
+	return \@deps;
+    } elsif ($target =~ m{\.acl2x$}) {
+	return $depdb->cert_bookdeps($target =~ s/\.acl2x$/.cert/);
+    } elsif ($target =~ m{\.pcert1$}) {
+	return [ $target =~ s/\.pcert1$/\.pcert0/ ];
+    } elsif ($target =~ m{\.pcert0$}) {
+	(my $cert = $target) =~ s/\.pcert0$/\.cert/;
+	my @deps = ();
+	my $bookdeps = $depdb->cert_bookdeps($cert);
+	foreach my $dep (@$bookdeps) {
+	    push(@deps, $depdb->cert_sequential_dep($dep));
+	}
+	return \@deps;
+    }
+    return [];
+}
 
 
 # The following "1" is here so that loading this file with "do" or "require" will succeed:
