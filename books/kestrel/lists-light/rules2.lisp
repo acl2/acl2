@@ -335,10 +335,10 @@
                  (nthcdr (+ n -1 (- start end)) lst)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use (:instance append-subrange-nthcdr)
-           :in-theory (e/d () (append-subrange-nthcdr
+           :in-theory (disable append-subrange-nthcdr
 ;                               LIST::EQUAL-APPEND-REDUCTION!  ;bozo
                                equal-of-append
-                                     )))))
+                               ))))
 
 
 ;; (thm
@@ -874,12 +874,12 @@
 (defthm len-of-update-nth-last-val
   (equal (len (update-nth (len lst) val lst))
          (+ 1 (len lst)))
-  :hints (("Goal" :in-theory (e/d ( update-nth) ()))))
+  :hints (("Goal" :in-theory (enable update-nth))))
 
 (defthm update-nth-len-lst-becomes-append
   (equal (update-nth (len lst) val lst)
          (append lst (list val)))
-  :hints (("Goal" :in-theory (e/d (update-nth) ()))))
+  :hints (("Goal" :in-theory (enable update-nth))))
 
 (defthmd update-nth-len-lst-becomes-append-strong
   (implies (equal n (len lst))

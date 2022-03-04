@@ -237,7 +237,7 @@
            (equal (equal (subrange i j x)
                          (nthcdr i x))
                   t))
-  :hints (("Goal" :in-theory (e/d (subrange nthcdr) ()))))
+  :hints (("Goal" :in-theory (enable subrange nthcdr))))
 
 (defthmd take-of-cdr-becomes-subrange
   (implies (and (integerp n)
@@ -245,7 +245,7 @@
            (equal (take n (cdr lst))
                   (subrange 1 n lst)))
   :hints (("Goal" :use (:instance take-of-nthcdr-becomes-subrange (n1 n) (n2 1))
-           :in-theory (e/d () (take-of-nthcdr-becomes-subrange)))))
+           :in-theory (disable take-of-nthcdr-becomes-subrange))))
 
 (theory-invariant (incompatible (:rewrite take-of-cdr-becomes-subrange) (:definition subrange)))
 
@@ -280,7 +280,7 @@
                 (natp n))
            (equal (CONS (NTH k lst) (SUBRANGE m n lst))
                   (SUBRANGE k n lst)))
-  :hints (("Goal" :in-theory (e/d () (TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
+  :hints (("Goal" :in-theory (disable TAKE-OF-NTHCDR-BECOMES-SUBRANGE))))
 
 (defthm subrange-of-take
   (implies (and (< high n)
@@ -372,7 +372,7 @@
                   (subrange (- m (len x))
                             (- n (len x))
                             y)))
-  :hints (("Goal" :in-theory (e/d (subrange take-when-zp) ()))))
+  :hints (("Goal" :in-theory (enable subrange take-when-zp))))
 
 (defthm subrange-of-cdr
   (implies (and ;(natp low)
@@ -412,7 +412,7 @@
                           (subrange (- m (len x))
                                     (- n (len x))
                                     y))))
-  :hints (("Goal" :in-theory (e/d (subrange posp NTHCDR-WHEN-NOT-POSP) ()))))
+  :hints (("Goal" :in-theory (enable subrange posp NTHCDR-WHEN-NOT-POSP))))
 
 ;can we avoid the case splits?
 (defthm subrange-of-append

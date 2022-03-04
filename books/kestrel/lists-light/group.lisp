@@ -350,9 +350,9 @@
                 (natp n2))
            (equal (firstn n1 (nthcdr n2 x))
                   (nthcdr n2 (firstn (+ n1 n2) x))))
-  :hints (("Goal" :in-theory (e/d (firstn
-                                   TRUE-LIST-FIX-OF-NTHCDR
-                                   NTHCDR-WHEN-<-OF-LEN) ()))))
+  :hints (("Goal" :in-theory (enable firstn
+                                     TRUE-LIST-FIX-OF-NTHCDR
+                                     NTHCDR-WHEN-<-OF-LEN))))
 
 (defthm firstn-of-group
   (implies (and (posp n)
@@ -534,8 +534,7 @@
   :hints (("Goal"
            :use ((:instance group-of-append-1)
                  (:instance group-of-append-2 (x (NTHCDR (* N (FLOOR (LEN X) N)) X))))
-           :in-theory (e/d (group-of-append-2 mod)
-                           ()))))
+           :in-theory (enable group-of-append-2 mod))))
 
 (defthmd group-of-append-new
   (implies (posp n)

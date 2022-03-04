@@ -34,4 +34,4 @@
   (implies (true-listp k2)
            (equal (all-equal$ k1 k2)
                   (equal k2 (repeat (len k2) k1))))
-  :hints (("Goal" :in-theory (e/d (all-equal$ repeat) ()))))
+  :hints (("Goal" :in-theory (enable all-equal$ repeat))))

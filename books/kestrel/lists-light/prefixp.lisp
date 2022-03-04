@@ -90,14 +90,14 @@
                 (equal free y))
            (equal (equal (len x) (len y))
                   (equal (true-list-fix x) (true-list-fix y))))
-  :hints (("Goal" :in-theory (e/d (prefixp true-list-fix) ()))))
+  :hints (("Goal" :in-theory (enable prefixp true-list-fix))))
 
 (defthm equal-of-len-and-len-when-prefixp-alt
   (implies (and (prefixp x free) ;poor man's backchain limit
                 (equal free y))
            (equal (equal (len y) (len x))
                   (equal (true-list-fix x) (true-list-fix y))))
-  :hints (("Goal" :in-theory (e/d (prefixp true-list-fix) ()))))
+  :hints (("Goal" :in-theory (enable prefixp true-list-fix))))
 
 (defthm prefixp-same
   (prefixp x x)

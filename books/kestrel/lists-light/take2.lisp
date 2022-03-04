@@ -54,7 +54,7 @@
                          (take (+ 1 N) LST2))
                   (EQUAL (take N LST1)
                          (take N LST2))))
-  :hints (("Goal" :in-theory (e/d (take nth) ())
+  :hints (("Goal" :in-theory (enable take nth)
            :induct t
            :do-not '(generalize eliminate-destructors))))
 
@@ -72,7 +72,7 @@
                   (EQUAL (TAKE (+ 1 n) lst1)
                          (TAKE (+ 1 n) lst2))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (take nth) ()))))
+           :in-theory (enable take nth))))
 
 ;move
 (defthm take-of-update-nth-irrel
