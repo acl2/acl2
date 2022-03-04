@@ -2788,8 +2788,7 @@
 (defun max-width-of-widest-int (lst-of-lsts)
   (declare (xargs :guard (and (true-listp lst-of-lsts)
                               (all-integer-listp lst-of-lsts))
-                  :guard-hints (("Goal" :in-theory (e/d (ALL-INTEGERP) ()))) ;fixme
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable ALL-INTEGERP)))))
   (if (endp lst-of-lsts)
       0
     (max (width-of-widest-int (first lst-of-lsts))

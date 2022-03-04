@@ -963,9 +963,9 @@
                                interpreted-function-alist))
                     2147483646)))
   :hints (("Goal" :use (:instance merge-tree-into-dag-array-return-type)
-           :in-theory (e/d () (merge-tree-into-dag-array-return-type
+           :in-theory (disable merge-tree-into-dag-array-return-type
                                pseudo-dag-arrayp-monotone
-                               axe-treep)))))
+                               axe-treep))))
 
 (defthm merge-trees-into-dag-array-return-type-2
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)

@@ -79,7 +79,7 @@
 ;improve logapp-<-0?
 (defthm bvcat-non-negative
   (not (< (bvcat highsize highval lowsize lowval) 0))
-  :hints (("Goal" :in-theory (e/d (bvcat natp) ()))))
+  :hints (("Goal" :in-theory (enable bvcat natp))))
 
 (defthm integerp-of-bvxor
   (integerp (bvxor size x y)))

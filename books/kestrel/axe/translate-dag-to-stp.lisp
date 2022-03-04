@@ -2415,8 +2415,7 @@
                       (eq (first res) *possible-counterexample*)
                       (counterexamplep (second res))
                       (equal (len res) 2)))))
-  :hints (("Goal" :in-theory (enable prove-query-with-stp)
-           :use ())))
+  :hints (("Goal" :in-theory (enable prove-query-with-stp))))
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; TODO: Unify param order with prove-query-with-stp

@@ -526,8 +526,7 @@
                 (all-< literal-nodenums dag-len)
                 (subst-candidate-listp acc))
            (subst-candidate-listp (subst-candidates literal-nodenums dag-array dag-len lim acc)))
-  :hints (("Goal" :in-theory (e/d (subst-candidates subst-candidatep subst-candidate-listp)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable subst-candidates subst-candidatep subst-candidate-listp))))
 
 (defthm all-<-of-strip-cars-of-subst-candidates
   (implies (and (all-< literal-nodenums dag-len)
