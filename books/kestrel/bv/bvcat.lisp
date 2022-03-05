@@ -1,7 +1,7 @@
 ; BV Library: Theorems about bvcat
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1406,3 +1406,88 @@
                (bvcat highsize highval lowsize lowval)))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable bvcat logapp))))
+
+;disable?
+;move?  not really about bvcat
+(defthm unsigned-byte-p-tighten-when-slice-is-0
+  (implies (and (equal 0 (slice k free x))
+                (equal k (+ -1 size))
+                (< free size)
+                (natp free))
+           (equal (unsigned-byte-p size x)
+                  (and (unsigned-byte-p free x)
+                       (integerp size))))
+  :hints (("Goal"
+           :cases ((unsigned-byte-p size x))
+           :use (:instance split-with-bvcat (hs (- size free)) (ls free))
+           :in-theory (disable equal-of-bvchop-and-bvchop-same))))
+
+;can this loop?
+(defthm equal-of-bvchop-and-bvchop-when-smaller-bvchops-equal
+  (implies (and (equal (bvchop free x) (bvchop free y))
+                (<= free n)
+                (posp n)
+                (natp free)
+                )
+           (equal (equal (bvchop n x) (bvchop n y))
+                  (equal (slice (+ -1 n) free x)
+                         (slice (+ -1 n) free y))))
+  :hints (("Goal"
+           :in-theory (disable BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE)
+           :use ((:instance split-bv (n n) (m free) (y (bvchop n x)))
+                 (:instance split-bv (n n) (m free) (y (bvchop n y)))))))
+
+;keep disabled
+;move?
+(defthmd slice-low-cases
+  (implies (and (<= low high)
+                (natp low)
+                (integerp high))
+           (equal (slice high low x)
+                  (if (equal 0 (getbit low x))
+                      (bvcat (- high low)
+                             (slice high (+ 1 low) x)
+                             1
+                             0)
+                    (bvcat (- high low)
+                           (slice high (+ 1 low) x)
+                           1
+                           1)))))
+
+;move?
+;keep disabled
+(defthmd bvchop-top-bit-cases
+  (implies (posp size)
+           (equal (bvchop size x)
+                  (if (equal 0 (getbit (+ -1 size) x))
+                      (bvchop (+ -1 size) x)
+                    (bvcat 1
+                           1
+                           (+ -1 size)
+                           x)))))
+
+;move?
+(defthm equal-of-bvchop-and-bvchop-one-wider
+  (implies (posp size)
+           (equal (equal (bvchop size x) (bvchop (+ -1 size) y))
+                  (and (equal 0 (getbit (+ -1 size) x))
+                       (equal (bvchop (+ -1 size) x)
+                              (bvchop (+ -1 size) y)))))
+  :hints (("Goal" :in-theory (enable bvchop-top-bit-cases))))
+
+(defthm +-of-1-and-bvcat-1-0
+  (equal (+ 1 (bvcat highsize highval 1 0))
+         (bvcat highsize highval 1 1))
+  :hints (("Goal" :in-theory (enable bvcat))))
+
+(defthm +-of-1-and-bvcat-1-1
+  (implies (and (natp highsize)
+                (integerp highval))
+           (equal (+ 1 (bvcat highsize highval 1 1))
+                  (if (equal (bvchop highsize highval)
+                             (+ -1 (expt 2 highsize)))
+                      (expt 2 (+ 1 highsize))
+                    (bvcat highsize (+ 1 highval) 1 0))))
+  :hints (("Goal" :in-theory (enable bvcat logapp
+                                     BVCHOP-OF-SUM-CASES
+                                     EXPT-OF-+))))

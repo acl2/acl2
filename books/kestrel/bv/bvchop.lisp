@@ -1,7 +1,7 @@
 ; BV Library: Theorems about bvchop.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -802,3 +802,20 @@
                 (natp size))
            (equal (bvchop size (+ (- (* x (expt 2 size))) y))
                   (bvchop size y))))
+
+(local
+ (defthmd mod-both-sides
+   (implies (equal x1 x2)
+            (equal (mod x1 y) (mod x2 y)))))
+
+(defthm bvchops-same-when-bvchops-same
+  (implies (and (equal (bvchop free x) (bvchop free y))
+                (<= n free)
+                (natp free)
+                (natp n)
+                )
+           (equal (equal (bvchop n x) (bvchop n y))
+                  t))
+  :hints (("Goal" :use ((:instance BVCHOP-OF-BVCHOP (size1 n) (size free) (i x))
+                        (:instance BVCHOP-OF-BVCHOP (size1 n) (size free) (i y)))
+           :in-theory (disable BVCHOP-OF-BVCHOP))))

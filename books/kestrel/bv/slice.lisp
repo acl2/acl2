@@ -597,3 +597,28 @@
            (equal (slice high low (ash x low))
                   (bvchop (+ 1 (- high low)) x)))
   :hints (("Goal" :cases ((<= n 0)))))
+
+(defthm slices-same-when-bvchops-same
+  (implies (and (equal (bvchop free x) (bvchop free y))
+                (< high free)
+                (natp free)
+                (natp high)
+                (natp low))
+           (equal (equal (slice high low x) (slice high low y))
+                  t))
+  :hints (("Goal" :use ((:instance slice-of-bvchop-low (n free) (x x))
+                        (:instance slice-of-bvchop-low (n free) (x y)))
+           :in-theory (disable slice-of-slice))))
+
+;move
+(defthm slice-of-+-of--1-and-expt
+  (implies (and (< high i)
+                (posp n)
+                (natp low)
+                (integerp high)
+                (<= low high)
+                (natp i)
+                )
+           (equal (slice high low (+ -1 (expt 2 i)))
+                  (+ -1 (expt 2 (+ 1 high (- low))))))
+  :hints (("Goal" :in-theory (enable SLICE-ALT-DEF))))
