@@ -1,7 +1,7 @@
 ; BV Library: theorems about logtail
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,6 +20,7 @@
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/plus"))
 (local (include-book "../arithmetic-light/expt2"))
+(local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/floor-and-expt"))
 
 (in-theory (disable logtail))
@@ -317,3 +318,10 @@
 ;;                   (logtail 2 x)))
 ;;   :hints (("Goal" :in-theory (enable logtail))))
 ;; (theory-invariant (incompatible (:rewrite FLOOR-BY-4) (:DEFINITION LOGTAIL)))
+
+(defthm logtail-of-1-and-+-of-1-and-*-of-2
+  (implies (integerp x)
+           (equal (logtail 1 (+ 1 (* 2 x)))
+                  x))
+  :hints (("Goal" :in-theory (e/d (logtail)
+                                  ()))))
