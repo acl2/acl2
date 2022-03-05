@@ -2244,68 +2244,7 @@
                   (bitnot (getbit low x))))
   :hints (("Goal" :in-theory (enable bitnot))))
 
-;make a rule to substitute?
-(defthm getbits-same-when-bvchops-same
-  (implies (and (equal (bvchop free x) (bvchop free y))
-                (< n free)
-                (natp free)
-                (natp n)
-                )
-           (equal (equal (getbit n x) (getbit n y))
-                  t))
-  :hints (("Goal" :use ((:instance GETBIT-OF-BVCHOP (m n) (n free) (x x))
-                        (:instance GETBIT-OF-BVCHOP (m n) (n free) (x y)))
-           :in-theory (disable GETBIT-OF-BVCHOP))))
 
-(defthm bvchops-same-when-bvchops-same
-  (implies (and (equal (bvchop free x) (bvchop free y))
-                (<= n free)
-                (natp free)
-                (natp n)
-                )
-           (equal (equal (bvchop n x) (bvchop n y))
-                  t))
-  :hints (("Goal" :use ((:instance BVCHOP-OF-BVCHOP (size1 n) (size free) (i x))
-                        (:instance BVCHOP-OF-BVCHOP (size1 n) (size free) (i y)))
-           :in-theory (disable BVCHOP-OF-BVCHOP))))
-
-(defthm slices-same-when-slices-same
-  (implies (and (equal (bvchop free x) (bvchop free y))
-                (< high free)
-                (natp free)
-                (natp high)
-                (natp low)
-                )
-           (equal (equal (slice high low x) (slice high low y))
-                  t))
-  :hints (("Goal" :use ((:instance SLICE-OF-bvchop-low (n free) (x x))
-                        (:instance SLICE-OF-bvchop-low (n free) (x y)))
-           :in-theory (disable SLICE-OF-SLICE))))
-
-;can this loop?
-(defthm equal-of-bvchop-and-bvchop-when-smaller-bvchops-equal
-  (implies (and (equal (bvchop free x) (bvchop free y))
-                (<= free n)
-                (posp n)
-                (natp free)
-                )
-           (equal (equal (bvchop n x) (bvchop n y))
-                  (equal (slice (+ -1 n) free x)
-                         (slice (+ -1 n) free y))))
-  :hints (("Goal"
-           :in-theory (disable BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE)
-           :use ((:instance split-bv (n n) (m free) (y (bvchop n x)))
-                 (:instance split-bv (n n) (m free) (y (bvchop n y)))))))
-
-(defthm equal-of-bvsx-and-bvsx
-  (implies (and (< lowsize n)
-                (posp lowsize)
-                (integerp n))
-           (equal (equal (bvsx n lowsize x) (bvsx n lowsize y))
-                  (equal (bvchop lowsize x)
-                         (bvchop lowsize y))))
-  :hints (("Goal"
-           :in-theory (enable bvsx))))
 
 ;bozo
 (defthmd blast-bvxor-32-into-8
@@ -5988,17 +5927,6 @@
   :hints (("Goal" :in-theory (e/d (logext) (;LOGBITP-BVCHOP
                                             )))))
 
-(defthm getbit-when-slice-is-known-constant
-  (implies (and (equal free (slice high low x)) ;reversed the equality
-                (syntaxp (quotep free))
-                (<= low n)
-                (<= n high)
-                (natp low)
-                (integerp n)
-                (integerp high))
-           (equal (getbit n x)
-                  (getbit (- n low) free))))
-
 (defthmd rewrite-bv-equality-when-sizes-dont-match-core
   (implies (and (< x-size y-size)
                 (unsigned-byte-p x-size x)
@@ -8057,19 +7985,6 @@
            (equal (booland (not (sbvlt size k x)) (not (equal k x)))
                   (sbvlt size x k)))
   :hints (("Goal" :use (:instance svblt-trichotomy (y k)))))
-
-;disable?
-(defthm unsigned-byte-p-tighten-when-slice-is-0
-  (implies (and (equal 0 (slice k free x))
-                (equal k (+ -1 size))
-                (posp size)
-                (< free size)
-                (natp free))
-           (equal (unsigned-byte-p size x)
-                  (unsigned-byte-p free x)))
-  :hints (("Goal"
-           :use (:instance split-with-bvcat (hs (- size free)) (ls free))
-           :in-theory (disable equal-of-bvchop-and-bvchop-same))))
 
 (defthm unsigned-byte-p-of-slice-lemma
   (implies (and (unsigned-byte-p (+ n low) x)

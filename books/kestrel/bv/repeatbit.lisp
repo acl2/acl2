@@ -1,7 +1,7 @@
 ; Creating BVs of all ones or all zeros
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -93,4 +93,15 @@
   (implies (zp n)
            (equal (repeatbit n bit)
                   0))
+  :hints (("Goal" :in-theory (enable repeatbit))))
+
+(defthm equal-of-repeatbit-and-constant
+  (implies (and (syntaxp (quotep k))
+                (posp n))
+           (equal (equal k (repeatbit n bit))
+                  (if (equal k 0)
+                      (equal bit 0)
+                    (if (equal k (+ -1 (expt 2 n)))
+                        (not (equal bit 0))
+                      nil))))
   :hints (("Goal" :in-theory (enable repeatbit))))
