@@ -33,7 +33,7 @@
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 
 (defxdoc finite-difference
-  :parents (transformations)
+  :parents (apt::apt)
   :short "This transformation performs finite-differencing, aka
 incrementalization."
 
