@@ -1,7 +1,7 @@
 ; Utilities to make terms into dags
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,8 +12,6 @@
 
 (in-package "ACL2")
 
-;; See also make-term-into-dag-simple.lisp.
-
 (include-book "make-term-into-dag-array-basic")
 
 ;;;
@@ -21,6 +19,7 @@
 ;;;
 
 ;; Returns (mv erp dag-or-quotep).  Returns the DAG as a list but uses arrays to do the work.
+;; See also make-term-into-dag-simple.
 (defund make-term-into-dag-basic (term interpreted-function-alist)
   (declare (xargs :guard (and (pseudo-termp term)
                               (interpreted-function-alistp interpreted-function-alist))
