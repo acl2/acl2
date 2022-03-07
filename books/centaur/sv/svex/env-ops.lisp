@@ -680,3 +680,76 @@ of @(see svex-env-lookup), and they bind the same variables.")
                                     svarlist-p
                                     4veclist-p
                                     pairlis$))))
+
+
+
+(define svex-alist-constantp ((x svex-alist-p))
+  (if (atom x)
+      t
+    (and (or (not (mbt (and (consp (car x))
+                            (svar-p (caar x)))))
+             (svex-case (cdar x) :quote))
+         (svex-alist-constantp (cdr x))))
+  ///
+  (defthmd svex-lookup-when-svex-alist-constantp
+    (implies (and (svex-alist-constantp x)
+                  (svex-lookup k x))
+             (svex-case (svex-lookup k x) :quote))
+    :hints(("Goal" :in-theory (enable svex-lookup))))
+
+  (defthm svex-alist-constantp-of-svex-alist-extract
+    (implies (svex-alist-constantp x)
+             (svex-alist-constantp (svex-alist-extract keys x)))
+    :hints(("Goal" :in-theory (enable svex-alist-extract
+                                      svex-lookup-when-svex-alist-constantp))))
+
+  (defthmd svex-alist-eval-when-svex-alist-constantp
+    (implies (and (syntaxp (not (equal env ''nil)))
+                  (svex-alist-constantp x))
+             (equal (svex-alist-eval x env)
+                    (svex-alist-eval x nil)))
+    :hints(("Goal" :in-theory (enable svex-alist-eval))))
+  
+  (local (in-theory (enable svex-alist-fix))))
+
+
+(define svex-env-to-subst ((x svex-env-p))
+  :verify-guards nil
+  :returns (new-x svex-alist-p)
+  (mbe :logic (if (atom x)
+                  nil
+                (if (not (mbt (and (consp (car x))
+                                   (svar-p (caar x)))))
+                    (svex-env-to-subst (cdr x))
+                  (cons (cons (caar x) (svex-quote (cdar x)))
+                        (svex-env-to-subst (cdr x)))))
+       :exec x)
+  ///
+  (local (defthm svex-env-to-subst-id
+           (implies (svex-env-p x)
+                    (equal (svex-env-to-subst x) x))
+           :hints(("Goal" :in-theory (enable svex-env-p svex-quote)))))
+  (verify-guards svex-env-to-subst
+    :hints(("Goal" :in-theory (enable svex-env-p svex-quote))))
+
+  (defret svex-alist-constantp-of-<fn>
+    (svex-alist-constantp new-x)
+    :hints(("Goal" :in-theory (enable svex-alist-constantp))))
+
+  (defret lookup-of-svex-env-to-subst
+    (equal (svex-lookup k new-x)
+           (and (svex-env-boundp k x)
+                (svex-quote (svex-env-lookup k x))))
+    :hints(("Goal" :in-theory (enable svex-env-boundp svex-lookup svex-env-lookup))))
+
+  (defret svex-alist-eval-of-<fn>
+    (equal (svex-alist-eval new-x env)
+           (svex-env-fix x))
+    :hints(("Goal" :in-theory (enable svex-alist-eval svex-env-fix))))
+
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys new-x)
+           (alist-keys (svex-env-fix x)))
+    :hints(("Goal" :in-theory (enable alist-keys svex-env-fix svex-alist-keys))))
+
+  (local (in-theory (e/d (svex-env-fix) (svex-env-to-subst-id)))))

@@ -604,7 +604,11 @@
                   (:instance svex-monotonic-p-necc
                    (x x-equiv)
                    (env1 (mv-nth 0 (svex-monotonic-p-witness x)))
-                   (env2 (mv-nth 1 (svex-monotonic-p-witness x)))))))))
+                   (env2 (mv-nth 1 (svex-monotonic-p-witness x))))))))
+
+  (defthm svex-var-monotonic
+    (svex-monotonic-p (svex-var k))
+    :hints(("Goal" :in-theory (enable svex-monotonic-p svex-eval)))))
 
 (defsection svexlist-monotonic-p
   (defcong svexlist-eval-equiv equal (svexlist-monotonic-p x) 1
