@@ -122,9 +122,9 @@ disabled and may be enabled using:</p>
 
 <p>Besides this @(see xdoc::xdoc) documentation, you may be interested in the
 2004 ACL2 workshop paper, <a
-href='http://www.cs.utexas.edu/users/jared/publications/2004-acl2-osets/set-theory.pdf'>Finite
+href='https://www.cs.utexas.edu/users/moore/acl2/workshop-2004/contrib/davis/set-theory.pdf'>Finite
 Set Theory based on Fully Ordered Lists</a>, and see also the <a
-href='http://www.cs.utexas.edu/users/jared/osets/Slides/2004-02-seminar-slides.pdf'>slides</a>
+href='https://www.cs.utexas.edu/users/moore/acl2/workshop-2004/contrib/davis/workshop-osets-slides.pdf'>slides</a>
 from the accompanying talk.</p>")
 
 ; We begin with the definitions of the set theory functions and a few trivial
