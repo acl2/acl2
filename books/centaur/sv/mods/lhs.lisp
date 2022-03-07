@@ -2089,6 +2089,15 @@ bits of @('foo'):</p>
              (not (member v (netassigns-vars (assign->netassigns lhs offset dr acc)))))
     :hints (("goal" :induct (assign->netassigns lhs offset dr acc)
              :expand ((lhs-vars lhs))
+             :in-theory (enable svex-alist-vars lhatom-vars))))
+  
+  
+  (defthm hons-assoc-equal-of-assign->netassigns
+    (implies (and (not (member v (lhs-vars lhs)))
+                  (not (hons-assoc-equal v (netassigns-fix acc))))
+             (not (hons-assoc-equal v (assign->netassigns lhs offset dr acc))))
+    :hints (("goal" :induct (assign->netassigns lhs offset dr acc)
+             :expand ((lhs-vars lhs))
              :in-theory (enable svex-alist-vars lhatom-vars)))))
 
 (define assigns->netassigns-aux ((x assigns-p) (acc netassigns-p))
@@ -2105,6 +2114,14 @@ bits of @('foo'):</p>
                   (not (member v (netassigns-vars acc))))
              (not (member v (netassigns-vars (assigns->netassigns-aux x acc)))))
     :hints (("goal" :induct (assigns->netassigns-aux x acc)
+             :expand ((assigns-vars x)))))
+  
+
+  (defthm hons-assoc-equal-of-assigns->netassigns-aux
+    (implies (and (not (member v (assigns-vars x)))
+                  (not (hons-assoc-equal v (netassigns-fix acc))))
+             (not (hons-assoc-equal v (assigns->netassigns-aux x acc))))
+    :hints (("goal" :induct (assigns->netassigns-aux x acc)
              :expand ((assigns-vars x))))))
 
 (define assigns->netassigns ((x assigns-p))
@@ -2114,7 +2131,11 @@ bits of @('foo'):</p>
   (defthm vars-of-assigns->netassigns
     (implies (not (member v (assigns-vars x)))
              (not (member v (netassigns-vars (assigns->netassigns x)))))
-    :hints(("Goal" :in-theory (disable fast-alist-clean)))))
+    :hints(("Goal" :in-theory (disable fast-alist-clean))))
+
+  (defthm hons-assoc-equal-of-assigns->netassigns
+    (implies (not (member v (assigns-vars x)))
+             (not (hons-assoc-equal v (assigns->netassigns x))))))
 
 
 
@@ -2261,7 +2282,12 @@ bits of @('foo'):</p>
     (implies (not (member v (netassigns-vars x)))
              (and (not (member v (svex-alist-keys (netassigns->resolves x))))
                   (not (member v (svex-alist-vars (netassigns->resolves x))))))
-    :hints(("Goal" :in-theory (enable netassigns-vars svex-alist-vars svex-alist-keys)))))
+    :hints(("Goal" :in-theory (enable netassigns-vars svex-alist-vars svex-alist-keys))))
+
+  (defret svex-lookup-under-iff-of-<fn>
+    (iff (svex-lookup v assigns)
+         (hons-assoc-equal (svar-fix v) (netassigns-fix x)))
+    :hints(("Goal" :in-theory (enable netassigns-fix svex-lookup)))))
 
 
 ;; (define svar-indexedp ((x svar-p))

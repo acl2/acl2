@@ -30,6 +30,7 @@
 
 (in-package "SV")
 (include-book "compose-theory-base")
+(include-book "partial-monotonicity")
 (include-book "svex-lattice")
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
@@ -48,7 +49,21 @@
          :hints(("Goal" :in-theory (enable alist-keys)
                  :induct (neteval-ordering-selfinduct x)
                  :expand ((neteval-ordering-eval x network env))))))
-                 
+
+
+;; (define svex-compose-alist-selfbound-keys-p ((keys svarlist-p)
+;;                                              (x svex-alist-p))
+;;   (if (atom keys)
+;;       t
+;;     (and (ec-call (svex-eval-equiv (svex-compose-lookup (car keys) x) (svex-var (car keys))))
+;;          (svex-compose-alist-selfbound-keys-p (cdr keys) x)))
+;;   ///
+;;   (defthmd svex-compose-lookup-when-svex-compose-alist-selfbound-keys-p
+;;     (implies (and (svex-compose-alist-selfbound-keys-p keys x)
+;;                   (member-equal (svar-fix k) (svarlist-fix keys)))
+;;              (svex-eval-equiv (svex-compose-lookup k x) (svex-var k)))))
+
+
 
 (encapsulate nil
   (local (in-theory (enable svex-monotonic-p-necc)))
@@ -57,7 +72,7 @@
       (implies (and (svex-alist-monotonic-p network)
                     (svex-env-<<= env1 env2))
                (svex-env-<<= (neteval-ordering-eval x network env1)
-                            (neteval-ordering-eval x network env2)))
+                             (neteval-ordering-eval x network env2)))
       :hints ('(:expand ((:free (env) (neteval-ordering-eval x network env)))))
       :flag neteval-ordering-compile)
 
@@ -65,7 +80,7 @@
       (implies (and (svex-alist-monotonic-p network)
                     (svex-env-<<= env1 env2))
                (4vec-<<= (neteval-sigordering-eval x signal offset network env1)
-                        (neteval-sigordering-eval x signal offset network env2)))
+                         (neteval-sigordering-eval x signal offset network env2)))
       :hints ('(:expand ((:free (env) (neteval-sigordering-eval x signal offset network env)))))
       :flag neteval-sigordering-compile)
 
@@ -73,8 +88,166 @@
       (implies (and (svex-alist-monotonic-p network)
                     (svex-env-<<= env1 env2))
                (4vec-<<= (neteval-ordering-or-null-eval x signal network env1)
-                        (neteval-ordering-or-null-eval x signal network env2)))
+                         (neteval-ordering-or-null-eval x signal network env2)))
       :hints ('(:expand ((:free (env) (neteval-ordering-or-null-eval x signal network env)))))
+      :flag neteval-ordering-or-null-compile))
+
+  (local (defthm consp-hons-assoc-equal
+           (iff (consp (hons-assoc-equal k x))
+                (hons-assoc-equal k x))))
+  (local (defthm member-alist-keys
+           (iff (member-equal k (alist-keys x))
+                (hons-assoc-equal k x))
+           :hints(("Goal" :in-theory (enable alist-keys)))))
+  
+  (local (defthm member-alist-keys-of-svex-env-fix
+           (implies (svar-p k)
+                    (iff (member-equal k (alist-keys (svex-env-fix x)))
+                         (svex-env-boundp k x)))
+           :hints(("Goal" :in-theory (enable svex-env-boundp)))))
+
+  (local (defthm svex-env-extract-of-append-alists-when-first-keys-not-intersecting
+           (implies (not (intersectp-equal (svarlist-fix keys) (alist-keys (svex-env-fix x))))
+                    (equal (svex-env-extract keys (append x y))
+                           (svex-env-extract keys y)))
+           :hints(("Goal" :in-theory (e/d (svex-env-extract svarlist-fix intersectp-equal)
+                                          (acl2::intersectp-equal-commute))))))
+
+  (local (defthm svex-envs-similar-of-append-extract-blah
+           (implies (equal (svex-env-extract keys w)
+                           (svex-env-extract keys (append a w)))
+                    (svex-envs-similar (append (svex-env-extract keys w)
+                                               a
+                                               w)
+                                       (append a w)))
+           :hints(("Goal" :in-theory (e/d (svex-envs-similar)
+                                          (svex-env-lookup-of-svex-env-extract))
+                   :use ((:instance svex-env-lookup-of-svex-env-extract
+                          (v (svex-envs-similar-witness
+                              (append (svex-env-extract keys w)
+                                      a
+                                      w)
+                              (append a w)))
+                          (vars keys) (env w))
+                         (:instance svex-env-lookup-of-svex-env-extract
+                          (v (svex-envs-similar-witness
+                              (append (svex-env-extract keys w)
+                                      a
+                                      w)
+                              (append a w)))
+                          (vars keys) (env (append a w))))))))
+
+  ;; (local (defthm svex-env-extract-non-intersecting-of-neteval-ordering-eval
+  ;;          (implies ;; (not (intersectp-equal (svarlist-fix params) (svex-alist-keys network)))
+  ;;           (svex-compose-alist-const/selfbound-keys-p params network)
+  ;;                   (equal (svex-env-extract params (append (neteval-ordering-eval x network env) env))
+  ;;                          (svex-env-extract params env)))
+  ;;          :hints(("Goal" :in-theory (e/d (svex-env-extract
+  ;;                                          svarlist-fix
+  ;;                                          intersectp-equal
+  ;;                                          svex-compose-alist-const/selfbound-keys-p
+  ;;                                          lookup-network-fixed-signal-of-neteval-ordering-eval)
+  ;;                                         (acl2::intersectp-equal-commute))))))
+
+
+  (local (defun neteval-sigordering-order-ind (x offset)
+           (declare (xargs :measure (neteval-sigordering-count x)))
+           (neteval-sigordering-case x
+             :segment (neteval-sigordering-order-ind x.rest (+ x.width (nfix offset)))
+             :remainder offset)))
+  
+  (local (defthm neteval-sigordering-eval-equiv-when-constantp
+           (implies (and (svex-constantp (svex-compose-lookup signal network))
+                         (equal (svex-env-lookup signal env1) (svex-env-lookup signal env2)))
+                    (equal (equal (neteval-sigordering-eval x signal offset network env1)
+                                  (neteval-sigordering-eval x signal offset network env2))
+                           t))
+           :hints (("goal" :induct (neteval-sigordering-order-ind x offset)
+                    :expand ((:free (env) (neteval-sigordering-eval x signal offset network env))
+                             (:free (x env) (neteval-ordering-or-null-eval x signal network env)))
+                    :in-theory (enable svex-constantp-necc)))))
+
+  ;; (local (defthm neteval-sigordering-eval-equiv-when-selfequiv
+  ;;          (implies (and (svex-eval-equiv (svex-compose-lookup signal network) (svex-var signal))
+  ;;                        (equal (svex-env-lookup signal env1) (svex-env-lookup signal env2)))
+  ;;                   (equal (equal (neteval-sigordering-eval x signal offset network env1)
+  ;;                                 (neteval-sigordering-eval x signal offset network env2))
+  ;;                          t))
+  ;;          :hints (("goal" :induct (neteval-sigordering-order-ind x offset)
+  ;;                   :expand ((:free (env) (neteval-sigordering-eval x signal offset network env))
+  ;;                            (:free (x env) (neteval-ordering-or-null-eval x signal network env))
+  ;;                            (:free (x env) (svex-eval (svex-var x) env)))
+  ;;                   :in-theory (e/d (lookup-network-fixed-signal-of-neteval-ordering-eval)
+  ;;                                   (SVEX-ENV-LOOKUP-OF-NETEVAL-ORDERING-EVAL))))))
+  
+  
+  (local (defthm svex-env-extract-of-append-neteval-equivalents
+           (implies (and (equal (svex-env-extract keys x) (svex-env-extract keys y))
+                         (svex-compose-alist-const/selfbound-keys-p keys a))
+                    (equal (equal (svex-env-extract keys (append (neteval-ordering-eval ord a x) x))
+                                  (svex-env-extract keys (append (neteval-ordering-eval ord a y) y)))
+                           t))
+           :hints(("Goal" :in-theory (e/d (svex-env-extract
+                                           svex-compose-alist-const/selfbound-keys-p
+                                           lookup-network-fixed-signal-of-neteval-ordering-eval)
+                                          (svex-env-lookup-of-neteval-ordering-eval))
+                   :induct t
+                   :expand ((:free (v x) (svex-eval (svex-var v) x))))
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable svex-env-lookup-of-neteval-ordering-eval))))))
+
+
+  
+  
+  
+  
+  (defthm-neteval-ordering-compile-flag
+    (defthm neteval-ordering-eval-partial-monotonic
+      (implies (and (svex-alist-partial-monotonic params network)
+                    (svex-compose-alist-const/selfbound-keys-p params network)
+                    (equal (svex-env-extract params env1)
+                           (svex-env-extract params env2))
+                    (svex-env-<<= env1 env2))
+               (svex-env-<<= (neteval-ordering-eval x network env1)
+                             (neteval-ordering-eval x network env2)))
+      :hints ('(:expand ((:free (env) (neteval-ordering-eval x network env)))))
+      :flag neteval-ordering-compile)
+
+    (defthm neteval-sigordering-eval-partial-monotonic
+      (implies (and (svex-alist-partial-monotonic params network)
+                    (svex-compose-alist-const/selfbound-keys-p params network)
+                    (equal (svex-env-extract params env1)
+                           (svex-env-extract params env2))
+                    (svex-env-<<= env1 env2))
+               (4vec-<<= (neteval-sigordering-eval x signal offset network env1)
+                         (neteval-sigordering-eval x signal offset network env2)))
+      :hints ('(:expand ((:free (env) (neteval-sigordering-eval x signal offset network env)))))
+      :flag neteval-sigordering-compile)
+
+    (defthm neteval-ordering-or-null-eval-partial-monotonic
+      (implies (and (svex-alist-partial-monotonic params network)
+                    (svex-compose-alist-const/selfbound-keys-p params network)
+                    (equal (svex-env-extract params env1)
+                           (svex-env-extract params env2))
+                    (svex-env-<<= env1 env2))
+               (4vec-<<= (neteval-ordering-or-null-eval x signal network env1)
+                         (neteval-ordering-or-null-eval x signal network env2)))
+      :hints ('(:expand ((:free (env) (neteval-ordering-or-null-eval x signal network env))))
+              (and stable-under-simplificationp
+                   '(:use ((:instance svex-compose-lookup-when-svex-alist-partial-monotonic
+                            (param-keys params) (x network) (k signal))
+                           (:instance eval-when-svex-partial-monotonic
+                            (param-keys params)
+                            (x (svex-compose-lookup signal network))
+                            ;; (setting (svex-env-to-subst
+                            ;;           (svex-env-extract params env1)))
+                            (env1 (APPEND (NETEVAL-ORDERING-EVAL (NETEVAL-ORDERING-OR-NULL-ORDERING->ORD X)
+                                                                 NETWORK ENV1)
+                                          ENV1))
+                            (env2 (APPEND (NETEVAL-ORDERING-EVAL (NETEVAL-ORDERING-OR-NULL-ORDERING->ORD X)
+                                                                 NETWORK ENV2)
+                                          ENV2))))
+                     :in-theory (disable svex-compose-lookup-when-svex-alist-partial-monotonic))))
       :flag neteval-ordering-or-null-compile))
 
   (defthm neteval-ordering-compile-monotonic
@@ -93,13 +266,42 @@
     :hints (("goal" :in-theory (enable svex-monotonic-p))))
 
 
+  (local (defthm svex-env-extract-of-append-when-subset-of-first
+           (implies (subsetp-equal (svarlist-fix params) (alist-keys (svex-env-fix x)))
+                    (equal (svex-env-extract params (append x y))
+                           (svex-env-extract params x)))
+           :hints(("Goal" :in-theory (enable svex-env-extract svarlist-fix)))))
+  
+  (defthm neteval-ordering-compile-partial-monotonic
+    (implies (and (svex-alist-partial-monotonic params network)
+                  (svex-compose-alist-const/selfbound-keys-p params network))
+             (svex-alist-partial-monotonic params (neteval-ordering-compile x network)))
+    :hints (("goal" :expand ((svex-alist-partial-monotonic params (neteval-ordering-compile x network)))
+             :in-theory (enable svex-alist-monotonic-p
+                                svex-alist-eval-when-svex-alist-constantp))))
+
+  (defthm neteval-sigordering-compile-partial-monotonic
+    (implies (and (svex-alist-partial-monotonic params network)
+                  (svex-compose-alist-const/selfbound-keys-p params network))
+             (svex-partial-monotonic params (neteval-sigordering-compile x signal offset network)))
+    :hints (("goal" :in-theory (enable svex-partial-monotonic svex-monotonic-p
+                                       svex-alist-eval-when-svex-alist-constantp))))
+
+  (defthm neteval-ordering-or-null-compile-partial-monotonic
+    (implies (and (svex-alist-partial-monotonic params network)
+                  (svex-compose-alist-const/selfbound-keys-p params network))
+             (svex-partial-monotonic params (neteval-ordering-or-null-compile x signal network)))
+    :hints (("goal" :in-theory (enable svex-partial-monotonic svex-monotonic-p
+                                       svex-alist-eval-when-svex-alist-constantp))))
+
+
   (local (defthm svex-eval-mono-lemma
            (implies (and (svex-<<= x1 x2)
                          (svex-env-<<= env1 env2)
                          (or (svex-monotonic-p x1)
                              (svex-monotonic-p x2)))
                     (4vec-<<= (svex-eval x1 env1)
-                             (svex-eval x2 env2)))
+                              (svex-eval x2 env2)))
            :hints (("goal" :use ((:instance svex-<<=-necc
                                   (x x1) (y x2) (env env2))
                                  (:instance svex-<<=-necc
@@ -120,7 +322,7 @@
                     ;;            (svex-alist-keys network2))
                     (svex-alist-compose-<<= network1 network2))
                (svex-env-<<= (neteval-ordering-eval x network1 env)
-                            (neteval-ordering-eval x network2 env)))
+                             (neteval-ordering-eval x network2 env)))
       :hints ('(:expand ((:free (network) (neteval-ordering-eval x network env)))))
       :flag neteval-ordering-compile)
 
@@ -132,7 +334,7 @@
                     ;;            (svex-alist-keys network2))
                     (svex-alist-compose-<<= network1 network2))
                (4vec-<<= (neteval-sigordering-eval x signal offset network1 env)
-                        (neteval-sigordering-eval x signal offset network2 env)))
+                         (neteval-sigordering-eval x signal offset network2 env)))
       :hints ('(:expand ((:free (network) (neteval-sigordering-eval x signal offset network env)))))
       :flag neteval-sigordering-compile)
 
@@ -144,7 +346,119 @@
                     ;;            (svex-alist-keys network2))
                     (svex-alist-compose-<<= network1 network2))
                (4vec-<<= (neteval-ordering-or-null-eval x signal network1 env)
-                        (neteval-ordering-or-null-eval x signal network2 env)))
+                         (neteval-ordering-or-null-eval x signal network2 env)))
+      :hints ('(:expand ((:free (network) (neteval-ordering-or-null-eval x signal network env)))))
+      :flag neteval-ordering-or-null-compile))
+
+
+  (local (defthm not-svex-constantp-of-var
+           (not (Svex-constantp (svex-var x)))
+           :hints (("goal" :use ((:instance svex-constantp-necc (x (svex-var x)) (env `((,(svar-fix x) . 1)))))
+                    :in-theory (enable svex-eval svex-env-lookup)))))
+  
+  (local (defthm svex-alist-compose-<<=-and-selfbound-implies-not-constantp
+           (implies (and (svex-alist-compose-<<= network1 network2)
+                         (svex-eval-equiv (svex-compose-lookup key network1) (svex-var key)))
+                    (not (svex-constantp (svex-compose-lookup key network2))))
+           :hints (("goal" :expand ((:free (env) (svex-eval (svex-var key) env)))
+                    :use ((:instance svex-alist-compose-<<=-necc
+                           (x network1) (y network2) (var key))
+                          (:instance svex-<<=-necc
+                           (x (svex-var key))
+                           (y (svex-compose-lookup key network2))
+                           (env `((,(svar-fix key) . -1))))
+                          (:instance svex-<<=-necc
+                           (x (svex-var key))
+                           (y (svex-compose-lookup key network2))
+                           (env `((,(svar-fix key) . 0)))))
+                    :in-theory (e/d (svex-env-lookup
+                                     svex-constantp-necc)
+                                    (svex-alist-compose-<<=-necc))))))
+
+  ;; (local (defthm neteval-sigordering-eval-equiv-on-networks-when-constantp
+  ;;          (implies (and (svex-constantp (svex-compose-lookup signal network1))
+  ;;                        (svex-constantp (svex-compose-lookup signal network2)))
+  ;;                   (equal (equal (neteval-sigordering-eval x signal offset network1 env)
+  ;;                                 (neteval-sigordering-eval x signal offset network2 env))
+  ;;                          t))
+  ;;          :hints (("goal" :induct (neteval-sigordering-order-ind x offset)
+  ;;                   :expand ((:free (network) (neteval-sigordering-eval x signal offset network env))
+  ;;                            (:free (x network) (neteval-ordering-or-null-eval x signal network env)))
+  ;;                   :in-theory (enable svex-constantp-necc)))))
+  
+  (local (defthm svex-env-extract-of-append-neteval-network-equivalents
+           (implies (and (svex-compose-alist-selfbound-keys-p keys a)
+                         (svex-compose-alist-selfbound-keys-p keys b)
+                         (svex-alist-compose-<<= network1 network2))
+                    (equal (equal (svex-env-extract keys (append (neteval-ordering-eval ord a env) env))
+                                  (svex-env-extract keys (append (neteval-ordering-eval ord b env) env)))
+                           t))
+           :hints(("Goal" :in-theory (e/d (svex-env-extract
+                                           svex-compose-alist-selfbound-keys-p
+                                           lookup-network-fixed-signal-of-neteval-ordering-eval)
+                                          (svex-env-lookup-of-neteval-ordering-eval))
+                   :induct t
+                   :expand ((:free (v x) (svex-eval (svex-var v) x))))
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable svex-env-lookup-of-neteval-ordering-eval))))))
+  
+  (local (defthm svex-eval-partial-mono-lemma
+           (implies (and (svex-<<= x1 x2)
+                         (svex-env-<<= env1 env2)
+                         (bind-free '((params . params)) (params))
+                         (equal (svex-env-extract params env1)
+                                (svex-env-extract params env2))
+                         (or (svex-partial-monotonic params x1)
+                             (svex-partial-monotonic params x2)))
+                    (4vec-<<= (svex-eval x1 env1)
+                              (svex-eval x2 env2)))
+           :hints (("goal" :use ((:instance svex-<<=-necc
+                                  (x x1) (y x2) (env env2))
+                                 (:instance svex-<<=-necc
+                                  (x x1) (y x2) (env env1))
+                                 (:instance eval-when-svex-partial-monotonic
+                                  (param-keys params) (x x1) (env1 env1) (env2 env2))
+                                 (:instance eval-when-svex-partial-monotonic
+                                  (param-keys params) (x x2) (env1 env1) (env2 env2)))
+                    :in-theory (e/d (4vec-<<=-transitive-1)
+                                    (svex-<<=-necc
+                                     eval-when-svex-partial-monotonic))))))
+  
+
+  (defthm-neteval-ordering-compile-flag
+    (defthm neteval-ordering-eval-preserves-<<=-when-partial-monotonic
+      (implies (and (bind-free '((params . params)) (params))
+                    (or (svex-alist-partial-monotonic params network1)
+                        (svex-alist-partial-monotonic params network2))
+                    (svex-compose-alist-selfbound-keys-p params network1)
+                    (svex-compose-alist-selfbound-keys-p params network2)
+                    (svex-alist-compose-<<= network1 network2))
+               (svex-env-<<= (neteval-ordering-eval x network1 env)
+                             (neteval-ordering-eval x network2 env)))
+      :hints ('(:expand ((:free (network) (neteval-ordering-eval x network env)))))
+      :flag neteval-ordering-compile)
+
+    (defthm neteval-sigordering-eval-preserves-<<=-when-partial-monotonic
+      (implies (and (bind-free '((params . params)) (params))
+                    (or (svex-alist-partial-monotonic params network1)
+                        (svex-alist-partial-monotonic params network2))
+                    (svex-compose-alist-selfbound-keys-p params network1)
+                    (svex-compose-alist-selfbound-keys-p params network2)
+                    (svex-alist-compose-<<= network1 network2))
+               (4vec-<<= (neteval-sigordering-eval x signal offset network1 env)
+                         (neteval-sigordering-eval x signal offset network2 env)))
+      :hints ('(:expand ((:free (network) (neteval-sigordering-eval x signal offset network env)))))
+      :flag neteval-sigordering-compile)
+
+    (defthm neteval-ordering-or-null-eval-preserves-<<=-when-partial-monotonic
+      (implies (and (bind-free '((params . params)) (params))
+                    (or (svex-alist-partial-monotonic params network1)
+                        (svex-alist-partial-monotonic params network2))
+                    (svex-compose-alist-selfbound-keys-p params network1)
+                    (svex-compose-alist-selfbound-keys-p params network2)
+                    (svex-alist-compose-<<= network1 network2))
+               (4vec-<<= (neteval-ordering-or-null-eval x signal network1 env)
+                         (neteval-ordering-or-null-eval x signal network2 env)))
       :hints ('(:expand ((:free (network) (neteval-ordering-or-null-eval x signal network env)))))
       :flag neteval-ordering-or-null-compile))
 
@@ -156,7 +470,7 @@
              ;; note: also svex-alist-compose-<<= because svex-alist-keys are set-equiv
              ;; (by SVEX-ALIST-COMPOSE-<<=-WHEN-ALIST-KEYS-SAME))
              (svex-alist-<<= (neteval-ordering-compile x network1)
-                            (neteval-ordering-compile x network2)))
+                             (neteval-ordering-compile x network2)))
     :hints(("Goal" :in-theory (enable svex-alist-<<=))))
 
   (defthm neteval-sigordering-compile-preserves-<<=
@@ -167,7 +481,7 @@
                   ;;            (svex-alist-keys network2))
                   (svex-alist-compose-<<= network1 network2))
              (svex-<<= (neteval-sigordering-compile x signal offset network1)
-                      (neteval-sigordering-compile x signal offset network2)))
+                       (neteval-sigordering-compile x signal offset network2)))
     :hints(("Goal" :in-theory (enable svex-<<=))))
 
   (defthm neteval-ordering-or-null-compile-preserves-<<=
@@ -178,8 +492,82 @@
                   ;;            (svex-alist-keys network2))
                   (svex-alist-compose-<<= network1 network2))
              (svex-<<= (neteval-ordering-or-null-compile x signal network1)
-                      (neteval-ordering-or-null-compile x signal network2)))
+                       (neteval-ordering-or-null-compile x signal network2)))
+    :hints(("Goal" :in-theory (enable svex-<<=))))
+
+
+  (defthm neteval-ordering-compile-preserves-<<=-when-partial-monotonic
+    (implies (and (bind-free '((params . params)) (params))
+                  (or (svex-alist-partial-monotonic params network1)
+                      (svex-alist-partial-monotonic params network2))
+                  (svex-compose-alist-selfbound-keys-p params network1)
+                  (svex-compose-alist-selfbound-keys-p params network2)
+                  (svex-alist-compose-<<= network1 network2))
+             ;; note: also svex-alist-compose-<<= because svex-alist-keys are set-equiv
+             ;; (by SVEX-ALIST-COMPOSE-<<=-WHEN-ALIST-KEYS-SAME))
+             (svex-alist-<<= (neteval-ordering-compile x network1)
+                             (neteval-ordering-compile x network2)))
+    :hints(("Goal" :in-theory (enable svex-alist-<<=))))
+
+  (defthm neteval-sigordering-compile-preserves-<<=-when-partial-monotonic
+    (implies (and (bind-free '((params . params)) (params))
+                  (or (svex-alist-partial-monotonic params network1)
+                      (svex-alist-partial-monotonic params network2))
+                  (svex-compose-alist-selfbound-keys-p params network1)
+                  (svex-compose-alist-selfbound-keys-p params network2)
+                  ;; (svex-alist-monotonic-p network2)
+                  ;; (set-equiv (svex-alist-keys network1)
+                  ;;            (svex-alist-keys network2))
+                  (svex-alist-compose-<<= network1 network2))
+             (svex-<<= (neteval-sigordering-compile x signal offset network1)
+                       (neteval-sigordering-compile x signal offset network2)))
+    :hints(("Goal" :in-theory (enable svex-<<=))))
+
+  (defthm neteval-ordering-or-null-compile-preserves-<<=-when-partial-monotonic
+    (implies (and (bind-free '((params . params)) (params))
+                  (or (svex-alist-partial-monotonic params network1)
+                      (svex-alist-partial-monotonic params network2))
+                  (svex-compose-alist-selfbound-keys-p params network1)
+                  (svex-compose-alist-selfbound-keys-p params network2)
+                  ;; (svex-alist-monotonic-p network2)
+                  ;; (set-equiv (svex-alist-keys network1)
+                  ;;            (svex-alist-keys network2))
+                  (svex-alist-compose-<<= network1 network2))
+             (svex-<<= (neteval-ordering-or-null-compile x signal network1)
+                       (neteval-ordering-or-null-compile x signal network2)))
     :hints(("Goal" :in-theory (enable svex-<<=)))))
+
+
+(local (defthmd svex-eval-of-var
+         (Equal (svex-eval (svex-var x) env)
+                (svex-env-lookup x env))
+         :hints(("Goal" :in-theory (enable svex-eval)))))
+
+(defretd eval-compose-lookup-of-neteval-ordering-compile
+  (equal (svex-eval (svex-compose-lookup key compose) env)
+         (if (hons-assoc-equal (svar-fix key) x)
+             (svex-env-lookup key (neteval-ordering-eval x network env))
+           (svex-env-lookup key env)))
+  :hints (("goal" :in-theory (enable svex-compose-lookup svex-eval-of-var)
+           :do-not-induct t))
+  :fn neteval-ordering-compile)
+
+(defthm svex-compose-alist-selfbound-keys-p-of-neteval-ordering-compile
+  (implies (svex-compose-alist-selfbound-keys-p params network)
+           (svex-compose-alist-selfbound-keys-p
+            params (neteval-ordering-compile x network)))
+  :hints(("Goal" :in-theory (enable svex-compose-alist-selfbound-keys-p
+                                    neteval-sigordering-eval-when-signal-not-in-network
+                                    eval-compose-lookup-of-neteval-ordering-compile
+                                    svex-eval-of-var)
+          :induct (svex-compose-alist-selfbound-keys-p params network))
+         (and stable-under-simplificationp
+              (let ((lit (assoc 'svex-eval-equiv clause)))
+                `(:expand (,lit))))))
+
+
+
+
 
 (defsection netcomp-<<=
   (defun-sk netcomp-<<= (comp decomp)
@@ -320,6 +708,24 @@
                     (ordering (neteval-ordering-compose (netcomp-<<=-same-keys-witness x y)
                                                         (netcomp-<<=-same-keys-witness y z))))))))
 
+  (defthmd netcomp-<<=-transitive-when-partial-monotonic
+    (implies (and (netcomp-<<= x y)
+                  (netcomp-<<= y z)
+                  (bind-free '((params . params)) (params))
+                  (or (svex-alist-partial-monotonic params y)
+                      (svex-alist-partial-monotonic params z))
+                  (svex-compose-alist-selfbound-keys-p params y)
+                  (svex-compose-alist-selfbound-keys-p params z))
+             (netcomp-<<= x z))
+    :hints (("goal" :expand ((netcomp-<<= x y)
+                             (netcomp-<<= y z))
+             :in-theory (enable svex-alist-<<=-transitive-1
+                                svex-alist-<<=-transitive-2)
+             :use ((:instance netcomp-<<=-suff
+                    (comp x) (decomp z)
+                    (ordering (neteval-ordering-compose (netcomp-<<=-same-keys-witness x y)
+                                                        (netcomp-<<=-same-keys-witness y z))))))))
+
   (defthmd netcomp-<<=-transitive2
     (implies (and (netcomp-<<= y z)
                   (netcomp-<<= x y)
@@ -327,6 +733,18 @@
                       (svex-alist-monotonic-p z)))
              (netcomp-<<= x z))
     :hints(("Goal" :in-theory (enable netcomp-<<=-transitive))))
+
+
+  (defthmd netcomp-<<=-transitive2-when-partial-monotonic
+    (implies (and (netcomp-<<= y z)
+                  (netcomp-<<= x y)
+                  (bind-free '((params . params)) (params))
+                  (or (svex-alist-partial-monotonic params y)
+                      (svex-alist-partial-monotonic params z))
+                  (svex-compose-alist-selfbound-keys-p params y)
+                  (svex-compose-alist-selfbound-keys-p params z))
+             (netcomp-<<= x z))
+    :hints(("Goal" :in-theory (enable netcomp-<<=-transitive-when-partial-monotonic))))
 
   (defthm netcomp-<<=-reflexive
     (netcomp-<<= x x)
@@ -399,6 +817,76 @@
                   (netcomp-<<= subst network)
                   (or (svex-alist-monotonic-p network)
                       (svex-alist-monotonic-p x)))
+             (netcomp-<<= (svex-alist-compose x subst) network))
+    :hints (("goal" :use ((:instance netcomp-<<=-suff
+                           (comp (svex-alist-compose x subst))
+                           (decomp network)
+                           (ordering (neteval-ordering-compose-aux
+                                      (netcomp-<<=-same-keys-witness x network)
+                                      (netcomp-<<=-same-keys-witness subst network)))))
+             :expand ((netcomp-<<= x network)
+                      (netcomp-<<= subst network)))))
+
+
+  (defthm svex-env-extract-of-append-eval-selfbound
+    (implies (svex-compose-alist-selfbound-keys-p params a)
+             (equal (svex-env-extract params (append (svex-alist-eval a env) env))
+                    (svex-env-extract params env)))
+    :hints(("Goal" :in-theory (enable svex-compose-alist-selfbound-keys-p
+                                      svex-env-extract
+                                      svex-eval-of-var))))
+
+  (defthm svex-alist-<<=-of-svex-alist-compose-when-partial-monotonic-lemma
+    (implies (and (svex-alist-compose-<<= a b)
+                  (svex-alist-partial-monotonic params x)
+                  (svex-compose-alist-selfbound-keys-p params a)
+                  (svex-compose-alist-selfbound-keys-p params b))
+             (svex-alist-<<= (svex-alist-compose x a)
+                             (svex-alist-compose x b)))
+    :hints(("Goal" :in-theory (enable svex-alist-<<=))))
+
+  
+  (defthm svex-alist-<<=-of-svex-alist-compose-when-partial-monotonic
+    (implies (and (svex-alist-<<= x y)
+                  (svex-alist-compose-<<= a b)
+                  (bind-free '((params . params)) (params))
+                  (or (svex-alist-partial-monotonic params x)
+                      (svex-alist-partial-monotonic params y))
+                  (svex-compose-alist-selfbound-keys-p params a)
+                  (svex-compose-alist-selfbound-keys-p params b))
+             (svex-alist-<<= (svex-alist-compose x a)
+                             (svex-alist-compose y b)))
+    :hints (("goal" :use ((:instance svex-alist-<<=-transitive-1
+                           (x (svex-alist-compose x a))
+                           (y (svex-alist-compose x b))
+                           (z (svex-alist-compose y b)))
+                          (:instance svex-alist-<<=-transitive-1
+                           (x (svex-alist-compose x a))
+                           (y (svex-alist-compose y a))
+                           (z (svex-alist-compose y b)))))))
+
+  (defthm netcomp-<<=-of-svex-alist-compose-when-partial-monotonic-1
+    (implies (and (netcomp-<<= x network)
+                  (netcomp-<<= subst network)
+                  (svex-alist-partial-monotonic params network)
+                  (svex-compose-alist-selfbound-keys-p params network)
+                  (svex-compose-alist-selfbound-keys-p params subst))
+             (netcomp-<<= (svex-alist-compose x subst) network))
+    :hints (("goal" :use ((:instance netcomp-<<=-suff
+                           (comp (svex-alist-compose x subst))
+                           (decomp network)
+                           (ordering (neteval-ordering-compose-aux
+                                      (netcomp-<<=-same-keys-witness x network)
+                                      (netcomp-<<=-same-keys-witness subst network)))))
+             :expand ((netcomp-<<= x network)
+                      (netcomp-<<= subst network)))))
+  
+  (defthm netcomp-<<=-of-svex-alist-compose-when-partial-monotonic-2
+    (implies (and (netcomp-<<= x network)
+                  (netcomp-<<= subst network)
+                  (svex-alist-partial-monotonic params x)
+                  (svex-compose-alist-selfbound-keys-p params network)
+                  (svex-compose-alist-selfbound-keys-p params subst))
              (netcomp-<<= (svex-alist-compose x subst) network))
     :hints (("goal" :use ((:instance netcomp-<<=-suff
                            (comp (svex-alist-compose x subst))
@@ -504,13 +992,33 @@
              :use ((:instance netcomp-<<=-suff
                     (comp x) (decomp z)
                     (ordering (netcomp-p-eval-equiv-witness x y)))))))
+  
+  (defthmd netcomp-<<=-when-netcomp-of-<<=-partial-monotonic
+    (implies (and (netcomp-p x y)
+                  (svex-alist-compose-<<= y z)
+                  (or (svex-alist-partial-monotonic params y)
+                      (svex-alist-partial-monotonic params z))
+                  (svex-compose-alist-selfbound-keys-p params y)
+                  (svex-compose-alist-selfbound-keys-p params z))
+             (netcomp-<<= x z))
+    :hints (("goal" :expand ((netcomp-p x y))
+             :use ((:instance netcomp-<<=-suff
+                    (comp x) (decomp z)
+                    (ordering (netcomp-p-eval-equiv-witness x y)))
+                   (:instance neteval-ordering-compile-preserves-<<=-when-partial-monotonic
+                    (x (netcomp-p-eval-equiv-witness x y))
+                    (network1 y)
+                    (network2 z))))))
 
-  (defthm netevalcomp-p-when-netcomp-<<=
-    (implies (netcomp-<<= x y)
-             (netevalcomp-p (svex-alist-compose x (svarlist-x-subst (svex-alist-keys y))) y))
-    :hints (("goal" :expand ((netcomp-<<= x y))
-             :use ((:instance netevalcomp-p-suff
-                    (comp (svex-alist-compose x (svarlist-x-subst (svex-alist-keys y))))
-                    (network y)
-                    (ordering (netcomp-<<=-same-keys-witness x y))))))))
+  ;; (defthm netevalcomp-p-when-netcomp-<<=
+  ;;   (implies (netcomp-<<= x y)
+  ;;            (netevalcomp-p (svex-alist-compose x (svarlist-x-subst (svex-alist-keys y))) y))
+  ;;   :hints (("goal" :expand ((netcomp-<<= x y))
+  ;;            :use ((:instance netevalcomp-p-suff
+  ;;                   (comp (svex-alist-compose x (svarlist-x-subst (svex-alist-keys y))))
+  ;;                   (network y)
+  ;;                   (ordering (netcomp-<<=-same-keys-witness x y)))))))
+  )
+
+
 
