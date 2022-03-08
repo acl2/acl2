@@ -752,7 +752,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-integer-fixtype-to-type ((fixtype symbolp))
+(define fixtype-to-integer-type ((fixtype symbolp))
   :returns (type type-optionp)
   :short "Integer type corresponding to a fixtype name, if any."
   (case fixtype
@@ -769,10 +769,10 @@
     (t nil))
   ///
 
-  (defret type-integerp-of-atc-integer-fixtype-to-type
+  (defret type-integerp-of-fixtype-to-integer-type
     (implies type
              (type-integerp type)))
 
-  (defret type-arithmeticp-of-atc-integer-fixtype-to-type
+  (defret type-arithmeticp-of-fixtype-to-integer-type
     (implies type
              (type-arithmeticp type))))
