@@ -16829,7 +16829,8 @@
                 (NATP SIZE))
            (EQUAL (BVLT SIZE X y)
                   (BVLT (max FREE1 free2) X y)))
-  :hints (("Goal" :in-theory (disable BVLT-WHEN-UNSIGNED-BYTE-P-BETTER-NON-CONSTANT)
+  :hints (("Goal" :in-theory (disable BVLT-WHEN-UNSIGNED-BYTE-P-BETTER-NON-CONSTANT
+                                      NOT-BVLT-WHEN-BVLT-OPPOSITE-SMALLER-AND-UNSIGNED-BYTE-P)
            :use (:instance BVLT-TIGHTEN-FREE (k y) (free (max free1 free2))))))
 
 

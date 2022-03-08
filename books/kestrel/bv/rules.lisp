@@ -7500,6 +7500,16 @@
                      (bvchop 32 y))))
   :hints (("Goal" :in-theory (enable bvminus bvplus bvchop-of-sum-cases bvchop-of-minus bvlt))))
 
+;helpful for termination proofs
+(defthm <-of-bvminus-and-bvminus-same-arg2-arg2
+  (implies (and (bvle 32 x y)
+                (bvle 32 x z))
+           (equal (< (bvminus 32 y x)
+                     (bvminus 32 z x))
+                  (< (bvchop 32 y)
+                     (bvchop 32 z))))
+  :hints (("Goal" :in-theory (enable bvminus bvplus bvchop-of-sum-cases bvchop-of-minus bvlt))))
+
 ;; Lemmas to convert arithmetic operations to bit-vector operations:
 
 (defthmd <-to-sbvlt-32

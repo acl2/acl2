@@ -1320,7 +1320,56 @@
 ;; Odd-round a non-zero value u and encode in the SP format, with overflow
 ;; resulting in an infinity and underflow resulting in a zero:
 
+(local
+ (defthmd rto-exact
+   (implies (and (exactp x n)
+                 (rationalp x)
+                 (posp n))
+            (equal (rto x n) x))
+   :hints (("Goal" :in-theory (enable rto-exactp-b)))))
+
+(local
+ (defthm rto-lpn
+   (implies (formatp f)
+            (equal (rto (lpn f) (prec f))
+                   (lpn f)))
+   :hints (("Goal"
+            :use nrepp-lpn
+            :in-theory (enable formatp prec rto-exact nrepp)))))
+
+(local
+ (defthm nrepp-rto
+   (implies (and (formatp f)
+                 (rationalp x)
+                 (<= (spn f) (abs x))
+                 (<= (abs x) (lpn f)))
+            (nrepp (rto x (prec f)) f))
+   :hints (("Goal"
+            :use ((:instance expo-monotone
+                             (x (spn f))
+                             (y x))
+                  (:instance expo-monotone
+                             (y (lpn f))))
+            :in-theory (enable nrepp
+                               rto-positive rto-negative
+                               expo-spn expo-lpn)))))
+
 (defund bf-post-comp (u)
+  (declare (xargs :guard (and (real/rationalp u)
+                              (not (= u 0)))
+                  :guard-hints (("Goal"
+                                 :use ((:instance nrepp-rto
+                                                 (x u)
+                                                 (f (sp)))
+                                       (:instance rto-monotone
+                                                  (x u)
+                                                  (y (- (lpn (sp))))
+                                                  (n (prec (sp))))
+                                       (:instance rto-monotone
+                                                  (x (lpn (sp)))
+                                                  (y u)
+                                                  (n (prec (sp)))))
+                                 :in-theory (e/d (sp) (nrepp-rto))))))
   (let ((sgnf (if (< u 0) 1 0))
 	(r (rto u 24)))
     (if (> (abs r) (lpn (sp)))
@@ -1333,6 +1382,8 @@
 ;; the product is 16-exact so no rounding is required:
 
 (defund bfmul16-spec (a b)
+  (declare (xargs :guard (and (encodingp a (bf))
+                              (encodingp b (bf)))))
   (let ((sgnr (logxor (sgnf a (bf)) (sgnf b (bf)))))
     (if (or (nanp a (bf))
 	    (nanp b (bf))
@@ -1351,6 +1402,8 @@
 ;; SP sum of 2 SP operands:
 
 (defund bfadd32-spec (a b)
+  (declare (xargs :guard (and (encodingp a (sp))
+                              (encodingp b (sp)))))
   (let* ((sgna (sgnf a (sp)))
 	 (sgnb (sgnf b (sp)))
 	 (aval (if (or (zerp a (sp)) (denormp a (sp))) 0 (ndecode a (sp))))
@@ -1367,5 +1420,5 @@
 	  (if (= u 0)
 	      (if (= sgna sgnb)
 	          (zencode sgna (sp))
-	        (zencode 0 (sp)))		
+	        (zencode 0 (sp)))
 	    (bf-post-comp u)))))))
