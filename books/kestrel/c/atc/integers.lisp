@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -66,7 +66,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-integer-type-string ((type typep))
+(define atc-integer-type-xdoc-string ((type typep))
   :guard (type-integerp type)
   :returns (string stringp)
   :short "Documentation (sub)string that describes a C integer type."
@@ -145,7 +145,7 @@
   :returns (event pseudo-event-formp)
   :short "Event to generate the model of the values of a C integer type."
 
-  (b* ((type-string (atc-integer-type-string type))
+  (b* ((type-string (atc-integer-type-xdoc-string type))
        (minbits (atc-integer-type-minbits type))
        (signedp (type-signed-integerp type))
        (maxbound (if signedp

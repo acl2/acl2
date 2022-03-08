@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -139,7 +139,7 @@
      We also generate the function that returns the length of an array,
      as an ACL2 integer."))
 
-  (b* ((type-string (atc-integer-type-string type))
+  (b* ((type-string (atc-integer-type-xdoc-string type))
        (<type> (atc-integer-type-fixtype type))
        (<type>p (pack <type> 'p))
        (<type>-fix (pack <type> '-fix))
@@ -266,8 +266,8 @@
     "Here @('etype') is the type of the array elements,
      while @('itype') is the type of the array indices."))
 
-  (b* ((etype-string (atc-integer-type-string etype))
-       (itype-string (atc-integer-type-string itype))
+  (b* ((etype-string (atc-integer-type-xdoc-string etype))
+       (itype-string (atc-integer-type-xdoc-string itype))
        (<etype> (atc-integer-type-fixtype etype))
        (<itype> (atc-integer-type-fixtype itype))
        (<etype>p (pack <etype> 'p))
