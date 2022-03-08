@@ -1,7 +1,7 @@
 ; The tactic-based prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,7 +21,9 @@
 ;; TODO: Make a lighter-weight version that does not depend on skip-proofs.
 
 (include-book "prune")
+(include-book "rewriter") ; for simp-dag
 (include-book "dag-size")
+(include-book "equivalent-dags")
 (include-book "dagify") ;todo
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
