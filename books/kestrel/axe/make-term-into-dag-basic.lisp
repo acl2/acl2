@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+;; The functions in this book use the basic evaluator to evaluate ground terms.
+
 (include-book "make-term-into-dag-array-basic")
 
 ;;;
