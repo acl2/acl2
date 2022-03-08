@@ -323,6 +323,7 @@
             (prune-dag-with-rule-alist dag
                                        all-assumptions ;are they all needed?
                                        (first rule-alists) ;what should we use here?
+                                       nil ; interpreted-function-alist
                                        monitored-rules
                                        call-stp
                                        state)

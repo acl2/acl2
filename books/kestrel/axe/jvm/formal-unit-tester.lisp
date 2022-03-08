@@ -605,6 +605,7 @@
                              (append extra-rules
                                      (set-difference-eq (formal-unit-testing-extra-simplification-rules)
                                                         remove-rules))
+                             nil ;interpreted-fns
                              nil  ;monitor
                              t ;simplify-xors (todo: try nil? or make an option?)
                              :bit ;type

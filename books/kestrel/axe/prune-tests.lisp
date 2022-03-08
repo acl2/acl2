@@ -20,12 +20,14 @@
                                                        nil
                                                        nil
                                                        nil
+                                                       nil
                                                        state)
                            '(myif (equal x y) v z)
                            :stobjs (state))
 
 ;; TODO: Simplify the (booland 't ...) below
 (assert-equal-with-stobjs2 (prune-term-with-rule-alist '(myif (equal x y) (booland (equal x y) z) w)
+                                                       nil
                                                        nil
                                                        nil
                                                        nil
@@ -39,11 +41,13 @@
                                                        nil
                                                        nil
                                                        nil
+                                                       nil
                                                        state)
                            '(bool-fix x)
                            :stobjs (state))
 
 (assert-equal-with-stobjs2 (prune-term-with-rule-alist '(boolif 'nil x y)
+                                                       nil
                                                        nil
                                                        nil
                                                        nil

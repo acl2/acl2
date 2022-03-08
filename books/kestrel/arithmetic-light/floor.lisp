@@ -20,7 +20,7 @@
 (local (include-book "times-and-divides"))
 (local (include-book "nonnegative-integer-quotient"))
 (local (include-book "integerp"))
-(local (include-book "expt"))
+;(local (include-book "expt"))
 (local (include-book "../../meta/meta-plus-lessp"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -1244,7 +1244,7 @@
                   (and (natp n)
                        (unsigned-byte-p (+ 1 n) x))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p
-                                     expt-of-+
+                                     ;expt-of-+
                                      <-of-floor-arg1
                                      ))))
 

@@ -6082,6 +6082,7 @@
                                    (jvm-simplification-rules)
                                    (g :extra-rules options))
                            (g :remove-rules options))
+                          nil ; interpreted-fns
                           (g :monitor options)
                           (g :call-stp options)
                           state))
@@ -6596,6 +6597,7 @@
                                   (jvm-simplification-rules)
                                   (g :extra-rules options))
                           (g :remove-rules options))
+                         nil ; interpreted-fns
                          (g :monitor options)
                          (g :call-stp options)
                          state))
