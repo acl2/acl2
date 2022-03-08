@@ -444,22 +444,6 @@
   (equal (< (+ x y) x)
          (< y 0)))
 
-(defthm integerp-of-*-of-expt-and-expt
-  (implies (and (integerp i)
-                (integerp j))
-           (equal (integerp (* (expt 2 i) (expt 2 j)))
-                  (natp (+ i j))))
-  :hints (("Goal" :in-theory (disable ;integerp-of-expt
-                              ;;<-OF-0-AND-EXPT
-                              integerp-of-expt-when-natp)
-           :use (:instance integerp-of-expt-when-natp (r 2) (i (+ i j))))))
-
-(defthm *-of-expt-and-expt-of-1minus
-  (implies (integerp size)
-           (equal (* (expt 2 size) (expt 2 (+ 1 (- size))))
-                  2))
-  :hints (("Goal" :use (:instance exponents-add (r 2) (i size) (j (- 1 size))))))
-
 (defthm logtail-hack77
   (implies (posp size)
            (equal (logtail (+ -1 size) (- (expt 2 size)))
@@ -737,6 +721,7 @@
 
 ;this is probably done better elsewhere
 ;as a forward-chaining rule, this caused a big slowdown
+;rename
 (defthm expt-bound-fw
   (implies (and (<= k j)
                 (syntaxp (and (quotep k)
