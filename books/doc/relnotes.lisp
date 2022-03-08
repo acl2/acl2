@@ -341,6 +341,9 @@
    (xdoc::p
     "A book of theorems about @(tsee symbol-alistp) has been added.")
 
+   (xdoc::p
+    "A definition of alists from strings to symbols has been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
