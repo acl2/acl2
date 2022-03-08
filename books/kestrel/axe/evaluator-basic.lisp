@@ -44,6 +44,7 @@
     posp
     booleanp
     true-listp
+    (coerce coerce-unguarded)
     all-natp
     all-unsigned-byte-p
     (endp endp-unguarded)
@@ -63,6 +64,8 @@
     (floor floor-unguarded)
     (ceiling ceiling-unguarded)
     equal
+    (eql eql-unguarded) ; not strictly needed if we turn EQL into EQUAL
+    (eq eq-unguarded) ; not strictly needed if we turn EQ into EQUAL
     (< <-unguarded)
     (zp zp-unguarded)
     not
@@ -85,9 +88,26 @@
     ;; bv functions:
     (trim trim-unguarded)
     (bvchop bvchop-unguarded)
+    (getbit getbit-unguarded)
     (bvplus bvplus-unguarded)
+    (bvmult bvmult-unguarded)
+    (bvuminus bvuminus-unguarded)
     (bvxor bvxor-unguarded)
+    (bvor bvor-unguarded)
+    (bvand bvand-unguarded)
+    (bvnot bvnot-unguarded)
+    (bvlt bvlt-unguarded)
+    (bvminus bvminus-unguarded)
+    (bvmod bvmod-unguarded)
+    (bvdiv bvdiv-unguarded)
+    (bvcat bvcat-unguarded)
+    (sbvlt sbvlt-unguarded)
     (leftrotate32 leftrotate32-unguarded)
+    (lg lg-unguarded)
+    (bitnot bitnot-unguarded)
+    (bitor bitor-unguarded)
+    (bitxor bitxor-unguarded)
+    (bitand bitand-unguarded)
 
     ;; bv-array functions:
     (bv-array-read bv-array-read-unguarded)
