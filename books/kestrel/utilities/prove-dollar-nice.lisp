@@ -15,7 +15,7 @@
 ;; handling of the time-limit argument (error if the value is nil but not the
 ;; term "nil"), and disallowing ignored vars by default (unless allowed by the
 ;; acl2-defaults-table -- the checking of which is best avoided in a tool that
-;; will be called programmatically, to prevents that behavior from depending on
+;; will be called programmatically, to prevent that behavior from depending on
 ;; such a global setting).
 
 ;; Example problematic calls of prove$ for which prove$-nice works better (see below):
@@ -83,6 +83,6 @@
 
 ;; Tests:
 ;; (prove$-nice '(equal (car (cons x y)) x))
-;; (prove$-nice '(equal (car (cons x y)) x) :step-limit 2) ; fails quietly (call last-prover-steps to see that the step limit was reaached)
+;; (prove$-nice '(equal (car (cons x y)) x) :step-limit 2) ; fails quietly (call last-prover-steps to see that the step limit was reached)
 ;; (let ((time-limit nil)) (prove$-nice '(equal (car (cons x y)) x) :time-limit time-limit)) ; works
 ;; (prove$-nice '(let ((w 1)) (equal (car (cons x y)) x))) ; no error about W
