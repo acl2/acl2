@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; January 2022
+;; March 2022
 
 (in-package "RTL")
 
@@ -13,6 +13,7 @@
                  bits-upper-bound
                  bvecp-bitn-1
                  expo-fl
+                 expo-spn
                  expo-lpn
                  expo-shift
                  expo-ndecode
@@ -25,6 +26,8 @@
                  rdn-upper-bound
                  rtz-upper-pos
                  raz-lower-pos
+                 rto-positive
+                 rto-negative
                  roundup-pos)
                 (rnd-positive
                  rnd-negative)))
@@ -1438,12 +1441,6 @@
 
 ;; ======================================================================
 
-(defthm expo-spn
-  (implies (formatp f)
-           (equal (expo (spn f))
-                  (- 1 (bias f))))
-  :hints (("Goal" :in-theory (enable spn))))
-
 (defthm smallest-spn-linear
   (implies (nrepp x f)
            (<= (spn f) (abs x)))
@@ -1642,6 +1639,29 @@
            :in-theory (e/d (rto-exact
                             nrepp)
                            (nrepp-ndecode)))))
+
+(defthm rto-lpn
+  (implies (formatp f)
+           (equal (rto (lpn f) (prec f))
+                  (lpn f)))
+  :hints (("Goal"
+           :use nrepp-lpn
+           :in-theory (e/d (formatp prec rto-exact nrepp)
+                           (nrepp-lpn)))))
+
+(defthm nrepp-rto
+  (implies (and (formatp f)
+                (rationalp x)
+                (<= (spn f) (abs x))
+                (<= (abs x) (lpn f)))
+           (nrepp (rto x (prec f)) f))
+  :hints (("Goal"
+           :use ((:instance expo-monotone
+                            (x (spn f))
+                            (y x))
+                 (:instance expo-monotone
+                            (y (lpn f))))
+           :in-theory (enable nrepp))))
 
 (encapsulate
   ()

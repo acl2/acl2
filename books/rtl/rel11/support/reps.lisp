@@ -349,6 +349,12 @@
   :rule-classes (:linear)
   :hints (("Goal" :in-theory (enable spn))))
 
+(defthmd expo-spn
+  (implies (formatp f)
+           (equal (expo (spn f))
+                  (- 1 (bias f))))
+  :hints (("Goal" :in-theory (enable spn))))
+
 (defthmd nrepp-spn
   (implies (formatp f)
            (nrepp (spn f) f))
