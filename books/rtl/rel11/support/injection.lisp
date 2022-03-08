@@ -13,7 +13,7 @@
 
 ;;---------------------------------------------------------------------------------------
 
-;; I also found that the lemma rna-force, which is listed in the book, was not in round.lisp, so it ias proved here:
+;; I also found that the lemma rna-force, which is listed in the book, was not in round.lisp, so it is proved here:
 
 (local-defthmd rnaf-1
   (let ((e (expo x)))
@@ -162,7 +162,7 @@
 	     (= y (rna x n)))
   :hints (("Goal" :use (rnaf-11 rnaf-12)))
   :rule-classes ())
-  
+
 
 ;;---------------------------------------------------------------------------------------
 
@@ -197,7 +197,7 @@
   :hints (("Goal" :use (p2-1 p2-2 p2-3)
                   :in-theory (theory 'minimal-theory)))
   :rule-classes ())
-  
+
 (defthm rne-pow-2
   (implies (and (rationalp x) (> x 0)
                 (not (zp n))
@@ -751,7 +751,7 @@
 (local-defthmd hack-2
   (implies (and (integerp n) (rationalp x) (<= n x) (< x (1+ n)))
            (equal (fl x) n)))
-	   
+
 (local-defthmd dia-8
   (implies (and (common-mode-p mode)
                 (natp k) (natp p) (>= k (+ p 2)) (>= p 1)
@@ -1191,7 +1191,7 @@
 	        (= (expo (sum m k p mode)) (expo m)))
            (equal (bits (sh m k p mode) p 1)
 	          (bits (sum m k p mode) (expo m) (1+ (- k p)))))
-  :hints (("Goal" :in-theory (enable dia-45 bits-bits)  
+  :hints (("Goal" :in-theory (enable dia-45 bits-bits)
                   :use (dia-5 dia-44))))
 
 (local-defthmd m-lemma-a
@@ -1227,7 +1227,7 @@
                 (natp k) (natp p) (>= k (+ p 2)) (>= p 1)
                 (bvecp m k))
            (iff (= (sl m k p mode) (c k p mode))
-	        (= (mod m (expt 2 (- k p))) 0)))	        
+	        (= (mod m (expt 2 (- k p))) 0)))
   :hints (("Goal" :in-theory (enable bits-mod sl sum bvecp)
                   :use (dia-2 (:instance mod-plus-mod-iff (a m) (b 0) (c (c k p mode)) (n (expt 2 (- k p))))))))
 
@@ -1237,7 +1237,7 @@
                 (bvecp m k)
 		(>= (expo m) (- k p)))
            (iff (exactp m (- (+ (expo m) p 1) k))
-	        (= (mod m (expt 2 (- k p))) 0)))	        
+	        (= (mod m (expt 2 (- k p))) 0)))
   :hints (("Goal" :in-theory (enable exactp2) :use ((:instance mod-def (x m) (y (expt 2 (- k p))))))))
 
 (local-defthmd dia-50
@@ -2463,7 +2463,7 @@
   :hints (("Goal" :in-theory (enable sgn spn exactp-2**n drnd-rewrite)
                   :use ((:instance rnd-monotone (x (spn f)) (y (+ x (spn f))) (n (prec f)))
 		        (:instance rnd-exactp-b (x (spn f)) (n (prec f)))))))
-	   
+
 (local-defthmd rdid-12
   (let* ((p (prec f))
          (s (spn f))
@@ -3508,7 +3508,7 @@
   :hints (("Goal" :nonlinearp t
                   :use (rdif-19
                         (:instance bitn-plus-bits (x (m k z)) (n (1- (- k (prec f)))) (m 0))))))
-		        
+
 (local-defthmd rdif-33
   (let* ((p (prec f))
          (s (spn f))
