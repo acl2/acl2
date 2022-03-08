@@ -617,33 +617,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-integer-fixtype-to-type ((fixtype symbolp))
-  :returns (type type-optionp)
-  :short "Integer type corresponding to a fixtype name, if any."
-  (case fixtype
-    (schar (type-schar))
-    (uchar (type-uchar))
-    (sshort (type-sshort))
-    (ushort (type-ushort))
-    (sint (type-sint))
-    (uint (type-uint))
-    (slong (type-slong))
-    (ulong (type-ulong))
-    (sllong (type-sllong))
-    (ullong (type-ullong))
-    (t nil))
-  ///
-
-  (defret type-integerp-of-atc-integer-fixtype-to-type
-    (implies type
-             (type-integerp type)))
-
-  (defret type-arithmeticp-of-atc-integer-fixtype-to-type
-    (implies type
-             (type-arithmeticp type))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-check-iconst ((term pseudo-termp) (ctx ctxp) state)
   :returns (mv erp
                (val (tuple (yes/no booleanp)
