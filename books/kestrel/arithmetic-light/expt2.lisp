@@ -18,15 +18,24 @@
 ;about expt when the base is 2:
 (include-book "expt")
 
-(local (include-book "../../arithmetic-3/top"))
+(local (include-book "times"))
+(local (include-book "times-and-divides"))
+(local (include-book "plus"))
+
+(defthm integerp-of-expt2
+  (implies (integerp i)
+           (equal (integerp (expt 2 i))
+                  (<= 0 i))))
 
 (defthm integerp-of-*-of-expt2-and-/-of-expt2
   (implies (and (integerp i1)
                 (integerp i2))
            (equal (integerp (* (expt 2 i1) (/ (expt 2 i2))))
                   (<= i2 i1)))
-  :hints (("Goal" :use (:instance integerp-of-expt-when-natp (r 2) (i (- i1 i2)))
-           :in-theory (disable integerp-of-expt-when-natp))))
+  :hints (("Goal" :use (:instance integerp-of-expt2 (i (- i1 i2)))
+           :in-theory (e/d (expt-of-+)
+                           (integerp-of-expt-when-natp
+                            integerp-of-expt2)))))
 
 (defthm integerp-of-*-of-expt2-and-/-of-expt2-type
   (implies (and (<= i2 i1)
@@ -65,7 +74,7 @@
            (equal (* (/ (EXPT 2 LOW)) (* (EXPT 2 (+ DIFF LOW)) x))
                   (* (expt 2 diff) x)))
   :hints (("Goal" :in-theory (e/d (expt-of-+)
-                                  (normalize-factors-gather-exponents ;looped
+                                  (;normalize-factors-gather-exponents ;looped
                                    )))))
 
 (defthm expt-combine-hack-2
@@ -74,8 +83,10 @@
            (equal (* (EXPT 2 LOW) (EXPT 2 (+ (- LOW) N)))
                   (expt 2 n)))
   :hints (("Goal" :in-theory (e/d (expt-of-+)
-                                  (normalize-factors-gather-exponents ;looped
+                                  (;normalize-factors-gather-exponents ;looped
                                    )))))
+
+(local (in-theory (enable expt-of-+))) ;todo
 
 (defthm expt-combine-hack
   (implies (and (integerp a)
@@ -113,7 +124,8 @@
                             zip
                             expt-bound-when-negative
                             )
-                           (normalize-factors-gather-exponents)))))
+                           (;normalize-factors-gather-exponents
+                            )))))
 
 (defthmd even-not-equal-odd-hack
   (implies (and (evenp y)
@@ -152,7 +164,8 @@
            (equal (* (/ (expt 2 n)) (expt 2 m))
                   (expt 2 (- m n))))
   :hints (("Goal" :in-theory (e/d (expt-of-+)
-                                  (normalize-factors-gather-exponents)))))
+                                  (;normalize-factors-gather-exponents
+                                   )))))
 
 ;;move and gen
 (defthm equal-of-expt-same
@@ -190,11 +203,13 @@
                 (integerp free)
                 (integerp size))
            (<= (expt 2 size) (expt 2 (+ -1 free))))
-  :rule-classes ((:linear)))
+  :rule-classes ((:linear))
+  :hints (("Goal" :in-theory (disable expt-of-+))))
 
 (defthm unsigned-byte-p-of-+-of--1-and-expt
   (implies (integerp i)
            (equal (unsigned-byte-p size (+ -1 (expt 2 i)))
                   (and (natp size)
                        (<= 0 i)
-                       (<= i size)))))
+                       (<= i size))))
+  :hints (("Goal" :in-theory (disable expt-of-+))))
