@@ -62,7 +62,8 @@
       |IEEE-Rounded Square Root|)
       |SSE Floating-Point Instructions|
       |x87 Instructions|
-      |ARM AArch32 Floating-Point Instructions|)
+      |ARM AArch32 Floating-Point Instructions|
+      |ARM AArch64 Floating-Point Instructions|)
    (|Implementation of Elementary Operations|
     (|Addition| ; add.lisp
      |Bit Vector Addition|

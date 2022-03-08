@@ -1037,6 +1037,8 @@
 ;; resulting in an infinity and underflow resulting in a zero:
 
 (defund bf-post-comp (u)
+  (declare (xargs :guard (and (real/rationalp u)
+                              (not (= u 0)))))
   (let ((sgnf (if (< u 0) 1 0))
 	(r (rto u 24)))
     (if (> (abs r) (lpn (sp)))
@@ -1049,6 +1051,8 @@
 ;; the product is 16-exact so no rounding is required:
 
 (defund bfmul16-spec (a b)
+  (declare (xargs :guard (and (encodingp a (bf))
+                              (encodingp b (bf)))))
   (let ((sgnr (logxor (sgnf a (bf)) (sgnf b (bf)))))
     (if (or (nanp a (bf))
 	    (nanp b (bf))
@@ -1067,6 +1071,8 @@
 ;; SP sum of 2 SP operands:
 
 (defund bfadd32-spec (a b)
+  (declare (xargs :guard (and (encodingp a (sp))
+                              (encodingp b (sp)))))
   (let* ((sgna (sgnf a (sp)))
 	 (sgnb (sgnf b (sp)))
 	 (aval (if (or (zerp a (sp)) (denormp a (sp))) 0 (ndecode a (sp))))

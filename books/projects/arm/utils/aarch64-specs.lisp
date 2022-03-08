@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; January 2022
+;; March 2022
 
 ;; Extend Arm floating-point specs to AArch64 that includes two new control
 ;; bits FIZ and AH
@@ -12,6 +12,9 @@
 (local (arith-5-for-rtl))
 
 ;; ======================================================================
+
+(defsection-rtl |ARM AArch64 Floating-Point Instructions|
+  |Floating-Point Exceptions and Specification of Elementary Arithmetic Instructions|
 
 ;; Extend ARM-BINARY-SPEC to AArch64
 
@@ -637,3 +640,62 @@
     (if result
         (mv result fpsr)
       (aarch64-fscale-comp a b fpcr fpsr f))))
+
+;; ======================================================================
+
+;; Extend Arm BFloat16 specs to AArch64
+
+;; SP product of 2 BF operands. Note that in the case of a normal result, the
+;; product is 16-exact so no rounding is required.
+
+(defund aarch64-bfmul16-spec (a b ah)
+  (declare (xargs :guard (and (encodingp a (bf))
+                              (encodingp b (bf))
+                              (bitp ah))
+                  :guard-hints (("Goal" :in-theory (enable sgnf)))))
+  (let ((sgnr (logxor (sgnf a (bf)) (sgnf b (bf)))))
+    (if (or (nanp a (bf))
+	    (nanp b (bf))
+	    (and (infp a (bf))
+		 (or (zerp b (bf)) (denormp b (bf))))
+	    (and (infp b (bf))
+		 (or (zerp a (bf)) (denormp a (bf)))))
+        (signed-indef ah (sp))
+      (if (or (infp a (bf)) (infp b (bf)))
+	  (iencode sgnr (sp))
+        (if (or (zerp a (bf)) (denormp a (bf))
+		(zerp b (bf)) (denormp b (bf)))
+	    (zencode sgnr (sp))
+	  (bf-post-comp (* (ndecode a (bf)) (ndecode b (bf)))))))))
+
+;; SP sum of 2 SP operands
+
+(defund aarch64-bfadd32-spec (a b ah)
+  (declare (xargs :guard (and (encodingp a (sp))
+                              (encodingp b (sp))
+                              (bitp ah))
+                  :guard-hints (("Goal" :in-theory (enable sgnf)))))
+  (let* ((sgna (sgnf a (sp)))
+	 (sgnb (sgnf b (sp)))
+	 (aval (if (or (zerp a (sp)) (denormp a (sp)))
+                   0
+                 (ndecode a (sp))))
+	 (bval (if (or (zerp b (sp)) (denormp b (sp)))
+                   0
+                 (ndecode b (sp))))
+	 (u (+ aval bval)))
+    (if (or (nanp a (sp))
+	    (nanp b (sp))
+	    (and (infp a (sp)) (infp b (sp)) (not (= sgna sgnb))))
+        (signed-indef ah (sp))
+      (if (infp a (sp))
+	  a
+	(if (infp b (sp))
+	    b
+	  (if (= u 0)
+	      (if (= sgna sgnb)
+	          (zencode sgna (sp))
+	        (zencode 0 (sp)))
+	    (bf-post-comp u)))))))
+
+)
