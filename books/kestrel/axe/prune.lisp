@@ -16,9 +16,10 @@
 
 ;; TODO: Use counterexamples returned by STP to avoid later calls that will fail.
 
-;; TODO: Use the basic-rewriter here?
-
-(include-book "rewriter") ;because we call simplify-term (an Axe rewriter function)
+(include-book "rewriter")
+;(include-book "rewriter-basic") ;because we call simplify-term-basic
+(include-book "prove-with-stp")
+(include-book "dagify") ; todo: brings in skip-proofs, try something simpler
 (include-book "dag-size-fast")
 (include-book "kestrel/utilities/subtermp" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -84,6 +85,7 @@
 
 ;; Returns (mv erp result state) where RESULT is :true (meaning non-nil), :false, or :unknown.
 ;; TODO: If this can show the test must be both true and false (because the assumptions contradict), then the entire if/myif/bvif may be irrelevant.
+;; TODO: Allow STP to run longer (more conflicts) for IFs that are higher up in the term, since resolving such an IF throws away more stuff
 (defun try-to-resolve-test (test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
   (declare (xargs :stobjs (state)
                   :guard (and (pseudo-termp test)
@@ -94,7 +96,7 @@
                               (interpreted-function-alistp interpreted-function-alist)
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp)))
-                  :mode :program ;because this calls the rewriter
+                  :mode :program ; todo
                   ))
   (b* ( ;; First apply the Axe rewriter to the test:
        (- (cw "(Simplifying test.~%"))
@@ -105,6 +107,16 @@
                    :monitor monitored-rules
                    :assumptions assumptions ;no equality assumptions here to prevent loops (todo: think about this)
                    :check-inputs nil))
+       ;; TODO: Put this in instead:
+       ;; ((mv erp simplified-test)
+       ;;  (simplify-term-basic test ;; TODO: Does this use contexts?
+       ;;                       assumptions ;no equality assumptions here to prevent loops (todo: think about this)
+       ;;                       rule-alist
+       ;;                       nil ; interpreted-function-alist
+       ;;                       monitored-rules
+       ;;                       nil ; memoizep
+       ;;                       nil ; count-hitsp
+       ;;                       (w state)))
        ((when erp) (mv erp nil state))
        ((when (quotep simplified-dag-or-quotep))
         ;; Resolved the test via rewriting:
@@ -381,6 +393,7 @@
 
 ;; Returns (mv erp result-term state).
 ;; This one takes a rule-alist
+;; TODO: Print some stats about the pruning process?
 (defun prune-term-with-rule-alist (term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
   (declare (xargs :stobjs (state)
                   :guard (and (pseudo-termp term)
@@ -434,7 +447,7 @@
        ((mv erp term state)
         (prune-term-with-rule-alist term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
        ((when erp) (mv erp nil state))
-       ((mv erp dag) (dagify-term2 term))
+       ((mv erp dag) (dagify-term2 term)) ; todo: try make-term-into-dag-simple here
        ((when erp) (mv erp nil state)))
     (mv (erp-nil) dag state)))
 

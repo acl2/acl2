@@ -122,3 +122,5 @@
   (interpreted-function-alist-completep-aux alist
                                             (append (strip-cars alist)
                                                     built-in-fns)))
+
+;; TODO: Add a function make-complete-interpreted-function-alist.

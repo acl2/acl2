@@ -846,3 +846,12 @@
 ;drop if we'll always enable bvle?
 (defthm bvle-self
   (bvle size x x))
+
+(defthm not-bvlt-when-bvlt-opposite-smaller-and-unsigned-byte-p
+  (implies (and (bvlt freesize y x)
+                (<= freesize size)
+                (unsigned-byte-p freesize y) ; means that y is still smaller even if we consider more bits
+                (integerp size)
+                (natp freesize))
+           (not (bvlt size x y)))
+  :hints (("Goal" :in-theory (enable bvlt))))

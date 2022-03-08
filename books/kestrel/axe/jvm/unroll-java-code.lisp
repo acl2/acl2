@@ -24,7 +24,8 @@
 (include-book "unroll-java-code-common")
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/doc" :dir :system)
-(include-book "../dag-size-fast")
+;(include-book "../dag-size-fast")
+(include-book "../rewriter") ; for simp-dag (todo: use something better?)
 (include-book "../prune") ;brings in the rewriter
 
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))

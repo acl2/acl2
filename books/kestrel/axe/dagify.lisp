@@ -1217,7 +1217,6 @@
 ;; Returns (mv erp dag-or-quotep).
 ;; Convert term to a DAG (or quoted constant).  Uses arrays to do the work.
 ;doesn't handle inlined constants in the embedded dags?
-;compare to make-term-into-dag
 (defund dagify-term (term)
   (declare (xargs :guard (pseudo-termp term)))
   (make-term-into-dag term nil))
@@ -1230,19 +1229,8 @@
     (mv :bad-term
         (er hard? 'dagify-term-unguarded "Non-pseudo-term encountered: ~x0." term))))
 
-;; (mutual-recursion
-;;  (defun term-size (term)
-;;    (declare (xargs :guard (pseudo-termp term)))
-;;    (if (
-
-;; ;; Returns the DAG.  Requires TERM to be small enough to avoid the dag size
-;; ;; limit.  Thus, this doesn't return an error.
-;; (defund dagify-small-term (term)
-;;   (declare (xargs :guard (and (pseudo-termp term)
-;;                               (< (term-size term) 1000))))
-;;   (make-term-into-dag term nil))
-
 ;; Returns (mv erp dag).
+;todo: same as dagify-term!
 (defund dagify-term2 (term)
   (declare (xargs :guard (pseudo-termp term)))
   (make-term-into-dag term nil))

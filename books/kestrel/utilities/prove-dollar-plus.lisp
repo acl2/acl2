@@ -14,7 +14,8 @@
 
 (include-book "tools/prove-dollar" :dir :system)
 
-;; Returns (mv erp provedp failure-info state).
+;; Returns (mv erp provedp failure-info state), where failure-info may be
+;; :step-limit-reached or :unknown.
 (defun prove$+-fn (term
                    hints
                    instructions
@@ -51,7 +52,8 @@
             (progn$ (cw "Failed to prove (unknown reason).~%" prover-steps)
                     (mv nil nil :unknown state))))))))
 
-;; Returns (mv erp provedp failure-info state).
+;; Returns (mv erp provedp failure-info state), where failure-info may be
+;; :step-limit-reached or :unknown.
 (defmacro prove$+ (term
                    &key
                    (hints 'nil)
