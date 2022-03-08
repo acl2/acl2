@@ -568,6 +568,7 @@
                         (union-eq (unroll-java-code2-rules)
                                   extra-rules)
                         remove-rules)
+                       nil ; interpreted-fns
                        monitor
                        call-stp
                        state)

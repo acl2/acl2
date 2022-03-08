@@ -64,7 +64,9 @@
        (- (and print (cw "Variables in DAG: ~x0~%" vars)))
        ((mv result info-acc state)
         (apply-proof-tactics-to-problem (make-problem dag assumptions)
-                                        tactics rule-alist monitor
+                                        tactics rule-alist
+                                        nil ; interpreted-function-alist ; todo: thread through
+                                        monitor
                                         t ;simplify-xors (todo: make this an option?)
                                         print max-conflicts call-stp-when-pruning nil state)))
     (if (eq *error* result)
