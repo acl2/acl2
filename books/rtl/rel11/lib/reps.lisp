@@ -196,6 +196,11 @@
   (> (spn f) 0)
   :rule-classes ( :linear))
 
+(defthmd expo-spn
+  (implies (formatp f)
+           (equal (expo (spn f))
+                  (- 1 (bias f)))))
+
 (defthmd nrepp-spn
   (implies (formatp f)
            (nrepp (spn f) f)))

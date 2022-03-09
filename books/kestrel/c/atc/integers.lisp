@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -66,7 +66,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-integer-type-string ((type typep))
+(define atc-integer-type-xdoc-string ((type typep))
   :guard (type-integerp type)
   :returns (string stringp)
   :short "Documentation (sub)string that describes a C integer type."
@@ -90,7 +90,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-integer-type-fixtype ((type typep))
+(define integer-type-to-fixtype ((type typep))
   :guard (type-integerp type)
   :returns (fixtype symbolp)
   :short "Name of the fixtype of the values of a C integer type."
@@ -145,7 +145,7 @@
   :returns (event pseudo-event-formp)
   :short "Event to generate the model of the values of a C integer type."
 
-  (b* ((type-string (atc-integer-type-string type))
+  (b* ((type-string (atc-integer-type-xdoc-string type))
        (minbits (atc-integer-type-minbits type))
        (signedp (type-signed-integerp type))
        (maxbound (if signedp
@@ -155,7 +155,7 @@
                      (- (expt 2 (1- minbits)))
                    0))
        (<type>-bits (atc-integer-type-bits type))
-       (<type> (atc-integer-type-fixtype type))
+       (<type> (integer-type-to-fixtype type))
        (<type>p (pack <type> 'p))
        (<type>-integer (pack <type> '-integer))
        (<type>-integerp (pack <type>-integer 'p))
@@ -749,3 +749,30 @@
     :enable (ulong-max
              sllong-max
              long-bits-vs-llong-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fixtype-to-integer-type ((fixtype symbolp))
+  :returns (type type-optionp)
+  :short "Integer type corresponding to a fixtype name, if any."
+  (case fixtype
+    (schar (type-schar))
+    (uchar (type-uchar))
+    (sshort (type-sshort))
+    (ushort (type-ushort))
+    (sint (type-sint))
+    (uint (type-uint))
+    (slong (type-slong))
+    (ulong (type-ulong))
+    (sllong (type-sllong))
+    (ullong (type-ullong))
+    (t nil))
+  ///
+
+  (defret type-integerp-of-fixtype-to-integer-type
+    (implies type
+             (type-integerp type)))
+
+  (defret type-arithmeticp-of-fixtype-to-integer-type
+    (implies type
+             (type-arithmeticp type))))

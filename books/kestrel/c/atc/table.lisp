@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -81,7 +81,7 @@
        (info? (cdr (assoc-equal call table))))
     (if (atc-maybe-call-infop info?)
         info?
-      (raise "Internal error: value ~x0 of key ~x1 in the ATC table."
+      (raise "Internal error: malformed value ~x0 of key ~x1 in the ATC table."
              info? call)))
   :prepwork ((local (include-book "std/alists/top" :dir :system))))
 
