@@ -333,6 +333,9 @@
     "Some theorems about @(tsee fsublis-var) and @(tsee fsublis-var-lst)
      have been added.")
 
+   (xdoc::p
+    "A fixer for @(tsee pseudo-event-formp) has been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std::std/typed-alists"
