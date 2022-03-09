@@ -617,33 +617,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-integer-fixtype-to-type ((fixtype symbolp))
-  :returns (type type-optionp)
-  :short "Integer type corresponding to a fixtype name, if any."
-  (case fixtype
-    (schar (type-schar))
-    (uchar (type-uchar))
-    (sshort (type-sshort))
-    (ushort (type-ushort))
-    (sint (type-sint))
-    (uint (type-uint))
-    (slong (type-slong))
-    (ulong (type-ulong))
-    (sllong (type-sllong))
-    (ullong (type-ullong))
-    (t nil))
-  ///
-
-  (defret type-integerp-of-atc-integer-fixtype-to-type
-    (implies type
-             (type-integerp type)))
-
-  (defret type-arithmeticp-of-atc-integer-fixtype-to-type
-    (implies type
-             (type-arithmeticp type))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-check-iconst ((term pseudo-termp) (ctx ctxp) state)
   :returns (mv erp
                (val (tuple (yes/no booleanp)
@@ -772,7 +745,7 @@
        ((pseudo-term-fncall term) term)
        ((mv okp op fixtype) (atc-check-symbol-2part term.fn))
        ((when (not okp)) (no))
-       (in-type (atc-integer-fixtype-to-type fixtype))
+       (in-type (fixtype-to-integer-type fixtype))
        ((when (not in-type)) (no))
        ((unless (list-lenp 1 term.args)) (no))
        (arg (first term.args)))
@@ -817,9 +790,9 @@
        ((pseudo-term-fncall term) term)
        ((mv okp op fixtype1 fixtype2) (atc-check-symbol-3part term.fn))
        ((when (not okp)) (no))
-       (in-type1 (atc-integer-fixtype-to-type fixtype1))
+       (in-type1 (fixtype-to-integer-type fixtype1))
        ((when (not in-type1)) (no))
-       (in-type2 (atc-integer-fixtype-to-type fixtype2))
+       (in-type2 (fixtype-to-integer-type fixtype2))
        ((when (not in-type2)) (no))
        ((unless (list-lenp 2 term.args)) (no))
        (arg1 (first term.args))
@@ -897,9 +870,9 @@
        ((unless (and okp
                      (eq from 'from)))
         (no))
-       (in-type (atc-integer-fixtype-to-type stype))
+       (in-type (fixtype-to-integer-type stype))
        ((when (not in-type)) (no))
-       (out-type (atc-integer-fixtype-to-type dtype))
+       (out-type (fixtype-to-integer-type dtype))
        ((when (not out-type)) (no))
        ((unless (list-lenp 1 term.args)) (no))
        (arg (first term.args))
@@ -942,10 +915,10 @@
                      (eq array 'array)
                      (eq read 'read)))
         (no))
-       (out-type (atc-integer-fixtype-to-type etype))
+       (out-type (fixtype-to-integer-type etype))
        ((when (not out-type)) (no))
        (in-type1 (type-pointer out-type))
-       (in-type2 (atc-integer-fixtype-to-type itype))
+       (in-type2 (fixtype-to-integer-type itype))
        ((when (not in-type2)) (no))
        ((unless (list-lenp 2 term.args)) (no))
        (arr (first term.args))
@@ -1043,7 +1016,7 @@
                      (eq boolean 'boolean)
                      (eq from 'from)))
         (no))
-       (in-type (atc-integer-fixtype-to-type type))
+       (in-type (fixtype-to-integer-type type))
        ((when (not in-type)) (no))
        ((unless (list-lenp 1 args)) (no)))
     (mv t (first args) in-type))
@@ -1236,9 +1209,9 @@
                      (eq array 'array)
                      (eq write 'write)))
         (no))
-       (sub-type (atc-integer-fixtype-to-type itype))
+       (sub-type (fixtype-to-integer-type itype))
        ((unless sub-type) (no))
-       (elem-type (atc-integer-fixtype-to-type etype))
+       (elem-type (fixtype-to-integer-type etype))
        ((when (not elem-type)) (no))
        ((unless (list-lenp 3 val.args)) (no))
        (arr (first val.args))
@@ -3903,7 +3876,7 @@
                 (reftype (type-pointer->referenced type))
                 ((unless (type-integerp reftype))
                  (raise "Internal error: pointer type ~x0 for ~x1." type name))
-                (reftype-array-length (pack (atc-integer-type-fixtype reftype)
+                (reftype-array-length (pack (integer-type-to-fixtype reftype)
                                             '-array-length)))
              (list `(equal (,reftype-array-length ,theresult)
                            (,reftype-array-length ,name))))))

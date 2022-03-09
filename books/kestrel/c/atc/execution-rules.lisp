@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -399,8 +399,8 @@
     :returns (names symbol-listp)
     :parents nil
     (cond ((endp itypes) nil)
-          (t (b* ((afixtype (atc-integer-type-fixtype atype))
-                  (ifixtype (atc-integer-type-fixtype (car itypes))))
+          (t (b* ((afixtype (integer-type-to-fixtype atype))
+                  (ifixtype (integer-type-to-fixtype (car itypes))))
                (cons
                 (pack afixtype
                       '-array-length-of-
@@ -830,12 +830,12 @@
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
     :parents nil
-    (b* ((lfixtype (atc-integer-type-fixtype ltype))
-         (rfixtype (atc-integer-type-fixtype rtype))
+    (b* ((lfixtype (integer-type-to-fixtype ltype))
+         (rfixtype (integer-type-to-fixtype rtype))
          (lpred (pack lfixtype 'p))
          (rpred (pack rfixtype 'p))
          (type (uaconvert-types ltype rtype))
-         (fixtype (atc-integer-type-fixtype type))
+         (fixtype (integer-type-to-fixtype type))
          (lterm (if (equal type ltype)
                     'x
                   `(,(pack fixtype '-from- lfixtype) x)))
@@ -916,8 +916,8 @@
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
     :parents nil
-    (b* ((afixtype (atc-integer-type-fixtype atype))
-         (ifixtype (atc-integer-type-fixtype itype))
+    (b* ((afixtype (integer-type-to-fixtype atype))
+         (ifixtype (integer-type-to-fixtype itype))
          (apred (pack afixtype '-arrayp))
          (ipred (pack ifixtype 'p))
          (atype-array-itype-index-okp
@@ -1001,7 +1001,7 @@
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
     :parents nil
-    (b* ((fixtype (atc-integer-type-fixtype type))
+    (b* ((fixtype (integer-type-to-fixtype type))
          (pred (pack fixtype 'p))
          (op-kind (unop-kind op))
          (exec-op (pack 'exec- op-kind))
@@ -1095,8 +1095,8 @@
                 (type-integerp stype))
     :returns (mv (name symbolp) (event pseudo-event-formp))
     :parents nil
-    (b* ((dfixtype (atc-integer-type-fixtype dtype))
-         (sfixtype (atc-integer-type-fixtype stype))
+    (b* ((dfixtype (integer-type-to-fixtype dtype))
+         (sfixtype (integer-type-to-fixtype stype))
          (spred (pack sfixtype 'p))
          (name (pack 'exec-cast-of- dfixtype '-when- spred))
          (dtyname (integer-type-to-type-name dtype))
@@ -1189,8 +1189,8 @@
                 (type-integerp rtype))
     :returns (mv (name symbolp) (event pseudo-event-formp))
     :parents nil
-    (b* ((lfixtype (atc-integer-type-fixtype ltype))
-         (rfixtype (atc-integer-type-fixtype rtype))
+    (b* ((lfixtype (integer-type-to-fixtype ltype))
+         (rfixtype (integer-type-to-fixtype rtype))
          (rpred (pack rfixtype 'p))
          (op-kind (binop-kind op))
          (exec-op (pack 'exec- op-kind))
@@ -1263,7 +1263,7 @@
     :parents nil
     (b* (((when (endp ltypes)) (mv nil nil))
          (ltype (car ltypes))
-         (lfixtype (atc-integer-type-fixtype ltype))
+         (lfixtype (integer-type-to-fixtype ltype))
          (lpred (pack lfixtype 'p))
          (ltype-fix (pack lfixtype '-fix))
          (op-kind (binop-kind op))
@@ -1817,8 +1817,8 @@
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
     :parents nil
-    (b* ((afixtype (atc-integer-type-fixtype atype))
-         (ifixtype (atc-integer-type-fixtype itype))
+    (b* ((afixtype (integer-type-to-fixtype atype))
+         (ifixtype (integer-type-to-fixtype itype))
          (apred (pack afixtype '-arrayp))
          (epred (pack afixtype 'p))
          (ipred (pack ifixtype 'p))

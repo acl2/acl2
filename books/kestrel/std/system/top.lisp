@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,6 +27,7 @@
 (include-book "maybe-pseudo-event-formp")
 (include-book "plist-worldp-with-formals")
 (include-book "pseudo-command-landmark-listp")
+(include-book "pseudo-event-form-fix")
 (include-book "pseudo-event-form-listp")
 (include-book "pseudo-event-formp")
 (include-book "pseudo-event-landmark-listp")

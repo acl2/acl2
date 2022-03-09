@@ -116,6 +116,7 @@
                pos-listp
                pseudo-event-form-listp
                pseudo-event-formp
+               pseudo-event-form
                pseudo-fn-args-p
                pseudo-fn-p
                pseudo-lambda
