@@ -484,3 +484,19 @@
   :hints (("Goal" :use ((:instance <-of-*-and-*-cancel)
                         (:instance <-of-*-and-*-cancel (y (- y))))
            :in-theory (disable <-of-*-and-*-cancel))))
+
+(defthm <-of-constant-and-*-of-constant
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (< 0 k2) ;gen
+                (rationalp x)
+                (rationalp k1)
+                (rationalp k2)
+                )
+           (equal (< k1 (* k2 x))
+                  (and ;(acl2-numberp k1)
+                       (< (/ k1 k2) (fix x)))))
+  :hints (("Goal" :in-theory (disable inverse-of-*
+                                      associativity-of-*)
+           :use ((:instance inverse-of-* (x k2))
+                 (:instance associativity-of-* (x k2) (y (/ k2)) (z x))))))
