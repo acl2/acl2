@@ -12,11 +12,12 @@
 
 ;; TODO: Add a way to return the failed subgoals
 
-(include-book "tools/prove-dollar" :dir :system)
+;(include-book "tools/prove-dollar" :dir :system)
+(include-book "prove-dollar-nice")
 
 ;; Returns (mv erp provedp failure-info state), where failure-info may be
 ;; :step-limit-reached or :unknown.
-(defun prove$+-fn (term
+(defun prove$+-fn (term ; untranslated (todo: optimize if known to be translated?)
                    hints
                    instructions
                    otf-flg
@@ -25,15 +26,15 @@
   (declare (xargs :guard (and (booleanp otf-flg)
                               (or (natp step-limit)
                                   (null step-limit)))
-                  :mode :program
+                  :mode :program ; because this (ultimately) calls the prover
                   :stobjs state))
   (mv-let (erp val state)
-    (prove$ term
-            :hints hints
-            :instructions instructions
-            :otf-flg otf-flg
-            :ignore-ok t ; okay to have ignored let-vars
-            :step-limit step-limit)
+    (prove$-nice term
+                 :hints hints
+                 :instructions instructions
+                 :otf-flg otf-flg
+                 ;; :ignore-ok t ; okay to have ignored let-vars
+                 :step-limit step-limit)
     (if erp
         (mv erp nil nil state)
       ;; no error (but may have failed to prove):
@@ -47,7 +48,7 @@
           ;; failed to prove:
           (if (not (natp prover-steps))
               ;; negative prover-steps means reached the step limit
-              (progn$ (cw "Failed to prove (step limit reached).~%" prover-steps)
+              (progn$ (cw "Failed to prove (step limit of ~x0 reached).~%" step-limit)
                       (mv nil nil :step-limit-reached state))
             (progn$ (cw "Failed to prove (unknown reason).~%" prover-steps)
                     (mv nil nil :unknown state))))))))
