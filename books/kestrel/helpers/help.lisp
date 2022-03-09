@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; STATUS: IN-PROGRESS
+
 ;; To use this tool, include this book and also do:
 ;; (adjust-ld-history t state)
 ;; to tell ACL2 to save the full command history.
@@ -23,6 +25,7 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
+(include-book "kestrel/utilities/forms" :dir :system)
 (include-book "tools/prove-dollar" :dir :system)
 
 (local (in-theory (disable weak-ld-history-entry-p get-global
@@ -45,13 +48,18 @@
       (er hard? 'most-recent-theorem-aux "Can't find a theorem in the history, which is ~x0" whole-ld-history)
     (let* ((most-recent-command (first ld-history))
            (most-recent-command-input (ld-history-entry-input most-recent-command)))
-      (if (not (consp most-recent-command-input))
-          ;; Skip any input that is an atom:
-          (most-recent-theorem-aux (rest ld-history) whole-ld-history)
-        (if (member-eq (car most-recent-command-input) '(thm defthm)) ;todo: support defrule, what about other kinds of proofs?
-            most-recent-command
-          ;; Keep looking:
-          (most-recent-theorem-aux (rest ld-history) whole-ld-history))))))
+      (let ( ;; Strip must-fail, if present:
+            (most-recent-command-input (if (and (call-of 'must-fail most-recent-command-input)
+                                                (= 1 (len (fargs most-recent-command-input))))
+                                           (farg1 most-recent-command-input)
+                                         most-recent-command-input)))
+        (if (not (consp most-recent-command-input))
+            ;; Skip any input that is an atom:
+            (most-recent-theorem-aux (rest ld-history) whole-ld-history)
+          (if (member-eq (car most-recent-command-input) '(thm defthm defthmd)) ;todo: support defrule, what about other kinds of proofs?
+              most-recent-command-input
+            ;; Keep looking:
+            (most-recent-theorem-aux (rest ld-history) whole-ld-history)))))))
 
 ;move
 ;; Returns the most recent THM or DEFTHM submitted by the user.
