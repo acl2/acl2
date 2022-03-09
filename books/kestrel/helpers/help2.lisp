@@ -18,10 +18,11 @@
 (include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
 (include-book "kestrel/utilities/checkpoints" :dir :system)
 (include-book "kestrel/utilities/wrap-all" :dir :system)
+(include-book "kestrel/utilities/ld-history" :dir :system)
+(include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/terms-light/non-trivial-formals" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/negate-terms" :dir :system)
-(include-book "help") ;todo: reduce
 (include-book "std/util/defaggregate" :dir :system) ; reduce?
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
