@@ -140,7 +140,7 @@
      as an ACL2 integer."))
 
   (b* ((type-string (atc-integer-type-xdoc-string type))
-       (<type> (atc-integer-type-fixtype type))
+       (<type> (integer-type-to-fixtype type))
        (<type>p (pack <type> 'p))
        (<type>-fix (pack <type> '-fix))
        (<type>-list (pack <type> '-list))
@@ -268,8 +268,8 @@
 
   (b* ((etype-string (atc-integer-type-xdoc-string etype))
        (itype-string (atc-integer-type-xdoc-string itype))
-       (<etype> (atc-integer-type-fixtype etype))
-       (<itype> (atc-integer-type-fixtype itype))
+       (<etype> (integer-type-to-fixtype etype))
+       (<itype> (integer-type-to-fixtype itype))
        (<etype>p (pack <etype> 'p))
        (<itype>p (pack <itype> 'p))
        (<etype>-array (pack <etype> '-array))

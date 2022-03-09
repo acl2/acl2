@@ -3876,7 +3876,7 @@
                 (reftype (type-pointer->referenced type))
                 ((unless (type-integerp reftype))
                  (raise "Internal error: pointer type ~x0 for ~x1." type name))
-                (reftype-array-length (pack (atc-integer-type-fixtype reftype)
+                (reftype-array-length (pack (integer-type-to-fixtype reftype)
                                             '-array-length)))
              (list `(equal (,reftype-array-length ,theresult)
                            (,reftype-array-length ,name))))))

@@ -363,7 +363,7 @@
                 is not an integer type."
                type name tag))
        (defprod-field-name (intern-in-package-of-symbol name tag))
-       (defprod-field-type (atc-integer-type-fixtype type))
+       (defprod-field-type (integer-type-to-fixtype type))
        (defprod-field (list defprod-field-name
                             defprod-field-type))
        (defprod-fields (struct-gen-defprod-fields tag (cdr fields))))
@@ -417,7 +417,7 @@
                 the type ~x0 of field ~x1 of structure ~x2 ~
                 is not an integer type."
                type name tag))
-       (typep (pack (atc-integer-type-fixtype type) 'p))
+       (typep (pack (integer-type-to-fixtype type) 'p))
        (field-keyword (intern name "KEYWORD"))
        (struct-var tag)
        (new-struct-var (packn-pos (list struct-var '-new) tag))

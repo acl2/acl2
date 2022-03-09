@@ -90,7 +90,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-integer-type-fixtype ((type typep))
+(define integer-type-to-fixtype ((type typep))
   :guard (type-integerp type)
   :returns (fixtype symbolp)
   :short "Name of the fixtype of the values of a C integer type."
@@ -155,7 +155,7 @@
                      (- (expt 2 (1- minbits)))
                    0))
        (<type>-bits (atc-integer-type-bits type))
-       (<type> (atc-integer-type-fixtype type))
+       (<type> (integer-type-to-fixtype type))
        (<type>p (pack <type> 'p))
        (<type>-integer (pack <type> '-integer))
        (<type>-integerp (pack <type>-integer 'p))
