@@ -84,11 +84,12 @@
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
 
 ;; Returns (mv erp result state) where RESULT is :true (meaning non-nil), :false, or :unknown.
-;; TODO: If this can show the test must be both true and false (because the assumptions contradict), then the entire if/myif/bvif may be irrelevant.
-;; TODO: Allow STP to run longer (more conflicts) for IFs that are higher up in the term, since resolving such an IF throws away more stuff
+;; (It may be the case that the test can be shown to be other true and false,
+;; because the assumptions contradict, in which case the entire enclosing
+;; IF/MYIF/BOOLIF/BVIF may be irrelevant.)
+;; TODO: Allow STP to run longer (more conflicts) for IFs that are higher up in the term, since resolving such an IF throws away more stuff.
 (defun try-to-resolve-test (test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-  (declare (xargs :stobjs (state)
-                  :guard (and (pseudo-termp test)
+  (declare (xargs :guard (and (pseudo-termp test)
                               (pseudo-term-listp assumptions)
                               (pseudo-term-listp equality-assumptions)
                               (symbol-listp monitored-rules)
@@ -97,8 +98,8 @@
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp)))
                   :mode :program ; todo
-                  ))
-  (b* ( ;; First apply the Axe rewriter to the test:
+                  :stobjs (state)))
+  (b* ( ;; First apply the Axe Rewriter to the test:
        (- (cw "(Simplifying test.~%"))
        ((mv erp simplified-dag-or-quotep state)
         (simp-term test ;; TODO: Does this use contexts?
@@ -126,15 +127,17 @@
           (mv nil :false state)))
        ;; Test did not rewrite to a constant, so try other things:
        (- (cw "Did not simplify to a constant.)~%"))
+       ;; Is this needed, given that we simplified the test above using the assumptions?
        ((when (or (member-equal test assumptions)
                   (member-equal test equality-assumptions))) ;; In case the test is not a known boolean (so rewriting can't rewrite it to t). ;todo: use simplified-test-term here?
         (prog2$ (cw "(The test is a known assumption.)")
                 (mv nil :true state))) ;a test that's in the assumptions is like a test that rewrites to t
        ;; TODO: What if the test is equal to an assumption but not identical to it (e.g., a disjunction with the disjuncts reordered?)
-       (simplified-test-term (dag-to-term simplified-dag-or-quotep)) ;TODO: check that this is not huge (I supposed it could be if something gets unrolled)
+       (simplified-test-term (dag-to-term simplified-dag-or-quotep)) ;TODO: check that this is not huge (I suppose it could be if something gets unrolled)
        ((when (not call-stp))
         (mv nil :unknown state))
-       (- (cw "(Attempting to prove test true:~%"))
+       ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first.
+       (- (cw "(Attempting to prove test true with STP:~%"))
        ((mv true-result state)
         (prove-implication-with-stp simplified-test-term
                                     assumptions ;todo: this caused problems with an rlp example: (append assumptions equality-assumptions)
@@ -146,9 +149,11 @@
        ((when (eq *error* true-result))
         (prog2$ (er hard 'try-to-resolve-test "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
-       (- (cw "Done attempting to prove test true.)~%")) ;todo: improve this printing once we don't try both true and false
-       ;;todo: eventually skip this if the call above proves that the test is true
-       (- (cw "(Attempting to prove test false:~%"))
+       ((when (eq *valid* true-result)) ;; STP proved the test
+        (prog2$ (cw "STP proved the test true.)~%")
+                (mv nil :true state)))
+       (- (cw "STP failed to prove the test true.)~%"))
+       (- (cw "(Attempting to prove test false with STP:~%"))
        ((mv false-result state)
         (prove-implication-with-stp `(not ,simplified-test-term)
                                     assumptions ;todo: this caused problems with an rlp example: (append assumptions equality-assumptions)
@@ -160,24 +165,11 @@
        ((when (eq *error* false-result))
         (prog2$ (er hard 'try-to-resolve-test "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
-       (- (cw "Done attempting to prove test false.)~%"))
-       ;;todo: remove this check eventually, once we see it never being triggered (but perhaps the assumptions contradict!):
-       ((when (and (eq *valid* true-result)
-                   (eq *valid* false-result)))
-        (progn$ (cw "Test for warning below: ~x0~%" test)
-                (cw "Assumptions for warning below: ~x0~%" assumptions)
-                (cw "Equality ssumptions for warning below: ~x0~%" equality-assumptions)
-                (cw "WARNING: STP proved the test both true and false (see details above)!  This may indicate that the assumptions contradict.")
-                ;; Arbitrarily picking :true here for now:
-                (mv nil :true state))))
-    (if (eq *valid* true-result) ;; STP proved the test
-        (prog2$ (cw "(STP resolved the test to true.)~%")
-                (mv nil :true state))
-      (if (eq *valid* false-result) ;; STP proved the negation of the test
-          (prog2$ (cw "(STP resolved the test to false.)~%")
-                  (mv nil :false state))
-        (prog2$ (cw "(STP did not resolve the test.)~%")
-                (mv nil :unknown state))))))
+       ((when (eq *valid* false-result)) ;; STP proved the negation of the test
+        (prog2$ (cw "STP proved the test false.)~%")
+                (mv nil :false state))))
+    (prog2$ (cw "(STP did not resolve the test.)~%")
+            (mv nil :unknown state))))
 
 ;; TODO: Thread through a print option
 (mutual-recursion
