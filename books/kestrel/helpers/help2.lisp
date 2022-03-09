@@ -20,6 +20,7 @@
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/utilities/ld-history" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
+(include-book "kestrel/terms-light/function-call-subterms" :dir :system)
 (include-book "kestrel/terms-light/non-trivial-formals" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/negate-terms" :dir :system)
@@ -33,46 +34,6 @@
 ;; TODO: Think about rule classes (watch for illegal rules!) and disablement of new theorems
 
 (local (in-theory (disable natp)))
-
-;dup in letify
-(mutual-recursion
- ;; Looks inside lambda bodies in a limited way (can return a term that is
- ;; inside a lambda if the lambda doesn't change the meaning of the term [by
- ;; non-trivially binding any of the term's vars]).  Result may include
- ;; lambda-applications.
- (defun find-all-fn-call-subterms (term dead-vars)
-   (declare (xargs :guard (and (pseudo-termp term)
-                               (symbol-listp dead-vars))
-                   :verify-guards nil ;todo
-                   ))
-   (cond ((variablep term) nil) ;we exclude vars (no point in let binding a variable)
-         ((quotep term) nil) ;we exclude constants (no point in let binding a constant)
-         ((flambda-applicationp term)
-          (let* ((args-result (find-all-fn-call-subterms-lst (fargs term) dead-vars))
-                 (body-result (find-all-fn-call-subterms (lambda-body (ffn-symb term))
-                                                         (union-eq (non-trivial-formals (lambda-formals (ffn-symb term)) (fargs term))
-                                                                   dead-vars))))
-            (if (not (intersection-eq (free-vars-in-term term) dead-vars))
-                (cons term (union-equal body-result args-result)) ;todo: use add-to-set-equal
-              ;; term mentions vars whose meaning is changed by an overarching
-              ;; lambda, so drop (we could try harder, by substituting, but
-              ;; that could blow up):
-              (union-equal body-result args-result))))
-         (t ;; it's a regular function call:
-          (let* ((args-result (find-all-fn-call-subterms-lst (fargs term) dead-vars)))
-            (if (not (intersection-eq (free-vars-in-term term) dead-vars))
-                (cons term args-result) ;todo: use add-to-set-equal
-              ;; term mentions vars whose meaning is changed by an overarching
-              ;; lambda, so drop (we could try harder, by substituting, but
-              ;; that could blow up):
-              args-result)))))
- (defun find-all-fn-call-subterms-lst (terms dead-vars)
-   (declare (xargs :guard (and (pseudo-term-listp terms)
-                               (symbol-listp dead-vars))))
-   (if (endp terms)
-       nil
-     (append (find-all-fn-call-subterms (first terms) dead-vars)
-             (find-all-fn-call-subterms-lst (rest terms) dead-vars)))))
 
 ;; A proof technique, such as (:direct), or (:induct f).
 (defund techniquep (x)
