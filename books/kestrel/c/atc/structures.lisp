@@ -136,7 +136,7 @@
     "We also store the call of @(tsee struct) that defines the structure.
      This supports redundancy checking."))
   ((fields string-type-alist)
-   (call acl2::pseudo-event-form))
+   (call pseudo-event-form))
   :pred struct-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
