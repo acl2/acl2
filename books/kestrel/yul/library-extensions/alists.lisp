@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(include-book "std/util/defrule" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Extensions of the alist library.
@@ -61,3 +63,32 @@
                 (member-equal b (strip-cdrs alist)))
            (member-equal (cons (member-strip-cdrs-find-car b alist) b) alist))
   :hints (("Goal" :in-theory (enable member-strip-cdrs-find-car))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; If an alist is a subset of another,
+; the CARs and CDRs of the first are a subset of the ones of the second.
+
+(defruled subsetp-equal-of-strip-cars
+  (implies (and (alistp x)
+                (alistp y)
+                (subsetp-equal x y))
+           (subsetp-equal (strip-cars x)
+                          (strip-cars y)))
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (alistp x)
+                   (member-equal a x))
+              (member-equal (car a) (strip-cars x))))))
+
+(defruled subsetp-equal-of-strip-cdrs
+  (implies (and (alistp x)
+                (alistp y)
+                (subsetp-equal x y))
+           (subsetp-equal (strip-cdrs x)
+                          (strip-cdrs y)))
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (alistp x)
+                   (member-equal a x))
+              (member-equal (cdr a) (strip-cdrs x))))))
