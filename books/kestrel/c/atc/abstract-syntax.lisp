@@ -199,9 +199,7 @@
      the hexadecimal prefixes @('0x') and @('0X').")
    (xdoc::p
     "We do not capture the distinction between the @('u') and @('U'),
-     which is not very important.
-     Also see @(tsee iconst-tysuffix) for a discussion about
-     uppercase and lowercase type suffixes."))
+     which is not very important."))
   ((value nat)
    (base iconst-base)
    (unsignedp bool)
