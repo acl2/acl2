@@ -19,6 +19,13 @@
        (set::in key (keys map)))
   :enable in)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled set-in-keys-to-in
+  (iff (set::in key (keys map))
+       (in key map))
+  :enable in)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule keys-of-restrict
