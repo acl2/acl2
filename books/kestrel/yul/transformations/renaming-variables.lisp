@@ -311,7 +311,20 @@
     (b* ((ren1 (add-var-to-var-renaming old new ren)))
       (implies (not (resulterrp ren1))
                (subsetp-equal (renaming->list ren)
-                              (renaming->list ren1))))))
+                              (renaming->list ren1)))))
+
+  (defruled renaming-old/new-of-add-var-to-var-renaming
+    (implies (and (identifierp old-var)
+                  (identifierp new-var))
+             (b* ((ren1 (add-var-to-var-renaming old-var new-var ren)))
+               (implies (not (resulterrp ren1))
+                        (and (equal (renaming-old ren1)
+                                    (set::insert old-var (renaming-old ren)))
+                             (equal (renaming-new ren1)
+                                    (set::insert new-var (renaming-new ren)))))))
+    :enable (renaming-old
+             renaming-new
+             mergesort)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
