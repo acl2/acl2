@@ -213,9 +213,7 @@
               :float (prog2$ (raise "Internal error: ~
                                      floating constants not supported.")
                              "")
-              :enum (prog2$ (raise "Internal error: ~
-                                    enumeration constants not supported.")
-                            "")
+              :enum (pprint-ident c.get)
               :char (prog2$ (raise "Internal error: ~
                                     character constants not supported.")
                             ""))

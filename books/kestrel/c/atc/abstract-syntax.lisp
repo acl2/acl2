@@ -223,12 +223,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only capture integer constants,
-     but we include placeholders for
-     floating, enumeration, and character constants."))
+    "For now we only capture integer and enumeration constants,
+     but we include placeholders for floating and character constants."))
   (:int ((get iconst)))
   (:float ())
-  (:enum ())
+  (:enum ((get ident)))
   (:char ())
   :pred constp)
 
