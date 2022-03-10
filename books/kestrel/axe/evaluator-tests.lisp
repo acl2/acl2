@@ -463,7 +463,7 @@
                                                   FN)
                                                  (MV
                                                   T
-                                                  (MEMBER-EQUAL
+                                                  (MEMBER-EQUAL-unguarded
                                                    ARG1 ARG2))
                                                  (IF
                                                   (EQ 'FLOOR FN)

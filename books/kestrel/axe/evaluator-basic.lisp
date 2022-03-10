@@ -54,6 +54,7 @@
     repeat-tail
     (repeat repeat-unguarded)
     (binary-append binary-append-unguarded)
+    (member-equal member-equal-unguarded)
     (unary-- unary---unguarded)
     (expt expt-unguarded)
     (= =-unguarded)

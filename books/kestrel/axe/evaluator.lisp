@@ -553,7 +553,7 @@
                   (floor floor arg1 arg2)
 ;                  (logext-list logext-list arg1 arg2)
 ;                  (list::memberp list::memberp arg1 arg2)
-                  (member-equal member-equal arg1 arg2)
+                  (member-equal member-equal-unguarded arg1 arg2)
 ;                  (member-eq member-eq arg1 arg2)
                   (g g arg1 arg2) ;unguarded
 ;                  (repeat repeat-unguarded arg1 arg2) ;see repeat-unguarded-correct ; can blow up!

@@ -481,3 +481,16 @@
   (equal (eq-unguarded x y)
          (eq x y))
   :hints (("Goal" :in-theory (enable eq-unguarded eq))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun member-equal-unguarded (x lst)
+  (declare (xargs :guard t))
+  (cond ((atom lst) nil)
+        ((equal x (car lst)) lst)
+        (t (member-equal-unguarded x (cdr lst)))))
+
+(defthm member-equal-unguarded-correct
+  (equal (member-equal-unguarded x y)
+         (member-equal x y))
+  :hints (("Goal" :in-theory (enable member-equal-unguarded member-equal))))
