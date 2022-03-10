@@ -57,10 +57,7 @@
      comments, and their removal during one of C's translation phases,
      would be captured differently,
      presumably not as part of the abstract syntax
-     over which the language semantics is defined.
-     These are preliminary ideas, which will be refined,
-     and possibly revised, as more of ATC and of the language formalization
-     are developed."))
+     over which the language semantics is defined."))
   :order-subtopics t
   :default-parent t)
 
