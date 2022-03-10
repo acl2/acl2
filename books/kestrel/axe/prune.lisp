@@ -108,12 +108,11 @@
                    :monitor monitored-rules
                    :assumptions assumptions ;no equality assumptions here to prevent loops (todo: think about this)
                    :check-inputs nil))
-       ;; TODO: Put this in instead:
-       ;; ((mv erp simplified-test)
+       ;; ((mv erp simplified-dag-or-quotep)
        ;;  (simplify-term-basic test ;; TODO: Does this use contexts?
        ;;                       assumptions ;no equality assumptions here to prevent loops (todo: think about this)
        ;;                       rule-alist
-       ;;                       nil ; interpreted-function-alist
+       ;;                       interpreted-function-alist
        ;;                       monitored-rules
        ;;                       nil ; memoizep
        ;;                       nil ; count-hitsp
@@ -126,6 +125,7 @@
             (mv nil :true state)
           (mv nil :false state)))
        ;; Test did not rewrite to a constant, so try other things:
+       ;; (- (cw "(Simplified to ~X01.)~%" simplified-dag-or-quotep nil))
        (- (cw "Did not simplify to a constant.)~%"))
        ;; Is this needed, given that we simplified the test above using the assumptions?
        ((when (or (member-equal test assumptions)
@@ -168,7 +168,7 @@
        ((when (eq *valid* false-result)) ;; STP proved the negation of the test
         (prog2$ (cw "STP proved the test false.)~%")
                 (mv nil :false state))))
-    (prog2$ (cw "(STP did not resolve the test.)~%")
+    (prog2$ (cw "STP did not resolve the test.)~%")
             (mv nil :unknown state))))
 
 ;; TODO: Thread through a print option
