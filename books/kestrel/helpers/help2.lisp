@@ -20,6 +20,7 @@
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/utilities/ld-history" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
+(include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/terms-light/function-call-subterms" :dir :system)
 (include-book "kestrel/terms-light/non-trivial-formals" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
@@ -32,6 +33,7 @@
 ;; TODO: Add more proof techniques!
 ;; TODO: After a successful proof, try to combine steps
 ;; TODO: Think about rule classes (watch for illegal rules!) and disablement of new theorems
+;; TODO: How can we parallelize this?
 
 (local (in-theory (disable natp)))
 
