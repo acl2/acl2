@@ -89,7 +89,8 @@
      with suitable restrictions on the ACL2 string.")
    (xdoc::p
     "A C implementation may limit
-     the number of significant characters in identifiers [C:5.2.4.1],
+     the number of significant characters in identifiers
+     [C:6.4.2.1/5] [C:6.4.2.1/6] [C:5.2.4.1],
      to 31 for external identifiers and 63 for internal identifiers.
      In the interest of portability,
      it is our intention to have ATC
