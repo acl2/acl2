@@ -86,7 +86,7 @@
     "Unconstrained ACL2 strings may not be valid C ASCII identifiers.
      ATC will always generate ACL2 strings that are,
      but in the future we may extend this fixtype
-     with suitably restrictions on the ACL2 string.")
+     with suitable restrictions on the ACL2 string.")
    (xdoc::p
     "A C implementation may limit
      the number of significant characters in identifiers [C:5.2.4.1],
