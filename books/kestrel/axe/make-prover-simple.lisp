@@ -2753,9 +2753,9 @@
                                axe-treep-when-consp-of-car
                                <=-of--1-and-largest-non-quotep-linear ; not-<-of-largest-non-quotep-and--1
                                integerp-when-natp-for-axe
-                               pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-other
+                               pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array2-other
                                integerp-of-maxelem2
-                               integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
+                               integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array2
                                <-of-maxelem-when-all-<
                                ,(pack$ relieve-free-var-hyp-and-all-others-name '-return-type)
                                ,(pack$ relieve-rule-hyps-name '-return-type)

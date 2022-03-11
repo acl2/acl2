@@ -234,8 +234,8 @@
                       (if changep
                           ;; TODO: It would be nice to evaluate ground terms here,
                           ;; but that would require an evaluator or interpreted-function-alist.
-                          (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                            (add-function-call-expr-to-dag-array (ffn-symb expr) new-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                          (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
+                            (add-function-call-expr-to-dag-array2 (ffn-symb expr) new-args dag-array dag-len dag-parent-array dag-constant-alist)
                             (if erp
                                 (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                               (rebuild-nodes-aux (rest worklist)

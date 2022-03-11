@@ -1818,8 +1818,8 @@
                                          (prog2$ (cw "Literals:~%")
                                                  (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array))))
                                  ;;add the negation of nodenum to the dag:
-                                 ((mv erp negation-of-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                                  (add-function-call-expr-to-dag-array 'not (list nodenum) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                                 ((mv erp negation-of-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
+                                  (add-function-call-expr-to-dag-array2 'not (list nodenum) dag-array dag-len dag-parent-array dag-constant-alist))
                                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
                                  ((mv erp case-1-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
                                   (prove-disjunction-with-axe-prover (cons negation-of-nodenum literal-nodenums)
