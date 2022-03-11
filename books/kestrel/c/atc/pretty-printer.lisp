@@ -283,18 +283,46 @@
                   :void "void"
                   :char "char"
                   :schar "signed char"
-                  :sshort "short"
-                  :sint "int"
-                  :slong "long"
-                  :sllong "long long"
                   :uchar "unsigned char"
-                  :ushort "unsigned short"
-                  :uint "unsigned int"
-                  :ulong "unsigned long"
-                  :ullong "unsigned long long"
+                  :sshort (msg "~s0short~s1"
+                               (if tss.signed "signed " "")
+                               (if tss.int " int" ""))
+                  :ushort (msg "unsigned short~s0"
+                               (if tss.int " int" ""))
+                  :sint (cond ((and tss.signed tss.int) "signed int")
+                              (tss.signed "signed")
+                              (tss.int "int")
+                              (t (prog2$ (impossible) "")))
+                  :uint (msg "unsigned~s0"
+                             (if tss.int " int" ""))
+                  :slong (msg "~s0long~s1"
+                              (if tss.signed "signed " "")
+                              (if tss.int " int" ""))
+                  :ulong (msg "unsigned long~s0"
+                              (if tss.int " int" ""))
+                  :sllong (msg "~s0long long~s1"
+                               (if tss.signed "signed " "")
+                               (if tss.int " int" ""))
+                  :ullong (msg "unsigned long long~s0"
+                               (if tss.int " int" ""))
+                  :bool "_Bool"
+                  :float (msg "float~s0"
+                              (if tss.complex " _Complex" ""))
+                  :double (msg "double~s0"
+                               (if tss.complex " _Complex" ""))
+                  :ldouble (msg "long double~s0"
+                                (if tss.complex " _Complex" ""))
                   :struct (msg "struct ~@0"
-                               (pprint-ident tss.tag)))
-  :hooks (:fix))
+                               (pprint-ident tss.tag))
+                  :union (msg "union ~@0"
+                              (pprint-ident tss.tag))
+                  :enum (msg "union ~@0"
+                             (pprint-ident tss.tag))
+                  :typedef (pprint-ident tss.name))
+  :hooks (:fix)
+  :guard-hints (("Goal"
+                 :use (:instance tyspecseq-sint-requirements (x tss))
+                 :in-theory (disable tyspecseq-sint-requirements))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
