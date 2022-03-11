@@ -32,6 +32,8 @@
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
+(include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "unguarded-built-ins") ; for assoc-equal-unguarded
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -523,3 +525,18 @@
          (code-char x))
   :hints (("Goal" :in-theory (enable code-char-unguarded)
            :use ((:instance completion-of-code-char)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund lookup-equal-unguarded (key alist)
+  (declare (xargs :guard t))
+  (let ((res (assoc-equal-unguarded key alist)))
+    (if (consp res)
+        (cdr res)
+      nil)))
+
+(defthm lookup-equal-unguarded-correct
+  (equal (lookup-equal-unguarded key alist)
+         (lookup-equal key alist))
+  :hints (("Goal" :in-theory (enable lookup-equal
+                                     lookup-equal-unguarded))))

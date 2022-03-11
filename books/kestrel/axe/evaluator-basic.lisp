@@ -74,6 +74,7 @@
     not
     len
     (assoc-equal assoc-equal-unguarded)
+    (lookup-equal lookup-equal-unguarded)
     (symbol< symbol<-unguarded)
     unsigned-byte-p
     unsigned-byte-p-forced
