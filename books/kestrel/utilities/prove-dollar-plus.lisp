@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 ;; TODO: Add a way to return the failed subgoals
+;; TODO: Add a version that returns the runes used (see get-event-data)
 
 ;(include-book "tools/prove-dollar" :dir :system)
 (include-book "prove-dollar-nice")
