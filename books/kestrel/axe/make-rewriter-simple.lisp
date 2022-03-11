@@ -73,7 +73,8 @@
                 (natp y))
            (equal (< x (+ 1 y)) (<= x y))))
 
-(defthm <-of-if-arg2
+;; Axe version, to be kept disabled except in certain Axe proofs
+(defthmd <-of-if-arg2-axe
   (equal (< x (if test y z))
          (if test
              (< x y)
@@ -4076,7 +4077,8 @@
                                                                 <-OF-+-OF-1-WHEN-natps
                                                                 ;; integerp-when-dargp ;caused problems when natp is known
                                                                 axe-treep-when-pseudo-termp
-                                                                dargp-when-natp)
+                                                                dargp-when-natp
+                                                                <-of-if-arg2-axe)
                                                                (natp
                                                                 NATP-WHEN-DARGP ;caused problems when natp is known
                                                                 ))))))
@@ -4177,7 +4179,8 @@
                                           max-key-hack
                                           max-key-hack-2
                                           <-OF-+-OF-1-WHEN-INTEGERS
-                                          integerp-when-natp)
+                                          integerp-when-natp
+                                          <-of-if-arg2-axe)
                                          (natp)))))
 
        (defthm ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name)
