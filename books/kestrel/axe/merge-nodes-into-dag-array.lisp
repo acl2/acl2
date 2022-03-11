@@ -58,8 +58,8 @@
            (nodenum (car entry))
            (expr (cdr entry)))
       (if (variablep expr)
-          (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-            (add-variable-to-dag-array expr dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+          (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-variable-alist)
+            (add-variable-to-dag-array expr dag-array dag-len dag-parent-array dag-variable-alist)
             (if erp
                 (mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
               (merge-nodes-into-dag-array (rest rev-dag-lst)

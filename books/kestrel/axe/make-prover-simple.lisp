@@ -1682,8 +1682,8 @@
                      ;;                            (mv nil assumption-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                      ;;                          ;; no match, so we just add the variable to the DAG:
                      ;;                          ;;make this a macro? this one might be rare..  same for other adding to dag operations?
-                     ;;                          (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist) ;fixme simplify nodenum?
-                     ;;                            (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                     ;;                          (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-variable-alist) ;fixme simplify nodenum?
+                     ;;                            (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-variable-alist)
                      ;;                            (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))
                      )
                   ;; TREE is a nodenum (because it's an atom but not a symbol): TODO: Do we ever need to try to replace

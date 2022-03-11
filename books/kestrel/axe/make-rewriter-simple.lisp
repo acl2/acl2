@@ -1455,8 +1455,8 @@
                 (if (symbolp tree)
                     ;; It's a variable (this case may be very rare; can we eliminate it by pre-handling vars in the initial term?):
                     (b* ( ;; Add it to the DAG:
-                         ((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                          (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                         ((mv erp nodenum dag-array dag-len dag-parent-array dag-variable-alist)
+                          (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-variable-alist))
                          ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                          ;; See if the resulting node is known to be equal to something:
                          (replacement-match (lookup-in-node-replacement-array nodenum node-replacement-array node-replacement-array-num-valid-nodes))

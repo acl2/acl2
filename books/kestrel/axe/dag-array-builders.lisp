@@ -39,12 +39,11 @@
 ;;;
 
 ;Add the symbol VAR to the dag-array.
-;returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-;TODO: make a version that doesn't thread through the dag-constant-alist?
+;returns (mv erp nodenum dag-array dag-len dag-parent-array dag-variable-alist)
 ;TODO: Combine the erp return value with nodenum (use nil for error)?
 (defund add-variable-to-dag-array (var dag-array dag-len
                                              dag-parent-array
-                                             dag-constant-alist ;;just passed through
+                                             ;; dag-constant-alist ;;just passed through
                                              dag-variable-alist)
   (declare (type symbol var)
            (type (integer 0 2147483646) dag-len)
@@ -63,25 +62,23 @@
             dag-array
             dag-len
             dag-parent-array
-            dag-constant-alist
             dag-variable-alist)
       (if (= dag-len 2147483646) ;error case
           (mv :dag-too-large ;error
               dag-len ;; meaningless but might help with proofs
-              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+              dag-array dag-len dag-parent-array dag-variable-alist)
         (mv (erp-nil)
             dag-len     ;new nodenum
             (aset1-expandable 'dag-array dag-array dag-len var)
             (+ 1 dag-len)
             (maybe-expand-array 'dag-parent-array dag-parent-array dag-len) ;; must keep the arrays in sync (parents of the new node are nil, the default)
-            dag-constant-alist
             ;;pair var with its new nodenum in the DAG :
             (acons-fast var dag-len dag-variable-alist))))))
 
 (defthm natp-of-mv-nth-1-of-add-variable-to-dag-array
   (implies (and (dag-variable-alistp dag-variable-alist)
                 (natp dag-len))
-           (natp (mv-nth 1 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (natp (mv-nth 1 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
@@ -89,15 +86,15 @@
   (implies (and (array1p 'dag-array dag-array)
                 (<= dag-len 2147483646)
                 (natp dag-len))
-           (array1p 'dag-array (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (array1p 'dag-array (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
 (defthm pseudo-dag-arrayp-of-mv-nth-2-of-add-variable-to-dag-array
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp dag-len)
                 (symbolp var))
-           (pseudo-dag-arrayp 'dag-array (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                              (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (pseudo-dag-arrayp 'dag-array (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
+                              (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
   :hints (("Goal" :in-theory (e/d (add-variable-to-dag-array)
                                   (index-in-bounds-after-maybe-expand-array))
            :use (:instance INDEX-IN-BOUNDS-AFTER-MAYBE-EXPAND-ARRAY
@@ -107,42 +104,41 @@
 
 (defthm bound-on-mv-nth-3-of-add-variable-to-dag-array-2
   (implies (natp dag-len)
-           (<= (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+           (<= (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
                (+ 1 dag-len)))
-  :rule-classes ((:linear :trigger-terms ((mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
+  :rule-classes ((:linear :trigger-terms ((mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
 (defthm bound-on-mv-nth-3-of-add-variable-to-dag-array-3
   (implies (natp dag-len)
            (<= dag-len
-               (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
-  :rule-classes ((:linear :trigger-terms ((mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
+               (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
+  :rule-classes ((:linear :trigger-terms ((mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
 (defthm natp-of-mv-nth-3-of-add-variable-to-dag-array
   (implies (natp dag-len)
-           (natp (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (natp (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
 (defthm integerp-of-mv-nth-3-of-add-variable-to-dag-array
   (implies (natp dag-len)
-           (integerp (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (integerp (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
 ;; If no error is signaled, the new size is acceptable
 (defthm <=-of-mv-nth-3-of-add-variable-to-dag-array-and-2147483646
   (implies (and (<= dag-len 2147483646)
                 (integerp dag-len)
-                (not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
-           (<= (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                (not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
+           (<= (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
                2147483646))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
 (defthm bound-on-mv-nth-3-and-mv-nth-1-of-add-variable-to-dag-array
   (implies (and (natp dag-len)
-                ;(all-< (strip-cdrs dag-constant-alist) dag-len)
                 ;(DAG-PARENT-ARRAYP 'DAG-PARENT-ARRAY DAG-PARENT-ARRAY)
                 ;(bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                 ;; (ARRAY1P 'DAG-ARRAY DAG-ARRAY)
@@ -152,17 +148,17 @@
                 ;;        (alen1 'DAG-PARENT-ARRAY
                 ;;                         DAG-PARENT-ARRAY))
                 (bounded-dag-variable-alistp dag-variable-alist dag-len)
-                (not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
-           (< (mv-nth 1 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-              (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
-  :rule-classes ((:linear :trigger-terms ((mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
+                (not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
+           (< (mv-nth 1 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
+              (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
+  :rule-classes ((:linear :trigger-terms ((mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
 (defthm dag-parent-arrayp-of-mv-nth-4-of-add-variable-to-dag-array
   (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                 (natp dag-len)
                 (<= dag-len 2147483646))
-           (dag-parent-arrayp 'dag-parent-array (mv-nth 4 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (dag-parent-arrayp 'dag-parent-array (mv-nth 4 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
 (defthm alen1-of-mv-nth-4-of-add-variable-to-dag-array
@@ -170,36 +166,31 @@
                 (natp dag-len)
                 (equal (alen1 'dag-parent-array dag-parent-array)
                        (alen1 'dag-array dag-array)))
-           (equal (alen1 'dag-parent-array (mv-nth 4 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
-                  (alen1 'dag-array (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
+           (equal (alen1 'dag-parent-array (mv-nth 4 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)))
+                  (alen1 'dag-array (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array maybe-expand-array))))
 
-(defthm mv-nth-5-of-add-variable-to-dag-array
-  (equal (mv-nth 5 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-         dag-constant-alist)
-  :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
-
-(defthm dag-variable-listp-of-mv-nth-6-of-add-variable-to-dag-array
+(defthm dag-variable-listp-of-mv-nth-5-of-add-variable-to-dag-array
   (implies (and (dag-variable-alistp dag-variable-alist)
                 (symbolp var)
                 (natp dag-len))
-           (dag-variable-alistp (mv-nth 6 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (dag-variable-alistp (mv-nth 5 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
-(defthm all-<-of-strip-cdrs-of-mv-nth-6-of-add-variable-to-dag-array
+(defthm all-<-of-strip-cdrs-of-mv-nth-5-of-add-variable-to-dag-array
   (implies (and (bounded-dag-variable-alistp dag-variable-alist dag-len)
                 (symbolp var)
                 (natp dag-len))
-           (all-< (strip-cdrs (mv-nth 6 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
-                  (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (all-< (strip-cdrs (mv-nth 5 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)))
+                  (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array bounded-dag-variable-alistp))))
 
-(defthm bounded-dag-variable-alistp-of-mv-nth-6-of-add-variable-to-dag-array
+(defthm bounded-dag-variable-alistp-of-mv-nth-5-of-add-variable-to-dag-array
   (implies (and (bounded-dag-variable-alistp dag-variable-alist dag-len)
                 (symbolp var)
                 (natp dag-len))
-           (bounded-dag-variable-alistp (mv-nth 6 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                                        (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (bounded-dag-variable-alistp (mv-nth 5 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
+                                        (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
 (defthm bounded-dag-parent-entriesp-after-add-variable-to-dag-array
@@ -213,10 +204,10 @@
                 (<= dag-len (alen1 'dag-parent-array dag-parent-array))
                 (equal (alen1 'dag-parent-array dag-parent-array)
                        (alen1 'dag-array dag-array)))
-           (bounded-dag-parent-entriesp (+ -1 (alen1 'dag-array (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (bounded-dag-parent-entriesp (+ -1 (alen1 'dag-array (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
                                         'dag-parent-array
-                                        (mv-nth 4 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                                        (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+                                        (mv-nth 4 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
+                                        (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
   :hints (("Goal" :expand (BOUNDED-DAG-PARENT-ENTRIESP
                            (+ -1
                               (alen1 'DAG-ARRAY
@@ -246,64 +237,51 @@
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (equal (alen1 'dag-parent-array dag-parent-array)
                        (alen1 'dag-array dag-array))
-;(not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+;(not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)))
                 )
            (bounded-dag-parent-arrayp 'dag-parent-array
-                               (mv-nth 4 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                               (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+                               (mv-nth 4 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
+                               (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
   :hints (("Goal" :use (:instance bounded-dag-parent-entriesp-after-add-variable-to-dag-array)
            :in-theory (e/d (bounded-dag-parent-arrayp) (bounded-dag-parent-entriesp-after-add-variable-to-dag-array)))))
 
 (defthmd dag-variable-alist-correct-after-add-variable-to-dag-array
-  (implies (and ;(not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+  (implies (and ;(not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)))
                 (equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp dag-len)
                 (not (consp var)))
-           (equal (mv-nth 6 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+           (equal (mv-nth 5 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
                   (make-dag-variable-alist
                    'dag-array
-                   (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                   (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
-  :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
-
-(defthmd dag-constant-alist-correct-after-add-variable-to-dag-array
-  (implies (and; (not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
-                (equal dag-constant-alist (make-dag-constant-alist 'dag-array dag-array dag-len))
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (natp dag-len)
-                (not (consp var)))
-           (equal (mv-nth 5 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                  (make-dag-constant-alist
-                   'dag-array
-                   (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                   (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
+                   (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
+                   (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
 (defthmd dag-constant-alist-after-add-variable-to-dag-array
-  (implies (and ;(not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
-                (equal dag-constant-alist (make-dag-constant-alist 'dag-array dag-array dag-len))
+  (implies (and ;(not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)))
+                ;; (equal dag-constant-alist (make-dag-constant-alist 'dag-array dag-array dag-len))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp dag-len)
                 (not (consp var)))
            (equal (make-dag-constant-alist
                    'dag-array
-                   (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                   (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                   (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
+                   (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)))
                   (make-dag-constant-alist 'dag-array dag-array dag-len)))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
 (defthm wf-dagp-after-add-variable-to-dag-array
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                ;(not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                ;(not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)))
                 (symbolp var))
            (wf-dagp 'dag-array
-                    (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                    (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                    (mv-nth 2 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
+                    (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
                     'dag-parent-array
-                    (mv-nth 4 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                    (mv-nth 4 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
                     dag-constant-alist ; unchanged
-                    (mv-nth 6 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+                    (mv-nth 5 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
   :hints (("Goal" :in-theory (enable wf-dagp
                                      dag-constant-alist-after-add-variable-to-dag-array
                                      dag-variable-alist-correct-after-add-variable-to-dag-array))))
@@ -316,13 +294,13 @@
                 (equal (alen1 'dag-array dag-array)
                        (alen1 'dag-parent-array
                               dag-parent-array))
-                (not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
-           (dargp-less-than (mv-nth 1 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                            (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+                (not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
+           (dargp-less-than (mv-nth 1 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
+                            (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
   :hints (("Goal" :in-theory (e/d (dargp-less-than add-variable-to-dag-array) (natp)))))
 
 (defthm dargp-less-than-of-mv-nth-1-of-add-variable-to-dag-array-gen
-  (implies (and (<= (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)) bound)
+  (implies (and (<= (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)) bound)
                 (natp dag-len)
                 (bounded-dag-variable-alistp dag-variable-alist dag-len)
                 (symbolp var)
@@ -330,8 +308,8 @@
                 (equal (alen1 'dag-array dag-array)
                        (alen1 'dag-parent-array
                               dag-parent-array))
-                (not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
-           (dargp-less-than (mv-nth 1 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                (not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
+           (dargp-less-than (mv-nth 1 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))
                             bound))
   :hints (("Goal" :use dargp-less-than-of-mv-nth-1-of-add-variable-to-dag-array
            :in-theory (disable dargp-less-than-of-mv-nth-1-of-add-variable-to-dag-array))))
