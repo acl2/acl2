@@ -994,7 +994,7 @@
                                        ;; This node is ready to add to the dag
                                        ;; in-line this?
                                        (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
-                                         (add-function-call-expr-to-dag-array2
+                                         (add-function-call-expr-to-dag-array
                                           (prog2$ (and (eq :verbose print)
                                                        (cw "(Making ~x0 term with args: ~x1.)~%" fn args))
                                                   fn)
@@ -1819,7 +1819,7 @@
                                                  (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array))))
                                  ;;add the negation of nodenum to the dag:
                                  ((mv erp negation-of-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
-                                  (add-function-call-expr-to-dag-array2 'not (list nodenum) dag-array dag-len dag-parent-array dag-constant-alist))
+                                  (add-function-call-expr-to-dag-array 'not (list nodenum) dag-array dag-len dag-parent-array dag-constant-alist))
                                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
                                  ((mv erp case-1-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
                                   (prove-disjunction-with-axe-prover (cons negation-of-nodenum literal-nodenums)

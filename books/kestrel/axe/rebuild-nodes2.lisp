@@ -408,7 +408,7 @@
              ;; things other than nodenums (which the callers would
              ;; need to handle -- e.g., if a literal maps to a quotep).
              ((mv erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
-              (add-function-call-expr-to-dag-array2 (ffn-symb expr) new-args dag-array dag-len dag-parent-array dag-constant-alist))
+              (add-function-call-expr-to-dag-array (ffn-symb expr) new-args dag-array dag-len dag-parent-array dag-constant-alist))
              ((when erp) (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
              (translation-array (aset1 'translation-array translation-array nodenum new-nodenum))
              (worklist (rest worklist)) ;; skip the current node

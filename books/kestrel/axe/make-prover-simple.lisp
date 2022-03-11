@@ -321,7 +321,7 @@
     (:FORWARD-CHAINING TRIESP-FORWARD)
     (:FORWARD-CHAINING WF-DAGP-FORWARD)
     (:FORWARD-CHAINING WF-DAGP-FORWARD-TO-<=-OF-LEN)
-    (:LINEAR BOUND-ON-MV-NTH-3-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY2-3)
+    (:LINEAR BOUND-ON-MV-NTH-3-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY-3)
     (:REWRITE +-COMBINE-CONSTANTS)
     (:REWRITE <-OF-+-OF-1-STRENGTHEN-2)
     (:REWRITE <-OF--1-WHEN-NATP)
@@ -364,7 +364,7 @@
     (:REWRITE AXE-TREEP-WHEN-EQUAL-OF-CAR-AND-QUOTE-CHEAP)
     (:REWRITE AXE-TREEP-WHEN-NOT-CONSP-AND-NOT-SYMBOLP-CHEAP)
     (:REWRITE AXE-TREEP-WHEN-PSEUDO-TERMP)
-    (:REWRITE BOUND-ON-MV-NTH-3-AND-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY2-ALT)
+    (:REWRITE BOUND-ON-MV-NTH-3-AND-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY-ALT)
     (:REWRITE BOUNDED-AXE-TREEP-MONO)
     (:REWRITE BOUNDED-AXE-TREEP-OF-CAR)
     (:REWRITE BOUNDED-AXE-TREEP-OF-CONS)
@@ -383,7 +383,7 @@
     (:REWRITE DARGP-LESS-THAN-MONO)
     (:REWRITE DARGP-LESS-THAN-OF-LIST-OF-QUOTE)
     ;; (:REWRITE DARGP-LESS-THAN-OF-MAYBE-REPLACE-NODENUM-USING-ASSUMPTIONS-FOR-AXE-PROVER-GEN)
-    (:REWRITE DARGP-LESS-THAN-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY2-GEN)
+    (:REWRITE DARGP-LESS-THAN-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY-GEN)
     (:REWRITE DARGP-LESS-THAN-WHEN-CONSP-CHEAP)
     (:REWRITE DARGP-LESS-THAN-WHEN-MYQUOTEP-CHEAP)
     (:REWRITE DARGP-LESS-THAN-WHEN-NATP-CHEAP)
@@ -393,23 +393,23 @@
     (:REWRITE EQUAL-OF-LEN-AND-0)
     (:REWRITE INFO-WORLDP-OF-INCREMENT-HIT-COUNT-IN-INFO-WORLD)
     (:REWRITE INTEGER-LISTP-WHEN-ALL-NATP)
-    (:REWRITE INTEGERP-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY2)
+    (:REWRITE INTEGERP-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
     (:REWRITE LEN-OF-CDR)
     (:REWRITE LEN-OF-CONS)
     (:REWRITE LEN-OF-LAMBDA-FORMALS-WHEN-AXE-TREEP)
     (:REWRITE LOOKUP-EQ-BECOMES-LOOKUP-EQUAL)
     (:REWRITE MAXELEM-OF-CONS)
-    ;; (:REWRITE MV-NTH-6-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY2)
+    ;; (:REWRITE MV-NTH-6-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
     (:REWRITE MV-NTH-OF-CONS)
     ;; (:REWRITE MYQUOTEP-OF-REPLACE-NODENUM-USING-ASSUMPTIONS-FOR-AXE-PROVER)
     (:REWRITE NAT-LISTP-WHEN-ALL-NATP)
     (:REWRITE NATP-OF-+-OF-1-ALT)
-    (:REWRITE NATP-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY2)
+    (:REWRITE NATP-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
     (:REWRITE NOT-<-OF-+-1-AND-MAXELEM)
     (:REWRITE NOT-<-OF-ALEN1-WHEN-PSEUDO-DAG-ARRAYP)
     (:REWRITE PERM-OF-APPEND)
     (:REWRITE PSEUDO-DAG-ARRAYP-MONOTONE)
-    (:REWRITE PSEUDO-DAG-ARRAYP-OF-MV-NTH-2-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY2-GEN)
+    (:REWRITE PSEUDO-DAG-ARRAYP-OF-MV-NTH-2-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY-GEN)
     (:REWRITE PSEUDO-TERM-LISTP-OF-STORED-RULE-LHS-ARGS)
     (:REWRITE PSEUDO-TERMP-OF-LAMBDA-BODY-WHEN-AXE-TREEP)
     (:REWRITE PSEUDO-TERMP-OF-STORED-RULE-RHS)
@@ -427,7 +427,7 @@
     (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP)
     (:REWRITE TRUE-LISTP-OF-LOOKUP-EQUAL-WHEN-RULE-ALISTP)
     (:REWRITE USE-ALL-STORED-AXE-RULEP-FOR-CAR)
-    (:REWRITE WF-DAGP-AFTER-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY2)
+    (:REWRITE WF-DAGP-AFTER-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
     (:TYPE-PRESCRIPTION ACL2-NUMBER-LISTP)
     (:TYPE-PRESCRIPTION ALEN1-TYPE)
     (:TYPE-PRESCRIPTION ALISTP)
@@ -464,7 +464,7 @@
     (:TYPE-PRESCRIPTION NAT-LISTP)
     (:TYPE-PRESCRIPTION NATP-OF-CAR-WHEN-NAT-LISTP-TYPE)
     (:TYPE-PRESCRIPTION NATP-OF-MAXELEM-2)
-    (:TYPE-PRESCRIPTION NATP-OF-MV-NTH-3-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY2)
+    (:TYPE-PRESCRIPTION NATP-OF-MV-NTH-3-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
     (:TYPE-PRESCRIPTION PSEUDO-DAG-ARRAYP)
     (:TYPE-PRESCRIPTION PSEUDO-TERMP)
     (:TYPE-PRESCRIPTION RATIONAL-LISTP)
@@ -1622,7 +1622,7 @@
                 (b* ((- (and (member-eq print '(:verbose2 :verbose)) (cw "(Making ~x0 term with args: ~x1.)~%" fn args)))
                      ((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
                       ;; todo: perhaps inline this:
-                      (add-function-call-expr-to-dag-array2 fn args dag-array dag-len dag-parent-array dag-constant-alist))
+                      (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))
                      ((when erp) (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                   ;; Finally, see if the node can be replaced by something using the assumptions.  Note that this uses
                   ;; the simplified args, so assumptions not in normal form may have no effect.
@@ -2753,9 +2753,9 @@
                                axe-treep-when-consp-of-car
                                <=-of--1-and-largest-non-quotep-linear ; not-<-of-largest-non-quotep-and--1
                                integerp-when-natp-for-axe
-                               pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array2-other
+                               pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-other
                                integerp-of-maxelem2
-                               integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array2
+                               integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
                                <-of-maxelem-when-all-<
                                ,(pack$ relieve-free-var-hyp-and-all-others-name '-return-type)
                                ,(pack$ relieve-rule-hyps-name '-return-type)
