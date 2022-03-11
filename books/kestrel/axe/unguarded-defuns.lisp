@@ -494,3 +494,32 @@
   (equal (member-equal-unguarded x y)
          (member-equal x y))
   :hints (("Goal" :in-theory (enable member-equal-unguarded member-equal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund char-code-unguarded (x)
+  (declare (xargs :guard t))
+  (if (characterp x)
+      (char-code x)
+    0))
+
+(defthm char-code-unguarded-correct
+  (equal (char-code-unguarded x)
+         (char-code x))
+  :hints (("Goal" :in-theory (enable char-code-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund code-char-unguarded (x)
+  (declare (xargs :guard t))
+  (if (and (integerp x)
+           (<= 0 x)
+           (< x 256))
+      (code-char x)
+    (code-char 0)))
+
+(defthm code-char-unguarded-correct
+  (equal (code-char-unguarded x)
+         (code-char x))
+  :hints (("Goal" :in-theory (enable code-char-unguarded)
+           :use ((:instance completion-of-code-char)))))

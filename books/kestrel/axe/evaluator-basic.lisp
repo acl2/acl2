@@ -49,6 +49,8 @@
     all-unsigned-byte-p
     (endp endp-unguarded)
     (take take-unguarded)
+    (char-code char-code-unguarded)
+    (code-char code-char-unguarded)
     (nthcdr nthcdr-unguarded)
     (reverse-list reverse-list-unguarded)
     repeat-tail
