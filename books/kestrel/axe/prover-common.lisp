@@ -246,10 +246,9 @@
       (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
     (let* ((expr (aref1 from-dag-array-name from-dag-array nodenum)))
       (if (variablep expr)
-          (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+          (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-variable-alist)
             (add-variable-to-dag-array expr dag-array dag-len
-                                       dag-parent-array   ;;just passed through
-                                       dag-constant-alist ;;just passed through
+                                       dag-parent-array
                                        dag-variable-alist)
             (if erp
                 (mv erp nil nil nil nil nil nil)
@@ -262,7 +261,7 @@
           (let* ((args (dargs expr))
                  (args (rename-args args 'renaming-array renaming-array)))
             (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
-              (add-function-call-expr-to-dag-array2 (ffn-symb expr) args dag-array dag-len dag-parent-array dag-constant-alist)
+              (add-function-call-expr-to-dag-array (ffn-symb expr) args dag-array dag-len dag-parent-array dag-constant-alist)
               (if erp
                   (mv erp nil nil nil nil nil nil)
                 (add-array-nodes-to-dag (+ 1 nodenum) max-nodenum from-dag-array-name from-dag-array from-dag-array-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -711,7 +710,7 @@
 ;;            (expr `(lookup-eq ',var ,alist-nodenum)))
 ;;       (mv-let (nodenum dag-array dag-len dag-parent-array dag-constant-alist)
 ;;               ;would like to simplify this right here..
-;;               (add-function-call-expr-to-dag-array2 'lookup-eq `(',var ,alist-nodenum)
+;;               (add-function-call-expr-to-dag-array 'lookup-eq `(',var ,alist-nodenum)
 ;;                                                           dag-array dag-len dag-parent-array
 ;;                                                           dag-constant-alist)
 ;;               (make-nodes-for-vars (cdr vars)
@@ -1077,9 +1076,9 @@
 ;;                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;          (let ((expr (aref1 'dag-array dag-array nodenum)))
 ;;            (if (atom expr) ;must be a variable
-;;                (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;;                (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-variable-alist)
 ;;                  (add-variable-to-dag-array
-;;                   expr dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;;                   expr dag-array dag-len dag-parent-array dag-variable-alist)
 ;;                  (if erp
 ;;                      (mv erp merge-dag-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;                    (merge-supporting-nodes-into-dag (cdr worklist)
@@ -1104,7 +1103,7 @@
 ;;                      ;;all args are merged:
 ;;                      (let* ((args (lookup-args-in-merge-dag-array args merge-dag-array)))
 ;;                        (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
-;;                          (add-function-call-expr-to-dag-array2
+;;                          (add-function-call-expr-to-dag-array
 ;;                           fn args dag-array dag-len dag-parent-array dag-constant-alist)
 ;;                          (if erp
 ;;                              (mv erp merge-dag-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1478,8 +1477,8 @@
 ;;                 (mv (erp-nil) assumption-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
 ;;               ;; no match, so we just add the variable to the DAG:
 ;;               ;;make this a macro? this one might be rare..  same for other adding to dag operations?
-;;               (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist) ;fixme simplify nodenum?
-;;                 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;;               (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-variable-alist) ;fixme simplify nodenum?
+;;                 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist)
 ;;                 (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
 
 ;; ;todo: don't even take tries

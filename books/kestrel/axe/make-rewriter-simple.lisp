@@ -73,7 +73,8 @@
                 (natp y))
            (equal (< x (+ 1 y)) (<= x y))))
 
-(defthm <-of-if-arg2
+;; Axe version, to be kept disabled except in certain Axe proofs
+(defthmd <-of-if-arg2-axe
   (equal (< x (if test y z))
          (if test
              (< x y)
@@ -1455,8 +1456,8 @@
                 (if (symbolp tree)
                     ;; It's a variable (this case may be very rare; can we eliminate it by pre-handling vars in the initial term?):
                     (b* ( ;; Add it to the DAG:
-                         ((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                          (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                         ((mv erp nodenum dag-array dag-len dag-parent-array dag-variable-alist)
+                          (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-variable-alist))
                          ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                          ;; See if the resulting node is known to be equal to something:
                          (replacement-match (lookup-in-node-replacement-array nodenum node-replacement-array node-replacement-array-num-valid-nodes))
@@ -1697,7 +1698,7 @@
                                                             interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
                       ;; No rule fired, so no simplification can be done.  Add the node to the dag:
                       (b* (((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
-                            (add-function-call-expr-to-dag-array2
+                            (add-function-call-expr-to-dag-array
                              fn args ;(if any-arg-was-simplifiedp (cons fn args) tree) ;could put back the any-arg-was-simplifiedp trick to save this cons
                              dag-array dag-len dag-parent-array dag-constant-alist
                              ;;1000 ; the print-interval ;todo: consider putting back some printing like that done by add-function-call-expr-to-dag-array-with-memo
@@ -4076,7 +4077,8 @@
                                                                 <-OF-+-OF-1-WHEN-natps
                                                                 ;; integerp-when-dargp ;caused problems when natp is known
                                                                 axe-treep-when-pseudo-termp
-                                                                dargp-when-natp)
+                                                                dargp-when-natp
+                                                                <-of-if-arg2-axe)
                                                                (natp
                                                                 NATP-WHEN-DARGP ;caused problems when natp is known
                                                                 ))))))
@@ -4177,7 +4179,8 @@
                                           max-key-hack
                                           max-key-hack-2
                                           <-OF-+-OF-1-WHEN-INTEGERS
-                                          integerp-when-natp)
+                                          integerp-when-natp
+                                          <-of-if-arg2-axe)
                                          (natp)))))
 
        (defthm ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name)
