@@ -8,8 +8,8 @@
 
 (include-book "kestrel/utilities/tables" :dir :system)
 
-(defun prove$-fn (term state hints instructions otf-flg ignore-ok ignore-ok-p
-                       skip-proofs)
+(defun prove$-fn (term state hints instructions otf-flg ignore-ok skip-proofs
+                       prover-error-output-off)
 
 ; This function is based on thm-fn and defthm-fn1.  It returns (value t) if the
 ; proof succeeds, else (value nil).  It returns a soft error if there is a
@@ -23,10 +23,9 @@
                            (ld-skip-proofsp state)
                          skip-proofs)))
      (er-let* ((wrld0 (value (w state)))
-               (wrld1 (value (cond ((null ignore-ok-p) wrld0)
-                                   (t (table-programmatic
-                                       'acl2-defaults-table :ignore-ok ignore-ok
-                                       wrld0)))))
+               (wrld1 (value (table-programmatic
+                              'acl2-defaults-table
+                              :ignore-ok ignore-ok wrld0)))
                (tterm (translate term t t t ctx wrld1 state))
                (instructions
                 (cond ((null instructions) (value nil))
@@ -44,15 +43,23 @@
        (revert-world
         (er-progn
 
-; The following is based on (set-inhibit-er-soft "Failure"), using with-output!
-; instead of with-output for legality in this context.
+; The following is based on (table inhibit-er-soft-table nil alist :clear).
 
-         (with-output!
-           :off (event summary)
-           (table-fn 'inhibit-er-soft-table
-                     '("Failure" nil)
-                     state
-                     '(table inhibit-er-soft-table "Failure" nil)))
+         (let ((alist (cond ((eq prover-error-output-off t)
+                             '(("Failure") ("Step-limit")))
+                            ((string-listp prover-error-output-off)
+                             (pairlis$ prover-error-output-off nil))
+                            (t (er hard ctx
+                                   "Illegal value for ~
+                                    :prover-error-output-off argument, ~x0 ~
+                                    (value must be t or a list of strings)"
+                                   prover-error-output-off)))))
+           (with-output!
+             :off (event summary)
+             (table-fn 'inhibit-er-soft-table
+                       `(nil ',alist :clear)
+                       state
+                       `(table inhibit-er-soft-table nil ',alist :clear))))
          (mv-let (erp val state)
            (let ((wrld (w state)))
              (with-ctx-summarized
@@ -69,13 +76,23 @@
            (declare (ignore val))
            (value (null erp)))))))))
 
+(defun make-with-prover-time-limit (time form)
+  `(let ((with-prover-time-limit+-var ,time)) ; avoid duplicate evaluation
+     (if with-prover-time-limit+-var
+         (with-prover-time-limit with-prover-time-limit+-var
+                                 (check-vars-not-free
+                                  (with-prover-time-limit+-var)
+                                  ,form))
+       ,form)))
+
 (defmacro prove$ (term &key
                        hints instructions otf-flg
                        (with-output '(:off :all :on error :gag-mode nil))
                        time-limit
                        step-limit
-                       (ignore-ok 'nil ignore-ok-p)
-                       (skip-proofs ':same))
+                       (ignore-ok 't)
+                       (skip-proofs ':same)
+                       (prover-error-output-off 't))
 
 ; All of the arguments except :with-output are evaluated.  The result is
 ; (mv nil t state) if the proof is successful, otherwise (mv nil nil state).
@@ -83,10 +100,10 @@
   (declare (xargs :guard (member-eq ignore-ok '(t nil :warn))))
 
   (let* ((form `(prove$-fn ,term state ,hints ,instructions ,otf-flg ,ignore-ok
-                           ,ignore-ok-p ,skip-proofs))
+                           ,skip-proofs ,prover-error-output-off))
          (form `(with-output! ,@with-output ,form))
          (form (if time-limit
-                   `(with-prover-time-limit ,time-limit ,form)
+                   (make-with-prover-time-limit time-limit form)
                  form))
          (form (if step-limit
 
@@ -124,16 +141,17 @@
 
  @({
  General Form:
- (prove$ term                  ; any term (translated or not)
+ (prove$ term                    ; any term (translated or not)
          &key
-         hints                 ; default nil
-         instructions          ; default nil
-         otf-flg               ; default nil
-         ignore-ok             ; default taken from acl2-defaults-table
-         with-output           ; default (:off :all :on error :gag-mode nil)
-         time-limit            ; default nil
-         step-limit            ; default nil
-         skip-proofs)          ; default :same
+         hints                   ; default nil
+         ignore-ok               ; default t
+         instructions            ; default nil
+         otf-flg                 ; default nil
+         prover-error-output-off ; default t
+         skip-proofs             ; default :same
+         step-limit              ; default nil
+         time-limit              ; default nil
+         with-output)            ; default (:off :all :on error :gag-mode nil)
  })
 
  <p>where all arguments except @('with-output') are evaluated.  The value of
@@ -152,7 +170,11 @@
  @('skip-proofs') is not @(':same') then proofs take place if and only if the
  value of @('skip-proofs') is not @('nil'), as though @('(set-ld-skip-proofsp
  state)') were evaluated immediately preceding evaluation of the @('prove$')
- call.</p>
+ call.  Finally, the value of @('prover-error-output-off') must be either
+ @('t'), which represents the list @('(\"Failure\" \"Step-limit\")'), or a list
+ of strings; error messages arising during the proof whose type is one of these
+ strings is to be suppressed, as though @(tsee set-inhibit-er-soft) had been
+ executed on these strings.</p>
 
  <p>@('Prove$') returns an @(see error-triple), @('(mv erp val state)').  If
  there is a syntax error (so-called ``translation error'') in the given term,

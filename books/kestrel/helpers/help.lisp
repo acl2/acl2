@@ -26,57 +26,8 @@
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
+(include-book "kestrel/utilities/ld-history" :dir :system)
 (include-book "tools/prove-dollar" :dir :system)
-
-(local (in-theory (disable weak-ld-history-entry-p get-global
-                           ;;boundp-global
-                           )))
-
-;move
-(defun weak-ld-history-entry-list-p (entries)
-  (declare (xargs :guard t))
-  (if (atom entries)
-      (null entries)
-    (and (weak-ld-history-entry-p (first entries))
-         (weak-ld-history-entry-list-p (rest entries)))))
-
-;move
-;; Returns the most recent THM or DEFTHM submitted by the user.
-(defund most-recent-theorem-aux (ld-history whole-ld-history)
-  (declare (xargs :guard (weak-ld-history-entry-list-p ld-history)))
-  (if (endp ld-history)
-      (er hard? 'most-recent-theorem-aux "Can't find a theorem in the history, which is ~x0" whole-ld-history)
-    (let* ((most-recent-command (first ld-history))
-           (most-recent-command-input (ld-history-entry-input most-recent-command)))
-      (let ( ;; Strip must-fail, if present:
-            (most-recent-command-input (if (and (call-of 'must-fail most-recent-command-input)
-                                                (= 1 (len (fargs most-recent-command-input))))
-                                           (farg1 most-recent-command-input)
-                                         most-recent-command-input)))
-        (if (not (consp most-recent-command-input))
-            ;; Skip any input that is an atom:
-            (most-recent-theorem-aux (rest ld-history) whole-ld-history)
-          (if (member-eq (car most-recent-command-input) '(thm defthm defthmd)) ;todo: support defrule, what about other kinds of proofs?
-              most-recent-command-input
-            ;; Keep looking:
-            (most-recent-theorem-aux (rest ld-history) whole-ld-history)))))))
-
-;move
-;; Returns the most recent THM or DEFTHM submitted by the user.
-(defund most-recent-theorem (state)
-  (declare (xargs :stobjs state
-                  ;; is this implied by statep?:
-                  :guard (and (boundp-global 'ld-history state)
-                              (weak-ld-history-entry-list-p (get-global 'ld-history state)))))
-  (let ((ld-history (ld-history state)))
-    (most-recent-theorem-aux ld-history ld-history)))
-
-;; We are in multiple entry mode IFF the ld-history has length at least 2.
-(defund multiple-ld-history-entry-modep (state)
-  (declare (xargs :stobjs state
-                  :guard-hints (("Goal" :in-theory (enable state-p1))) ; todo: Drop?
-                  ))
-  (< 1 (len (ld-history state))))
 
 ;; Returns (mv erp proved hints state).
 (defun try-enabling-functions (fns claim state)

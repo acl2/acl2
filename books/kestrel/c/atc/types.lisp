@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -203,20 +203,51 @@
                              :void (type-void)
                              :char (type-char)
                              :schar (type-schar)
-                             :sshort (type-sshort)
-                             :sint (type-sint)
-                             :slong (type-slong)
-                             :sllong (type-sllong)
                              :uchar (type-uchar)
+                             :sshort (type-sshort)
                              :ushort (type-ushort)
+                             :sint (type-sint)
                              :uint (type-uint)
+                             :slong (type-slong)
                              :ulong (type-ulong)
+                             :sllong (type-sllong)
                              :ullong (type-ullong)
+                             :bool (prog2$
+                                    (raise "Internal error: ~
+                                            _Bool not supported yet.")
+                                    (irr-type))
+                             :float (prog2$
+                                     (raise "Internal error: ~
+                                             float not supported yet.")
+                                     (irr-type))
+                             :double (prog2$
+                                      (raise "Internal error: ~
+                                              double not supported yet.")
+                                      (irr-type))
+                             :ldouble (prog2$
+                                       (raise "Internal error: ~
+                                               long double not supported yet.")
+                                       (irr-type))
                              :struct (prog2$
                                       (raise "Internal error: ~
                                               struct ~x0 not supported yet."
                                              tyspecseq.tag)
-                                      (irr-type)))))
+                                      (irr-type))
+                             :union (prog2$
+                                     (raise "Internal error: ~
+                                             union ~x0 not supported yet."
+                                            tyspecseq.tag)
+                                     (irr-type))
+                             :enum (prog2$
+                                    (raise "Internal error: ~
+                                            enum ~x0 not supported yet."
+                                           tyspecseq.tag)
+                                    (irr-type))
+                             :typedef (prog2$
+                                       (raise "Internal error: ~
+                                               typedef ~x0 not supported yet."
+                                              tyspecseq.name)
+                                       (irr-type)))))
     (if (tyname->pointerp tyname)
         (type-pointer type)
       type))
@@ -251,14 +282,14 @@
     (:char (make-tyname :specs (tyspecseq-char) :pointerp nil))
     (:schar (make-tyname :specs (tyspecseq-schar) :pointerp nil))
     (:uchar (make-tyname :specs (tyspecseq-uchar) :pointerp nil))
-    (:sshort (make-tyname :specs (tyspecseq-sshort) :pointerp nil))
-    (:ushort (make-tyname :specs (tyspecseq-ushort) :pointerp nil))
-    (:sint (make-tyname :specs (tyspecseq-sint) :pointerp nil))
-    (:uint (make-tyname :specs (tyspecseq-uint) :pointerp nil))
-    (:slong (make-tyname :specs (tyspecseq-slong) :pointerp nil))
-    (:ulong (make-tyname :specs (tyspecseq-ulong) :pointerp nil))
-    (:sllong (make-tyname :specs (tyspecseq-sllong) :pointerp nil))
-    (:ullong (make-tyname :specs (tyspecseq-ullong) :pointerp nil))
+    (:sshort (make-tyname :specs (tyspecseq-sshort nil nil) :pointerp nil))
+    (:ushort (make-tyname :specs (tyspecseq-ushort nil) :pointerp nil))
+    (:sint (make-tyname :specs (tyspecseq-sint nil t) :pointerp nil))
+    (:uint (make-tyname :specs (tyspecseq-uint t) :pointerp nil))
+    (:slong (make-tyname :specs (tyspecseq-slong nil nil) :pointerp nil))
+    (:ulong (make-tyname :specs (tyspecseq-ulong nil) :pointerp nil))
+    (:sllong (make-tyname :specs (tyspecseq-sllong nil nil) :pointerp nil))
+    (:ullong (make-tyname :specs (tyspecseq-ullong nil) :pointerp nil))
     (t (prog2$ (impossible) (irr-tyname))))
   :guard-hints (("Goal" :in-theory (enable type-integerp
                                            type-signed-integerp

@@ -48,3 +48,5 @@
 (include-book "substitute-unnecessary-lambda-vars")
 (include-book "make-lambda-term-simple")
 (include-book "make-lambda-application-simple")
+(include-book "function-call-subterms")
+(include-book "replace-term-with-term")
