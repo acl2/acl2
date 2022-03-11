@@ -1926,20 +1926,23 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is always called on a non-pointer type currently."))
+    "This is always called on a non-pointer type currently.")
+   (xdoc::p
+    "We pick one type specification sequences for each type.
+     This choice could be controlled by an ATC option in the future."))
   (type-case type
              :void (tyspecseq-void)
              :char (tyspecseq-char)
              :schar (tyspecseq-schar)
-             :sshort (tyspecseq-sshort)
-             :sint (tyspecseq-sint)
-             :slong (tyspecseq-slong)
-             :sllong (tyspecseq-sllong)
              :uchar (tyspecseq-uchar)
-             :ushort (tyspecseq-ushort)
-             :uint (tyspecseq-uint)
-             :ulong (tyspecseq-ulong)
-             :ullong (tyspecseq-ullong)
+             :sshort (tyspecseq-sshort nil nil)
+             :ushort (tyspecseq-ushort nil)
+             :sint (tyspecseq-sint nil t)
+             :uint (tyspecseq-uint t)
+             :slong (tyspecseq-slong nil nil)
+             :ulong (tyspecseq-ulong nil)
+             :sllong (tyspecseq-sllong nil nil)
+             :ullong (tyspecseq-ullong nil)
              :pointer (prog2$ (impossible) (irr-tyspecseq)))
   :hooks (:fix)
   ///

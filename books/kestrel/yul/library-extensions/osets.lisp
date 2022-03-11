@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -90,3 +90,10 @@
     (implies (subset x y)
              (subset (list-insert l x)
                      (list-insert l y)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd subset-of-mergesort-and-mergesort
+  (equal (subset (mergesort x) (mergesort y))
+         (subsetp-equal x y))
+  :hints (("Goal" :in-theory (enable mergesort))))

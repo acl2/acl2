@@ -118,7 +118,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We only support the execution of integer constants."))
+    "We only support the execution of integer constants for now."))
   (const-case c
               :int (exec-iconst c.get)
               :float (error :exec-const-float)

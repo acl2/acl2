@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,10 +11,8 @@
 
 (in-package "C")
 
-(include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
-(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -59,10 +57,7 @@
      comments, and their removal during one of C's translation phases,
      would be captured differently,
      presumably not as part of the abstract syntax
-     over which the language semantics is defined.
-     These are preliminary ideas, which will be refined,
-     and possibly revised, as more of ATC and of the language formalization
-     are developed."))
+     over which the language semantics is defined."))
   :order-subtopics t
   :default-parent t)
 
@@ -91,10 +86,11 @@
     "Unconstrained ACL2 strings may not be valid C ASCII identifiers.
      ATC will always generate ACL2 strings that are,
      but in the future we may extend this fixtype
-     with suitably restrictions on the ACL2 string.")
+     with suitable restrictions on the ACL2 string.")
    (xdoc::p
     "A C implementation may limit
-     the number of significant characters in identifiers [C:5.2.4.1],
+     the number of significant characters in identifiers
+     [C:6.4.2.1/5] [C:6.4.2.1/6] [C:5.2.4.1],
      to 31 for external identifiers and 63 for internal identifiers.
      In the interest of portability,
      it is our intention to have ATC
@@ -203,9 +199,7 @@
      the hexadecimal prefixes @('0x') and @('0X').")
    (xdoc::p
     "We do not capture the distinction between the @('u') and @('U'),
-     which is not very important.
-     Also see @(tsee iconst-tysuffix) for a discussion about
-     uppercase and lowercase type suffixes."))
+     which is not very important."))
   ((value nat)
    (base iconst-base)
    (unsignedp bool)
@@ -229,12 +223,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only capture integer constants,
-     but we include placeholders for
-     floating, enumeration, and character constants."))
+    "For now we only capture integer and enumeration constants,
+     but we include placeholders for floating and character constants."))
   (:int ((get iconst)))
   (:float ())
-  (:enum ())
+  (:enum ((get ident)))
   (:char ())
   :pred constp)
 
@@ -364,19 +357,28 @@
      The allowed sequences are described in [C:6.7.2].
      This fixtype captures (some of) these sequences.")
    (xdoc::p
-    "For now we only capture type specifier sequences for
+    "We capture type specifier sequences for
      the @('void') type,
      the plain @('char') type,
-     the standard signed and unsigned integer types (except @('_Bool')),
-     and structure types.
-     We only capture structure type specifiers consisting of
-     an identifier, which is the tag of the structure type [C:6.7.2.1].")
+     the standard signed and unsigned integer types (which include @('_Bool')),
+     the (real and complex) floating types,
+     limited forms of structure, union, and enumeration types,
+     and type definition names.
+     Complex floating types are not supported by all implementations;
+     we include them in the abstract syntax,
+     because it must suffice to represent all implementations,
+     but they will be used only if supported.")
    (xdoc::p
-    "Syntactically, declarations that defines (the members of) structure types
+    "The form of structure, union, and enumeration types is limited
+     to the case of a single identifier (i.e. tag) [C:6.7.2.1] [C:6.7.2.2],
+     without members or enumerators.
+     Syntactically, declarations that define
+     (members of) structure and union types
+     and (enumerators) of enumeration types
      are also type specifiers.
-     We capture them elsewhere in our abstract syntax.
-     We use values of this fixtype of sequences of type specifiers
-     only in parts of the code that reference existing types,
+     But we capture them elsewhere in our abstract syntax.
+     We use @('tyspecseq') only in parts of the code
+     that reference existing types,
      not that introduce them.
      Recall that our abstract syntax does not capture
      all possible forms of C code,
@@ -384,22 +386,69 @@
      In that context, there is a distinction between
      defining a structure type and merely referencing it.")
    (xdoc::p
-    "We only capture one sequence for type, implicitly,
-     even though some types can be specified
-     via different equivalent sequences."))
+    "We do not capture atomic type specifiers for now.
+     These involve additional syntactic complexities,
+     as they contain type names,
+     which are defined below to depend on type specifier sequences;
+     so adding atomic type specifiers would introduce a mutual recursion
+     in the definition of these fixtypes,
+     which is doable but can perhaps be avoided for a while,
+     until we actually need atomic type specifiers.")
+   (xdoc::p
+    "This @('tyspecseq') fixtype has one constructor
+     for each item in the list in [C:6.7.2/2],
+     where different items are different types
+     (syntactically speaking,
+     as type definition names may be equal to other types).
+     Each item in that list lists one of more sequences,
+     meant to represent multisets, i.e. where order does not matter.
+     We capture all the possible multisets for each item,
+     via boolean fields that say whether
+     elements of a sequence are present or absent:
+     for example, @('(make-tyspecseq-sshort :signed t :int nil)')
+     represents @('signed short');
+     see the pretty-printer for details.
+     However, we do not capture
+     different sequentializations of the same multiset,
+     e.g. we capture @('signed short') but not @('short signed').
+     We capture the sequences listed in [C:6.7.2/2]
+     that represent the multiset.
+     Arguably, those are the sequences that should always be used,
+     despite other equivalent sequences being allowed.")
+   (xdoc::p
+    "The type specifiers in a declaration
+     may be intermixed with other declaration specifiers [C:6.7/1] [C:6.7.2/2]
+     (e.g. one could write @('unsigned auto int x = 1;')),
+     so long as their sequence (ignoring any intermixed non-type specifiers)
+     is valid according to [C:6.7.2/2].
+     This intermixing is probably best avoided,
+     so our abstract syntax does not allow it:
+     our type specifier sequences are contiguous."))
   (:void ())
   (:char ())
   (:schar ())
-  (:sshort ())
-  (:sint ())
-  (:slong ())
-  (:sllong ())
   (:uchar ())
-  (:ushort ())
-  (:uint ())
-  (:ulong ())
-  (:ullong ())
+  (:sshort ((signed booleanp)
+            (int booleanp)))
+  (:ushort ((int booleanp)))
+  (:sint ((signed booleanp :reqfix (if (not int) t signed))
+          (int booleanp :reqfix (if (not signed) t int)))
+   :require (or signed int))
+  (:uint ((int booleanp)))
+  (:slong ((signed booleanp)
+           (int booleanp)))
+  (:ulong ((int booleanp)))
+  (:sllong ((signed booleanp)
+            (int booleanp)))
+  (:ullong ((int booleanp)))
+  (:bool ())
+  (:float ((complex booleanp)))
+  (:double ((complex booleanp)))
+  (:ldouble ((complex booleanp)))
   (:struct ((tag ident)))
+  (:union ((tag ident)))
+  (:enum ((tag ident)))
+  (:typedef ((name ident)))
   :pred tyspecseqp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
