@@ -376,8 +376,8 @@
      (if supplied) hints have illegal syntax, an error now occurs.")
 
    (xdoc::p
-    "A new keyword option @(':ignore-ok') is now available for @(tsee
-     prove$).")
+    "New keyword options @(':ignore-ok') and @(':prover-error-output-off') are
+     now available for @(tsee prove$).")
 
    (xdoc::p
     "Evaluation of @('prover-steps-counted state)') returns the prover steps

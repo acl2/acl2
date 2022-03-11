@@ -106,3 +106,11 @@
 
 ; Error: bad term
 (must-fail (prove$ '(t)))
+
+; Example from Eric Smith: :ignore-ok now has default t
+(must-succeed-pi (prove$ '(let ((w 1)) (equal (car (cons x y)) x))))
+
+; Example from Eric Smith: time-limit need not be supplied as a number
+(must-succeed-pi
+ (let ((time-limit nil))
+   (prove$ '(equal (car (cons x y)) x) :time-limit time-limit)))
