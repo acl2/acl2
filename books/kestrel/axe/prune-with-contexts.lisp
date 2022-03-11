@@ -82,8 +82,8 @@
       (mv (erp-nil) renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (let ((expr (aref1 'old-dag-array old-dag-array old-nodenum)))
       (if (atom expr)
-          (b* (((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                (add-variable-to-dag-array expr dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+          (b* (((mv erp nodenum dag-array dag-len dag-parent-array dag-variable-alist)
+                (add-variable-to-dag-array expr dag-array dag-len dag-parent-array dag-variable-alist))
                ((when erp)
                 (mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                (renaming-array (aset1 'renaming-array renaming-array old-nodenum nodenum)))
@@ -151,7 +151,7 @@
                      ;; Couldn't resolve test:
                      (b* ((renamed-args (rename-args (dargs expr) 'renaming-array renaming-array))
                           ((mv erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
-                           (add-function-call-expr-to-dag-array2 fn renamed-args dag-array dag-len dag-parent-array dag-constant-alist))
+                           (add-function-call-expr-to-dag-array fn renamed-args dag-array dag-len dag-parent-array dag-constant-alist))
                           ((when erp)
                            (mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                           (renaming-array (aset1 'renaming-array renaming-array old-nodenum new-nodenum)))
@@ -162,7 +162,7 @@
             (t ;; Normal function (nothing to resolve):
              (b* ((renamed-args (rename-args (dargs expr) 'renaming-array renaming-array))
                   ((mv erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
-                   (add-function-call-expr-to-dag-array2 fn renamed-args dag-array dag-len dag-parent-array dag-constant-alist))
+                   (add-function-call-expr-to-dag-array fn renamed-args dag-array dag-len dag-parent-array dag-constant-alist))
                   ((when erp)
                    (mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                   (renaming-array (aset1 'renaming-array renaming-array old-nodenum new-nodenum)))

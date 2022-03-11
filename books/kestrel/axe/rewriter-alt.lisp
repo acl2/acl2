@@ -751,7 +751,7 @@
                                                                        interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries simplify-xorsp state result-array-stobj))
                                                  ;;no rule fired, so add this expr to the dag, then check whether it is equated to anything:
                                                  (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist) ;version for non-ground terms? or maybe we can't eval the fn
-                                                   (add-function-call-expr-to-dag-array2 fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist)
+                                                   (add-function-call-expr-to-dag-array fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist)
                                                    (if erp
                                                        (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
                                                      ;;see if the node is equated to anything (is this the right place to check this?)
