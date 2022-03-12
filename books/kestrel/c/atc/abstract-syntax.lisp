@@ -518,7 +518,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are declarators for C objects.
+    "These are declarators for objects.
      [C] does not have a separate syntactic category for them,
      but in our abstract syntax it is useful
      to differentiate them from other kinds of declarators.")
@@ -531,6 +531,40 @@
   (:ident ((get ident)))
   (:pointer ((get ident)))
   :pred obj-declorp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum obj-adeclor
+  :short "Fixtype of abstract object declarators [C:6.7.7]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are abstract declarators for objects.
+     [C] does not have a separate syntactic category for them,
+     but in our abstract syntax it is useful
+     to differentiate them from other kinds of abstract declarators.")
+   (xdoc::p
+    "For now we only capture two kinds of abstract object declarators:
+     (i) no abstract object declarator; and
+     (ii) a direct abstract declarator consisting of
+     a single pointer (i.e. @('*')).
+     This will be generalized eventually.")
+   (xdoc::p
+    "Note that these correspond to @(tsee obj-declor), intentionally:
+     an abstract declarator is like a declarator without the identifier.
+     Abstract declarators are used in type names,
+     which are like declarations without identifiers [C:6.7.7/2].")
+   (xdoc::p
+    "From a point of view,
+     it may seem strange to have an explicit value, in this fixtype,
+     for no abstract object declarator,
+     since the fixtype should consist of abstract object declarators.
+     However, this modeling choice is justified by
+     the correspondence between abstract declarators and declarators
+     explained just above."))
+  (:none ())
+  (:pointer ())
+  :pred obj-adeclorp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -96,6 +96,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define obj-declor-to-adeclor ((declor obj-declorp))
+  :returns (adeclor obj-adeclorp)
+  :short "Abstract an object declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee obj-adeclor),
+     the abstraction amoung to removing the identifier."))
+  (obj-declor-case declor
+                   :ident (obj-adeclor-none)
+                   :pointer (obj-adeclor-pointer))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define param-declon->tyname ((param param-declonp))
   :returns (tyname tynamep)
   :short "Turn a parameter declaration into the corresponding type name."

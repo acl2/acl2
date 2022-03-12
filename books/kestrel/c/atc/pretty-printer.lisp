@@ -328,10 +328,20 @@
 
 (define pprint-obj-declor ((declor obj-declorp))
   :returns (part msgp)
-  :short "Pretty-print a declarator."
+  :short "Pretty-print an object declarator."
   (obj-declor-case declor
                    :ident (pprint-ident declor.get)
                    :pointer (msg "*~s0" (pprint-ident declor.get)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-obj-adeclor ((declor obj-adeclorp))
+  :returns (part msgp)
+  :short "Pretty-print an abstract object declarator."
+  (obj-adeclor-case declor
+                    :none ""
+                    :pointer " *")
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
