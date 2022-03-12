@@ -642,7 +642,15 @@
      (body block))
     :tag :fundef
     :pred fundefp
-    :measure (two-nats-measure (acl2-count x) 2)))
+    :measure (two-nats-measure (acl2-count x) 2))
+
+  ///
+
+  (defruled block-option-some->val-when-nonnil
+    (implies x
+             (equal (block-option-some->val x)
+                    (block-fix x)))
+    :enable block-option-some->val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
