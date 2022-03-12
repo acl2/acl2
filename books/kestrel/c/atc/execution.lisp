@@ -1516,8 +1516,8 @@
        (formal (car formals))
        (actual (car actuals))
        (declor (param-declon->declor formal))
-       (pointerp (declor->pointerp declor))
-       (name (declor->ident declor))
+       (pointerp (obj-declor->pointerp declor))
+       (name (obj-declor->ident declor))
        (formal-type (type-name-to-type
                      (make-tyname :specs (param-declon->type formal)
                                   :pointerp pointerp)))
@@ -1969,8 +1969,8 @@
             ((when (not init))
              (mv (error (list :void-initializer (block-item-fix item)))
                  compst))
-            (var (declor->ident declor))
-            (pointerp (declor->pointerp declor))
+            (var (obj-declor->ident declor))
+            (pointerp (obj-declor->pointerp declor))
             (type (type-name-to-type
                    (make-tyname :specs type
                                 :pointerp pointerp)))

@@ -2155,9 +2155,9 @@
                   (equal (type-of-value val)
                          (type-name-to-type
                           (make-tyname :specs (declon-var->type declon)
-                                       :pointerp (declor->pointerp declor))))
+                                       :pointerp (obj-declor->pointerp declor))))
                   (equal compst2
-                         (create-var (declor->ident declor) val compst1))
+                         (create-var (obj-declor->ident declor) val compst1))
                   (compustatep compst2))
              (equal (exec-block-item item compst fenv limit)
                     (mv nil compst2)))
@@ -2184,8 +2184,8 @@
       (:e declon-var->type)
       (:e declon-var->declor)
       (:e declon-var->init)
-      (:e declor->pointerp)
-      (:e declor->ident))))
+      (:e obj-declor->pointerp)
+      (:e obj-declor->ident))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2243,11 +2243,11 @@
                   (equal (type-of-value val)
                          (type-name-to-type
                           (make-tyname :specs (param-declon->type formal)
-                                       :pointerp (declor->pointerp declor))))
+                                       :pointerp (obj-declor->pointerp declor))))
                   (value-listp vals)
                   (equal scope (init-scope (cdr formals) vals))
                   (scopep scope)
-                  (equal name (declor->ident declor))
+                  (equal name (obj-declor->ident declor))
                   (not (omap::in name scope)))
              (equal (init-scope formals (cons val vals))
                     (omap::update name val scope)))
@@ -2259,5 +2259,5 @@
       (:e param-declonp)
       (:e param-declon->type)
       (:e param-declon->declor)
-      (:e declor->pointerp)
-      (:e declor->ident))))
+      (:e obj-declor->pointerp)
+      (:e obj-declor->ident))))

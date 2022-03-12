@@ -2413,7 +2413,7 @@
                                but it has type ~x2 instead."
                               val var init-type))
                    (declon (make-declon-var :type (atc-gen-tyspecseq init-type)
-                                            :declor (make-declor
+                                            :declor (make-obj-declor
                                                      :ident
                                                      (make-ident
                                                       :name (symbol-name var)))
@@ -2697,7 +2697,7 @@
                                but it has type ~x2 instead."
                               val var init-type))
                    (declon (make-declon-var :type (atc-gen-tyspecseq init-type)
-                                            :declor (make-declor
+                                            :declor (make-obj-declor
                                                      :ident
                                                      (make-ident
                                                       :name (symbol-name var)))
@@ -3520,8 +3520,8 @@
         (raise "Internal error: pointer type to pointer type ~x0." ref-type)
         (acl2::value nil))
        (param (make-param-declon
-               :declor (make-declor :ident (make-ident :name name)
-                                    :pointerp pointerp)
+               :declor (make-obj-declor :ident (make-ident :name name)
+                                        :pointerp pointerp)
                :type (atc-gen-tyspecseq ref-type)))
        ((er params)
         (atc-gen-param-declon-list (cdr typed-formals) fn ctx state)))

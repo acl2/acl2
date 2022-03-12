@@ -846,12 +846,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-declor ((declor declorp))
+(define pprint-obj-declor ((declor obj-declorp))
   :returns (part msgp)
   :short "Pretty-print a declarator."
   (msg "~s0~@1"
-       (if (declor->pointerp declor) "*" "")
-       (pprint-ident (declor->ident declor)))
+       (if (obj-declor->pointerp declor) "*" "")
+       (pprint-ident (obj-declor->ident declor)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -880,7 +880,7 @@
   (b* (((struct-declon member) member))
     (pprint-line (msg "~@0 ~@1;"
                       (pprint-tyspecseq member.type)
-                      (pprint-declor member.declor))
+                      (pprint-obj-declor member.declor))
                  (lnfix level)))
   :hooks (:fix))
 
@@ -906,7 +906,7 @@
    :var
    (list (pprint-line (msg "~@0 ~@1 = ~@2;"
                            (pprint-tyspecseq declon.type)
-                           (pprint-declor declon.declor)
+                           (pprint-obj-declor declon.declor)
                            (pprint-expr declon.init (expr-grade-top) options))
                       (lnfix level)))
    :struct
@@ -1069,7 +1069,7 @@
   (b* (((param-declon param) param))
     (msg "~@0 ~@1"
          (pprint-tyspecseq param.type)
-         (pprint-declor param.declor)))
+         (pprint-obj-declor param.declor)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

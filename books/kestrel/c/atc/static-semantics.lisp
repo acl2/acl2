@@ -1225,8 +1225,8 @@
           (init (declon-var->init item.get))
           ((when (tyspecseq-case type :void))
            (error (list :declon-error-type-void item.get)))
-          (pointerp (declor->pointerp declor))
-          (var (declor->ident declor))
+          (pointerp (obj-declor->pointerp declor))
+          (var (obj-declor->ident declor))
           (wf (check-ident var))
           ((when (errorp wf)) (error (list :declon-error-var wf)))
           (type (type-name-to-type (make-tyname :specs type
@@ -1318,8 +1318,8 @@
   (b* (((param-declon param) param)
        ((when (tyspecseq-case param.type :void))
         (error (list :param-error-void (param-declon-fix param))))
-       (pointerp (declor->pointerp param.declor))
-       (var (declor->ident param.declor))
+       (pointerp (obj-declor->pointerp param.declor))
+       (var (obj-declor->ident param.declor))
        (wf (check-ident var))
        ((when (errorp wf)) (error (list :param-error wf))))
     (var-table-add-var var

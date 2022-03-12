@@ -632,12 +632,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod declor
-  :short "Fixtype of declarators [C:6.7.6]."
+(fty::defprod obj-declor
+  :short "Fixtype of object declarators [C:6.7.6]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only capture declarators
+    "These are declarators for C objects.
+     [C] does not have a separate syntactic category for them,
+     but in our abstract syntax it is useful
+     to differentiate them from other kinds of declarators.")
+   (xdoc::p
+    "For now we only capture object declarators
      that consist of single direct declarators
      that consist of identifiers
      optionally preceded by a single pointer indication without type qualifiers.
@@ -647,8 +652,8 @@
      This will be generalized eventually."))
   ((pointerp bool)
    (ident ident))
-  :tag :declor
-  :pred declorp)
+  :tag :obj-declor
+  :pred obj-declorp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -662,11 +667,11 @@
    (xdoc::p
     "For now we only capture structure declarations that consist of
      a type specifier sequence from @(tsee tyspecseq),
-     and a structure declarator that is a declarator from @(tsee declor).
+     and a structure declarator that is a declarator from @(tsee obj-declor).
      We do not capture static assertions.
      We do not capture bit field sizes."))
   ((type tyspecseq)
-   (declor declor))
+   (declor obj-declor))
   :tag :struct-declon
   :pred struct-declonp)
 
@@ -697,7 +702,7 @@
       no type qualifiers,
       no function specifiers,
       no alignment specifiers,
-      and a single declarator (see @(tsee declor))
+      and a single declarator (see @(tsee obj-declor))
       with an initializer expression.
       These declare variables.")
     (xdoc::li
@@ -710,7 +715,7 @@
    (xdoc::p
     "We do not support static assertions for now."))
   (:var ((type tyspecseq)
-         (declor declor)
+         (declor obj-declor)
          (init expr)))
   (:struct ((tag ident)
             (members struct-declon-list)))
@@ -834,9 +839,9 @@
     "For now we capture a very limited form of parameter declarations,
      namely the ones consisting of
      a type specifier sequence (see @(tsee tyspecseq))
-     and a declarator (see @(tsee declor))."))
+     and a declarator (see @(tsee obj-declor))."))
   ((type tyspecseq)
-   (declor declor))
+   (declor obj-declor))
   :tag :param-declon
   :pred param-declonp)
 
