@@ -513,6 +513,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum obj-declor
+  :short "Fixtype of object declarators [C:6.7.6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are declarators for C objects.
+     [C] does not have a separate syntactic category for them,
+     but in our abstract syntax it is useful
+     to differentiate them from other kinds of declarators.")
+   (xdoc::p
+    "For now we only capture two kinds of object declarators:
+     (i) a direct declarator consisting of a single identifier; and
+     (ii) a direct declarator consisting of a single identifier
+     preceded by a single pointer (i.e. @('*')).
+     This will be generalized eventually."))
+  (:ident ((get ident)))
+  (:pointer ((get ident)))
+  :pred obj-declorp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod tyname
   :short "Fixtype of type names [C:6.7.7]."
   :long
@@ -663,27 +684,6 @@
   (with-guard-checking :none (ec-call (expr-fix :irrelevant)))
   ///
   (in-theory (disable (:e irr-expr))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum obj-declor
-  :short "Fixtype of object declarators [C:6.7.6]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are declarators for C objects.
-     [C] does not have a separate syntactic category for them,
-     but in our abstract syntax it is useful
-     to differentiate them from other kinds of declarators.")
-   (xdoc::p
-    "For now we only capture two kinds of object declarators:
-     (i) a direct declarator consisting of a single identifier; and
-     (ii) a direct declarator consisting of a single identifier
-     preceded by a single pointer (i.e. @('*')).
-     This will be generalized eventually."))
-  (:ident ((get ident)))
-  (:pointer ((get ident)))
-  :pred obj-declorp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -326,6 +326,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pprint-obj-declor ((declor obj-declorp))
+  :returns (part msgp)
+  :short "Pretty-print a declarator."
+  (obj-declor-case declor
+                   :ident (pprint-ident declor.get)
+                   :pointer (msg "*~s0" (pprint-ident declor.get)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pprint-tyname ((tn tynamep))
   :returns (part msgp)
   :short "Pretty-print a type name."
@@ -843,16 +853,6 @@
   (verify-guards pprint-expr)
 
   (fty::deffixequiv-mutual pprint-expr))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define pprint-obj-declor ((declor obj-declorp))
-  :returns (part msgp)
-  :short "Pretty-print a declarator."
-  (obj-declor-case declor
-                   :ident (pprint-ident declor.get)
-                   :pointer (msg "*~s0" (pprint-ident declor.get)))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
