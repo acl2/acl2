@@ -1520,7 +1520,7 @@
                                             :ident (mv nil declor.get)
                                             :pointer (mv t declor.get)))
        (formal-type (type-name-to-type
-                     (make-tyname :specs (param-declon->type formal)
+                     (make-tyname :tyspec (param-declon->type formal)
                                   :pointerp pointerp)))
        (actual-type (type-of-value actual))
        ((unless (equal formal-type actual-type))
@@ -1809,7 +1809,7 @@
          ((when (errorp val?)) (mv val? compst))
          ((unless (equal (type-of-value-option val?)
                          (type-name-to-type
-                          (make-tyname :specs info.result
+                          (make-tyname :tyspec info.result
                                        :pointerp nil))))
           (mv (error (list :return-value-mistype
                            :required info.result
@@ -1974,7 +1974,7 @@
                                                 :ident (mv nil declor.get)
                                                 :pointer (mv t declor.get)))
             (type (type-name-to-type
-                   (make-tyname :specs type
+                   (make-tyname :tyspec type
                                 :pointerp pointerp)))
             ((unless (equal type (type-of-value init)))
              (mv (error (list :decl-var-mistype var

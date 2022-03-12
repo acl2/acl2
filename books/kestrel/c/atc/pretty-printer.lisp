@@ -350,7 +350,7 @@
   :returns (part msgp)
   :short "Pretty-print a type name."
   (msg "~@0~s1"
-       (pprint-tyspecseq (tyname->specs tn))
+       (pprint-tyspecseq (tyname->tyspec tn))
        (if (tyname->pointerp tn) " *" ""))
   :hooks (:fix))
 

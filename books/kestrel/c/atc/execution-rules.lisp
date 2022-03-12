@@ -2011,7 +2011,7 @@
                   (value-optionp val?)
                   (equal (type-of-value-option val?)
                          (type-name-to-type
-                          (make-tyname :specs (fun-info->result info)
+                          (make-tyname :tyspec (fun-info->result info)
                                        :pointerp nil))))
              (equal (exec-fun fun args compst fenv limit)
                     (mv val? (pop-frame compst1))))
@@ -2158,7 +2158,7 @@
                   (equal pointerp (obj-declor-case declor :pointer))
                   (equal (type-of-value val)
                          (type-name-to-type
-                          (make-tyname :specs (declon-var->type declon)
+                          (make-tyname :tyspec (declon-var->type declon)
                                        :pointerp pointerp)))
                   (equal compst2 (create-var var val compst1))
                   (compustatep compst2))
@@ -2254,7 +2254,7 @@
                   (equal pointerp (obj-declor-case declor :pointer))
                   (equal (type-of-value val)
                          (type-name-to-type
-                          (make-tyname :specs (param-declon->type formal)
+                          (make-tyname :tyspec (param-declon->type formal)
                                        :pointerp pointerp)))
                   (value-listp vals)
                   (equal scope (init-scope (cdr formals) vals))

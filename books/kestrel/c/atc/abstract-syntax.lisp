@@ -578,7 +578,7 @@
      and pointers thereof (only single pointers, not pointers to pointers).
      We capture the presence or absence of @('*') (for pointer)
      via a boolean flag."))
-  ((specs tyspecseq)
+  ((tyspec tyspecseq)
    (pointerp bool))
   :tag :tyname
   :pred tynamep)

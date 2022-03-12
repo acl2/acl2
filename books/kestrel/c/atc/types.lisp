@@ -198,7 +198,7 @@
    (xdoc::p
     "A type name denotes a type [C:6.7.7/2].
      This ACL2 function returns the denoted type."))
-  (b* ((tyspecseq (tyname->specs tyname))
+  (b* ((tyspecseq (tyname->tyspec tyname))
        (type (tyspecseq-case tyspecseq
                              :void (type-void)
                              :char (type-char)
@@ -279,17 +279,17 @@
      For now we actually only need the mapping for integer types,
      so we define this function on integer types for now."))
   (case (type-kind type)
-    (:char (make-tyname :specs (tyspecseq-char) :pointerp nil))
-    (:schar (make-tyname :specs (tyspecseq-schar) :pointerp nil))
-    (:uchar (make-tyname :specs (tyspecseq-uchar) :pointerp nil))
-    (:sshort (make-tyname :specs (tyspecseq-sshort nil nil) :pointerp nil))
-    (:ushort (make-tyname :specs (tyspecseq-ushort nil) :pointerp nil))
-    (:sint (make-tyname :specs (tyspecseq-sint nil t) :pointerp nil))
-    (:uint (make-tyname :specs (tyspecseq-uint t) :pointerp nil))
-    (:slong (make-tyname :specs (tyspecseq-slong nil nil) :pointerp nil))
-    (:ulong (make-tyname :specs (tyspecseq-ulong nil) :pointerp nil))
-    (:sllong (make-tyname :specs (tyspecseq-sllong nil nil) :pointerp nil))
-    (:ullong (make-tyname :specs (tyspecseq-ullong nil) :pointerp nil))
+    (:char (make-tyname :tyspec (tyspecseq-char) :pointerp nil))
+    (:schar (make-tyname :tyspec (tyspecseq-schar) :pointerp nil))
+    (:uchar (make-tyname :tyspec (tyspecseq-uchar) :pointerp nil))
+    (:sshort (make-tyname :tyspec (tyspecseq-sshort nil nil) :pointerp nil))
+    (:ushort (make-tyname :tyspec (tyspecseq-ushort nil) :pointerp nil))
+    (:sint (make-tyname :tyspec (tyspecseq-sint nil t) :pointerp nil))
+    (:uint (make-tyname :tyspec (tyspecseq-uint t) :pointerp nil))
+    (:slong (make-tyname :tyspec (tyspecseq-slong nil nil) :pointerp nil))
+    (:ulong (make-tyname :tyspec (tyspecseq-ulong nil) :pointerp nil))
+    (:sllong (make-tyname :tyspec (tyspecseq-sllong nil nil) :pointerp nil))
+    (:ullong (make-tyname :tyspec (tyspecseq-ullong nil) :pointerp nil))
     (t (prog2$ (impossible) (irr-tyname))))
   :guard-hints (("Goal" :in-theory (enable type-integerp
                                            type-signed-integerp

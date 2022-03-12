@@ -118,7 +118,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is obtained by removing the identifier."))
-  (make-tyname :specs (param-declon->type param)
+  (make-tyname :tyspec (param-declon->type param)
                :pointerp (obj-declor-case (param-declon->declor param)
                                           :pointer))
   :hooks (:fix))

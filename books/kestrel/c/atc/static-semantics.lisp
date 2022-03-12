@@ -1231,7 +1231,7 @@
                             :pointer (mv t declor.get)))
           (wf (check-ident var))
           ((when (errorp wf)) (error (list :declon-error-var wf)))
-          (type (type-name-to-type (make-tyname :specs type
+          (type (type-name-to-type (make-tyname :tyspec type
                                                 :pointerp pointerp)))
           (init-type (check-expr-call-or-pure init funtab vartab))
           ((when (errorp init-type))
@@ -1326,7 +1326,7 @@
        (wf (check-ident var))
        ((when (errorp wf)) (error (list :param-error wf))))
     (var-table-add-var var
-                       (type-name-to-type (make-tyname :specs param.type
+                       (type-name-to-type (make-tyname :tyspec param.type
                                                        :pointerp pointerp))
                        vartab))
   :hooks (:fix))
@@ -1384,7 +1384,7 @@
   (b* (((fundef fundef) fundef)
        (in-types (type-name-list-to-type-list
                   (param-declon-list->tyname-list fundef.params)))
-       (out-type (type-name-to-type (make-tyname :specs fundef.result
+       (out-type (type-name-to-type (make-tyname :tyspec fundef.result
                                                  :pointerp nil)))
        (ftype (make-fun-type :inputs in-types :output out-type))
        (funtab (fun-table-add-fun fundef.name ftype funtab))
