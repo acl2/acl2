@@ -666,3 +666,31 @@
   :hints (("Goal" :in-theory (disable bvchop-of-*-of-bvchop)
            :use ((:instance bvchop-of-*-of-bvchop (size 32) (x (logext 32 y)) (y x))
                  (:instance bvchop-of-*-of-bvchop (size 32) (x y) (y x))))))
+
+(defthm bvchop-of---of-logext-same
+  (implies (and (integerp x)
+                (posp size))
+           (equal (bvchop size (- (logext size x)))
+                  (bvchop size (- x)))))
+
+(defthm logext-of---of-logext
+  (implies (and (integerp x)
+                (posp size))
+           (equal (logext size (- (logext size x)))
+                  (logext size (- x))))
+  :hints (("Goal" :use ((:instance logext-bvchop-better (i (- x)) (n size))
+                        (:instance logext-bvchop-better (i (- (logext size x))) (n size)))
+           :in-theory (disable logext-bvchop-better
+                               logext-of-bvchop-same
+                               logext-of-bvchop-smaller-better
+                               logext-of-bvchop-smaller
+                               logext-when-signed-byte-p
+                               logext-identity
+                               bvchop-of-minus))))
+
+(defthm logext-of-+-of---of-logext-arg2
+  (implies (and (integerp x)
+                (integerp y)
+                (posp size))
+           (equal (logext size (+ x (- (logext size y))))
+                  (logext size (+ x (- y))))))
