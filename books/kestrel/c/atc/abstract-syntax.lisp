@@ -243,7 +243,22 @@
   (xdoc::topstring
    (xdoc::p
     "For now we only capture integer and enumeration constants,
-     but we include placeholders for floating and character constants."))
+     but we include placeholders for floating and character constants.")
+   (xdoc::p
+    "The C grammar for enumeration constants [C:6.4.4.3/1] [C:6.4.4/1]
+     is actually ambiguous in expressions [C:6.5.1/1]:
+     an identifier that appears where an expression is expected
+     could be either a primary expression identifier (e.g. denoting an object)
+     or an enumeration constant.
+     The two cases cannot be disambiguated during parsing,
+     as they need to take into account static semantic constraints.
+     This is not an issue for ATC, which generates, does not parse, C code:
+     ATC can generate one or the other case in the code.
+     Nevertheless, at some point we may decide to remove enumeration constants
+     from this C abstract syntax for ATC,
+     and just use identifiers in expressions,
+     which may denote either enumeration constants or other things;
+     after all, this is how a C compiler analyzes the C code it parses."))
   (:int ((get iconst)))
   (:float ())
   (:enum ((get ident)))
