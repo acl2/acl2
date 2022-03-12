@@ -641,6 +641,43 @@
 
   (fty::deffixequiv-mutual statements/blocks/cases/fundefs-renamevar)
 
+  (local (include-book "std/basic/inductions" :dir :system))
+
+  (defruled same-len-when-expression-list-renamevar
+    (implies (not (resulterrp (expression-list-renamevar old new ren)))
+             (equal (len old) (len new)))
+    :enable expression-list-renamevar
+    :induct (acl2::cdr-cdr-induct old new))
+
+  (defruled expression-list-renamevar-of-append-error
+    (implies (equal (len old) (len new))
+             (equal (resulterrp (expression-list-renamevar (append old old1)
+                                                           (append new new1)
+                                                           ren))
+                    (or (resulterrp (expression-list-renamevar old new ren))
+                        (resulterrp (expression-list-renamevar old1 new1 ren)))))
+    :enable expression-list-renamevar
+    :induct (acl2::cdr-cdr-induct old new))
+
+  (defruled expression-list-renamevar-of-rev-error
+    (implies (equal (len old) (len new))
+             (equal (resulterrp (expression-list-renamevar (rev old)
+                                                           (rev new)
+                                                           ren))
+                    (resulterrp (expression-list-renamevar old new ren))))
+    :induct (acl2::cdr-cdr-induct old new)
+    :enable (rev
+             expression-list-renamevar
+             expression-list-renamevar-of-append-error))
+
+  (defruled expression-list-renamevar-of-rev-not-error
+    (implies (not (resulterrp (expression-list-renamevar old new ren)))
+             (not (resulterrp (expression-list-renamevar (rev old)
+                                                         (rev new)
+                                                         ren))))
+    :enable (expression-list-renamevar-of-rev-error
+             same-len-when-expression-list-renamevar))
+
   (defruled same-statement-kind-when-statement-renamevar
     (implies (not (resulterrp (statement-renamevar old new ren)))
              (equal (statement-kind new)
@@ -687,8 +724,7 @@
              (equal (swcase-list->value-list new)
                     (swcase-list->value-list old)))
     :induct (acl2::cdr-cdr-induct old new)
-    :enable same-swcase->value-when-swcase-renamevar
-    :prep-books ((include-book "std/basic/inductions" :dir :system)))
+    :enable same-swcase->value-when-swcase-renamevar)
 
   (defruled same-fundef->name-when-fundef-renamevar
     (implies (not (resulterrp (fundef-renamevar old new)))
