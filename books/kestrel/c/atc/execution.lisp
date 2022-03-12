@@ -1516,8 +1516,9 @@
        (formal (car formals))
        (actual (car actuals))
        (declor (param-declon->declor formal))
-       (pointerp (obj-declor->pointerp declor))
-       (name (obj-declor->ident declor))
+       ((mv pointerp name) (obj-declor-case declor
+                                            :ident (mv nil declor.get)
+                                            :pointer (mv t declor.get)))
        (formal-type (type-name-to-type
                      (make-tyname :specs (param-declon->type formal)
                                   :pointerp pointerp)))
@@ -1969,8 +1970,9 @@
             ((when (not init))
              (mv (error (list :void-initializer (block-item-fix item)))
                  compst))
-            (var (obj-declor->ident declor))
-            (pointerp (obj-declor->pointerp declor))
+            ((mv pointerp var) (obj-declor-case declor
+                                                :ident (mv nil declor.get)
+                                                :pointer (mv t declor.get)))
             (type (type-name-to-type
                    (make-tyname :specs type
                                 :pointerp pointerp)))

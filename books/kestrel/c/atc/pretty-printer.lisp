@@ -849,9 +849,9 @@
 (define pprint-obj-declor ((declor obj-declorp))
   :returns (part msgp)
   :short "Pretty-print a declarator."
-  (msg "~s0~@1"
-       (if (obj-declor->pointerp declor) "*" "")
-       (pprint-ident (obj-declor->ident declor)))
+  (obj-declor-case declor
+                   :ident (pprint-ident declor.get)
+                   :pointer (msg "*~s0" (pprint-ident declor.get)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

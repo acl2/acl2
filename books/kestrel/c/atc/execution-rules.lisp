@@ -2152,12 +2152,15 @@
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
                   (equal declor (declon-var->declor declon))
+                  (equal var (obj-declor-case declor
+                                              :ident declor.get
+                                              :pointer declor.get))
+                  (equal pointerp (obj-declor-case declor :pointer))
                   (equal (type-of-value val)
                          (type-name-to-type
                           (make-tyname :specs (declon-var->type declon)
-                                       :pointerp (obj-declor->pointerp declor))))
-                  (equal compst2
-                         (create-var (obj-declor->ident declor) val compst1))
+                                       :pointerp pointerp)))
+                  (equal compst2 (create-var var val compst1))
                   (compustatep compst2))
              (equal (exec-block-item item compst fenv limit)
                     (mv nil compst2)))
@@ -2184,8 +2187,9 @@
       (:e declon-var->type)
       (:e declon-var->declor)
       (:e declon-var->init)
-      (:e obj-declor->pointerp)
-      (:e obj-declor->ident))))
+      (:e obj-declor-kind)
+      (:e obj-declor-ident->get)
+      (:e obj-declor-pointer->get))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2231,7 +2235,11 @@
     "The base case is a call @('(init-scope nil nil)'),
      which is handled by the executable counterpart of @(tsee init-scope).
      For the step case, during symbolic execution we expect that
-     there is always the same number of formals and actuals."))
+     there is always the same number of formals and actuals.")
+   (xdoc::p
+    "We need to enable @(tsee eq) because it arises from
+     the translation of @('(obj-declor-case declor :pointer)')
+     in one of the hypotheses of the rule."))
 
   (defruled init-scope-when-consp
     (implies (and (syntaxp (quotep formals))
@@ -2240,14 +2248,18 @@
                   (param-declonp formal)
                   (equal declor (param-declon->declor formal))
                   (valuep val)
+                  (equal var (obj-declor-case declor
+                                              :ident declor.get
+                                              :pointer declor.get))
+                  (equal pointerp (obj-declor-case declor :pointer))
                   (equal (type-of-value val)
                          (type-name-to-type
                           (make-tyname :specs (param-declon->type formal)
-                                       :pointerp (obj-declor->pointerp declor))))
+                                       :pointerp pointerp)))
                   (value-listp vals)
                   (equal scope (init-scope (cdr formals) vals))
                   (scopep scope)
-                  (equal name (obj-declor->ident declor))
+                  (equal name var)
                   (not (omap::in name scope)))
              (equal (init-scope formals (cons val vals))
                     (omap::update name val scope)))
@@ -2255,9 +2267,11 @@
 
   (defval *atc-init-scope-rules*
     '(init-scope-when-consp
+      eq
       (:e init-scope)
       (:e param-declonp)
       (:e param-declon->type)
       (:e param-declon->declor)
-      (:e obj-declor->pointerp)
-      (:e obj-declor->ident))))
+      (:e obj-declor-kind)
+      (:e obj-declor-ident->get)
+      (:e obj-declor-pointer->get))))

@@ -666,7 +666,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod obj-declor
+(fty::deftagsum obj-declor
   :short "Fixtype of object declarators [C:6.7.6]."
   :long
   (xdoc::topstring
@@ -676,17 +676,13 @@
      but in our abstract syntax it is useful
      to differentiate them from other kinds of declarators.")
    (xdoc::p
-    "For now we only capture object declarators
-     that consist of single direct declarators
-     that consist of identifiers
-     optionally preceded by a single pointer indication without type qualifiers.
-     That is, for now a declarator is
-     either an identifier or a @('*') followed by an identifier.
-     We model the presence or absence of the @('*') via boolean flag.
+    "For now we only capture two kinds of object declarators:
+     (i) a direct declarator consisting of a single identifier; and
+     (ii) a direct declarator consisting of a single identifier
+     preceded by a single pointer (i.e. @('*')).
      This will be generalized eventually."))
-  ((pointerp bool)
-   (ident ident))
-  :tag :obj-declor
+  (:ident ((get ident)))
+  (:pointer ((get ident)))
   :pred obj-declorp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
