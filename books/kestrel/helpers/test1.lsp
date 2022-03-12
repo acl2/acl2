@@ -15,7 +15,7 @@
 (help2)
 
 ;; TODO: Have the tool try to combine the 2 steps that it finds
-(must-be-redundant
+(must-be-redundant ; todo: make a quiet version of this
  ;; The tool finds this proof:
  (defthm nat-listp-when-pos-listp-induct0
    (implies (and (consp x)
