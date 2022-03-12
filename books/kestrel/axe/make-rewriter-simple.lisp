@@ -32,6 +32,8 @@
 
 ;; TODO: add a function to simplify a dag.
 
+;; TODO: Add checks (or guards?) that interpreted-function-alists are complete.
+
 (include-book "rewriter-common")
 (include-book "supporting-nodes") ; for drop-non-supporters-array
 (include-book "make-node-replacement-alist")
@@ -4182,6 +4184,20 @@
                                           integerp-when-natp
                                           <-of-if-arg2-axe)
                                          (natp)))))
+
+       (defthm ,(pack$ 'consp-of-cdr-of-mv-nth-1-of- simplify-term-name '-when-quotep)
+         (implies (and (equal 'quote (car (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld))))
+                       (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld))) ; no error
+                       (pseudo-termp term)
+                       (pseudo-term-listp assumptions)
+                       (rule-alistp rule-alist)
+                       (interpreted-function-alistp interpreted-function-alist)
+                       (symbol-listp monitored-symbols)
+                       (booleanp memoizep)
+                       (booleanp count-hitsp)
+                       (plist-worldp wrld))
+                  (consp (cdr (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld)))))
+         :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
        (defthm ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name)
          (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld))) ; no error

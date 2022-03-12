@@ -5182,6 +5182,7 @@
               ((when (not (interpreted-function-alist-completep interpreted-function-alist ,(pack$ '* evaluator-base-name '-fns*))))
                (er hard? ',prove-dag-implication-name "Incomplete interpreted-function-alist.  See warning(s) above: ~x0" interpreted-function-alist)
                (mv :bad-input nil state))
+              ;; TODO: Some things in this comment may be out of date:
               ;; Check whether functions may be missing when we instantiate hyps, substitute in RHSes and lambda bodies, and merge terms into dags, all of which still use the basic evaluator:
               ((when (not (interpreted-function-alist-completep interpreted-function-alist *axe-evaluator-basic-fns*)))
                (er hard? ',prove-dag-implication-name "Incomplete interpreted-function-alist.  See warning(s) above: ~x0" interpreted-function-alist)

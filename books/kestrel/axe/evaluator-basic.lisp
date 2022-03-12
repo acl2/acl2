@@ -49,11 +49,14 @@
     all-unsigned-byte-p
     (endp endp-unguarded)
     (take take-unguarded)
+    (char-code char-code-unguarded)
+    (code-char code-char-unguarded)
     (nthcdr nthcdr-unguarded)
     (reverse-list reverse-list-unguarded)
     repeat-tail
     (repeat repeat-unguarded)
     (binary-append binary-append-unguarded)
+    (member-equal member-equal-unguarded)
     (unary-- unary---unguarded)
     (expt expt-unguarded)
     (= =-unguarded)
@@ -71,6 +74,7 @@
     not
     len
     (assoc-equal assoc-equal-unguarded)
+    (lookup-equal lookup-equal-unguarded)
     (symbol< symbol<-unguarded)
     unsigned-byte-p
     unsigned-byte-p-forced

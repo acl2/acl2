@@ -174,6 +174,38 @@
                                 (mv-nth 3 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
   :hints (("Goal" :in-theory (enable make-terms-into-dag-array-basic))))
 
+(defthm all-dargp-of-mv-nth-1-of-make-terms-into-dag-array-basic
+  (implies (and (pseudo-term-listp terms)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name)
+                (interpreted-function-alistp interpreted-function-alist)
+                (not (mv-nth 0 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (all-dargp (mv-nth 1 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
+  :hints (("Goal" :in-theory (enable make-terms-into-dag-array-basic))))
+
+(defthm alen1-of-mv-nth-4-of-make-terms-into-dag-array-basic
+  (implies (and (pseudo-term-listp terms)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name)
+                (interpreted-function-alistp interpreted-function-alist)
+                (not (mv-nth 0 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (equal (alen1 dag-parent-array-name (mv-nth 4 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist)))
+                  (alen1 dag-array-name (mv-nth 2 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist)))))
+  :hints (("Goal" :use (:instance wf-dagp-of-make-terms-into-dag-array-basic)
+           :in-theory (disable wf-dagp-of-make-terms-into-dag-array-basic))))
+
+(defthm bounded-dag-parent-arrayp-after-of-make-terms-into-dag-array-basic
+  (implies (and (pseudo-term-listp terms)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name)
+                (interpreted-function-alistp interpreted-function-alist)
+                (not (mv-nth 0 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (bounded-dag-parent-arrayp dag-parent-array-name
+                                      (mv-nth 4 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))
+                                      (mv-nth 3 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
+  :hints (("Goal" :use (:instance wf-dagp-of-make-terms-into-dag-array-basic)
+           :in-theory (disable wf-dagp-of-make-terms-into-dag-array-basic))))
+
 (defthm true-listp-of-mv-nth-1-of-make-terms-into-dag-array-basic
   (implies (and (pseudo-term-listp terms)
                 (symbolp dag-array-name)
@@ -181,4 +213,15 @@
                 (interpreted-function-alistp interpreted-function-alist)
                 (not (mv-nth 0 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
            (true-listp (mv-nth 1 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
+  :hints (("Goal" :in-theory (enable make-terms-into-dag-array-basic))))
+
+(defthm pseudo-dag-arrayp-after-make-terms-into-dag-array-basic
+  (implies (and (pseudo-term-listp terms)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name)
+                (interpreted-function-alistp interpreted-function-alist)
+                (not (mv-nth 0 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (pseudo-dag-arrayp dag-array-name
+                              (mv-nth 2 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))
+                              (mv-nth 3 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
   :hints (("Goal" :in-theory (enable make-terms-into-dag-array-basic))))

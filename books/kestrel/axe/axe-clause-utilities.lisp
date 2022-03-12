@@ -101,7 +101,7 @@
   :hints (("Goal" :in-theory (enable handle-constant-disjuncts))))
 
 (defthm nat-listp-of-mv-nth-1-of-handle-constant-disjuncts
-  (implies (and (all-dargp-less-than disjuncts bound)
+  (implies (and (all-dargp disjuncts)
                 (nat-listp acc))
            (nat-listp (mv-nth 1 (handle-constant-disjuncts disjuncts acc))))
   :hints (("Goal" :in-theory (enable handle-constant-disjuncts))))
