@@ -1595,7 +1595,7 @@
                                       (if (not (all-consp args)) ;; test for args being quoted constants
                                           ;; not a ground term:
                                           (mv (erp-nil) nil nil)
-                                        ;; ground term, so try to evaluate:
+                                        ;; ground term, so try to evaluate (may fail, but we may have a constant opener rule to apply later):
                                         (b* (((mv erp val)
                                               (,apply-axe-evaluator-to-quoted-args-name fn args interpreted-function-alist)))
                                           (if erp

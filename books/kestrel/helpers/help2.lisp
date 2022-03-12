@@ -37,6 +37,36 @@
 
 (local (in-theory (disable natp)))
 
+;;;
+;;; Library stuff
+;;;
+
+;dup?
+(defun append-all (xs)
+  (declare (xargs :guard (true-list-listp xs)))
+  (if (endp xs)
+      nil
+    (append (first xs) (append-all (rest xs)))))
+
+;dup?
+(defun lookup-all (keys alist)
+  (declare (xargs :guard (and (symbol-listp keys)
+                              (alistp alist))))
+  (if (endp keys)
+      nil
+    (cons (cdr (assoc-eq (first keys) alist))
+          (lookup-all (rest keys) alist))))
+
+(defun all-keys-boundp (keys alist)
+  (if (endp keys)
+      t
+    (and (assoc-eq (first keys) alist)
+         (all-keys-boundp (rest keys) alist))))
+
+;;;
+;;; End of library stuff
+;;;
+
 ;; A proof technique, such as (:direct), or (:induct f).
 (defund techniquep (x)
   (declare (xargs :guard t))
@@ -172,7 +202,7 @@
     (and (pending-problemp (first probs))
          (pending-problem-listp (rest probs)))))
 
-;; A problem we've not yet triaged for techniques
+;; A problem that we've not yet analyzed to determine which techniques may apply.
 (std::defaggregate raw-problem
                    ((name problem-namep) ; name for the formula being to be prove (not the problem = formula + technique)
                     ;; (technique techniquep)
@@ -224,6 +254,29 @@
       nil
     (cons (clause-to-implication (first clauses))
           (clauses-to-implications (rest clauses)))))
+
+(defun filter-rec-fns (fns wrld)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (plist-worldp wrld))))
+  (if (endp fns)
+      nil
+    (let ((fn (first fns)))
+      (if (recursivep fn nil wrld)
+          (cons fn (filter-rec-fns (rest fns) wrld))
+        (filter-rec-fns (rest fns) wrld)))))
+
+(defconst *fns-not-worth-enabling*
+  (append '(implies not) ; don't bother trying to enable these simple functions
+          ;; Can't enable these since they are primitives:
+          (strip-cars *primitive-formals-and-guards*)))
+
+;; Get the techniques from the PROBS
+(defun map-open-problem->technique (probs)
+  (if (endp probs)
+      nil
+    (cons (open-problem->technique (first probs))
+          (map-open-problem->technique (rest probs)))))
+
 
 ;; Same return type as attack-open-problem.
 (defund attack-induct-problem (prob step-limit name-map state)
@@ -388,26 +441,7 @@
                             old-techniques)
               (make-enable-problems (rest items) name formula benefit old-techniques wrld))))))
 
-(defun filter-rec-fns (fns wrld)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (plist-worldp wrld))))
-  (if (endp fns)
-      nil
-    (let ((fn (first fns)))
-      (if (recursivep fn nil wrld)
-          (cons fn (filter-rec-fns (rest fns) wrld))
-        (filter-rec-fns (rest fns) wrld)))))
-
-(defconst *fns-not-worth-enabling*
-  (append '(implies)
-          (strip-cars *primitive-formals-and-guards*)))
-
-(defun map-open-problem->technique (probs)
-  (if (endp probs)
-      nil
-    (cons (open-problem->technique (first probs))
-          (map-open-problem->technique (rest probs)))))
-
+;; Given a raw-problem, analyze it to determine which proof techniques might apply.
 ;; Returns a list of open problems.
 (defun elaborate-raw-problem (prob wrld)
   (declare (xargs :guard (and (raw-problemp prob)
@@ -423,14 +457,20 @@
        (fns (all-fnnames formula))
        (rec-fns (filter-rec-fns fns wrld))
        (non-rec-fns (set-difference-eq fns rec-fns))
+       ;; start with an empty list of problems:
+       (probs nil)
+       ;; todo: :direct
+       ;; Add :enable problems:
        (items-to-consider-enabling (append (set-difference-eq non-rec-fns *fns-not-worth-enabling*)
                                            ;; here we try enabling just the :definition of the recursive functions,
                                            ;; because elsewhere we try induction with them:
                                            (wrap-all :definition rec-fns)))
+       (probs (append (make-enable-problems items-to-consider-enabling name formula benefit old-techniques wrld)
+                      probs))
+       ;; Add :induct problems:
        (probs (append (make-induct-problems subterms name formula benefit old-techniques wrld)
-                      (make-enable-problems items-to-consider-enabling name formula benefit old-techniques wrld)
-                      ;; todo: :direct, :enable, etc.
-                      ))
+                      probs))
+
        (- (cw "Created ~x0 problems using these techniques:~%~x1.)~%" (len probs) (map-open-problem->technique probs))))
     probs))
 
@@ -444,27 +484,6 @@
     (append (elaborate-raw-problem (first probs) wrld)
             (elaborate-raw-problems (rest probs) wrld))))
 
-;dup?
-(defun append-all (xs)
-  (declare (xargs :guard (true-list-listp xs)))
-  (if (endp xs)
-      nil
-    (append (first xs) (append-all (rest xs)))))
-
-;dup?
-(defun lookup-all (keys alist)
-  (declare (xargs :guard (and (symbol-listp keys)
-                              (alistp alist))))
-  (if (endp keys)
-      nil
-    (cons (cdr (assoc-eq (first keys) alist))
-          (lookup-all (rest keys) alist))))
-
-(defun all-keys-boundp (keys alist)
-  (if (endp keys)
-      t
-    (and (assoc-eq (first keys) alist)
-         (all-keys-boundp (rest keys) alist))))
 
 ;; Returns (mv changep pending-probs done-map).
 ;; todo: optimize by building some indices?
@@ -575,32 +594,33 @@
       (choose-best-problem (rest open-probs) (first open-probs) (problem-goodness (first open-probs))))))
 
 ;; Returns (mv erp provedp proof-events state).
-;todo: think about raising step limits
-(defun help2-loop (open-probs
-                   pending-probs
-                   step-limit
-                   name-map ; alist from problem names to goals
-                   done-map ; alist from problem names to successful event sequences (ending in a proof of the goal corresponding to that name)
-                   top-name
-                   state)
+(defun repeatedly-attack-problems (open-probs
+                                   pending-probs
+                                   step-limit
+                                   name-map ; alist from problem names to goals
+                                   done-map ; alist from problem names to successful event sequences (ending in a proof of the goal corresponding to that name)
+                                   top-name
+                                   state)
   (declare (xargs :mode :program
                   :stobjs state))
-  (b* (;(- (cw "Loop iter.~%"))
+  (b* ( ;(- (cw "Loop iter.~%"))
        ((when (not open-probs))
         (cw "NO PROBLEMS LEFT! FAILING.")
         (mv t nil nil state))
        (res (choose-next-problem open-probs step-limit))
-       ((when (not res))
-        (er hard? 'help2-loop "No open problems.  Proof attempt failed.")
+       ((when (not res)) ; can this happen?
+        (er hard? 'repeatedly-attack-problems "No open problems.  Proof attempt failed.")
         (mv t nil nil state))
+       ;; We've reached the current step limit for all problems left, so raise
+       ;; the limit and try again:
        ((when (eq :step-limited res))
-        (help2-loop open-probs
-                    pending-probs
-                    (* 2 step-limit)
-                    name-map
-                    done-map
-                    top-name
-                    state))
+        (repeatedly-attack-problems open-probs
+                                    pending-probs
+                                    (* 2 step-limit)
+                                    name-map
+                                    done-map
+                                    top-name
+                                    state))
        (prob res)
        ;; Found a problem to attack:
        ((mv erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state)
@@ -616,34 +636,34 @@
                 ;; We've proved the top-level goal!
                 (mv nil t (cdr res) state)
               ;; Didn't prove the top-level goal yet:
-              (help2-loop (remove-equal prob open-probs) ;this problem is done
-                          pending-probs
-                          step-limit
-                          name-map ; alist from problem names to goals
-                          done-map ; alist from problem names to successful event sequences (ending in a proof of the goal corresponding to that name)
-                          top-name
-                          state))))
-        (if (eq :updated res)
-            (help2-loop (cons updated-open-problem (remove-equal prob open-probs))
-                        pending-probs
-                        step-limit
-                        name-map
-                        done-map
-                        top-name
-                        state)
-          (if (eq :split res)
-              (let ((new-open-probs (elaborate-raw-problems raw-subproblems (w state)))) ; make open problems for all the ways of solving each raw-subproblem
-                (help2-loop (append new-open-probs (remove-equal prob open-probs))
-                            (cons new-pending-problem pending-probs)
-                            step-limit
-                            name-map
-                            done-map
-                            top-name
-                            state))
-            (prog2$ (er hard? "Unknown result: ~x0." res)
-                    (mv t nil nil state)))))))
+              (repeatedly-attack-problems (remove-equal prob open-probs) ;this problem is done
+                                          pending-probs
+                                          step-limit
+                                          name-map ; alist from problem names to goals
+                                          done-map ; alist from problem names to successful event sequences (ending in a proof of the goal corresponding to that name)
+                                          top-name
+                                          state))))
+      (if (eq :updated res)
+          (repeatedly-attack-problems (cons updated-open-problem (remove-equal prob open-probs))
+                                      pending-probs
+                                      step-limit
+                                      name-map
+                                      done-map
+                                      top-name
+                                      state)
+        (if (eq :split res)
+            (let ((new-open-probs (elaborate-raw-problems raw-subproblems (w state)))) ; make open problems for all the ways of solving each raw-subproblem
+              (repeatedly-attack-problems (append new-open-probs (remove-equal prob open-probs))
+                                          (cons new-pending-problem pending-probs)
+                                          step-limit
+                                          name-map
+                                          done-map
+                                          top-name
+                                          state))
+          (prog2$ (er hard? "Unknown result: ~x0." res)
+                  (mv t nil nil state)))))))
 
-;; Returns (mv erp event state)
+;; Returns (mv erp event state).
 (defun help2-fn (state)
   (declare (xargs :mode :program
                   :stobjs state))
@@ -663,7 +683,7 @@
        (raw-prob (raw-problem name body 1000 nil))
        (open-probs (elaborate-raw-problem raw-prob (w state)))
        ((mv erp provedp proof-events state)
-        (help2-loop open-probs
+        (repeatedly-attack-problems open-probs
                     nil
                     10000
                     (acons name body nil) ; initial name-map

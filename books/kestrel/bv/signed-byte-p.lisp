@@ -33,11 +33,13 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
 
-(defthm sbp-32-of-one-more
-  (implies (and (signed-byte-p 32 x)
+;; As long as x is smaller than some signed-byte, adding 1 can't overflow.
+(defthm signed-byte-p-of-+-of-1
+  (implies (and (signed-byte-p size x)
                 (< x free)
-                (signed-byte-p 32 free))
-           (signed-byte-p 32 (+ 1 x)))
+                (signed-byte-p size free)
+                (posp size))
+           (signed-byte-p size (+ 1 x)))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
 
 (defthm signed-byte-p-when-signed-byte-p
