@@ -647,11 +647,40 @@
                     (statement-kind old)))
     :expand (statement-renamevar old new ren))
 
+  (defruled block-option-renamevar-of-nil-1-forward
+    (implies (not (resulterrp (block-option-renamevar nil block ren)))
+             (equal block nil))
+    :rule-classes ((:forward-chaining
+                    :trigger-terms
+                    ((resulterrp (block-option-renamevar nil block ren))))))
+
+  (defruled block-option-renamevar-of-nil-2-forward
+    (implies (not (resulterrp (block-option-renamevar block nil ren)))
+             (equal block nil))
+    :rule-classes ((:forward-chaining
+                    :trigger-terms
+                    ((resulterrp (block-option-renamevar block nil ren))))))
+
+  (defruled block-option-renamevar-when-nonnil
+    (implies (and x y)
+             (equal (block-option-renamevar x y ren)
+                    (block-renamevar x y ren)))
+    :expand (block-option-renamevar x y ren)
+    :enable block-option-some->val)
+
   (defruled same-swcase->value-when-swcase-renamevar
     (implies (not (resulterrp (swcase-renamevar old new ren)))
              (equal (swcase->value new)
                     (swcase->value old)))
     :expand (swcase-renamevar old new ren))
+
+  (defruled resulterrp-of-swcase-renamevar
+    (equal (resulterrp (swcase-renamevar x y ren))
+           (or (not (equal (swcase->value x)
+                           (swcase->value y)))
+               (resulterrp (block-renamevar (swcase->body x)
+                                            (swcase->body y)
+                                            ren)))))
 
   (defruled same-swcase-list->value-list-when-swcase-list-renamevar
     (implies (not (resulterrp (swcase-list-renamevar old new ren)))
