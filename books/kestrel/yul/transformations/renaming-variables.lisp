@@ -324,7 +324,20 @@
                                     (set::insert new-var (renaming-new ren)))))))
     :enable (renaming-old
              renaming-new
-             mergesort)))
+             mergesort))
+
+  (defruled var-renamevar-when-add-var-to-var-renaming
+    (b* ((ren1 (add-var-to-var-renaming old new ren)))
+      (implies (not (resulterrp ren1))
+               (not (resulterrp (var-renamevar old new ren1)))))
+    :enable var-renamevar)
+
+  (defruled var-renamevar-of-add-var-to-var-renaming-when-var-renamevar
+    (b* ((ren1 (add-var-to-var-renaming old1 new1 ren)))
+      (implies (and (not (resulterrp ren1))
+                    (not (resulterrp (var-renamevar old new ren))))
+               (not (resulterrp (var-renamevar old new ren1)))))
+    :enable var-renamevar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -352,7 +365,22 @@
     (b* ((ren1 (add-vars-to-var-renaming old new ren)))
       (implies (not (resulterrp ren1))
                (subsetp-equal (renaming->list ren)
-                              (renaming->list ren1))))))
+                              (renaming->list ren1)))))
+
+  (defruled var-renamevar-of-add-vars-to-var-renaming-when-var-renamevar
+    (b* ((ren1 (add-vars-to-var-renaming old1 new1 ren)))
+      (implies (and (not (resulterrp ren1))
+                    (not (resulterrp (var-renamevar old new ren))))
+               (not (resulterrp (var-renamevar old new ren1)))))
+    :enable var-renamevar-of-add-var-to-var-renaming-when-var-renamevar)
+
+  (defruled var-list-renamevar-when-add-vars-to-var-renaming
+    (b* ((ren1 (add-vars-to-var-renaming old new ren)))
+      (implies (not (resulterrp ren1))
+               (not (resulterrp (var-list-renamevar old new ren1)))))
+    :enable (var-list-renamevar
+             var-renamevar-of-add-vars-to-var-renaming-when-var-renamevar
+             var-renamevar-when-add-var-to-var-renaming)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
