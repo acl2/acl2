@@ -43,24 +43,12 @@
                   0))
   :hints (("Goal" :in-theory (enable logext logbitp))))
 
-(defthm logext-bvchop-better
-  (implies (posp n)
-           (equal (logext n (bvchop n i))
-                  (logext n i)))
-  :hints (("Goal" :in-theory (enable logext logapp bvchop-when-i-is-not-an-integer bvchop
-                                     mod-expt-split)
-           :cases ((integerp i)))))
-
-;; (local ;newly local
-;;  (defthm logext-bvchop
-;;    (implies (and (integerp x)
-;;                  (< 0 n)
-;;                  (integerp n))
-;;             (equal (logext n (bvchop n x))
-;;                    (logext n x)))
-;;    :hints (("Goal" ;:cases ((EQUAL N 0))
-;;             :in-theory (enable logext logapp)))))
-
+(defthm logext-of-bvchop-same
+  (implies (posp size)
+           (equal (logext size (bvchop size x))
+                  (logext size x)))
+  :hints (("Goal" :cases ((integerp size))
+           :in-theory (enable logext))))
 
 ;; (thm
 ;;  (IMPLIES (AND (INTEGERP X)
@@ -340,13 +328,6 @@
          (bvchop size x))
   :hints (("Goal" :cases ((integerp size)))))
 
-(defthm logext-of-bvchop-same
-  (implies (posp size)
-           (equal (logext size (bvchop size x))
-                  (logext size x)))
-  :hints (("Goal" :cases ((integerp size))
-           :in-theory (enable logext))))
-
 ;todo: prove without opening up so much stuff
 (defthm equal-of-0-and-bvchop
   (implies (posp n)
@@ -376,7 +357,6 @@
                         (:instance logext-of-bvchop-same
                                    (x x)))
            :in-theory (disable logext-of-bvchop-same expt
-                               LOGEXT-BVCHOP-BETTER
                                logext-of-bvchop-smaller-better))))
 
 (defthm logext-of-minint
@@ -536,7 +516,6 @@
            :in-theory (disable bvchop-of-logext-same
                                logext-of-bvchop-same
                                logext-of-bvchop-smaller-better
-                               logext-bvchop-better
                                bvchop-of-logext))))
 
 (defthm logext-of-+-of-logext-arg1
@@ -678,10 +657,9 @@
                 (posp size))
            (equal (logext size (- (logext size x)))
                   (logext size (- x))))
-  :hints (("Goal" :use ((:instance logext-bvchop-better (i (- x)) (n size))
-                        (:instance logext-bvchop-better (i (- (logext size x))) (n size)))
-           :in-theory (disable logext-bvchop-better
-                               logext-of-bvchop-same
+  :hints (("Goal" :use ((:instance logext-of-bvchop-same (x (- x)))
+                        (:instance logext-of-bvchop-same (x (- (logext size x)))))
+           :in-theory (disable logext-of-bvchop-same
                                logext-of-bvchop-smaller-better
                                logext-of-bvchop-smaller
                                logext-when-signed-byte-p
