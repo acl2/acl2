@@ -18,7 +18,6 @@
 (include-book "bvcat")
 (include-book "sbvrem")
 (include-book "sbvrem-rules")
-(include-book "logext")
 (include-book "unsigned-byte-p-forced")
 (local (include-book "rules")) ; reduce?
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
