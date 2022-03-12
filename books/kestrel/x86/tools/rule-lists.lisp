@@ -866,7 +866,7 @@
             acl2::bvchop-identity
 ;            combine-bytes-and-byte-ify
             x86isa::open-ash-positive-constants
-            acl2::logext-bvchop-better
+            acl2::logext-of-bvchop-same
             acl2::logext-identity
             ;x86isa::rgfi-is-i64p ;targets signed-byte-of-xr
 ;            x86isa::xw-xr-same
