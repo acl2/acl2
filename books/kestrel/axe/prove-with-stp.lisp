@@ -180,6 +180,16 @@
     (mv nil ;no hyps
         term)))
 
+(defthm pseudo-term-listp-of-mv-nth-0-of-term-hyps-and-conc
+  (implies (pseudo-termp term)
+           (pseudo-term-listp (mv-nth 0 (term-hyps-and-conc term))))
+  :hints (("Goal" :in-theory (enable term-hyps-and-conc))))
+
+(defthm pseudo-termp-of-mv-nth-1-of-term-hyps-and-conc
+  (implies (pseudo-termp term)
+           (pseudo-termp (mv-nth 1 (term-hyps-and-conc term))))
+  :hints (("Goal" :in-theory (enable term-hyps-and-conc))))
+
 (defthm plus-of-half-and-half
   (implies (acl2-numberp x)
            (equal (+ (* 1/2 x) (* 1/2 x))
@@ -2343,11 +2353,11 @@
 ;todo: deprecate in favor of a version that just takes a single term (note that we may need to look into the boolean structure of the term to get assumptions that tell us the types of things?)
 (defun prove-clause-with-stp (clause counterexamplep max-conflicts print base-filename state)
   (declare (xargs :stobjs state
-                  :verify-guards nil ;todo: need properties of MAKE-TERMS-INTO-DAG-ARRAY, etc
                   :guard (and (pseudo-term-listp clause)
                               (booleanp counterexamplep)
                               (or (null max-conflicts)
-                                  (natp max-conflicts)))))
+                                  (natp max-conflicts))
+                              (stringp base-filename))))
   (b* ( ;; Check for bad input (todo: drop this check?):
        ((when (not (pseudo-term-listp clause)))
         (er hard 'prove-clause-with-stp "Some disjunct in the clause is not a pseudo-term: ~x0." clause)
@@ -2383,12 +2393,12 @@
 ;; is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>)..
 (defund prove-implication-with-stp (conc hyps counterexamplep max-conflicts print base-filename state)
   (declare (xargs :stobjs state
-                  :verify-guards nil ;todo: verify-guards for subfunctions first
                   :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
                               (booleanp counterexamplep)
                               (or (null max-conflicts)
-                                  (natp max-conflicts)))))
+                                  (natp max-conflicts))
+                              (stringp base-filename))))
   (b* ((negated-hyps (wrap-all 'not hyps)) ;inefficient - also could remove double negation?
        (clause (cons conc negated-hyps)))
     (prove-clause-with-stp clause
@@ -2420,7 +2430,6 @@
  ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 (defun prove-term-with-stp (term counterexamplep max-conflicts print base-filename state)
   (declare (xargs :stobjs state
-                  :verify-guards nil ;todo: verify-guards for subfunctions first
                   :guard (and (pseudo-termp term)
                               (booleanp counterexamplep)
                               (or (null max-conflicts)
