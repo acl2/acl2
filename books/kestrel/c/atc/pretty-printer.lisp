@@ -1169,7 +1169,8 @@
   :short "Pretty-print an external declaration."
   (ext-declon-case ext
                    :fundef (pprint-fundef ext.get options)
-                   :declon (pprint-declon ext.get 0 options)))
+                   :obj-declon (pprint-obj-declon ext.get 0 options)
+                   :tag-declon (pprint-tag-declon ext.get 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

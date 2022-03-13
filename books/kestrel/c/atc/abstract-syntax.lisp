@@ -1046,8 +1046,14 @@
 
 (fty::deftagsum ext-declon
   :short "Fixtype of external declarations [C:6.9]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We support declarations for objects
+     and tags (i.e. structure, union, and enumeration types."))
   (:fundef ((get fundef)))
-  (:declon ((get declon)))
+  (:obj-declon ((get obj-declon)))
+  (:tag-declon ((get tag-declon)))
   :pred ext-declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1081,9 +1087,10 @@
   (b* (((when (endp exts)) nil)
        (ext (car exts)))
     (ext-declon-case ext
-                   :fundef (cons (ext-declon-fundef->get ext)
-                                 (ext-declon-list->fundef-list (cdr exts)))
-                   :declon (ext-declon-list->fundef-list (cdr exts))))
+                     :fundef (cons (ext-declon-fundef->get ext)
+                                   (ext-declon-list->fundef-list (cdr exts)))
+                     :obj-declon (ext-declon-list->fundef-list (cdr exts))
+                     :tag-declon (ext-declon-list->fundef-list (cdr exts))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

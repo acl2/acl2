@@ -1411,7 +1411,10 @@
   (ext-declon-case
    ext
    :fundef (check-fundef ext.get funtab)
-   :declon (error (list :top-level-declaraion-not-supported ext.get)))
+   :obj-declon (error
+                (list :file-level-object-declaraion-not-supported ext.get))
+   :tag-declon (error
+                (list :file-level-tag-declaration-not-supported ext.get)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
