@@ -843,6 +843,12 @@
      We could easily make the initializer optional for greater generality,
      but currently ATC always generates initializers.")
    (xdoc::p
+    "For now we model
+     no storage class specifiers
+     no type qualifiers,
+     no function specifiers,
+     and no alignment specifiers.")
+   (xdoc::p
     "An object declaration as defined here is like
      a parameter declaration (as defined in our abstract syntax)
      with an initializer."))
@@ -851,43 +857,6 @@
    (init expr))
   :tag :obj-declon
   :pred obj-declonp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum declon
-  :short "Fixtype of declarations [C:6.7]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Declarations are perhaps the most complex part of the C syntax.
-     For now we capture only a very limited form of declarations,
-     namely:")
-   (xdoc::ul
-    (xdoc::li
-     "The ones consisting of
-      a type specifier sequence from @(tsee tyspecseq),
-      no storage class specifiers,
-      no type qualifiers,
-      no function specifiers,
-      no alignment specifiers,
-      and a single declarator (see @(tsee obj-declor))
-      with an initializer expression.
-      These declare variables.")
-    (xdoc::li
-     "The ones consisting of
-      a single structure type specifier consisting of the tag identifier
-      and a list of structure declarations from @(tsee struct-declon).
-      These declare structure types."))
-   (xdoc::p
-    "We will support richer forms of declarations when needed.")
-   (xdoc::p
-    "We do not support static assertions for now."))
-  (:var ((type tyspecseq)
-         (declor obj-declor)
-         (init expr)))
-  (:struct ((tag ident)
-            (members struct-declon-list)))
-  :pred declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

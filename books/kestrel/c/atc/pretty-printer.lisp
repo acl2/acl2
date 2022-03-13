@@ -980,28 +980,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-declon ((declon declonp) (level natp) (options pprint-options-p))
-  :returns (lines msg-listp)
-  :short "Pretty-print a declaration."
-  (declon-case
-   declon
-   :var
-   (list (pprint-line (msg "~@0 ~@1 = ~@2;"
-                           (pprint-tyspecseq declon.type)
-                           (pprint-obj-declor declon.declor)
-                           (pprint-expr declon.init (expr-grade-top) options))
-                      (lnfix level)))
-   :struct
-   (append (list (pprint-line (msg "struct ~@0 {"
-                                   (pprint-ident declon.tag))
-                              (lnfix level)))
-           (pprint-struct-declon-list declon.members (1+ (lnfix level)))
-           (list (pprint-line "}"
-                              (lnfix level)))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define pprint-label ((lab labelp))
   :returns (part msgp)
   :short "Pretty-print a label."
