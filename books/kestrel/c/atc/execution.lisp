@@ -1516,8 +1516,7 @@
        (formal (car formals))
        (actual (car actuals))
        (declor (param-declon->declor formal))
-       (name (obj-declor-to-ident declor))
-       (adeclor (obj-declor-to-adeclor declor))
+       ((mv name adeclor) (obj-declor-to-ident-and-adeclor declor))
        (formal-type (type-name-to-type
                      (make-tyname :tyspec (param-declon->tyspec formal)
                                   :declor adeclor)))
@@ -1966,8 +1965,7 @@
             ((when (not init))
              (mv (error (list :void-initializer (block-item-fix item)))
                  compst))
-            (var (obj-declor-to-ident declor))
-            (adeclor (obj-declor-to-adeclor declor))
+            ((mv var adeclor) (obj-declor-to-ident-and-adeclor declor))
             (type (type-name-to-type
                    (make-tyname :tyspec tyspec
                                 :declor adeclor)))

@@ -96,27 +96,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define obj-declor-to-adeclor ((declor obj-declorp))
-  :returns (adeclor obj-adeclorp)
-  :short "Abstract an object declarator."
+(define obj-declor-to-ident-and-adeclor ((declor obj-declorp))
+  :returns (mv (id identp) (adeclor obj-adeclorp))
+  :short "Decompose an object declarator into
+          an identifier and an abstract object declarator."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in @(tsee obj-adeclor),
-     the abstraction amoung to removing the identifier."))
+    "This abstracts an object declarator to an abstract one,
+     by removing the identifier and also returning it.
+     See @(tsee obj-adeclor)."))
   (obj-declor-case declor
-                   :ident (obj-adeclor-none)
-                   :pointer (obj-adeclor-pointer))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define obj-declor-to-ident ((declor obj-declorp))
-  :returns (id identp)
-  :short "Identifier of an object declarator."
-  (obj-declor-case declor
-                   :ident declor.get
-                   :pointer declor.get)
+                   :ident (mv declor.get (obj-adeclor-none))
+                   :pointer (mv declor.get (obj-adeclor-pointer)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -128,8 +120,10 @@
   (xdoc::topstring
    (xdoc::p
     "This is obtained by removing the identifier."))
-  (make-tyname :tyspec (param-declon->tyspec param)
-               :declor (obj-declor-to-adeclor (param-declon->declor param)))
+  (b* (((mv & adeclor) (obj-declor-to-ident-and-adeclor
+                        (param-declon->declor param))))
+    (make-tyname :tyspec (param-declon->tyspec param)
+                 :declor adeclor))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

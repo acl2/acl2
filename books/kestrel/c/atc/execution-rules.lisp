@@ -2151,8 +2151,9 @@
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
                   (equal declor (obj-declon->declor declon))
-                  (equal var (obj-declor-to-ident declor))
-                  (equal adeclor (obj-declor-to-adeclor declor))
+                  (equal var+adeclor (obj-declor-to-ident-and-adeclor declor))
+                  (equal var (mv-nth 0 var+adeclor))
+                  (equal adeclor (mv-nth 1 var+adeclor))
                   (equal (type-of-value val)
                          (type-name-to-type
                           (make-tyname :tyspec (obj-declon->tyspec declon)
@@ -2183,8 +2184,7 @@
       (:e obj-declon->tyspec)
       (:e obj-declon->declor)
       (:e obj-declon->init)
-      (:e obj-declor-to-ident)
-      (:e obj-declor-to-adeclor))))
+      (:e obj-declor-to-ident-and-adeclor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2243,8 +2243,9 @@
                   (param-declonp formal)
                   (equal declor (param-declon->declor formal))
                   (valuep val)
-                  (equal var (obj-declor-to-ident declor))
-                  (equal adeclor (obj-declor-to-adeclor declor))
+                  (equal var+adeclor (obj-declor-to-ident-and-adeclor declor))
+                  (equal var (mv-nth 0 var+adeclor))
+                  (equal adeclor (mv-nth 1 var+adeclor))
                   (equal (type-of-value val)
                          (type-name-to-type
                           (make-tyname :tyspec (param-declon->tyspec formal)
@@ -2265,5 +2266,4 @@
       (:e param-declonp)
       (:e param-declon->tyspec)
       (:e param-declon->declor)
-      (:e obj-declor-to-ident)
-      (:e obj-declor-to-adeclor))))
+      (:e obj-declor-to-ident-and-adeclor))))
