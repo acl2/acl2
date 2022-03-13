@@ -527,7 +527,15 @@
      (i) a direct declarator consisting of a single identifier; and
      (ii) a direct declarator consisting of a single identifier
      preceded by a single pointer (i.e. @('*')).
-     This will be generalized eventually."))
+     This will be generalized eventually.")
+   (xdoc::p
+    "We plan to extend this to support
+     combinations of pointer and array declarators,
+     but not of function declarators.
+     This is because the latter serve for objects involving function pointers,
+     but supporting those does not seem likely in ATC,
+     given that ACL2 is first-order,
+     and thus cannot readily represent C function pointers."))
   (:ident ((get ident)))
   (:pointer ((get ident)))
   :pred obj-declorp)
