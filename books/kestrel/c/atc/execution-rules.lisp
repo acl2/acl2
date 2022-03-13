@@ -2249,7 +2249,7 @@
                   (equal adeclor (obj-declor-to-adeclor declor))
                   (equal (type-of-value val)
                          (type-name-to-type
-                          (make-tyname :tyspec (param-declon->type formal)
+                          (make-tyname :tyspec (param-declon->tyspec formal)
                                        :declor adeclor)))
                   (value-listp vals)
                   (equal scope (init-scope (cdr formals) vals))
@@ -2265,7 +2265,7 @@
       eq
       (:e init-scope)
       (:e param-declonp)
-      (:e param-declon->type)
+      (:e param-declon->tyspec)
       (:e param-declon->declor)
       (:e obj-declor-to-ident)
       (:e obj-declor-to-adeclor))))

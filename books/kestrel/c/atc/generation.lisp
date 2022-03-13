@@ -3521,7 +3521,7 @@
                :declor (if pointerp
                            (obj-declor-pointer (make-ident :name name))
                          (obj-declor-ident (make-ident :name name)))
-               :type (atc-gen-tyspecseq ref-type)))
+               :tyspec (atc-gen-tyspecseq ref-type)))
        ((er params)
         (atc-gen-param-declon-list (cdr typed-formals) fn ctx state)))
     (acl2::value (cons param params)))

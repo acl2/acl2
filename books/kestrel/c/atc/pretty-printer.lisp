@@ -949,7 +949,7 @@
   :short "Pretty-print a parameter declaration."
   (b* (((param-declon param) param))
     (msg "~@0 ~@1"
-         (pprint-tyspecseq param.type)
+         (pprint-tyspecseq param.tyspec)
          (pprint-obj-declor param.declor)))
   :hooks (:fix))
 
@@ -961,6 +961,21 @@
   (cond ((endp params) nil)
         (t (cons (pprint-param-declon (car params))
                  (pprint-param-declon-list (cdr params)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-obj-declon ((declon obj-declonp)
+                           (level natp)
+                           (options pprint-options-p))
+  :returns (lines msg-listp)
+  :short "Pretty-print an object declaration."
+  (b* (((obj-declon declon) declon))
+    (list (pprint-line (msg "~@0 ~@1 = ~@2;"
+                            (pprint-tyspecseq declon.tyspec)
+                            (pprint-obj-declor declon.declor)
+                            (pprint-expr declon.init (expr-grade-top) options))
+                       (lnfix level))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

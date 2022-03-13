@@ -1316,14 +1316,14 @@
      because parameters must have complete types [C:6.7.6.3/4],
      but @('void') is incomplete [C:6.2.5/19]."))
   (b* (((param-declon param) param)
-       ((when (tyspecseq-case param.type :void))
+       ((when (tyspecseq-case param.tyspec :void))
         (error (list :param-error-void (param-declon-fix param))))
        (var (obj-declor-to-ident param.declor))
        (adeclor (obj-declor-to-adeclor param.declor))
        (wf (check-ident var))
        ((when (errorp wf)) (error (list :param-error wf))))
     (var-table-add-var var
-                       (type-name-to-type (make-tyname :tyspec param.type
+                       (type-name-to-type (make-tyname :tyspec param.tyspec
                                                        :declor adeclor))
                        vartab))
   :hooks (:fix))

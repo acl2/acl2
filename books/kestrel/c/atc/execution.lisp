@@ -1519,7 +1519,7 @@
        (name (obj-declor-to-ident declor))
        (adeclor (obj-declor-to-adeclor declor))
        (formal-type (type-name-to-type
-                     (make-tyname :tyspec (param-declon->type formal)
+                     (make-tyname :tyspec (param-declon->tyspec formal)
                                   :declor adeclor)))
        (actual-type (type-of-value actual))
        ((unless (equal formal-type actual-type))

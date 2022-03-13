@@ -793,7 +793,7 @@
      type specifier sequences and object declarators.
      This also implies that we only use named function parameters
      (i.e. no abstract declarators)."))
-  ((type tyspecseq)
+  ((tyspec tyspecseq)
    (declor obj-declor))
   :tag :param-declon
   :pred param-declonp)
@@ -815,6 +815,34 @@
   (with-guard-checking :none (ec-call (param-declon-fix :irrelevant)))
   ///
   (in-theory (disable (:e irr-param-declon))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod obj-declon
+  :short "Fixtype of object declarations [C:6.7]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are declarations for objects.
+     [C] does not have a separate syntactic category for them,
+     but in our abstract syntax it is useful
+     to differentiate them from other kinds of declarators.")
+   (xdoc::p
+    "For now we define an object declaration as consisting of
+     a type specification sequence,
+     an object declarator,
+     and an initializing expression.
+     We could easily make the initializer optional for greater generality,
+     but currently ATC always generates initializers.")
+   (xdoc::p
+    "An object declaration as defined here is like
+     a parameter declaration (as defined in our abstract syntax)
+     with an initializer."))
+  ((tyspec tyspecseq)
+   (declor obj-declor)
+   (init expr))
+  :tag :obj-declon
+  :pred obj-declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

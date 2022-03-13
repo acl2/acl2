@@ -128,7 +128,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is obtained by removing the identifier."))
-  (make-tyname :tyspec (param-declon->type param)
+  (make-tyname :tyspec (param-declon->tyspec param)
                :declor (obj-declor-to-adeclor (param-declon->declor param)))
   :hooks (:fix))
 
