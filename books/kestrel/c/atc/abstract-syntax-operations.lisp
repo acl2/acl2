@@ -113,24 +113,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-declon->tyname ((param param-declonp))
-  :returns (tyname tynamep)
-  :short "Turn a parameter declaration into the corresponding type name."
+(define param-declon-to-ident-and-tyname ((declon param-declonp))
+  :returns (mv (id identp) (tyname tynamep))
+  :short "Decompose a parameter declaration into an identifier and a type name."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is obtained by removing the identifier."))
-  (b* (((mv & adeclor) (obj-declor-to-ident-and-adeclor
-                        (param-declon->declor param))))
-    (make-tyname :tyspec (param-declon->tyspec param)
-                 :declor adeclor))
+    "We remove the identifier from the declarator,
+     obtaining an abstract declarator,
+     which we combine with the type specifier sequence
+     to obtain a type name,
+     which we return along with the identifier.
+     In essence, we turn a parameter declaration into its name and type,
+     which are somewhat mixed in the C syntax."))
+  (b* (((param-declon declon) declon)
+       ((mv id adeclor) (obj-declor-to-ident-and-adeclor declon.declor)))
+    (mv id (make-tyname :tyspec declon.tyspec :declor adeclor)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection param-declon-list->tyname-list ((x param-declon-listp))
-  :result-type tyname-listp
-  :short "Lift @(tsee param-declon->tyname) to lists."
-  (param-declon->tyname x)
+(define param-declon-list-to-ident-list-and-tyname-list
+  ((declons param-declon-listp))
+  :returns (mv (ids ident-listp) (tynames tyname-listp))
+  :short "Lift @(tsee param-declon-to-ident-and-tyname) to lists."
+  (b* (((when (endp declons)) (mv nil nil))
+       ((mv id tyname) (param-declon-to-ident-and-tyname (car declons)))
+       ((mv ids tynames) (param-declon-list-to-ident-list-and-tyname-list
+                          (cdr declons))))
+    (mv (cons id ids) (cons tyname tynames)))
+  :hooks (:fix)
   ///
-  (fty::deffixequiv param-declon-list->tyname-list))
+
+  (defret len-of-param-declon-list-to-ident-list-and-tyname-list.ids
+    (equal (len ids)
+           (len declons)))
+
+  (defret len-of-param-declon-list-to-ident-list-and-tyname-list.tynames
+    (equal (len tynames)
+           (len declons))))

@@ -1375,8 +1375,9 @@
      the function definitions in the translation unit in order,
      we extend the function table."))
   (b* (((fundef fundef) fundef)
-       (in-types (type-name-list-to-type-list
-                  (param-declon-list->tyname-list fundef.params)))
+       ((mv & tynames)
+        (param-declon-list-to-ident-list-and-tyname-list fundef.params))
+       (in-types (type-name-list-to-type-list tynames))
        (out-type (type-name-to-type (make-tyname :tyspec fundef.result
                                                  :declor (obj-adeclor-none))))
        (ftype (make-fun-type :inputs in-types :output out-type))
