@@ -781,6 +781,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod param-declon
+  :short "Fixtype of parameter declarations [C:6.7.6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used as part of function declarators,
+     to specify the parameters of a function.")
+   (xdoc::p
+    "We only support parameter declarations consisting of
+     type specifier sequences and object declarators.
+     This also implies that we only use named function parameters
+     (i.e. no abstract declarators)."))
+  ((type tyspecseq)
+   (declor obj-declor))
+  :tag :param-declon
+  :pred param-declonp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist param-declon-list
+  :short "Fixtype of lists of parameter declarations."
+  :elt-type param-declon
+  :true-listp t
+  :elementp-of-nil nil
+  :pred param-declon-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-param-declon ()
+  :returns (param param-declonp)
+  :short "An irrelevant parameter declaration, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (param-declon-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-param-declon))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum declon
   :short "Fixtype of declarations [C:6.7]."
   :long
@@ -920,43 +957,6 @@
   (with-guard-checking :none (ec-call (stmt-fix :irrelevant)))
   ///
   (in-theory (disable (:e irr-stmt))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod param-declon
-  :short "Fixtype of parameter declarations [C:6.7.6]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "C parameter declarations are a restricted form of
-     (general) declarations in C.")
-   (xdoc::p
-    "For now we capture a very limited form of parameter declarations,
-     namely the ones consisting of
-     a type specifier sequence (see @(tsee tyspecseq))
-     and a declarator (see @(tsee obj-declor))."))
-  ((type tyspecseq)
-   (declor obj-declor))
-  :tag :param-declon
-  :pred param-declonp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist param-declon-list
-  :short "Fixtype of lists of parameter declarations."
-  :elt-type param-declon
-  :true-listp t
-  :elementp-of-nil nil
-  :pred param-declon-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define irr-param-declon ()
-  :returns (param param-declonp)
-  :short "An irrelevant parameter declaration, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (param-declon-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-param-declon))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
