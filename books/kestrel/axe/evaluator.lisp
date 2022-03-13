@@ -312,32 +312,6 @@
 ;;          (bvsx new-size old-size val))
 ;;   :hints (("Goal" :in-theory (enable bvsx bvsx-unguarded))))
 
-
-(defund char-code-unguarded (x)
-  (declare (xargs :guard t))
-  (if (characterp x)
-      (char-code x)
-    0))
-
-(defthm char-code-unguarded-correct
-  (equal (char-code-unguarded x)
-         (char-code x))
-  :hints (("Goal" :in-theory (enable char-code-unguarded))))
-
-(defund code-char-unguarded (x)
-  (declare (xargs :guard t))
-  (if (and (integerp x)
-           (<= 0 x)
-           (< x 256))
-      (code-char x)
-    (code-char 0)))
-
-(defthm code-char-unguarded-correct
-  (equal (code-char-unguarded x)
-         (code-char x))
-  :hints (("Goal" :in-theory (enable code-char-unguarded)
-           :use ((:instance completion-of-code-char)))))
-
 (defund symbol-package-name-unguarded (x)
   (declare (xargs :guard t))
   (if (symbolp x)
@@ -553,7 +527,7 @@
                   (floor floor arg1 arg2)
 ;                  (logext-list logext-list arg1 arg2)
 ;                  (list::memberp list::memberp arg1 arg2)
-                  (member-equal member-equal arg1 arg2)
+                  (member-equal member-equal-unguarded arg1 arg2)
 ;                  (member-eq member-eq arg1 arg2)
                   (g g arg1 arg2) ;unguarded
 ;                  (repeat repeat-unguarded arg1 arg2) ;see repeat-unguarded-correct ; can blow up!

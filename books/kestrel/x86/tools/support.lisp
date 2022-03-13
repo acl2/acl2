@@ -682,29 +682,79 @@
                            (x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
                             x86isa::NOT-MEMBER-P-WHEN-DISJOINT-P)))))
 
+;; Move some of these:
+
+(defthmd split-integer
+  (implies (and (integerp x)
+                (natp size))
+           (equal (+ (acl2::bvchop size x) (* (expt 2 size) (acl2::logtail size x)))
+                  x))
+  :hints (("Goal" :in-theory (enable acl2::bvchop))))
+
+(defthm logtail-when-signed-byte-p-same
+  (implies (signed-byte-p 64 x)
+           (equal (logtail 64 x)
+                  (if (equal 1 (acl2::getbit 63 x))
+                      -1
+                    0))))
+
+(defthm logtail-when-signed-byte-p-one-more
+  (implies (signed-byte-p 64 x)
+           (equal (logtail 63 x)
+                  (if (equal 1 (acl2::getbit 63 x))
+                      -1
+                    0))))
+
+(defthmd bvchop-when-signed-byte-p-one-more-and-negative
+  (implies (and (signed-byte-p 64 x)
+                (equal 1 (acl2::getbit 63 x)))
+           (equal (acl2::bvchop 63 x)
+                  (+ x (expt 2 63))))
+  :hints (("Goal" :use (:instance split-integer
+                                  (size 63)
+                                  (x x))
+           :in-theory (disable acl2::bvcat-equal-rewrite-alt
+                               acl2::bvcat-equal-rewrite))))
+
+(defthmd bvchop-when-signed-byte-p-one-more-and-negative-linear
+  (implies (and (signed-byte-p 64 x)
+                (equal 1 (acl2::getbit 63 x)))
+           (equal (acl2::bvchop 63 x)
+                  (+ x (expt 2 63))))
+  :rule-classes (:linear)
+  :hints (("Goal" :use (:instance split-integer
+                                  (size 63)
+                                  (x x))
+           :in-theory (disable acl2::bvcat-equal-rewrite-alt
+                               acl2::bvcat-equal-rewrite))))
+
 ;this may help that problem where normalizing these constants caused problems
 (defthm <-of-logext-and-bvplus-of-constant
   (implies (and (syntaxp (quotep k))
                 (unsigned-byte-p 64 k)
-                (EQUAL 1 (ACL2::GETBIT 63 K)) ;(>= k (expt 2 63))
+                (equal 1 (acl2::getbit 63 k)) ;(>= k (expt 2 63))
                 (signed-byte-p 64 x))
-           (equal (< x (LOGEXT 64 (ACL2::BVPLUS 64 k x)))
+           (equal (< x (logext 64 (acl2::bvplus 64 k x)))
                   (< x (+ (- (expt 2 64) (acl2::bvchop 64 k)) (- (expt 2 63))))))
   :hints (("Goal" :in-theory (e/d (acl2::bvplus
-                                   ACL2::LOGEXT-CASES
-                                   acl2::bvcat
-                                   ACL2::LOGAPP
-                                   ACL2::LOGEXT-OF-PLUS)
-                                  (ACL2::BVPLUS-RECOLLAPSE
-                                   ACL2::BVCHOP-IDENTITY-CHEAP
-                                   ACL2::BVCHOP-IDENTITY
-                                   ;ACL2::TRIM-TO-N-BITS-META-RULE-FOR-BVCAT ;looped
-                                   ACL2::PLUS-BVCAT-WITH-0 ;looped
-                                   ACL2::PLUS-BVCAT-WITH-0-ALT ;looped
-                                   ACL2::BVCAT-OF-BVCHOP-LOW ;looped
-                                   ACL2::SLICE-OF-BVCHOP-LOW ;looped
-                                   ACL2::SLICE-OF-BVCHOP-LOW-GEN ;looped
-                                   ACL2::SLICE-OF-BVCHOP-LOW-GEN-BETTER ;looped
+                                   acl2::logext-cases
+                                   ;acl2::bvcat
+                                   ;acl2::logapp
+                                   acl2::logext-of-plus
+                                   acl2::bvchop-of-sum-cases
+                                   acl2::getbit-of-plus
+                                   acl2::bvchop-when-top-bit-1-cheap
+                                   bvchop-when-signed-byte-p-one-more-and-negative-linear)
+                                  (acl2::bvplus-recollapse
+                                   acl2::bvchop-identity-cheap
+                                   acl2::bvchop-identity
+                                   ;acl2::trim-to-n-bits-meta-rule-for-bvcat ;looped
+                                   acl2::plus-bvcat-with-0 ;looped
+                                   acl2::plus-bvcat-with-0-alt ;looped
+                                   acl2::bvcat-of-bvchop-low ;looped
+                                   acl2::slice-of-bvchop-low ;looped
+                                   acl2::slice-of-bvchop-low-gen ;looped
+                                   acl2::slice-of-bvchop-low-gen-better ;looped
                                    ))
            :use (:instance acl2::split-bv
                            (n 64)

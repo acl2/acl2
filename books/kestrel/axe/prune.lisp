@@ -16,8 +16,8 @@
 
 ;; TODO: Use counterexamples returned by STP to avoid later calls that will fail.
 
-(include-book "rewriter")
-;(include-book "rewriter-basic") ;because we call simplify-term-basic
+;(include-book "rewriter")
+(include-book "rewriter-basic") ;because we call simplify-term-basic
 (include-book "prove-with-stp")
 (include-book "dagify") ; todo: brings in skip-proofs, try something simpler
 (include-book "dag-size-fast")
@@ -88,7 +88,7 @@
 ;; because the assumptions contradict, in which case the entire enclosing
 ;; IF/MYIF/BOOLIF/BVIF may be irrelevant.)
 ;; TODO: Allow STP to run longer (more conflicts) for IFs that are higher up in the term, since resolving such an IF throws away more stuff.
-(defun try-to-resolve-test (test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+(defund try-to-resolve-test (test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
   (declare (xargs :guard (and (pseudo-termp test)
                               (pseudo-term-listp assumptions)
                               (pseudo-term-listp equality-assumptions)
@@ -97,27 +97,25 @@
                               (interpreted-function-alistp interpreted-function-alist)
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp)))
-                  :mode :program ; todo
                   :stobjs (state)))
   (b* ( ;; First apply the Axe Rewriter to the test:
        (- (cw "(Simplifying test.~%"))
-       ((mv erp simplified-dag-or-quotep state)
-        (simp-term test ;; TODO: Does this use contexts?
-                   :rule-alist rule-alist
-                   :interpreted-function-alist interpreted-function-alist
-                   :monitor monitored-rules
-                   :assumptions assumptions ;no equality assumptions here to prevent loops (todo: think about this)
-                   :check-inputs nil))
-       ;; TODO: Put this in instead:
-       ;; ((mv erp simplified-test)
-       ;;  (simplify-term-basic test ;; TODO: Does this use contexts?
-       ;;                       assumptions ;no equality assumptions here to prevent loops (todo: think about this)
-       ;;                       rule-alist
-       ;;                       nil ; interpreted-function-alist
-       ;;                       monitored-rules
-       ;;                       nil ; memoizep
-       ;;                       nil ; count-hitsp
-       ;;                       (w state)))
+       ;; ((mv erp simplified-dag-or-quotep state)
+       ;;  (simp-term test ;; TODO: Does this use contexts?
+       ;;             :rule-alist rule-alist
+       ;;             :interpreted-function-alist interpreted-function-alist
+       ;;             :monitor monitored-rules
+       ;;             :assumptions assumptions ;no equality assumptions here to prevent loops (todo: think about this)
+       ;;             :check-inputs nil))
+       ((mv erp simplified-dag-or-quotep)
+        (simplify-term-basic test ;; TODO: Does this use contexts?
+                             assumptions ;no equality assumptions here to prevent loops (todo: think about this)
+                             rule-alist
+                             interpreted-function-alist
+                             monitored-rules
+                             nil ; memoizep
+                             nil ; count-hitsp
+                             (w state)))
        ((when erp) (mv erp nil state))
        ((when (quotep simplified-dag-or-quotep))
         ;; Resolved the test via rewriting:
@@ -126,6 +124,7 @@
             (mv nil :true state)
           (mv nil :false state)))
        ;; Test did not rewrite to a constant, so try other things:
+       ;; (- (cw "(Simplified to ~X01.)~%" simplified-dag-or-quotep nil))
        (- (cw "Did not simplify to a constant.)~%"))
        ;; Is this needed, given that we simplified the test above using the assumptions?
        ((when (or (member-equal test assumptions)
@@ -147,7 +146,7 @@
                                     "PRUNE-PROVE-TRUE" ;todo: do better?
                                     state))
        ((when (eq *error* true-result))
-        (prog2$ (er hard 'try-to-resolve-test "Error calling STP")
+        (prog2$ (er hard? 'try-to-resolve-test "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
        ((when (eq *valid* true-result)) ;; STP proved the test
         (prog2$ (cw "STP proved the test true.)~%")
@@ -163,12 +162,12 @@
                                     "PRUNE-PROVE-FALSE" ;todo: do better?
                                     state))
        ((when (eq *error* false-result))
-        (prog2$ (er hard 'try-to-resolve-test "Error calling STP")
+        (prog2$ (er hard? 'try-to-resolve-test "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
        ((when (eq *valid* false-result)) ;; STP proved the negation of the test
         (prog2$ (cw "STP proved the test false.)~%")
                 (mv nil :false state))))
-    (prog2$ (cw "(STP did not resolve the test.)~%")
+    (prog2$ (cw "STP did not resolve the test.)~%")
             (mv nil :unknown state))))
 
 ;; TODO: Thread through a print option
@@ -187,7 +186,8 @@
                                (interpreted-function-alistp interpreted-function-alist)
                                (or (member-eq call-stp '(t nil))
                                    (natp call-stp)))
-                   :mode :program))
+                   :verify-guards nil ; done below
+                   ))
    (if (variablep term)
        (mv (erp-nil) term state)
      (let ((fn (ffn-symb term)))
@@ -373,8 +373,7 @@
                                (interpreted-function-alistp interpreted-function-alist)
                                (symbol-listp monitored-rules)
                                (or (member-eq call-stp '(t nil))
-                                   (natp call-stp)))
-                   :mode :program))
+                                   (natp call-stp)))))
    (if (endp terms)
        (mv (erp-nil) nil state)
      (b* (((mv erp pruned-first state) (prune-term (first terms) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
@@ -383,9 +382,51 @@
           ((when erp) (mv erp nil state)))
        (mv (erp-nil) (cons pruned-first pruned-rest) state)))))
 
+(make-flag prune-term)
+
+(defthm-flag-prune-term
+  (defthm len-of-mv-nth-1-of-prune-terms-skip
+    :flag prune-term
+    :skip t)
+  (defthm len-of-mv-nth-1-of-prune-terms
+    (implies (not (mv-nth 0 (prune-terms terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)))
+             (equal (len (mv-nth 1  (prune-terms terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)))
+                    (len terms)))
+    :flag prune-terms)
+  :hints (("Goal" :in-theory (enable len prune-terms))))
+
+(defthm-flag-prune-term
+  (defthm prune-term-return-type
+    (implies (and (pseudo-termp term)
+                  (pseudo-term-listp assumptions)
+                  (pseudo-term-listp equality-assumptions) ;used only for looking up conditions
+                  (symbol-listp monitored-rules)
+                  (rule-alistp rule-alist)
+                  (interpreted-function-alistp interpreted-function-alist)
+                  )
+             (pseudo-termp (mv-nth 1 (prune-term term assumptions equality-assumptions
+                                                 rule-alist interpreted-function-alist
+                                                 monitored-rules call-stp state))))
+    :flag prune-term)
+  (defthm prune-terms-return-type
+    (implies (and (pseudo-term-listp terms)
+                  (pseudo-term-listp assumptions)
+                  (pseudo-term-listp equality-assumptions)
+                  (rule-alistp rule-alist)
+                  (interpreted-function-alistp interpreted-function-alist)
+                  (symbol-listp monitored-rules)
+                  )
+             (pseudo-term-listp (mv-nth 1  (prune-terms terms assumptions equality-assumptions
+                                                        rule-alist interpreted-function-alist
+                                                        monitored-rules call-stp state))))
+  :flag prune-terms))
+
+(verify-guards prune-term)
+
 ;; Returns (mv erp result-term state).
 ;; This one takes a rule-alist
 ;; TODO: Print some stats about the pruning process?
+;; TODO: Separate the translation of this from the rest.
 (defun prune-term-with-rule-alist (term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
   (declare (xargs :stobjs (state)
                   :guard (and (pseudo-termp term)
@@ -395,7 +436,8 @@
                               (symbol-listp monitored-rules)
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp)))
-                  :mode :program))
+                  :mode :program ; because we call translate-terms
+                  ))
   (b* ((- (cw "(Pruning branches in term (~x0 rules, ~x1 assumptions).~%" (count-rules-in-rule-alist rule-alist) (len assumptions)))
        (assumptions (translate-terms assumptions 'prune-term-with-rule-alist (w state))) ;todo: add a flag to avoid this
        ((mv erp new-term state)
@@ -427,6 +469,7 @@
 
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
 ;; term size. Returns (mv erp result-dag state).
+;; TODO: This internally translates assumptions -- make a version that doesn't?
 (defun prune-dag-with-rule-alist (dag-lst assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
   (declare (xargs :stobjs (state)
                   :guard (and (rule-alistp rule-alist)
