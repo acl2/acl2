@@ -1218,11 +1218,9 @@
     (block-item-case
      item
      :declon
-     (b* (((unless (declon-case item.get :var))
-           (error (list :struct-declaration-in-block-item item.get)))
-          (tyspec (declon-var->type item.get))
-          (declor (declon-var->declor item.get))
-          (init (declon-var->init item.get))
+     (b* ((tyspec (obj-declon->tyspec item.get))
+          (declor (obj-declon->declor item.get))
+          (init (obj-declon->init item.get))
           ((when (tyspecseq-case tyspec :void))
            (error (list :declon-error-type-void item.get)))
           (var (obj-declor-to-ident declor))

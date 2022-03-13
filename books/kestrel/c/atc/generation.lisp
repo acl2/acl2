@@ -2412,8 +2412,8 @@
                                must not have a C pointer type, ~
                                but it has type ~x2 instead."
                               val var init-type))
-                   (declon (make-declon-var
-                            :type (atc-gen-tyspecseq init-type)
+                   (declon (make-obj-declon
+                            :tyspec (atc-gen-tyspecseq init-type)
                             :declor (obj-declor-ident
                                      (make-ident :name (symbol-name var)))
                             :init init-expr))
@@ -2695,8 +2695,8 @@
                                must not have a C pointer type, ~
                                but it has type ~x2 instead."
                               val var init-type))
-                   (declon (make-declon-var
-                            :type (atc-gen-tyspecseq init-type)
+                   (declon (make-obj-declon
+                            :tyspec (atc-gen-tyspecseq init-type)
                             :declor (obj-declor-ident
                                      (make-ident :name (symbol-name var)))
                             :init init-expr))
@@ -3518,10 +3518,10 @@
         (raise "Internal error: pointer type to pointer type ~x0." ref-type)
         (acl2::value nil))
        (param (make-param-declon
+               :tyspec (atc-gen-tyspecseq ref-type)
                :declor (if pointerp
                            (obj-declor-pointer (make-ident :name name))
-                         (obj-declor-ident (make-ident :name name)))
-               :tyspec (atc-gen-tyspecseq ref-type)))
+                         (obj-declor-ident (make-ident :name name)))))
        ((er params)
         (atc-gen-param-declon-list (cdr typed-formals) fn ctx state)))
     (acl2::value (cons param params)))

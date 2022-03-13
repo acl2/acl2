@@ -964,8 +964,12 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "These are declarations and statements."))
-    (:declon ((get declon)))
+      "These are declarations and statements.")
+     (xdoc::p
+      "We limit declarations to object declarations,
+       which suffice for ATC, at least for now:
+       we only support tag declarations at the file level."))
+    (:declon ((get obj-declon)))
     (:stmt ((get stmt)))
     :pred block-itemp)
 

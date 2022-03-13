@@ -1130,7 +1130,7 @@
                              (options pprint-options-p))
     :returns (lines msg-listp)
     (block-item-case item
-                     :declon (pprint-declon item.get level options)
+                     :declon (pprint-obj-declon item.get level options)
                      :stmt (pprint-stmt item.get level options))
     :measure (block-item-count item))
 

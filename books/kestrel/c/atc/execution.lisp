@@ -1955,12 +1955,9 @@
       (block-item-case
        item
        :declon
-       (b* (((unless (declon-case item.get :var))
-             (mv (error (list :struct-declaration-in-block-item item.get))
-                 (compustate-fix compst)))
-            (type (declon-var->type item.get))
-            (declor (declon-var->declor item.get))
-            (init (declon-var->init item.get))
+       (b* ((tyspec (obj-declon->tyspec item.get))
+            (declor (obj-declon->declor item.get))
+            (init (obj-declon->init item.get))
             ((mv init compst) (exec-expr-call-or-pure init
                                                       compst
                                                       fenv
@@ -1972,7 +1969,7 @@
             (var (obj-declor-to-ident declor))
             (adeclor (obj-declor-to-adeclor declor))
             (type (type-name-to-type
-                   (make-tyname :tyspec type
+                   (make-tyname :tyspec tyspec
                                 :declor adeclor)))
             ((unless (equal type (type-of-value init)))
              (mv (error (list :decl-var-mistype var
