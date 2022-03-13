@@ -324,7 +324,20 @@
                                     (set::insert new-var (renaming-new ren)))))))
     :enable (renaming-old
              renaming-new
-             mergesort)))
+             mergesort))
+
+  (defruled var-renamevar-when-add-var-to-var-renaming
+    (b* ((ren1 (add-var-to-var-renaming old new ren)))
+      (implies (not (resulterrp ren1))
+               (not (resulterrp (var-renamevar old new ren1)))))
+    :enable var-renamevar)
+
+  (defruled var-renamevar-of-add-var-to-var-renaming-when-var-renamevar
+    (b* ((ren1 (add-var-to-var-renaming old1 new1 ren)))
+      (implies (and (not (resulterrp ren1))
+                    (not (resulterrp (var-renamevar old new ren))))
+               (not (resulterrp (var-renamevar old new ren1)))))
+    :enable var-renamevar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -352,7 +365,22 @@
     (b* ((ren1 (add-vars-to-var-renaming old new ren)))
       (implies (not (resulterrp ren1))
                (subsetp-equal (renaming->list ren)
-                              (renaming->list ren1))))))
+                              (renaming->list ren1)))))
+
+  (defruled var-renamevar-of-add-vars-to-var-renaming-when-var-renamevar
+    (b* ((ren1 (add-vars-to-var-renaming old1 new1 ren)))
+      (implies (and (not (resulterrp ren1))
+                    (not (resulterrp (var-renamevar old new ren))))
+               (not (resulterrp (var-renamevar old new ren1)))))
+    :enable var-renamevar-of-add-var-to-var-renaming-when-var-renamevar)
+
+  (defruled var-list-renamevar-when-add-vars-to-var-renaming
+    (b* ((ren1 (add-vars-to-var-renaming old new ren)))
+      (implies (not (resulterrp ren1))
+               (not (resulterrp (var-list-renamevar old new ren1)))))
+    :enable (var-list-renamevar
+             var-renamevar-of-add-vars-to-var-renaming-when-var-renamevar
+             var-renamevar-when-add-var-to-var-renaming)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -641,11 +669,69 @@
 
   (fty::deffixequiv-mutual statements/blocks/cases/fundefs-renamevar)
 
+  (local (include-book "std/basic/inductions" :dir :system))
+
+  (defruled same-len-when-expression-list-renamevar
+    (implies (not (resulterrp (expression-list-renamevar old new ren)))
+             (equal (len old) (len new)))
+    :enable expression-list-renamevar
+    :induct (acl2::cdr-cdr-induct old new))
+
+  (defruled expression-list-renamevar-of-append-error
+    (implies (equal (len old) (len new))
+             (equal (resulterrp (expression-list-renamevar (append old old1)
+                                                           (append new new1)
+                                                           ren))
+                    (or (resulterrp (expression-list-renamevar old new ren))
+                        (resulterrp (expression-list-renamevar old1 new1 ren)))))
+    :enable expression-list-renamevar
+    :induct (acl2::cdr-cdr-induct old new))
+
+  (defruled expression-list-renamevar-of-rev-error
+    (implies (equal (len old) (len new))
+             (equal (resulterrp (expression-list-renamevar (rev old)
+                                                           (rev new)
+                                                           ren))
+                    (resulterrp (expression-list-renamevar old new ren))))
+    :induct (acl2::cdr-cdr-induct old new)
+    :enable (rev
+             expression-list-renamevar
+             expression-list-renamevar-of-append-error))
+
+  (defruled expression-list-renamevar-of-rev-not-error
+    (implies (not (resulterrp (expression-list-renamevar old new ren)))
+             (not (resulterrp (expression-list-renamevar (rev old)
+                                                         (rev new)
+                                                         ren))))
+    :enable (expression-list-renamevar-of-rev-error
+             same-len-when-expression-list-renamevar))
+
   (defruled same-statement-kind-when-statement-renamevar
     (implies (not (resulterrp (statement-renamevar old new ren)))
              (equal (statement-kind new)
                     (statement-kind old)))
     :expand (statement-renamevar old new ren))
+
+  (defruled block-option-renamevar-of-nil-1-forward
+    (implies (not (resulterrp (block-option-renamevar nil block ren)))
+             (equal block nil))
+    :rule-classes ((:forward-chaining
+                    :trigger-terms
+                    ((resulterrp (block-option-renamevar nil block ren))))))
+
+  (defruled block-option-renamevar-of-nil-2-forward
+    (implies (not (resulterrp (block-option-renamevar block nil ren)))
+             (equal block nil))
+    :rule-classes ((:forward-chaining
+                    :trigger-terms
+                    ((resulterrp (block-option-renamevar block nil ren))))))
+
+  (defruled block-option-renamevar-when-nonnil
+    (implies (and x y)
+             (equal (block-option-renamevar x y ren)
+                    (block-renamevar x y ren)))
+    :expand (block-option-renamevar x y ren)
+    :enable block-option-some->val)
 
   (defruled same-swcase->value-when-swcase-renamevar
     (implies (not (resulterrp (swcase-renamevar old new ren)))
@@ -653,13 +739,20 @@
                     (swcase->value old)))
     :expand (swcase-renamevar old new ren))
 
+  (defruled resulterrp-of-swcase-renamevar
+    (equal (resulterrp (swcase-renamevar x y ren))
+           (or (not (equal (swcase->value x)
+                           (swcase->value y)))
+               (resulterrp (block-renamevar (swcase->body x)
+                                            (swcase->body y)
+                                            ren)))))
+
   (defruled same-swcase-list->value-list-when-swcase-list-renamevar
     (implies (not (resulterrp (swcase-list-renamevar old new ren)))
              (equal (swcase-list->value-list new)
                     (swcase-list->value-list old)))
     :induct (acl2::cdr-cdr-induct old new)
-    :enable same-swcase->value-when-swcase-renamevar
-    :prep-books ((include-book "std/basic/inductions" :dir :system)))
+    :enable same-swcase->value-when-swcase-renamevar)
 
   (defruled same-fundef->name-when-fundef-renamevar
     (implies (not (resulterrp (fundef-renamevar old new)))

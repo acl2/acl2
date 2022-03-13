@@ -32,6 +32,8 @@
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
+(include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "unguarded-built-ins") ; for assoc-equal-unguarded
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -481,3 +483,60 @@
   (equal (eq-unguarded x y)
          (eq x y))
   :hints (("Goal" :in-theory (enable eq-unguarded eq))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun member-equal-unguarded (x lst)
+  (declare (xargs :guard t))
+  (cond ((atom lst) nil)
+        ((equal x (car lst)) lst)
+        (t (member-equal-unguarded x (cdr lst)))))
+
+(defthm member-equal-unguarded-correct
+  (equal (member-equal-unguarded x y)
+         (member-equal x y))
+  :hints (("Goal" :in-theory (enable member-equal-unguarded member-equal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund char-code-unguarded (x)
+  (declare (xargs :guard t))
+  (if (characterp x)
+      (char-code x)
+    0))
+
+(defthm char-code-unguarded-correct
+  (equal (char-code-unguarded x)
+         (char-code x))
+  :hints (("Goal" :in-theory (enable char-code-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund code-char-unguarded (x)
+  (declare (xargs :guard t))
+  (if (and (integerp x)
+           (<= 0 x)
+           (< x 256))
+      (code-char x)
+    (code-char 0)))
+
+(defthm code-char-unguarded-correct
+  (equal (code-char-unguarded x)
+         (code-char x))
+  :hints (("Goal" :in-theory (enable code-char-unguarded)
+           :use ((:instance completion-of-code-char)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund lookup-equal-unguarded (key alist)
+  (declare (xargs :guard t))
+  (let ((res (assoc-equal-unguarded key alist)))
+    (if (consp res)
+        (cdr res)
+      nil)))
+
+(defthm lookup-equal-unguarded-correct
+  (equal (lookup-equal-unguarded key alist)
+         (lookup-equal key alist))
+  :hints (("Goal" :in-theory (enable lookup-equal
+                                     lookup-equal-unguarded))))

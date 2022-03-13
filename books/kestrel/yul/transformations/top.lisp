@@ -12,6 +12,7 @@
 
 (include-book "disambiguator")
 (include-book "renaming-variables-safety")
+(include-book "renaming-variables-execution")
 
 (include-book "for-loop-init-rewriter")
 
