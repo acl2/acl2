@@ -73,9 +73,9 @@
      for syntactic convenience apparently [C:6.7.1/5],
      even though its role is very different from the others.
      Thus, by differentiating more explicitly, in our ATC abstract syntax,
-     among different kinds of declaration and related entities,
+     among different kinds of declarations and related entities,
      we make things more clear overall, as far as ATC is concerned.
-     More specific discussions on this topic are
+     More specific discussions on this aspect of our model are
      in the documentation of some of the abstract syntax types below."))
   :order-subtopics t
   :default-parent t)
@@ -748,6 +748,36 @@
   :true-listp t
   :elementp-of-nil nil
   :pred struct-declon-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum tag-declon
+  :short "Fixtype of declarations of structure, union, and enumeration types
+          [C:6.7.2.1] [C:6.7.2.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are declarations that consists of
+     single structure, union, and enumeration specifiers,
+     which introduce structure, union, and enumeration types.
+     These kinds of types are all identified by tags [C:6.2.3],
+     which justifies our choice of name for this fixtype.")
+   (xdoc::p
+    "These are declarations that include
+     the structure or union members,
+     or the enumerators (which are identifiers).
+     That is, these tag declarations introduce the type with that tag.
+     We only model structure and union members
+     of the form discussed in @(tsee struct-declon);
+     we only model enumerators that are single identifiers,
+     without bindings to constant expressions."))
+  (:struct ((tag ident)
+            (members struct-declon-list)))
+  (:union ((tag ident)
+           (members struct-declon-list)))
+  (:enum ((tag ident)
+          (enumerators ident-list)))
+  :pred tag-declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

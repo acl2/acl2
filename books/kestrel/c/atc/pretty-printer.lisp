@@ -120,6 +120,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pprint-ident-list ((ids ident-listp))
+  :returns (parts msg-listp)
+  :short "Pretty-print a list of identifiers."
+  (cond ((endp ids) nil)
+        (t (cons (pprint-ident (car ids))
+                 (pprint-ident-list (cdr ids)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pprint-iconst-tysuffix ((ts iconst-tysuffixp))
   :returns (part msgp)
   :short "Pretty-print a type suffix of integer constants."
@@ -905,6 +915,32 @@
   ///
   (fty::deffixequiv pprint-struct-declon-list
     :hints (("Goal" :in-theory (disable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-tag-declon ((declon tag-declonp) (level natp))
+  :returns (lines msg-listp)
+  :short "Pretty-print a tag declaration."
+  (tag-declon-case
+   declon
+   :struct (append (list (pprint-line (msg "struct ~@0 {"
+                                           (pprint-ident declon.tag))
+                                      (lnfix level)))
+                   (pprint-struct-declon-list declon.members (1+ (lnfix level)))
+                   (list (pprint-line "};"
+                                      (lnfix level))))
+   :union (append (list (pprint-line (msg "union ~@0 {"
+                                          (pprint-ident declon.tag))
+                                     (lnfix level)))
+                  (pprint-struct-declon-list declon.members (1+ (lnfix level)))
+                  (list (pprint-line "};"
+                                     (lnfix level))))
+   :enum (list (pprint-line (msg "enum ~@0 {,@1};"
+                                 (pprint-ident declon.tag)
+                                 (pprint-comma-sep
+                                  (pprint-ident-list declon.enumerators)))
+                            (lnfix level))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
