@@ -2012,7 +2012,7 @@
                   (equal (type-of-value-option val?)
                          (type-name-to-type
                           (make-tyname :tyspec (fun-info->result info)
-                                       :pointerp nil))))
+                                       :declor (obj-adeclor-none)))))
              (equal (exec-fun fun args compst fenv limit)
                     (mv val? (pop-frame compst1))))
     :enable exec-fun)
@@ -2152,14 +2152,12 @@
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
                   (equal declor (declon-var->declor declon))
-                  (equal var (obj-declor-case declor
-                                              :ident declor.get
-                                              :pointer declor.get))
-                  (equal pointerp (obj-declor-case declor :pointer))
+                  (equal var (obj-declor-to-ident declor))
+                  (equal adeclor (obj-declor-to-adeclor declor))
                   (equal (type-of-value val)
                          (type-name-to-type
                           (make-tyname :tyspec (declon-var->type declon)
-                                       :pointerp pointerp)))
+                                       :declor adeclor)))
                   (equal compst2 (create-var var val compst1))
                   (compustatep compst2))
              (equal (exec-block-item item compst fenv limit)
@@ -2187,9 +2185,8 @@
       (:e declon-var->type)
       (:e declon-var->declor)
       (:e declon-var->init)
-      (:e obj-declor-kind)
-      (:e obj-declor-ident->get)
-      (:e obj-declor-pointer->get))))
+      (:e obj-declor-to-ident)
+      (:e obj-declor-to-adeclor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2248,14 +2245,12 @@
                   (param-declonp formal)
                   (equal declor (param-declon->declor formal))
                   (valuep val)
-                  (equal var (obj-declor-case declor
-                                              :ident declor.get
-                                              :pointer declor.get))
-                  (equal pointerp (obj-declor-case declor :pointer))
+                  (equal var (obj-declor-to-ident declor))
+                  (equal adeclor (obj-declor-to-adeclor declor))
                   (equal (type-of-value val)
                          (type-name-to-type
                           (make-tyname :tyspec (param-declon->type formal)
-                                       :pointerp pointerp)))
+                                       :declor adeclor)))
                   (value-listp vals)
                   (equal scope (init-scope (cdr formals) vals))
                   (scopep scope)
@@ -2272,6 +2267,5 @@
       (:e param-declonp)
       (:e param-declon->type)
       (:e param-declon->declor)
-      (:e obj-declor-kind)
-      (:e obj-declor-ident->get)
-      (:e obj-declor-pointer->get))))
+      (:e obj-declor-to-ident)
+      (:e obj-declor-to-adeclor))))

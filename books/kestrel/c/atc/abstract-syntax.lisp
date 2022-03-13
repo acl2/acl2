@@ -577,9 +577,9 @@
      the type specifier sequences captured by @(tsee tyspecseq),
      and pointers thereof (only single pointers, not pointers to pointers).
      We capture the presence or absence of @('*') (for pointer)
-     via a boolean flag."))
+     via an abstract object declarator, for ease of future extension."))
   ((tyspec tyspecseq)
-   (pointerp bool))
+   (declor obj-adeclor))
   :tag :tyname
   :pred tynamep)
 

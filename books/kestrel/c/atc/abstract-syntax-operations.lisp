@@ -111,6 +111,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define obj-declor-to-ident ((declor obj-declorp))
+  :returns (id identp)
+  :short "Identifier of an object declarator."
+  (obj-declor-case declor
+                   :ident declor.get
+                   :pointer declor.get)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define param-declon->tyname ((param param-declonp))
   :returns (tyname tynamep)
   :short "Turn a parameter declaration into the corresponding type name."
@@ -119,8 +129,7 @@
    (xdoc::p
     "This is obtained by removing the identifier."))
   (make-tyname :tyspec (param-declon->type param)
-               :pointerp (obj-declor-case (param-declon->declor param)
-                                          :pointer))
+               :declor (obj-declor-to-adeclor (param-declon->declor param)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

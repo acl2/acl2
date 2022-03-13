@@ -1220,19 +1220,17 @@
      :declon
      (b* (((unless (declon-case item.get :var))
            (error (list :struct-declaration-in-block-item item.get)))
-          (type (declon-var->type item.get))
+          (tyspec (declon-var->type item.get))
           (declor (declon-var->declor item.get))
           (init (declon-var->init item.get))
-          ((when (tyspecseq-case type :void))
+          ((when (tyspecseq-case tyspec :void))
            (error (list :declon-error-type-void item.get)))
-          ((mv pointerp var)
-           (obj-declor-case declor
-                            :ident (mv nil declor.get)
-                            :pointer (mv t declor.get)))
+          (var (obj-declor-to-ident declor))
+          (adeclor (obj-declor-to-adeclor declor))
           (wf (check-ident var))
           ((when (errorp wf)) (error (list :declon-error-var wf)))
-          (type (type-name-to-type (make-tyname :tyspec type
-                                                :pointerp pointerp)))
+          (type (type-name-to-type (make-tyname :tyspec tyspec
+                                                :declor adeclor)))
           (init-type (check-expr-call-or-pure init funtab vartab))
           ((when (errorp init-type))
            (error (list :declon-error-init init-type)))
@@ -1320,14 +1318,13 @@
   (b* (((param-declon param) param)
        ((when (tyspecseq-case param.type :void))
         (error (list :param-error-void (param-declon-fix param))))
-       ((mv pointerp var) (obj-declor-case param.declor
-                                           :ident (mv nil param.declor.get)
-                                           :pointer (mv t param.declor.get)))
+       (var (obj-declor-to-ident param.declor))
+       (adeclor (obj-declor-to-adeclor param.declor))
        (wf (check-ident var))
        ((when (errorp wf)) (error (list :param-error wf))))
     (var-table-add-var var
                        (type-name-to-type (make-tyname :tyspec param.type
-                                                       :pointerp pointerp))
+                                                       :declor adeclor))
                        vartab))
   :hooks (:fix))
 
@@ -1385,7 +1382,7 @@
        (in-types (type-name-list-to-type-list
                   (param-declon-list->tyname-list fundef.params)))
        (out-type (type-name-to-type (make-tyname :tyspec fundef.result
-                                                 :pointerp nil)))
+                                                 :declor (obj-adeclor-none))))
        (ftype (make-fun-type :inputs in-types :output out-type))
        (funtab (fun-table-add-fun fundef.name ftype funtab))
        ((when (errorp funtab)) (error (list :fundef funtab)))

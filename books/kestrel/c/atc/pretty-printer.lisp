@@ -349,9 +349,9 @@
 (define pprint-tyname ((tn tynamep))
   :returns (part msgp)
   :short "Pretty-print a type name."
-  (msg "~@0~s1"
+  (msg "~@0~@1"
        (pprint-tyspecseq (tyname->tyspec tn))
-       (if (tyname->pointerp tn) " *" ""))
+       (pprint-obj-adeclor (tyname->declor tn)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

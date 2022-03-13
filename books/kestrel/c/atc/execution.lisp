@@ -1516,12 +1516,11 @@
        (formal (car formals))
        (actual (car actuals))
        (declor (param-declon->declor formal))
-       ((mv pointerp name) (obj-declor-case declor
-                                            :ident (mv nil declor.get)
-                                            :pointer (mv t declor.get)))
+       (name (obj-declor-to-ident declor))
+       (adeclor (obj-declor-to-adeclor declor))
        (formal-type (type-name-to-type
                      (make-tyname :tyspec (param-declon->type formal)
-                                  :pointerp pointerp)))
+                                  :declor adeclor)))
        (actual-type (type-of-value actual))
        ((unless (equal formal-type actual-type))
         (error (list :formal-actual-mistype
@@ -1810,7 +1809,7 @@
          ((unless (equal (type-of-value-option val?)
                          (type-name-to-type
                           (make-tyname :tyspec info.result
-                                       :pointerp nil))))
+                                       :declor (obj-adeclor-none)))))
           (mv (error (list :return-value-mistype
                            :required info.result
                            :supplied (type-of-value-option val?)))
@@ -1970,12 +1969,11 @@
             ((when (not init))
              (mv (error (list :void-initializer (block-item-fix item)))
                  compst))
-            ((mv pointerp var) (obj-declor-case declor
-                                                :ident (mv nil declor.get)
-                                                :pointer (mv t declor.get)))
+            (var (obj-declor-to-ident declor))
+            (adeclor (obj-declor-to-adeclor declor))
             (type (type-name-to-type
                    (make-tyname :tyspec type
-                                :pointerp pointerp)))
+                                :declor adeclor)))
             ((unless (equal type (type-of-value init)))
              (mv (error (list :decl-var-mistype var
                               :required type

@@ -74,6 +74,7 @@
     (:e scopep)
     (:e tyname)
     (:e type-name-to-type)
+    (:e obj-adeclor-none)
     (:e type-pointer)
     (:e type-schar)
     (:e type-uchar)
