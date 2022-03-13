@@ -726,15 +726,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are used inside structure specifiers:
-     they do not declare structure types, but rather their members.")
+    "These are used inside structure and union specifiers:
+     they do not declare structure types, but rather their members.
+     (A better name for these could be `member declarations'.)")
    (xdoc::p
     "For now we only capture structure declarations that consist of
-     a type specifier sequence from @(tsee tyspecseq),
-     and a structure declarator that is a declarator from @(tsee obj-declor).
+     a type specifier sequence
+     and a structure declarator that is an object declarator.
      We do not capture static assertions.
      We do not capture bit field sizes."))
-  ((type tyspecseq)
+  ((tyspec tyspecseq)
    (declor obj-declor))
   :tag :struct-declon
   :pred struct-declonp)

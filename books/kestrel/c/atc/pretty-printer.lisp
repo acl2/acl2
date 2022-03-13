@@ -889,7 +889,7 @@
   :short "Pretty-print a structure declaration."
   (b* (((struct-declon member) member))
     (pprint-line (msg "~@0 ~@1;"
-                      (pprint-tyspecseq member.type)
+                      (pprint-tyspecseq member.tyspec)
                       (pprint-obj-declor member.declor))
                  (lnfix level)))
   :hooks (:fix))
