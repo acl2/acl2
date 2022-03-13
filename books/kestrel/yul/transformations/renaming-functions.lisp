@@ -31,15 +31,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fun-renamefun ((old identifierp)
-                       (new identifierp)
-                       (ren renamingp))
+(define fun-renamefun ((old identifierp) (new identifierp) (ren renamingp))
   :returns (_ resulterr-optionp)
   :short "Check if two function names are related by function renaming."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check is the two function names form an association pair in the omap."))
+    "We check if the two function names form a pair in the renaming list."))
   (b* ((old (identifier-fix old))
        (new (identifier-fix new)))
     (if (member-equal (cons old new) (renaming->list ren))
@@ -235,7 +233,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines statements/blocks/cases/fundefs-renamefun
-  :short "Mutually recursive functions to check if
+  :short "Mutually recursive ACL2 functions to check if
           statements, blocks, cases, and function definitions are
           related by function renaming."
 
@@ -261,7 +259,9 @@
        we extend the renaming list according to
        the function definitions in the initialization block,
        and then we process the rest of the statement
-       with the updated renaming list."))
+       with the updated renaming list.
+       However, the renaming list after the loop is the same as the one before:
+       a loop does not permanently introduce new variables."))
     (statement-case
      old
      :block
@@ -462,11 +462,17 @@
     :returns (_ resulterr-optionp)
     :short "Check if two switch cases are
             related by function renaming."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The value literals must be identical
+       (since they do not contain functions),
+       and the bodies must be related."))
     (b* (((unless (equal (swcase->value old)
                          (swcase->value new)))
           (err (list :mismatch-case-value
-                 (swcase->value old)
-                 (swcase->value new)))))
+                (swcase->value old)
+                (swcase->value new)))))
       (block-renamefun (swcase->body old) (swcase->body new) ren))
     :measure (swcase-count old))
 
