@@ -151,7 +151,8 @@
           (declon (car declons)))
        (ext-declon-case
         declon
-        :declon (error :external-declaration-is-not-a-function)
+        :obj-declon (error :external-declaration-is-not-a-function)
+        :tag-declon (error :external-declaration-is-not-a-function)
         :fundef (b* ((fenv (fun-env-extend declon.get fenv))
                      ((when (errorp fenv)) fenv))
                   (init-fun-env-aux (cdr declons) fenv))))

@@ -120,6 +120,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pprint-ident-list ((ids ident-listp))
+  :returns (parts msg-listp)
+  :short "Pretty-print a list of identifiers."
+  (cond ((endp ids) nil)
+        (t (cons (pprint-ident (car ids))
+                 (pprint-ident-list (cdr ids)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pprint-iconst-tysuffix ((ts iconst-tysuffixp))
   :returns (part msgp)
   :short "Pretty-print a type suffix of integer constants."
@@ -326,12 +336,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pprint-obj-declor ((declor obj-declorp))
+  :returns (part msgp)
+  :short "Pretty-print an object declarator."
+  (obj-declor-case declor
+                   :ident (pprint-ident declor.get)
+                   :pointer (msg "*~s0" (pprint-ident declor.get)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-obj-adeclor ((declor obj-adeclorp))
+  :returns (part msgp)
+  :short "Pretty-print an abstract object declarator."
+  (obj-adeclor-case declor
+                    :none ""
+                    :pointer " *")
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pprint-tyname ((tn tynamep))
   :returns (part msgp)
   :short "Pretty-print a type name."
-  (msg "~@0~s1"
-       (pprint-tyspecseq (tyname->specs tn))
-       (if (tyname->pointerp tn) " *" ""))
+  (msg "~@0~@1"
+       (pprint-tyspecseq (tyname->tyspec tn))
+       (pprint-obj-adeclor (tyname->declor tn)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -846,16 +876,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-declor ((declor declorp))
-  :returns (part msgp)
-  :short "Pretty-print a declarator."
-  (msg "~s0~@1"
-       (if (declor->pointerp declor) "*" "")
-       (pprint-ident (declor->ident declor)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define pprint-line-blank ()
   :returns (line msgp)
   :short "Pretty-print a blank line of code."
@@ -879,8 +899,8 @@
   :short "Pretty-print a structure declaration."
   (b* (((struct-declon member) member))
     (pprint-line (msg "~@0 ~@1;"
-                      (pprint-tyspecseq member.type)
-                      (pprint-declor member.declor))
+                      (pprint-tyspecseq member.tyspec)
+                      (pprint-obj-declor member.declor))
                  (lnfix level)))
   :hooks (:fix))
 
@@ -898,24 +918,64 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-declon ((declon declonp) (level natp) (options pprint-options-p))
+(define pprint-tag-declon ((declon tag-declonp) (level natp))
   :returns (lines msg-listp)
-  :short "Pretty-print a declaration."
-  (declon-case
+  :short "Pretty-print a tag declaration."
+  (tag-declon-case
    declon
-   :var
-   (list (pprint-line (msg "~@0 ~@1 = ~@2;"
-                           (pprint-tyspecseq declon.type)
-                           (pprint-declor declon.declor)
-                           (pprint-expr declon.init (expr-grade-top) options))
-                      (lnfix level)))
-   :struct
-   (append (list (pprint-line (msg "struct ~@0 {"
-                                   (pprint-ident declon.tag))
-                              (lnfix level)))
-           (pprint-struct-declon-list declon.members (1+ (lnfix level)))
-           (list (pprint-line "}"
-                              (lnfix level)))))
+   :struct (append (list (pprint-line (msg "struct ~@0 {"
+                                           (pprint-ident declon.tag))
+                                      (lnfix level)))
+                   (pprint-struct-declon-list declon.members (1+ (lnfix level)))
+                   (list (pprint-line "};"
+                                      (lnfix level))))
+   :union (append (list (pprint-line (msg "union ~@0 {"
+                                          (pprint-ident declon.tag))
+                                     (lnfix level)))
+                  (pprint-struct-declon-list declon.members (1+ (lnfix level)))
+                  (list (pprint-line "};"
+                                     (lnfix level))))
+   :enum (list (pprint-line (msg "enum ~@0 {,@1};"
+                                 (pprint-ident declon.tag)
+                                 (pprint-comma-sep
+                                  (pprint-ident-list declon.enumerators)))
+                            (lnfix level))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-param-declon ((param param-declonp))
+  :returns (part msgp)
+  :short "Pretty-print a parameter declaration."
+  (b* (((param-declon param) param))
+    (msg "~@0 ~@1"
+         (pprint-tyspecseq param.tyspec)
+         (pprint-obj-declor param.declor)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-param-declon-list ((params param-declon-listp))
+  :returns (parts msg-listp)
+  :short "Pretty-print a list of parameter declarations."
+  (cond ((endp params) nil)
+        (t (cons (pprint-param-declon (car params))
+                 (pprint-param-declon-list (cdr params)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-obj-declon ((declon obj-declonp)
+                           (level natp)
+                           (options pprint-options-p))
+  :returns (lines msg-listp)
+  :short "Pretty-print an object declaration."
+  (b* (((obj-declon declon) declon))
+    (list (pprint-line (msg "~@0 ~@1 = ~@2;"
+                            (pprint-tyspecseq declon.tyspec)
+                            (pprint-obj-declor declon.declor)
+                            (pprint-expr declon.init (expr-grade-top) options))
+                       (lnfix level))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1048,7 +1108,7 @@
                              (options pprint-options-p))
     :returns (lines msg-listp)
     (block-item-case item
-                     :declon (pprint-declon item.get level options)
+                     :declon (pprint-obj-declon item.get level options)
                      :stmt (pprint-stmt item.get level options))
     :measure (block-item-count item))
 
@@ -1060,27 +1120,6 @@
           (t (append (pprint-block-item (car items) level options)
                      (pprint-block-item-list (cdr items) level options))))
     :measure (block-item-list-count items)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define pprint-param-declon ((param param-declonp))
-  :returns (part msgp)
-  :short "Pretty-print a parameter declaration."
-  (b* (((param-declon param) param))
-    (msg "~@0 ~@1"
-         (pprint-tyspecseq param.type)
-         (pprint-declor param.declor)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define pprint-param-declon-list ((params param-declon-listp))
-  :returns (parts msg-listp)
-  :short "Pretty-print a list of parameter declarations."
-  (cond ((endp params) nil)
-        (t (cons (pprint-param-declon (car params))
-                 (pprint-param-declon-list (cdr params)))))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1108,7 +1147,8 @@
   :short "Pretty-print an external declaration."
   (ext-declon-case ext
                    :fundef (pprint-fundef ext.get options)
-                   :declon (pprint-declon ext.get 0 options)))
+                   :obj-declon (pprint-obj-declon ext.get 0 options)
+                   :tag-declon (pprint-tag-declon ext.get 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

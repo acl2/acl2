@@ -1515,12 +1515,8 @@
        ((when (errorp scope)) scope)
        (formal (car formals))
        (actual (car actuals))
-       (declor (param-declon->declor formal))
-       (pointerp (declor->pointerp declor))
-       (name (declor->ident declor))
-       (formal-type (type-name-to-type
-                     (make-tyname :specs (param-declon->type formal)
-                                  :pointerp pointerp)))
+       ((mv name tyname) (param-declon-to-ident+tyname formal))
+       (formal-type (type-name-to-type tyname))
        (actual-type (type-of-value actual))
        ((unless (equal formal-type actual-type))
         (error (list :formal-actual-mistype
@@ -1808,8 +1804,8 @@
          ((when (errorp val?)) (mv val? compst))
          ((unless (equal (type-of-value-option val?)
                          (type-name-to-type
-                          (make-tyname :specs info.result
-                                       :pointerp nil))))
+                          (make-tyname :tyspec info.result
+                                       :declor (obj-adeclor-none)))))
           (mv (error (list :return-value-mistype
                            :required info.result
                            :supplied (type-of-value-option val?)))
@@ -1955,12 +1951,7 @@
       (block-item-case
        item
        :declon
-       (b* (((unless (declon-case item.get :var))
-             (mv (error (list :struct-declaration-in-block-item item.get))
-                 (compustate-fix compst)))
-            (type (declon-var->type item.get))
-            (declor (declon-var->declor item.get))
-            (init (declon-var->init item.get))
+       (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
             ((mv init compst) (exec-expr-call-or-pure init
                                                       compst
                                                       fenv
@@ -1969,11 +1960,7 @@
             ((when (not init))
              (mv (error (list :void-initializer (block-item-fix item)))
                  compst))
-            (var (declor->ident declor))
-            (pointerp (declor->pointerp declor))
-            (type (type-name-to-type
-                   (make-tyname :specs type
-                                :pointerp pointerp)))
+            (type (type-name-to-type tyname))
             ((unless (equal type (type-of-value init)))
              (mv (error (list :decl-var-mistype var
                               :required type

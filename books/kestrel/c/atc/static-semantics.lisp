@@ -1218,25 +1218,18 @@
     (block-item-case
      item
      :declon
-     (b* (((unless (declon-case item.get :var))
-           (error (list :struct-declaration-in-block-item item.get)))
-          (type (declon-var->type item.get))
-          (declor (declon-var->declor item.get))
-          (init (declon-var->init item.get))
-          ((when (tyspecseq-case type :void))
-           (error (list :declon-error-type-void item.get)))
-          (pointerp (declor->pointerp declor))
-          (var (declor->ident declor))
+     (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
           (wf (check-ident var))
           ((when (errorp wf)) (error (list :declon-error-var wf)))
-          (type (type-name-to-type (make-tyname :specs type
-                                                :pointerp pointerp)))
+          (type (type-name-to-type tyname))
+          ((when (type-case type :void))
+           (error (list :declon-error-type-void item.get)))
           (init-type (check-expr-call-or-pure init funtab vartab))
           ((when (errorp init-type))
            (error (list :declon-error-init init-type)))
           ((unless (equal init-type type))
            (error (list
-                   :declon-mistype type declor init
+                   :declon-mistype item.get
                    :required type
                    :supplied init-type)))
           (vartab (var-table-add-var var type vartab))
@@ -1315,17 +1308,13 @@
     "We disallow @('void') as type of a parameter,
      because parameters must have complete types [C:6.7.6.3/4],
      but @('void') is incomplete [C:6.2.5/19]."))
-  (b* (((param-declon param) param)
-       ((when (tyspecseq-case param.type :void))
-        (error (list :param-error-void (param-declon-fix param))))
-       (pointerp (declor->pointerp param.declor))
-       (var (declor->ident param.declor))
+  (b* (((mv var tyname) (param-declon-to-ident+tyname param))
        (wf (check-ident var))
-       ((when (errorp wf)) (error (list :param-error wf))))
-    (var-table-add-var var
-                       (type-name-to-type (make-tyname :specs param.type
-                                                       :pointerp pointerp))
-                       vartab))
+       ((when (errorp wf)) (error (list :param-error wf)))
+       (type (type-name-to-type tyname))
+       ((when (type-case type :void))
+        (error (list :param-error-void (param-declon-fix param)))))
+    (var-table-add-var var type vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1379,10 +1368,10 @@
      the function definitions in the translation unit in order,
      we extend the function table."))
   (b* (((fundef fundef) fundef)
-       (in-types (type-name-list-to-type-list
-                  (param-declon-list->tyname-list fundef.params)))
-       (out-type (type-name-to-type (make-tyname :specs fundef.result
-                                                 :pointerp nil)))
+       ((mv & tynames) (param-declon-list-to-ident+tyname-lists fundef.params))
+       (in-types (type-name-list-to-type-list tynames))
+       (out-type (type-name-to-type (make-tyname :tyspec fundef.result
+                                                 :declor (obj-adeclor-none))))
        (ftype (make-fun-type :inputs in-types :output out-type))
        (funtab (fun-table-add-fun fundef.name ftype funtab))
        ((when (errorp funtab)) (error (list :fundef funtab)))
@@ -1413,7 +1402,10 @@
   (ext-declon-case
    ext
    :fundef (check-fundef ext.get funtab)
-   :declon (error (list :top-level-declaraion-not-supported ext.get)))
+   :obj-declon (error
+                (list :file-level-object-declaraion-not-supported ext.get))
+   :tag-declon (error
+                (list :file-level-tag-declaration-not-supported ext.get)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
