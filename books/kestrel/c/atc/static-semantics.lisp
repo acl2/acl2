@@ -1218,22 +1218,18 @@
     (block-item-case
      item
      :declon
-     (b* ((tyspec (obj-declon->tyspec item.get))
-          (declor (obj-declon->declor item.get))
-          (init (obj-declon->init item.get))
-          ((when (tyspecseq-case tyspec :void))
-           (error (list :declon-error-type-void item.get)))
-          ((mv var adeclor) (obj-declor-to-ident+adeclor declor))
-(wf (check-ident var))
+     (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
+          (wf (check-ident var))
           ((when (errorp wf)) (error (list :declon-error-var wf)))
-          (type (type-name-to-type (make-tyname :tyspec tyspec
-                                                :declor adeclor)))
+          (type (type-name-to-type tyname))
+          ((when (type-case type :void))
+           (error (list :declon-error-type-void item.get)))
           (init-type (check-expr-call-or-pure init funtab vartab))
           ((when (errorp init-type))
            (error (list :declon-error-init init-type)))
           ((unless (equal init-type type))
            (error (list
-                   :declon-mistype type declor init
+                   :declon-mistype item.get
                    :required type
                    :supplied init-type)))
           (vartab (var-table-add-var var type vartab))
@@ -1312,16 +1308,13 @@
     "We disallow @('void') as type of a parameter,
      because parameters must have complete types [C:6.7.6.3/4],
      but @('void') is incomplete [C:6.2.5/19]."))
-  (b* (((param-declon param) param)
-       ((when (tyspecseq-case param.tyspec :void))
-        (error (list :param-error-void (param-declon-fix param))))
-       ((mv var adeclor) (obj-declor-to-ident+adeclor param.declor))
+  (b* (((mv var tyname) (param-declon-to-ident+tyname param))
        (wf (check-ident var))
-       ((when (errorp wf)) (error (list :param-error wf))))
-    (var-table-add-var var
-                       (type-name-to-type (make-tyname :tyspec param.tyspec
-                                                       :declor adeclor))
-                       vartab))
+       ((when (errorp wf)) (error (list :param-error wf)))
+       (type (type-name-to-type tyname))
+       ((when (type-case type :void))
+        (error (list :param-error-void (param-declon-fix param)))))
+    (var-table-add-var var type vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

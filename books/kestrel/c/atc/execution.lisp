@@ -1515,11 +1515,8 @@
        ((when (errorp scope)) scope)
        (formal (car formals))
        (actual (car actuals))
-       (declor (param-declon->declor formal))
-       ((mv name adeclor) (obj-declor-to-ident+adeclor declor))
-       (formal-type (type-name-to-type
-                     (make-tyname :tyspec (param-declon->tyspec formal)
-                                  :declor adeclor)))
+       ((mv name tyname) (param-declon-to-ident+tyname formal))
+       (formal-type (type-name-to-type tyname))
        (actual-type (type-of-value actual))
        ((unless (equal formal-type actual-type))
         (error (list :formal-actual-mistype
@@ -1954,9 +1951,7 @@
       (block-item-case
        item
        :declon
-       (b* ((tyspec (obj-declon->tyspec item.get))
-            (declor (obj-declon->declor item.get))
-            (init (obj-declon->init item.get))
+       (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
             ((mv init compst) (exec-expr-call-or-pure init
                                                       compst
                                                       fenv
@@ -1965,10 +1960,7 @@
             ((when (not init))
              (mv (error (list :void-initializer (block-item-fix item)))
                  compst))
-            ((mv var adeclor) (obj-declor-to-ident+adeclor declor))
-            (type (type-name-to-type
-                   (make-tyname :tyspec tyspec
-                                :declor adeclor)))
+            (type (type-name-to-type tyname))
             ((unless (equal type (type-of-value init)))
              (mv (error (list :decl-var-mistype var
                               :required type

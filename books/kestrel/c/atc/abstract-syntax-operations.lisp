@@ -152,3 +152,19 @@
   (defret len-of-param-declon-list-to-ident+tyname-lists.tynames
     (equal (len tynames)
            (len declons))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define obj-declon-to-ident+tyname+init ((declon obj-declonp))
+  :returns (mv (id identp) (tyname tynamep) (init exprp))
+  :short "Decompose an object declaration into
+          an identifier, a type name, and an initializer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee param-declon-to-ident+tyname),
+     with the addition of the initializer."))
+  (b* (((obj-declon declon) declon)
+       ((mv id adeclor) (obj-declor-to-ident+adeclor declon.declor)))
+    (mv id (make-tyname :tyspec declon.tyspec :declor adeclor) declon.init))
+  :hooks (:fix))
