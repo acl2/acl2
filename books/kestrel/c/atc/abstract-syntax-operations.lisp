@@ -168,3 +168,22 @@
        ((mv id adeclor) (obj-declor-to-ident+adeclor declon.declor)))
     (mv id (make-tyname :tyspec declon.tyspec :declor adeclor) declon.init))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ext-declon-list->fundef-list ((exts ext-declon-listp))
+  :returns (defs fundef-listp)
+  :short "Extract from a list of external declarations
+          the list of function definitions, in the same order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Declarations are discarded. Only function definitions are projected."))
+  (b* (((when (endp exts)) nil)
+       (ext (car exts)))
+    (ext-declon-case ext
+                     :fundef (cons (ext-declon-fundef->get ext)
+                                   (ext-declon-list->fundef-list (cdr exts)))
+                     :obj-declon (ext-declon-list->fundef-list (cdr exts))
+                     :tag-declon (ext-declon-list->fundef-list (cdr exts))))
+  :hooks (:fix))
