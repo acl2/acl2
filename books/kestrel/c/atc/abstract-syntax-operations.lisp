@@ -96,7 +96,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define obj-declor-to-ident-and-adeclor ((declor obj-declorp))
+(define obj-declor-to-ident+adeclor ((declor obj-declorp))
   :returns (mv (id identp) (adeclor obj-adeclorp))
   :short "Decompose an object declarator into
           an identifier and an abstract object declarator."
@@ -113,7 +113,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-declon-to-ident-and-tyname ((declon param-declonp))
+(define param-declon-to-ident+tyname ((declon param-declonp))
   :returns (mv (id identp) (tyname tynamep))
   :short "Decompose a parameter declaration into an identifier and a type name."
   :long
@@ -127,28 +127,28 @@
      In essence, we turn a parameter declaration into its name and type,
      which are somewhat mixed in the C syntax."))
   (b* (((param-declon declon) declon)
-       ((mv id adeclor) (obj-declor-to-ident-and-adeclor declon.declor)))
+       ((mv id adeclor) (obj-declor-to-ident+adeclor declon.declor)))
     (mv id (make-tyname :tyspec declon.tyspec :declor adeclor)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-declon-list-to-ident-list-and-tyname-list
+(define param-declon-list-to-ident+tyname-lists
   ((declons param-declon-listp))
   :returns (mv (ids ident-listp) (tynames tyname-listp))
-  :short "Lift @(tsee param-declon-to-ident-and-tyname) to lists."
+  :short "Lift @(tsee param-declon-to-ident+tyname) to lists."
   (b* (((when (endp declons)) (mv nil nil))
-       ((mv id tyname) (param-declon-to-ident-and-tyname (car declons)))
-       ((mv ids tynames) (param-declon-list-to-ident-list-and-tyname-list
+       ((mv id tyname) (param-declon-to-ident+tyname (car declons)))
+       ((mv ids tynames) (param-declon-list-to-ident+tyname-lists
                           (cdr declons))))
     (mv (cons id ids) (cons tyname tynames)))
   :hooks (:fix)
   ///
 
-  (defret len-of-param-declon-list-to-ident-list-and-tyname-list.ids
+  (defret len-of-param-declon-list-to-ident+tyname-lists.ids
     (equal (len ids)
            (len declons)))
 
-  (defret len-of-param-declon-list-to-ident-list-and-tyname-list.tynames
+  (defret len-of-param-declon-list-to-ident+tyname-lists.tynames
     (equal (len tynames)
            (len declons))))

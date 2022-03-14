@@ -2151,7 +2151,7 @@
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
                   (equal declor (obj-declon->declor declon))
-                  (equal var+adeclor (obj-declor-to-ident-and-adeclor declor))
+                  (equal var+adeclor (obj-declor-to-ident+adeclor declor))
                   (equal var (mv-nth 0 var+adeclor))
                   (equal adeclor (mv-nth 1 var+adeclor))
                   (equal (type-of-value val)
@@ -2184,7 +2184,7 @@
       (:e obj-declon->tyspec)
       (:e obj-declon->declor)
       (:e obj-declon->init)
-      (:e obj-declor-to-ident-and-adeclor))))
+      (:e obj-declor-to-ident+adeclor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2243,7 +2243,7 @@
                   (param-declonp formal)
                   (equal declor (param-declon->declor formal))
                   (valuep val)
-                  (equal var+adeclor (obj-declor-to-ident-and-adeclor declor))
+                  (equal var+adeclor (obj-declor-to-ident+adeclor declor))
                   (equal var (mv-nth 0 var+adeclor))
                   (equal adeclor (mv-nth 1 var+adeclor))
                   (equal (type-of-value val)
@@ -2266,4 +2266,4 @@
       (:e param-declonp)
       (:e param-declon->tyspec)
       (:e param-declon->declor)
-      (:e obj-declor-to-ident-and-adeclor))))
+      (:e obj-declor-to-ident+adeclor))))

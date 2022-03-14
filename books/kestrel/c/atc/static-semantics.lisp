@@ -1223,7 +1223,7 @@
           (init (obj-declon->init item.get))
           ((when (tyspecseq-case tyspec :void))
            (error (list :declon-error-type-void item.get)))
-          ((mv var adeclor) (obj-declor-to-ident-and-adeclor declor))
+          ((mv var adeclor) (obj-declor-to-ident+adeclor declor))
 (wf (check-ident var))
           ((when (errorp wf)) (error (list :declon-error-var wf)))
           (type (type-name-to-type (make-tyname :tyspec tyspec
@@ -1315,7 +1315,7 @@
   (b* (((param-declon param) param)
        ((when (tyspecseq-case param.tyspec :void))
         (error (list :param-error-void (param-declon-fix param))))
-       ((mv var adeclor) (obj-declor-to-ident-and-adeclor param.declor))
+       ((mv var adeclor) (obj-declor-to-ident+adeclor param.declor))
        (wf (check-ident var))
        ((when (errorp wf)) (error (list :param-error wf))))
     (var-table-add-var var
@@ -1375,8 +1375,7 @@
      the function definitions in the translation unit in order,
      we extend the function table."))
   (b* (((fundef fundef) fundef)
-       ((mv & tynames)
-        (param-declon-list-to-ident-list-and-tyname-list fundef.params))
+       ((mv & tynames) (param-declon-list-to-ident+tyname-lists fundef.params))
        (in-types (type-name-list-to-type-list tynames))
        (out-type (type-name-to-type (make-tyname :tyspec fundef.result
                                                  :declor (obj-adeclor-none))))
