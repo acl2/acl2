@@ -15,7 +15,7 @@
 (include-book "prune")
 (include-book "kestrel/utilities/assert-with-stobjs" :dir :system)
 
-(assert-equal-with-stobjs2 (prune-term-with-rule-alist '(myif (equal x y) (myif (equal x y) v w) z)
+(assert-equal-with-stobjs2 (prune-term-new '(myif (equal x y) (myif (equal x y) v w) z)
                                                        nil
                                                        nil
                                                        nil
@@ -26,7 +26,7 @@
                            :stobjs (state))
 
 ;; TODO: Simplify the (booland 't ...) below
-(assert-equal-with-stobjs2 (prune-term-with-rule-alist '(myif (equal x y) (booland (equal x y) z) w)
+(assert-equal-with-stobjs2 (prune-term-new '(myif (equal x y) (booland (equal x y) z) w)
                                                        nil
                                                        nil
                                                        nil
@@ -36,7 +36,7 @@
                            '(myif (equal x y) (booland 't z) w)
                            :stobjs (state))
 
-(assert-equal-with-stobjs2 (prune-term-with-rule-alist '(boolif 't x y)
+(assert-equal-with-stobjs2 (prune-term-new '(boolif 't x y)
                                                        nil
                                                        nil
                                                        nil
@@ -46,7 +46,7 @@
                            '(bool-fix x)
                            :stobjs (state))
 
-(assert-equal-with-stobjs2 (prune-term-with-rule-alist '(boolif 'nil x y)
+(assert-equal-with-stobjs2 (prune-term-new '(boolif 'nil x y)
                                                        nil
                                                        nil
                                                        nil
@@ -57,7 +57,7 @@
                            :stobjs (state))
 
 ;; todo:
-;; (assert-equal-with-stobjs2 (prune-term-with-rule-alist '(boolif '3 x y)
+;; (assert-equal-with-stobjs2 (prune-term-new '(boolif '3 x y)
 ;;                                                        nil
 ;;                                                        nil
 ;;                                                        nil
