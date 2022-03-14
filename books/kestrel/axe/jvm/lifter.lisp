@@ -634,7 +634,7 @@
     equal-of-same-cancel-3
     equal-of-same-cancel-4
 
-    LOGEXT-OF-BVCHOP-SMALLER-BETTER
+    LOGEXT-OF-BVCHOP-SMALLER
     thread-TOP-FRAME-of-MYIF
     ;;G-DIFF-S ;use a safe version?
 

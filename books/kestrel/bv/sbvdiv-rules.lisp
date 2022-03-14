@@ -99,13 +99,6 @@
 
 ;;(bvuminus 32 (bvdiv 31 (bvuminus 31 x) y))
 
-;could loop?
-(defthmd logext-when-positive-gen
-  (implies (<= 0 (logext size x))
-           (equal (logext size x)
-                  (bvchop (+ -1 size) x)))
-  :hints (("Goal" :in-theory (enable logext logapp))))
-
 (defthmd sbvdiv-when-both-positive
   (implies (and (integerp x)
                 (integerp y)
