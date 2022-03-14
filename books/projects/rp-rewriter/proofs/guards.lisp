@@ -609,6 +609,7 @@
 
 (verify-guards match-lhs-for-dont-rw)
 (verify-guards calculate-dont-rw$inline)
+(verify-guards calculate-dont-rw-lst$inline)
 
 (local
  (defret unsigned-byte-p-of-GET-LIMIT-FOR-HYP-RW
@@ -631,6 +632,26 @@
             (BOOLEANP (RW-LIMIT-THROWS-ERROR RP-STATE)))
    :hints (("Goal"
             :in-theory (e/d (rp-statep) ())))))
+
+(verify-guards rw-only-with-context
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (CONTEXT-SYNTAXP
+                            is-rp
+                            is-if)
+                           (FALIST-CONSISTENT
+                            rp-termp
+                            )))))
+
+(verify-guards RW-ONLY-WITH-CONTEXT-LST$IFF-FLG=T
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (CONTEXT-SYNTAXP
+                            is-rp
+                            is-if)
+                           (FALIST-CONSISTENT
+                            rp-termp
+                            )))))
 
 (verify-guards rp-rw
   :otf-flg nil

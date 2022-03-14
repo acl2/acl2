@@ -112,7 +112,7 @@
                               term))))
             res))
          ((acl2::fquotep term) term)
-         ((is-synp term) ''t)
+         ;;((is-synp term) term)
          (t
           (cons-with-hint (car term)
                           (rp-apply-bindings-subterms (cdr term) bindings )
@@ -446,6 +446,8 @@
   ;; used by rp-rw-if
   (case-match
     term
+    (('dont-rw-context a)
+     (rp-extract-context a))
     (('if a b ''nil)
      (append (rp-extract-context a)
              (rp-extract-context b)))
@@ -463,8 +465,10 @@
       ;; do not print this warning in case of "not"
       (case-match term
         (('if & ''nil ''t) nil)
-        (& (cw "WARNING! (if a b c) unsupported case-split may be required. ~%")))
+        (& (and nil (cw "WARNING! (if a b c) unsupported case-split may be required. ~%"))))
       (cons term nil)))
+    (''t
+     nil)
     (&
      (cons term nil))))
 
@@ -685,6 +689,7 @@
                     (rp-term-listp context)
                     (valid-sc term a)
                     (valid-sc-subterms context a)
+                    (eval-and-all context a)
                     (rp-evl-meta-extract-global-facts)
                     (rp-formula-checks state)
                     (rp-statep rp-state))
@@ -715,6 +720,7 @@
                     (valid-sc-subterms context a)
                     (rp-evl-meta-extract-global-facts)
                     (rp-formula-checks state)
+                    (eval-and-all context a)
                     (rp-statep rp-state))
                (b* ((res-term (rp-rw-preprocessor term context rp-state state)))
                  (and (valid-sc res-term a)
@@ -733,6 +739,7 @@
                     (rp-term-listp context)
                     (valid-sc term a)
                     (valid-sc-subterms context a)
+                    (eval-and-all context a)
                     (rp-evl-meta-extract-global-facts)
                     (rp-formula-checks state)
                     (rp-statep rp-state))
@@ -854,21 +861,21 @@ returns (mv rule rules-rest bindings rp-context)"
        nil)
       (& alist)))
 
-  (defun rp-rw-fix-cw-list (list)
+  (defun rp-rw-fix-cw-list (list context)
     (declare (xargs :guard t))
     (case-match list
       (('cons a rest)
-       (cons a
-             (rp-rw-fix-cw-list rest)))
+       (cons (if (and (symbolp a) (equal (symbol-name a) "@CONTEXT")) context a)
+             (rp-rw-fix-cw-list rest context)))
       (''nil
        nil)
       (& nil)))
 
   (local
    (defthm true-listp-rp-rw-fix-cw-list
-     (true-listp (rp-rw-fix-cw-list list))))
+     (true-listp (rp-rw-fix-cw-list list context))))
 
-  (defun rp-rw-check-hard-error-or-cw (term rp-state)
+  (defun rp-rw-check-hard-error-or-cw (term context rp-state)
     (declare (xargs :stobjs (rp-state )))
     (case-match term
       (('hard-error ('quote ctx) ('quote str) alist)
@@ -880,8 +887,7 @@ returns (mv rule rules-rest bindings rp-context)"
        ;; if all arguments are quoted, then executable counterpart will be
        ;; triggered anyways, so dont do anything.
        nil)
-      (('fmt-to-comment-window ('quote str) ('acl2::pairlis2 ''(#\0 #\1 #\2 #\3 #\4
-                                                                #\5 #\6 #\7 #\8 #\9)
+      (('fmt-to-comment-window ('quote str) ('acl2::pairlis2 &
                                                              list)
                                ('quote col)
                                ('quote evisc)
@@ -890,7 +896,7 @@ returns (mv rule rules-rest bindings rp-context)"
         ;;(cw "here1 ~p0 ~%" term)
         (fmt-to-comment-window
          str
-         (acl2::pairlis2 acl2::*base-10-chars* (rp-rw-fix-cw-list list))
+         (acl2::pairlis2 acl2::*base-10-chars* (rp-rw-fix-cw-list list context))
          col evisc print-base)))
       (('fmt-to-comment-window ('quote str) alist
                                ('quote col) ('quote evisc) ('quote print-base))
@@ -983,7 +989,19 @@ returns (mv rule rules-rest bindings rp-context)"
                 (bindings (match-lhs-for-dont-rw (rp-lhs rule) dont-rw nil))
                 (new-dont-rw (apply-bindings-for-dont-rw rhs/hyp bindings)))
              new-dont-rw))
-          (t rhs/hyp))))
+          (t rhs/hyp)))
+
+  (defund-inline calculate-dont-rw-lst (rule rhs/hyp-lst dont-rw outside-in-flg)
+    (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
+                                (not (rp-rule-metap rule)))
+                    :verify-guards nil))
+    (cond (outside-in-flg
+           (b* (((when (not dont-rw))
+                 dont-rw)
+                (bindings (match-lhs-for-dont-rw (rp-lhs rule) dont-rw nil))
+                (new-dont-rw (apply-bindings-for-dont-rw-lst rhs/hyp-lst bindings)))
+             new-dont-rw))
+          (t rhs/hyp-lst))))
 
 (define limit-reached-action (rp-state)
   :stobjs (rp-state)
@@ -1101,9 +1119,177 @@ relieving the hypothesis for ~x1! You can disable this error by running:
 (defconst *and-pattern-flip-cons-count-limit*
   100)
 
+
+(mutual-recursion
+ (defun rw-only-with-context (term dont-rw context iff-flg limit rp-state
+                                   state)
+   (declare (type (unsigned-byte 58) limit))
+   (declare (ignorable dont-rw))
+   (declare (xargs :measure (acl2::nat-list-measure (list limit 0))
+                   :guard (and
+                           (rp-termp term)
+                           (rp-term-listp context)
+                           (booleanp iff-flg)
+                           (natp limit)
+                           ;;(valid-rp-state-syntaxp RP-STATE)
+                           ;;(rule-list-syntaxp rules-for-term)
+                           )
+                   :stobjs (state rp-state)
+                   :verify-guards nil
+                   :mode :logic))
+   (b* (((when (quotep term)) (mv term rp-state))
+        ((when (or (zp limit) (atom term) (equal (car term) 'list)))
+         (mv (if (should-not-rw dont-rw)
+                 term
+               (b* (((mv new-term &)
+                     (rp-check-context term dont-rw context iff-flg)))
+                 new-term))
+             rp-state))
+        ((mv term dont-rw)
+         (rp-check-context term dont-rw context iff-flg))
+
+        ((when (or (atom term)
+                   (should-not-rw dont-rw)
+                   (equal (car term) 'quote)
+                   (equal (car term) 'falist)))
+         (mv term rp-state))
+
+        ((when (is-rp$ term)) ;; to make the proofs go easily
+         (b* (((mv subterm rp-state)
+               (rw-only-with-context (caddr term)
+                                     (dont-rw-car
+                                      (dont-rw-cdr
+                                       (dont-rw-cdr dont-rw)))
+                                     context nil (1- limit)
+                                     rp-state state)))
+           (mv (cons-with-hint (car term)
+                               (cons-with-hint (cadr term)
+                                               (cons-with-hint subterm nil (cddr
+                                                                            term))
+                                               (cdr term))
+                               term)
+               rp-state)))
+
+        ((when (is-if term))
+         (rw-only-with-context-if term dont-rw context iff-flg (1- limit)
+                                  rp-state state))
+        ((mv subterms rp-state)
+         (rw-only-with-context-subterms (cdr term)
+                                        (dont-rw-cdr dont-rw)
+                                        context
+                                        (1- limit)
+                                        rp-state state))
+        (term (cons-with-hint (car term) subterms term))
+        ((mv term &)
+         (rp-check-context term t context iff-flg))
+        ((mv term rp-state)
+         (rp-ex-counterpart term rp-state state)))
+     (mv term rp-state)))
+
+ (defun rw-only-with-context-if (term dont-rw context iff-flg limit rp-state
+                                      state)
+   (declare (type (unsigned-byte 58) limit))
+   (declare (ignorable dont-rw))
+   (declare (xargs :measure (acl2::nat-list-measure (list limit 0))
+                   :guard (and
+                           (is-if term)
+                           (rp-termp term)
+                           (rp-term-listp context)
+                           (booleanp iff-flg)
+                           (natp limit)
+                           ;;(valid-rp-state-syntaxp RP-STATE)
+                           ;;(rule-list-syntaxp rules-for-term)
+                           )
+                   :stobjs (state rp-state)
+                   :verify-guards nil
+                   :mode :logic))
+   (b* (((when (zp limit)) (mv term rp-state))
+        ((mv cond then else)
+         (mv (cadr term) (caddr term) (cadddr term)))
+        ((mv cond-dont-rw then-dont-rw else-dont-rw)
+         (mv (dont-rw-car (dont-rw-cdr term))
+             (dont-rw-car (dont-rw-cdr (dont-rw-cdr term)))
+             (dont-rw-car (dont-rw-cdr (dont-rw-cdr (dont-rw-cdr term))))))
+        ((mv cond rp-state)
+         (rw-only-with-context cond cond-dont-rw context t (1- limit)
+                               rp-state state))
+        ((when (nonnil-p cond))
+         (rw-only-with-context then then-dont-rw context iff-flg (1- limit)
+                               rp-state state))
+        ((when (equal cond ''nil))
+         (rw-only-with-context else else-dont-rw context iff-flg (1- limit)
+                               rp-state state))
+        ((mv then rp-state)
+         (rw-only-with-context then then-dont-rw context iff-flg (1- limit)
+                               rp-state state))
+        ((mv else rp-state)
+         (rw-only-with-context else else-dont-rw context iff-flg (1- limit)
+                               rp-state state))
+        ((when (equal then else))
+         (mv then rp-state))
+        ((when (and* iff-flg (nonnil-p then) (nonnil-p else)))
+         (mv ''t rp-state)))
+     (mv (create-if-instance cond then else) rp-state)))
+
+ (defun rw-only-with-context-subterms (lst dont-rw context limit rp-state state)
+   (declare (type (unsigned-byte 58) limit))
+   (declare (ignorable dont-rw))
+   (declare (xargs :measure (acl2::nat-list-measure (list limit (acl2-count lst)))
+                   :guard (and
+                           (rp-term-listp lst)
+                           (rp-term-listp context)
+                           (natp limit))
+                   :stobjs (state rp-state)
+                   :verify-guards nil
+                   :mode :logic))
+   (if (atom lst)
+       (mv lst rp-state)
+     (b* (((mv cur rp-state)
+           (rw-only-with-context (car lst) (dont-rw-car dont-rw) context
+                                 nil limit rp-state state))
+          ((mv rest rp-state)
+           (rw-only-with-context-subterms (cdr lst) (dont-rw-cdr dont-rw) context
+                                          limit rp-state state)))
+       (mv (cons-with-hint cur rest lst) rp-state)))))
+
+(defun clear-context-for-rw-only-with-context (context)
+  (declare (xargs :guard t))
+  (if (atom context)
+      nil
+    (If (include-fnc (car context) 'if)
+        (clear-context-for-rw-only-with-context (cdr context))
+        (cons-with-hint (car context)
+                        (clear-context-for-rw-only-with-context (cdr context))
+                        context))))
+
+(defun rw-only-with-context-lst$iff-flg=t (lst dont-rw context limit rp-state
+                                               state)
+  (declare (type (unsigned-byte 58) limit))
+  (declare (xargs :measure (acl2-count lst)
+                  :guard (and
+                          (rp-term-listp lst)
+                          (rp-term-listp context)
+                          (natp limit))
+                  :stobjs (state rp-state)
+                  :verify-guards nil
+                  :mode :logic))
+  (if (atom lst)
+      (mv lst rp-state)
+    (b* (((mv cur rp-state)
+          (rw-only-with-context (car lst) (dont-rw-car dont-rw) context
+                                t limit rp-state state))
+         ((when (equal cur ''nil))
+          (mv (list cur) rp-state))
+         ((mv rest rp-state)
+          (rw-only-with-context-lst$iff-flg=t (cdr lst) (dont-rw-cdr dont-rw) context
+                                              limit rp-state state)))
+      (mv (if (nonnil-p cur) rest (cons-with-hint cur rest lst)) rp-state))))
+
+
+
 (mutual-recursion
 
- ;; The big, main 4 mutually recursive functions that calls the above functions
+ ;; The main mutually recursive functions
  ;; to perform rewriting.
 
  (defun rp-rw-rule (term dont-rw rules-for-term context iff-flg outside-in-flg  limit rp-state state)
@@ -1154,50 +1340,74 @@ relieving the hypothesis for ~x1! You can disable this error by running:
           ((mv stack-index rp-state)
            (rp-state-push-to-try-to-rw-stack rule var-bindings
                                              rp-context rp-state))
-          (synp-relieved
-           (rp-rw-relieve-synp-wrap (rp-hyp rule)
-                                    var-bindings ;no-rp-var-bindings
-                                    state))
-          ((when (not synp-relieved))
-           (b* ((rp-state (rp-stat-add-to-rules-used rule :failed-synp nil
-                                                     rp-state))
-                (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index
-                                                               :failed-synp nil nil rp-state)))
-             (rp-rw-rule term dont-rw rules-for-term-rest context iff-flg
-                         outside-in-flg  (1- limit) rp-state state)))
-          (hyp (rp-apply-bindings (rp-hyp rule) var-bindings))
+
+          (hyp (rp-apply-bindings-subterms (rp-hyp rule) var-bindings))
 
           ((mv hyp-limit backchain-starts old-limit-error-setting rp-state)
            (get-limit-for-hyp-rw limit rule rp-state))
 
-          ((mv hyp-rewritten rp-state)
-           (rp-rw hyp
-                  (calculate-dont-rw rule (rp-hyp rule) dont-rw outside-in-flg)
-                  rp-context t t
-                  hyp-limit rp-state state))
+          ((mv hyp-relieved rp-state)
+           (rp-rw-relieve-hyp hyp
+                              (calculate-dont-rw-lst rule (rp-hyp rule) dont-rw outside-in-flg)
+                              rp-context rule stack-index var-bindings hyp-limit
+                              rp-state state))
 
           (rp-state (post-backchain-ops backchain-starts old-limit-error-setting rp-state))
 
-          (hyp-relieved (nonnil-p hyp-rewritten))
           ((when (not hyp-relieved))
-           (b* ((rp-state (rp-stat-add-to-rules-used rule :failed  nil rp-state))
-                (rp-state (rp-state-push-to-result-to-rw-stack rule
-                                                               stack-index :failed nil nil
-                                                               rp-state)))
-             (rp-rw-rule
-              term dont-rw rules-for-term-rest context iff-flg outside-in-flg
-              (1- limit) rp-state state)))
+           (rp-rw-rule
+            term dont-rw rules-for-term-rest context iff-flg outside-in-flg
+            (1- limit) rp-state state))
           (term-res (rp-apply-bindings (rp-rhs rule) var-bindings))
           (rp-state (rp-stat-add-to-rules-used rule nil nil rp-state))
           (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index
                                                          :success term
                                                          term-res rp-state))
           (dont-rw (calculate-dont-rw rule (rp-rhs rule) dont-rw outside-in-flg)))
-       (mv t term-res dont-rw rp-state))))) 
+       (mv t term-res dont-rw rp-state)))))
 
- 
+ (defun rp-rw-relieve-hyp (term-lst dont-rw context rule stack-index var-bindings limit rp-state state)
+   (declare (type (unsigned-byte 58) limit))
+   (declare (xargs
+             :measure (acl2::nat-list-measure (list limit (acl2-count term-lst)))
+             :stobjs (state rp-state)
+             :guard (and
+                     (rp-term-listp term-lst)
+                     (natp limit)
+                     (valid-rp-state-syntaxp rp-state)
+                     (rp-term-listp context)
+                     (integerp stack-index)
+                     (weak-custom-rewrite-rule-p rule)
+                     (alistp var-bindings))
+             :verify-guards nil
+             :mode :logic))
+   (b* (((when (zp limit))
+         (mv nil rp-state))
+        ((when (atom term-lst))
+         (mv t rp-state))
+        (term (car term-lst))
+        (synp-relieved (or (not (and (consp term) (equal (car term) 'synp)))
+                           (rp-rw-relieve-synp-wrap term var-bindings state)))
+        ((unless synp-relieved)
+         (b* ((rp-state (rp-stat-add-to-rules-used rule :failed-synp nil rp-state))
+              (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index
+                                                             :failed-synp nil nil rp-state)))
+           (mv nil rp-state)))
+        ((mv eval1 rp-state)
+         (rp-rw term (dont-rw-car dont-rw) context t t (1- limit) rp-state
+                state))
+        ((unless (nonnil-p eval1))
+         (b* ((rp-state (rp-stat-add-to-rules-used rule :failed  nil rp-state))
+              (rp-state (rp-state-push-to-result-to-rw-stack rule
+                                                             stack-index :failed nil nil
+                                                             rp-state)))
+           (mv nil rp-state))))
+     (rp-rw-relieve-hyp (cdr term-lst) (dont-rw-cdr dont-rw)
+                        context rule stack-index var-bindings limit rp-state state)))
+
  (defun rp-rw-if (term dont-rw context iff-flg hyp-flg limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
+   (declare (ignorable hyp-flg))
    (declare (xargs
              :measure (acl2::nat-list-measure (list limit 0))
              :stobjs (state
@@ -1222,210 +1432,143 @@ relieving the hypothesis for ~x1! You can disable this error by running:
 
           (dont-rw (dont-rw-if-fix dont-rw)) ;;for guard
           ;; rewrite the condition first.
+
+          ((mv cond then else)
+           (mv (first (cdr term)) (second (cdr term)) (third (cdr term))))
+          ((mv cond-dont-rw then-dont-rw else-dont-rw)
+           (mv (first (cdr dont-rw)) (second (cdr dont-rw)) (third (cdr dont-rw))))
+
+          ;; simplify it for "or" pattern.
+          ;;(then (if (and iff-flg (rp-equal-cnt then cond 2)) ''t then))
+
           ((mv cond-rw rp-state)
-           (rp-rw (cadr term) (cadr dont-rw)
-                  context t nil
+           (rp-rw cond cond-dont-rw
+                  context t hyp-flg
                   (1- limit)
                   rp-state state))
           ;; if the cond is ''nil, then the 3rd subterm
 
           ((when (equal cond-rw ''nil))
-           (rp-rw (cadddr term) (cadddr dont-rw)
+           (rp-rw else else-dont-rw
                   context iff-flg hyp-flg
                   (1- limit) rp-state state))
           ;; if the cond is ''t then return the rewritten 2nd subterm
           ((when (nonnil-p cond-rw))
-           (rp-rw (caddr term) (caddr dont-rw)
+           (rp-rw then then-dont-rw
                   context iff-flg hyp-flg
                   (1- limit) rp-state state))
-
-
-          ;; cond is something other than ''t or ''nil
-          ;; if in hyp-flg=1 (meaning a hyp is being rewritten), then stop
-          ;; trying to rewrite (for better proof-time performance) because doing the
-          ;; rest is unnecessary
-          ((when (and* hyp-flg
-                       (equal (cadddr term) ''nil)
-                       ;; If this comes from a rule that resembles anything
-                       ;; other than "and", then keep on rewriting.
-                       (not* (equal (cadr dont-rw)
-                                    (caddr dont-rw))) ;; CONSIDER REMOVING!!!!!!!!!!!!!!!!!!!!!
-                       ;; if the context has an instance of "if", then stopping
-                       ;; rewriting with the hyp-flg might prevent a rewrite. So
-                       ;; keep on going.
-                       (not* (include-fnc-subterms context 'if)) ;; CONSIDER REMOVING
-                       ))
-           (mv (create-if-instance cond-rw (caddr term) (cadddr term)) rp-state))
-
-          ;; add to the
-          ;; context to each subterm and simply them.
-          ((mv r1-context rp-state)
-           (rp-rw-context-main cond-rw context (1- limit) rp-state state)
-           ;;(mv (append context (rp-extract-context cond-rw)) rp-state)
-           #|(b* ((rp-state (update-rw-limit-throws-error nil rp-state))
-                (extra-context1 (rp-extract-context cond-rw))
-                (limit (min (1- limit) *and-pattern-flip-cons-count-limit*))
-                (?r1-context (append (rev context) extra-context1))
-                ((mv r1-context rp-state)
-                 (rp-rw-context context r1-context (len context) limit rp-state state))
-                (r1-context (append r1-context extra-context1))
-                (rp-state (update-rw-limit-throws-error
-                           current-rw-limit-throws-error
-                           rp-state)))
-             (mv r1-context rp-state))|#)
-          (r1-context-has-nil (member-equal ''nil r1-context))
-
-          ((mv r1 rp-state)
-           (rp-rw (caddr term)
-                  (rp-rw-dont-rw-or r1-context-has-nil (caddr dont-rw))
-                  r1-context iff-flg hyp-flg
-                  (1- limit) rp-state state))
-
 
           ((mv negated-cond-rw negated-cond-rw-dont-rw)
            (dumb-negate-lit2 cond-rw))
           ((mv negated-cond-rw rp-state)
            (rp-rw negated-cond-rw
-                  ;; to minimize casesplits:
-                  (rp-rw-dont-rw-or (quotep (cadddr term)) negated-cond-rw-dont-rw)
+                  (rp-rw-dont-rw-or (and* (or* (equal then ''nil)
+                                               (nonnil-p then))
+                                          (or* (equal else ''nil)
+                                               (nonnil-p else)))
+                                    negated-cond-rw-dont-rw)
                   context t nil (1- limit)
-                  rp-state state)
-           #|(if (quotep (cadddr term))
-               (mv negated-cond-rw rp-state)
-             (rp-rw negated-cond-rw (or* (quotep (cadddr term)) negated-cond-rw-dont-rw)
-                    context t nil (1- limit)
-                    rp-state state))|#)
-          #|(extra-context2
-          (rp-extract-context negated-cond-rw))
-          (r2-context (append extra-context2 context))|#
-          ((mv r2-context rp-state)
-           (rp-rw-context-main negated-cond-rw context (1- limit) rp-state state)
-           ;;(mv (append context (rp-extract-context negated-cond-rw)) rp-state)
-           #|(b* ((rp-state (update-rw-limit-throws-error nil rp-state))
-                (extra-context2 (rp-extract-context negated-cond-rw))
-                (limit (min (1- limit) *and-pattern-flip-cons-count-limit*))
-                (r2-context (append (rev context) extra-context2))
-                ((mv r2-context rp-state)
-                 (rp-rw-context context r2-context (len context) limit rp-state state))
-                (r2-context (append r2-context extra-context2))
-                (rp-state (update-rw-limit-throws-error
-                           current-rw-limit-throws-error
-                           rp-state)))
-             (mv r2-context rp-state))|#)
-          (r2-context-has-nil (member-equal ''nil r2-context))
-          
-          ((mv r2 rp-state)
-           (rp-rw (cadddr term)
-                  ;; to minimize casesplit, use a dont-rw trick:
-                  (rp-rw-dont-rw-or r2-context-has-nil (cadddr dont-rw))
-                  r2-context iff-flg hyp-flg
-                  (1- limit) rp-state state))
+                  rp-state state))
+
+          ((when (and* hyp-flg
+                       (not* (nonnil-p negated-cond-rw))
+                       (not* (equal negated-cond-rw ''nil))
+                       (or* (equal then ''nil)
+                            (equal else ''nil))))
+           ;; hyp-flg means stop rewriting if you are sure that the term won't
+           ;; become ''t.
+           ;; When  simplifying   a  hypothesis,  cond  did   not  simplify  to
+           ;; nil/nonnil. Same for negated-cond. We now  rely on r1 and r2 both
+           ;; being  rewritten to  a nonnil.  If r2  is already  nil, or  if r1
+           ;; doesn't simplify  to a nonnil or  simplifies to a nil,  then just
+           ;; return the term
+           (mv term rp-state))
+
+          ((mv r1 r1-context-has-nil rp-state)
+           (b* (((mv r1-context rp-state)
+                 (rp-rw-context-main cond-rw context
+                                     (and* (not* (is-dont-rw-context cond)) 
+                                                 
+                                           (not* (nonnil-p then))
+                                           (not* (equal else ''nil)) ;; if
+                                           ;; rewriting an 'and' pattern, then
+                                           ;; don't try to rewrite the context
+                                           (not* (equal then ''nil)))
+                                     (1- limit) rp-state state))
+                (r1-context-has-nil (member-equal ''nil r1-context))
+                ((mv r1 rp-state)
+                 (rp-rw then
+                        (rp-rw-dont-rw-or r1-context-has-nil then-dont-rw)
+                        r1-context iff-flg hyp-flg
+                        (1- limit) rp-state state)))
+             (mv r1 r1-context-has-nil rp-state)))
+
+          ((when (and* hyp-flg
+                       (or* (equal r1 ''nil)
+                            (equal else ''nil)
+                            (not* (nonnil-p r1)))))
+           ;; When  simplifying   a  hypothesis,  cond  did   not  simplify  to
+           ;; nil/nonnil. We  now rely on r1  and r2 both being  rewritten to a
+           ;; nonnil. If  r2 is  already nil,  or if r1  doesn't simplify  to a
+           ;; nonnil or simplifies to a nil, then just return the term
+           (mv term rp-state))
+
+          ((mv r2 r2-context-has-nil rp-state)
+           (b* (((mv r2-context rp-state)
+                 (rp-rw-context-main negated-cond-rw context
+                                     (and* (not* (is-dont-rw-context cond))
+                                           (not* (nonnil-p else))
+                                           (not* (equal else ''nil)))
+                                     (1- limit) rp-state state))
+                (r2-context-has-nil (member-equal ''nil r2-context))
+                ((mv r2 rp-state)
+                 (rp-rw else
+                        ;; to minimize casesplit, use a dont-rw trick:
+                        (rp-rw-dont-rw-or r2-context-has-nil else-dont-rw)
+                        r2-context iff-flg hyp-flg
+                        (1- limit) rp-state state)))
+             (mv r2 r2-context-has-nil rp-state)))
           ;; if the two subterms are equal, return them
           ;; cannot use rp-equal because they may have different
           ;; side-conditions, which is not allowed.
           ;; their rp-equal case is handled in create-if-instance
-          ((when (equal r1 r2)) (mv r1 rp-state))
+          ((when (equal r1 r2))
+           (mv r1 rp-state))
 
           ((when r1-context-has-nil) (mv r2 rp-state))
           ((when r2-context-has-nil) (mv r1 rp-state))
-          
-          ((when (and* iff-flg
-                       (nonnil-p r1)
-                       (equal r2 ''nil)))
+
+          ((unless iff-flg)
+           (mv (create-if-instance cond-rw r1 r2) rp-state))
+
+          ;; only do things with iff-flg from here and on.
+
+          ((when (and* ;;iff-flg
+                  (nonnil-p r1)
+                  (equal r2 ''nil)))
            (mv cond-rw rp-state))
 
-          ((when (and* iff-flg
-                       (nonnil-p r2)
-                       (equal r1 ''nil)))
+          ((when (and* ;;iff-flg
+                  (nonnil-p r2)
+                  (equal r1 ''nil)))
            (mv negated-cond-rw rp-state))
 
+          ((when (and* ;;iff-flg
+                  (nonnil-p r2)
+                  (nonnil-p r1)))
+           (mv ''t rp-state))
 
-          ((when (and* iff-flg
-                       (equal r2 ''nil)
-                       (not* (cons-count-compare cond-rw (* 3 *and-pattern-flip-cons-count-limit*)))
-                       (not* (cons-count-compare r1 (* 3 *and-pattern-flip-cons-count-limit*)))))
-           ;; if we have an "and" pattern: (if cond r1 nil)
-           ;; then add r1 to the context, and try to rewrite cond again with a
-           ;; small limit.
-           ;; since we are flipping things around valid-sc gets messy, so keep
-           ;; things small so we can extract side-conds later.
-           ;; Explanation: if everything evaluated to nil. we'd lose some hyps
-           ;; in inductive cases since context will have nil eval'ed
-           ;; values. Cases:
-           ;; 1. Say r1 evals to nil, then rewriting cond-rw with r1 in the
-           ;; context can cause cond-rw to attain false side-conditions, so we
-           ;; return a version without any side-conditons;
-           ;; 2. Say cond-rw evals to nil, then r1 might have false
-           ;; side-conditions, then rewriting cond-rw again with r1 in the
-           ;; context might cause cond-rw to become nonnil, so we remove
-           ;; side-conditions from r1 when rewriting cond-rw.
-           ;; For the same reason, if cond-rw becomes nonnil, it will now
-           ;; return r1 and we don't know anything about the correctness of its
-           ;; side conditions and they may be incorrect, so we extract it all.
-           (rp-rw-and cond-rw r1 context hyp-flg (1- limit) rp-state state)
-           #|(b* ((rp-state (update-rw-limit-throws-error nil rp-state))
-                (if-rw-limit *and-pattern-flip-cons-count-limit*)
-                (r1-orig r1)
-                (r1 (ex-from-rp-all2 r1))
-                (cond-context (append (rp-extract-context r1)
-                                      context))
-                (cond-rw-orig cond-rw)
-                ((mv cond-rw rp-state)
-                 (rp-rw cond-rw cond-rw ;; pass this as dont-rw to not rw the atoms
-                        cond-context iff-flg hyp-flg
-                        (min (1- limit) if-rw-limit)
-                        rp-state state))
-                (rp-state (update-rw-limit-throws-error
-                           current-rw-limit-throws-error
-                           rp-state))
-                #|(cond-rw (if (equal cond-rw cond-rw-orig)
-                cond-rw
-                (ex-from-rp-all2 cond-rw)))|#)
-             (mv (if (equal cond-rw cond-rw-orig)
-                     (create-if-instance cond-rw-orig r1-orig r2)
-                   (create-if-instance (ex-from-rp-all2 cond-rw)
-                                       r1 r2))
+          ((when (and* ;;iff-flg
+                  (equal r2 ''nil)
+                  (not* (cons-count-compare cond-rw (* 3 *and-pattern-flip-cons-count-limit*)))
+                  (not* (cons-count-compare r1 (* 3 *and-pattern-flip-cons-count-limit*)))))
+           (rp-rw-and cond-rw r1 context hyp-flg (1- limit) rp-state state))
 
-                 rp-state))|#)
-
-          ((when (and* iff-flg
-                       (equal r1 ''nil)
-                       (not* (cons-count-compare cond-rw (* 3 *and-pattern-flip-cons-count-limit*)))
-                       (not* (cons-count-compare r2 (* 3 *and-pattern-flip-cons-count-limit*))))) ; ;
-
-           (rp-rw-and negated-cond-rw r2 context hyp-flg (1- limit) rp-state state)
-           ;; if  we  have  an  "and"  pattern:  (if  cond  nil  r2)  i.e.  (if ; ;
-           ;; negated-cond-rw r2  nil) then add r2  to the context, and  try to ; ;
-           ;; rewrite negated-cond-rw again with a small limit. ; ;
-
-           ;; 1. Here say r2 evals to nil, then negated-cond-rw might attain
-           ;; incorrect side-conditions. So we extract them.
-           ;; 2. If negated-cond-rw evaluates nil, then r2 might have incorrect
-           ;; side-conds, then rewriting negated-cond-rw with r2 in the context
-           ;; might cause  negated-cond-rw to become nonnil, so the final
-           ;; result might be not valid-sc. So we extract side-conditions when
-           ;; returning the. See above for further commets.
-           #|(b* ((rp-state (update-rw-limit-throws-error nil rp-state)) ; ;
-                (if-rw-limit *and-pattern-flip-cons-count-limit*)
-                (r2-orig r2)
-                (r2 (ex-from-rp-all2 r2))
-                (cond-context (append (rp-extract-context r2)
-                                      context))
-                (negated-cond-rw-orig negated-cond-rw)
-                ((mv negated-cond-rw rp-state)
-                 (rp-rw negated-cond-rw negated-cond-rw
-                        cond-context iff-flg hyp-flg
-                        (min (1- limit) if-rw-limit)
-                        rp-state state))
-                (rp-state (update-rw-limit-throws-error
-                           current-rw-limit-throws-error
-                           rp-state))) ; ;
-             (mv (if (equal negated-cond-rw negated-cond-rw-orig)
-                     (create-if-instance negated-cond-rw-orig
-                                         r2-orig r1)
-                   (create-if-instance (ex-from-rp-all2 negated-cond-rw)
-                                       r2 r1))
-                 rp-state))|#))
+          ((when (and* ;;iff-flg
+                  (equal r1 ''nil)
+                  (not* (cons-count-compare cond-rw (* 3 *and-pattern-flip-cons-count-limit*)))
+                  (not* (cons-count-compare r2 (* 3 *and-pattern-flip-cons-count-limit*))))) ; ;
+           (rp-rw-and negated-cond-rw r2 context hyp-flg (1- limit) rp-state state)))
 
        ;; could not simplify, return the rewritten term.
        (mv (create-if-instance cond-rw r1 r2) rp-state)))
@@ -1435,6 +1578,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
    ;; Rewrite again the (if term1 term2 'nil) pattern by swapping term1 and
    ;; term2. To be called only under iff flag.
    (declare (type (unsigned-byte 58) limit))
+   (declare (ignorable hyp-flg))
    (declare (xargs :measure (acl2::nat-list-measure (list limit
                                                           0))
                    :stobjs (state rp-state)
@@ -1464,33 +1608,38 @@ relieving the hypothesis for ~x1! You can disable this error by running:
    ;; For the same reason, if cond-rw becomes nonnil, it will now
    ;; return r1 and we don't know anything about the correctness of its
    ;; side conditions and they may be incorrect, so we extract it all.
-   (b* (((when (zp limit))
+   (b* (((when (or (zp limit)
+                   (backchaining-rule rp-state);; if working on relieving the hyp of a rule, then don't bother
+                   (rewriting-context-flg rp-state)))
          (mv (create-if-instance term1 term2 ''nil) rp-state))
+
+        (rp-state (update-rewriting-context-flg t rp-state))
         (current-rw-limit-throws-error (rw-limit-throws-error rp-state))
         (rp-state (update-rw-limit-throws-error nil rp-state))
         (if-rw-limit *and-pattern-flip-cons-count-limit*)
         (term2-orig term2)
         (term2 (ex-from-rp-all2 term2))
         (term1-context (append (rp-extract-context term2)
-                              context))
+                               context))
         (term1-orig term1)
         ((mv term1 rp-state)
          (rp-rw term1 term1 ;; pass this as dont-rw to not rw the atoms
                 term1-context t hyp-flg
                 (min (1- limit) if-rw-limit)
                 rp-state state))
+        (rp-state (update-rewriting-context-flg nil rp-state))
         (rp-state (update-rw-limit-throws-error current-rw-limit-throws-error
                                                 rp-state)))
-     (mv (if (equal term1 term1-orig)
+     (mv (if (rp-equal-cnt term1 term1-orig 2)
              (create-if-instance term1-orig term2-orig ''nil)
            (create-if-instance (ex-from-rp-all2 term1)
                                term2 ''nil))
 
          rp-state)))
-   
 
- (defun rp-rw-context-main (term context limit rp-state state)
+ (defun rp-rw-context-main (term context enabled limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
+
    (declare (xargs :measure (acl2::nat-list-measure (list limit 0))
                    :stobjs (state rp-state)
                    :verify-guards nil
@@ -1501,18 +1650,53 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                            (valid-rp-state-syntaxp rp-state))
                    :mode :logic))
    (b* (((when (zp limit)) (mv context rp-state))
+        ((when (or
+                ;; if already rewriting a context, then don't try to rewrite
+                ;; the context with inner ifs to save performance
+                (rewriting-context-flg rp-state)
+                ;; if working on relieving a hyp,
+                ;; then don't bother.
+                (backchaining-rule rp-state)
+                (not enabled)))
+         (mv (append (rp-extract-context term) context) rp-state))
+
+        (extra-context1 (rp-extract-context term))
+
+        ;; try to apply the new context without any rewrite rule.
+        (extra-context1-cleaned
+         (clear-context-for-rw-only-with-context extra-context1))
+        ((mv context rp-state)
+         (if extra-context1-cleaned
+             (rw-only-with-context-lst$iff-flg=t context nil extra-context1-cleaned
+                                                 (* 5 *and-pattern-flip-cons-count-limit*)
+                                                 rp-state state)
+           (mv context rp-state)))
+
+        ;; ;; if already rewriting a context, then don't try to rewrite
+        ;; ;; the context with inner ifs to save performance
+        ;; ((when (rewriting-context-flg rp-state))
+        ;;  (mv (append (rp-extract-context term) context) rp-state))
+
+        (& (FMT-TO-COMMENT-WINDOW "Rewriting the context with term: ~p0 ~%"
+                                  (PAIRLIS2 ACL2::*BASE-10-CHARS* (LIST TERM))
+                                  0 '(nil 6 7 nil) NIL))
+        (& (FMT-TO-COMMENT-WINDOW "Current context: ~p0 ~%"
+                                  (PAIRLIS2 ACL2::*BASE-10-CHARS* (LIST context))
+                                  0 '(nil 6 7 nil) NIL))
+
         (current-rw-limit-throws-error (rw-limit-throws-error rp-state))
         (rp-state (update-rw-limit-throws-error nil rp-state))
-        (extra-context1 (rp-extract-context term))
+        (rp-state (update-rewriting-context-flg t rp-state))
         (limit (min (1- limit) *and-pattern-flip-cons-count-limit*))
         (?r1-context (append (rev context) extra-context1))
         ((mv r1-context rp-state)
          (rp-rw-context context r1-context (len context) limit rp-state state))
         (r1-context (append r1-context extra-context1))
         (rp-state (update-rw-limit-throws-error current-rw-limit-throws-error
-                                                rp-state)))
+                                                rp-state))
+        (rp-state (update-rewriting-context-flg nil rp-state)))
      (mv r1-context rp-state)))
- 
+
  (defun rp-rw-context (old-context new-context i limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
    (declare (xargs :measure (acl2::nat-list-measure (list limit
@@ -1547,6 +1731,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
 
  (defun rp-rw (term dont-rw context iff-flg hyp-flg limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
+   (declare (ignorable hyp-flg))
    (declare (xargs :measure (acl2::nat-list-measure (list limit 0))
                    :stobjs (state rp-state)
                    :verify-guards nil
@@ -1578,7 +1763,9 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                                              (rp-check-context term dont-rw context iff-flg)))
                                          term))
       rp-state))
-    ((eq (car term) 'quote)
+    ((or (eq (car term) 'quote)
+         (eq (car term) 'list)) ;; a list instance is created by a meta rule,
+     ;; do not try to rewrite it again.
      (mv term rp-state))
     ((should-not-rw dont-rw);; exit right away if said to not rewrite
      (mv term rp-state))
@@ -1602,6 +1789,16 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                                            (cdr term))
                            term)
            rp-state)))
+    ((is-dont-rw-context term)
+     (b* ((dont-rw (dont-rw-car (dont-rw-cdr dont-rw)))
+          (current-rewriting-context-flg (rewriting-context-flg rp-state))
+          (rp-state (update-rewriting-context-flg t rp-state))
+          ((mv term rp-state)
+           (rp-rw (cadr term) dont-rw
+                  context iff-flg hyp-flg (1- limit) rp-state state))
+          (rp-state (update-rewriting-context-flg current-rewriting-context-flg
+                                                  rp-state)))
+       (mv term rp-state)))
     (t
      (b* (
           ;; update the term to see if it simplifies with respect to the
@@ -1639,11 +1836,11 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                   (mv term rp-state))
                  (t (b* (((mv subterms rp-state)
                           (rp-rw-subterms (cdr term) (dont-rw-cdr dont-rw)
-                                          context hyp-flg (1- limit) rp-state
+                                          context nil (1- limit) rp-state
                                           state))
                          (term (cons-with-hint (car term) subterms term))
                          ;; check if it is a cw or hard-error statements.
-                         (- (rp-rw-check-hard-error-or-cw term rp-state)))
+                         (- (rp-rw-check-hard-error-or-cw term context rp-state)))
                       (mv term rp-state)))))
 
           ;; if the subterms are  quotep's, then run ex-counterpart
@@ -1668,6 +1865,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
  (defun rp-rw-subterms (subterms dont-rw context hyp-flg limit rp-state state)
    ;; call the rewriter on subterms.
    (declare (type (unsigned-byte 58) limit))
+   (declare (ignorable hyp-flg))
    (declare (xargs :measure (acl2::nat-list-measure (List limit
                                                           (acl2-count subterms)))
                    :stobjs (state rp-state)

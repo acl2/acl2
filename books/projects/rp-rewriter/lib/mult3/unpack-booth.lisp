@@ -719,7 +719,8 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
 
   (case-match term
     (('unpack-booth subterm)
-     (b* (((unless (unpack-booth-later-enabled))
+     (b* (((unless (or (binary-fnc-p (ex-from-rp subterm))
+                       (unpack-booth-later-enabled)))
            (mv term nil))
           (- (cw "Unpack-booth-meta starting.. ~%"))
           ;;(- (hard-error 'stop-hre "" nil))

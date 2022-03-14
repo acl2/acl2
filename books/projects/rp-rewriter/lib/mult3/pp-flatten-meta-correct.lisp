@@ -366,6 +366,34 @@
                              (:rewrite rp-termp-implies-subterms)
                              (:definition quotep)))))))
 
+(local
+ (defthm sort-sum-meta-aux2-returns-valid-sc
+   (implies (valid-sc term a)
+            (valid-sc-subterms-lst
+             (strip-cdrs (mv-nth 1 (sort-sum-meta-aux2 term)))
+             a))
+   :hints (("goal"
+            :in-theory (e/d (sort-sum-meta-aux2
+                             )
+                            ((:definition valid-sc)
+                             (:DEFINITION EVAL-AND-ALL)
+                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                             (:DEFINITION INCLUDE-FNC)
+                             (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
+
+                             (:DEFINITION RP-TERMP)
+                             (:DEFINITION FALIST-CONSISTENT)
+                             (:REWRITE DEFAULT-CDR)
+                             (:DEFINITION FALIST-CONSISTENT-AUX)
+                             rp-trans
+                             (:definition rp-termp)
+                             (:rewrite car-of-ex-from-rp-is-not-rp)
+                             (:definition rp-term-listp)
+                             (:rewrite not-include-rp-means-valid-sc)
+                             (:definition include-fnc)
+                             (:rewrite rp-termp-implies-subterms)
+                             (:definition quotep)))))))
+
 (defthm sort-sum-meta-returns-valid-sc
   (implies (valid-sc term a)
            (valid-sc (mv-nth 0 (sort-sum-meta term)) a))
@@ -3114,6 +3142,26 @@
                                rp-trans))))))
 
   (local
+   (defthm SORT-SUM-META-AUX2-returns-bit-list-listp
+     (implies (and (MV-NTH 0 (SORT-SUM-META-AUX2 term))
+                   (mult-formula-checks state)
+                   (valid-sc term a)
+                   (rp-evl-meta-extract-global-facts))
+              (BIT-LIST-LISTP
+               (RP-EVLT-LST-LST (STRIP-CDRS (MV-NTH 1 (SORT-SUM-META-AUX2 term)))
+                                A)))
+     :hints (("Goal"
+              :induct (SORT-SUM-META-AUX2 term)
+              :do-not-induct t
+              :expand ((RP-TRANS-LST (CDR TERM))
+                       (RP-TRANS-LST (CDdR TERM))
+                       (RP-TRANS-LST (CDddR TERM)))
+              :in-theory (e/d (SORT-SUM-META-AUX2)
+                              (bitp
+                               valid-sc
+                               rp-trans))))))
+
+  (local
    (defthm valid-sort-sum-meta-aux-aux-is-integerp
      (implies (and (mult-formula-checks state)
                    (valid-sc term a)
@@ -3317,6 +3365,55 @@
                                TYPE-FIX-WHEN-INTEGERP
                                PP-LISTS-TO-TERM-P+-TO-PP-LISTS-TO-TERM-PP-LST)))))
 
+  (defthm PP-LISTS-TO-TERM-P+-SORT-SUM-META-AUX2
+    (implies (and (mult-formula-checks state)
+                  (valid-sc term a)
+                  (rp-evl-meta-extract-global-facts)
+                  (MV-NTH 0 (SORT-SUM-META-AUX2 term)))
+             (EQUAL
+              (rp-evlt (pp-lists-to-term-p+ (mv-nth 1 (sort-sum-meta-aux2 term))) a)
+              (rp-evlt term A)))
+    :hints (("Goal"
+             :induct (MV-NTH 1 (SORT-SUM-META-AUX2 term))
+             :do-not-induct t
+             :Expand ((true-listp (cdr term))
+                      (RP-TRANS-LST (CDR TERM))
+                      (RP-TRANS-LST (CDdR TERM)))
+             :in-theory (e/d* (SORT-SUM-META-AUX2
+                               regular-eval-lemmas
+                               rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
+                               not-consp-SORT-SUM-META-AUX-AUX-means
+                               is-if is-rp context-from-rp eval-and-all
+                               true-listp
+                               ifix-opener
+                               PP-LISTS-TO-TERM-P+)
+                              (PP-LISTS-TO-TERM-AND$-REDEF
+                               rp-evlt-of-ex-from-rp
+                               rp-trans
+                               rp-trans-lst
+                               (:DEFINITION EX-FROM-RP)
+;(:REWRITE VALID-SC-CADR)
+;(:REWRITE VALID-SC-CADDR)
+                               (:DEFINITION EVAL-AND-ALL)
+                               (:REWRITE DEFAULT-CDR)
+                               (:REWRITE DEFAULT-CAR)
+                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
+                               (:DEFINITION RP-TRANS)
+                               (:REWRITE ATOM-RP-TERMP-IS-SYMBOLP)
+                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                               (:REWRITE EVAL-OF-BIT-OF)
+                               (:REWRITE EVAL-OF-BINARY-XOR)
+                               (:REWRITE EVAL-OF-BINARY-OR)
+                               (:DEFINITION INCLUDE-FNC)
+                               (:DEFINITION RP-TERMP)
+;VALID-SC-EX-FROM-RP-2
+                               rp-evl-of-ex-from-rp-reverse
+                               bitp
+                               TYPE-FIX-WHEN-BITP
+                               TYPE-FIX-WHEN-INTEGERP
+                               PP-LISTS-TO-TERM-P+-TO-PP-LISTS-TO-TERM-PP-LST)))))
+
   ;; A MAIN LEMMA
   (defthm sort-sum-meta-correct
     (implies (and (mult-formula-checks state)
@@ -3327,12 +3424,12 @@
     :hints (("Goal"
              :do-not-induct t
              :use ((:instance pp-lists-to-term-p+-to-pp-lists-to-term-pp-lst
-                              (lst (SORT-PP-LISTS (MV-NTH 1 (SORT-SUM-META-AUX (CADR TERM)))
+                              (lst (SORT-PP-LISTS (MV-NTH 1 (SORT-SUM-META-AUX2 (CADR TERM)))
                                                   (LEN (MV-NTH 1
-                                                               (SORT-SUM-META-AUX (CADR TERM)))))))
+                                                               (SORT-SUM-META-AUX2 (CADR TERM)))))))
                    (:instance EVAL-OF-SORT-PP-LISTS-IS-CORRECT
-                              (lst (MV-NTH 1 (SORT-SUM-META-AUX (CADR TERM))))
-                              (size (LEN (MV-NTH 1 (SORT-SUM-META-AUX (CADR TERM)))))))
+                              (lst (MV-NTH 1 (SORT-SUM-META-AUX2 (CADR TERM))))
+                              (size (LEN (MV-NTH 1 (SORT-SUM-META-AUX2 (CADR TERM)))))))
              :in-theory (e/d (sort-sum-meta
                               SORT-SUM
                               )

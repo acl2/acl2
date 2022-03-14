@@ -57,23 +57,7 @@
 (local
  (in-theory (enable rule-syntaxp)))
 
-(defun custom-rewrite-from-formula (formula)
-  (declare (xargs :guard t))
-  (case-match formula
-    (('implies hyp conc)
-     (case-match conc
-       (('equal lhs rhs)
-        (mv nil hyp lhs rhs))
-       (&
-        (mv t hyp conc ''t;`(nonnil-fix ,conc)
-            ))))
-    (&
-     (case-match formula
-       (('equal lhs rhs)
-        (mv nil ''t lhs rhs))
-       (&
-        (mv t ''t formula ''t;`(nonnil-fix ,formula)
-            ))))))
+
 
 
 #|(mutual-recursion
@@ -101,6 +85,24 @@
      (cons a
            (if-to-and-list b)))
     (& (cons if-form nil))))
+
+(defun custom-rewrite-from-formula (formula)
+  (declare (xargs :guard t))
+  (case-match formula
+    (('implies hyp conc)
+     (case-match conc
+       (('equal lhs rhs)
+        (mv nil hyp lhs rhs))
+       (&
+        (mv t hyp conc ''t;`(nonnil-fix ,conc)
+            ))))
+    (&
+     (case-match formula
+       (('equal lhs rhs)
+        (mv nil ''t lhs rhs))
+       (&
+        (mv t ''t formula ''t;`(nonnil-fix ,formula)
+            ))))))
 
 (defun sc-rule-p (formula sc-formula)
   (declare (xargs :guard t
@@ -234,7 +236,7 @@
          
          (rule (make custom-rewrite-rule
                      :rune rune
-                     :hyp hyp
+                     :hyp (if-to-and-list hyp)
                      :flg flg
                      :lhs/trig-fnc lhs
                      :rhs/meta-fnc rhs))
@@ -290,22 +292,30 @@
 
 
 
-(defund extract-from-force (term)
-  (declare (xargs :guard t))
-  (case-match term
-    (('force$ ('if x ''t ''nil) & &)
-     x)
-    (('force ('if x ''t ''nil))
-     x)
-    (('force$ x & &)
-     x)
-    (('force x)
-     x)
-    (('if x y z)
-     `(if ,(extract-from-force x)
-          ,(extract-from-force y)
-        ,(extract-from-force z)))
-    (& term)))
+(progn
+  (defund extract-from-force (term)
+    (declare (xargs :guard t))
+    (case-match term
+      (('force$ ('if x ''t ''nil) & &)
+       x)
+      (('force ('if x ''t ''nil))
+       x)
+      (('force$ x & &)
+       x)
+      (('force x)
+       x)
+      (('if x y z)
+       `(if ,(extract-from-force x)
+            ,(extract-from-force y)
+          ,(extract-from-force z)))
+      (& term)))
+
+  (defund extract-from-force-lst (lst)
+    (declare (xargs :guard t))
+    (if (atom lst)
+        nil
+      (cons (extract-from-force (car lst))
+            (extract-from-force-lst (cdr lst))))))
 
 #|(local
  (defthm true-listp-of-extract-from-force-lst
@@ -328,7 +338,7 @@
     (case-match sc-formula
       (('implies scp q)
        (b* (((when (not (subsetp-equal (if-to-and-list (extract-from-force scp))
-                                       (if-to-and-list (extract-from-force (rp-hyp rule))))))
+                                       (extract-from-force-lst (rp-hyp rule)))))
              (or (hard-error 'side-condition-check
                              "hypothesis of side-condition rule should be a subset ~
   of the original rule ~%" nil)
@@ -573,7 +583,7 @@
   (declare (xargs :guard (meta-rune-p rune)))
   (make custom-rewrite-rule
                       :meta-rulep t
-                      :hyp ''nil ;; hyp nil will make the rule always correct without
+                      :hyp (list ''nil) ;; hyp nil will make the rule always correct without
                       ;; having to identify it as a special meta rule.
                       :rune rune
                       :lhs/trig-fnc (cddr rune)  

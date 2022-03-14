@@ -60,6 +60,23 @@
   (not (is-if (cons 'list x)))
   :hints (("Goal"
            :in-theory (e/d (is-if) ()))))
+
+
+
+(defthm eval-and-all-nt-of-if-to-and-list
+  (iff (eval-and-all-nt (if-to-and-list term) a)
+       (rp-evl term a))
+  :hints (("Goal"
+           :induct (if-to-and-list term)
+           :in-theory (e/d (if-to-and-list) ()))))
+
+(defthm eval-and-all-of-if-to-and-list
+  (iff (eval-and-all (if-to-and-list term) a)
+       (rp-evlt term a))
+  :hints (("Goal"
+           :induct (if-to-and-list term)
+           :in-theory (e/d (if-to-and-list) ()))))
+
 (local
  ;;local funcitons for local lemmas
  (encapsulate
@@ -1686,11 +1703,63 @@
                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                               (:DEFINITION RP-TRANS))))))
 
+  (defthm rp-evl-lst-of-extract-from-force-lst
+    (and #|(iff (rp-evlt (extract-from-force term) a)
+     (rp-evlt term a))||#
+     (iff (rp-evl-lst (extract-from-force-lst lst) a)
+          (rp-evl-lst lst a)))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (extract-from-force-lst lst)
+             :expand ()
+             :in-theory (e/d (extract-from-force-lst)
+                             (rp-termp
+                              (:REWRITE EX-FROM-SYNP-LEMMA1)
+                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+                              (:DEFINITION IS-SYNP$INLINE)
+                              (:TYPE-PRESCRIPTION TRANS-LIST)
+                              (:DEFINITION TRANS-LIST)
+                              (:REWRITE RP-EVL-OF-FALIST-CALL)
+                              (:DEFINITION IS-FALIST)
+                              (:REWRITE
+                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
+                              (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
+                              (:DEFINITION RP-TRANS))))))
+
+  (defthm eval-and-all-of-extract-from-force-lst
+    (and #|(iff (rp-evlt (extract-from-force term) a)
+     (rp-evlt term a))||#
+     (iff (eval-and-all-nt (extract-from-force-lst lst) a)
+          (eval-and-all-nt lst a)))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (extract-from-force-lst lst)
+             :expand ()
+             :in-theory (e/d (extract-from-force-lst)
+                             (rp-termp
+                              (:REWRITE EX-FROM-SYNP-LEMMA1)
+                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+                              (:DEFINITION IS-SYNP$INLINE)
+                              (:TYPE-PRESCRIPTION TRANS-LIST)
+                              (:DEFINITION TRANS-LIST)
+                              (:REWRITE RP-EVL-OF-FALIST-CALL)
+                              (:DEFINITION IS-FALIST)
+                              (:REWRITE
+                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
+                              (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
+                              (:DEFINITION RP-TRANS))))))
+
   (defthm not-include-fnc-extract-from-force
     (implies (not (include-fnc term fn))
              (not (include-fnc (extract-from-force term) fn)))
     :hints (("Goal"
-             :in-theory (e/d (extract-from-force) ())))))
+             :in-theory (e/d (extract-from-force) ()))))
+
+  (defthm not-include-fnc-subterms-extract-from-force
+    (implies (not (include-fnc-subterms lst fn))
+             (not (include-fnc-subterms (extract-from-force-lst lst) fn)))
+    :hints (("Goal"
+             :in-theory (e/d (extract-from-force-lst) ())))))
 
 (local
  (encapsulate
@@ -1730,14 +1799,14 @@
       (implies (and (rule-syntaxp rule)
                     (rp-rule-rwp rule))
                (AND (WEAK-CUSTOM-REWRITE-RULE-P RULE)
-                    (RP-TERMP (RP-HYPm RULE))
+                    (rp-term-listp (RP-HYPm RULE))
                     (RP-TERMP (RP-LHSm RULE))
                     (RP-TERMP (RP-RHSm RULE))
                     (NOT (INCLUDE-FNC (RP-LHSm RULE) 'RP))
-                    (NOT (INCLUDE-FNC (RP-HYPm RULE) 'RP))
+                    (NOT (include-fnc-subterms (RP-HYPm RULE) 'RP))
                     (rp-termp (RP-RHSm RULE))
                     (NOT (INCLUDE-FNC (RP-RHSm RULE) 'FALIST))
-                    (NOT (INCLUDE-FNC (RP-HYPm RULE) 'FALIST))
+                    (NOT (include-fnc-subterms (RP-HYPm RULE) 'FALIST))
                     ;;(NOT (INCLUDE-FNC (RP-LHSm RULE) 'IF))
                     (NOT (INCLUDE-FNC (RP-LHSm RULE) 'SYNP))
                     #|(NO-FREE-VARIABLEP RULE)|#))
@@ -1782,6 +1851,19 @@
                                (rp-evl-and-eval-and-all))))))
 
    (local
+    (defthm rp-evl-and-subset-if-to-and-lists-2
+      (implies (and (subsetp (if-to-and-list x)
+                             y)
+                    (eval-and-all-nt y a))
+               (rp-evl x a))
+      :hints (("Goal"
+               :use ((:instance rp-evl-and-eval-and-all
+                                (x (if-to-and-list x))
+                                (y y)))
+               :in-theory (e/d ()
+                               (rp-evl-and-eval-and-all))))))
+
+   (local
     (defthm rp-evl-and-subset-if-to-and-lists-EXTRACT-FROM-FORCE
       (implies (and (subsetp (if-to-and-list (EXTRACT-FROM-FORCE x))
                              (if-to-and-list (EXTRACT-FROM-FORCE y)))
@@ -1791,6 +1873,19 @@
                :use ((:instance rp-evl-and-eval-and-all
                                 (x (if-to-and-list (EXTRACT-FROM-FORCE x)))
                                 (y (if-to-and-list (EXTRACT-FROM-FORCE y)))))
+               :in-theory (e/d ()
+                               (rp-evl-and-eval-and-all))))))
+
+   (local
+    (defthm rp-evl-and-subset-if-to-and-lists-EXTRACT-FROM-FORCE-2
+      (implies (and (subsetp (if-to-and-list (EXTRACT-FROM-FORCE x))
+                             (extract-from-force-lst y))
+                    (eval-and-all-nt y a))
+               (rp-evl x a))
+      :hints (("Goal"
+               :use ((:instance rp-evl-and-subset-if-to-and-lists-2
+                                (x (EXTRACT-FROM-FORCE x))
+                                (y (extract-from-force-lst y))))
                :in-theory (e/d ()
                                (rp-evl-and-eval-and-all))))))
 

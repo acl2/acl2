@@ -185,7 +185,9 @@
              (rp::rp-state-new-run rp::rp-state)))
    :hints (("goal"
             :in-theory (e/d (rp::rp-state-new-run
-                             rp::rp-statep) ())))))
+                             rp::rp-statep
+                             RP::UPDATE-REWRITING-CONTEXT-FLG)
+                            ())))))
 
 (local
  (defthm symbolp-not-simplified-action

@@ -46,6 +46,9 @@
 (local
  (include-book "../proofs/proof-function-lemmas"))
 
+(local
+ (include-book "../proofs/rp-equal-lemmas"))
+
 (define casesplitter-aux ((term rp-termp)
                           (cases rp-term-listp))
   :returns (res-term rp-termp :hyp (and (rp-termp term)
@@ -66,8 +69,6 @@
        (cases (ex-from-rp-all2-lst cases)))
     (casesplitter-aux term cases)))
 
-
-
 (local
  (defret casesplitter-aux-correct
    (implies (and (valid-sc term a)
@@ -83,110 +84,11 @@
                              )
                             ())))))
 
-
 (add-preprocessor
  :processor-fnc casesplitter
  :hints (("Goal"
           :in-theory (e/d (casesplitter
                            RP-STATEP)
                           ()))))
-                  
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Casesplit from context
-
-(defthmd implies-redef-with-casesplit-from-context-trig
-  (equal (implies p q)
-         (if p (casesplit-from-context-trig (if q t nil)) t))
-  :hints (("Goal"
-           :in-theory (e/d (casesplit-from-context-trig
-                            implies)
-                           ()))))
-
-(add-rp-rule implies-redef-with-casesplit-from-context-trig
-             :outside-in t)
-  
-
-(define casesplit-from-context-getcases-aux (term)
-  :returns res
-  (case-match term
-    (('if a b c)
-     (if (and (quotep b)
-              (quotep c))
-         nil
-       (append (list a)
-               (casesplit-from-context-getcases-aux b)
-               (casesplit-from-context-getcases-aux c))))
-    (& nil))
-  ///
-  (defret rp-term-listp-of-<fn>
-    (implies (rp-termp term)
-             (rp-term-listp res))))
-
-(define casesplit-from-context-getcases (context)
-  :Returns res
-  (if (atom context)
-      nil
-    (append (casesplit-from-context-getcases-aux (car context))
-            (casesplit-from-context-getcases (cdr context))))
-  ///
-  (defret rp-term-listp-of-<fn>
-    (implies (rp-term-listp context)
-             (rp-term-listp res))))
-
-
-(define casesplit-from-context-aux ((term)
-                                    (dont-rw)
-                                    (cases))
-  :returns (mv (res-term rp-termp :hyp (and (rp-termp term)
-                                            (rp-term-listp cases)))
-               dont-rw) 
-  (if (atom cases)
-      (mv term dont-rw)
-    (casesplit-from-context-aux `(if ,(car cases)
-                                     ,term
-                                   ,term)
-                                `(nil t ,dont-rw ,dont-rw)
-                                (cdr cases))))
-
-
-(define casesplit-from-context (term dont-rw context)
-  :Returns (mv res dont-rw)
-  (case-match term
-    (('casesplit-from-context-trig term)
-     (b* ((cases (ex-from-rp-all2-lst (casesplit-from-context-getcases context)))
-          (dont-rw (dont-rw-car (dont-rw-cdr dont-rw)))
-          ((mv term dont-rw)
-           (casesplit-from-context-aux term dont-rw cases)))
-       (mv term dont-rw)))
-    (& (mv term dont-rw))))
-
-(local
- (defret casesplit-from-context-aux-correct
-   (implies (and (valid-sc term a)
-                 (valid-sc-subterms cases a))
-            (and (valid-sc res-term a)
-                 (equal (rp-evlt res-term a)
-                        (rp-evlt term a))))
-   :fn casesplit-from-context-aux
-   :hints (("Goal"
-            :in-theory (e/d (casesplit-from-context-aux
-                             is-if
-                             is-rp
-                             )
-                            ())))))
-
-(rp::add-meta-rule
- :meta-fnc casesplit-from-context
- :trig-fnc casesplit-from-context-trig
- :valid-syntaxp t
- :outside-in t
- :returns (mv term dont-rw)
- :hints (("Goal"
-          :in-theory (e/d (casesplit-from-context
-                           CASESPLIT-FROM-CONTEXT-TRIG)
-                          ()))))
-       
 
 

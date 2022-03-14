@@ -258,7 +258,7 @@
 
 (defthm valid-rulep-implies-valid-sc
   (implies (and (valid-rulep rule)
-                (rp-evl (rp-hyp rule) a))
+                (eval-and-all-nt (rp-hyp rule) a))
            (valid-sc-nt (rp-rhs rule) a))
   :hints (("Goal"
            :use (:instance valid-rulep-sk-necc)

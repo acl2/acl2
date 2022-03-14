@@ -138,9 +138,9 @@
                               SVL::4VEC-PART-SELECT-IS-BITS)))))
 
   (defthm bits-is-bit-of
-    (implies (and (integerp num)
-                  (natp start)
-                  (syntaxp (atom (ex-from-rp num))))
+    (implies (and (syntaxp (atom (ex-from-rp num)))
+                  (integerp num)
+                  (natp start))
              (equal (svl::bits num start 1)
                     (bit-of num start)))
     :hints (("Goal"
@@ -774,10 +774,11 @@
   (equal (bits-to-bit-of x)
          x))
 
+;; this should never be used because of (:rewrite bits-is-bit-of)?
 (def-rp-rule bits-to-bit-of-with-wrapper
-  (implies (and (integerp num)
-                (natp start)
-                (syntaxp (atom (ex-from-rp num))))
+  (implies (and (syntaxp (atom (ex-from-rp num)))
+                (integerp num)
+                (natp start))
            (equal (bits-to-bit-of (svl::bits num start 1))
                   (bit-of num start))))
 

@@ -51,6 +51,7 @@
                 (rp-term-listp context)
                 (valid-sc term a)
                 (valid-sc-subterms context a)
+                (eval-and-all context a)
                 (rp-evl-meta-extract-global-facts)
                 (rp-formula-checks state)
                 (rp-statep rp-state))
