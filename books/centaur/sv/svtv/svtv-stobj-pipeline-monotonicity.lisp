@@ -170,19 +170,7 @@
 
 
 
-(define svarlist-non-override-test-p ((x svarlist-p))
-  (if (atom x)
-      t
-    (and (b* (((svar x1) (car x)))
-           (not x1.override-test))
-         (svarlist-non-override-test-p (cdr x)))))
 
-(define svarlist->override-tests ((x svarlist-p))
-  :returns (new-x svarlist-p)
-  (if (atom x)
-      nil
-    (cons (change-svar (Car x) :override-test t)
-          (svarlist->override-tests (cdr x)))))
 
 
 (defthm svex-alist-partial-monotonic-of-nil
@@ -1216,6 +1204,8 @@
                      (svex-alistlist-check-monotonic (svtv-data-obj-pipeline-substs obj))))
               :hints(("Goal" :in-theory (enable (<export>))))))
 
+     (defconst *<svtv>-override-tests* '<override-vars>)
+     
      (local (defthm override-vars-of-<export>
               (equal (svtv-input-substs-extract-override-vars
                       (svtv-data-obj-pipeline-substs (<export>)))
@@ -1223,7 +1213,7 @@
               :hints(("Goal" :in-theory (enable (<export>))))))
 
      (defthm <svtv>-partial-monotonic
-       (svex-alist-partial-monotonic '<override-vars>
+       (svex-alist-partial-monotonic *<svtv>-override-tests*
                                      (svtv->outexprs (<svtv>)))
        :hints (("goal" :use ((:instance svtv-data-obj-pipeline-partial-monotonic-p (obj (<export>)))))))))
 

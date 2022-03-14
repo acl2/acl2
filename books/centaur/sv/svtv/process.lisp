@@ -482,7 +482,7 @@
        (overrideconds (svtv-entries->overrideconds xf.entries))
        (mask (lhs->mask xf.lhs)))
     (append (pairlis$ vars (replicate (len vars) mask))
-            (pairlis$ overrideconds (replicate (len overrideconds) 1))
+            (pairlis$ overrideconds (replicate (len overrideconds) mask))
             (svtv-collect-masks (cdr x)))))
 
 (fty::deffixcong true-list-list-equiv true-list-list-equiv (append a b) a

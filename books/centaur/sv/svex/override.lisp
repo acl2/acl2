@@ -402,7 +402,68 @@
                                          (svex-override-triplelist-vars trips2)))
                   (svex-override-triplelist-lookup key trips2))
              (and (not (svex-override-triplelist-lookup key trips1))
-                  (not (svex-override-triplelist-lookup-valvar key trips1))))))
+                  (not (svex-override-triplelist-lookup-valvar key trips1)))))
+
+
+  (defthmd svex-override-triplelist-vars-of-append
+    (Equal (svex-override-triplelist-vars (append a b))
+           (append (svex-override-triplelist-vars a)
+                   (svex-override-triplelist-vars b)))))
+
+
+
+(define svex-override-triplelist-testvars ((x svex-override-triplelist-p))
+  :returns (vars svarlist-p)
+  (b* (((when (atom x)) nil)
+       ((svex-override-triple trip) (car x)))
+    (cons trip.testvar (svex-override-triplelist-testvars (cdr x))))
+  ///
+  (local (in-theory (enable svex-override-triplelist-lookup
+                            svex-override-triplelist-lookup-valvar)))
+
+  (defret not-lookup-when-not-member-<fn>
+    (implies (not (member-equal (svar-fix var) vars))
+             (not (svex-override-triplelist-lookup var x))))
+
+  (defret member-when-lookup-<fn>
+    (implies (and (svex-override-triplelist-lookup var x)
+                  (svar-p var))
+             (member-equal var vars)))
+
+  (local (defthm member-svex-override-triplelist-testvars-of-insert
+           (iff (member k (svex-override-triplelist-testvars (insert trip x)))
+                (b* (((svex-override-triple trip)))
+                  (or (equal k trip.testvar)
+                      (member k (svex-override-triplelist-testvars (sfix x))))))
+           :hints(("Goal" :in-theory (enable svex-override-triplelist-testvars
+                                             insert head empty tail sfix setp)))))
+  
+  (defthm mergesort-preserves-member-testvars
+    (iff (member k (svex-override-triplelist-testvars (mergesort x)))
+         (member k (svex-override-triplelist-testvars x)))
+    :hints(("Goal" :in-theory (enable mergesort
+                                      svex-override-triplelist-testvars))))
+
+  (defcong set-equiv set-equiv (svex-override-triplelist-testvars x) 1
+    :hints (("goal" :in-theory (e/d (acl2::set-unequal-witness-rw)
+                                    (mergesort-preserves-member-testvars))
+             :use ((:instance mergesort-preserves-member-testvars
+                    (k (acl2::set-unequal-witness
+                        (svex-override-triplelist-testvars x)
+                        (svex-override-triplelist-testvars x-equiv)))
+                    (x x))
+                   (:instance mergesort-preserves-member-testvars
+                    (k (acl2::set-unequal-witness
+                        (svex-override-triplelist-testvars x)
+                        (svex-override-triplelist-testvars x-equiv)))
+                    (x x-equiv)))
+             :do-not-induct t)))
+
+
+  (defthmd svex-override-triplelist-testvars-of-append
+    (Equal (svex-override-triplelist-testvars (append a b))
+           (append (svex-override-triplelist-testvars a)
+                   (svex-override-triplelist-testvars b)))))
 
 
 
@@ -463,6 +524,19 @@
 
 (local (defthmd cons-under-iff
          (iff (cons a b) t)))
+
+
+(define svex-env-keys-no-1s-p ((keys svarlist-p)
+                               (env svex-env-p))
+  (if (atom keys)
+      t
+    (and (4vec-no-1s-p (svex-env-lookup (car keys) env))
+         (svex-env-keys-no-1s-p (cdr keys) env)))
+  ///
+  (defthm 4vec-no-1s-p-lookup-when-svex-env-keys-no-1s-p
+    (implies (and (svex-env-keys-no-1s-p keys env)
+                  (member-equal (svar-fix var) (svarlist-fix keys)))
+             (4vec-no-1s-p (svex-env-lookup var env)))))
 
 
                                
@@ -865,7 +939,11 @@
                  (equal (svexlist-eval x prev-env)
                         (svexlist-eval x env))))
       :hints ('(:expand <call>))
-      :fn svexlist-check-overridetriples));; )
+      :fn svexlist-check-overridetriples))
+  
+
+
+  ;; )
 
   (encapsulate nil
     (local (defthm svex-alist-eval-is-pairlis$
@@ -1074,11 +1152,11 @@
       :hints ('(:expand ((:free (triples) <call>))))
       :fn svexlist-check-overridetriples))
 
-  (local (defthm svex-override-triplelist-vars-of-append
-           (equal (svex-override-triplelist-vars (append x y))
-                  (append (svex-override-triplelist-vars x)
-                          (svex-override-triplelist-vars y)))
-           :hints(("Goal" :in-theory (enable svex-override-triplelist-vars)))))
+  ;; (local (defthm svex-override-triplelist-vars-of-append
+  ;;          (equal (svex-override-triplelist-vars (append x y))
+  ;;                 (append (svex-override-triplelist-vars x)
+  ;;                         (svex-override-triplelist-vars y)))
+  ;;          :hints(("Goal" :in-theory (enable svex-override-triplelist-vars)))))
 
 
   (local (defthm svexlist-check-override-triples-implies-caddr
@@ -1096,7 +1174,8 @@
            :hints (("goal" :induct (append more trips))
                    '(:use ((:instance cdr-triples-preserves-svex-check-overridetriples
                             (triples (append more trips))))
-                     :in-theory (enable svex-override-triplelist-vars)))))
+                     :in-theory (enable svex-override-triplelist-vars
+                                        svex-override-triplelist-vars-of-append)))))
 
   (local (defthm svex-check-overridetriples-of-append-implied-2
            (implies (and (svex-check-overridetriples x trips)
@@ -1106,7 +1185,8 @@
                                   (triples (append trips more)))
                                  (:instance svex-check-overridetriples-of-mergesort
                                   (triples (append more trips))))
-                    :in-theory (disable svex-check-overridetriples-of-mergesort)))))
+                    :in-theory (e/d (svex-override-triplelist-vars-of-append)
+                                    (svex-check-overridetriples-of-mergesort))))))
 
   (local (defthm lookup-valvar-when-no-intersecting-vars-free-1
            (implies (and (not (intersectp-equal (svex-override-triplelist-vars trips1)
@@ -1208,8 +1288,239 @@
       :hints ('(:expand ((:free (triples) (svexlist-check-overridetriples x triples)))))
       :flag svexlist-check-overridetriples-ind))
 
+  (defthm-svex-check-overridetriples-ind-flag
+    (defthm svex-check-overridetriples-of-atom
+      (implies (not (consp triples))
+               (and (not (svex-check-overridetriples x triples))
+                    (implies (svex-case x :call)
+                             (not (svex-check-overridetriples-call x triples)))))
+      :hints ('(:expand ((:free (triples) (svex-check-overridetriples x triples))
+                         (:free (triples) (svex-check-overridetriples-call x triples)))
+                :in-theory (enable svex-override-triple-check
+                                   svex-override-triplelist-lookup
+                                   svex-override-triplelist-lookup-valvar)))
+      :flag svex-check-overridetriples-ind)
+    (defthm svexlist-check-overridetriples-of-atom
+      (implies (not (consp triples))
+               (not (svexlist-check-overridetriples x triples)))
+      :hints ('(:expand ((:free (triples) (svexlist-check-overridetriples x triples)))))
+      :flag svexlist-check-overridetriples-ind))
+
+
+
+  (local
+   (defthm svex-override-triplelist-env-ok-implies-lookup-free-2
+     (b* (((svex-override-triple trip) (svex-override-triplelist-lookup test x))
+          (testval (svex-env-lookup test1 override-env))
+          (valval (svex-env-lookup trip.valvar1 override-env))
+          (exprval (svex-eval trip.valexpr1 env1)))
+       (implies (and (svex-override-triplelist-env-ok x override-env1 prev-env)
+                     (equal testval (svex-env-lookup test1 override-env1))
+                     (equal valval (svex-env-lookup trip.valvar1 override-env1))
+                     (equal trip.valvar1 trip.valvar)
+                     (equal test1 test)
+                     (equal exprval (svex-eval trip.valexpr prev-env))
+                     trip)
+                (equal (4vec-bit?! testval valval exprval)
+                       exprval)))
+     :hints (("goal" :use ((:instance svex-override-triplelist-env-ok-implies-lookup
+                            (override-env override-env1)))
+              :in-theory (disable svex-override-triplelist-env-ok-implies-lookup)))))
+  
+
+  (std::defret-mutual un-append-override-vars-when-check-overridetriples
+    (defret un-append-override-vars-when-<fn>
+      (b* ((vars  (svex-override-triplelist-vars triples))
+           (env (append (svex-env-extract vars override-env) prev-env)))
+        (implies (and (not bad)
+                      (svex-env-keys-no-1s-p
+                       (svex-override-triplelist-testvars triples) prev-env)
+                      (no-duplicatesp-equal vars)
+                      (svex-override-triplelist-env-ok triples env prev-env))
+                 (equal (svex-eval x env)
+                        (svex-eval x prev-env))))
+      :hints ('(:expand <call>)
+              (and stable-under-simplificationp
+                   '(:expand ((:free (env) (svex-eval x env))))))
+      :fn svex-check-overridetriples)
+    (defret un-append-override-vars-when-<fn>
+      (b* ((vars  (svex-override-triplelist-vars triples))
+           (env (append (svex-env-extract vars override-env) prev-env)))
+        (implies (and (not bad)
+                      (svex-env-keys-no-1s-p
+                       (svex-override-triplelist-testvars triples) prev-env)
+                      (no-duplicatesp-equal vars)
+                      (svex-override-triplelist-env-ok triples env prev-env))
+                 (equal (svex-eval x env)
+                        (svex-eval x prev-env))))
+      :hints ('(:expand (<call>
+                         (:free (env) (svex-eval x env)))
+                :in-theory (enable svex-apply 4veclist-nth-safe
+                                   svex-override-triple-check))
+              (and stable-under-simplificationp
+                   '(:in-theory (enable cons-under-iff))))
+      :fn svex-check-overridetriples-call)
+    (defret un-append-override-vars-when-<fn>
+      (b* ((vars  (svex-override-triplelist-vars triples))
+           (env (append (svex-env-extract vars override-env) prev-env)))
+        (implies (and (not bad)
+                      (svex-env-keys-no-1s-p
+                       (svex-override-triplelist-testvars triples) prev-env)
+                      (no-duplicatesp-equal vars)
+                      (svex-override-triplelist-env-ok triples env prev-env))
+                 (equal (svexlist-eval x env)
+                        (svexlist-eval x prev-env))))
+      :hints ('(:expand <call>))
+      :fn svexlist-check-overridetriples))
+
+  (encapsulate nil
+    (local (defthm svex-alist-eval-is-pairlis$
+             (equal (svex-alist-eval x env)
+                    (pairlis$ (svex-alist-keys x)
+                              (svexlist-eval (svex-alist-vals x) env)))
+             :hints(("Goal" :in-theory (enable svex-alist-vals svex-alist-keys svex-alist-eval
+                                               svexlist-eval)))))
+
+    (defthm un-append-override-vars-from-svex-alist-eval-when-svexlist-check-overridetriples
+      (b* ((vars  (svex-override-triplelist-vars triples))
+           (env (append (svex-env-extract vars override-env) prev-env)))
+        (implies (and (not (svexlist-check-overridetriples (svex-alist-vals x) triples))
+                      (svex-env-keys-no-1s-p
+                       (svex-override-triplelist-testvars triples) prev-env)
+                      (no-duplicatesp-equal vars)
+                      (svex-override-triplelist-env-ok triples env prev-env))
+                 (equal (svex-alist-eval x env)
+                        (svex-alist-eval x prev-env))))))
+  
+  
   (fty::deffixequiv-mutual svex-check-overridetriples))
 
+
+
+(defsection svexlist-check-overridetriples-of-singleton
+  ;; (local
+  ;;  (defthmd append-when-member
+  ;;    (implies (member-equal k x)
+  ;;             (equal (append (take (- (len x) (len (member-equal k x))) x)
+  ;;                            (member-equal k x))
+  ;;                    x))
+  ;;    :hints(("Goal" :in-theory (enable take)))))
+
+  ;; ;; (local
+  ;; ;;  (defthm append-when-member
+  ;; ;;    (implies (and (member-equal k x)
+  ;; ;;                  (equal len  (- (len x) (len (member-equal k x)))))
+  ;; ;;             (equal (append (take len x)
+  ;; ;;                            (member-equal k x))
+  ;; ;;                    x))))
+
+  ;; (local (defthmd append-member-cdr
+  ;;          (implies (member-equal k x)
+  ;;                   (equal (append (list k) (cdr (member-equal k x)))
+  ;;                          (member-equal k x)))))
+
+  (local (defthmd append-when-member
+           (implies (member-equal k x)
+                    (equal (append (take (- (len x) (len (member-equal k x))) x)
+                                   (list k)
+                                   (cdr (member-equal k x)))
+                           x))))
+
+  (local (defthmd svexlist-check-overridetriples-of-singleton-lemma
+           (implies (and (equal triples (append a b c))
+                         (no-duplicatesp-equal (svex-override-triplelist-vars triples)))
+                    (iff (svexlist-check-overridetriples x triples)
+                         (or (svexlist-check-overridetriples x a)
+                             (svexlist-check-overridetriples x b)
+                             (svexlist-check-overridetriples x c))))
+           :hints(("Goal" :in-theory (enable svex-override-triplelist-vars-of-append)))))
+  
+  (defthmd svexlist-check-overridetriples-of-singleton
+    (implies (and (not (svexlist-check-overridetriples x triples))
+                  (no-duplicatesp-equal (svex-override-triplelist-vars triples))
+                  (member-equal trip (svex-override-triplelist-fix triples)))
+             (not (svexlist-check-overridetriples x (list trip))))
+    :hints (("goal" :use ((:instance svexlist-check-overridetriples-of-singleton-lemma
+                           (triples (svex-override-triplelist-fix triples))
+                           (a (take (- (len triples)
+                                       (len (member-equal trip (svex-override-triplelist-fix triples))))
+                                    (svex-override-triplelist-fix triples)))
+                           (b (list trip))
+                           (c (cdr (member-equal trip (svex-override-triplelist-fix triples)))))
+                          (:instance append-when-member
+                           (k trip) (x (svex-override-triplelist-fix triples)))))))
+
+
+  (defthmd svexlist-check-overridetriples-expand-consp
+    (implies (and (syntaxp (not (or (and (quotep triples)
+                                         (consp (unquote triples))
+                                         (eq (cdr (unquote triples)) nil))
+                                    (and (consp triples)
+                                         (eq (car triples) 'cons)
+                                         (equal (caddr triples) ''nil)))))
+                  (consp triples)
+                  (no-duplicatesp-equal (svex-override-triplelist-vars triples)))
+             (iff (svexlist-check-overridetriples x triples)
+                  (or (svexlist-check-overridetriples x (list (car triples)))
+                      (svexlist-check-overridetriples x (cdr triples)))))
+    :hints (("goal" :use ((:instance svexlist-check-overridetriples-of-append
+                           (triples (list (car triples)))
+                           (trips2 (cdr triples))))
+             :expand ((svex-override-triplelist-vars triples)
+                      (svex-override-triplelist-vars (list (car triples))))
+             :in-theory (disable svexlist-check-overridetriples-of-append)))))
+
+
+;; Picks the first triple that fails
+(define svexlist-check-overridetriples-badguy ((x svexlist-p)
+                                               (triples svex-override-triplelist-p))
+  :returns (badguy (iff (svex-override-triple-p badguy) badguy))
+  (if (atom triples)
+      nil
+    (if (svexlist-check-overridetriples x (list (car triples)))
+        (svex-override-triple-fix (car triples))
+      (svexlist-check-overridetriples-badguy x (cdr triples))))
+  ///
+  (defret badguy-fails-when-svexlist-check-overridetriples
+    (implies (and (svexlist-check-overridetriples x triples)
+                  (no-duplicatesp-equal (svex-override-triplelist-vars triples)))
+             (and badguy
+                  (member-equal badguy (svex-override-triplelist-fix triples))
+                  (svexlist-check-overridetriples x (list badguy))))
+    :hints(("Goal" :in-theory (enable svexlist-check-overridetriples-expand-consp)
+            :expand ((svex-override-triplelist-vars triples)))))
+
+  (defret badguy-when-not-svexlist-check-overridetriples
+    (implies (and (no-duplicatesp-equal (svex-override-triplelist-vars triples))
+                  (svexlist-check-overridetriples x (list badguy))
+                  (member-equal badguy (svex-override-triplelist-fix triples)))
+             (svexlist-check-overridetriples x triples))
+    :hints(("Goal" :in-theory (enable svexlist-check-overridetriples-expand-consp)
+            :expand ((svex-override-triplelist-vars triples))))))
+             
+
+(defthmd svexlist-check-overridetriples-when-subset
+  (implies (and (not (svexlist-check-overridetriples x triples))
+                (no-duplicatesp-equal (svex-override-triplelist-vars triples))
+                (subsetp-equal (svex-override-triplelist-fix sub)
+                               (svex-override-triplelist-fix triples))
+                (no-duplicatesp-equal (svex-override-triplelist-vars sub)))
+           (not (svexlist-check-overridetriples x sub)))
+  :hints(("Goal" :use ((:instance badguy-fails-when-svexlist-check-overridetriples
+                        (triples sub)))
+          :in-theory (e/d (svexlist-check-overridetriples-of-singleton)
+                          (badguy-fails-when-svexlist-check-overridetriples)))))
+
+(defthm svexlist-check-overridetriples-when-set-equiv
+  (implies (and (no-duplicatesp-equal (svex-override-triplelist-vars trips1))
+                (no-duplicatesp-equal (svex-override-triplelist-vars trips2))
+                (set-equiv (svex-override-triplelist-fix trips1)
+                           (svex-override-triplelist-fix trips2)))
+           (iff (svexlist-check-overridetriples x trips1)
+                (svexlist-check-overridetriples x trips2)))
+  :hints(("Goal" :in-theory (enable set-equiv
+                                    svexlist-check-overridetriples-when-subset)))
+  :rule-classes nil)
 
 
 
@@ -1751,3 +2062,5 @@
 ;;                                                    tests)
 ;;                                            env))
 ;;                     (svexlist-eval svexes env)))))
+
+

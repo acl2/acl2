@@ -299,8 +299,8 @@
              (svex-identity-subst statevars)
            (svex-x-subst statevars)))))
     (make-pipeline-setup :probes probes
-                         :inputs inputs
-                         :overrides override-tests
+                         :inputs (make-fast-alistlist inputs)
+                         :overrides (make-fast-alistlist override-tests)
                          :initst initst))
   ///
   (defret initst-keys-of-<fn>

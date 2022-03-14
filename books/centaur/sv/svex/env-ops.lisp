@@ -753,3 +753,171 @@ of @(see svex-env-lookup), and they bind the same variables.")
     :hints(("Goal" :in-theory (enable alist-keys svex-env-fix svex-alist-keys))))
 
   (local (in-theory (e/d (svex-env-fix) (svex-env-to-subst-id)))))
+
+
+(define svex-env-append ((x svex-env-p) (y svex-env-p))
+  :returns (app svex-env-p)
+  (append (svex-env-fix x) (svex-env-fix y))
+  ///
+  (defthm svex-env-boundp-of-svex-env-append
+    (equal (svex-env-boundp k (svex-env-append x y))
+           (or (svex-env-boundp k x)
+               (svex-env-boundp k y))))
+
+  (defthm svex-env-lookup-of-svex-env-append
+    (equal (svex-env-lookup k (svex-env-append x y))
+           (if (svex-env-boundp k x)
+               (svex-env-lookup k x)
+             (svex-env-lookup k y))))
+
+  (defthm alist-keys-of-svex-env-append
+    (equal (alist-keys (svex-env-append x y))
+           (append (alist-keys (svex-env-fix x))
+                   (alist-keys (svex-env-fix y))))
+    :hints(("Goal" :in-theory (enable alist-keys append svex-env-fix)))))
+
+
+
+(define svex-envs-disagree-witness ((vars svarlist-p)
+                                    (x svex-env-p)
+                                    (y svex-env-p))
+  :returns (var (iff (svar-p var) var))
+  (if (atom vars)
+      nil
+    (if (equal (svex-env-lookup (car vars) x)
+               (svex-env-lookup (car vars) y))
+        (svex-envs-disagree-witness (cdr vars) x y)
+      (svar-fix (car vars))))
+  ///
+  (defret lookup-when-not-<fn>
+    (implies (and (not var)
+                  (member-equal (svar-fix v) (svarlist-fix vars)))
+             (equal (equal (svex-env-lookup v x)
+                           (svex-env-lookup v y))
+                    t)))
+
+  (defret witness-when-<fn>
+    (implies var
+             (and (member-equal var (svarlist-fix vars))
+                  (not (equal (svex-env-lookup var x)
+                              (svex-env-lookup var y))))))
+
+  (defret not-<fn>-when-lookup-equal
+    (implies (equal (svex-env-lookup var x)
+                    (svex-env-lookup var y))
+             (not var)))
+
+  (defretd <fn>-under-iff
+    (iff var
+         (and (member-equal var (svarlist-fix vars))
+              (not (equal (svex-env-lookup var x)
+                          (svex-env-lookup var y))))))
+
+  (defthm svex-envs-disagree-witness-self
+    (not (svex-envs-disagree-witness vars x x)))
+
+  (defthmd svex-envs-disagree-witness-commutative
+    (equal (svex-envs-disagree-witness vars x y)
+           (svex-envs-disagree-witness vars y x)))
+
+  ;; (local (include-book "tools/trivial-ancestors-check" :dir :system))
+  ;; (local (acl2::use-trivial-ancestors-check))
+
+  (defret svex-envs-disagree-witness-of-svex-env-extract
+    :pre-bind ((x  (svex-env-extract vars x))
+               (y x))
+    (not (svex-envs-disagree-witness vars x y)))
+
+  (defret svex-envs-disagree-witness-when-subset
+    (implies (and (not var)
+                  (subsetp (svarlist-fix vars2)
+                           (svarlist-fix vars)))
+             (not (svex-envs-disagree-witness vars2 x y)))
+    :hints (("goal" :use ((:instance witness-when-<fn> (vars vars2))
+                          (:instance lookup-when-not-<fn>
+                           (v (svex-envs-disagree-witness vars2 x y))))
+             :in-theory (disable witness-when-<fn>
+                                 lookup-when-not-<fn>
+                                 <fn>))))
+  
+  (defcong set-equiv iff (svex-envs-disagree-witness vars x y) 1
+    :hints(("Goal" :use ((:instance svex-envs-disagree-witness-when-subset
+                          (vars2 vars-equiv))
+                         (:instance svex-envs-disagree-witness-when-subset
+                          (vars vars-equiv) (vars2 vars)))
+            :in-theory (disable svex-envs-disagree-witness-when-subset
+                                lookup-when-not-svex-envs-disagree-witness
+                                not-svex-envs-disagree-witness-when-lookup-equal)))
+    :package :function)
+
+  (local (in-theory (disable svex-envs-disagree-witness)))
+  
+  (defthm-svex-eval-flag
+    (defthmd svex-eval-when-envs-agree
+      (implies (not (svex-envs-disagree-witness (svex-vars x) env1 env2))
+               (equal (svex-eval x env1)
+                      (svex-eval x env2)))
+      :hints ('(:expand ((svex-vars x)
+                         (:free (env) (svex-eval x env)))))
+      :flag expr)
+    (defthmd svexlist-eval-when-envs-agree
+      (implies (not (svex-envs-disagree-witness (svexlist-vars x) env1 env2))
+               (equal (svexlist-eval x env1)
+                      (svexlist-eval x env2)))
+      :hints ('(:expand ((svexlist-vars x)
+                         (:free (env) (svexlist-eval x env)))))
+      :flag list))
+
+
+  (defthm svex-envs-disagree-witness-of-append
+    (equal (svex-envs-disagree-witness (append vars1 vars2) x y)
+           (or (svex-envs-disagree-witness vars1 x y)
+               (svex-envs-disagree-witness vars2 x y)))
+    :hints(("Goal" :in-theory (enable svex-envs-disagree-witness))))
+
+
+  (defthmd svex-alist-eval-when-envs-agree
+    (implies (not (svex-envs-disagree-witness (svex-alist-vars x) env1 env2))
+             (equal (svex-alist-eval x env1)
+                    (svex-alist-eval x env2)))
+    :hints(("Goal" :in-theory (enable svex-alist-eval svex-alist-vars
+                                      svex-eval-when-envs-agree))))
+
+  
+
+  (defthm svex-envs-similar-of-svex-env-append-extract-when-agree
+    (implies (not (svex-envs-disagree-witness vars x y))
+             (svex-envs-similar (svex-env-append (svex-env-extract vars x) y)
+                                y))
+    :hints(("Goal" :in-theory (enable svex-envs-similar))))
+
+  (local (defthmd svex-env-boundp-iff-member-svex-env-alist-keys
+         (iff (svex-env-boundp v env)
+              (member-equal (svar-fix v) (alist-keys (svex-env-fix env))))
+         :hints(("Goal" :in-theory (enable svex-env-boundp svex-env-fix alist-keys)))))
+  
+  (defthm svex-envs-similar-of-append-when-agree-on-keys-superset
+    (implies (and (not (svex-envs-disagree-witness vars x y))
+                  (subsetp-equal (alist-keys (svex-env-fix x)) (svarlist-fix vars)))
+             (svex-envs-similar (svex-env-append x y) y))
+    :hints(("Goal" :in-theory (e/d (svex-envs-similar
+                                    svex-env-boundp-iff-member-svex-env-alist-keys)
+                                   (lookup-when-not-svex-envs-disagree-witness))
+            :use ((:instance lookup-when-not-svex-envs-disagree-witness
+                   (v (svex-envs-similar-witness (svex-env-append x y) y)))))))
+
+  (local (in-theory (enable svex-envs-disagree-witness))))
+
+
+(define svex-envs-agree ((vars svarlist-p)
+                         (x svex-env-p)
+                         (y svex-env-p))
+  :returns (res (equal res (not (svex-envs-disagree-witness vars x y)))
+                :hints(("Goal" :in-theory (enable svex-envs-disagree-witness))))
+  (if (atom vars)
+      t
+    (and (equal (svex-env-lookup (car vars) x)
+                (svex-env-lookup (car vars) y))
+         (svex-envs-agree (cdr vars) x y))))
+
+
