@@ -1,7 +1,7 @@
 ; Utilities for stating claims to be proved by Axe
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -37,7 +37,7 @@
   (symbolic-list base-name len))
 
 ;fixme pass in a size
-(defun bvcat-nest-for-vars (index size base-name)
+(defund bvcat-nest-for-vars (index size base-name)
   (declare (xargs :guard (and (natp index)
                               (natp size)
                               (symbolp base-name))))
@@ -48,7 +48,14 @@
             ',(* index size)
             ,(bvcat-nest-for-vars (+ -1 index) size base-name))))
 
-(defun bit-blasted-bv-array-write-nest-for-vars-aux (current-index len element-size var-name)
+(defthm pseudo-termp-of-bvcat-nest-for-vars
+  (implies (and (natp index)
+                (natp size)
+                (symbolp base-name))
+           (pseudo-termp (bvcat-nest-for-vars index size base-name)))
+  :hints (("Goal" :in-theory (enable bvcat-nest-for-vars))))
+
+(defund bit-blasted-bv-array-write-nest-for-vars-aux (current-index len element-size var-name)
   (declare (xargs :measure (nfix (+ 1 (- len current-index)))
                   :guard (and (natp current-index)
                               (natp len)
@@ -64,6 +71,14 @@
                      ,(bvcat-nest-for-vars (+ -1 element-size) 1 (pack$ var-name "_" current-index "_"))
                      ,(bit-blasted-bv-array-write-nest-for-vars-aux (+ 1 current-index) len element-size var-name))))
 
+(defthm pseudo-termp-of-bit-blasted-bv-array-write-nest-for-vars-aux
+  (implies (and (natp current-index)
+                (natp len)
+                (posp element-size)
+                (symbolp var-name))
+           (pseudo-termp (bit-blasted-bv-array-write-nest-for-vars-aux current-index len element-size var-name)))
+  :hints (("Goal" :in-theory (enable bit-blasted-bv-array-write-nest-for-vars-aux))))
+
 ;is var-count really element-count?
 (defun bit-blasted-bv-array-write-nest-for-vars (var-name var-count element-size)
   (declare (xargs :guard (and (symbolp var-name)
@@ -71,7 +86,7 @@
                               (posp element-size))))
   (bit-blasted-bv-array-write-nest-for-vars-aux 0 var-count element-size var-name))
 
-(defun bv-array-write-nest-for-vars-aux (current-index len element-size var-name)
+(defund bv-array-write-nest-for-vars-aux (current-index len element-size var-name)
   (DECLARE (XARGS :measure (nfix (+ 1 (- len current-index)))
                   :guard (and (natp current-index)
                               (natp len)
@@ -87,11 +102,26 @@
                      ,(PACK$ var-name (NAT-TO-STRING current-index))
                      ,(bv-array-write-nest-for-vars-aux (+ 1 current-index) len element-size var-name))))
 
-(defun bv-array-write-nest-for-vars (var-name var-count element-size)
+(defthm pseudo-termp-of-bv-array-write-nest-for-vars-aux
+  (implies (and (natp current-index)
+                (natp len)
+                (posp element-size)
+                (symbolp var-name))
+           (pseudo-termp (bv-array-write-nest-for-vars-aux current-index len element-size var-name)))
+  :hints (("Goal" :in-theory (enable bv-array-write-nest-for-vars-aux))))
+
+(defund bv-array-write-nest-for-vars (var-name var-count element-size)
   (declare (xargs :guard (and (symbolp var-name)
                               (natp var-count)
                               (posp element-size))))
   (bv-array-write-nest-for-vars-aux 0 var-count element-size var-name))
+
+(defthm pseudo-termp-of-bv-array-write-nest-for-vars
+  (implies (and (symbolp var-name)
+                (natp var-count)
+                (posp element-size))
+           (pseudo-termp (bv-array-write-nest-for-vars var-name var-count element-size)))
+  :hints (("Goal" :in-theory (enable bv-array-write-nest-for-vars))))
 
 ;the numbering starts at 0
 (defmacro var-names (base-symbol count)
@@ -278,8 +308,15 @@
                               (posp element-width))))
   (bv-array-write-nest-for-vars name length element-width))
 
-(defun bit-blasted-symbolic-array (name length element-width)
+(defund bit-blasted-symbolic-array (name length element-width)
   (declare (xargs :guard (and (symbolp name)
                               (natp length)
                               (posp element-width))))
   (bit-blasted-bv-array-write-nest-for-vars name length element-width))
+
+(defthm pseudo-termp-of-bit-blasted-symbolic-array
+  (implies (and (symbolp name)
+                (natp length)
+                (posp element-width))
+           (pseudo-termp (bit-blasted-symbolic-array name length element-width)))
+  :hints (("Goal" :in-theory (enable bit-blasted-symbolic-array))))
