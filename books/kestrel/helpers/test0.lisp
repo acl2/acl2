@@ -28,7 +28,8 @@
             (consp (append x y)))))
 
 (must-be-redundant
- ;; The tool finds this proof:
+ ;; The tool finds this proof (even though APPEND is disabled, the tool tries
+ ;; inducting on it:
  (defthm consp-of-append
    (implies (consp x)
             (consp (binary-append x y)))

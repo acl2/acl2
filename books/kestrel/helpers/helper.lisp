@@ -38,6 +38,7 @@
 ;; TODO: Record both a safe proof (subgoal hints) and a nice proofs (rely on rules firing)?
 ;; TODO: Don't spawn a subproblem when the checkpoint is the same as the goal
 ;; TODO: add and use done-mapp
+;; TODO: When we find a technique to prove a problem, remove all other open problems for the same formula
 
 (local (in-theory (disable natp)))
 
@@ -317,6 +318,7 @@
                  :in-theory (enable ;(:i ,(farg1 technique))
                              ,(ffn-symb (farg1 technique)) ; induction and definition rules (usually want both)
                              ))))
+       (- (cw " ")) ; indent prove$+ output
        ((mv erp provedp failure-info state)
         (prove$+ formula
                  :hints hints
@@ -340,7 +342,7 @@
             (mv t nil nil nil nil nil name-map state))
            (non-top-checkpoints (clauses-to-implications non-top-checkpoints))
            ;; (- (cw "top-checkpoints: ~x0~%" top-checkpoints))
-           (- (cw "non-top-checkpoints: ~x0~%" non-top-checkpoints))
+           (- (cw " non-top-checkpoints: ~x0~%" non-top-checkpoints))
            ;; Spawn subproblems for each of the checkpoints under the induction (TODO: Can this be abstracted out?)
            (subproblem-names (fresh-var-names (len non-top-checkpoints) (pack$ name '-induct) (strip-cars name-map))) ;slow?
            )
@@ -372,6 +374,7 @@
        (hints `(("Goal" :in-theory (enable ,@(fargs technique))
                  :do-not-induct t ; since we don't look at the non-top-checkpoints below anyway (the checkpoints exposed by the enabling may be proved by induction, of course)
                  )))
+       (- (cw " ")) ; indent prove$+ output
        ((mv erp provedp failure-info state)
         (prove$+ formula
                  :hints hints
@@ -388,7 +391,7 @@
        (top-checkpoints (checkpoint-list t state))
        (top-checkpoints (clauses-to-implications top-checkpoints))
        ;; (non-top-checkpoints (checkpoint-list nil state))
-       (- (cw "top-checkpoints: ~x0~%" top-checkpoints))
+       (- (cw " top-checkpoints: ~x0~%" top-checkpoints))
        ;; (- (cw "non-top-checkpoints: ~x0~%" non-top-checkpoints))
        (subproblem-names (fresh-var-names (len top-checkpoints) (pack$ name '-enable) (strip-cars name-map))) ;slow?
        )
@@ -419,8 +422,8 @@
        (- (cw "(Attacking ~x0 by ~x1.~%" name technique)))
     (mv-let (erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state)
       (case (car technique)
-        (:induct (attack-induct-problem prob step-limit name-map state))
-        (:enable (attack-enable-problem prob step-limit name-map state))
+        (:induct (attack-induct-problem prob step-limit name-map state)) ; todo: mention macro-aliases instead when possible?
+        (:enable (attack-enable-problem prob step-limit name-map state)) ; todo: mention macro-aliases instead when possible?
         ;;todo
         (otherwise (prog2$ (er hard? 'attack-open-problem "Unknown technique in problem ~x0." prob)
                            (mv t nil nil nil nil nil name-map state))))
@@ -467,7 +470,8 @@
   (if (endp items)
       nil
     (let* ((item (first items))
-           (technique `(:enable ,item)))
+           (technique `(:enable ,item))  ; todo: mention macro-alias instead when possible?
+           )
       (if (member-equal technique old-techniques) ; todo: what if an old-technique enabled this function and more?
           (make-enable-problems (rest items) name formula benefit old-techniques wrld) ; already tried this technique
         (cons (open-problem name technique formula benefit
@@ -484,7 +488,7 @@
                   :verify-guards nil ; todo
                   ))
   (b* ((name (raw-problem->name prob))
-       (- (cw "(Elaborating ~x0:~%" name))
+       (- (cw "(Determining techniques for ~x0:~%" name))
        (formula (raw-problem->formula prob))
        (benefit (raw-problem->benefit prob))
        (old-techniques (raw-problem->old-techniques prob))
@@ -506,7 +510,7 @@
        (probs (append (make-induct-problems subterms name formula benefit old-techniques wrld)
                       probs))
 
-       (- (cw "Created ~x0 problems using these techniques:~%~x1.)~%" (len probs) (map-open-problem->technique probs))))
+       (- (cw " Created ~x0 problems using these techniques:~% ~x1.)~%" (len probs) (map-open-problem->technique probs))))
     probs))
 
 (defun elaborate-raw-problems (probs wrld)
@@ -641,6 +645,10 @@
        ((when (not open-probs))
         (cw "NO PROBLEMS LEFT! FAILING.")
         (mv t nil nil state))
+       (- (cw "(Choosing next problem (~x0 open, ~x1 pending).~%" (len open-probs) (len pending-probs)))
+       (- (cw " (Pending problems: ~X01)~%" pending-probs nil))
+       (- (cw " (Open problems: ~X01)" open-probs nil))
+       (- (cw ")~%"))
        (res (choose-next-problem open-probs step-limit))
        ((when (not res)) ; can this happen?
         (er hard? 'repeatedly-attack-problems "No open problems.  Proof attempt failed.")
@@ -701,8 +709,8 @@
 (defun help-with-fn (form state)
   (declare (xargs :mode :program
                   :stobjs state))
-  (b* ((- (cw "~%Trying to help with ~x0.~%" form))
-       (state (set-print-case :downcase state)) ; make printing of forms downcase, to support the use copyind and pasting them
+  (b* ((state (set-print-case :downcase state)) ; make printing of forms downcase, to support the use copyind and pasting them
+       (- (cw "~%Trying to help with ~x0.~%" form))
        (theorem-type (car form))
        (body (if (eq 'thm theorem-type)
                  (second form)
