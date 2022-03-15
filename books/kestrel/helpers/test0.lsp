@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "help2")
+(include-book "helper")
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
 
@@ -22,7 +22,7 @@
    (implies (consp x)
             (consp (append x y)))))
 
-(help2)
+(h) ; ask for help
 
 (must-be-redundant
  ;; The tool finds this proof:

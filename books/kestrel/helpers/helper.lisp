@@ -664,7 +664,7 @@
                   (mv t nil nil state)))))))
 
 ;; Returns (mv erp event state).
-(defun help2-fn (state)
+(defun help-fn (state)
   (declare (xargs :mode :program
                   :stobjs state))
   (b* ((state (set-print-case :downcase state)) ; make all printing downcase
@@ -675,7 +675,7 @@
                  (second most-recent-theorem)
                (third most-recent-theorem) ; for defthm
                ))
-       (body (translate-term body 'help2-fn (w state)))
+       (body (translate-term body 'help-fn (w state)))
        (name (if (eq 'thm theorem-type)
                  'the-thm
                (second most-recent-theorem) ; for defthm
@@ -698,5 +698,5 @@
             (cw "Submitting proof now.~%")
             (mv nil `(progn ,@proof-events) state))))
 
-(defmacro help2 ()
-  '(make-event-quiet (help2-fn state)))
+(defmacro h ()
+  '(make-event-quiet (help-fn state)))
