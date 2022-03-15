@@ -2011,8 +2011,8 @@
                   (value-optionp val?)
                   (equal (type-of-value-option val?)
                          (type-name-to-type
-                          (make-tyname :specs (fun-info->result info)
-                                       :pointerp nil))))
+                          (make-tyname :tyspec (fun-info->result info)
+                                       :declor (obj-adeclor-none)))))
              (equal (exec-fun fun args compst fenv limit)
                     (mv val? (pop-frame compst1))))
     :enable exec-fun)
@@ -2142,22 +2142,19 @@
                   (equal (block-item-kind item) :declon)
                   (not (zp limit))
                   (equal declon (block-item-declon->get item))
-                  (declon-case declon :var)
+                  (equal var+tyname+init
+                         (obj-declon-to-ident+tyname+init declon))
+                  (equal var (mv-nth 0 var+tyname+init))
+                  (equal tyname (mv-nth 1 var+tyname+init))
+                  (equal init (mv-nth 2 var+tyname+init))
                   (equal val+compst1
-                         (exec-expr-call-or-pure (declon-var->init declon)
-                                                 compst
-                                                 fenv
-                                                 (1- limit)))
+                         (exec-expr-call-or-pure init compst fenv (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
-                  (equal declor (declon-var->declor declon))
                   (equal (type-of-value val)
-                         (type-name-to-type
-                          (make-tyname :specs (declon-var->type declon)
-                                       :pointerp (declor->pointerp declor))))
-                  (equal compst2
-                         (create-var (declor->ident declor) val compst1))
+                         (type-name-to-type tyname))
+                  (equal compst2 (create-var var val compst1))
                   (compustatep compst2))
              (equal (exec-block-item item compst fenv limit)
                     (mv nil compst2)))
@@ -2180,12 +2177,8 @@
       (:e block-item-kind)
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
-      (:e declon-kind)
-      (:e declon-var->type)
-      (:e declon-var->declor)
-      (:e declon-var->init)
-      (:e declor->pointerp)
-      (:e declor->ident))))
+      (:e obj-declon-to-ident+tyname+init)
+      (:e type-name-to-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2231,23 +2224,26 @@
     "The base case is a call @('(init-scope nil nil)'),
      which is handled by the executable counterpart of @(tsee init-scope).
      For the step case, during symbolic execution we expect that
-     there is always the same number of formals and actuals."))
+     there is always the same number of formals and actuals.")
+   (xdoc::p
+    "We need to enable @(tsee eq) because it arises from
+     the translation of @('(obj-declor-case declor :pointer)')
+     in one of the hypotheses of the rule."))
 
   (defruled init-scope-when-consp
     (implies (and (syntaxp (quotep formals))
                   (consp formals)
                   (equal formal (car formals))
                   (param-declonp formal)
-                  (equal declor (param-declon->declor formal))
                   (valuep val)
+                  (equal name+tyname (param-declon-to-ident+tyname formal))
+                  (equal name (mv-nth 0 name+tyname))
+                  (equal tyname (mv-nth 1 name+tyname))
                   (equal (type-of-value val)
-                         (type-name-to-type
-                          (make-tyname :specs (param-declon->type formal)
-                                       :pointerp (declor->pointerp declor))))
+                         (type-name-to-type tyname))
                   (value-listp vals)
                   (equal scope (init-scope (cdr formals) vals))
                   (scopep scope)
-                  (equal name (declor->ident declor))
                   (not (omap::in name scope)))
              (equal (init-scope formals (cons val vals))
                     (omap::update name val scope)))
@@ -2255,9 +2251,8 @@
 
   (defval *atc-init-scope-rules*
     '(init-scope-when-consp
+      eq
       (:e init-scope)
       (:e param-declonp)
-      (:e param-declon->type)
-      (:e param-declon->declor)
-      (:e declor->pointerp)
-      (:e declor->ident))))
+      (:e param-declon-to-ident+tyname)
+      (:e type-name-to-type))))

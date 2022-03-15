@@ -273,38 +273,22 @@
                                    SLICE-BECOMES-GETBIT
                                    BVCHOP-1-BECOMES-GETBIT)))))
 
-;(in-theory (disable logextu-as-bvchop))
-
 (defthm logext-of-bvchop-smaller
-  (implies (and (integerp x) ;drop
-                (<= size n)
+  (implies (and (<= size n)
                 (integerp n)
-                (integerp size)
-                (< 0 size))
+                (posp size))
            (equal (logext size (bvchop n x))
                   (logext size x)))
-  :hints (("Goal" :in-theory (enable logext))))
-
-(DEFTHM LOGEXT-OF-BVCHOP-SMALLER-better
-  (IMPLIES (AND ;(INTEGERP X)
-            (<= SIZE N)
-        ;    (INTEGERP X)
-            (INTEGERP N)
-            (INTEGERP SIZE)
-            (< 0 SIZE))
-           (EQUAL (LOGEXT SIZE (BVCHOP N X))
-                  (LOGEXT SIZE X)))
-  :HINTS (("Goal" :cases ((integerp x)):IN-THEORY (E/d (LOGEXT) (;LOGBITP-BVCHOP
-                                            )))))
+  :hints (("Goal" :cases ((integerp x))
+           :in-theory (enable logext))))
 
 (defthm signed-byte-p-of-logext
   (implies (and (>= size1 size)
-                (> size 0)
                 (integerp size1)
-                (integerp size))
-           (equal (signed-byte-p size1 (logext size i))
-                  t)))
+                (posp size))
+           (signed-byte-p size1 (logext size i))))
 
+;; Splits based on the high bit
 (defthmd logext-cases
   (implies (posp size)
            (equal (logext size x)
@@ -357,7 +341,7 @@
                         (:instance logext-of-bvchop-same
                                    (x x)))
            :in-theory (disable logext-of-bvchop-same expt
-                               logext-of-bvchop-smaller-better))))
+                               logext-of-bvchop-smaller))))
 
 (defthm logext-of-minint
   (implies (posp size)
@@ -409,9 +393,8 @@
   :rule-classes :linear)
 
 (defthm <-of-logext-same-linear
-  (implies (and (posp size)
-                ;; (<= (- (expt 2 (+ -1 size))) x) ;todo
-                (natp x))
+  (implies (and (natp x)
+                (posp size))
            (<= (logext size x) x))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable logext))))
@@ -426,12 +409,12 @@
                            (logext-identity
                             logext-does-nothing-rewrite)))))
 
-(defthmd logext-when-positive
-  (implies (and (equal 0 (getbit (+ -1 size) x))
-                (posp size))
+;could loop?
+(defthmd logext-when-positive-gen
+  (implies (<= 0 (logext size x))
            (equal (logext size x)
                   (bvchop (+ -1 size) x)))
-  :hints (("Goal" :in-theory (enable logext))))
+  :hints (("Goal" :in-theory (enable logext logapp))))
 
 (defthmd logext-when-negative
   (implies (< (logext 32 x) 0)
@@ -487,6 +470,7 @@
            0))
   :hints (("Goal" :in-theory (enable logext))))
 
+;todo better than logext-negative above
 (defthmd <-of-logext-and-0
   (implies (posp size)
            (equal (< (logext size k) 0)
@@ -515,7 +499,7 @@
                         (:instance logext-of-bvchop-same (x y)))
            :in-theory (disable bvchop-of-logext-same
                                logext-of-bvchop-same
-                               logext-of-bvchop-smaller-better
+                               logext-of-bvchop-smaller
                                bvchop-of-logext))))
 
 (defthm logext-of-+-of-logext-arg1
@@ -552,7 +536,7 @@
   :hints (("Goal" :in-theory (enable logext-cases))))
 
 ;used to allow n=1 but untrue for that case?
-;renme
+;rename
 (defthm logext-shift
   (implies (and (integerp x)
                 (natp n)
@@ -660,7 +644,6 @@
   :hints (("Goal" :use ((:instance logext-of-bvchop-same (x (- x)))
                         (:instance logext-of-bvchop-same (x (- (logext size x)))))
            :in-theory (disable logext-of-bvchop-same
-                               logext-of-bvchop-smaller-better
                                logext-of-bvchop-smaller
                                logext-when-signed-byte-p
                                logext-identity
