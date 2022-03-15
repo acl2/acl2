@@ -139,7 +139,8 @@
                    ((name problem-namep) ; name for the formula being to be prove (not the problem = formula + technique)
                     (technique techniquep)
                     (formula pseudo-termp) ; or could store untranslated terms, or clauses
-                    (benefit benefitp) ; benefit of solving this problem, from 0 to 1000 (with 1000 being as good as proving the top-level goal)
+                    (benefit benefitp) ; benefit of solving this problem, from 0 to 1000 (with 1000 being as good as proving the top-level goal), todo: track benefits on behalf of each parent?
+                    (parents problem-name-listp)
                     (chance chancep) ; estimated chance of success for this goal and technique
                     ;; todo: estimated cost of applying this technique to prove this goal (including proving and subgoals)
                     (last-step-limit maybe-step-limitp) ; either nil (not tried before) or a step-limit insufficient to handle the problem (e.g., to produce subgoals)
@@ -234,9 +235,9 @@
 ;; A problem that we've not yet analyzed to determine which techniques may apply.
 (std::defaggregate raw-problem
                    ((name problem-namep) ; name for the formula being to be prove (not the problem = formula + technique)
-                    ;; (technique techniquep)
                     (formula pseudo-termp) ; or could store untranslated terms, or clauses
-                    (benefit benefitp) ; benefit of solving this problem, from 0 to 1000 (with 1000 being as good as proving the top-level goal)
+                    (benefit benefitp) ; benefit of solving this problem, from 0 to 1000 (with 1000 being as good as proving the top-level goal), todo: track benefits on behalf of each parent?
+                    (parents problem-name-listp)
                     ;; (chance chancep)   ; estimated chance of success for this goal and technique
                     ;; todo: estimated cost of applying this technique to prove this goal (including proving and subgoals)
                     (old-techniques technique-listp) ; techniques to avoid trying again
@@ -252,16 +253,17 @@
          (raw-problem-listp (rest probs)))))
 
 ;todo: allow benefit to differ for different subproblems
-(defund make-raw-subproblems (names formulas benefit old-techniques)
+(defund make-raw-subproblems (names formulas benefit parents old-techniques)
   (declare (xargs :guard (and (problem-name-listp names)
                               (pseudo-term-listp formulas)
                               (benefitp benefit)
+                              (problem-name-listp parents)
                               (technique-listp old-techniques))
                   :guard-hints (("Goal" :in-theory (enable problem-name-listp)))))
   (if (endp names)
       nil
-    (cons (raw-problem (first names) (first formulas) benefit old-techniques)
-          (make-raw-subproblems (rest names) (rest formulas) benefit old-techniques))))
+    (cons (raw-problem (first names) (first formulas) benefit parents old-techniques)
+          (make-raw-subproblems (rest names) (rest formulas) benefit parents old-techniques))))
 
 (defund name-mapp (map)
   (declare (xargs :guard t))
@@ -362,6 +364,7 @@
                                )
               (make-raw-subproblems subproblem-names non-top-checkpoints
                                     (+ -1 benefit) ; slightly less good than solving the original problem
+                                    (list name)
                                     (cons technique old-techniques) ; or don't since now we're in an induction?
                                     )
               (append (pairlis$ subproblem-names non-top-checkpoints) ;inefficient
@@ -410,6 +413,7 @@
                          )
         (make-raw-subproblems subproblem-names top-checkpoints
                               (+ -1 benefit) ; slightly less good than solving the original problem (TODO: Divide by number of problems? Look at chance other will be solved?)
+                              (list name)
                               (cons technique old-techniques))
         (append (pairlis$ subproblem-names top-checkpoints) ;inefficient
                 name-map)
@@ -441,11 +445,12 @@
               (and (eq res :split) (cw "Split into ~x0 subproblems.)~%" (len raw-subproblems)))
               (mv erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state)))))
 
-(defun make-induct-problems (subterms name formula benefit old-techniques wrld)
+(defun make-induct-problems (subterms name formula benefit parents old-techniques wrld)
   (declare (xargs :guard (and (pseudo-term-listp subterms)
                               (symbolp name)
                               (pseudo-termp formula)
                               (benefitp benefit)
+                              (problem-name-listp parents)
                               (technique-listp old-techniques)
                               (plist-worldp wrld))
                   :guard-hints (("Goal" :in-theory (enable techniquep)))))
@@ -460,19 +465,22 @@
                )
           (let ((technique `(:induct ,subterm)))
             (if (member-equal technique old-techniques)
-                (make-induct-problems (rest subterms) name formula benefit old-techniques wrld) ; already tried this technique
-              (cons (open-problem name technique formula benefit
+                (make-induct-problems (rest subterms) name formula benefit parents old-techniques wrld) ; already tried this technique
+              (cons (open-problem name technique formula
+                                  benefit
+                                  parents
                                   500 ; todo: chance
                                   nil ; no step-limit tried yet
                                   old-techniques)
-                    (make-induct-problems (rest subterms) name formula benefit old-techniques wrld))))
-        (make-induct-problems (rest subterms) name formula benefit old-techniques wrld)))))
+                    (make-induct-problems (rest subterms) name formula benefit parents old-techniques wrld))))
+        (make-induct-problems (rest subterms) name formula benefit parents old-techniques wrld)))))
 
-(defun make-enable-problems (items name formula benefit old-techniques wrld)
+(defun make-enable-problems (items name formula benefit parents old-techniques wrld)
   (declare (xargs :guard (and (true-listp items) ; names and runes
                               (symbolp name)
                               (pseudo-termp formula)
                               (benefitp benefit)
+                              (problem-name-listp parents)
                               (technique-listp old-techniques)
                               (plist-worldp wrld))
                   :guard-hints (("Goal" :in-theory (enable techniquep)))))
@@ -481,12 +489,14 @@
     (let* ((item (first items))
            (technique `(:enable ,item)))
       (if (member-equal technique old-techniques) ; todo: what if an old-technique enabled this function and more?
-          (make-enable-problems (rest items) name formula benefit old-techniques wrld) ; already tried this technique
-        (cons (open-problem name technique formula benefit
+          (make-enable-problems (rest items) name formula benefit parents old-techniques wrld) ; already tried this technique
+        (cons (open-problem name technique formula
+                            benefit
+                            parents
                             600 ; todo: chance
                             nil ; no step-limit tried yet
                             old-techniques)
-              (make-enable-problems (rest items) name formula benefit old-techniques wrld))))))
+              (make-enable-problems (rest items) name formula benefit parents old-techniques wrld))))))
 
 ;; Given a raw-problem, analyze it to determine which proof techniques might apply.
 ;; Returns a list of open problems.
@@ -499,6 +509,7 @@
        (- (cw "(Determining techniques for ~x0:~%" name))
        (formula (raw-problem->formula prob))
        (benefit (raw-problem->benefit prob))
+       (parents (raw-problem->parents prob))
        (old-techniques (raw-problem->old-techniques prob))
        (subterms (find-all-fn-call-subterms formula nil))
        (fns (all-fnnames formula)) ; todo: keep only defined ones?
@@ -512,10 +523,10 @@
                                            ;; here we try enabling just the :definition of the recursive functions,
                                            ;; because elsewhere we try induction with them:
                                            (wrap-all :definition rec-fns)))
-       (probs (append (make-enable-problems items-to-consider-enabling name formula benefit old-techniques wrld)
+       (probs (append (make-enable-problems items-to-consider-enabling name formula benefit parents old-techniques wrld)
                       probs))
        ;; Add :induct problems:
-       (probs (append (make-induct-problems subterms name formula benefit old-techniques wrld)
+       (probs (append (make-induct-problems subterms name formula benefit parents old-techniques wrld)
                       probs))
 
        (- (cw " Created ~x0 problems using these techniques:~% ~x1.)~%" (len probs) (map-open-problem->technique probs))))
@@ -731,7 +742,9 @@
                  'the-thm
                (second form) ; for defthm
                ))
-       (raw-prob (raw-problem name body 1000 nil))
+       (raw-prob (raw-problem name body 1000
+                              nil ; no parents ; todo: perhaps we could use this instead of passing around the top-name
+                              nil))
        (open-probs (elaborate-raw-problem raw-prob (w state)))
        ((mv erp provedp proof-events state)
         (repeatedly-attack-problems open-probs
