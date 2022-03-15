@@ -22,7 +22,10 @@
    (implies (pos-listp x)
             (nat-listp x))))
 
-(h) ; ask for help
+(help-with
+ (defthm nat-listp-when-pos-listp
+   (implies (pos-listp x)
+            (nat-listp x))))
 
 ;; TODO: Have the tool try to combine the 2 steps that it finds
 (must-be-redundant ; todo: make a quiet version of this

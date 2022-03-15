@@ -32,9 +32,12 @@
 (local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
 
 ;; TODO: Add more proof techniques!
-;; TODO: After a successful proof, try to combine steps
+;; TODO: After a successful proof, try to combine steps/hints
 ;; TODO: Think about rule classes (watch for illegal rules!) and disablement of new theorems
 ;; TODO: How can we parallelize this?
+;; TODO: Record both a safe proof (subgoal hints) and a nice proofs (rely on rules firing)?
+;; TODO: Don't spawn a subproblem when the checkpoint is the same as the goal
+;; TODO: add and use done-mapp
 
 (local (in-theory (disable natp)))
 
@@ -366,7 +369,9 @@
        (benefit (open-problem->benefit prob))
        (technique (open-problem->technique prob)) ; (:enable ....)
        (old-techniques (open-problem->old-techniques prob))
-       (hints `(("Goal" :in-theory (enable ,@(fargs technique)))))
+       (hints `(("Goal" :in-theory (enable ,@(fargs technique))
+                 :do-not-induct t ; since we don't look at the non-top-checkpoints below anyway (the checkpoints exposed by the enabling may be proved by induction, of course)
+                 )))
        ((mv erp provedp failure-info state)
         (prove$+ formula
                  :hints hints
@@ -693,32 +698,31 @@
                   (mv t nil nil state)))))))
 
 ;; Returns (mv erp event state).
-(defun help-fn (state)
+(defun help-with-fn (form state)
   (declare (xargs :mode :program
                   :stobjs state))
-  (b* ((state (set-print-case :downcase state)) ; make all printing downcase
-       (most-recent-theorem (most-recent-theorem state)) ;throws an error if there isn't one, TODO: What if the theorem is in an encapsulate?  Better to look for the checkpoints?
-       (- (cw "~%Trying to help with ~x0.~%" most-recent-theorem))
-       (theorem-type (car most-recent-theorem))
+  (b* ((- (cw "~%Trying to help with ~x0.~%" form))
+       (state (set-print-case :downcase state)) ; make printing of forms downcase, to support the use copyind and pasting them
+       (theorem-type (car form))
        (body (if (eq 'thm theorem-type)
-                 (second most-recent-theorem)
-               (third most-recent-theorem) ; for defthm
+                 (second form)
+               (third form) ; for defthm
                ))
        (body (translate-term body 'help-fn (w state)))
        (name (if (eq 'thm theorem-type)
                  'the-thm
-               (second most-recent-theorem) ; for defthm
+               (second form) ; for defthm
                ))
        (raw-prob (raw-problem name body 1000 nil))
        (open-probs (elaborate-raw-problem raw-prob (w state)))
        ((mv erp provedp proof-events state)
         (repeatedly-attack-problems open-probs
-                    nil
-                    10000
-                    (acons name body nil) ; initial name-map
-                    nil                   ; initial done-map
-                    name                  ; top name to prove
-                    state))
+                                    nil
+                                    10000
+                                    (acons name body nil) ; initial name-map
+                                    nil                   ; initial done-map
+                                    name                  ; top name to prove
+                                    state))
        ((when erp) (mv erp nil state))
        ((when (not provedp))
         (cw "Failed to prove.~%")
@@ -727,6 +731,18 @@
             (cw "Submitting proof now.~%")
             (mv nil `(progn ,@proof-events) state))))
 
+;; Returns (mv erp event state).
+(defun h-fn (state)
+  (declare (xargs :mode :program
+                  :stobjs state))
+  (help-with-fn (most-recent-theorem state) ;throws an error if there isn't one, TODO: What if the theorem is in an encapsulate?  Better to look for the checkpoints?
+                state))
+
 ;; Call this to get help with the most recent thm or defthm attempt.
+;; We could call this tool "help' but that name is already taken.
 (defmacro h ()
-  '(make-event-quiet (help-fn state)))
+  '(make-event-quiet (h-fn state)))
+
+;; Wrap this around a form (a defthm or thm) to get help with it.
+(defmacro help-with (form)
+  `(make-event-quiet (help-with-fn ',form state)))

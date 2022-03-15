@@ -22,7 +22,10 @@
    (implies (consp x)
             (consp (append x y)))))
 
-(h) ; ask for help
+(help-with
+ (defthm consp-of-append
+   (implies (consp x)
+            (consp (append x y)))))
 
 (must-be-redundant
  ;; The tool finds this proof:
