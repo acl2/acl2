@@ -16,6 +16,7 @@
 (include-book "integers")
 (include-book "types")
 (include-book "errors")
+(include-book "tag-environments")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
@@ -1392,35 +1393,126 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-ext-declon ((ext ext-declonp) (funtab fun-tablep))
-  :returns (new-funtab fun-table-resultp)
-  :short "Check an external declaration."
+(define check-struct-declon-list ((declons struct-declon-listp))
+  :returns (members member-info-list-resultp)
+  :short "Check a list of structure declarations."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only allow function definitions."))
-  (ext-declon-case
-   ext
-   :fundef (check-fundef ext.get funtab)
-   :obj-declon (error
-                (list :file-level-object-declaraion-not-supported ext.get))
-   :tag-declon (error
-                (list :file-level-tag-declaration-not-supported ext.get)))
+    "These specify the members of a structure or union type
+     (see @(tsee struct-declon)).
+     We go through the declarations
+     and turn each of them into member information (see @(tsee member-info)).
+     We ensure that each member name is well-formed;
+     we will also need to check that each member type is well-formed,
+     but we need to extend our static semantics for that.
+     By using @(tsee member-add-first),
+     we ensure that there are no duplicate member names."))
+  (b* (((when (endp declons)) nil)
+       (members (check-struct-declon-list (cdr declons)))
+       ((when (errorp members)) members)
+       ((mv name tyname) (struct-declon-to-ident+tyname (car declons)))
+       (wf (check-ident name))
+       ((when (errorp wf)) wf)
+       (type (type-name-to-type tyname))
+       (members-opt (member-add-first name type members)))
+    (member-info-list-option-case members-opt
+                                  :some members-opt.val
+                                  :none (error (list :duplicate-member name))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-ext-declon-list ((exts ext-declon-listp) (funtab fun-tablep))
-  :returns (new-funtab fun-table-resultp)
+(define check-tag-declon ((declon tag-declonp) (tagenv tag-envp))
+  :returns (new-tagenv tag-env-resultp)
+  :short "Check a tag declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support structure type declarations,
+     not union or enumeration type declarations.
+     For a structure type declaration, we first check the members,
+     obtaining a list of member information if successful.
+     We ensure that there is at least one member [C:6.2.5/20].
+     We use @(tsee tag-add) to ensure that there is not already
+     another structure or union or enumeration type with the same tag,
+     since these share one name space [C:6.2.3]."))
+  (tag-declon-case
+   declon
+   :struct
+   (b* ((members (check-struct-declon-list declon.members))
+        ((when (errorp members)) members)
+        ((unless (consp members))
+         (error (list :empty-struct (tag-declon-fix declon))))
+        (info (tag-info-struct members))
+        (tagenv-opt (tag-add declon.tag info tagenv)))
+     (tag-env-option-case tagenv-opt
+                          :some tagenv-opt.val
+                          :none (error (list :duplicate-tag declon.tag))))
+   :union (error (list :union-not-supported (tag-declon-fix declon)))
+   :enum (error (list :enum-not-supported (tag-declon-fix declon))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod funtab+tagenv
+  :short "Fixtype of pairs consisting of
+          a function table and a tag environment."
+  ((funs fun-tablep)
+   (tags tag-envp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult funtab+tagenv
+  "pairs consisting of a function table and a tag environment")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-ext-declon ((ext ext-declonp)
+                          (funtab fun-tablep)
+                          (tagenv tag-envp))
+  :returns (new-funtab+tagenv funtab+tagenv-resultp)
+  :short "Check an external declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only allow function definitions and tag declarations.")
+   (xdoc::p
+    "If successful, we return updated function table and tag environment."))
+  (ext-declon-case
+   ext
+   :fundef (b* ((funtab (check-fundef ext.get funtab))
+                ((when (errorp funtab)) funtab))
+             (make-funtab+tagenv :funs funtab
+                                 :tags (tag-env-fix tagenv)))
+   :obj-declon (error
+                (list :file-level-object-declaraion-not-supported ext.get))
+   :tag-declon (b* ((tagenv (check-tag-declon ext.get tagenv))
+                    ((when (errorp tagenv)) tagenv))
+                 (make-funtab+tagenv :funs (fun-table-fix funtab)
+                                     :tags tagenv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-ext-declon-list ((exts ext-declon-listp)
+                               (funtab fun-tablep)
+                               (tagenv tag-envp))
+  :returns (new-funtab+tagenv funtab+tagenv-resultp)
   :short "Check a list of external declarations."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We thread the function table through."))
-  (b* (((when (endp exts)) (fun-table-fix funtab))
-       (funtab (check-ext-declon (car exts) funtab))
-       ((when (errorp funtab)) (error (list :ext-declon-error funtab))))
-    (check-ext-declon-list (cdr exts) funtab))
+    "We thread the function table and tag environment through."))
+  (b* (((when (endp exts))
+        (make-funtab+tagenv :funs (fun-table-fix funtab)
+                            :tags (tag-env-fix tagenv)))
+       (funtab+tagenv (check-ext-declon (car exts) funtab tagenv))
+       ((when (errorp funtab+tagenv))
+        (error (list :ext-declon-error funtab+tagenv))))
+    (check-ext-declon-list (cdr exts)
+                           (funtab+tagenv->funs funtab+tagenv)
+                           (funtab+tagenv->tags funtab+tagenv)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1437,7 +1529,9 @@
      and discarding the final one (it served its pupose)."))
   (b* (((transunit tunit) tunit)
        (funtab (fun-table-init))
-       (funtab (check-ext-declon-list tunit.declons funtab))
-       ((when (errorp funtab)) (error (list :transunit-error funtab))))
+       (tagenv nil)
+       (funtab+tagenv (check-ext-declon-list tunit.declons funtab tagenv))
+       ((when (errorp funtab+tagenv))
+        (error (list :transunit-error funtab+tagenv))))
     :wellformed)
   :hooks (:fix))
