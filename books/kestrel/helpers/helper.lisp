@@ -25,6 +25,7 @@
 (include-book "kestrel/terms-light/non-trivial-formals" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/negate-terms" :dir :system)
+(include-book "kestrel/lists-light/true-list-fix" :dir :system)
 (include-book "std/util/defaggregate" :dir :system) ; reduce?
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
@@ -180,10 +181,28 @@
     (and (open-problemp (first probs))
          (open-problem-listp (rest probs)))))
 
+(defthm open-problem-listp-forward-to-true-listp
+  (implies (open-problem-listp probs)
+           (true-listp probs))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable open-problem-listp))))
+
 (defthm open-problemp-of-car
   (implies (and (open-problem-listp probs)
                 (consp probs))
            (open-problemp (car probs)))
+  :hints (("Goal" :in-theory (enable open-problem-listp))))
+
+(defthm open-problem-listp-of-cdr
+  (implies (and (open-problem-listp probs)
+                (consp probs))
+           (open-problem-listp (cdr probs)))
+  :hints (("Goal" :in-theory (enable open-problem-listp))))
+
+(defthm open-problem-listp-of-append
+  (equal (open-problem-listp (append probs1 probs2))
+         (and (open-problem-listp (true-list-fix probs1))
+              (open-problem-listp probs2)))
   :hints (("Goal" :in-theory (enable open-problem-listp))))
 
 (std::defaggregate pending-problem
@@ -272,11 +291,11 @@
 
 ;; Get the techniques from the PROBS
 (defun map-open-problem->technique (probs)
+  (declare (xargs :guard (open-problem-listp probs)))
   (if (endp probs)
       nil
     (cons (open-problem->technique (first probs))
           (map-open-problem->technique (rest probs)))))
-
 
 ;; Same return type as attack-open-problem.
 (defund attack-induct-problem (prob step-limit name-map state)
@@ -290,6 +309,7 @@
        (benefit (open-problem->benefit prob))
        (technique (open-problem->technique prob)) ; (:induct <term>)
        (old-techniques (open-problem->old-techniques prob))
+       ;; We'll use the induction scheme specified by the technique:
        (hints `(("Goal" :induct ,(farg1 technique)
                  :in-theory (enable ;(:i ,(farg1 technique))
                              ,(ffn-symb (farg1 technique)) ; induction and definition rules (usually want both)
@@ -301,28 +321,38 @@
                  ;; todo: :otf-flg?
                  ))
        ((when erp) (mv erp nil nil nil nil nil name-map state))
-       (form `(defthm ,name ,(untranslate formula nil (w state)) :hints ,hints))
-       ((when provedp) (mv nil :proved (list form) nil nil nil name-map state))
-       ;; Didn't prove it:
-       ((when (eq :step-limit-reached failure-info))
-        (mv nil :updated nil (change-open-problem prob :last-step-limit step-limit) nil nil name-map state))
-       ;; (top-checkpoints (checkpoint-list t state))
-       (non-top-checkpoints (checkpoint-list nil state))
-       (non-top-checkpoints (clauses-to-implications non-top-checkpoints))
-       ;; (- (cw "top-checkpoints: ~x0~%" top-checkpoints))
-       (- (cw "non-top-checkpoints: ~x0~%" non-top-checkpoints))
-       (subproblem-names (fresh-var-names (len non-top-checkpoints) (pack$ name '-induct) (strip-cars name-map))) ;slow?
-       )
-    (mv nil :split nil nil
-        (pending-problem name formula subproblem-names
-                         (list form) ; todo: put in use hints to prove the checkpoints using the subproblem defthms
-                         )
-        (make-raw-subproblems subproblem-names non-top-checkpoints
-                              (+ -1 benefit) ; slightly less good than solving the original problem
-                              (cons technique old-techniques))
-        (append (pairlis$ subproblem-names non-top-checkpoints) ;inefficient
-                name-map)
-        state)))
+       (form `(defthm ,name ,(untranslate formula nil (w state)) :hints ,hints)))
+    (if provedp
+        (progn$ (cw "Prove ~x0 by induction on ~x1.~%" name (farg1 technique))
+                (mv nil :proved (list form) nil nil nil name-map state))
+      ;; Didn't prove it:
+      (b* (((when (eq :step-limit-reached failure-info))
+            ;; Step limit reached, so record the fact that we worked harder on it:
+            (mv nil :updated nil (change-open-problem prob :last-step-limit step-limit) nil nil name-map state))
+           ;; (top-checkpoints (checkpoint-list t state))
+           (non-top-checkpoints (checkpoint-list nil state))
+           ((when (not non-top-checkpoints))
+            ;; If this can happen legitimately, we could remove this:
+            (er hard? 'attack-induct-problem "No checkpoints found for ~x0 but the proof was not step limited." name)
+            (mv t nil nil nil nil nil name-map state))
+           (non-top-checkpoints (clauses-to-implications non-top-checkpoints))
+           ;; (- (cw "top-checkpoints: ~x0~%" top-checkpoints))
+           (- (cw "non-top-checkpoints: ~x0~%" non-top-checkpoints))
+           ;; Spawn subproblems for each of the checkpoints under the induction (TODO: Can this be abstracted out?)
+           (subproblem-names (fresh-var-names (len non-top-checkpoints) (pack$ name '-induct) (strip-cars name-map))) ;slow?
+           )
+        (mv nil
+            :split ; since there might only be one, perhaps :split isn't a good name.
+            nil nil
+            (pending-problem name formula subproblem-names
+                             (list form) ; todo: put in use hints to prove the checkpoints using the subproblem defthms
+                             )
+            (make-raw-subproblems subproblem-names non-top-checkpoints
+                                  (+ -1 benefit) ; slightly less good than solving the original problem
+                                  (cons technique old-techniques))
+            (append (pairlis$ subproblem-names non-top-checkpoints) ;inefficient
+                    name-map)
+            state)))))
 
 ;; Same return type as attack-open-problem.
 (defund attack-enable-problem (prob step-limit name-map state)
@@ -445,7 +475,7 @@
 ;; Returns a list of open problems.
 (defun elaborate-raw-problem (prob wrld)
   (declare (xargs :guard (and (raw-problemp prob)
-                              (PLIST-WORLDP WRLD))
+                              (plist-worldp wrld))
                   :verify-guards nil ; todo
                   ))
   (b* ((name (raw-problem->name prob))
@@ -533,15 +563,14 @@
            (natp (problem-goodness prob)))
   :hints (("Goal" :in-theory (enable problem-goodness))))
 
-(set-non-linearp t)
 (defthm <=-of-problem-goodness-and-1000
   (implies (open-problemp prob)
            (<= (problem-goodness prob) 1000))
   :hints (("Goal" :use (:instance <=-of-floor-by-1-and-1000
                                   (x (* 1/1000 (OPEN-PROBLEM->BENEFIT PROB)
                                         (OPEN-PROBLEM->CHANCE PROB))))
+           :nonlinearp t
            :in-theory (e/d (problem-goodness) (<=-of-floor-by-1-and-1000)))))
-(set-non-linearp nil)
 
 (defun skip-step-limited-probs (open-probs step-limit)
   (declare (xargs :guard (and (open-problem-listp open-probs)
@@ -668,7 +697,7 @@
   (declare (xargs :mode :program
                   :stobjs state))
   (b* ((state (set-print-case :downcase state)) ; make all printing downcase
-       (most-recent-theorem (most-recent-theorem state))
+       (most-recent-theorem (most-recent-theorem state)) ;throws an error if there isn't one, TODO: What if the theorem is in an encapsulate?  Better to look for the checkpoints?
        (- (cw "~%Trying to help with ~x0.~%" most-recent-theorem))
        (theorem-type (car most-recent-theorem))
        (body (if (eq 'thm theorem-type)
@@ -698,5 +727,6 @@
             (cw "Submitting proof now.~%")
             (mv nil `(progn ,@proof-events) state))))
 
+;; Call this to get help with the most recent thm or defthm attempt.
 (defmacro h ()
   '(make-event-quiet (help-fn state)))
