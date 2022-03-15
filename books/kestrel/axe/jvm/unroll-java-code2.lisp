@@ -561,17 +561,17 @@
        ;; todo: make optional and avoid this on huge terms by default
        ((mv erp result-dag state)
         (if prune-branches
-            (prune-dag result-dag
-                       assumptions
-                       (set-difference-eq
-                        ;; no actual symbolic execution is done here:
-                        (union-eq (unroll-java-code2-rules)
-                                  extra-rules)
-                        remove-rules)
-                       nil ; interpreted-fns
-                       monitor
-                       call-stp
-                       state)
+            (prune-dag-new result-dag
+                           assumptions
+                           (set-difference-eq
+                            ;; no actual symbolic execution is done here:
+                            (union-eq (unroll-java-code2-rules)
+                                      extra-rules)
+                            remove-rules)
+                           nil ; interpreted-fns
+                           monitor
+                           call-stp
+                           state)
           (mv nil result-dag state)))
        ((when erp) (mv erp nil state))
        ;; Now simplify the pruned dag (TODO, repeatedly simplifying and pruning might help?)

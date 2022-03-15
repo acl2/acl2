@@ -18,6 +18,7 @@
 (include-book "kestrel/jvm/jvm" :dir :system) ;for JVM::CALL-STACK-SIZE
 (include-book "kestrel/jvm/method-designator-strings" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
+(local (include-book "kestrel/lists-light/len" :dir :system))
 
 ;;These rules just get rid of all branches with exception/error states (totally
 ;;unsound, but helpful to guess an invariant to be checked later). ffffffixme:
@@ -172,7 +173,8 @@
 ;replace things like (contents <blah>) with (GET-FIELD <blah> '("ARRAY" "contents" . "dummy-descriptor") (JVM::HEAP <state-var>))
 (mutual-recursion
  (defun desugar-calls-of-contents-in-term (term heap-term)
-   (declare (xargs :guard (pseudo-termp term)))
+   (declare (xargs :guard (and (pseudo-termp term)
+                               (pseudo-termp heap-term))))
    (if (atom term)
        term
      (if (quotep term)
@@ -191,11 +193,35 @@
              ;;normal case:
              (cons fn new-args)))))))
  (defun desugar-calls-of-contents-in-terms (terms heap-term)
-   (declare (xargs :guard (pseudo-term-listp terms)))
+   (declare (xargs :guard (and (pseudo-term-listp terms)
+                               (pseudo-termp heap-term))))
    (if (endp terms)
        nil
      (cons (desugar-calls-of-contents-in-term (first terms) heap-term)
            (desugar-calls-of-contents-in-terms (rest terms) heap-term)))))
+
+(make-flag desugar-calls-of-contents-in-term)
+
+(defthm-flag-desugar-calls-of-contents-in-term
+  (defthm len-of-of-desugar-calls-of-contents-in-terms-skip
+    :skip t
+    :flag desugar-calls-of-contents-in-term)
+  (defthm len-of-of-desugar-calls-of-contents-in-terms
+    (equal (len (desugar-calls-of-contents-in-terms terms heap-term))
+           (len terms))
+    :flag desugar-calls-of-contents-in-terms))
+
+(defthm-flag-desugar-calls-of-contents-in-term
+  (defthm pseudo-termp-of-desugar-calls-of-contents-in-term
+    (implies (and (pseudo-termp term)
+                  (pseudo-termp heap-term))
+             (pseudo-termp (desugar-calls-of-contents-in-term term heap-term)))
+    :flag desugar-calls-of-contents-in-term)
+  (defthm pseudo-term-listp-of-desugar-calls-of-contents-in-terms
+    (implies (and (pseudo-term-listp terms)
+                  (pseudo-termp heap-term))
+             (pseudo-term-listp (desugar-calls-of-contents-in-terms terms heap-term)))
+    :flag desugar-calls-of-contents-in-terms))
 
 ; A dummy function that has special meaning when used in invariants (it gets
 ; replaced by a term representing the local var with the given name in the
@@ -530,17 +556,27 @@
     (let ((entry (first alist)))
       (acons (cdr entry) (car entry) (reflect-alist (rest alist))))))
 
-(defun assumptions-that-classes-are-initialized (class-names state-var)
+(defund assumptions-that-classes-are-initialized (class-names state-var)
   (if (endp class-names)
       nil
     (cons `(memberp ',(first class-names) (jvm::initialized-classes ,state-var))
           (assumptions-that-classes-are-initialized (rest class-names) state-var))))
 
-(defun assumptions-that-classes-are-uninitialized (class-names state-var)
+(defthm pseudo-term-listp-of-assumptions-that-classes-are-initialized
+  (implies (symbolp state-var)
+           (pseudo-term-listp (assumptions-that-classes-are-initialized class-names state-var)))
+  :hints (("Goal" :in-theory (enable assumptions-that-classes-are-initialized))))
+
+(defund assumptions-that-classes-are-uninitialized (class-names state-var)
   (if (endp class-names)
       nil
     (cons `(not (memberp ',(first class-names) (jvm::initialized-classes ,state-var)))
           (assumptions-that-classes-are-uninitialized (rest class-names) state-var))))
+
+(defthm pseudo-term-listp-of-assumptions-that-classes-are-uninitialized
+  (implies (symbolp state-var)
+           (pseudo-term-listp (assumptions-that-classes-are-uninitialized class-names state-var)))
+  :hints (("Goal" :in-theory (enable assumptions-that-classes-are-uninitialized))))
 
 (defun add-stack-pops-for-parameters-above (parameter-types-above ;; these are in parameter order (early ones correspond to deeper stack items)
                                             stack-term)
@@ -556,6 +592,12 @@
 
 ;;(add-stack-pops-for-parameters-above '(:long :int :int) 'foo) = (JVM::POP-OPERAND (JVM::POP-OPERAND (JVM::POP-LONG FOO)))
 
+(defthm pseudo-termp-of-add-stack-pops-for-parameters-above
+  (implies (and (jvm::all-typep parameter-types-above)
+                (true-listp parameter-types-above)
+                (pseudo-termp stack-term))
+           (pseudo-termp (add-stack-pops-for-parameters-above parameter-types-above stack-term))))
+
 (defun stack-item-term (type ;the type of this stack item
                         parameter-types-above ;; these are in parameter order (early ones correspond to deeper stack items)
                         stack-term)
@@ -565,6 +607,13 @@
   (if (member-eq type jvm::*two-slot-types*)
       `(jvm::top-long ,(add-stack-pops-for-parameters-above parameter-types-above stack-term))
     `(jvm::top-operand ,(add-stack-pops-for-parameters-above parameter-types-above stack-term))))
+
+(defthm pseudo-termp-of-stack-item-term
+  (implies (and (jvm::all-typep parameter-types-above)
+                (true-listp parameter-types-above)
+                (jvm::typep type)
+                (pseudo-termp stack-term))
+           (pseudo-termp (stack-item-term type parameter-types-above stack-term))))
 
 ;; TODO: Compare to parameter-assumptions-aux
 (defun assumptions-about-parameters-on-stack (parameter-types
