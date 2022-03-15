@@ -1321,7 +1321,7 @@
 
 (define check-param-declon-list ((params param-declon-listp) (vartab var-tablep))
   :returns (new-vartab var-table-resultp)
-  :short "Check a list of parameter declaration."
+  :short "Check a list of parameter declarations."
   :long
   (xdoc::topstring
    (xdoc::p
