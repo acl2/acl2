@@ -39,6 +39,12 @@
 ;; TODO: Don't spawn a subproblem when the checkpoint is the same as the goal
 ;; TODO: add and use done-mapp
 ;; TODO: When we find a technique to prove a problem, remove all other open problems for the same formula
+;; TODO: compare goals up to reordered hyps
+;; TODO: subsumption when we finish a goal
+;; TODO: Propagate failures back up
+;; TODO: Handle obviously unprovable goals, like nil!
+;; TODO: Try to reoreder hyps to make a nice rule
+;; TODO: Untranslate to make the forms?
 
 (local (in-theory (disable natp)))
 
@@ -314,8 +320,9 @@
        (technique (open-problem->technique prob)) ; (:induct <term>)
        (old-techniques (open-problem->old-techniques prob))
        ;; We'll use the induction scheme specified by the technique:
-       (hints `(("Goal" :induct ,(farg1 technique)
-                 :in-theory (enable ;(:i ,(farg1 technique))
+       (hints `(("Goal" :induct ,(farg1 technique) ;; todo: mention macro-aliases instead when possible?
+                 :in-theory (enable                ;(:i ,(farg1 technique))
+                             ;; todo: mention macro-aliases instead when possible?
                              ,(ffn-symb (farg1 technique)) ; induction and definition rules (usually want both)
                              ))))
        (- (cw " ")) ; indent prove$+ output
@@ -328,36 +335,38 @@
        ((when erp) (mv erp nil nil nil nil nil name-map state))
        (form `(defthm ,name ,(untranslate formula nil (w state)) :hints ,hints)))
     (if provedp
-        (progn$ (cw "Prove ~x0 by induction on ~x1.~%" name (farg1 technique))
+        (progn$ (cw "Proved ~x0 by induction on ~x1.~%" name (farg1 technique))
                 (mv nil :proved (list form) nil nil nil name-map state))
-      ;; Didn't prove it:
-      (b* (((when (eq :step-limit-reached failure-info))
-            ;; Step limit reached, so record the fact that we worked harder on it:
-            (mv nil :updated nil (change-open-problem prob :last-step-limit step-limit) nil nil name-map state))
-           ;; (top-checkpoints (checkpoint-list t state))
-           (non-top-checkpoints (checkpoint-list nil state))
-           ((when (not non-top-checkpoints))
-            ;; If this can happen legitimately, we could remove this:
-            (er hard? 'attack-induct-problem "No checkpoints found for ~x0 but the proof was not step limited." name)
-            (mv t nil nil nil nil nil name-map state))
-           (non-top-checkpoints (clauses-to-implications non-top-checkpoints))
-           ;; (- (cw "top-checkpoints: ~x0~%" top-checkpoints))
-           (- (cw " non-top-checkpoints: ~x0~%" non-top-checkpoints))
-           ;; Spawn subproblems for each of the checkpoints under the induction (TODO: Can this be abstracted out?)
-           (subproblem-names (fresh-var-names (len non-top-checkpoints) (pack$ name '-induct) (strip-cars name-map))) ;slow?
-           )
-        (mv nil
-            :split ; since there might only be one, perhaps :split isn't a good name.
-            nil nil
-            (pending-problem name formula subproblem-names
-                             (list form) ; todo: put in use hints to prove the checkpoints using the subproblem defthms
-                             )
-            (make-raw-subproblems subproblem-names non-top-checkpoints
-                                  (+ -1 benefit) ; slightly less good than solving the original problem
-                                  (cons technique old-techniques))
-            (append (pairlis$ subproblem-names non-top-checkpoints) ;inefficient
-                    name-map)
-            state)))))
+      (if (eq :step-limit-reached failure-info)
+          ;; Step limit reached, so record the fact that we worked harder on it:
+          (mv nil :updated nil (change-open-problem prob :last-step-limit step-limit) nil nil name-map state)
+        ;; Didn't prove it but no limit reached, so we should have subgoals:
+        (b* ( ;; (top-checkpoints (checkpoint-list t state))
+             (non-top-checkpoints (checkpoint-list nil state))
+             ((when (not non-top-checkpoints))
+              ;; If this can happen legitimately, we could remove this:
+              (er hard? 'attack-induct-problem "No checkpoints found for ~x0 but the proof was not step limited." name)
+              (mv t nil nil nil nil nil name-map state))
+             (non-top-checkpoints (clauses-to-implications non-top-checkpoints))
+             ;; (- (cw "top-checkpoints: ~x0~%" top-checkpoints))
+             (- (cw " non-top-checkpoints: ~x0~%" non-top-checkpoints))
+             ;; Spawn subproblems for each of the checkpoints under the induction (TODO: Can this be abstracted out?)
+             ;; TODO: Compare to the already named problems!  Up the benefit...
+             (subproblem-names (fresh-var-names (len non-top-checkpoints) (pack$ name '-induct) (strip-cars name-map))) ;slow?
+             )
+          (mv nil
+              :split ; since there might only be one, perhaps :split isn't a good name.
+              nil nil
+              (pending-problem name formula subproblem-names
+                               (list form) ; todo: put in use hints to prove the checkpoints using the subproblem defthms
+                               )
+              (make-raw-subproblems subproblem-names non-top-checkpoints
+                                    (+ -1 benefit) ; slightly less good than solving the original problem
+                                    (cons technique old-techniques) ; or don't since now we're in an induction?
+                                    )
+              (append (pairlis$ subproblem-names non-top-checkpoints) ;inefficient
+                      name-map)
+              state))))))
 
 ;; Same return type as attack-open-problem.
 (defund attack-enable-problem (prob step-limit name-map state)
@@ -371,7 +380,7 @@
        (benefit (open-problem->benefit prob))
        (technique (open-problem->technique prob)) ; (:enable ....)
        (old-techniques (open-problem->old-techniques prob))
-       (hints `(("Goal" :in-theory (enable ,@(fargs technique))
+       (hints `(("Goal" :in-theory (enable ,@(fargs technique)) ;; todo: mention macro-aliases instead when possible?
                  :do-not-induct t ; since we don't look at the non-top-checkpoints below anyway (the checkpoints exposed by the enabling may be proved by induction, of course)
                  )))
        (- (cw " ")) ; indent prove$+ output
@@ -400,7 +409,7 @@
                          (list form) ; todo: put in use hints to prove the checkpoints using the subproblem defthms
                          )
         (make-raw-subproblems subproblem-names top-checkpoints
-                              (+ -1 benefit) ; slightly less good than solving the original problem
+                              (+ -1 benefit) ; slightly less good than solving the original problem (TODO: Divide by number of problems? Look at chance other will be solved?)
                               (cons technique old-techniques))
         (append (pairlis$ subproblem-names top-checkpoints) ;inefficient
                 name-map)
@@ -422,8 +431,8 @@
        (- (cw "(Attacking ~x0 by ~x1.~%" name technique)))
     (mv-let (erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state)
       (case (car technique)
-        (:induct (attack-induct-problem prob step-limit name-map state)) ; todo: mention macro-aliases instead when possible?
-        (:enable (attack-enable-problem prob step-limit name-map state)) ; todo: mention macro-aliases instead when possible?
+        (:induct (attack-induct-problem prob step-limit name-map state))
+        (:enable (attack-enable-problem prob step-limit name-map state))
         ;;todo
         (otherwise (prog2$ (er hard? 'attack-open-problem "Unknown technique in problem ~x0." prob)
                            (mv t nil nil nil nil nil name-map state))))
@@ -470,8 +479,7 @@
   (if (endp items)
       nil
     (let* ((item (first items))
-           (technique `(:enable ,item))  ; todo: mention macro-alias instead when possible?
-           )
+           (technique `(:enable ,item)))
       (if (member-equal technique old-techniques) ; todo: what if an old-technique enabled this function and more?
           (make-enable-problems (rest items) name formula benefit old-techniques wrld) ; already tried this technique
         (cons (open-problem name technique formula benefit
@@ -493,7 +501,7 @@
        (benefit (raw-problem->benefit prob))
        (old-techniques (raw-problem->old-techniques prob))
        (subterms (find-all-fn-call-subterms formula nil))
-       (fns (all-fnnames formula))
+       (fns (all-fnnames formula)) ; todo: keep only defined ones?
        (rec-fns (filter-rec-fns fns wrld))
        (non-rec-fns (set-difference-eq fns rec-fns))
        ;; start with an empty list of problems:
@@ -526,6 +534,7 @@
 
 ;; Returns (mv changep pending-probs done-map).
 ;; todo: optimize by building some indices?
+;; TODO: Increase the benefit of remaining subproblems?
 (defun handle-pending-probs-aux (pending-probs done-map pending-probs-acc changep)
   (declare (xargs :guard (and (pending-problem-listp pending-probs)
                               (name-mapp done-map)
@@ -668,6 +677,7 @@
        ((mv erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state)
         (attack-open-problem prob step-limit name-map state))
        ((when erp) (mv erp nil nil state)))
+    ;; TODO: Handle failures, both "no progress" and subgoal of nil (remove other attempts to prove).  will need to update info on parent problem and maybe children (problems should track their parents, maybe along with benefits)
     (if (eq :proved res)
         (b* ((name (open-problem->name prob))
              (done-map (acons name proof-events done-map))
@@ -678,7 +688,7 @@
                 ;; We've proved the top-level goal!
                 (mv nil t (cdr res) state)
               ;; Didn't prove the top-level goal yet:
-              (repeatedly-attack-problems (remove-equal prob open-probs) ;this problem is done
+              (repeatedly-attack-problems (remove-equal prob open-probs) ;this problem is done -- TODO: Remove other attempts to prove this formula
                                           pending-probs
                                           step-limit
                                           name-map ; alist from problem names to goals
