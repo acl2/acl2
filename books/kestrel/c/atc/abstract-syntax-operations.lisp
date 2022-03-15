@@ -113,6 +113,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define struct-declon-to-ident+tyname ((declon struct-declonp))
+  :returns (mv (id identp) (tyname tynamep))
+  :short "Decompose a structure declaration into an identifier and a type name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We remove the identifier from the declarator,
+     obtaining an abstract declarator,
+     which we combine with the type specifier sequence
+     to obtain a type name,
+     which we return along with the identifier.
+     In essence, we turn a structure declaration into its name and type,
+     which are somewhat mixed in the C syntax."))
+  (b* (((struct-declon declon) declon)
+       ((mv id adeclor) (obj-declor-to-ident+adeclor declon.declor)))
+    (mv id (make-tyname :tyspec declon.tyspec :declor adeclor)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define param-declon-to-ident+tyname ((declon param-declonp))
   :returns (mv (id identp) (tyname tynamep))
   :short "Decompose a parameter declaration into an identifier and a type name."
