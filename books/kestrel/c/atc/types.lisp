@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-operations")
 (include-book "errors")
 
 (include-book "std/util/defval" :dir :system)
@@ -331,6 +331,27 @@
      :measure (type-count type)
      :verify-guards :after-returns
      :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ident+type-to-tyspec+declor ((id identp) (type typep))
+  :returns (mv (tyspec tyspecseqp) (declor obj-declorp))
+  :short "Turn an identifier and a type into
+          a type specifier sequence and an object declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This function provides the consituents to construct
+     a declaration of an identifier with a given type.
+     The type specifier sequence and the object declarator
+     can be used to construct various kinds of declarations
+     (see our C abstract syntax).")
+   (xdoc::p
+    "Note that we pick a specific type specifier sequence for each type,
+     out of possibly multiple ones possible,
+     via the use of @(tsee type-to-tyname)."))
+  (ident+tyname-to-tyspec+declor id (type-to-tyname type))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
