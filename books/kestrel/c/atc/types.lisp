@@ -294,7 +294,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define integer-type-to-type-name ((type typep))
+(define integer-type-to-tyname ((type typep))
   :guard (type-integerp type)
   :returns (tyname tynamep)
   :short "Turn an integer type into a type name."

@@ -1099,7 +1099,7 @@
          (sfixtype (integer-type-to-fixtype stype))
          (spred (pack sfixtype 'p))
          (name (pack 'exec-cast-of- dfixtype '-when- spred))
-         (dtyname (integer-type-to-type-name dtype))
+         (dtyname (integer-type-to-tyname dtype))
          (dtype-from-stype (pack dfixtype '-from- sfixtype))
          (dtype-from-stype-okp (pack dtype-from-stype '-okp))
          (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)

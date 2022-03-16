@@ -876,7 +876,7 @@
        ((when (not out-type)) (no))
        ((unless (list-lenp 1 term.args)) (no))
        (arg (first term.args))
-       (tyname (integer-type-to-type-name out-type)))
+       (tyname (integer-type-to-tyname out-type)))
     (mv t tyname arg in-type out-type))
   ///
 
