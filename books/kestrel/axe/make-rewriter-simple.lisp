@@ -4153,9 +4153,7 @@
                       (print-hit-counts t info (rules-from-rule-alist rule-alist))))
               (- (and nil ;; change to t to print info on the memoization
                       memoization
-                      (print-memo-stats memoization)))
-              ;; TODO: Print the hit info
-              )
+                      (print-memo-stats memoization))))
            (if (consp new-nodenum-or-quotep) ;check for quotep
                (mv (erp-nil) new-nodenum-or-quotep)
              (mv (erp-nil) (drop-non-supporters-array 'dag-array dag-array new-nodenum-or-quotep nil)))))
