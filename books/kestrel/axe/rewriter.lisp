@@ -2141,7 +2141,7 @@
       (mv nil nil nil state) ;failed to simplify anything
     (let ((term (first terms-to-simplify)))
       (mv-let (erp result-dag state)
-        ;; could instead to rewrite-term...
+        ;; could instead call rewrite-term...
         (simp-term term :rule-alist rule-alist
                    :assumptions (remove-equal term all-terms) ;don't use the term to simplify itself!
                    :monitor monitored-rules)
