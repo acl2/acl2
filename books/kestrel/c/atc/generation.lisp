@@ -1920,7 +1920,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-tyspecseq ((type typep))
-  :guard (not (type-case type :pointer))
+  :guard (and (not (type-case type :pointer))
+              (not (type-case type :array)))
   :returns (tyspecseq tyspecseqp)
   :short "Generate a type specifier sequence for a type."
   :long
@@ -1943,12 +1944,14 @@
              :ulong (tyspecseq-ulong nil)
              :sllong (tyspecseq-sllong nil nil)
              :ullong (tyspecseq-ullong nil)
-             :pointer (prog2$ (impossible) (irr-tyspecseq)))
+             :pointer (prog2$ (impossible) (irr-tyspecseq))
+             :array (prog2$ (impossible) (irr-tyspecseq)))
   :hooks (:fix)
   ///
 
   (defrule type-name-to-type-of-tyname-of-atc-gen-tyspecseq
-    (implies (not (type-case type :pointer))
+    (implies (and (not (type-case type :pointer))
+                  (not (type-case type :array)))
              (equal (type-name-to-type (tyname (atc-gen-tyspecseq type) nil))
                     (type-fix type)))
     :enable type-name-to-type))
@@ -2406,6 +2409,9 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val var vars init-affect))
+                   ((when (type-case init-type :array))
+                    (raise "Internal error: array type ~x0." init-type)
+                    (acl2::value irr))
                    ((when (type-case init-type :pointer))
                     (er-soft+ ctx t irr
                               "The term ~x0 to which the variable ~x1 is bound ~
@@ -2475,6 +2481,9 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val var vars rhs-affect))
+                   ((when (type-case rhs-type :array))
+                    (raise "Internal error: array type ~x0." rhs-type)
+                    (acl2::value irr))
                    ((when (type-case rhs-type :pointer))
                     (er-soft+ ctx t irr
                               "The term ~x0 to which the variable ~x1 is bound ~
@@ -2689,6 +2698,9 @@
                                must not affect any variables, ~
                                but it affects ~x2 instead."
                               val var init-affect))
+                   ((when (type-case init-type :array))
+                    (raise "Internal error: array type ~x0." init-type)
+                    (acl2::value irr))
                    ((when (type-case init-type :pointer))
                     (er-soft+ ctx t irr
                               "The term ~x0 to which the variable ~x1 is bound ~
@@ -2756,6 +2768,9 @@
                                must not affect any variables, ~
                                but it affects ~x2 instead."
                               val var rhs-affect))
+                   ((when (type-case rhs-type :array))
+                    (raise "Internal error: array type ~x0." rhs-type)
+                    (acl2::value irr))
                    ((when (type-case rhs-type :pointer))
                     (er-soft+ ctx t irr
                               "The term ~x0 to which the variable ~x1 is bound ~
@@ -3005,6 +3020,9 @@
                   fn term eaffect affect))
        ((when (type-case type :void))
         (raise "Internal error: return term ~x0 has type void." term)
+        (acl2::value irr))
+       ((when (type-case type :array))
+        (raise "Internal error: array type ~x0." type)
         (acl2::value irr))
        ((when (type-case type :pointer))
         (er-soft+ ctx t irr
@@ -3510,12 +3528,18 @@
                    another formal parameter among ~x2; ~
                    this is disallowed, even if the package names differ."
                   formal fn cdr-formals))
+       ((when (type-case type :array))
+        (raise "Internal error: array type ~x0." type)
+        (acl2::value nil))
        ((mv pointerp ref-type)
         (if (type-case type :pointer)
             (mv t (type-pointer->referenced type))
           (mv nil type)))
        ((when (type-case ref-type :pointer))
         (raise "Internal error: pointer type to pointer type ~x0." ref-type)
+        (acl2::value nil))
+       ((when (type-case ref-type :array))
+        (raise "Internal error: array type to pointer type ~x0." ref-type)
         (acl2::value nil))
        (param (make-param-declon
                :tyspec (atc-gen-tyspecseq ref-type)
@@ -3620,7 +3644,9 @@
              :ulong 'ulong-arrayp
              :sllong 'sllong-arrayp
              :ullong 'ullong-arrayp
-             :pointer nil))
+             :pointer nil
+             :array nil)
+   :array nil)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

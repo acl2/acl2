@@ -66,6 +66,7 @@
   (:sllong ())
   (:ullong ())
   (:pointer ((referenced type)))
+  (:array ((element type)))
   :pred typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,6 +191,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define tyspecseq-to-type ((tyspec tyspecseqp))
+  :returns (type typep)
+  :short "Turn a type specifier sequence into a type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a subroutine of @(tsee type-name-to-type).
+     A type specifier sequence already denotes a type (of certain kinds);
+     but in general it is type names that denote types (of all kidns)."))
+  (tyspecseq-case tyspec
+                  :void (type-void)
+                  :char (type-char)
+                  :schar (type-schar)
+                  :uchar (type-uchar)
+                  :sshort (type-sshort)
+                  :ushort (type-ushort)
+                  :sint (type-sint)
+                  :uint (type-uint)
+                  :slong (type-slong)
+                  :ulong (type-ulong)
+                  :sllong (type-sllong)
+                  :ullong (type-ullong)
+                  :bool (prog2$
+                         (raise "Internal error: ~
+                                            _Bool not supported yet.")
+                         (irr-type))
+                  :float (prog2$
+                          (raise "Internal error: ~
+                                             float not supported yet.")
+                          (irr-type))
+                  :double (prog2$
+                           (raise "Internal error: ~
+                                              double not supported yet.")
+                           (irr-type))
+                  :ldouble (prog2$
+                            (raise "Internal error: ~
+                                               long double not supported yet.")
+                            (irr-type))
+                  :struct (prog2$
+                           (raise "Internal error: ~
+                                              struct ~x0 not supported yet."
+                                  tyspec.tag)
+                           (irr-type))
+                  :union (prog2$
+                          (raise "Internal error: ~
+                                             union ~x0 not supported yet."
+                                 tyspec.tag)
+                          (irr-type))
+                  :enum (prog2$
+                         (raise "Internal error: ~
+                                            enum ~x0 not supported yet."
+                                tyspec.tag)
+                         (irr-type))
+                  :typedef (prog2$
+                            (raise "Internal error: ~
+                                               typedef ~x0 not supported yet."
+                                   tyspec.name)
+                            (irr-type)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-name-to-type ((tyname tynamep))
   :returns (type typep)
   :short "Turn a type name into a type."
@@ -198,67 +261,22 @@
    (xdoc::p
     "A type name denotes a type [C:6.7.7/2].
      This ACL2 function returns the denoted type."))
-  (b* ((tyspecseq (tyname->tyspec tyname))
-       (type (tyspecseq-case tyspecseq
-                             :void (type-void)
-                             :char (type-char)
-                             :schar (type-schar)
-                             :uchar (type-uchar)
-                             :sshort (type-sshort)
-                             :ushort (type-ushort)
-                             :sint (type-sint)
-                             :uint (type-uint)
-                             :slong (type-slong)
-                             :ulong (type-ulong)
-                             :sllong (type-sllong)
-                             :ullong (type-ullong)
-                             :bool (prog2$
-                                    (raise "Internal error: ~
-                                            _Bool not supported yet.")
-                                    (irr-type))
-                             :float (prog2$
-                                     (raise "Internal error: ~
-                                             float not supported yet.")
-                                     (irr-type))
-                             :double (prog2$
-                                      (raise "Internal error: ~
-                                              double not supported yet.")
-                                      (irr-type))
-                             :ldouble (prog2$
-                                       (raise "Internal error: ~
-                                               long double not supported yet.")
-                                       (irr-type))
-                             :struct (prog2$
-                                      (raise "Internal error: ~
-                                              struct ~x0 not supported yet."
-                                             tyspecseq.tag)
-                                      (irr-type))
-                             :union (prog2$
-                                     (raise "Internal error: ~
-                                             union ~x0 not supported yet."
-                                            tyspecseq.tag)
-                                     (irr-type))
-                             :enum (prog2$
-                                    (raise "Internal error: ~
-                                            enum ~x0 not supported yet."
-                                           tyspecseq.tag)
-                                    (irr-type))
-                             :typedef (prog2$
-                                       (raise "Internal error: ~
-                                               typedef ~x0 not supported yet."
-                                              tyspecseq.name)
-                                       (irr-type))))
-       (declor (tyname->declor tyname)))
-    (obj-adeclor-case
-     declor
-     :none type
-     :pointer (if (obj-adeclor-case declor.to :none)
-                  (type-pointer type)
-                (prog2$ (raise "Not yet supported: ~x0" tyname)
-                        (irr-type)))
-     :array (prog2$ (raise "Not yet supported: ~x0" tyname)
-                    (irr-type))))
-  :hooks (:fix))
+  (type-name-to-type-aux (tyname->tyspec tyname)
+                         (tyname->declor tyname))
+  :hooks (:fix)
+
+  :prepwork
+  ((define type-name-to-type-aux ((tyspec tyspecseqp) (declor obj-adeclorp))
+     :returns (type typep)
+     :parents nil
+     (obj-adeclor-case
+      declor
+      :none (tyspecseq-to-type tyspec)
+      :pointer (type-pointer (type-name-to-type-aux tyspec declor.to))
+      :array (type-array (type-name-to-type-aux tyspec declor.of)))
+     :measure (obj-adeclor-count declor)
+     :verify-guards :after-returns
+     :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
