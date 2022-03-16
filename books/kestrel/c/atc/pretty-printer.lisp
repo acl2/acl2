@@ -339,9 +339,60 @@
 (define pprint-obj-declor ((declor obj-declorp))
   :returns (part msgp)
   :short "Pretty-print an object declarator."
-  (obj-declor-case declor
-                   :ident (pprint-ident declor.get)
-                   :pointer (msg "*~s0" (pprint-ident declor.get)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This requires a bit of care,
+     because we may need to print parentheses for proper grouping.
+     This is similar to the "
+    (xdoc::seetopic "pprint-expressions" "pretty-printing of expressions")
+    ", but much simpler,
+     so we do can put all the logic into this pretty-printing function,
+     avoiding all the structure needed for expressions
+     (which need that structure due to their greater complexity).
+     The idea is the same, though.")
+   (xdoc::p
+    "Array declarators bind tighter than pointer declarators.
+     E.g. @('*x[]') is like @('*(x[])'), not like @('(*x)[]').
+     This is because the concrete syntax @('*x[]') must be organized,
+     according to the C grammar [C:6.7.6],
+     as a <i>pointer</i> and a <i>direct-declarator</i>,
+     the latter consisting of
+     another <i>direct-declarator</i> for just the identifier @('x')
+     and of square brackets with nothing between them.")
+   (xdoc::p
+    "So, analogously to the treatment of expressions,
+     we need to take the relative precendence of pointer and array declarators
+     when pretty-printing them:")
+   (xdoc::ul
+    (xdoc::li
+     "If a declarator is an identifier, we just print it.")
+    (xdoc::li
+     "If a declarator is a pointer declarator,
+      we recursively pretty-print its sub-declarator,
+      and then we add @('*') in front.
+      We do not add any parentheses in this case.
+      So, if the sub-declarator is a pointer one,
+      the two @('*') will print one after the other, as desired.
+      If instead the sub-declarator is an array one,
+      then as explained above it binds tighter, so it needs no parentheses.")
+    (xdoc::li
+     "If a declarator is an array one,
+      we recursively pretty-print its sub-declarator.
+      If that sub-declarator is a pointer one,
+      then we need to parenthesize it,
+      because otherwise things would bind in the wrong way.
+      If instead the sub-declarator is an identifier or an array one,
+      then no parentheses are added, as desired.")))
+  (obj-declor-case
+   declor
+   :ident (pprint-ident declor.get)
+   :pointer (msg "*~@0" (pprint-obj-declor declor.to))
+   :array (b* ((sub (pprint-obj-declor declor.of)))
+            (if (obj-declor-case declor.of :pointer)
+                (msg "(~@0)[]" sub)
+              (msg "~@0[]" sub))))
+  :measure (obj-declor-count declor)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -349,9 +400,23 @@
 (define pprint-obj-adeclor ((declor obj-adeclorp))
   :returns (part msgp)
   :short "Pretty-print an abstract object declarator."
-  (obj-adeclor-case declor
-                    :none ""
-                    :pointer " *")
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee pprint-obj-declor).")
+   (xdoc::p
+    "We print the empty string when there is no declarator,
+     but this case never happens when this pretty-printing function
+     is called from @(tsee pprint-tyname)."))
+  (obj-adeclor-case
+   declor
+   :none ""
+   :pointer (msg "*~@0" (pprint-obj-adeclor declor.to))
+   :array (b* ((sub (pprint-obj-adeclor declor.of)))
+            (if (obj-adeclor-case declor.of :array)
+                (msg "(~@0)[]" sub)
+              (msg "~@0[]" sub))))
+  :measure (obj-adeclor-count declor)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -359,9 +424,18 @@
 (define pprint-tyname ((tn tynamep))
   :returns (part msgp)
   :short "Pretty-print a type name."
-  (msg "~@0~@1"
-       (pprint-tyspecseq (tyname->tyspec tn))
-       (pprint-obj-adeclor (tyname->declor tn)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is a declarator,
+     we add a space beween it and the type specifier sequence.
+     Otherwise, we just print the type specifier sequence."))
+  (b* (((tyname tn) tn))
+    (if (obj-adeclor-case tn.declor :none)
+        (pprint-tyspecseq tn.tyspec)
+      (msg "~@0 ~@1"
+           (pprint-tyspecseq tn.tyspec)
+           (pprint-obj-adeclor tn.declor))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

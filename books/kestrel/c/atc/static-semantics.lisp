@@ -779,7 +779,7 @@
                  (error (list :cast-mistype-operand e
                               :required :scalar
                               :supplied arg-type)))
-                (type (type-name-to-type e.type))
+                (type (tyname-to-type e.type))
                 ((unless (type-scalarp type))
                  (error (list :cast-mistype-type e
                               :required :scalar
@@ -1222,7 +1222,7 @@
      (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
           (wf (check-ident var))
           ((when (errorp wf)) (error (list :declon-error-var wf)))
-          (type (type-name-to-type tyname))
+          (type (tyname-to-type tyname))
           ((when (type-case type :void))
            (error (list :declon-error-type-void item.get)))
           (init-type (check-expr-call-or-pure init funtab vartab))
@@ -1312,7 +1312,7 @@
   (b* (((mv var tyname) (param-declon-to-ident+tyname param))
        (wf (check-ident var))
        ((when (errorp wf)) (error (list :param-error wf)))
-       (type (type-name-to-type tyname))
+       (type (tyname-to-type tyname))
        ((when (type-case type :void))
         (error (list :param-error-void (param-declon-fix param)))))
     (var-table-add-var var type vartab))
@@ -1371,8 +1371,8 @@
   (b* (((fundef fundef) fundef)
        ((mv & tynames) (param-declon-list-to-ident+tyname-lists fundef.params))
        (in-types (type-name-list-to-type-list tynames))
-       (out-type (type-name-to-type (make-tyname :tyspec fundef.result
-                                                 :declor (obj-adeclor-none))))
+       (out-type (tyname-to-type (make-tyname :tyspec fundef.result
+                                              :declor (obj-adeclor-none))))
        (ftype (make-fun-type :inputs in-types :output out-type))
        (funtab (fun-table-add-fun fundef.name ftype funtab))
        ((when (errorp funtab)) (error (list :fundef funtab)))
@@ -1414,7 +1414,7 @@
        ((mv name tyname) (struct-declon-to-ident+tyname (car declons)))
        (wf (check-ident name))
        ((when (errorp wf)) wf)
-       (type (type-name-to-type tyname))
+       (type (tyname-to-type tyname))
        (members-opt (member-add-first name type members)))
     (member-info-list-option-case members-opt
                                   :some members-opt.val

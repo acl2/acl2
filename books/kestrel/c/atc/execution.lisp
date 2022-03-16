@@ -1123,7 +1123,7 @@
      because a scalar type is required [C:6.5.4/2]."))
   (b* ((arg (value-result-fix arg))
        ((when (errorp arg)) arg)
-       (type (type-name-to-type tyname))
+       (type (tyname-to-type tyname))
        (err (error (list :cast-undefined :from arg :to type)))
        (todo (error (list :cast-todo :from arg :to type)))
        (void (error (list :cast-void :from arg :to type))))
@@ -1142,7 +1142,8 @@
             :slong (if (slong-from-uchar-okp arg) (slong-from-uchar arg) err)
             :ullong (ullong-from-uchar arg)
             :sllong (if (sllong-from-uchar-okp arg) (sllong-from-uchar arg) err)
-            :pointer todo))
+            :pointer todo
+            :array todo))
           ((scharp arg)
            (type-case
             type
@@ -1158,7 +1159,8 @@
             :slong (slong-from-schar arg)
             :ullong (ullong-from-schar arg)
             :sllong (sllong-from-schar arg)
-            :pointer todo))
+            :pointer todo
+            :array todo))
           ((ushortp arg)
            (type-case
             type
@@ -1174,7 +1176,8 @@
             :slong (if (slong-from-ushort-okp arg) (slong-from-ushort arg) err)
             :ullong (ullong-from-ushort arg)
             :sllong (if (sllong-from-ushort-okp arg) (sllong-from-ushort arg) err)
-            :pointer todo))
+            :pointer todo
+            :array todo))
           ((sshortp arg)
            (type-case
             type
@@ -1190,7 +1193,8 @@
             :slong (slong-from-sshort arg)
             :ullong (ullong-from-sshort arg)
             :sllong (sllong-from-sshort arg)
-            :pointer todo))
+            :pointer todo
+            :array todo))
           ((uintp arg)
            (type-case
             type
@@ -1206,7 +1210,8 @@
             :slong (if (slong-from-uint-okp arg) (slong-from-uint arg) err)
             :ullong (ullong-from-uint arg)
             :sllong (if (sllong-from-uint-okp arg) (sllong-from-uint arg) err)
-            :pointer todo))
+            :pointer todo
+            :array todo))
           ((sintp arg)
            (type-case
             type
@@ -1222,7 +1227,8 @@
             :slong (slong-from-sint arg)
             :ullong (ullong-from-sint arg)
             :sllong (sllong-from-sint arg)
-            :pointer todo))
+            :pointer todo
+            :array todo))
           ((ulongp arg)
            (type-case
             type
@@ -1238,7 +1244,8 @@
             :slong (if (slong-from-ulong-okp arg) (slong-from-ulong arg) err)
             :ullong (ullong-from-ulong arg)
             :sllong (if (sllong-from-ulong-okp arg) (sllong-from-ulong arg) err)
-            :pointer todo))
+            :pointer todo
+            :array todo))
           ((slongp arg)
            (type-case
             type
@@ -1254,7 +1261,8 @@
             :slong arg
             :ullong (ullong-from-slong arg)
             :sllong (sllong-from-slong arg)
-            :pointer todo))
+            :pointer todo
+            :array todo))
           ((ullongp arg)
            (type-case
             type
@@ -1270,7 +1278,8 @@
             :slong (if (slong-from-ullong-okp arg) (slong-from-ullong arg) err)
             :ullong arg
             :sllong (if (sllong-from-ullong-okp arg) (sllong-from-ullong arg) err)
-            :pointer todo))
+            :pointer todo
+            :array todo))
           ((sllongp arg)
            (type-case
             type
@@ -1286,7 +1295,8 @@
             :slong (if (slong-from-sllong-okp arg) (slong-from-sllong arg) err)
             :ullong (ullong-from-sllong arg)
             :sllong arg
-            :pointer todo))
+            :pointer todo
+            :array todo))
           ((pointerp arg) todo)
           (t (error (impossible)))))
   :hooks (:fix))
@@ -1516,7 +1526,7 @@
        (formal (car formals))
        (actual (car actuals))
        ((mv name tyname) (param-declon-to-ident+tyname formal))
-       (formal-type (type-name-to-type tyname))
+       (formal-type (tyname-to-type tyname))
        (actual-type (type-of-value actual))
        ((unless (equal formal-type actual-type))
         (error (list :formal-actual-mistype
@@ -1803,7 +1813,7 @@
          (compst (pop-frame compst))
          ((when (errorp val?)) (mv val? compst))
          ((unless (equal (type-of-value-option val?)
-                         (type-name-to-type
+                         (tyname-to-type
                           (make-tyname :tyspec info.result
                                        :declor (obj-adeclor-none)))))
           (mv (error (list :return-value-mistype
@@ -1960,7 +1970,7 @@
             ((when (not init))
              (mv (error (list :void-initializer (block-item-fix item)))
                  compst))
-            (type (type-name-to-type tyname))
+            (type (tyname-to-type tyname))
             ((unless (equal type (type-of-value init)))
              (mv (error (list :decl-var-mistype var
                               :required type
