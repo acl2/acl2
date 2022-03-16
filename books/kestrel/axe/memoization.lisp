@@ -260,12 +260,8 @@
   (let* ((key (sum-of-nodenums object))
          (alist-for-key (aref1 'memoization memoization key))
          (res (lookup-equal object alist-for-key)))
-    res
-    ;; (if res
-    ;;     (progn$ (cw "(Memo hit for ~x0.)~%" object)
-    ;;             res)
-    ;;   nil)
-    ))
+    (progn$ ;; (and res (cw "(Memo hit for ~x0.)~%" object))
+            res)))
 
 (defthm dargp-of-lookup-in-memoization-when-memoizationp
   (implies (and (memoizationp memoization)
