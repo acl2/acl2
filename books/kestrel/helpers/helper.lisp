@@ -410,8 +410,6 @@
                                               raw-problems-acc)
                                         (cons name formula-names-acc))))))
 
-
-
 ;; Same return type as attack-open-problem.
 (defund attack-induct-problem (prob step-limit name-map state)
   (declare (xargs :guard (and (open-problemp prob)
@@ -446,15 +444,20 @@
           ;; Step limit reached, so record the fact that we worked harder on it:
           (mv nil :updated nil (change-open-problem prob :last-step-limit step-limit) nil nil name-map state)
         ;; Didn't prove it but no limit reached, so we should have subgoals:
-        (b* ( ;; (top-checkpoints (checkpoint-list t state))
-             (non-top-checkpoints (checkpoint-list nil state))
+        (b* ((non-top-checkpoints (checkpoint-list nil state)) ; these are clauses
+             (non-top-checkpoints (clauses-to-implications non-top-checkpoints))
              ((when (not non-top-checkpoints))
               ;; If this can happen legitimately, we could remove this:
               (er hard? 'attack-induct-problem "No checkpoints found for ~x0 but the proof was not step limited." name)
               (mv t nil nil nil nil nil name-map state))
-             (non-top-checkpoints (clauses-to-implications non-top-checkpoints))
+             ((when (equal non-top-checkpoints (list formula)))
+              (prog2$ (cw " No change.  Abandoning this technique.~%")
+                      (mv nil :failed nil nil nil nil name-map state)))
+             ((when (member-equal formula non-top-checkpoints))
+              (prog2$ (cw " One checkpoint is the problem itself.  Abandoning this technique.~%")
+                      (mv nil :failed nil nil nil nil name-map state)))
              ;; (- (cw "top-checkpoints: ~x0~%" top-checkpoints))
-             (- (cw " non-top-checkpoints: ~x0~%" non-top-checkpoints))
+             (- (cw " non-top-checkpoints: ~x0~%" (untranslate-lst non-top-checkpoints t (w state))))
              ;; Spawn subproblems for each of the checkpoints under the induction:
              ((mv raw-subproblems subproblem-names name-map)
               (spawn-subproblems-for-formulas non-top-checkpoints
@@ -503,10 +506,16 @@
        ;; Didn't prove it:
        ((when (eq :step-limit-reached failure-info))
         (mv nil :updated nil (change-open-problem prob :last-step-limit step-limit) nil nil name-map state))
-       (top-checkpoints (checkpoint-list t state))
+       (top-checkpoints (checkpoint-list t state)) ; these are clauses
        (top-checkpoints (clauses-to-implications top-checkpoints))
+       ((when (equal top-checkpoints (list formula)))
+        (prog2$ (cw " No change.  Abandoning this technique.~%")
+                (mv nil :failed nil nil nil nil name-map state)))
+       ((when (member-equal formula top-checkpoints))
+        (prog2$ (cw " One checkpoint is the problem itself.  Abandoning this technique.~%")
+                (mv nil :failed nil nil nil nil name-map state)))
        ;; (non-top-checkpoints (checkpoint-list nil state))
-       (- (cw " top-checkpoints: ~x0~%" top-checkpoints))
+       (- (cw " top-checkpoints: ~x0~%" (untranslate-lst top-checkpoints t (w state))))
        ;; Spawn subproblems for each of the checkpoints:
        ((mv raw-subproblems subproblem-names name-map)
         (spawn-subproblems-for-formulas top-checkpoints
@@ -518,17 +527,18 @@
                                         1 nil nil))
        (- (cw "Spawned ~x0 new subproblems.~%" (len raw-subproblems))))
     (mv nil :split nil nil
-              (pending-problem name formula subproblem-names
-                               (list form) ; todo: put in use hints to prove the checkpoints using the subproblem defthms
-                               )
-              raw-subproblems
-              name-map
-              state)))
+        (pending-problem name formula subproblem-names
+                         (list form) ; todo: put in use hints to prove the checkpoints using the subproblem defthms
+                         )
+        raw-subproblems
+        name-map
+        state)))
 
 ;; Returns (mv erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state), where RES is :proved, :updated, or :split.
 ;; If RES is :proved, then PROOF-EVENTS contain the proof.
 ;; If RES is :updated, then UPDATED-OPEN-PROBLEM is a replacement for PROB (e.g., with a higher last-step-limit)
 ;; If RES is :split, then NEW-PENDING-PROBLEM is a pending problem awaiting solution of the RAW-SUBPROBLEMS (todo: since there might only be one, perhaps :split isn't a good name)
+;; If RES is :failed, nothing else is returned
 ;; TODO: For some techniques, breaking down a problem into subproblems doesn't require a prover call, so we could do those first
 (defund attack-open-problem (prob step-limit name-map state)
   (declare (xargs :guard (and (open-problemp prob)
@@ -540,7 +550,7 @@
        (name (open-problem->name prob))
        (formula (open-problem->formula prob))
        (- (cw "(Attacking ~x0 by~% ~x1.~%" name technique))
-       (- (cw " (Formula: ~x0.)~%" formula)))
+       (- (cw " (Formula: ~x0.)~%" (untranslate-lst formula t (w state)))))
     (mv-let (erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state)
       (case (car technique)
         (:induct (attack-induct-problem prob step-limit name-map state))
@@ -551,6 +561,7 @@
       (progn$ (and (eq res :proved) (cw " Proved it!)~%"))
               (and (eq res :updated) (cw " Reached step limit.)~%"))
               (and (eq res :split) (cw " Split into ~x0 subproblems.)~%" (len raw-subproblems)))
+              (and (eq res :failed) (cw " Failed.)~%" (len raw-subproblems)))
               (mv erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state)))))
 
 ;; For each subterms of the goal, this considers doing an induction based on it.
@@ -638,7 +649,7 @@
        (probs (append (make-induct-problems subterms name formula benefit parents old-techniques wrld)
                       probs))
 
-       (- (cw " Created ~x0 problems using these techniques:~% ~x1.)~%" (len probs) (map-open-problem->technique probs))))
+       (- (cw " Created ~x0 problems using these techniques:~| ~x1.)~%" (len probs) (map-open-problem->technique probs))))
     probs))
 
 (defun elaborate-raw-problems (probs wrld)
@@ -774,9 +785,9 @@
        ((when (not open-probs))
         (cw "NO PROBLEMS LEFT! FAILING.")
         (mv t nil nil state))
-       (- (cw "(Choosing next problem (~x0 open, ~x1 pending).~%" (len open-probs) (len pending-probs)))
-       ;; (- (cw " (~x0 Pending problems: ~X12)~%" (len pending-probs) pending-probs nil))
-       ;; (- (cw " (~x0 Open problems: ~X12)" (len open-probs) open-probs nil))
+       (- (cw "(Choosing next problem (~x0 open, ~x1 pending)." (len open-probs) (len pending-probs)))
+       ;; (- (cw "~% (~x0 Pending problems: ~X12)~%" (len pending-probs) pending-probs nil))
+       ;; (- (cw "~% (~x0 Open problems: ~X12)" (len open-probs) open-probs nil))
        (- (cw ")~%"))
        (res (choose-next-problem open-probs step-limit))
        ((when (not res)) ; can this happen?
@@ -823,24 +834,32 @@
                                       done-map
                                       top-name
                                       state)
-        (if (eq :split res)
-            (let ((new-open-probs (elaborate-raw-problems raw-subproblems (w state)))) ; make open problems for all the ways of solving each raw-subproblem
-              (repeatedly-attack-problems (append new-open-probs (remove-equal prob open-probs))
-                                          (cons new-pending-problem pending-probs)
-                                          step-limit
-                                          name-map
-                                          done-map
-                                          top-name
-                                          state))
-          (prog2$ (er hard? "Unknown result: ~x0." res)
-                  (mv t nil nil state)))))))
+        (if (eq :failed res)
+            (repeatedly-attack-problems (remove-equal prob open-probs)
+                                        pending-probs
+                                        step-limit
+                                        name-map
+                                        done-map
+                                        top-name
+                                        state)
+          (if (eq :split res)
+              (let ((new-open-probs (elaborate-raw-problems raw-subproblems (w state)))) ; make open problems for all the ways of solving each raw-subproblem
+                (repeatedly-attack-problems (append new-open-probs (remove-equal prob open-probs))
+                                            (cons new-pending-problem pending-probs)
+                                            step-limit
+                                            name-map
+                                            done-map
+                                            top-name
+                                            state))
+            (prog2$ (er hard? 'repeatedly-attack-problems "Unknown result: ~x0." res)
+                    (mv t nil nil state))))))))
 
 ;; Returns (mv erp event state).
 (defun help-with-fn (form state)
   (declare (xargs :mode :program
                   :stobjs state))
   (b* ((state (set-print-case :downcase state)) ; make printing of forms downcase, to support the use copyind and pasting them
-       (- (cw "~%Trying to help with ~x0.~%" form))
+       (- (cw "~%~%Trying to help with ~x0.~%" form))
        (theorem-type (car form))
        (body (if (eq 'thm theorem-type)
                  (second form)
