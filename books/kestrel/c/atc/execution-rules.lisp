@@ -2010,7 +2010,7 @@
                   (equal compst1 (mv-nth 1 val?+compst1))
                   (value-optionp val?)
                   (equal (type-of-value-option val?)
-                         (type-name-to-type
+                         (tyname-to-type
                           (make-tyname :tyspec (fun-info->result info)
                                        :declor (obj-adeclor-none)))))
              (equal (exec-fun fun args compst fenv limit)
@@ -2153,7 +2153,7 @@
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
                   (equal (type-of-value val)
-                         (type-name-to-type tyname))
+                         (tyname-to-type tyname))
                   (equal compst2 (create-var var val compst1))
                   (compustatep compst2))
              (equal (exec-block-item item compst fenv limit)
@@ -2178,7 +2178,7 @@
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
       (:e obj-declon-to-ident+tyname+init)
-      (:e type-name-to-type))))
+      (:e tyname-to-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2240,7 +2240,7 @@
                   (equal name (mv-nth 0 name+tyname))
                   (equal tyname (mv-nth 1 name+tyname))
                   (equal (type-of-value val)
-                         (type-name-to-type tyname))
+                         (tyname-to-type tyname))
                   (value-listp vals)
                   (equal scope (init-scope (cdr formals) vals))
                   (scopep scope)
@@ -2255,4 +2255,4 @@
       (:e init-scope)
       (:e param-declonp)
       (:e param-declon-to-ident+tyname)
-      (:e type-name-to-type))))
+      (:e tyname-to-type))))

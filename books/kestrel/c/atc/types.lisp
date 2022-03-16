@@ -197,7 +197,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a subroutine of @(tsee type-name-to-type).
+    "This is a subroutine of @(tsee tyname-to-type).
      A type specifier sequence already denotes a type (of certain kinds);
      but in general it is type names that denote types (of all kidns)."))
   (tyspecseq-case tyspec
@@ -253,7 +253,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-name-to-type ((tyname tynamep))
+(define tyname-to-type ((tyname tynamep))
   :returns (type typep)
   :short "Turn a type name into a type."
   :long
@@ -261,19 +261,19 @@
    (xdoc::p
     "A type name denotes a type [C:6.7.7/2].
      This ACL2 function returns the denoted type."))
-  (type-name-to-type-aux (tyname->tyspec tyname)
-                         (tyname->declor tyname))
+  (tyname-to-type-aux (tyname->tyspec tyname)
+                      (tyname->declor tyname))
   :hooks (:fix)
 
   :prepwork
-  ((define type-name-to-type-aux ((tyspec tyspecseqp) (declor obj-adeclorp))
+  ((define tyname-to-type-aux ((tyspec tyspecseqp) (declor obj-adeclorp))
      :returns (type typep)
      :parents nil
      (obj-adeclor-case
       declor
       :none (tyspecseq-to-type tyspec)
-      :pointer (type-pointer (type-name-to-type-aux tyspec declor.to))
-      :array (type-array (type-name-to-type-aux tyspec declor.of)))
+      :pointer (type-pointer (tyname-to-type-aux tyspec declor.to))
+      :array (type-array (tyname-to-type-aux tyspec declor.of)))
      :measure (obj-adeclor-count declor)
      :verify-guards :after-returns
      :hooks (:fix))))
@@ -282,8 +282,8 @@
 
 (std::defprojection type-name-list-to-type-list ((x tyname-listp))
   :result-type type-listp
-  :short "Lift @(tsee type-name-to-type) to lists."
-  (type-name-to-type x)
+  :short "Lift @(tsee tyname-to-type) to lists."
+  (tyname-to-type x)
   ///
   (fty::deffixequiv type-name-list-to-type-list))
 

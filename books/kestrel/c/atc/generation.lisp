@@ -1949,12 +1949,12 @@
   :hooks (:fix)
   ///
 
-  (defrule type-name-to-type-of-tyname-of-atc-gen-tyspecseq
+  (defrule tyname-to-type-of-tyname-of-atc-gen-tyspecseq
     (implies (and (not (type-case type :pointer))
                   (not (type-case type :array)))
-             (equal (type-name-to-type (tyname (atc-gen-tyspecseq type) nil))
+             (equal (tyname-to-type (tyname (atc-gen-tyspecseq type) nil))
                     (type-fix type)))
-    :enable type-name-to-type))
+    :enable tyname-to-type))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1123,7 +1123,7 @@
      because a scalar type is required [C:6.5.4/2]."))
   (b* ((arg (value-result-fix arg))
        ((when (errorp arg)) arg)
-       (type (type-name-to-type tyname))
+       (type (tyname-to-type tyname))
        (err (error (list :cast-undefined :from arg :to type)))
        (todo (error (list :cast-todo :from arg :to type)))
        (void (error (list :cast-void :from arg :to type))))
@@ -1526,7 +1526,7 @@
        (formal (car formals))
        (actual (car actuals))
        ((mv name tyname) (param-declon-to-ident+tyname formal))
-       (formal-type (type-name-to-type tyname))
+       (formal-type (tyname-to-type tyname))
        (actual-type (type-of-value actual))
        ((unless (equal formal-type actual-type))
         (error (list :formal-actual-mistype
@@ -1813,7 +1813,7 @@
          (compst (pop-frame compst))
          ((when (errorp val?)) (mv val? compst))
          ((unless (equal (type-of-value-option val?)
-                         (type-name-to-type
+                         (tyname-to-type
                           (make-tyname :tyspec info.result
                                        :declor (obj-adeclor-none)))))
           (mv (error (list :return-value-mistype
@@ -1970,7 +1970,7 @@
             ((when (not init))
              (mv (error (list :void-initializer (block-item-fix item)))
                  compst))
-            (type (type-name-to-type tyname))
+            (type (tyname-to-type tyname))
             ((unless (equal type (type-of-value init)))
              (mv (error (list :decl-var-mistype var
                               :required type
