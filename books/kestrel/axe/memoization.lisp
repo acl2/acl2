@@ -92,14 +92,6 @@
 
 ;; TODO: Consider using fixnums here (doing the mod [or mask] operation on each addition).
 (mutual-recursion
- (defun sum-of-nodenums-aux-lst (objects acc)
-   (declare (xargs :guard (and (all-axe-treep objects)
-                               (natp acc))
-                   :verify-guards nil ;done below
-                   ))
-   (if (atom objects)
-       acc
-     (sum-of-nodenums-aux-lst (cdr objects) (sum-of-nodenums-aux (car objects) acc))))
 
  ;; If OBJECT is a ground-term, this should return ACC (usually 0).
  (defun sum-of-nodenums-aux (object acc)
@@ -113,7 +105,16 @@
      (if (eq 'quote (ffn-symb object))
          acc ;it's a quoted constant
        ;;it's a term:
-       (sum-of-nodenums-aux-lst (fargs object) acc)))))
+       (sum-of-nodenums-aux-lst (fargs object) acc))))
+
+ (defun sum-of-nodenums-aux-lst (objects acc)
+   (declare (xargs :guard (and (all-axe-treep objects)
+                               (natp acc))
+                   :verify-guards nil ;done below
+                   ))
+   (if (atom objects)
+       acc
+     (sum-of-nodenums-aux-lst (cdr objects) (sum-of-nodenums-aux (car objects) acc)))))
 
 (make-flag sum-of-nodenums-aux)
 
