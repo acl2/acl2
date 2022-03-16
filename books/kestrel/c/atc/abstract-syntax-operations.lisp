@@ -106,9 +106,15 @@
     "This abstracts an object declarator to an abstract one,
      by removing the identifier and also returning it.
      See @(tsee obj-adeclor)."))
-  (obj-declor-case declor
-                   :ident (mv declor.get (obj-adeclor-none))
-                   :pointer (mv declor.get (obj-adeclor-pointer)))
+  (obj-declor-case
+   declor
+   :ident (mv declor.get (obj-adeclor-none))
+   :pointer (b* (((mv id sub) (obj-declor-to-ident+adeclor declor.to)))
+              (mv id (obj-adeclor-pointer sub)))
+   :array (b* (((mv id sub) (obj-declor-to-ident+adeclor declor.of)))
+            (mv id (obj-adeclor-array sub))))
+  :measure (obj-declor-count declor)
+  :verify-guards :after-returns
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

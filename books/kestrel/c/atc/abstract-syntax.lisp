@@ -523,21 +523,36 @@
      but in our abstract syntax it is useful
      to differentiate them from other kinds of declarators.")
    (xdoc::p
-    "For now we only capture two kinds of object declarators:
-     (i) a direct declarator consisting of a single identifier; and
-     (ii) a direct declarator consisting of a single identifier
-     preceded by a single pointer (i.e. @('*')).
-     This will be generalized eventually.")
+    "For now we only capture three kinds of object declarators:
+     (i) a direct declarator consisting of a single identifier;
+     (ii) a pointer declarator consisting of
+     the pointer notation @('*')
+     and (recursively) an object declarator; and
+     (iii) an array (direct) declarator consisting of
+     an object declarator (recursively)
+     and the array notation @('[]') without anything inside.
+     Note that we can represent sequences of pointer notations @('* ... *')
+     by nesting the @(':pointer') constructor.
+     Note also that a direct declarator may be a (parenthesized) declarator,
+     but in our abstract syntax we just have declarators,
+     which we can nest put under the @(':array') constructor,
+     so we do not need to represent parentheses explicitly.
+     Also see the pretty-printer for how
+     the combination of @(':pointer') and @(':array') is handled.")
    (xdoc::p
-    "We plan to extend this to support
-     combinations of pointer and array declarators,
-     but not of function declarators.
+    "We may extend this to support type qualifiers for pointer declarators,
+     and possibly array length notations between square brackets,
+     but most likely we will not add support for function declarators.
      This is because the latter serve for objects involving function pointers,
      but supporting those does not seem likely in ATC,
      given that ACL2 is first-order,
-     and thus cannot readily represent C function pointers."))
+     and thus cannot readily represent C function pointers.
+     (However, perhaps there is a way
+     to represent function pointers with @(tsee apply$,
+     in which case we may end up adding support for function declarators.)"))
   (:ident ((get ident)))
-  (:pointer ((get ident)))
+  (:pointer ((to obj-declor)))
+  (:array ((of obj-declor)))
   :pred obj-declorp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -552,13 +567,9 @@
      but in our abstract syntax it is useful
      to differentiate them from other kinds of abstract declarators.")
    (xdoc::p
-    "For now we only capture two kinds of abstract object declarators:
-     (i) no abstract object declarator; and
-     (ii) a direct abstract declarator consisting of
-     a single pointer (i.e. @('*')).
-     This will be generalized eventually.")
-   (xdoc::p
-    "Note that these correspond to @(tsee obj-declor), intentionally:
+    "For now we only capture three kinds of abstract object declarators,
+     corresponding to the (non-abstract) object declarators
+     captured in @(tsee obj-declor):
      an abstract declarator is like a declarator without the identifier.
      Abstract declarators are used in type names,
      which are like declarations without identifiers [C:6.7.7/2].")
@@ -571,7 +582,8 @@
      the correspondence between abstract declarators and declarators
      explained just above."))
   (:none ())
-  (:pointer ())
+  (:pointer ((to obj-adeclor)))
+  (:array ((of obj-adeclor)))
   :pred obj-adeclorp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

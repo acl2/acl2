@@ -247,10 +247,17 @@
                                        (raise "Internal error: ~
                                                typedef ~x0 not supported yet."
                                               tyspecseq.name)
-                                       (irr-type)))))
-    (if (obj-adeclor-case (tyname->declor tyname) :pointer)
-        (type-pointer type)
-      type))
+                                       (irr-type))))
+       (declor (tyname->declor tyname)))
+    (obj-adeclor-case
+     declor
+     :none type
+     :pointer (if (obj-adeclor-case declor.to :none)
+                  (type-pointer type)
+                (prog2$ (raise "Not yet supported: ~x0" tyname)
+                        (irr-type)))
+     :array (prog2$ (raise "Not yet supported: ~x0" tyname)
+                    (irr-type))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

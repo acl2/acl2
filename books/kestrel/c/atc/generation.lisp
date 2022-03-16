@@ -3520,7 +3520,8 @@
        (param (make-param-declon
                :tyspec (atc-gen-tyspecseq ref-type)
                :declor (if pointerp
-                           (obj-declor-pointer (make-ident :name name))
+                           (obj-declor-pointer
+                            (obj-declor-ident (make-ident :name name)))
                          (obj-declor-ident (make-ident :name name)))))
        ((er params)
         (atc-gen-param-declon-list (cdr typed-formals) fn ctx state)))
