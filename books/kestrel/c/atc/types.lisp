@@ -294,43 +294,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define integer-type-to-tyname ((type typep))
-  :guard (type-integerp type)
+(define type-to-tyname ((type typep))
   :returns (tyname tynamep)
-  :short "Turn an integer type into a type name."
+  :short "Turn a type into a type name."
   :long
   (xdoc::topstring
    (xdoc::p
     "We pick a particular choice of type specifier sequence,
      and thus of type name, for each integer type."))
-  (case (type-kind type)
-    (:char (make-tyname :tyspec (tyspecseq-char)
-                        :declor (obj-adeclor-none)))
-    (:schar (make-tyname :tyspec (tyspecseq-schar)
-                         :declor (obj-adeclor-none)))
-    (:uchar (make-tyname :tyspec (tyspecseq-uchar)
-                         :declor (obj-adeclor-none)))
-    (:sshort (make-tyname :tyspec (tyspecseq-sshort nil nil)
-                          :declor (obj-adeclor-none)))
-    (:ushort (make-tyname :tyspec (tyspecseq-ushort nil)
-                          :declor (obj-adeclor-none)))
-    (:sint (make-tyname :tyspec (tyspecseq-sint nil t)
-                        :declor (obj-adeclor-none)))
-    (:uint (make-tyname :tyspec (tyspecseq-uint t)
-                        :declor (obj-adeclor-none)))
-    (:slong (make-tyname :tyspec (tyspecseq-slong nil nil)
-                         :declor (obj-adeclor-none)))
-    (:ulong (make-tyname :tyspec (tyspecseq-ulong nil)
-                         :declor (obj-adeclor-none)))
-    (:sllong (make-tyname :tyspec (tyspecseq-sllong nil nil)
-                          :declor (obj-adeclor-none)))
-    (:ullong (make-tyname :tyspec (tyspecseq-ullong nil)
-                          :declor (obj-adeclor-none)))
-    (t (prog2$ (impossible) (irr-tyname))))
-  :guard-hints (("Goal" :in-theory (enable type-integerp
-                                           type-signed-integerp
-                                           type-unsigned-integerp)))
-  :hooks (:fix))
+  (b* (((mv tyspec declor) (type-to-tyname-aux type)))
+    (make-tyname :tyspec tyspec :declor declor))
+  :hooks (:fix)
+
+  :prepwork
+  ((define type-to-tyname-aux ((type typep))
+     :returns (mv (tyspec tyspecseqp) (declor obj-adeclorp))
+     :parents nil
+     (type-case
+      type
+      :void (mv (tyspecseq-void) (obj-adeclor-none))
+      :char (mv (tyspecseq-char) (obj-adeclor-none))
+      :schar (mv (tyspecseq-schar) (obj-adeclor-none))
+      :uchar (mv (tyspecseq-uchar) (obj-adeclor-none))
+      :sshort (mv (tyspecseq-sshort nil nil) (obj-adeclor-none))
+      :ushort (mv (tyspecseq-ushort nil) (obj-adeclor-none))
+      :sint (mv (tyspecseq-sint nil t) (obj-adeclor-none))
+      :uint (mv (tyspecseq-uint t) (obj-adeclor-none))
+      :slong (mv (tyspecseq-slong nil nil) (obj-adeclor-none))
+      :ulong (mv (tyspecseq-ulong nil) (obj-adeclor-none))
+      :sllong (mv (tyspecseq-sllong nil nil) (obj-adeclor-none))
+      :ullong (mv (tyspecseq-ullong nil) (obj-adeclor-none))
+      :pointer (b* (((mv tyspec declor) (type-to-tyname-aux type.referenced)))
+                 (mv tyspec (obj-adeclor-pointer declor)))
+      :array (b* (((mv tyspec declor) (type-to-tyname-aux type.element)))
+               (mv tyspec (obj-adeclor-array declor))))
+     :measure (type-count type)
+     :verify-guards :after-returns
+     :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
