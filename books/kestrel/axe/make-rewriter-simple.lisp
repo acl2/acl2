@@ -1667,7 +1667,7 @@
               (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
             (b* ((expr (cons fn args)) ;todo: save this cons, or use below?
                  ;;Try looking it up in the memoization (note that the args are now simplified):
-                 (memo-match (and memoization (lookup-in-memoization expr memoization))))
+                 (memo-match (and memoization (lookup-in-memoization expr memoization)))) ; todo: use a more specialized version of lookup-in-memoization, since we know the shape of expr (also avoid the cons for expr here)?
               (if memo-match
                   (mv (erp-nil)
                       memo-match
