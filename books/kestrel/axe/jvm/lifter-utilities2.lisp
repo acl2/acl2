@@ -15,6 +15,7 @@
 ;; This book will contain lifter utilities that are only used by the compositional lifters.
 
 (include-book "lifter-utilities")
+(local (include-book "kestrel/lists-light/len" :dir :system))
 
 (defconst *invoke-opcodes*
   '(:invokevirtual
@@ -124,6 +125,39 @@
                                                              param-name-to-slot-alist param-slot-to-stack-item-alist)
            (desugar-params-in-assumption-terms-to-stack-items (rest terms) ;state-var
                                                               param-name-to-slot-alist param-slot-to-stack-item-alist)))))
+
+(make-flag desugar-params-in-assumption-term-to-stack-items)
+
+(defthm-flag-desugar-params-in-assumption-term-to-stack-items
+  (defthm len-of-desugar-params-in-assumption-term-to-stack-items-skip
+    :skip t
+    :flag desugar-params-in-assumption-term-to-stack-items)
+  (defthm len-of-desugar-params-in-assumption-terms-to-stack-items
+    (equal (len (desugar-params-in-assumption-terms-to-stack-items terms param-name-to-slot-alist param-slot-to-stack-item-alist))
+           (len terms))
+    :flag desugar-params-in-assumption-terms-to-stack-items))
+
+(DEFTHM-FLAG-DESUGAR-PARAMS-IN-ASSUMPTION-TERM-TO-STACK-ITEMS
+  (DEFTHM pseudo-termp-of-DESUGAR-PARAMS-IN-ASSUMPTION-TERM-TO-STACK-ITEMS
+    (IMPLIES (and (pseudo-termp term)
+                  (symbol-alistp param-name-to-slot-alist)
+                  (alistp param-slot-to-stack-item-alist)
+                  (PSEUDO-TERM-LISTP (STRIP-CDRS PARAM-SLOT-TO-STACK-ITEM-ALIST)))
+             (pseudo-termp (DESUGAR-PARAMS-IN-ASSUMPTION-TERM-TO-STACK-ITEMS
+                            TERM PARAM-NAME-TO-SLOT-ALIST
+                            PARAM-SLOT-TO-STACK-ITEM-ALIST)))
+    :FLAG DESUGAR-PARAMS-IN-ASSUMPTION-TERM-TO-STACK-ITEMS)
+  (DEFTHM pseudo-term-listp-of--DESUGAR-PARAMS-IN-ASSUMPTION-TERMS-TO-STACK-ITEMS
+    (IMPLIES (and (pseudo-term-listp terms)
+                  (symbol-alistp param-name-to-slot-alist)
+                  (alistp param-slot-to-stack-item-alist)
+                  (PSEUDO-TERM-LISTP (STRIP-CDRS PARAM-SLOT-TO-STACK-ITEM-ALIST)))
+             (pseudo-term-listp (DESUGAR-PARAMS-IN-ASSUMPTION-TERMS-TO-STACK-ITEMS
+                                 TERMS PARAM-NAME-TO-SLOT-ALIST
+                                 PARAM-SLOT-TO-STACK-ITEM-ALIST)))
+    :FLAG DESUGAR-PARAMS-IN-ASSUMPTION-TERMS-TO-STACK-ITEMS))
+
+
 
 ;these are little alists
 (defun get-all-lifted-methods-from-table (wrld)

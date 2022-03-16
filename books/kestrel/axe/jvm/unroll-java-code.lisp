@@ -152,7 +152,7 @@
                                 error-on-incomplete-runsp ;whether to throw a hard error
                                 state)
   (declare (xargs :stobjs (state)
-                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, PRUNE-DAG-WITH-RULE-ALIST, SIMP-TERM-FN and TRANSLATE-TERMS
+                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
                   :guard (and (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
@@ -320,13 +320,13 @@
         (mv erp nil nil nil nil nil state))
        ((mv erp dag state)
         (if prune-branches
-            (prune-dag-with-rule-alist dag
-                                       all-assumptions ;are they all needed?
-                                       (first rule-alists) ;what should we use here?
-                                       nil ; interpreted-function-alist
-                                       monitored-rules
-                                       call-stp
-                                       state)
+            (prune-dag-with-rule-alist-new dag
+                                           all-assumptions ;are they all needed?
+                                           (first rule-alists) ;what should we use here?
+                                           nil ; interpreted-function-alist
+                                           monitored-rules
+                                           call-stp
+                                           state)
           (mv nil dag state)))
        ((when erp) (mv erp nil nil nil nil nil state))
        (dag-fns (dag-fns dag)))
@@ -376,7 +376,7 @@
                              whole-form
                              state)
   (declare (xargs :stobjs (state)
-                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, PRUNE-DAG-WITH-RULE-ALIST, SIMP-TERM-FN and TRANSLATE-TERMS
+                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
                   :guard (and (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
