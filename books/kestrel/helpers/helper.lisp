@@ -46,11 +46,17 @@
 ;; TODO: Try to reoreder hyps to make a nice rule
 ;; TODO: Untranslate to make the forms?
 
-(local (in-theory (disable natp)))
+(local (in-theory (disable natp acons)))
 
 ;;;
 ;;; Library stuff
 ;;;
+
+(defthm consp-of-rassoc-equal
+  (implies (alistp alist)
+           (iff (consp (rassoc-equal x alist))
+                (rassoc-equal x alist)))
+  :hints (("Goal" :in-theory (enable rassoc-equal))))
 
 ;dup?
 (defun append-all (xs)
@@ -111,12 +117,29 @@
   (declare (xargs :guard t))
   (symbolp name))
 
+(defthm problem-namep-of-fresh-symbol
+  (implies (problem-namep desired-sym)
+           (problem-namep (fresh-symbol desired-sym syms-to-avoid)))
+  :hints (("Goal" :in-theory (enable problem-namep))))
+
 (defund problem-name-listp (names)
   (declare (xargs :guard t))
   (if (atom names)
       (null names)
     (and (problem-namep (first names))
          (problem-name-listp (rest names)))))
+
+(defthm problem-name-listp-to-true-listp
+  (implies (problem-name-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable problem-name-listp))))
+
+(defthm problem-name-listp-of-cons
+  (equal (problem-name-listp (cons name names))
+         (and (problem-namep name)
+              (problem-name-listp names)))
+  :hints (("Goal" :in-theory (enable problem-name-listp))))
 
 (defund benefitp (x)
   (declare (xargs :guard t))
@@ -252,24 +275,46 @@
     (and (raw-problemp (first probs))
          (raw-problem-listp (rest probs)))))
 
-;todo: allow benefit to differ for different subproblems
-(defund make-raw-subproblems (names formulas benefit parents old-techniques)
-  (declare (xargs :guard (and (problem-name-listp names)
-                              (pseudo-term-listp formulas)
-                              (benefitp benefit)
-                              (problem-name-listp parents)
-                              (technique-listp old-techniques))
-                  :guard-hints (("Goal" :in-theory (enable problem-name-listp)))))
-  (if (endp names)
-      nil
-    (cons (raw-problem (first names) (first formulas) benefit parents old-techniques)
-          (make-raw-subproblems (rest names) (rest formulas) benefit parents old-techniques))))
+(defthm raw-problem-listp-forward-to-true-listp
+  (implies (raw-problem-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable raw-problem-listp))))
+
+(defthm raw-problem-listp-of-cons
+  (equal (raw-problem-listp (cons prob probs))
+         (and (raw-problemp prob)
+              (raw-problem-listp probs)))
+  :hints (("Goal" :in-theory (enable raw-problem-listp))))
 
 (defund name-mapp (map)
   (declare (xargs :guard t))
   (and (alistp map)
        (symbol-listp (strip-cars map))
        (pseudo-term-listp (strip-cdrs map))))
+
+(defthm name-mapp-forward-alistp
+  (implies (name-mapp name-map)
+           (alistp name-map))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable name-mapp))))
+
+(defthm symbol-listp-of-strip-cars
+  (implies (name-mapp name-map)
+           (symbol-listp (strip-cars name-map)))
+  :hints (("Goal" :in-theory (enable name-mapp))))
+
+(defthm name-mapp-of-acons
+  (equal (name-mapp (acons name formula name-map))
+         (and (problem-namep name)
+              (pseudo-termp formula)
+              (name-mapp name-map)))
+  :hints (("Goal" :in-theory (enable name-mapp acons))))
+
+(defthm problem-namep-of-car-of-rassoc-equal
+  (implies (name-mapp name-map)
+           (problem-namep (car (rassoc-equal formula name-map))))
+  :hints (("Goal" :in-theory (enable name-mapp))))
 
 ;; clause is: ((not <hyp1>) ... (not <hypn>) conc)
 (defun clause-to-implication (clause)
@@ -308,6 +353,64 @@
       nil
     (cons (open-problem->technique (first probs))
           (map-open-problem->technique (rest probs)))))
+
+
+;todo: allow benefit to differ for different subproblems
+(defund make-raw-subproblems (names formulas benefit parents old-techniques)
+  (declare (xargs :guard (and (problem-name-listp names)
+                              (pseudo-term-listp formulas)
+                              (benefitp benefit)
+                              (problem-name-listp parents)
+                              (technique-listp old-techniques))
+                  :guard-hints (("Goal" :in-theory (enable problem-name-listp)))))
+  (if (endp names)
+      nil
+    (cons (raw-problem (first names) (first formulas) benefit parents old-techniques)
+          (make-raw-subproblems (rest names) (rest formulas) benefit parents old-techniques))))
+
+;; Returns (mv raw-problems formula-names name-map).  The formula-names
+;; returned may include the names of existing problems, in which case fewer raw-problems are returned.
+(defun spawn-subproblems-for-formulas (formulas name-map benefit parent old-techniques
+                                                base-name name-index
+                                                raw-problems-acc formula-names-acc)
+  (declare (xargs :guard (and (pseudo-term-listp formulas)
+                              (name-mapp name-map)
+                              (benefitp benefit)
+                              (problem-namep parent)
+                              (technique-listp old-techniques)
+                              (symbolp base-name)
+                              (natp name-index)
+                              (raw-problem-listp raw-problems-acc)
+                              (problem-name-listp formula-names-acc))))
+  (if (endp formulas)
+      (mv (reverse raw-problems-acc)  ; maybe skip the reverse
+          (reverse formula-names-acc) ; maybe skip the reverse
+          name-map)
+    (let* ((formula (first formulas))
+           ;; TODO: Handle problems that are equivalent but not identical (e.g., in the order of the hyps)?
+           (res (rassoc-equal formula name-map))
+           (name (fresh-symbol (pack$ base-name name-index)
+                               (strip-cars name-map) ; todo: slow
+                               )))
+      (if res
+          (let ((existing-name (car res)))
+            ;; formula is already a goal in the system:
+            ;; TODO: Up the benefit of the existing problem?
+            (prog2$ (cw "(Note: The problem that would be called ~x0 is already present as ~x1.)~%" name existing-name)
+                    (spawn-subproblems-for-formulas (rest formulas) name-map benefit parent old-techniques
+                                                    base-name (+ 1 name-index)
+                                                    raw-problems-acc ; nothing to add since problem already in the system
+                                                    (cons existing-name formula-names-acc))))
+        ;; formula not already a goal:
+        (spawn-subproblems-for-formulas (rest formulas)
+                                        (acons name formula name-map)
+                                        benefit parent old-techniques
+                                        base-name (+ 1 name-index)
+                                        (cons (raw-problem name formula benefit (list parent) old-techniques)
+                                              raw-problems-acc)
+                                        (cons name formula-names-acc))))))
+
+
 
 ;; Same return type as attack-open-problem.
 (defund attack-induct-problem (prob step-limit name-map state)
@@ -352,23 +455,23 @@
              (non-top-checkpoints (clauses-to-implications non-top-checkpoints))
              ;; (- (cw "top-checkpoints: ~x0~%" top-checkpoints))
              (- (cw " non-top-checkpoints: ~x0~%" non-top-checkpoints))
-             ;; Spawn subproblems for each of the checkpoints under the induction (TODO: Can this be abstracted out?)
-             ;; TODO: Compare to the already named problems!  Up the benefit...
-             (subproblem-names (fresh-var-names (len non-top-checkpoints) (pack$ name '-induct) (strip-cars name-map))) ;slow?
-             )
-          (mv nil
-              :split ; since there might only be one, perhaps :split isn't a good name.
-              nil nil
+             ;; Spawn subproblems for each of the checkpoints under the induction:
+             ((mv raw-subproblems subproblem-names name-map)
+              (spawn-subproblems-for-formulas non-top-checkpoints
+                                              name-map
+                                              (+ -1 benefit) ; slightly less good than solving the original problem (todo: divide by number of subproblems?
+                                              name
+                                              (cons technique old-techniques) ; or don't since now we're in an induction?
+                                              (pack$ name '-induct-)
+                                              1
+                                              nil nil))
+             (- (cw "Spawned ~x0 new subproblems.~%" (len raw-subproblems))))
+          (mv nil :split nil nil
               (pending-problem name formula subproblem-names
                                (list form) ; todo: put in use hints to prove the checkpoints using the subproblem defthms
                                )
-              (make-raw-subproblems subproblem-names non-top-checkpoints
-                                    (+ -1 benefit) ; slightly less good than solving the original problem
-                                    (list name)
-                                    (cons technique old-techniques) ; or don't since now we're in an induction?
-                                    )
-              (append (pairlis$ subproblem-names non-top-checkpoints) ;inefficient
-                      name-map)
+              raw-subproblems
+              name-map
               state))))))
 
 ;; Same return type as attack-open-problem.
@@ -404,25 +507,28 @@
        (top-checkpoints (clauses-to-implications top-checkpoints))
        ;; (non-top-checkpoints (checkpoint-list nil state))
        (- (cw " top-checkpoints: ~x0~%" top-checkpoints))
-       ;; (- (cw "non-top-checkpoints: ~x0~%" non-top-checkpoints))
-       (subproblem-names (fresh-var-names (len top-checkpoints) (pack$ name '-enable) (strip-cars name-map))) ;slow?
-       )
+       ;; Spawn subproblems for each of the checkpoints:
+       ((mv raw-subproblems subproblem-names name-map)
+        (spawn-subproblems-for-formulas top-checkpoints
+                                        name-map
+                                        (+ -1 benefit) ; slightly less good than solving the original problem (todo: divide by number of subproblems?
+                                        name
+                                        (cons technique old-techniques)
+                                        (pack$ name '-enable-)
+                                        1 nil nil))
+       (- (cw "Spawned ~x0 new subproblems.~%" (len raw-subproblems))))
     (mv nil :split nil nil
-        (pending-problem name formula subproblem-names
-                         (list form) ; todo: put in use hints to prove the checkpoints using the subproblem defthms
-                         )
-        (make-raw-subproblems subproblem-names top-checkpoints
-                              (+ -1 benefit) ; slightly less good than solving the original problem (TODO: Divide by number of problems? Look at chance other will be solved?)
-                              (list name)
-                              (cons technique old-techniques))
-        (append (pairlis$ subproblem-names top-checkpoints) ;inefficient
-                name-map)
-        state)))
+              (pending-problem name formula subproblem-names
+                               (list form) ; todo: put in use hints to prove the checkpoints using the subproblem defthms
+                               )
+              raw-subproblems
+              name-map
+              state)))
 
 ;; Returns (mv erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state), where RES is :proved, :updated, or :split.
 ;; If RES is :proved, then PROOF-EVENTS contain the proof.
 ;; If RES is :updated, then UPDATED-OPEN-PROBLEM is a replacement for PROB (e.g., with a higher last-step-limit)
-;; If RES is :split, then NEW-PENDING-PROBLEM is a pending problem awaiting solution of the RAW-SUBPROBLEMS.
+;; If RES is :split, then NEW-PENDING-PROBLEM is a pending problem awaiting solution of the RAW-SUBPROBLEMS (todo: since there might only be one, perhaps :split isn't a good name)
 ;; TODO: For some techniques, breaking down a problem into subproblems doesn't require a prover call, so we could do those first
 (defund attack-open-problem (prob step-limit name-map state)
   (declare (xargs :guard (and (open-problemp prob)
@@ -432,7 +538,9 @@
                   :stobjs state))
   (b* ((technique (open-problem->technique prob))
        (name (open-problem->name prob))
-       (- (cw "(Attacking ~x0 by ~x1.~%" name technique)))
+       (formula (open-problem->formula prob))
+       (- (cw "(Attacking ~x0 by~% ~x1.~%" name technique))
+       (- (cw " (Formula: ~x0.)~%" formula)))
     (mv-let (erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state)
       (case (car technique)
         (:induct (attack-induct-problem prob step-limit name-map state))
@@ -440,11 +548,12 @@
         ;;todo
         (otherwise (prog2$ (er hard? 'attack-open-problem "Unknown technique in problem ~x0." prob)
                            (mv t nil nil nil nil nil name-map state))))
-      (progn$ (and (eq res :proved) (cw "Proved it!)~%"))
-              (and (eq res :updated) (cw "Reached step limit.)~%"))
-              (and (eq res :split) (cw "Split into ~x0 subproblems.)~%" (len raw-subproblems)))
+      (progn$ (and (eq res :proved) (cw " Proved it!)~%"))
+              (and (eq res :updated) (cw " Reached step limit.)~%"))
+              (and (eq res :split) (cw " Split into ~x0 subproblems.)~%" (len raw-subproblems)))
               (mv erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state)))))
 
+;; For each subterms of the goal, this considers doing an induction based on it.
 (defun make-induct-problems (subterms name formula benefit parents old-techniques wrld)
   (declare (xargs :guard (and (pseudo-term-listp subterms)
                               (symbolp name)
@@ -666,8 +775,8 @@
         (cw "NO PROBLEMS LEFT! FAILING.")
         (mv t nil nil state))
        (- (cw "(Choosing next problem (~x0 open, ~x1 pending).~%" (len open-probs) (len pending-probs)))
-       (- (cw " (Pending problems: ~X01)~%" pending-probs nil))
-       (- (cw " (Open problems: ~X01)" open-probs nil))
+       ;; (- (cw " (~x0 Pending problems: ~X12)~%" (len pending-probs) pending-probs nil))
+       ;; (- (cw " (~x0 Open problems: ~X12)" (len open-probs) open-probs nil))
        (- (cw ")~%"))
        (res (choose-next-problem open-probs step-limit))
        ((when (not res)) ; can this happen?
