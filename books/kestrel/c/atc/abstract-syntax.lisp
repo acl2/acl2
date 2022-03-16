@@ -548,7 +548,7 @@
      given that ACL2 is first-order,
      and thus cannot readily represent C function pointers.
      (However, perhaps there is a way
-     to represent function pointers with @(tsee apply$,
+     to represent function pointers with @(tsee apply$),
      in which case we may end up adding support for function declarators.)"))
   (:ident ((get ident)))
   (:pointer ((to obj-declor)))
