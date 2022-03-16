@@ -2718,5 +2718,5 @@ You are using version ~s.~s.~s."
                  (> ccl::*openmcl-minor-version* 10)))
   (setq ccl:*trust-paths-from-environment* nil))
 
-#+ccl ; originally for ACL2(h), but let's make behavior the same for ACL2
+#+ccl ; originally for ACL2(h), but here we make behavior the same for ACL2
 (setq ccl::*quit-on-eof* t)
