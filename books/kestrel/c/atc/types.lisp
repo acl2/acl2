@@ -44,15 +44,17 @@
      the @('void') type,
      the plain @('char') type, and
      the standard signed and unsigned integer types (except @('_Bool'),
-     as well as pointer types.
-     The referenced type of a pointer type may be any type (that we model),
-     including a pointer type.
-     The recursion bottoms out at the integer types.")
+     as well as pointer types,
+     and array types with unknown size
+     (i.e. array types with nothing between the square brackets).")
    (xdoc::p
-    "This semantic model is more general
-     than its syntactic counterpart @(tsee tyname):
-     the latter only allows one level of pointers currently.
-     In any case, initially we make a limited use of pointer types."))
+    "This semantic model is slightly less general
+     than its syntactic counterpart @(tsee tyname),
+     which currently includes more types.
+     Eventually we will extend this semantic notion of type
+     to have counterparts of all the type names.
+     A semantic type as defined here is
+     an abstraction of type names as defined in the (abstract) syntax."))
   (:void ())
   (:char ())
   (:schar ())
@@ -260,7 +262,10 @@
   (xdoc::topstring
    (xdoc::p
     "A type name denotes a type [C:6.7.7/2].
-     This ACL2 function returns the denoted type."))
+     This ACL2 function returns the denoted type.
+     As mentioned in @(tsee type),
+     a semantic type is an abstraction of a type name:
+     this function reifies that abstraction."))
   (tyname-to-type-aux (tyname->tyspec tyname)
                       (tyname->declor tyname))
   :hooks (:fix)
@@ -296,13 +301,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Our model of type names does not cover all the types we model;
-     specifically, our type names only have one level of pointers allowed,
-     while our types allow multiple levels.
-     So at the moment we cannot have a total function
-     from all our types to our type names.
-     For now we actually only need the mapping for integer types,
-     so we define this function on integer types for now."))
+    "We pick a particular choice of type specifier sequence,
+     and thus of type name, for each integer type."))
   (case (type-kind type)
     (:char (make-tyname :tyspec (tyspecseq-char)
                         :declor (obj-adeclor-none)))
