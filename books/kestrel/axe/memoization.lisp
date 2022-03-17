@@ -14,7 +14,7 @@
 
 ;; The memoization conceptually maps objects (axe-trees) to the nodenum/quotep
 ;; to which they rewrote.  It is implemented as a hash table with chaining,
-;; where the hash of an object is the sum of the nodenums in the object modulo
+;; where the hash of a tree is the sum of the nodenums in the object modulo
 ;; *memoization-size*.
 
 (include-book "tools/flag" :dir :system)
@@ -31,6 +31,7 @@
 ;; TODO: Consider not memoizing things with unsimplified args? (that seemed to slow things down)
 ;; TODO: Consider whether to memoize rewrites of lambda applications (but not memoizing them slowed things down?)
 ;; TODO: Consider whether to memoize rewrites of ground terms
+;; TODO: Consider making a separate memoization for tree that are functions applied to simplified args (common).
 ;; TODO: Consider using an info world for the memoization (to make it per head symbol)
 ;; TODO: Consider memoizing only destructor trees, not constructor trees
 ;; NOTE: For anything we won't memoize, we should avoid consing it onto tree-equal-to-tree in the rewriter
@@ -96,12 +97,15 @@
  ;; If OBJECT is a ground-term, this should return ACC (usually 0).
  (defun sum-of-nodenums-aux (object acc)
    (declare (xargs :guard (and (axe-treep object)
-                               (natp acc))))
+                               (natp acc))
+                   :split-types t)
+            (type (integer 0 *) acc))
    (if (atom object)
        (if (symbolp object)
            acc ;it's a variable
          ;;it's a nodenum
-         (+ object acc))
+         (+ (the (integer 0 *) object)
+            acc))
      (if (eq 'quote (ffn-symb object))
          acc ;it's a quoted constant
        ;;it's a term:
@@ -171,10 +175,31 @@
 ;(defconst *fns-not-to-memoize* '(step-state-with-pc-and-call-stack-height get-field))
 
 ;;;
+;;; memo-alist
+;;;
+
+(defun memo-alistp (alist)
+  (declare (xargs :guard t))
+  (and (alistp alist)
+       ;; todo: keys are axe trees to memoize
+       (all-dargp (strip-cdrs alist))))
+
+(local
+ (defthm alistp-when-memo-alistp
+   (implies (memo-alistp alist)
+            (alistp alist))))
+
+(local
+ (defthm all-dargp-of-strip-cdrs-when-memo-alistp
+   (implies (memo-alistp alist)
+            (all-dargp (strip-cdrs alist)))))
+
+
+;;;
 ;;; memoizationp
 ;;;
 
-(def-typed-acl2-array2 array-of-memo-alistsp (and (alistp val) (all-dargp (strip-cdrs val))))
+(def-typed-acl2-array2 array-of-memo-alistsp (memo-alistp val))
 
 (defund memoizationp (memoization)
   (declare (xargs :guard t))
@@ -250,18 +275,19 @@
 ;;; lookup-in-memoization
 ;;;
 
-;returns nil or a nodenum/quotep
-;bozo check *fns-not-to-memoize*
-;can't we sort the memoization by function symbol?
-;; Object must be a function call (possibly a lambda application)
-(defund lookup-in-memoization (object memoization)
-  (declare (xargs :guard (and (tree-to-memoizep object)
+;; Returns a nodenum/quotep (to which to memozation equates TREE), or nil
+;; (meaning TREE is not equated to anything in the memoization).
+;todo: check *fns-not-to-memoize*?
+;todo: can't we sort the memoization by function symbol?
+;; Tree must be a function call (possibly a lambda application).
+(defund lookup-in-memoization (tree memoization)
+  (declare (xargs :guard (and (tree-to-memoizep tree)
                               (memoizationp memoization))
                   :guard-hints (("Goal" :in-theory (enable memoizationp)))))
-  (let* ((key (sum-of-nodenums object))
+  (let* ((key (sum-of-nodenums tree))
          (alist-for-key (aref1 'memoization memoization key))
-         (res (lookup-equal object alist-for-key)))
-    (progn$ ;; (and res (cw "(Memo hit for ~x0.)~%" object))
+         (res (lookup-equal tree alist-for-key)))
+    (progn$ ;; (and res (cw "(Memo hit for ~x0.)~%" tree))
             res)))
 
 (defthm dargp-of-lookup-in-memoization-when-memoizationp
@@ -357,7 +383,7 @@
 ;;; maybe-memoizationp
 ;;;
 
-;; Representations a memoization or nil (meaning no memoization).
+;; Recognizes an object that is a memoization or nil (meaning no memoization).
 (defund maybe-memoizationp (memoization)
   (declare (xargs :guard t))
   (or (eq nil memoization)
@@ -389,7 +415,7 @@
 ;;; maybe-bounded-memoizationp
 ;;;
 
-;; Representations a memoization or nil (meaning no memoization).
+;; Recognizes an object that is a bounded-memoization or nil (meaning no memoization).
 (defund maybe-bounded-memoizationp (memoization bound)
   (declare (xargs :guard (natp bound)))
   (or (eq nil memoization)
