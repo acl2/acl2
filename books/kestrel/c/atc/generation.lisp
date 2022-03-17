@@ -3560,6 +3560,7 @@
    :ulong 'ulongp
    :sllong 'sllongp
    :ullong 'ullongp
+   :struct nil
    :pointer (type-case
              type.referenced
              :void nil
@@ -3574,6 +3575,7 @@
              :ulong 'ulong-arrayp
              :sllong 'sllong-arrayp
              :ullong 'ullong-arrayp
+             :struct nil
              :pointer nil
              :array nil)
    :array nil)

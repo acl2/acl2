@@ -1142,6 +1142,7 @@
             :slong (if (slong-from-uchar-okp arg) (slong-from-uchar arg) err)
             :ullong (ullong-from-uchar arg)
             :sllong (if (sllong-from-uchar-okp arg) (sllong-from-uchar arg) err)
+            :struct todo
             :pointer todo
             :array todo))
           ((scharp arg)
@@ -1159,6 +1160,7 @@
             :slong (slong-from-schar arg)
             :ullong (ullong-from-schar arg)
             :sllong (sllong-from-schar arg)
+            :struct todo
             :pointer todo
             :array todo))
           ((ushortp arg)
@@ -1176,6 +1178,7 @@
             :slong (if (slong-from-ushort-okp arg) (slong-from-ushort arg) err)
             :ullong (ullong-from-ushort arg)
             :sllong (if (sllong-from-ushort-okp arg) (sllong-from-ushort arg) err)
+            :struct todo
             :pointer todo
             :array todo))
           ((sshortp arg)
@@ -1193,6 +1196,7 @@
             :slong (slong-from-sshort arg)
             :ullong (ullong-from-sshort arg)
             :sllong (sllong-from-sshort arg)
+            :struct todo
             :pointer todo
             :array todo))
           ((uintp arg)
@@ -1210,6 +1214,7 @@
             :slong (if (slong-from-uint-okp arg) (slong-from-uint arg) err)
             :ullong (ullong-from-uint arg)
             :sllong (if (sllong-from-uint-okp arg) (sllong-from-uint arg) err)
+            :struct todo
             :pointer todo
             :array todo))
           ((sintp arg)
@@ -1227,6 +1232,7 @@
             :slong (slong-from-sint arg)
             :ullong (ullong-from-sint arg)
             :sllong (sllong-from-sint arg)
+            :struct todo
             :pointer todo
             :array todo))
           ((ulongp arg)
@@ -1244,6 +1250,7 @@
             :slong (if (slong-from-ulong-okp arg) (slong-from-ulong arg) err)
             :ullong (ullong-from-ulong arg)
             :sllong (if (sllong-from-ulong-okp arg) (sllong-from-ulong arg) err)
+            :struct todo
             :pointer todo
             :array todo))
           ((slongp arg)
@@ -1261,6 +1268,7 @@
             :slong arg
             :ullong (ullong-from-slong arg)
             :sllong (sllong-from-slong arg)
+            :struct todo
             :pointer todo
             :array todo))
           ((ullongp arg)
@@ -1278,6 +1286,7 @@
             :slong (if (slong-from-ullong-okp arg) (slong-from-ullong arg) err)
             :ullong arg
             :sllong (if (sllong-from-ullong-okp arg) (sllong-from-ullong arg) err)
+            :struct todo
             :pointer todo
             :array todo))
           ((sllongp arg)
@@ -1295,6 +1304,7 @@
             :slong (if (slong-from-sllong-okp arg) (slong-from-sllong arg) err)
             :ullong (ullong-from-sllong arg)
             :sllong arg
+            :struct todo
             :pointer todo
             :array todo))
           ((pointerp arg) todo)

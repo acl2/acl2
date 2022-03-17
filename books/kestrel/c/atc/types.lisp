@@ -40,21 +40,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only model
-     the @('void') type,
-     the plain @('char') type, and
-     the standard signed and unsigned integer types (except @('_Bool'),
-     as well as pointer types,
-     and array types with unknown size
-     (i.e. array types with nothing between the square brackets).")
-   (xdoc::p
-    "This semantic model is slightly less general
-     than its syntactic counterpart @(tsee tyname),
-     which currently includes more types.
-     Eventually we will extend this semantic notion of type
-     to have counterparts of all the type names.
-     A semantic type as defined here is
-     an abstraction of type names as defined in the (abstract) syntax."))
+    "We model a subset of the types denoted by
+     the type names that we currently model;
+     see @(tsee tyspecseq), @(tsee obj-adeclor), and @(tsee tyname).
+     In essence, this fixtype combines
+     a subset of the cases of @(tsee tyspecseq)
+     (abstracting away the flags that model different syntactic variants),
+     with the recursive structure of @(tsee obj-adeclor)."))
   (:void ())
   (:char ())
   (:schar ())
@@ -67,6 +59,7 @@
   (:ulong ())
   (:sllong ())
   (:ullong ())
+  (:struct ((tag ident)))
   (:pointer ((referenced type)))
   (:array ((element type)))
   :pred typep)
@@ -231,11 +224,7 @@
                             (raise "Internal error: ~
                                                long double not supported yet.")
                             (irr-type))
-                  :struct (prog2$
-                           (raise "Internal error: ~
-                                              struct ~x0 not supported yet."
-                                  tyspec.tag)
-                           (irr-type))
+                  :struct (type-struct tyspec.tag)
                   :union (prog2$
                           (raise "Internal error: ~
                                              union ~x0 not supported yet."
@@ -324,6 +313,7 @@
       :ulong (mv (tyspecseq-ulong nil) (obj-adeclor-none))
       :sllong (mv (tyspecseq-sllong nil nil) (obj-adeclor-none))
       :ullong (mv (tyspecseq-ullong nil) (obj-adeclor-none))
+      :struct (mv (tyspecseq-struct type.tag) (obj-adeclor-none))
       :pointer (b* (((mv tyspec declor) (type-to-tyname-aux type.referenced)))
                  (mv tyspec (obj-adeclor-pointer declor)))
       :array (b* (((mv tyspec declor) (type-to-tyname-aux type.element)))
