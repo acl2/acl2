@@ -1919,45 +1919,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-tyspecseq ((type typep))
-  :guard (and (not (type-case type :pointer))
-              (not (type-case type :array)))
-  :returns (tyspecseq tyspecseqp)
-  :short "Generate a type specifier sequence for a type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is always called on a non-pointer type currently.")
-   (xdoc::p
-    "We pick one type specification sequences for each type.
-     This choice could be controlled by an ATC option in the future."))
-  (type-case type
-             :void (tyspecseq-void)
-             :char (tyspecseq-char)
-             :schar (tyspecseq-schar)
-             :uchar (tyspecseq-uchar)
-             :sshort (tyspecseq-sshort nil nil)
-             :ushort (tyspecseq-ushort nil)
-             :sint (tyspecseq-sint nil t)
-             :uint (tyspecseq-uint t)
-             :slong (tyspecseq-slong nil nil)
-             :ulong (tyspecseq-ulong nil)
-             :sllong (tyspecseq-sllong nil nil)
-             :ullong (tyspecseq-ullong nil)
-             :pointer (prog2$ (impossible) (irr-tyspecseq))
-             :array (prog2$ (impossible) (irr-tyspecseq)))
-  :hooks (:fix)
-  ///
-
-  (defrule tyname-to-type-of-tyname-of-atc-gen-tyspecseq
-    (implies (and (not (type-case type :pointer))
-                  (not (type-case type :array)))
-             (equal (tyname-to-type (tyname (atc-gen-tyspecseq type) nil))
-                    (type-fix type)))
-    :enable tyname-to-type))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-var-assignablep ((var symbolp)
                              (innermostp booleanp)
                              (affect symbol-listp))
@@ -2409,20 +2370,12 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val var vars init-affect))
-                   ((when (type-case init-type :array))
-                    (raise "Internal error: array type ~x0." init-type)
-                    (acl2::value irr))
-                   ((when (type-case init-type :pointer))
-                    (er-soft+ ctx t irr
-                              "The term ~x0 to which the variable ~x1 is bound ~
-                               must not have a C pointer type, ~
-                               but it has type ~x2 instead."
-                              val var init-type))
-                   (declon (make-obj-declon
-                            :tyspec (atc-gen-tyspecseq init-type)
-                            :declor (obj-declor-ident
-                                     (make-ident :name (symbol-name var)))
-                            :init init-expr))
+                   ((mv tyspec declor) (ident+type-to-tyspec+declor
+                                        (make-ident :name (symbol-name var))
+                                        init-type))
+                   (declon (make-obj-declon :tyspec tyspec
+                                            :declor declor
+                                            :init init-expr))
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-type body-limit))
@@ -2698,20 +2651,12 @@
                                must not affect any variables, ~
                                but it affects ~x2 instead."
                               val var init-affect))
-                   ((when (type-case init-type :array))
-                    (raise "Internal error: array type ~x0." init-type)
-                    (acl2::value irr))
-                   ((when (type-case init-type :pointer))
-                    (er-soft+ ctx t irr
-                              "The term ~x0 to which the variable ~x1 is bound ~
-                               must not have a C pointer type, ~
-                               but it has type ~x2 instead."
-                              val var init-type))
-                   (declon (make-obj-declon
-                            :tyspec (atc-gen-tyspecseq init-type)
-                            :declor (obj-declor-ident
-                                     (make-ident :name (symbol-name var)))
-                            :init init-expr))
+                   ((mv tyspec declor) (ident+type-to-tyspec+declor
+                                        (make-ident :name (symbol-name var))
+                                        init-type))
+                   (declon (make-obj-declon :tyspec tyspec
+                                            :declor declor
+                                            :init init-expr))
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-type body-limit))
@@ -3528,25 +3473,10 @@
                    another formal parameter among ~x2; ~
                    this is disallowed, even if the package names differ."
                   formal fn cdr-formals))
-       ((when (type-case type :array))
-        (raise "Internal error: array type ~x0." type)
-        (acl2::value nil))
-       ((mv pointerp ref-type)
-        (if (type-case type :pointer)
-            (mv t (type-pointer->referenced type))
-          (mv nil type)))
-       ((when (type-case ref-type :pointer))
-        (raise "Internal error: pointer type to pointer type ~x0." ref-type)
-        (acl2::value nil))
-       ((when (type-case ref-type :array))
-        (raise "Internal error: array type to pointer type ~x0." ref-type)
-        (acl2::value nil))
-       (param (make-param-declon
-               :tyspec (atc-gen-tyspecseq ref-type)
-               :declor (if pointerp
-                           (obj-declor-pointer
-                            (obj-declor-ident (make-ident :name name)))
-                         (obj-declor-ident (make-ident :name name)))))
+       ((mv tyspec declor) (ident+type-to-tyspec+declor (make-ident :name name)
+                                                        type))
+       (param (make-param-declon :tyspec tyspec
+                                 :declor declor))
        ((er params)
         (atc-gen-param-declon-list (cdr typed-formals) fn ctx state)))
     (acl2::value (cons param params)))
@@ -4648,8 +4578,10 @@
          (raise "Internal error: ~
                  the function ~x0 has return type ~x1."
                 fn type)))
-       (fundef (make-fundef :result (atc-gen-tyspecseq type)
-                            :name (make-ident :name name)
+       (id (make-ident :name name))
+       ((mv tyspec &) (ident+type-to-tyspec+declor id type))
+       (fundef (make-fundef :result tyspec
+                            :name id
                             :params params
                             :body items))
        (ext (ext-declon-fundef fundef))
