@@ -1611,7 +1611,7 @@
      and discarding the final one (it served its pupose)."))
   (b* (((transunit tunit) tunit)
        (funtab (fun-table-init))
-       (tagenv nil)
+       (tagenv (tag-env-init))
        (funtab+tagenv (check-ext-declon-list tunit.declons funtab tagenv))
        ((when (errorp funtab+tagenv))
         (error (list :transunit-error funtab+tagenv))))

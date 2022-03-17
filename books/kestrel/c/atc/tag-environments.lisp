@@ -200,6 +200,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define tag-env-init ()
+  :returns (env tag-envp)
+  :short "Initial tag environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is empty."))
+  nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tag-add ((tag identp) (info tag-infop) (env tag-envp))
   :returns (new-env tag-env-optionp)
   :short "Add tag information to a tag environment."
