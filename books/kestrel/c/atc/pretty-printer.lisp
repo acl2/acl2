@@ -231,55 +231,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-unop ((op unopp))
-  :returns (part msgp)
-  :short "Pretty-print a unary operator."
-  (unop-case op
-             :plus "+"
-             :minus "-"
-             :bitnot "~~" ; a single ~ is interpreted as a directive
-             :lognot "!")
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define pprint-binop ((op binopp))
-  :returns (part msgp)
-  :short "Pretty-print a binary operator."
-  (binop-case op
-              :mul "*"
-              :div "/"
-              :rem "%"
-              :add "+"
-              :sub "-"
-              :shl "<<"
-              :shr ">>"
-              :lt "<"
-              :gt ">"
-              :le "<="
-              :ge ">="
-              :eq "=="
-              :ne "!="
-              :bitand "&"
-              :bitxor "^"
-              :bitior "|"
-              :logand "&&"
-              :logor "||"
-              :asg "="
-              :asg-mul "*="
-              :asg-div "/="
-              :asg-rem "%="
-              :asg-add "+="
-              :asg-sub "-="
-              :asg-shl "<<="
-              :asg-shr ">>="
-              :asg-and "&="
-              :asg-xor "^="
-              :asg-ior "|=")
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define pprint-tyspecseq ((tss tyspecseqp))
   :returns (part msgp)
   :short "Pretty-print a sequence of type specifiers."
@@ -436,6 +387,55 @@
       (msg "~@0 ~@1"
            (pprint-tyspecseq tn.tyspec)
            (pprint-obj-adeclor tn.declor))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-unop ((op unopp))
+  :returns (part msgp)
+  :short "Pretty-print a unary operator."
+  (unop-case op
+             :plus "+"
+             :minus "-"
+             :bitnot "~~" ; a single ~ is interpreted as a directive
+             :lognot "!")
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-binop ((op binopp))
+  :returns (part msgp)
+  :short "Pretty-print a binary operator."
+  (binop-case op
+              :mul "*"
+              :div "/"
+              :rem "%"
+              :add "+"
+              :sub "-"
+              :shl "<<"
+              :shr ">>"
+              :lt "<"
+              :gt ">"
+              :le "<="
+              :ge ">="
+              :eq "=="
+              :ne "!="
+              :bitand "&"
+              :bitxor "^"
+              :bitior "|"
+              :logand "&&"
+              :logor "||"
+              :asg "="
+              :asg-mul "*="
+              :asg-div "/="
+              :asg-rem "%="
+              :asg-add "+="
+              :asg-sub "-="
+              :asg-shl "<<="
+              :asg-shr ">>="
+              :asg-and "&="
+              :asg-xor "^="
+              :asg-ior "|=")
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

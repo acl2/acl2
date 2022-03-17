@@ -267,120 +267,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum unop
-  :short "Fixtype of unary operators [C:6.5.3]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we only capture the ones that take and return integers
-     (along with values of other types).
-     These are unary plus,
-     unary minus,
-     bitwise negation/complement,
-     and logical negation/complement."))
-  (:plus ())
-  (:minus ())
-  (:bitnot ())
-  (:lognot ())
-  :pred unopp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist unop-list
-  :short "Fixtype of lists of unary operators."
-  :elt-type unop
-  :true-listp t
-  :elementp-of-nil nil
-  :pred unop-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define irr-unop ()
-  :returns (op unopp)
-  :short "An irrelevant unary operator, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (unop-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-unop))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum binop
-  :short "Fixtype of binary operators [C:6.5.5-14] [C:6.5.16]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We capture all of them; they all take and return integers
-     (along with values of other types).
-     The C grammar does not have a nonterminal for binary operators
-     (it has one for unary operators [C:6.5.3]),
-     but the grammar rules for binary operations implicitly describe them.")
-   (xdoc::p
-    "These are
-     multiplication,
-     division,
-     remainder,
-     addition,
-     subtraction,
-     shift (left and right),
-     relations (less than (or equal to) and greater than (or equal to)),
-     equality (and non-equality),
-     bitwise conjunction,
-     bitwise exclusive disjunction,
-     bitwise inclusive disjunction,
-     logical conjunction,
-     logical disjunction,
-     assignment (simple and compound)."))
-  (:mul ())
-  (:div ())
-  (:rem ())
-  (:add ())
-  (:sub ())
-  (:shl ())
-  (:shr ())
-  (:lt ())
-  (:gt ())
-  (:le ())
-  (:ge ())
-  (:eq ())
-  (:ne ())
-  (:bitand ())
-  (:bitxor ())
-  (:bitior ())
-  (:logand ())
-  (:logor ())
-  (:asg ())
-  (:asg-mul ())
-  (:asg-div ())
-  (:asg-rem ())
-  (:asg-add ())
-  (:asg-sub ())
-  (:asg-shl ())
-  (:asg-shr ())
-  (:asg-and ())
-  (:asg-xor ())
-  (:asg-ior ())
-  :pred binopp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist binop-list
-  :short "Fixtype of lists of binary operators."
-  :elt-type binop
-  :true-listp t
-  :elementp-of-nil nil
-  :pred binop-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define irr-binop ()
-  :returns (op binopp)
-  :short "An irrelevant binary operator, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (binop-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-binop))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deftagsum tyspecseq
   :short "Fixtype of sequences of type specifiers [C:6.7.2]."
   :long
@@ -620,6 +506,120 @@
   (with-guard-checking :none (ec-call (tyname-fix :irrelevant)))
   ///
   (in-theory (disable (:e irr-tyname))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum unop
+  :short "Fixtype of unary operators [C:6.5.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only capture the ones that take and return integers
+     (along with values of other types).
+     These are unary plus,
+     unary minus,
+     bitwise negation/complement,
+     and logical negation/complement."))
+  (:plus ())
+  (:minus ())
+  (:bitnot ())
+  (:lognot ())
+  :pred unopp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist unop-list
+  :short "Fixtype of lists of unary operators."
+  :elt-type unop
+  :true-listp t
+  :elementp-of-nil nil
+  :pred unop-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-unop ()
+  :returns (op unopp)
+  :short "An irrelevant unary operator, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (unop-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-unop))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum binop
+  :short "Fixtype of binary operators [C:6.5.5-14] [C:6.5.16]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We capture all of them; they all take and return integers
+     (along with values of other types).
+     The C grammar does not have a nonterminal for binary operators
+     (it has one for unary operators [C:6.5.3]),
+     but the grammar rules for binary operations implicitly describe them.")
+   (xdoc::p
+    "These are
+     multiplication,
+     division,
+     remainder,
+     addition,
+     subtraction,
+     shift (left and right),
+     relations (less than (or equal to) and greater than (or equal to)),
+     equality (and non-equality),
+     bitwise conjunction,
+     bitwise exclusive disjunction,
+     bitwise inclusive disjunction,
+     logical conjunction,
+     logical disjunction,
+     assignment (simple and compound)."))
+  (:mul ())
+  (:div ())
+  (:rem ())
+  (:add ())
+  (:sub ())
+  (:shl ())
+  (:shr ())
+  (:lt ())
+  (:gt ())
+  (:le ())
+  (:ge ())
+  (:eq ())
+  (:ne ())
+  (:bitand ())
+  (:bitxor ())
+  (:bitior ())
+  (:logand ())
+  (:logor ())
+  (:asg ())
+  (:asg-mul ())
+  (:asg-div ())
+  (:asg-rem ())
+  (:asg-add ())
+  (:asg-sub ())
+  (:asg-shl ())
+  (:asg-shr ())
+  (:asg-and ())
+  (:asg-xor ())
+  (:asg-ior ())
+  :pred binopp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist binop-list
+  :short "Fixtype of lists of binary operators."
+  :elt-type binop
+  :true-listp t
+  :elementp-of-nil nil
+  :pred binop-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-binop ()
+  :returns (op binopp)
+  :short "An irrelevant binary operator, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (binop-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-binop))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
