@@ -387,6 +387,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-tyspecseq ((tyspec tyspecseqp) (tagenv tag-envp))
+  :returns (wf? wellformed-resultp)
+  :short "Check a type specifier sequence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We only accept certain type specifier sequences for now,
+     namely the ones that have corresponding types (see @(tsee type)).
+     The tag of a structure type specifier sequence
+     must be in the tag environment.
+     All the other (supported) type specifier sequences
+     are always well-formed."))
+  (tyspecseq-case
+   tyspec
+   :void :wellformed
+   :char :wellformed
+   :schar :wellformed
+   :uchar :wellformed
+   :sshort :wellformed
+   :ushort :wellformed
+   :sint :wellformed
+   :uint :wellformed
+   :slong :wellformed
+   :ulong :wellformed
+   :sllong :wellformed
+   :ullong :wellformed
+   :bool :wellformed
+   :float :wellformed
+   :double :wellformed
+   :ldouble :wellformed
+   :struct (b* ((info (tag-lookup tyspec.tag tagenv)))
+             (tag-info-option-case
+              info
+              :some (if (tag-info-case info.val :struct)
+                        :wellformed
+                      (error (list :struct-tag-mismatch tyspec.tag info.val)))
+              :none (error (list :no-tag-found tyspec.tag))))
+   :union (error (list :not-supported-union tyspec.tag))
+   :enum (error (list :not-supported-enum tyspec.tag))
+   :typedef (error (list :not-supported-typedef tyspec.name)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-tyname ((tyname tynamep) (tagenv tag-envp))
+  :returns (wf? wellformed-resultp)
+  :short "Check a type name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The underlying type specifier sequence must be well-formed.
+     There are no constraints on the declarator."))
+  (check-tyspecseq (tyname->tyspec tyname) tagenv)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define promote-type ((type typep))
   :returns (promoted-type typep)
   :short "Apply the integer promotions to a type [C:6.3.1.1/2]."
@@ -739,6 +796,8 @@
      Its type is looked up there.")
    (xdoc::p
     "A cast is allowed between scalar types.
+     Since we check that the type name denotes a scalar type,
+     we do not need to check its well-formedness against the tag environment.
      The result has the type indicated in the cast.
      See [C:6.5.4]; note that the additional requirements on the type
      do not apply to our currently simplified model of C types.")
@@ -772,7 +831,8 @@
                  ((when (errorp arg-type))
                   (error (list :unary-error arg-type))))
               (check-unary e.op e.arg arg-type))
-     :cast (b* ((arg-type (check-expr-pure e.arg vartab))
+     :cast (b* (
+                (arg-type (check-expr-pure e.arg vartab))
                 ((when (errorp arg-type))
                  (error (list :cast-error arg-type)))
                 ((unless (type-scalarp arg-type))
@@ -1140,13 +1200,19 @@
      and we combine (i.e. take the union of) all the return types,
      after removing @('void') from the types of the first block item."))
 
-  (define check-stmt ((s stmtp) (funtab fun-tablep) (vartab var-tablep))
+  (define check-stmt ((s stmtp)
+                      (funtab fun-tablep)
+                      (vartab var-tablep)
+                      (tagenv tag-envp))
     :returns (stype stmt-type-resultp)
     (stmt-case
      s
      :labeled (error (list :unsupported-labeled s.label s.body))
      :compound (b* ((ext-vartab (var-table-add-block vartab))
-                    (stype (check-block-item-list s.items funtab ext-vartab))
+                    (stype (check-block-item-list s.items
+                                                  funtab
+                                                  ext-vartab
+                                                  tagenv))
                     ((when (errorp stype))
                      (error (list :stmt-compound-error stype))))
                  (change-stmt-type stype :variables vartab))
@@ -1161,7 +1227,7 @@
                (error (list :if-test-mistype s.test s.then :noelse
                             :required :scalar
                             :supplied type)))
-              (stype-then (check-stmt s.then funtab vartab))
+              (stype-then (check-stmt s.then funtab vartab tagenv))
               ((when (errorp stype-then))
                (error (list :if-then-error stype-then))))
            (make-stmt-type
@@ -1174,10 +1240,10 @@
                    (error (list :if-test-mistype s.test s.then s.else
                                 :required :scalar
                                 :supplied type)))
-                  (stype-then (check-stmt s.then funtab vartab))
+                  (stype-then (check-stmt s.then funtab vartab tagenv))
                   ((when (errorp stype-then))
                    (error (list :if-then-error stype-then)))
-                  (stype-else (check-stmt s.else funtab vartab))
+                  (stype-else (check-stmt s.else funtab vartab tagenv))
                   ((when (errorp stype-else))
                    (error (list :if-else-error stype-else))))
                (make-stmt-type
@@ -1191,7 +1257,7 @@
                   (error (list :while-test-mistype s.test s.body
                                :required :scalar
                                :supplied type)))
-                 (stype-body (check-stmt s.body funtab vartab))
+                 (stype-body (check-stmt s.body funtab vartab tagenv))
                  ((when (errorp stype-body))
                   (error (list :while-error stype-body))))
               (make-stmt-type
@@ -1214,12 +1280,15 @@
 
   (define check-block-item ((item block-itemp)
                             (funtab fun-tablep)
-                            (vartab var-tablep))
+                            (vartab var-tablep)
+                            (tagenv tag-envp))
     :returns (stype stmt-type-resultp)
     (block-item-case
      item
      :declon
      (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
+          (wf (check-tyname tyname tagenv))
+          ((when (errorp wf)) (error (list :declon-error-type wf)))
           (wf (check-ident var))
           ((when (errorp wf)) (error (list :declon-error-var wf)))
           (type (tyname-to-type tyname))
@@ -1237,22 +1306,23 @@
           ((when (errorp vartab)) (error (list :declon-error vartab))))
        (make-stmt-type :return-types (set::insert (type-void) nil)
                        :variables vartab))
-     :stmt (check-stmt item.get funtab vartab))
+     :stmt (check-stmt item.get funtab vartab tagenv))
     :measure (block-item-count item))
 
   (define check-block-item-list ((items block-item-listp)
                                  (funtab fun-tablep)
-                                 (vartab var-tablep))
+                                 (vartab var-tablep)
+                                 (tagenv tag-envp))
     :returns (stype stmt-type-resultp)
     (b* (((when (endp items))
           (make-stmt-type :return-types (set::insert (type-void) nil)
                           :variables vartab))
-         (stype (check-block-item (car items) funtab vartab))
+         (stype (check-block-item (car items) funtab vartab tagenv))
          ((when (errorp stype)) (error (list :block-item-error stype)))
          ((unless (set::in (type-void) (stmt-type->return-types stype))) stype)
          (rtypes1 (set::delete (type-void) (stmt-type->return-types stype)))
          (vartab (stmt-type->variables stype))
-         (stype (check-block-item-list (cdr items) funtab vartab))
+         (stype (check-block-item-list (cdr items) funtab vartab tagenv))
          ((when (errorp stype)) (error (list :block-item-list-error stype)))
          (rtypes2 (stmt-type->return-types stype))
          (vartab (stmt-type->variables stype)))
@@ -1269,7 +1339,7 @@
   (local
    (defthm-check-stmt-flag
      (defthm check-stmt-var-table
-       (b* ((result (check-stmt s funtab vartab)))
+       (b* ((result (check-stmt s funtab vartab tagenv)))
          (implies (stmt-typep result)
                   (equal (stmt-type->variables result)
                          (var-table-fix vartab))))
@@ -1282,17 +1352,19 @@
        t
        :rule-classes nil
        :flag check-block-item-list)
-     :hints (("Goal" :expand ((check-stmt s funtab vartab))))))
+     :hints (("Goal" :expand ((check-stmt s funtab vartab tagenv))))))
 
   (defrule check-stmt-var-table-no-change
-    (b* ((result (check-stmt s funtab vartab)))
+    (b* ((result (check-stmt s funtab vartab tagenv)))
       (implies (stmt-typep result)
                (equal (stmt-type->variables result)
                       (var-table-fix vartab))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-param-declon ((param param-declonp) (vartab var-tablep))
+(define check-param-declon ((param param-declonp)
+                            (vartab var-tablep)
+                            (tagenv tag-envp))
   :returns (new-vartab var-table-resultp)
   :short "Check a parameter declaration."
   :long
@@ -1310,6 +1382,8 @@
      because parameters must have complete types [C:6.7.6.3/4],
      but @('void') is incomplete [C:6.2.5/19]."))
   (b* (((mv var tyname) (param-declon-to-ident+tyname param))
+       (wf (check-tyname tyname tagenv))
+       ((when (errorp wf)) (error (list :param-type-error wf)))
        (wf (check-ident var))
        ((when (errorp wf)) (error (list :param-error wf)))
        (type (tyname-to-type tyname))
@@ -1320,7 +1394,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-param-declon-list ((params param-declon-listp) (vartab var-tablep))
+(define check-param-declon-list ((params param-declon-listp)
+                                 (vartab var-tablep)
+                                 (tagenv tag-envp))
   :returns (new-vartab var-table-resultp)
   :short "Check a list of parameter declarations."
   :long
@@ -1330,14 +1406,14 @@
      calling @(tsee check-param-declon)
      and threading the variable table through."))
   (b* (((when (endp params)) (var-table-fix vartab))
-       (vartab (check-param-declon (car params) vartab))
+       (vartab (check-param-declon (car params) vartab tagenv))
        ((when (errorp vartab)) (error (list :param-error vartab))))
-    (check-param-declon-list (cdr params) vartab))
+    (check-param-declon-list (cdr params) vartab tagenv))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-fundef ((fundef fundefp) (funtab fun-tablep))
+(define check-fundef ((fundef fundefp) (funtab fun-tablep) (tagenv tag-envp))
   :returns (new-funtab fun-table-resultp)
   :short "Check a function definition."
   :long
@@ -1371,17 +1447,20 @@
   (b* (((fundef fundef) fundef)
        ((mv & tynames) (param-declon-list-to-ident+tyname-lists fundef.params))
        (in-types (type-name-list-to-type-list tynames))
-       (out-type (tyname-to-type (make-tyname :tyspec fundef.result
-                                              :declor (obj-adeclor-none))))
+       (tyname (make-tyname :tyspec fundef.result
+                            :declor (obj-adeclor-none)))
+       (wf (check-tyname tyname tagenv))
+       ((when (errorp wf)) (error (list :bad-fun-out-type fundef.name wf)))
+       (out-type (tyname-to-type tyname))
        (ftype (make-fun-type :inputs in-types :output out-type))
        (funtab (fun-table-add-fun fundef.name ftype funtab))
        ((when (errorp funtab)) (error (list :fundef funtab)))
        (wf (check-ident fundef.name))
        ((when (errorp wf)) (error (list :fundef-name-error wf)))
        (vartab (var-table-init))
-       (vartab (check-param-declon-list fundef.params vartab))
+       (vartab (check-param-declon-list fundef.params vartab tagenv))
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
-       (stype (check-block-item-list fundef.body funtab vartab))
+       (stype (check-block-item-list fundef.body funtab vartab tagenv))
        ((when (errorp stype)) (error (list :fundef-body-error stype)))
        ((unless (equal (stmt-type->return-types stype)
                        (set::insert out-type nil)))
@@ -1393,7 +1472,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-struct-declon-list ((declons struct-declon-listp))
+(define check-struct-declon-list ((declons struct-declon-listp)
+                                  (tagenv tag-envp))
   :returns (members member-info-list-resultp)
   :short "Check a list of structure declarations."
   :long
@@ -1409,11 +1489,13 @@
      By using @(tsee member-add-first),
      we ensure that there are no duplicate member names."))
   (b* (((when (endp declons)) nil)
-       (members (check-struct-declon-list (cdr declons)))
+       (members (check-struct-declon-list (cdr declons) tagenv))
        ((when (errorp members)) members)
        ((mv name tyname) (struct-declon-to-ident+tyname (car declons)))
+       (wf (check-tyname tyname tagenv))
+       ((when (errorp wf)) (error (list :bad-member-type wf)))
        (wf (check-ident name))
-       ((when (errorp wf)) wf)
+       ((when (errorp wf)) (error (list :bad-member-name wf)))
        (type (tyname-to-type tyname))
        (members-opt (member-add-first name type members)))
     (member-info-list-option-case members-opt
@@ -1440,7 +1522,7 @@
   (tag-declon-case
    declon
    :struct
-   (b* ((members (check-struct-declon-list declon.members))
+   (b* ((members (check-struct-declon-list declon.members tagenv))
         ((when (errorp members)) members)
         ((unless (consp members))
          (error (list :empty-struct (tag-declon-fix declon))))
@@ -1481,7 +1563,7 @@
     "If successful, we return updated function table and tag environment."))
   (ext-declon-case
    ext
-   :fundef (b* ((funtab (check-fundef ext.get funtab))
+   :fundef (b* ((funtab (check-fundef ext.get funtab tagenv))
                 ((when (errorp funtab)) funtab))
              (make-funtab+tagenv :funs funtab
                                  :tags (tag-env-fix tagenv)))
