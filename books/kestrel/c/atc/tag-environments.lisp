@@ -72,7 +72,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define member-lookup ((name identp) (members member-info-listp))
+(define member-info-lookup ((name identp) (members member-info-listp))
   :returns (type type-optionp)
   :short "Look up a member by name in a list of member information."
   :long
@@ -86,14 +86,14 @@
        ((when (equal (ident-fix name)
                      (member-info->name (car members))))
         (member-info->type (car members))))
-    (member-lookup name (cdr members)))
+    (member-info-lookup name (cdr members)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define member-add-first ((name identp)
-                          (type typep)
-                          (members member-info-listp))
+(define member-info-add-first ((name identp)
+                               (type typep)
+                               (members member-info-listp))
   :returns (new-members member-info-list-optionp)
   :short "Add a member at the beginning of a list of member information."
   :long
@@ -101,7 +101,7 @@
    (xdoc::p
     "We check that the a member with the same name is not already in the list,
      to maintain the invariant mentioned in @(tsee tag-info)."))
-  (b* ((found (member-lookup name members))
+  (b* ((found (member-info-lookup name members))
        ((when found) (member-info-list-option-none)))
     (member-info-list-option-some
      (cons (make-member-info :name name :type type)
@@ -110,9 +110,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define member-add-last ((name identp)
-                         (type typep)
-                         (members member-info-listp))
+(define member-info-add-last ((name identp)
+                              (type typep)
+                              (members member-info-listp))
   :returns (new-members member-info-list-optionp)
   :short "Add a member at the end of a list of member information."
   :long
@@ -120,14 +120,14 @@
    (xdoc::p
     "We check that the a member with the same name is not already in the list,
      to maintain the invariant mentioned in @(tsee tag-info)."))
-  (b* ((found (member-lookup name members))
+  (b* ((found (member-info-lookup name members))
        ((when found) (member-info-list-option-none)))
     (member-info-list-option-some
      (rcons (make-member-info :name name :type type)
             members)))
   :guard-hints (("Goal" :in-theory (enable rcons)))
   ///
-  (fty::deffixequiv member-add-last
+  (fty::deffixequiv member-info-add-last
     :hints (("Goal" :in-theory (enable rcons)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -191,7 +191,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tag-lookup ((tag identp) (env tag-envp))
+(define tag-env-lookup ((tag identp) (env tag-envp))
   :returns (info tag-info-optionp
                  :hints (("Goal" :in-theory (enable tag-info-optionp))))
   :short "Look up a tag in a tag environment."
@@ -211,7 +211,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tag-add ((tag identp) (info tag-infop) (env tag-envp))
+(define tag-env-add ((tag identp) (info tag-infop) (env tag-envp))
   :returns (new-env tag-env-optionp)
   :short "Add tag information to a tag environment."
   :long

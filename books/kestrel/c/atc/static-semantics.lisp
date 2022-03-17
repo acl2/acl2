@@ -417,7 +417,7 @@
    :float :wellformed
    :double :wellformed
    :ldouble :wellformed
-   :struct (b* ((info (tag-lookup tyspec.tag tagenv)))
+   :struct (b* ((info (tag-env-lookup tyspec.tag tagenv)))
              (tag-info-option-case
               info
               :some (if (tag-info-case info.val :struct)
@@ -1486,7 +1486,7 @@
      We ensure that each member name is well-formed;
      we will also need to check that each member type is well-formed,
      but we need to extend our static semantics for that.
-     By using @(tsee member-add-first),
+     By using @(tsee member-info-add-first),
      we ensure that there are no duplicate member names."))
   (b* (((when (endp declons)) nil)
        (members (check-struct-declon-list (cdr declons) tagenv))
@@ -1497,7 +1497,7 @@
        (wf (check-ident name))
        ((when (errorp wf)) (error (list :bad-member-name wf)))
        (type (tyname-to-type tyname))
-       (members-opt (member-add-first name type members)))
+       (members-opt (member-info-add-first name type members)))
     (member-info-list-option-case members-opt
                                   :some members-opt.val
                                   :none (error (list :duplicate-member name))))
@@ -1516,7 +1516,7 @@
      For a structure type declaration, we first check the members,
      obtaining a list of member information if successful.
      We ensure that there is at least one member [C:6.2.5/20].
-     We use @(tsee tag-add) to ensure that there is not already
+     We use @(tsee tag-env-add) to ensure that there is not already
      another structure or union or enumeration type with the same tag,
      since these share one name space [C:6.2.3]."))
   (tag-declon-case
@@ -1527,7 +1527,7 @@
         ((unless (consp members))
          (error (list :empty-struct (tag-declon-fix declon))))
         (info (tag-info-struct members))
-        (tagenv-opt (tag-add declon.tag info tagenv)))
+        (tagenv-opt (tag-env-add declon.tag info tagenv)))
      (tag-env-option-case tagenv-opt
                           :some tagenv-opt.val
                           :none (error (list :duplicate-tag declon.tag))))
