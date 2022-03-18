@@ -6386,7 +6386,7 @@
 
 (defrec defstobj-template
   ((congruent-to . non-memoizable)
-   (recognizer creator . fixer)
+   (recognizer . creator)
    field-templates
    inline
    . non-executable)
@@ -6447,14 +6447,6 @@
         (t :scalar))
     :scalar))
 
-(defconst *stobj-fixer-suffix*
-
-; This is used by both defstobj and defabsstobj.  It was tempting to use "-FIX"
-; instead, but as of this writing in late August 2021, many books already
-; define functions st-FIX for stobjs st (concrete or abstract).
-
-  "$FIX")
-
 (defun defstobj-fnname (root key1 key2 renaming-alist)
 
 ; Warning: Keep this in sync with stobj-updater-guess-from-accessor.
@@ -6462,13 +6454,12 @@
 ; This function generates the actual name we will use for a function generated
 ; by defstobj.  Root and renaming-alist are, respectively, a symbol and an
 ; alist.  Key1 describes which function name we are to generate and is one of
-; :length, :resize, :recognizer, :accessor, :updater, :creator, or :fixer.
-; Key2 describes the ``type'' of root.  It is :top if root is the name of the
-; stobj and it is otherwise either :array, :hash-table, :stobj-table, or
-; :scalar (see defstobj-fnname-key2).  Note that if renaming-alist is nil, then
-; this function returns the ``default'' name used.  If renaming-alist pairs
-; some default name with an illegal name, the result is, of course, an illegal
-; name.
+; :length, :resize, :recognizer, :accessor, :updater, or :creator.  Key2
+; describes the ``type'' of root.  It is :top if root is the name of the stobj
+; and it is otherwise either :array, :hash-table, :stobj-table, or :scalar (see
+; defstobj-fnname-key2).  Note that if renaming-alist is nil, then this
+; function returns the ``default'' name used.  If renaming-alist pairs some
+; default name with an illegal name, the result is, of course, an illegal name.
 
   (let* ((default-fnname
            (case key1
@@ -6500,8 +6491,6 @@
                 (otherwise (packn-pos (list "UPDATE-" root) root))))
              (:creator
               (packn-pos (list "CREATE-" root) root))
-             (:fixer
-              (packn-pos (list root *stobj-fixer-suffix*) root))
              (:boundp
               (and (or (eq key2 :hash-table)
                        (eq key2 :stobj-table))
@@ -6722,7 +6711,6 @@
        (make defstobj-template
              :recognizer (defstobj-fnname name :recognizer :top renaming)
              :creator (defstobj-fnname name :creator :top renaming)
-             :fixer (defstobj-fnname name :fixer :top renaming)
              :field-templates (defstobj-field-templates
                                 field-descriptors renaming wrld)
              :non-memoizable non-memoizable
@@ -6822,7 +6810,6 @@
             (:A (mv nil "$A")) ; abstract
             (:C (mv nil "$C")) ; concrete (really, foundation)
             (:CREATOR (mv "CREATE-" nil))
-            (:FIXER (mv nil *stobj-fixer-suffix*))
             (:RECOGNIZER (mv nil "P"))
             (:RECOGNIZER-LOGIC (mv nil "$AP"))
             (:RECOGNIZER-EXEC (mv nil "$CP"))
@@ -6858,7 +6845,7 @@
 (defrec stobj-property
   ((recognizer . creator)
    names ; accessors and updaters
-   (fixer . live-var))
+   . live-var)
   nil)
 
 (defun get-stobj-creator (stobj wrld)
@@ -7660,32 +7647,6 @@
         ((endp (cdr l)) nil)
         (t (cons (car l) (all-but-last (cdr l))))))
 
-(defun defstobj-fixer-body (name recognizer-name creator-name rawp)
-
-; We return the definition body of a fixer for a stobj with the given name,
-; which is associated with the supplied recognizer and creator names.  The
-; definition is to be in the logic if rawp is nil and for raw Lisp if rawp is
-; non-nil.
-
-; This fixer returns the given stobj unchanged if it indeed satisfies the given
-; recognizer-name; otherwise, it returns a fresh such stobj (as produced by the
-; given creator-name).  The fixer will only be applied after looking up a stobj
-; with the given name in a stobj-table.  In raw Lisp that value will always
-; satisfy the stobj recognizer for name (i.e., recognizer-name) unless it is
-; nil, so we optimize a bit for the case rawp.
-
-  (if rawp
-      `(or ,name (,creator-name))
-    `(if (,recognizer-name ,name)
-         ,name
-       (,creator-name))))
-
-(defun defstobj-fixer-def (name fixer-name recognizer-name creator-name rawp)
-  `(,fixer-name
-    (,name)
-    (declare (xargs :guard t :verify-guards t))
-    ,(defstobj-fixer-body name recognizer-name creator-name rawp)))
-
 (defun defstobj-raw-defs (name template congruent-stobj-rep wrld)
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
@@ -7709,7 +7670,6 @@
 
   (let* ((recog (access defstobj-template template :recognizer))
          (creator (access defstobj-template template :creator))
-         (fixer (access defstobj-template template :fixer))
          (field-templates (access defstobj-template template :field-templates))
          (inline (access defstobj-template template :inline)))
     (append
@@ -7726,7 +7686,6 @@
                             field-templates 0 name nil)))))
        (,creator ()
                  ,(defstobj-raw-init template))
-       ,(defstobj-fixer-def name fixer recog creator t)
        ,@(defstobj-field-fns-raw-defs
            name
            (cond

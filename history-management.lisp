@@ -7466,7 +7466,6 @@
                                 (access stobj-property prop :live-var)
                                 (access stobj-property prop :recognizer)
                                 (access stobj-property prop :creator)
-                                (access stobj-property prop :fixer)
                                 (access stobj-property prop :names)))
                        renewal-mode wrld)))
         (t (value (renew-name name renewal-mode wrld)))))))))
@@ -18860,8 +18859,8 @@
                        ctx wrld state)
 
 ; Note that since known-stobjs above is '(state), no stobj can be returned.
-; Note that translate11 doesn't allow calls of stobj creators or fixers for
-; execution even when there is an active trust tag.
+; Note that translate11 doesn't allow calls of stobj creators for execution
+; even when there is an active trust tag.
 
            (cond
             (erp (silent-error state)) ; already printed any message
@@ -18881,7 +18880,7 @@
                          (msg "has output signature"
                               (cons 'mv stobjs-out))
                        (assert$
-; See comment above about stobj creators and fixers.
+; See comment above about stobj creators.
                         (eq (car stobjs-out) 'state)
                         (msg "returns STATE"
                              (car stobjs-out))))))

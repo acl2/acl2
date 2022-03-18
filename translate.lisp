@@ -14797,7 +14797,7 @@
 ; STOBJS-OUT is also $s, and the ith actual of a call is a live stobj, then the
 ; jth return value from that call is that same live stobj.  This is the only
 ; way that a live stobj can be found in the output (unless there is a call of a
-; creator or fixer function, which cannot be made directly in code).
+; creator function, which cannot be made directly in code).
 
 (defun compute-stobj-flags (lst known-stobjs w)
 
@@ -16231,22 +16231,6 @@
 
   :stobj-table-stobj)
 
-(defun stobj-fixerp (fixer wrld)
-
-; If fixer is a stobj-fixer for stobj st, return st.
-
-; Recall this comment from put-stobjs-in-and-outs:
-
-;      fn                  stobjs-in          stobjs-out
-; ....
-; fixer                    (nil)              (name)
-
-  (let ((st (getpropc fixer 'stobj-function nil wrld)))
-    (and st
-         (equal (stobjs-in fixer wrld) '(nil))
-         (eq (car (stobjs-out fixer wrld)) st)
-         st)))
-
 (defun chk-stobj-let/bindings (stobj acc-stobj first-acc bound-vars actuals
                                      wrld)
 
@@ -16312,16 +16296,6 @@
                          postlude)
                     nil nil nil))
                (t (mv nil parent st-get s2)))))
-           ((eq (car (getpropc (car actual) 'stobjs-out '(nil) wrld))
-                *stobj-table-stobj*)
-            (mv (msg "The variable ~x0 is bound in a stobj-let form to a call ~
-                      of the function ~x1, which directly accesses a ~
-                      stobj-table.  This is illegal because a stobj fixer ~
-                      must be applied to any such access.  See :DOC ~
-                      stobj-table."
-                     (car bound-vars)
-                     (car actual))
-                nil nil nil))
            (t
             (mv nil
                 (car (last actual))
@@ -16701,7 +16675,6 @@
              (let ((prop (getpropc st 'stobj nil wrld)))
                (and (not (eq fn (access stobj-property prop :recognizer)))
                     (not (eq fn (access stobj-property prop :creator)))
-                    (not (eq fn (access stobj-property prop :fixer)))
                     (absstobj-field-fn-of-stobj-type-p
                      fn
 ; We take the cddr to remove the tuples for the recognizer and creator.
@@ -21537,37 +21510,6 @@
    ((eq (car x) 'flet) ; (flet bindings form)
     (translate11-flet x stobjs-out bindings known-stobjs flet-alist ctx
                       wrld state-vars))
-   ((and (not (eq stobjs-out t))
-         (if (null (cdr x))
-             (getpropc (car x) 'stobj-function nil wrld) ; stobj-creatorp
-
-; Below we prohibit calls of stobj fixers in code (hence, in particular, in the
-; top-level loop).  Before removing that prohibition, consider the effect on a
-; case like the following.
-
-; (defstobj st fld)
-; (trace$ stp st$fix)
-; (let ((st (st$fix '(nil)))) (update-fld 3 st))
-; (fld st)
-
-; You'll see that st$fix returned '(nil), yet the live stobj is updated so that
-; (fld st) is 3.  That's nonsense, presumably an artifact of how we latch
-; stobjs, since st$fix is supposed to return a live st.
-
-           (and (null (cddr x)) ; optimization
-                (stobj-fixerp (car x) wrld))))
-    (trans-er+ x ctx
-               "It is illegal to call ~x0 in this context because it is a ~
-                ~@1.  Note that ~@1s cannot be called directly except in ~
-                theorems~@2.  See :DOC stobj."
-               (car x)
-               (if (null (cdr x))
-                   "stobj creator"
-                 "stobj fixer")
-               (if (null (cdr x))
-                   ""
-                 " or, in a specific way, when accessing stobj-tables (see ~
-                  :DOC stobj-table)")))
    ((eql (arity (car x) wrld) (length (cdr x)))
     (cond ((untouchable-fn-p (car x)
                              wrld

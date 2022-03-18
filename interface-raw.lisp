@@ -1804,20 +1804,7 @@
       (return-from oneify-cltl-code
                    `(,(*1*-symbol (car def)) nil
                      (throw-raw-ev-fncall ; as in oneify-fail-form
-                      (list 'ev-fncall-creator-er ',(car def))))))
-     ((and (null (cdr (cadr def))) ; optimization
-           (stobj-fixerp (car def) wrld))
-
-; We don't want the raw-Lisp stobj fixer ever to execute during a proof, thus
-; potentially creating a live stobj.  So we arrange that its *1* function is
-; defined to be the oneification of the body, without passing to the raw Lisp
-; version after a guard check as is generally done when oneifying a definition
-; body.  If the *1* function for creator is therefore called during a proof,
-; its usual throw will be handled just fine.
-
-      (return-from oneify-cltl-code
-                   `(,(*1*-symbol (car def)) ,(cadr def)
-                     ,(oneify (car (last def)) nil wrld nil))))))
+                      (list 'ev-fncall-creator-er ',(car def))))))))
 
   (when (null defun-mode)
 

@@ -18648,7 +18648,6 @@
    ((endp field-descriptors)
     (let ((default-names (list* (defstobj-fnname name :recognizer :top nil)
                                 (defstobj-fnname name :creator :top nil)
-                                (defstobj-fnname name :fixer :top nil)
                                 (reverse default-names)))
           (domain (strip-cars renaming)))
       (cond
@@ -18732,12 +18731,11 @@
 
 ; To discuss the guard issue, we name the functions introduced by defstobj,
 ; following the convention used in the comment in defstobj-template.  The
-; recognizer for the stobj itself will be called namep, the creator will be
-; called create-name, and the fixer will be called name$fix.  For each field,
-; the following names are introduced: recog-name - recognizer for the field
-; value; accessor-name - accessor for the field; updater-name - updater for the
-; field; length-name - length of array field; resize-name - resizing function
-; for array field.
+; recognizer for the stobj itself will be called namep, and the creator will be
+; called create-name.  For each field, the following names are introduced:
+; recog-name - recognizer for the field value; accessor-name - accessor for the
+; field; updater-name - updater for the field; length-name - length of array
+; field; resize-name - resizing function for array field.
 
 ; We are interested in determining the conditions we must check to ensure that
 ; each of these functions is Common Lisp compliant.  Both the guard and the
@@ -18792,12 +18790,10 @@
    ((endp ftemps)
     (let* ((recog-name (defstobj-fnname name :recognizer :top renaming))
            (creator-name (defstobj-fnname name :creator :top renaming))
-           (fixer-name (defstobj-fnname name :fixer :top renaming))
-           (names (list* recog-name creator-name fixer-name names)))
+           (names (list* recog-name creator-name names)))
       (er-progn
        (chk-all-but-new-name recog-name ctx 'function wrld state)
        (chk-all-but-new-name creator-name ctx 'function wrld state)
-       (chk-all-but-new-name fixer-name ctx 'function wrld state)
        (chk-acceptable-defstobj-renaming name field-descriptors renaming
                                          ctx state nil)
        (cond ((and renaming
@@ -19501,12 +19497,6 @@
       (defstobj-creator-def
         (access defstobj-template template :creator)
         field-templates wrld)
-      (defstobj-fixer-def
-        name
-        (access defstobj-template template :fixer)
-        (access defstobj-template template :recognizer)
-        (access defstobj-template template :creator)
-        nil)
       (defstobj-field-fns-axiomatic-defs
         (access defstobj-template template :recognizer)
         name 0 field-templates wrld)))))
@@ -19644,7 +19634,6 @@
 ;      fn                  stobjs-in          stobjs-out
 ; topmost recognizer       (name)             (nil)
 ; creator                  ()                 (name)
-; fixer                    (nil)              (name)
 ; field recogs             (nil ...)          (nil)
 ; simple accessor          (name)             (nil)
 ; hash-table accessor      (nil name)         (nil)
@@ -19670,20 +19659,16 @@
 
   (let ((recog-name (access defstobj-template template :recognizer))
         (creator-name (access defstobj-template template :creator))
-        (fixer-name (access defstobj-template template :fixer))
         (field-templates (access defstobj-template template :field-templates)))
     (put-stobjs-in-and-outs1 name
                              field-templates
-                             (putprop fixer-name
+                             (putprop creator-name
                                       'STOBJS-OUT
                                       (list name)
-                                      (putprop creator-name
-                                               'STOBJS-OUT
+                                      (putprop recog-name
+                                               'STOBJS-IN
                                                (list name)
-                                               (putprop recog-name
-                                                        'STOBJS-IN
-                                                        (list name)
-                                                        wrld))))))
+                                               wrld)))))
 
 (defun defconst-name-alist (lst n)
   (if (endp lst)
@@ -19801,7 +19786,6 @@
                  (raw-def-lst (defstobj-raw-defs name template nil wrld1))
                  (recog-name (access defstobj-template template :recognizer))
                  (creator-name (access defstobj-template template :creator))
-                 (fixer-name (access defstobj-template template :fixer))
                  (names
 
 ; Warning: Each updater should immediately follow the corresponding accessor --
@@ -19853,9 +19837,8 @@
                                           (pairlis-x1 'defun ax-def-lst)
                                           defconsts
 
-; We disable the executable-counterpart of the creator and fixer functions.
-; The creator's *1* function always does a throw, which is not useful during
-; proofs, and the fixer function can call the creator function.
+; We disable the executable-counterpart of the creator function.  The creator's
+; *1* function always does a throw, which is not useful during proofs.
 
                                           `((encapsulate
                                              ()
@@ -19863,9 +19846,7 @@
                                              (in-theory
                                               (disable
                                                (:executable-counterpart
-                                                ,creator-name)
-                                               (:executable-counterpart
-                                                ,fixer-name))))))
+                                                ,creator-name))))))
                                          0
                                          t ; might as well do make-event check
                                          (f-get-global 'cert-data state)
@@ -19932,14 +19913,12 @@
                                      :live-var the-live-var
                                      :recognizer recog-name
                                      :creator creator-name
-                                     :fixer fixer-name
                                      :names
 ; See the comment in the binding of names above.
                                      (append (set-difference-eq
                                               names
                                               (list recog-name
-                                                    creator-name
-                                                    fixer-name))
+                                                    creator-name))
                                              field-const-names))
                                (putprop-x-lst1
                                 names 'stobj-function name
@@ -20068,7 +20047,7 @@
 ; f_E and f_L for the function symbols associated with f (perhaps by default)
 ; by the :EXEC and :LOGIC keywords, respectively; these may be called the :EXEC
 ; (s-)primitive and :LOGIC (s-)primitive.  A stobj primitive other than the
-; recognizer, creator, or fixer may be called a "stobj export".
+; recognizer or creator may be called a "stobj export".
 
 ; This Essay models evaluation using live stobjs, as performed in the top-level
 ; loop.  (We do not consider here evaluation without live stobjs, as is carried
@@ -20858,7 +20837,7 @@
                               name
                               &key
                               foundation
-                              recognizer creator fixer exports
+                              recognizer creator exports
                               protect-default
                               congruent-to
                               &allow-other-keys)
@@ -20877,7 +20856,6 @@
          (creator-name (if (consp creator)
                            (car creator)
                          creator))
-         (fixer (or fixer (absstobj-name name :FIXER)))
          (congruent-stobj-rep (if congruent-to
                                   (congruent-stobj-rep-raw congruent-to)
                                 name))
@@ -20928,9 +20906,7 @@
 ; See the comment above in the binding of fields, about a guarantee that the
 ; first two methods must be for the recognizer and creator, respectively.
 
-                       (defabsstobj-raw-defs name methods
-                         (defstobj-fixer-def name fixer recognizer creator-name
-                           t)))
+                       (defabsstobj-raw-defs name methods))
              (let* ((old-pair (assoc-eq ',name *user-stobj-alist*))
                     (d (and old-pair
                             (get ',the-live-name
@@ -20978,7 +20954,7 @@
                               name
                               &key
                               foundation
-                              recognizer creator fixer corr-fn exports
+                              recognizer creator corr-fn exports
                               protect-default
                               congruent-to missing-only)
   (declare (xargs :guard (and (symbolp name)
@@ -20988,7 +20964,6 @@
         (list 'quote foundation)
         (list 'quote recognizer)
         (list 'quote creator)
-        (list 'quote fixer)
         (list 'quote corr-fn)
         (list 'quote exports)
         (list 'quote protect-default)
@@ -21011,7 +20986,7 @@
                                              name
                                              &key
                                              foundation
-                                             recognizer creator fixer
+                                             recognizer creator
                                              corr-fn exports protect-default
                                              congruent-to)
   (declare (xargs :guard (symbolp name)))
@@ -21021,7 +20996,6 @@
           (list 'quote foundation)
           (list 'quote recognizer)
           (list 'quote creator)
-          (list 'quote fixer)
           (list 'quote corr-fn)
           (list 'quote exports)
           (list 'quote protect-default)
@@ -22223,7 +22197,7 @@
                (cond (msg (mv msg nil nil))
                      (t (mv nil accessors updaters))))))))
 
-(defun chk-acceptable-defabsstobj (name st$c recognizer st$ap creator fixer
+(defun chk-acceptable-defabsstobj (name st$c recognizer st$ap creator
                                         corr-fn exports protect-default
                                         congruent-to see-doc ctx wrld state
                                         event-form)
@@ -22250,15 +22224,6 @@
         "The symbol ~x0 is not the name of a stobj in the current ACL2 world. ~
          ~ ~@1"
         st$c see-doc))
-   ((or (not (symbolp fixer))
-        (null fixer)
-        (keywordp fixer)
-        (booleanp fixer))
-    (er soft ctx
-        "The value of a ~x0 :FIXER argument must be a non-nil symbol that is ~
-         neither a kwyword nor a Boolean.  The :FIXER argument ~x1 is thus ~
-         illegal.  ~@2"
-        'defabsstobj fixer see-doc))
    ((not (true-listp exports))
     (er soft ctx
         "DEFABSSTOBJ requires the value of its :EXPORTS keyword argument to ~
@@ -22307,9 +22272,9 @@
                                     protect-default congruent-to see-doc ctx
                                     wrld2 state nil nil))))))
 
-(defun defabsstobj-axiomatic-defs (methods fixer-def)
+(defun defabsstobj-axiomatic-defs (methods)
   (cond
-   ((endp methods) (list fixer-def))
+   ((endp methods) nil)
    (t (cons (let ((method (car methods)))
               (mv-let (name formals guard-post logic stobjs-in-logic)
                 (mv (access absstobj-method method :NAME)
@@ -22358,7 +22323,7 @@
 ; primitives in the logic.)
 
                         (,logic ,@formals))))
-            (defabsstobj-axiomatic-defs (cdr methods) fixer-def)))))
+            (defabsstobj-axiomatic-defs (cdr methods))))))
 
 (defun with-inside-absstobj-update (temp saved name form)
 
@@ -22418,15 +22383,15 @@
                           ',name ,form0)))))
     (list name '(&rest args) body)))
 
-(defun defabsstobj-raw-defs-rec (methods fixer-def)
+(defun defabsstobj-raw-defs-rec (methods)
 
 ; See defabsstobj-raw-defs.
 
-  (cond ((endp methods) (list fixer-def))
+  (cond ((endp methods) nil)
         (t (cons (defabsstobj-raw-def (car methods))
-                 (defabsstobj-raw-defs-rec (cdr methods) fixer-def)))))
+                 (defabsstobj-raw-defs-rec (cdr methods))))))
 
-(defun defabsstobj-raw-defs (st-name methods fixer-def)
+(defun defabsstobj-raw-defs (st-name methods)
 
 ; Warning: Each method, which is an absstobj-method record, might only have
 ; valid :NAME, :LOGIC, :EXEC, and :PROTECT fields filled in.  Do not use other
@@ -22460,7 +22425,7 @@
           (exec (access absstobj-method method :EXEC)))
      (assert$ (not (eq exec 'args)) ; ACL2 built-in
               `(,name (&rest args) (cons ',exec args))))
-   (defabsstobj-raw-defs-rec (cddr methods) fixer-def)))
+   (defabsstobj-raw-defs-rec (cddr methods))))
 
 (defun expand-recognizer (st-name recognizer see-doc ctx state)
   (cond ((null recognizer)
@@ -22702,7 +22667,7 @@
 
   (congruent-absstobj-tuples-rec tuples1 tuples2 tuples1 tuples2))
 
-(defun defabsstobj-fn1 (st-name st$c recognizer creator fixer corr-fn exports
+(defun defabsstobj-fn1 (st-name st$c recognizer creator corr-fn exports
                                 protect-default congruent-to missing-only
                                 ctx state event-form)
   (let* ((wrld0 (w state))
@@ -22714,8 +22679,6 @@
          (creator-name (if (consp creator)
                            (car creator)
                          creator))
-         (fixer (or fixer
-                    (absstobj-name st-name :FIXER)))
          (corr-fn (or corr-fn
                       (absstobj-name st-name :CORR-FN))))
     (er-let* ((recognizer (expand-recognizer st-name recognizer see-doc ctx
@@ -22723,7 +22686,7 @@
               (st$ap (value (cadr (assoc-keyword :logic (cdr recognizer)))))
               (missing/methods/wrld1
                (chk-acceptable-defabsstobj
-                st-name st$c recognizer st$ap creator fixer corr-fn exports
+                st-name st$c recognizer st$ap creator corr-fn exports
                 protect-default congruent-to see-doc ctx wrld0 state
                 event-form)))
       (cond
@@ -22813,23 +22776,14 @@
                                    (defabsstobj-logic-subst methods0)
                                    methods0))
                          (wrld1 (cddr missing/methods/wrld1))
-                         (ax-def-lst (defabsstobj-axiomatic-defs
-                                       methods
-                                       (defstobj-fixer-def
-                                         st-name fixer
-                                         (car recognizer)
-                                         creator-name nil)))
+                         (ax-def-lst (defabsstobj-axiomatic-defs methods))
                          (raw-def-lst
 
 ; The first method in methods is for the recognizer, as is guaranteed by
 ; chk-acceptable-defabsstobj (as explained in a comment there that refers to
 ; the present function, defabsstobj-fn1).
 
-                          (defabsstobj-raw-defs st-name methods
-                            (defstobj-fixer-def
-                              st-name fixer
-                              (car recognizer)
-                              creator-name t)))
+                          (defabsstobj-raw-defs st-name methods))
                          (names (strip-cars ax-def-lst))
                          (the-live-var (the-live-var st-name)))
                     (er-progn
@@ -22868,9 +22822,7 @@
                               (in-theory
                                (disable
                                 (:executable-counterpart
-                                 ,creator-name)
-                                (:executable-counterpart
-                                 ,fixer))))))
+                                 ,creator-name))))))
                          0
                          t ; might as well do make-event check
                          (f-get-global 'cert-data state)
@@ -22919,7 +22871,6 @@
 
                                              :recognizer (car names)
                                              :creator (cadr names)
-                                             :fixer (car (last names))
                                              :names
                                              (sort-absstobj-names
                                               (butlast (cddr names) 1)
@@ -22930,11 +22881,9 @@
                                         (putprop
                                          the-live-var 'stobj-live-var st-name
                                           (putprop
-                                           fixer 'stobjs-out (list st-name)
-                                           (putprop
-                                            the-live-var 'symbol-class
-                                            :common-lisp-compliant
-                                            wrld2))))))))))))
+                                           the-live-var 'symbol-class
+                                           :common-lisp-compliant
+                                           wrld2)))))))))))
                                (discriminator
                                 (cons 'defabsstobj
                                       (make
@@ -22973,7 +22922,7 @@
                                            wrld3
                                            state))))))))))))))))))))))
 
-(defun defabsstobj-fn (st-name st$c recognizer creator fixer corr-fn exports
+(defun defabsstobj-fn (st-name st$c recognizer creator corr-fn exports
                                protect-default congruent-to missing-only
                                state event-form)
 
@@ -22989,7 +22938,7 @@
   (with-ctx-summarized
    (make-ctx-for-event event-form
                        (msg "( DEFABSSTOBJ ~x0 ...)" st-name))
-   (defabsstobj-fn1 st-name st$c recognizer creator fixer corr-fn exports
+   (defabsstobj-fn1 st-name st$c recognizer creator corr-fn exports
      protect-default congruent-to missing-only ctx state event-form)))
 
 (defun create-state ()

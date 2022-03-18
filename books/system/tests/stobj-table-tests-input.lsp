@@ -38,7 +38,6 @@
    val1))
 
 ; Illegal variant of definition above: missing creator.
-; Error: "the stobj fixer for ST1 should be applied to that expression".
 (defun bad (top)
   (declare (xargs :stobjs top :verify-guards nil))
   (stobj-let
@@ -118,7 +117,7 @@
         ))))
 
 ; Do the tests above with update-1 and read-1 not yet guard-verified.  This
-; tests the ability of *1* to handle things, including stobj fixers.
+; tests the ability of *1* to handle things.
 (runs 1)
 (assert-event (equal (tbl-count top) 3))
 (ubt 'st3)
@@ -129,13 +128,11 @@
 
 ; Now do those same tests after guard verificatin of update-1 and read-1.
 ; Note: Guard verification of update-1 depends on knowing that tbl-get returns
-; a stobj of the expected stobj type.  The implementation accomplishes this by
-; wrapping a stobj-fixer around each tbl-get call before generating the guard
-; proof obligation.  This is justified because that proof obligation merely
-; needs to be sufficient to justify error-free execution, and it is an
-; invariant that any tbl-get call accepted in the guard or body of a definition
-; is well-formed, such that the call will indeed return a stobj of the expected
-; stobj type during execution.
+; a stobj of the expected stobj type.  This is justified because that proof
+; obligation merely needs to be sufficient to justify error-free execution, and
+; it is an invariant that any tbl-get call accepted in the guard or body of a
+; definition is well-formed, such that the call will indeed return a stobj of
+; the expected stobj type during execution.
 (verify-guards update-1)
 (verify-guards read-1)
 (runs 1)
@@ -539,27 +536,6 @@
 ; Error: The :type should be (stobj-table), not stobj-table.
 (defstobj top-bad (tbl :type stobj-table))
 
-; Disallow stobj fixer calls at the top level.
-(st1$fix t)
-
-; Disallow stobj fixer calls in code.
-(defun foo ()
-  (st1$fix t))
-
-; Allow stobj fixer calls in theorems.  Note that we don't get an array from
-; the fixer by execution in the middle of the proof!
-(with-output :on :all :off proof-tree
-  (thm (equal (st1$fix t)
-              (create-st1))))
-
-; As above, and succeed even though we have enabled the executable-counterpart
-; of the fixer.  Notice the throws done by create-st1 if we first evaluate
-; (trace$ st1$fix create-st1).
-(with-output :on :all :off proof-tree
-  (thm (equal (st1$fix t)
-              (create-st1))
-       :hints (("Goal" :in-theory (enable (:e st1$fix))))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Locally-defined stobj issue
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -743,16 +719,11 @@
   (declare (xargs :stobjs (stobj-table)))
   (stobj-let ((st (tbl-get 'st stobj-table (create-st))))
              (val)
-             (mbe :logic (non-exec (let ((st (st$fix st)))
+             (mbe :logic (non-exec (let ((st (if (stp st) st (create-st))))
                                      (fld st)))
                   :exec (fld st))
              val))
 
-; SUCCEEDS because the stobj accessed by fld is produced from the coercion of
-; st to satisfy its stobj recognizer (i.e., stp).  By using mbe together with
-; the way guard obligations are generated -- by putting a stobj fixer around
-; each call of stobj-let; see ACL2 source function fix-stobj-table-get-calls --
-; we avoid runtime overhead of the fixer call.
 (thm (implies (stobj-tablep stobj-table)
               (integerp (read-fld-from-stobj-table stobj-table))))
 
@@ -783,7 +754,8 @@
 
 ; And here is a test adapted from an email from Sol Swords, which exposed a bug
 ; in the initial implementation of the use of stobj-fixers in generating guard
-; proof obligations (ACL2 source function fix-stobj-table-get-calls).
+; proof obligations (ACL2 source function fix-stobj-table-get-calls, which no
+; longer exists).
 
 (defun foo (sum stobj-table)
   (declare (xargs :stobjs (stobj-table)
@@ -796,6 +768,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Avoiding stobj fixers in guard verification: #1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This section was written when there were stobj fixers.  Those have been
+; eliminated, but this section seems worthwhile nonetheless.
 
 ; This example is due to Sol Swords.  See the comment just above
 ; fld-of-stobjtab-st.
@@ -816,7 +791,7 @@
   :rule-classes nil)
 
 ; This didn't guard verify when the guard conjecture was created by applying
-; the stobj fixer, st$fix, to the stbl-get call below (and more generally, by
+; the (obsolete) stobj fixer to the stbl-get call below (and more generally, by
 ; applying a suitable stobj fixer to each stobj-table accessor call).
 ; Specifically, the guard obligation from the mbe call was failing to prove.
 ; But now ACL2 adds hypothesis (stp (stbl-get 'st stobjtab (create-st))) in the
@@ -833,6 +808,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Avoiding stobj fixers in guard verification: #2
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This section was written when there were stobj fixers.  Those have been
+; eliminated, but this section seems worthwhile nonetheless.
 
 ; This example is from Rob Sumners.  See the comment above do-tbl, below.
 
@@ -867,7 +845,7 @@
   st)
 
 ; The following function failed to guard verify when the guard conjecture was
-; created by applying the stobj fixer, st$fix, to the tbl-get call below (and
+; created by applying the (obsolete) stobj fixer to the tbl-get call below (and
 ; more generally, by applying a suitable stobj fixer to each stobj-table
 ; accessor call).  But now ACL2 adds hypothesis (stp (tbl-get 'st stobj-table
 ; (create-st))) in the guard conjecture, which allows this to guard verify.

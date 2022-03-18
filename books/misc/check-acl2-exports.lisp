@@ -202,18 +202,7 @@
     VARIABLEP
 
 ; Symbols below should probably be added to *acl2-exports*.
-
-    D<
-    L<
-    LEX-FIX
-    LEXP
-    NFIX-LIST
-    MAYBE-CONVERT-TO-MV
-    SET-INHIBIT-ER-SOFT
-    SET-INHIBIT-ER-SOFT!
-    TOGGLE-INHIBIT-ER-SOFT
-    TOGGLE-INHIBIT-ER-SOFT!
-    ER-SOFT
+    
   ))
 
 (defconst *special-ops*

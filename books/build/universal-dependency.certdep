@@ -2,6 +2,6 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-2/22/22 The new summary argument of error1 was causing some
-out-of-date translate information to be cached in the :CERT-DATA field
-of certificates.
+3/2022 Changed ACL2 source definitions of (defrec defstobj-template
+...) and (defrec stobj-property ...).  It seems safest to force
+recertification of all books.

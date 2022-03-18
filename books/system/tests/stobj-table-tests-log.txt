@@ -1068,71 +1068,6 @@ as a type-spec (see :DOC type-spec) or as a user-defined stobj name.
 
 
 ACL2 Error [Failure] in ( DEFSTOBJ TOP-BAD ...):  See :DOC failure.
-ACL2 !>>(ST1$FIX T)
-
-
-ACL2 Error [Translate] in TOP-LEVEL:  It is illegal to call ST1$FIX
-in this context because it is a stobj fixer.  Note that stobj fixers
-cannot be called directly except in theorems or, in a specific way,
-when accessing stobj-tables (see :DOC stobj-table).  See :DOC stobj.
-Note:  this error occurred in the context (ST1$FIX T).
-
-ACL2 !>>(DEFUN FOO NIL (ST1$FIX T))
-
-
-ACL2 Error [Translate] in ( DEFUN FOO ...):  It is illegal to call
-ST1$FIX in this context because it is a stobj fixer.  Note that stobj
-fixers cannot be called directly except in theorems or, in a specific
-way, when accessing stobj-tables (see :DOC stobj-table).  See :DOC
-stobj.  Note:  this error occurred in the context (ST1$FIX T).
-
-ACL2 !>>(WITH-OUTPUT :ON :ALL :OFF PROOF-TREE
-                     (THM (EQUAL (ST1$FIX T) (CREATE-ST1))))
-
-By the simple :definition CREATE-ST1 we reduce the conjecture to
-
-Goal'
-(EQUAL (ST1$FIX T) '(0)).
-
-But simplification reduces this to T, using the :definitions CREATE-ST1
-and ST1$FIX and the :executable-counterparts of EQUAL and ST1P.
-
-Q.E.D.
-
-Summary
-Form:  ( THM ...)
-Rules: ((:DEFINITION CREATE-ST1)
-        (:DEFINITION ST1$FIX)
-        (:EXECUTABLE-COUNTERPART EQUAL)
-        (:EXECUTABLE-COUNTERPART ST1P))
-
-Proof succeeded.
-ACL2 !>>(WITH-OUTPUT
-             :ON :ALL :OFF PROOF-TREE
-             (THM (EQUAL (ST1$FIX T) (CREATE-ST1))
-                  :HINTS (("Goal" :IN-THEORY (ENABLE (:E ST1$FIX))))))
-
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
-
-By the simple :definition CREATE-ST1 we reduce the conjecture to
-
-Goal'
-(EQUAL (ST1$FIX T) '(0)).
-
-But simplification reduces this to T, using the :definitions CREATE-ST1
-and ST1$FIX and the :executable-counterparts of EQUAL and ST1P.
-
-Q.E.D.
-
-Summary
-Form:  ( THM ...)
-Rules: ((:DEFINITION CREATE-ST1)
-        (:DEFINITION ST1$FIX)
-        (:EXECUTABLE-COUNTERPART EQUAL)
-        (:EXECUTABLE-COUNTERPART ST1P))
-
-Proof succeeded.
 ACL2 !>>(ENCAPSULATE
              NIL (DEFSTOBJ ST5 FLD5)
              (DEFUN SET-ST-IN-STOBJ-TABLE (FLD-VAL TOP)
@@ -1359,11 +1294,13 @@ ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 ACL2 !>>(DEFUN
           READ-FLD-FROM-STOBJ-TABLE (STOBJ-TABLE)
           (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
-          (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
-                     (VAL)
-                     (MBE :LOGIC (NON-EXEC (LET ((ST (ST$FIX ST))) (FLD ST)))
-                          :EXEC (FLD ST))
-                     VAL))
+          (STOBJ-LET
+               ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+               (VAL)
+               (MBE :LOGIC (NON-EXEC (LET ((ST (IF (STP ST) ST (CREATE-ST))))
+                                          (FLD ST)))
+                    :EXEC (FLD ST))
+               VAL))
  READ-FLD-FROM-STOBJ-TABLE
 ACL2 !>>(THM (IMPLIES (STOBJ-TABLEP STOBJ-TABLE)
                       (INTEGERP (READ-FLD-FROM-STOBJ-TABLE STOBJ-TABLE))))
