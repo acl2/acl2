@@ -3562,7 +3562,7 @@
    :ullong 'ullongp
    :struct nil
    :pointer (type-case
-             type.referenced
+             type.to
              :void nil
              :char nil
              :schar 'schar-arrayp
@@ -3834,7 +3834,7 @@
           (nonnil-conjunct? (and index? (list theresult)))
           (arraylength-conjunct?
            (b* (((unless (type-case type :pointer)) nil)
-                (reftype (type-pointer->referenced type))
+                (reftype (type-pointer->to type))
                 ((unless (type-integerp reftype))
                  (raise "Internal error: pointer type ~x0 for ~x1." type name))
                 (reftype-array-length (pack (integer-type-to-fixtype reftype)
@@ -3993,7 +3993,7 @@
                   (list `(pointerp ,formal-ptr)
                         `(not (pointer-nullp ,formal-ptr))
                         `(equal (pointer->reftype ,formal-ptr)
-                                ',(type-pointer->referenced type)))))
+                                ',(type-pointer->to type)))))
        (inst (if fn-recursivep
                  (if arrayp
                      (list `(,formal (read-array (pointer->address

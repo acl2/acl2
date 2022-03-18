@@ -778,7 +778,7 @@
         (error (list :subscript-mistype (expr-fix sub-expr)
                      :required :integer
                      :supplied (type-fix sub-type)))))
-    (type-pointer->referenced arr-type))
+    (type-pointer->to arr-type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1015,7 +1015,7 @@
                            (error (list :subscript-mistype sub
                                         :required :integer
                                         :supplid sub-type))))
-                       (type-pointer->referenced arr-type)))
+                       (type-pointer->to arr-type)))
                     (t (error (list :expr-asg-disallowed left)))))
        ((when (errorp ltype)) ltype)
        (rtype (check-expr-call-or-pure right funtab vartab))

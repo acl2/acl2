@@ -60,8 +60,8 @@
   (:sllong ())
   (:ullong ())
   (:struct ((tag ident)))
-  (:pointer ((referenced type)))
-  (:array ((element type)))
+  (:pointer ((to type)))
+  (:array ((of type)))
   :pred typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -314,9 +314,9 @@
       :sllong (mv (tyspecseq-sllong nil nil) (obj-adeclor-none))
       :ullong (mv (tyspecseq-ullong nil) (obj-adeclor-none))
       :struct (mv (tyspecseq-struct type.tag) (obj-adeclor-none))
-      :pointer (b* (((mv tyspec declor) (type-to-tyname-aux type.referenced)))
+      :pointer (b* (((mv tyspec declor) (type-to-tyname-aux type.to)))
                  (mv tyspec (obj-adeclor-pointer declor)))
-      :array (b* (((mv tyspec declor) (type-to-tyname-aux type.element)))
+      :array (b* (((mv tyspec declor) (type-to-tyname-aux type.of)))
                (mv tyspec (obj-adeclor-array declor))))
      :measure (type-count type)
      :verify-guards :after-returns
