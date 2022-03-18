@@ -839,7 +839,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-expr-pure ((e exprp) (vartab var-tablep))
+(define check-expr-pure ((e exprp) (vartab var-tablep) (tagenv tag-envp))
   :returns (etype expr-type-resultp)
   :short "Check a pure expression."
   :long
@@ -911,12 +911,12 @@
      :const (b* ((type (check-const e.get))
                  ((when (errorp type)) type))
               (make-expr-type :type type :lvalue nil))
-     :arrsub (b* ((arr-etype (check-expr-pure e.arr vartab))
+     :arrsub (b* ((arr-etype (check-expr-pure e.arr vartab tagenv))
                   ((when (errorp arr-etype))
                    (error (list :arrsub e arr-etype)))
                   (arr-type (expr-type->type arr-etype))
                   (arr-type (apconvert-type arr-type))
-                  (sub-etype (check-expr-pure e.sub vartab))
+                  (sub-etype (check-expr-pure e.sub vartab tagenv))
                   ((when (errorp sub-etype))
                    (error (list :arrsub e sub-etype)))
                   (sub-type (expr-type->type sub-etype))
@@ -931,7 +931,7 @@
      :postdec (error (list :expr-non-pure e))
      :preinc (error (list :expr-non-pure e))
      :predec (error (list :expr-non-pure e))
-     :unary (b* ((arg-etype (check-expr-pure e.arg vartab))
+     :unary (b* ((arg-etype (check-expr-pure e.arg vartab tagenv))
                  ((when (errorp arg-etype))
                   (error (list :unary-error arg-etype)))
                  (arg-type (expr-type->type arg-etype))
@@ -939,7 +939,7 @@
                  (type (check-unary e.op e.arg arg-type))
                  ((when (errorp type)) type))
               (make-expr-type :type type :lvalue nil))
-     :cast (b* ((arg-etype (check-expr-pure e.arg vartab))
+     :cast (b* ((arg-etype (check-expr-pure e.arg vartab tagenv))
                 ((when (errorp arg-etype))
                  (error (list :cast-error arg-etype)))
                 (arg-type (expr-type->type arg-etype))
@@ -956,12 +956,12 @@
              (make-expr-type :type type :lvalue nil))
      :binary (b* (((unless (binop-purep e.op))
                    (error (list :binary-non-pure e)))
-                  (arg1-etype (check-expr-pure e.arg1 vartab))
+                  (arg1-etype (check-expr-pure e.arg1 vartab tagenv))
                   ((when (errorp arg1-etype))
                    (error (list :binary-left-error arg1-etype)))
                   (arg1-type (expr-type->type arg1-etype))
                   (arg1-type (apconvert-type arg1-type))
-                  (arg2-etype (check-expr-pure e.arg2 vartab))
+                  (arg2-etype (check-expr-pure e.arg2 vartab tagenv))
                   ((when (errorp arg2-etype))
                    (error (list :binary-right-error arg2-etype)))
                   (arg2-type (expr-type->type arg2-etype))
@@ -971,7 +971,7 @@
                                            e.arg2 arg2-type))
                   ((when (errorp type)) type))
                (make-expr-type :type type :lvalue nil))
-     :cond (b* ((test-etype (check-expr-pure e.test vartab))
+     :cond (b* ((test-etype (check-expr-pure e.test vartab tagenv))
                 ((when (errorp test-etype))
                  (error (list :cond-test-error test-etype)))
                 (test-type (expr-type->type test-etype))
@@ -980,7 +980,7 @@
                  (error (list :cond-mistype-test e.test e.then e.else
                               :required :scalar
                               :supplied test-type)))
-                (then-etype (check-expr-pure e.then vartab))
+                (then-etype (check-expr-pure e.then vartab tagenv))
                 ((when (errorp then-etype))
                  (error (list :cond-then-error then-etype)))
                 (then-type (expr-type->type then-etype))
@@ -989,7 +989,7 @@
                  (error (list :cond-mistype-then e.test e.then e.else
                               :required :arithmetic
                               :supplied then-type)))
-                (else-etype (check-expr-pure e.else vartab))
+                (else-etype (check-expr-pure e.else vartab tagenv))
                 ((when (errorp else-etype))
                  (error (list :cond-else-error else-etype)))
                 (else-type (expr-type->type else-etype))
@@ -1007,7 +1007,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-expr-pure-list ((es expr-listp) (vartab var-tablep))
+(define check-expr-pure-list ((es expr-listp)
+                              (vartab var-tablep)
+                              (tagenv tag-envp))
   :returns (types type-list-resultp
                   :hints (("Goal"
                            :in-theory
@@ -1022,11 +1024,11 @@
      The expression types returned by the expressions
      are subjected to lvalue conversion and array-to-pointer conversion."))
   (b* (((when (endp es)) nil)
-       (etype (check-expr-pure (car es) vartab))
+       (etype (check-expr-pure (car es) vartab tagenv))
        ((when (errorp etype)) etype)
        (type (expr-type->type etype))
        (type (apconvert-type type))
-       (types (check-expr-pure-list (cdr es) vartab))
+       (types (check-expr-pure-list (cdr es) vartab tagenv))
        ((when (errorp types)) types))
     (cons type types))
   :hooks (:fix))
@@ -1036,7 +1038,8 @@
 (define check-expr-call ((fun identp)
                          (args expr-listp)
                          (funtab fun-tablep)
-                         (vartab var-tablep))
+                         (vartab var-tablep)
+                         (tagenv tag-envp))
   :returns (type type-resultp)
   :short "Check an expression that is a function call."
   :long
@@ -1053,7 +1056,7 @@
      thus, we return a plain type, not an expression type."))
   (b* ((fun (ident-fix fun))
        (args (expr-list-fix args))
-       (types (check-expr-pure-list args vartab))
+       (types (check-expr-pure-list args vartab tagenv))
        ((when (errorp types))
         (error (list :call-args-error fun args types)))
        (ftype (fun-table-lookup fun funtab))
@@ -1069,7 +1072,8 @@
 
 (define check-expr-call-or-pure ((e exprp)
                                  (funtab fun-tablep)
-                                 (vartab var-tablep))
+                                 (vartab var-tablep)
+                                 (tagenv tag-envp))
   :returns (type type-resultp)
   :short "Check an expression that must be
           a function call or a pure expression."
@@ -1086,8 +1090,12 @@
      because the caller of this function
      do not need to differentiate between lvalues and not lvalues."))
   (if (expr-case e :call)
-      (check-expr-call (expr-call->fun e) (expr-call->args e) funtab vartab)
-    (b* ((etype (check-expr-pure e vartab))
+      (check-expr-call (expr-call->fun e)
+                       (expr-call->args e)
+                       funtab
+                       vartab
+                       tagenv)
+    (b* ((etype (check-expr-pure e vartab tagenv))
          ((when (errorp etype)) etype))
       (expr-type->type etype)))
   :hooks (:fix))
@@ -1096,7 +1104,8 @@
 
 (define check-expr-asg ((e exprp)
                         (funtab fun-tablep)
-                        (vartab var-tablep))
+                        (vartab var-tablep)
+                        (tagenv tag-envp))
   :returns (wf? wellformed-resultp)
   :short "Check an expression that must be an assignment exrpression."
   :long
@@ -1128,12 +1137,12 @@
        (right (expr-binary->arg2 e))
        ((unless (binop-case op :asg))
         (error (list :expr-asg-not-asg op)))
-       (left-etype (check-expr-pure left vartab))
+       (left-etype (check-expr-pure left vartab tagenv))
        ((when (errorp left-etype)) left-etype)
        ((unless (expr-type->lvalue left-etype))
         (error (list :asg-left-not-lvalue (expr-fix e))))
        (left-type (expr-type->type left-etype))
-       (right-type (check-expr-call-or-pure right funtab vartab))
+       (right-type (check-expr-call-or-pure right funtab vartab tagenv))
        ((when (errorp right-type)) right-type)
        (right-type (apconvert-type right-type))
        ((unless (equal left-type right-type))
@@ -1151,7 +1160,8 @@
 
 (define check-expr-call-or-asg ((e exprp)
                                 (funtab fun-tablep)
-                                (vartab var-tablep))
+                                (vartab var-tablep)
+                                (tagenv tag-envp))
   :returns (wf? wellformed-resultp)
   :short "Check an expression that must be a function call or an assignment."
   :long
@@ -1177,12 +1187,13 @@
       (b* ((type (check-expr-call (expr-call->fun e)
                                   (expr-call->args e)
                                   funtab
-                                  vartab))
+                                  vartab
+                                  tagenv))
            ((when (errorp type)) type)
            ((unless (type-case type :void))
             (error (list :nonvoid-function-result-discarded (expr-fix e)))))
         :wellformed)
-    (check-expr-asg e funtab vartab))
+    (check-expr-asg e funtab vartab tagenv))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1336,12 +1347,12 @@
                     ((when (errorp stype))
                      (error (list :stmt-compound-error stype))))
                  (change-stmt-type stype :variables vartab))
-     :expr (b* ((wf (check-expr-call-or-asg s.get funtab vartab))
+     :expr (b* ((wf (check-expr-call-or-asg s.get funtab vartab tagenv))
                 ((when (errorp wf)) (error (list :expr-stmt-error wf))))
              (make-stmt-type :return-types (set::insert (type-void) nil)
                              :variables (var-table-fix vartab)))
      :null (error :unsupported-null-stmt)
-     :if (b* ((etype (check-expr-pure s.test vartab))
+     :if (b* ((etype (check-expr-pure s.test vartab tagenv))
               ((when (errorp etype)) (error (list :if-test-error etype)))
               (type (expr-type->type etype))
               (type (apconvert-type type))
@@ -1356,7 +1367,7 @@
             :return-types (set::union (stmt-type->return-types stype-then)
                                       (set::insert (type-void) nil))
             :variables vartab))
-     :ifelse (b* ((etype (check-expr-pure s.test vartab))
+     :ifelse (b* ((etype (check-expr-pure s.test vartab tagenv))
                   ((when (errorp etype)) (error (list :if-test-error etype)))
                   (type (expr-type->type etype))
                   (type (apconvert-type type))
@@ -1375,7 +1386,7 @@
                                           (stmt-type->return-types stype-else))
                 :variables vartab))
      :switch (error (list :unsupported-switch s.ctrl s.body))
-     :while (b* ((etype (check-expr-pure s.test vartab))
+     :while (b* ((etype (check-expr-pure s.test vartab tagenv))
                  ((when (errorp etype)) (error (list :while-test-error etype)))
                  (type (expr-type->type etype))
                  (type (apconvert-type type))
@@ -1396,7 +1407,7 @@
      :continue (error :unsupported-continue)
      :break (error :unsupported-break)
      :return (b* (((unless s.value) (error (list :unsupported-return-void)))
-                  (type (check-expr-call-or-pure s.value funtab vartab))
+                  (type (check-expr-call-or-pure s.value funtab vartab tagenv))
                   ((when (errorp type)) (error (list :return-error type)))
                   (type (apconvert-type type))
                   ((when (type-case type :void))
@@ -1421,7 +1432,7 @@
           (type (tyname-to-type tyname))
           ((when (type-case type :void))
            (error (list :declon-error-type-void item.get)))
-          (init-type (check-expr-call-or-pure init funtab vartab))
+          (init-type (check-expr-call-or-pure init funtab vartab tagenv))
           ((when (errorp init-type))
            (error (list :declon-error-init init-type)))
           (init-type (apconvert-type init-type))
