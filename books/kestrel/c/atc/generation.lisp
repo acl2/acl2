@@ -4582,9 +4582,9 @@
                 fn type)))
        (id (make-ident :name name))
        ((mv tyspec &) (ident+type-to-tyspec+declor id type))
-       (fundef (make-fundef :result tyspec
-                            :name id
-                            :params params
+       (fundef (make-fundef :tyspec tyspec
+                            :declor (make-fun-declor :name id
+                                                     :params params)
                             :body items))
        (ext (ext-declon-fundef fundef))
        (finfo (fun-info-from-fundef fundef))

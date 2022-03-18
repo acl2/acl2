@@ -1039,6 +1039,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pprint-fun-declor ((declor fun-declorp))
+  :returns (part msgp)
+  :short "Pretty-print a function declarator."
+  (b* (((fun-declor declor) declor))
+    (msg "~@0(~@1)"
+         (pprint-ident declor.name)
+         (pprint-comma-sep (pprint-param-declon-list declor.params))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-fun-declon ((declon fun-declonp) (level natp))
+  :returns (lines msg-listp)
+  (b* (((fun-declon declon) declon))
+    (list (pprint-line (msg "~@0 ~@1;"
+                            (pprint-tyspecseq declon.tyspec)
+                            (pprint-fun-declor declon.declor))
+                       (lnfix level))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pprint-obj-declon ((declon obj-declonp)
                            (level natp)
                            (options pprint-options-p))
@@ -1205,11 +1227,9 @@
    "This is always at the top level,
     so we initialize the indentation level of the body to 1.")
   (b* (((fundef fdef) fdef))
-    (append (list (pprint-line (msg "~@0 ~@1(~@2) {"
-                                    (pprint-tyspecseq fdef.result)
-                                    (pprint-ident fdef.name)
-                                    (pprint-comma-sep
-                                     (pprint-param-declon-list fdef.params)))
+    (append (list (pprint-line (msg "~@0 ~@1 {"
+                                    (pprint-tyspecseq fdef.tyspec)
+                                    (pprint-fun-declor fdef.declor))
                                0))
             (pprint-block-item-list fdef.body 1 options)
             (list (pprint-line "}" 0)))))

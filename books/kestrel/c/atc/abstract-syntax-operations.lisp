@@ -13,6 +13,8 @@
 
 (include-book "abstract-syntax")
 
+(include-book "std/util/defprojection" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-abstract-syntax-operations
@@ -276,3 +278,22 @@
                      :obj-declon (ext-declon-list->fundef-list (cdr exts))
                      :tag-declon (ext-declon-list->fundef-list (cdr exts))))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fundef->name ((fundef fundefp))
+  :returns (name identp)
+  :short "Name of a function in a definition."
+  (fun-declor->name (fundef->declor fundef))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection fundef-list->name-list (x)
+  :guard (fundef-listp x)
+  :returns (names ident-listp)
+  :short "Lift @(tsee fundef->name) to lists."
+  (fundef->name x)
+  ///
+  (fty::deffixequiv fundef-list->name-list
+    :args ((x fundef-listp))))

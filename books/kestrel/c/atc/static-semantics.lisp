@@ -1413,16 +1413,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-fun-declor ((declor fun-declorp) (tagenv tag-envp))
+  :returns (vartab var-table-resultp)
+  :short "Check a function declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check the identifier and the list of parameter declarations.
+     We start with the empty variable table,
+     and we return the final variable table that contains the parameters.
+     This table is used when checking function definitions."))
+  (b* (((fun-declor declor) declor)
+       (wf (check-ident declor.name))
+       ((when (errorp wf)) wf))
+    (check-param-declon-list declor.params (var-table-init) tagenv))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-fun-declon ((declon fun-declonp) (tagenv tag-envp))
+  :returns (wf wellformed-resultp)
+  :short "Check a function declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check the type specifier sequence and the declarator.
+     We do not return anything, because a function declaration,
+     unlike a function definition, does not have a body to check
+     (for which we need the variable table that contains the parameters)."))
+  (b* (((fun-declon declon) declon)
+       (wf (check-tyspecseq declon.tyspec tagenv))
+       ((when (errorp wf)) wf)
+       (vartab (check-fun-declor declon.declor tagenv))
+       ((when (errorp vartab)) vartab))
+    :wellformed)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-fundef ((fundef fundefp) (funtab fun-tablep) (tagenv tag-envp))
   :returns (new-funtab fun-table-resultp)
   :short "Check a function definition."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Starting with an initial variable table,
-     we process the parameter declarations and obtain the variable table
-     in which the function body must be checked.
-     Critically, the block items are checked in the initial variable table,
+    "We check type specifier sequence and declarator,
+     obtaining the variable table that contains the parameters.
+     Importantly, the block items are checked in the initial variable table,
      which has the types for the function parameters,
      without creating a new scope for the block (i.e. the compound statement):
      the reason is that the scope of function parameters
@@ -1445,26 +1482,26 @@
      the function definitions in the translation unit in order,
      we extend the function table."))
   (b* (((fundef fundef) fundef)
-       ((mv & tynames) (param-declon-list-to-ident+tyname-lists fundef.params))
-       (in-types (type-name-list-to-type-list tynames))
-       (tyname (make-tyname :tyspec fundef.result
-                            :declor (obj-adeclor-none)))
-       (wf (check-tyname tyname tagenv))
-       ((when (errorp wf)) (error (list :bad-fun-out-type fundef.name wf)))
-       (out-type (tyname-to-type tyname))
-       (ftype (make-fun-type :inputs in-types :output out-type))
-       (funtab (fun-table-add-fun fundef.name ftype funtab))
-       ((when (errorp funtab)) (error (list :fundef funtab)))
-       (wf (check-ident fundef.name))
-       ((when (errorp wf)) (error (list :fundef-name-error wf)))
-       (vartab (var-table-init))
-       (vartab (check-param-declon-list fundef.params vartab tagenv))
+       ((fun-declor fundef.declor) fundef.declor)
+       (out-tyname (make-tyname :tyspec fundef.tyspec
+                                :declor (obj-adeclor-none)))
+       (wf (check-tyname out-tyname tagenv))
+       ((when (errorp wf))
+        (error (list :bad-fun-out-type fundef.declor.name wf)))
+       (out-type (tyname-to-type out-tyname))
+       (vartab (check-fun-declor fundef.declor tagenv))
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
+       ((mv & in-tynames)
+        (param-declon-list-to-ident+tyname-lists fundef.declor.params))
+       (in-types (type-name-list-to-type-list in-tynames))
+       (ftype (make-fun-type :inputs in-types :output out-type))
+       (funtab (fun-table-add-fun fundef.declor.name ftype funtab))
+       ((when (errorp funtab)) (error (list :fundef funtab)))
        (stype (check-block-item-list fundef.body funtab vartab tagenv))
        ((when (errorp stype)) (error (list :fundef-body-error stype)))
        ((unless (equal (stmt-type->return-types stype)
                        (set::insert out-type nil)))
-        (error (list :fundef-return-mistype fundef.name
+        (error (list :fundef-return-mistype fundef.declor.name
                      :required out-type
                      :inferred (stmt-type->return-types stype)))))
     funtab)

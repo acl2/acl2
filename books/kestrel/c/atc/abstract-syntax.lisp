@@ -12,7 +12,9 @@
 (in-package "C")
 
 (include-book "kestrel/fty/defset" :dir :system)
-(include-book "std/util/defprojection" :dir :system)
+
+; to generate more typed list theorems:
+(local (include-book "std/lists/append" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -838,6 +840,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod fun-declor
+  :short "Fixtype of function declarators [C:6.7.6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only model function declarators consisting of [C:6.7.6.3]
+     consisting of an identifier as the direct declarator
+     and a (parenthesized) list of parameter declarations."))
+  ((name ident)
+   (params param-declon-list))
+  :tag :fun-declor
+  :pred fun-declorp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod fun-declon
+  :short "Fixtype of function declarations [C:6.7]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A function declaration consists of
+     a type specifier sequence
+     and a function declarator."))
+  ((tyspec tyspecseq)
+   (declor fun-declor))
+  :tag :fun-declon
+  :pred fun-declonp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod obj-declon
   :short "Fixtype of object declarations [C:6.7]."
   :long
@@ -986,19 +1018,37 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only support a very limited form of function definitions,
-     namely those consisting of
-     a type specifier sequence for the result (see @(tsee tyspecseq)),
-     an identifier to name the function,
-     and a list of parameter declarations.
-     Richer forms may be added in the future.")
+    "We model a function definition as consisting of
+     a type specifier sequence,
+     a function declarator,
+     and a body.
+     With respect to [C:6.9.1/1],
+     the type specifier sequence are the declaration specifiers,
+     the function declarator is the declarator,
+     and the body is the compound statement.
+     We do not model function definitions with parameter names
+     and separate declarations for them before the body.")
    (xdoc::p
     "Since the body of a function definition must be a compound statement,
      we formalize the body as
-     the list of block items that form the compound statement."))
-  ((result tyspecseq)
-   (name ident)
-   (params param-declon-list)
+     the list of block items that form the compound statement.")
+   (xdoc::p
+    "Since a function declaration consists of
+     a type specifier sequence and a function declarator,
+     this product fixtype of function definitions is isomorphic to
+     a product fixtype of a function declaration and a body.
+     However, even though this work in abstract syntax,
+     in concrete syntax a function declaration has to end with a semicolon
+     (and that is why the grammar rule in [C:6.9.1/1]
+     does not use a declaration, but rather its components):
+     thus, for our pretty-printer,
+     we want to differentiate between
+     the type specifier sequences and declarators
+     that form a full function declaration,
+     and the type specifier sequences and declarators
+     that are part of a function definition."))
+  ((tyspec tyspecseq)
+   (declor fun-declor)
    (body block-item-list))
   :tag :fundef
   :pred fundefp)
@@ -1011,17 +1061,6 @@
   :true-listp t
   :elementp-of-nil nil
   :pred fundef-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection fundef-list->name-list (x)
-  :guard (fundef-listp x)
-  :returns (names ident-listp)
-  :short "Lift @(tsee fundef->name) to lists."
-  (fundef->name x)
-  ///
-  (fty::deffixequiv fundef-list->name-list
-    :args ((x fundef-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
