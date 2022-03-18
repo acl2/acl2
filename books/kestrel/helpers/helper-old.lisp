@@ -63,7 +63,7 @@
 
 ;; Returns (mv erp event state).
 ;; The purpose of this is to print :hints that are likely to prove the last theorem that the user attempted.
-(defun h-fn (state)
+(defun helper-old-fn (state)
   (declare (xargs :mode :program
                   :stobjs state))
   (b* ((- (and (not (multiple-ld-history-entry-modep state))
@@ -93,8 +93,8 @@
 
 ;; To invoke the helper tool (to try to produce hints sufficient to prove the
 ;; last theorem entered by the user, just do ":h").
-(defmacro h ()
-  '(make-event-quiet (h-fn state)))
+(defmacro h-old ()
+  '(make-event-quiet (helper-old-fn state)))
 
 ;; ;; Test:
 ;; (adjust-ld-history t state)

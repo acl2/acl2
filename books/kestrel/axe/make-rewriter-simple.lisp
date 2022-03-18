@@ -1556,11 +1556,10 @@
                             (b* ((args (fargs tree))
                                  ;; We are simplifying a call of FN on ARGS, where the ARGS are axe-trees.
                                  ;; First we simplify the args:
-                                 ;;ffixme should we simplify the args earlier? e.g., before looking the term up in the memoization?
-                                 ;; FN might be a lambda.
-                                 ;; fixme might it be possible to not check for ground-terms because we never build them -- think about where terms might come from other than sublis-var-simple, which we could change to not build ground terms (of functions we know about)
-                                 ;; ffixme maybe we should try to apply rules here (maybe outside-in rules) instead of rewriting the args
-                                 ;; fixme could pass in a flag for the common case where the args are known to be already simplified (b/c the tree is a dag node?)
+                                 ;; TODO: Should we simplify the args earlier? e.g., before looking the term up in the memoization?
+                                 ;; TODO: might it be possible to not check for ground-terms because we never build them? -- think about where terms might come from other than sublis-var-simple, which we could change to not build ground terms (of functions we know about)
+                                 ;; TODO: maybe we should try to apply rules here (maybe outside-in rules) instead of rewriting the args
+                                 ;; TODO: could pass in a flag for the common case where the args are known to be already simplified (b/c the tree is a dag node?)
                                  (- (and (eq :verbose2 print) (cw "(Rewriting args of ~x0:~%" fn)))
                                  ((mv erp args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                                   (,simplify-trees-and-add-to-dag-name args
@@ -1666,9 +1665,9 @@
           (if (or (not (mbt (natp count)))
                   (= 0 count))
               (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-            (b* ((expr (cons fn args)) ;todo: use below
+            (b* ((expr (cons fn args)) ;todo: save this cons, or use below?
                  ;;Try looking it up in the memoization (note that the args are now simplified):
-                 (memo-match (and memoization (lookup-in-memoization expr memoization))))
+                 (memo-match (and memoization (lookup-in-memoization expr memoization)))) ; todo: use a more specialized version of lookup-in-memoization, since we know the shape of expr (also avoid the cons for expr here)?
               (if memo-match
                   (mv (erp-nil)
                       memo-match
@@ -4153,9 +4152,7 @@
                       (print-hit-counts t info (rules-from-rule-alist rule-alist))))
               (- (and nil ;; change to t to print info on the memoization
                       memoization
-                      (print-memo-stats memoization)))
-              ;; TODO: Print the hit info
-              )
+                      (print-memo-stats memoization))))
            (if (consp new-nodenum-or-quotep) ;check for quotep
                (mv (erp-nil) new-nodenum-or-quotep)
              (mv (erp-nil) (drop-non-supporters-array 'dag-array dag-array new-nodenum-or-quotep nil)))))

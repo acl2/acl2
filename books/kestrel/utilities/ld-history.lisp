@@ -14,7 +14,7 @@
                            ;;boundp-global
                            )))
 
-;move
+;; Recognize a true list of ld-history-entries.
 (defun weak-ld-history-entry-list-p (entries)
   (declare (xargs :guard t))
   (if (atom entries)
@@ -22,8 +22,7 @@
     (and (weak-ld-history-entry-p (first entries))
          (weak-ld-history-entry-list-p (rest entries)))))
 
-;move
-;; Returns the most recent THM or DEFTHM submitted by the user.
+;; Returns the most recent THM or DEFTHM submitted by the user, or throws an error is there isn't one.
 (defund most-recent-theorem-aux (ld-history whole-ld-history)
   (declare (xargs :guard (weak-ld-history-entry-list-p ld-history)))
   (if (endp ld-history)
@@ -36,16 +35,13 @@
                                                 (= 1 (len (cdr most-recent-command-input))))
                                            (cadr most-recent-command-input)
                                          most-recent-command-input)))
-        (if (not (consp most-recent-command-input))
-            ;; Skip any input that is an atom:
-            (most-recent-theorem-aux (rest ld-history) whole-ld-history)
-          (if (member-eq (car most-recent-command-input) '(thm defthm defthmd)) ;todo: support defrule, what about other kinds of proofs?
-              most-recent-command-input
-            ;; Keep looking:
-            (most-recent-theorem-aux (rest ld-history) whole-ld-history)))))))
+        (if (and (consp most-recent-command-input)
+                 (member-eq (car most-recent-command-input) '(thm defthm defthmd))) ;todo: support defrule? rule? verify-termination?  verify-guards? what about other kinds of proofs?
+            most-recent-command-input
+          ;; Keep looking:
+          (most-recent-theorem-aux (rest ld-history) whole-ld-history))))))
 
-;move
-;; Returns the most recent THM or DEFTHM submitted by the user.
+;; Returns the most recent THM or DEFTHM submitted by the user, or throws an error is there isn't one.
 (defund most-recent-theorem (state)
   (declare (xargs :stobjs state
                   ;; is this implied by statep?:
