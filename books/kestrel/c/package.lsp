@@ -23,6 +23,7 @@
                                   boolean
                                   byte
                                   error
+                                  member
                                   pi
                                   pprint-indent
                                   schar
