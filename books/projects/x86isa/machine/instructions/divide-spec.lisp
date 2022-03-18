@@ -251,8 +251,8 @@
 
   (b* ((size*2                 (* 2 size))
        (size*2+1               (1+ size*2))
-       (?smallest-neg-quotient (- (1- (expt 2 (1- size)))))
-       (?largest-pos-quotient  (expt 2 (1- size)))
+       (smallest-neg-quotient (- (expt 2 (1- size))))
+       (largest-pos-quotient (1- (expt 2 (1- size))))
        (fn-name                (mk-name "IDIV-SPEC-" size))
        (str-nbits              (if (eql size 8) "08" size)))
 
