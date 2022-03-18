@@ -16,12 +16,13 @@
 
 (in-theory (disable append))
 
-;;fails
 (must-fail
+ ;;fails:
  (defthm consp-of-append
    (implies (consp x)
             (consp (append x y)))))
 
+;;succeeds:
 (help-with
  (defthm consp-of-append
    (implies (consp x)
