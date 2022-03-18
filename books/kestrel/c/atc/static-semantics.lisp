@@ -839,6 +839,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define struct-member-lookup ((tag identp) (mem identp) (tagenv tag-envp))
+  :returns (type type-resultp)
+  :short "Look up a member in a structure type in the tag environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We first look up the tag, ensuring we find a structure type.
+     Then we look for the member in the structure type,
+     returning its type if successful.
+     We propagate errors.")
+   (xdoc::p
+    "This is used to check member expressions,
+     both the @('.') and the @('->') kind."))
+  (b* ((info (tag-env-lookup tag tagenv))
+       ((when (tag-info-option-case info :none))
+        (error (list :struct-not-found
+                     (ident-fix tag)
+                     (tag-env-fix tagenv))))
+       (info (tag-info-option-some->val info))
+       ((unless (tag-info-case info :struct))
+        (error (list :tag-not-struct
+                     (ident-fix tag)
+                     info)))
+       (members (tag-info-struct->members info))
+       (type (member-info-lookup mem members))
+       ((when (type-option-case type :none))
+        (error (list :member-not-found
+                     (ident-fix tag)
+                     (ident-fix mem)
+                     members))))
+    (type-option-some->val type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-expr-pure ((e exprp) (vartab var-tablep) (tagenv tag-envp))
   :returns (etype expr-type-resultp)
   :short "Check a pure expression."
@@ -849,6 +884,9 @@
      If all the checks are satisfied,
      we return the expression type of the expression
      (see @(tsee expr-type)).")
+   (xdoc::p
+    "We disallow function calls and pre/post-increment/decrement,
+     since they are not pure.")
    (xdoc::p
     "An identifier must be in the variable table.
      Its type is looked up there.
@@ -875,9 +913,6 @@
      An array subscripting expression is always an lvalue;
      recall that it is like a form of the @('*') dereferencing expression.")
    (xdoc::p
-    "We disallow function calls and pre/post-increment/decrement,
-     since they are not pure.")
-   (xdoc::p
     "For unary and binary operators, we apply
      both lvalue conversion and array-to-pointer conversion to the operand(s).
      The latter is needed because some operators work on scalars,
@@ -901,7 +936,26 @@
      the result has the type resulting from the usual arithmetic conversions.
      See [C:6.5.15/3].
      We apply both lvalue conversion and array-to-pointer conversion.
-     A conditional expression is never an lvalue."))
+     A conditional expression is never an lvalue.")
+   (xdoc::p
+    "For a member expression with @('.') [C:6.5.2.3],
+     we first check the target, ensuring it has a structure type.
+     We do not do need to do array-to-pointer conversion,
+     because we require the type to be a structure type,
+     which rejects both array and pointer types.
+     We look up the structure type and its member.
+     We return its type, and we preserve the lvalue status:
+     if the target is an lvalue, so is the member;
+     if the target is not an lvalue, neither is the member.")
+   (xdoc::p
+    "For a member expression with @('->') [C:6.5.2.3],
+     we first check the target,
+     ensuring it has a pointer type to a structure type.
+     We perform array-to-pointer conversion on this type,
+     prior to ensuring it is a pointer to structure,
+     as an array type would become a pointer type via that conversion.
+     We look up the structure type and its member.
+     We return the member type, with the lvalue flag set."))
   (b* ((e (expr-fix e)))
     (expr-case
      e
@@ -925,8 +979,29 @@
                   ((when (errorp type)) type))
                (make-expr-type :type type :lvalue t))
      :call (error (list :expr-non-pure e))
-     :member (error (list :not-supported-yet e))
-     :memberp (error (list :not-supported-yet e))
+     :member (b* ((etype (check-expr-pure e.target vartab tagenv))
+                  ((when (errorp etype)) etype)
+                  (type (expr-type->type etype))
+                  (lvalue (expr-type->lvalue etype))
+                  ((unless (type-case type :struct))
+                   (error (list :dot-target-not-struct e)))
+                  (tag (type-struct->tag type))
+                  (memtype (struct-member-lookup tag e.name tagenv))
+                  ((when (errorp memtype)) memtype))
+               (make-expr-type :type memtype :lvalue lvalue))
+     :memberp (b* ((etype (check-expr-pure e.target vartab tagenv))
+                   ((when (errorp etype)) etype)
+                   (type (expr-type->type etype))
+                   (type (apconvert-type type))
+                   ((unless (type-case type :pointer))
+                    (error (list :arrow-operator-not-pointer e)))
+                   (type (type-pointer->to type))
+                   ((unless (type-case type :struct))
+                    (error (list :arrow-operator-not-pointer-to-struct e)))
+                   (tag (type-struct->tag type))
+                   (memtype (struct-member-lookup tag e.name tagenv))
+                   ((when (errorp memtype)) memtype))
+                (make-expr-type :type memtype :lvalue t))
      :postinc (error (list :expr-non-pure e))
      :postdec (error (list :expr-non-pure e))
      :preinc (error (list :expr-non-pure e))
