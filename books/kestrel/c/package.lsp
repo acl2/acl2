@@ -22,6 +22,7 @@
                                   assign
                                   boolean
                                   byte
+                                  defstruct
                                   error
                                   member
                                   pi
