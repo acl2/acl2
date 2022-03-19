@@ -3908,7 +3908,7 @@
      @('a-ptr') is a non-null pointer of the appropriate type;
      the type is determined from the type of the formal @('a').
      Along with the binding and the hypotheses,
-     we also generate an alist element @('(a a-ptr)'),
+     we also generate an alist element @('(a . a-ptr)'),
      returned as part of the @('pointer-subst') result,
      that is used to generate the argument list of @(tsee exec-fun),
      by applying the substitution @('pointer-subst') to the formals of @('fn'):
