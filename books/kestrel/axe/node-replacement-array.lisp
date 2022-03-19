@@ -24,6 +24,12 @@
 ;; We can build the node-replacement-array by calling make-into-array on the
 ;; node-replacement-alist produced by make-node-replacement-alist-and-add-to-dag-array.
 
+;; TODO: Consider chains of replacement, e.g., if the array indicates to
+;; replace B with C, and we add a replacement entry to replace A with B, should
+;; we actually add an entry to replace A with C?  That may make it impossible
+;; to later unassume the replacement of B, unless we've already unassumed the
+;; replacement of A...  We could instead address this by a repeated lookup.
+
 ;; See also node-replacement-array2.lisp.
 
 (local (in-theory (disable ;symbolp-of-car-of-car-when-symbol-term-alistp

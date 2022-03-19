@@ -16,6 +16,8 @@
 (include-book "dag-arrays")
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 
+;; TODO: Speed up the known boolean checking (e.g., by using a property list world).
+
 ;;;
 ;;; assume-nodenum-true-in-node-replacement-array
 ;;;
@@ -41,14 +43,14 @@
              (= 1 (len (dargs expr)))  ;optimize?
              (not (consp (darg1 expr))) ;avoid (not <constant>) but that should not happen
              )
-        ;; To assume (not <noden>), we assume <noden> is nil:
+        ;; To assume (not <noden>) is true, we assume <noden> is nil:
         (add-node-replacement-entry-and-maybe-expand (darg1 expr) *nil* 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
-      ;; Assume nodenum is t, but only if it's a call of a known boolean:
+      ;; Assume nodenum is T, but only if it's a call of a known boolean:
       (if (and (consp expr) ;always true?
                (member-eq (ffn-symb expr) known-booleans))
           (add-node-replacement-entry-and-maybe-expand nodenum *t* 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
         ;; TODO: Do something better in this case, perhaps by tracking nodenums known to be non-nil:
-        ;; Or assume that (not <nodenum>) is nil, but that might require adding a node to the dag.
+        ;; Or assume that (not <nodenum>) is nil, but that might require adding the NOT node to the dag.
         (mv node-replacement-array node-replacement-array-num-valid-nodes)))))
 
 (defthm node-replacement-arrayp-of-mv-nth-0-of-assume-nodenum-true-in-node-replacement-array
@@ -85,8 +87,7 @@
   (implies (and (natp nodenum)
                 (natp node-replacement-array-num-valid-nodes)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                )
+                (< nodenum dag-len))
            (natp (mv-nth 1 (assume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
   :hints (("Goal" :in-theory (e/d (assume-nodenum-true-in-node-replacement-array
                                    car-becomes-nth-of-0)
@@ -113,8 +114,7 @@
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
                 (natp node-replacement-array-num-valid-nodes)
-                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                )
+                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))
            (<= (mv-nth 1 (assume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))
                (alen1 'node-replacement-array (mv-nth 0 (assume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)))))
   :rule-classes (:rewrite :linear)
@@ -288,8 +288,6 @@
                (member-eq (ffn-symb expr) known-booleans))
           ;; Clear the entry for nodenum itself:
           (add-node-replacement-entry-and-maybe-expand nodenum nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
-        ;; TODO: Do something better in this case, perhaps by tracking nodenums known to be non-nil:
-        ;; Or assume that (not <nodenum>) is nil, but that might require adding a node to the dag.
         (mv node-replacement-array node-replacement-array-num-valid-nodes)))))
 
 (defthm node-replacement-arrayp-of-mv-nth-0-of-unassume-nodenum-true-in-node-replacement-array
@@ -401,15 +399,17 @@
              (= 1 (len (dargs expr)))  ;optimize?
              (not (consp (darg1 expr))) ;avoid (not <constant>) but that should not happen
              )
-        ;; To unassume (not <noden>) is false, we assumed <noden> is t, if it's a call of a known boolean.  Otherwise, we assumed the whole not is nil (less strong).
+        ;; When we unassumed (not <noden>) is false, we assumed <noden> is t, if it's a call of a known boolean.  Otherwise, we assumed the whole not is nil (less strong).
+        ;; Now we undo whatever was done.
         (let* ((noden (darg1 expr)) ;also done above
                (noden-expr (aref1 'dag-array dag-array noden)))
           (if (and (consp noden-expr)
                    (member-eq (ffn-symb noden-expr) known-booleans))
+              ;; Clear the entry for the argument of NODENUM:
               (add-node-replacement-entry-and-maybe-expand noden nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
-            ;; TODO: Do something better in this case, perhaps by tracking nodenums known to be non-nil:
+            ;; Clear the entry for NODENUM itself:
             (add-node-replacement-entry-and-maybe-expand nodenum nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)))
-      ;; Clear the entry for nodenum:
+      ;; Clear the entry for NODENUM itself:
       (add-node-replacement-entry-and-maybe-expand nodenum nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes))))
 
 (defthm node-replacement-arrayp-of-mv-nth-0-of-unassume-nodenum-false-in-node-replacement-array
