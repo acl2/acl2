@@ -40,6 +40,7 @@
 ;the generated term returns (mv hitp val) or (mv hitp val trace) depending on tracingp
 ;do the fns get tested in reverse order??
 ;the alist should have no duplicates
+;; TODO; Would the generated code be faster if it used CASE instead of an IF nest?  Perhaps not a large effect.
 (defun make-eval-case-for-fns (fn-call-alist current-arity tracingp acc)
 ;;  (declare (xargs :guard (and (symbol-alistp fn-call-alist))))
   (if (endp fn-call-alist)
