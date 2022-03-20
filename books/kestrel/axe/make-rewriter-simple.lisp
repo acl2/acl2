@@ -176,11 +176,11 @@
 
 ;; How we use the node-replacement-array:
 ;; OLD: To replace a tree that is a nodenum
-;; 1. To replace a var (calling lookup-in-node-replacement-array on its nodenum after we add the node to the dag).
-;; 2. To replace a simplified function call (calling lookup-in-node-replacement-array on its nodenum after we add the node to the dag).
+;; 1. To replace a var (calling apply-node-replacement-array on its nodenum after we add the node to the dag).
+;; 2. To replace a simplified function call (calling apply-node-replacement-array on its nodenum after we add the node to the dag).
 ;; Advantages: Lookup is very fast
 ;; Disadvantages: The thing being looked up must already be in the dag.
-;; TODO: Make this an array indexed by nodenum?  But consider how quickly we can add and remove pairs when rewriting individual nodes...
+;; TODO: Consider how quickly we can add and remove pairs in this array to handle contexts when rewriting individual DAG nodes
 
 ;; TODO: Consider whether to look up unsimplified assumptions.
 ;; TODO: Consider whether to simplify the RHSes of assumptions (at start, or when used).
@@ -1459,12 +1459,7 @@
                           (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-variable-alist))
                          ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                          ;; See if the resulting node is known to be equal to something:
-                         (replacement-match (lookup-in-node-replacement-array nodenum node-replacement-array node-replacement-array-num-valid-nodes))
-                         (new-nodenum-or-quotep (if replacement-match
-                                                    ;; the node was replaced with something equal to it, using an assumption:
-                                                    replacement-match
-                                                  ;; not replaced:
-                                                  nodenum)))
+                         (new-nodenum-or-quotep (apply-node-replacement-array nodenum node-replacement-array node-replacement-array-num-valid-nodes)))
                       (mv (erp-nil)
                           new-nodenum-or-quotep
                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -1704,12 +1699,8 @@
                              ))
                            ((when erp) (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                            ;; See if the nodenum returned is equated to anything:
-                           (replacement-match (lookup-in-node-replacement-array nodenum node-replacement-array node-replacement-array-num-valid-nodes))
-                           (new-nodenum-or-quotep (if replacement-match
-                                                      ;; the node was replaced with something equal to it, using an assumption:
-                                                      replacement-match ; not rewritten.  We could rewrite all such items (that replacements can introduce) outside the main clique
-                                                    ;; not replaced:
-                                                    nodenum)))
+                           ;; Result is not rewritten (we could rewrite all such items (that replacements can introduce) outside the main clique)
+                           (new-nodenum-or-quotep (apply-node-replacement-array nodenum node-replacement-array node-replacement-array-num-valid-nodes)))
                         (mv (erp-nil)
                             new-nodenum-or-quotep
                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
