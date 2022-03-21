@@ -15,7 +15,7 @@
 (include-book "arrays")
 (include-book "conditional-expressions")
 (include-book "let-designations")
-(include-book "structures")
+(include-book "defstruct")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

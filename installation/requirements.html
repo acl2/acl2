@@ -156,10 +156,12 @@ sh make.sh --with-sb-thread
   1.2.11 or later), such as building the ACL2+books combined manual,
   you may fail with an error, "Immobile space exhausted".  We have
   avoided this error by building SBCL from source rather than
-  obtaining a binary, using options as follows:</p>
+  obtaining a binary, using options as follows.  (Note: The use of
+  "--with-sb-thread" hasn't generally been necessary, but we have
+  seen the need for it when building on FreeBSD.)</p>
 
 <pre>
-sh make.sh --without-immobile-space --without-immobile-code --without-compact-instance-header
+sh make.sh --without-immobile-space --without-immobile-code --without-compact-instance-header --with-sb-thread
 </pre>
 
 <p>Rather comparable test runs produced a significant speed-up when

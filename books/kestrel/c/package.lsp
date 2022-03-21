@@ -22,7 +22,9 @@
                                   assign
                                   boolean
                                   byte
+                                  defstruct
                                   error
+                                  member
                                   pi
                                   pprint-indent
                                   schar

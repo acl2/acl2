@@ -120,14 +120,14 @@
      The ACL2 character with ASCII code 11 corresponds to vertical tab.
      The ACL2 character @('#\\Page') has ASCII code 12
      and corresponds to form feed."))
-  (or (and (member x (str::explode "ABCDEFGHIJKLMNOPQRSTUVWXYZ")) t)
-      (and (member x (str::explode "abcdefghijklmnopqrstuvwxyz")) t)
-      (and (member x (str::explode "0123456789")) t)
-      (and (member x (str::explode "!\"#%&'()*+,-./:;<=>?[\\]^_{|}~")) t)
-      (and (member x (list #\Space
-                           #\Tab
-                           (code-char 11)
-                           #\Page))
+  (or (and (acl2::member x (str::explode "ABCDEFGHIJKLMNOPQRSTUVWXYZ")) t)
+      (and (acl2::member x (str::explode "abcdefghijklmnopqrstuvwxyz")) t)
+      (and (acl2::member x (str::explode "0123456789")) t)
+      (and (acl2::member x (str::explode "!\"#%&'()*+,-./:;<=>?[\\]^_{|}~")) t)
+      (and (acl2::member x (list #\Space
+                                 #\Tab
+                                 (code-char 11)
+                                 #\Page))
            t))
   :no-function t
   ///
@@ -393,11 +393,11 @@
      The ACL2 character @('#\\Newline') has ASCII code 10
      and corresponds to new line."))
   (or (ascii-basic-source-charp x)
-      (and (member x (list (code-char 0)
-                           (code-char 7)
-                           (code-char 8)
-                           #\Return
-                           #\Newline))
+      (and (acl2::member x (list (code-char 0)
+                                 (code-char 7)
+                                 (code-char 8)
+                                 #\Return
+                                 #\Newline))
            t))
   :no-function t
   ///
