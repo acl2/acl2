@@ -1,4 +1,4 @@
-; An test of the proof helper tool
+; A test of the proof helper tool
 ;
 ; Copyright (C) 2022 Kestrel Institute
 ;
