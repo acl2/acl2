@@ -37,6 +37,8 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
   List<Case> *cl;
 }
 
+%define parse.error verbose
+
 %token TYPEDEF CONST STRUCT ENUM TEMPLATE
 %token RAC
 %token INT UINT INT64 UINT64 BOOL
