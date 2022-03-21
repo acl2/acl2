@@ -36,6 +36,8 @@
 
 ;; TODO: Skip consing tree onto trees-equal-to-tree if we are not memoizing.
 
+;; TODO: Consider making a separate version for when we are not memoizing.
+
 (include-book "rewriter-common")
 (include-book "supporting-nodes") ; for drop-non-supporters-array
 (include-book "make-node-replacement-alist")
@@ -903,7 +905,7 @@
                     (unassume-nodenum-false-in-node-replacement-array simplified-test dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
               ;;this function takes simplified args and does not handle ifs specially (or else things might loop):
               (,simplify-fun-call-and-add-to-dag-name fn (list simplified-test simplified-thenpart elsepart-result)
-                                                      (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
+                                                      (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                       rewriter-rule-alist
                                                       refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
@@ -1046,7 +1048,7 @@
               (if (consp simplified-test)
                   ;; Rewrite either the then-branch or the else-branch, according to whether the test simplified to nil:
                   (,simplify-tree-and-add-to-dag-name (if (unquote simplified-test) (second args) (third args))
-                                                      (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
+                                                      (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                       rewriter-rule-alist
                                                       refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
@@ -1126,7 +1128,7 @@
                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
               ;; Try to apply rules to the call of boolif on simplified args:
               (,simplify-fun-call-and-add-to-dag-name 'boolif (list simplified-test simplified-thenpart simplified-elsepart)
-                                                      (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
+                                                      (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                       rewriter-rule-alist
                                                       refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
@@ -1179,14 +1181,14 @@
                   (if (unquote simplified-test)
                       ;;test rewrote to non-nil:
                       (,simplify-tree-and-add-to-dag-name `(bool-fix$inline ,(second args)) ;the "then" branch
-                                                          (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
+                                                          (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                           rewriter-rule-alist
                                                           refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
                                                           (+ -1 count))
                     ;;test rewrote to nil:
                     (,simplify-tree-and-add-to-dag-name `(bool-fix$inline ,(third args)) ;the "else" branch
-                                                        (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
+                                                        (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                         rewriter-rule-alist
                                                         refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
@@ -1252,7 +1254,7 @@
                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
               ;; Try to apply rules to the call of bvif on simplified args:
               (,simplify-fun-call-and-add-to-dag-name 'bvif (list size-result simplified-test simplified-thenpart elsepart-result)
-                                                      (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
+                                                      (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                       rewriter-rule-alist
                                                       refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
@@ -1379,7 +1381,7 @@
                       (,simplify-tree-and-add-to-dag-name `(bvchop
                                                             ,(first args) ; size arg
                                                             ,(third args)) ; "then" branch
-                                                          (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
+                                                          (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                           rewriter-rule-alist
                                                           refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
@@ -1389,7 +1391,7 @@
                     (,simplify-tree-and-add-to-dag-name `(bvchop
                                                           ,(first args) ; size arg
                                                           ,(fourth args)) ; "else" branch
-                                                        (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
+                                                        (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                         rewriter-rule-alist
                                                         refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
@@ -1575,7 +1577,7 @@
                                          (new-expr (,sublis-var-and-eval-name (pairlis$-fast formals args) body interpreted-function-alist)))
                                     ;;simplify the result of beta-reducing:
                                     (,simplify-tree-and-add-to-dag-name new-expr
-                                                                        (cons tree trees-equal-to-tree) ;we memoize the lambda
+                                                                        (and memoization (cons tree trees-equal-to-tree)) ;we memoize the lambda
                                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                                         rewriter-rule-alist
                                                                         refined-assumption-alist node-replacement-array-num-valid-nodes print
@@ -1615,7 +1617,7 @@
                                     ;; Otherwise, simplify the non-lambda FN applied to the simplified args:
                                     ;; TODO: Perhaps pass in the original expr for use by cons-with-hint:
                                     (,simplify-fun-call-and-add-to-dag-name fn args
-                                                                            (cons tree trees-equal-to-tree) ;the thing we are rewriting is equal to tree
+                                                                            (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting is equal to tree
                                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                                             rewriter-rule-alist
                                                                             refined-assumption-alist node-replacement-array-num-valid-nodes
@@ -1683,8 +1685,9 @@
                         ;; This is a tail call, which allows long chains of rewrites:
                         (,simplify-tree-and-add-to-dag-name rhs-or-nil
                                                             ;;in the common case in which simplifying the args had no effect, the car of trees-equal-to-tree will be the same as (cons fn args), so don't add it twice
-                                                            (cons-if-not-equal-car expr ;could save this and similar conses in the function
-                                                                                   trees-equal-to-tree)
+                                                            (and memoization
+                                                                 (cons-if-not-equal-car expr ;could save this and similar conses in the function
+                                                                                        trees-equal-to-tree))
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                             rewriter-rule-alist
                                                             refined-assumption-alist node-replacement-array-num-valid-nodes print
