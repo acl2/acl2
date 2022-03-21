@@ -12,6 +12,7 @@
 (include-book "centaur/fgl/fgl-object" :dir :system) ;; for syntaxp checks
 (include-book "../svex/lists")
 (include-book "../svex/env-ops")
+(include-book "../svex/override")
 (local (include-book "centaur/bitops/ihsext-basics" :Dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
@@ -242,3 +243,187 @@
        (not (svex-envs-agree vars x y))))
 
 (fgl::remove-fgl-rewrite svex-envs-disagree-witness)
+
+
+;; Use FGL to prove that if pipeline input envs agree except on pipeline
+;; override vars, then FSM input envs agree except on FSM override vars.
+
+(fgl::remove-fgl-rewrite svex-envs-agree-except)
+
+
+
+;; Non-FTY compliant! Just meant for FGL processing of svex-envs-agree-except.
+(define svex-envs-correspond-except ((vars) ;; alist
+                                     (env1 svex-env-p)
+                                     (env2 svex-env-p))
+  :measure (+ (len env1) (len env2))
+  :hooks nil ;; 
+  :guard-debug t
+  (b* (((when (atom env1)) (if (atom env2) t nil))
+       ;; (cond ((atom env2) t)
+       ;;       ((mbt (and (consp (car env2)) (svar-p (caar env2)))) nil)
+       ;;       (t (svex-envs-correspond-except vars env1 (cdr env2))))
+       ((when (atom env2)) nil)
+       ;; (if (mbt (and (consp (car env1)) (svar-p (caar env1))))
+       ;;     nil
+       ;;   (svex-envs-correspond-except vars (cdr env1) env2))
+       ;; ((unless (mbt (and (consp (car env1)) (svar-p (caar env1)))))
+       ;;  (svex-envs-correspond-except vars (cdr env1) env2))
+       ;; ((unless (mbt (and (consp (car env2)) (svar-p (caar env2)))))
+       ;;  (svex-envs-correspond-except vars env1 (cdr env2)))
+       ((cons key1 val1) (car env1))
+       ((cons key2 val2) (car env2))
+       ((unless (and (equal key1 key2)
+                     (or (hons-get key1 vars)
+                         (equal val1 val2))))
+        nil))
+    (svex-envs-correspond-except vars (cdr env1) (cdr env2)))
+  ///
+  (local (defthm svex-env-lookup-when-consp
+           (implies (and (consp env)
+                         (svex-env-p env))
+                    (equal (svex-env-lookup var env)
+                           (if (equal (svar-fix var) (caar env))
+                               (cdar env)
+                             (svex-env-lookup var (cdr env)))))
+           :hints(("Goal" :in-theory (enable svex-env-lookup)))))
+
+  (local (defthm no-duplicatesp-equal-of-cons
+           (equal (no-duplicatesp-equal (cons a b))
+                  (and (not (member-equal a b))
+                       (no-duplicatesp-equal b)))))
+
+  (local (defthm hons-assoc-equal-is-member-alist-keys
+           (iff (hons-assoc-equal k x)
+                (member-equal k (Alist-keys x)))
+           :hints(("Goal" :in-theory (enable alist-keys)))))
+  
+  (local (in-theory (disable (:d svex-envs-correspond-except)
+                             member-equal
+                             no-duplicatesp-equal)))
+  
+  (defthm svex-envs-correspond-except-implies-agree-except
+    (implies (and (svex-envs-correspond-except vars env1 env2)
+                  (svex-env-p env1)
+                  (svex-env-p env2)
+                  (svarlist-p (alist-keys vars)))
+             (svex-envs-agree-except (alist-keys vars) env1 env2))
+    :hints (("goal" :induct (svex-envs-correspond-except vars env1 env2)
+             :expand ((svex-envs-correspond-except vars env1 env2)
+                      (svex-envs-correspond-except vars env1 nil)
+                      (svex-envs-correspond-except vars nil env2)
+                      (svex-envs-correspond-except vars nil nil)))
+            (and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))
+                   :in-theory (enable svex-envs-agree-except-implies)))))
+
+  (local (Defthm svex-env-lookup-when-not-member-keys
+           (implies (and (not (member-equal (svar-fix v) (alist-keys env)))
+                         (svex-env-p env))
+                    (equal (svex-env-lookup v env) (4vec-x)))
+           :hints(("Goal" :in-theory (enable svex-env-lookup alist-keys member-equal)))))
+
+
+  (defthm svex-envs-correspond-except-is-agree-except
+    (implies (and (svex-env-p env1)
+                  (svex-env-p env2)
+                  (svarlist-p (alist-keys vars))
+                  (equal (alist-keys env1)
+                         (alist-keys env2))
+                  (no-duplicatesp-equal (alist-keys env1)))
+             (equal (svex-envs-correspond-except vars env1 env2)
+                    (svex-envs-agree-except (alist-keys vars) env1 env2)))
+    :hints (("goal" :induct (svex-envs-correspond-except vars env1 env2))
+            '(:cases ((svex-envs-agree-except (alist-keys vars) env1 env2)))
+            (and stable-under-simplificationp
+                 '(
+             :expand ((svex-envs-correspond-except vars env1 env2)
+                      (svex-envs-correspond-except vars nil nil)
+                      (alist-keys env1)
+                      (alist-keys env2))))
+            (and stable-under-simplificationp
+                 (let ((lit (assoc-equal 'svex-envs-agree-except clause)))
+                   (if lit
+                       `(:expand (,lit)
+                         :use ((:instance svex-envs-agree-except-implies
+                                (x env1) (y env2) (vars (alist-keys vars))
+                                (var (svex-envs-agree-except-witness
+                                      . ,(cdr lit))))))
+                     `(:use ((:instance svex-envs-agree-except-implies
+                              (x env1) (y env2) (vars (alist-keys vars))
+                              (var (caar env1))))))))
+            )))
+                 
+(local (in-theory (disable acl2::hons-dups-p)))
+
+(local (defthm alist-keys-of-pairlis
+         (equal (alist-keys (pairlis$ x y))
+                (acl2::true-list-fix x))
+         :hints(("Goal" :in-theory (enable alist-keys)))))
+
+(fgl::def-fgl-rewrite svex-envs-agree-except-when-same-shape
+  (implies (and (syntaxp (fgl::fgl-object-case vars :g-concrete))
+                (equal env1-keys (alist-keys env1))
+                (syntaxp (fgl::fgl-object-case env1-keys :g-concrete))
+                (equal env1-keys (alist-keys env2))
+                (svex-env-p env1)
+                (svex-env-p env2)
+                (not (acl2::hons-dups-p env1-keys))
+                (svarlist-p vars))
+           (equal (svex-envs-agree-except vars env1 env2)
+                  (svex-envs-correspond-except
+                   (make-fast-alist (pairlis$ vars nil))
+                   env1 env2))))
+
+
+(fgl::remove-fgl-rewrite svex-envs-correspond-except)
+
+(fgl::def-fgl-rewrite svex-envs-correspond-except-fgl
+  (equal (svex-envs-correspond-except vars env1 env2)
+         (b* ((env1-atom (fgl::check-non-consp env1-atom env1))
+              (env2-atom (fgl::check-non-consp env2-atom env2))
+              ((when (and env1-atom env2-atom))
+               ;; we know they're both atoms.
+               t)
+              (env1-consp (fgl::check-consp env1-consp env1))
+              (env2-consp (fgl::check-consp env2-consp env2))
+              ((unless (and (or env1-atom env1-consp)
+                            (or env2-atom env2-consp)))
+               ;; for one of them, we don't know if it's atom or cons, so give up
+               (fgl::abort-rewrite (svex-envs-correspond-except vars env1 env2)))
+              ;; we know whether each of them are atom/cons and at least one is consp
+              (env1-pair (car env1))
+              (env1-pair-consp (fgl::check-consp env1-pair-consp env1-pair))
+              ((unless env1-pair-consp)
+               ;; (cheap) give up if we don't know whether the first element of env1 is consp
+               ;; -- could skip past it if we know it's not
+               (fgl::abort-rewrite (svex-envs-correspond-except vars env1 env2)))
+              (env2-pair (car env2))
+              (env2-pair-consp (fgl::check-consp env2-pair-consp env2-pair))
+              ((unless env2-pair-consp)
+               ;; (cheap) give up if we don't know whether the first element of env2 is consp
+               ;; -- could skip past it if we know it's not
+               (fgl::abort-rewrite (svex-envs-correspond-except vars env1 env2)))
+
+              (env1-key (car env1-pair))
+              (env2-key (car env2-pair))
+              ((unless (fgl::syntax-bind keys-known (fgl::g-concrete
+                                                     (and (fgl::fgl-object-case env1-key :g-concrete)
+                                                          (fgl::fgl-object-case env2-key :g-concrete)))))
+               ;; give up if the first key of env1 isn't concrete
+               (fgl::abort-rewrite (svex-envs-correspond-except vars env1 env2)))
+              ((unless (equal env1-key env2-key))
+               ;; nil if they aren't equal
+               nil)
+              ((when (hons-get env1-key vars))
+               ;; skip past this one
+               (svex-envs-correspond-except vars (cdr env1) (cdr env2)))
+              (first (equal (cdr env1-pair) (cdr env2-pair)))
+              (rest (svex-envs-correspond-except vars (cdr env1) (cdr env2))))
+           (and first rest)))
+  :hints(("Goal" :in-theory (enable svex-envs-correspond-except
+                                    fgl::check-consp
+                                    fgl::check-non-consp))))
+
+
+
