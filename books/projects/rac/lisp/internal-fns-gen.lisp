@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; January 2022
+;; March 2022
 
 ;; Direct reasoning about complex functions is often unachievable in most
 ;; existing verification tools.  Decomposition is a common technique for
@@ -1032,9 +1032,9 @@
                       loop-var name names body mv-clique nil))
                     (weight (nfix (cadr (assoc-equal name weight-alist))))
                     (measure `(list (acl2-count ,loop-var) ,weight))
-                    (init (cadr (assoc-equal name init-alist)))
-                    (init (if init
-                              init
+                    (init-pair (assoc-equal name init-alist))
+                    (init (if init-pair
+                              (cadr init-pair)
                             (list (strings-to-symbol pkg-name
                                                      (symbol-name name)
                                                      "-1")))))
@@ -1061,9 +1061,9 @@
                         loop-var name names body nil nil))
                       (weight (nfix (cadr (assoc-equal name weight-alist))))
                       (measure `(list (acl2-count ,loop-var) ,weight))
-                      (init (cadr (assoc-equal name init-alist)))
-                      (init (if init
-                              init
+                      (init-pair (assoc-equal name init-alist))
+                      (init (if init-pair
+                              (cadr init-pair)
                               (list (strings-to-symbol pkg-name
                                                        (symbol-name name)
                                                        "-1")))))
@@ -1087,6 +1087,7 @@
                          &key
                          (optimized 't)
                          (loop-var ''i)
+                         (bogus-mutual-recursion 'nil)
                          (base-cond 'nil)
                          (init-alist 'nil)
                          (sub-pairs 'nil)
@@ -1229,8 +1230,9 @@
       (encapsulate
         ()
 
-        (set-ignore-ok t)              ;; will be treated as LOCAL
-        (set-well-founded-relation l<) ;; will be treated as LOCAL
+        (set-ignore-ok t)
+        (set-well-founded-relation l<)
+        (set-bogus-mutual-recursion-ok ,bogus-mutual-recursion)
         ,mutually-recur-fns)
 
       (deftheory ,all-fns ',all-fn-names)
