@@ -51,6 +51,28 @@
   :elementp-of-nil nil
   :pred member-listp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection member-list->name-list (x)
+  :guard (member-listp x)
+  :returns (names ident-listp)
+  :short "Lift @(tsee member->name) to lists."
+  (member->name x)
+  ///
+  (fty::deffixequiv member-list->name-list
+    :args ((x member-listp))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection member-list->value-list (x)
+  :guard (member-listp x)
+  :returns (values value-listp)
+  :short "Lift @(tsee member->value) to lists."
+  (member->value x)
+  ///
+  (fty::deffixequiv member-list->value-list
+    :args ((x member-listp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defresult member-list "lists of structure members")
