@@ -26,6 +26,7 @@
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
+(include-book "kestrel/std/system/add-suffix-to-fn-lst" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/measure-plus" :dir :system)
@@ -3894,7 +3895,7 @@
      @(tsee exec-fun) takes pointers to those arrays.
      So we introduce variables for the pointers,
      named after the formals of @('fn') that are arrays:
-     we add \"-PTR\" to the formals of @('fn'),
+     we add @('-PTR') to the formals of @('fn'),
      which should not cause name conflicts because
      the names of the formals must be portable C identifiers.
      For each array formal @('a') of @('fn'),
@@ -4074,7 +4075,7 @@
      yields an optional result (absent if the function is @('void'))
      and a computation state obtained by modifying
      one or more arrays in the computation state.
-     These are the arrays affected by the loop,
+     These are the arrays affected by the C function,
      which the correctness theorem binds to the results of
      the ACL2 function that represents the C function.
      The modified computation state is expressed as
@@ -4083,22 +4084,27 @@
    (xdoc::p
     "The parameter @('mod-arrs') passed to this code
      consists of the formals of @('fn') that represent arrays
-     affected by the body of @('fn').
+     affected by the body of the ACL2 function that represents the C function.
      The parameter @('pointer-subst') is
      the result of @(tsee atc-gen-outer-bindings-and-hyps)
-     that maps array formals of @('fn')
+     that maps array formals of the ACL2 function
      to the corresponding pointer variables used by the correctness theorems.
      Thus, we go through @('mod-arrs'),
      looking up the corresponding pointer variables in @('pointer-subst'),
      and we construct each nested @(tsee write-array) call,
-     which needs both a pointer and an array.
-     Note that, in the correctness theorem,
-     the array variables are bound to
-     the possibly modified arrays returned by @('fn')."))
+     which needs both a pointer and an array.")
+   (xdoc::p
+    "Note that, in the correctness theorem,
+     the new array variables are bound to
+     the possibly modified arrays returned by the ACL2 function:
+     these new array variables are obtained by adding @('-NEW')
+     to the corresponding formals of the ACL2 function;
+     these new names should not cause any conflicts,
+     because the names of the formals must be portable C identifiers."))
   (cond ((endp mod-arrs) compst-var)
         (t `(write-array (pointer->address
                           ,(cdr (assoc-eq (car mod-arrs) pointer-subst)))
-                         ,(car mod-arrs)
+                         ,(add-suffix-to-fn (car mod-arrs) "-NEW")
                          ,(atc-gen-cfun-final-compustate (cdr mod-arrs)
                                                          pointer-subst
                                                          compst-var)))))
@@ -4143,9 +4149,15 @@
      an optional C result and zero or more modified arrays.
      If it returns a C result (i.e. if the C function is not @('void')),
      we bind a result variable to it;
-     this is @('nil') if the C function is @('void').
+     the value is @('nil') if the C function is @('void').
      We also bind the formals that are arrays
-     to the (other or only) results of @('fn') (if any).")
+     to the (other or only) results of @('fn') (if any).
+     We actually use new variables for the latter,
+     for greater clarity in the theorem formulation:
+     the new variables are obtained by adding @('-NEW')
+     to the corresponding array formals of @('fn');
+     these new names should not cause any conflicts,
+     because the names of the formals must be portable C identifiers.")
    (xdoc::p
     "The guard of @('fn') is used as hypothesis,
      along with the fact that @('compst') is a computation state.")
@@ -4258,10 +4270,11 @@
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (exec-fun-args (fsublis-var-lst pointer-subst formals))
+       (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (fn-results (append (if (type-case type :void)
                                nil
                              (list result-var))
-                           affect))
+                           affect-new))
        (fn-binder (if (endp (cdr fn-results))
                       (car fn-results)
                     `(mv ,@fn-results)))
@@ -5179,18 +5192,26 @@
      in the computation state.
      The modified computation state is expressed as
      a nest of @(tsee write-var) and @(tsee write-array) calls.
-     This ACL2 code here generates that nest."))
+     This ACL2 code here generates that nest.")
+   (xdoc::p
+    "Note that, in the correctness theorem,
+     the new array variables are bound to
+     the possibly modified arrays returned by the ACL2 function:
+     these new array variables are obtained by adding @('-NEW')
+     to the corresponding formals of the ACL2 function;
+     these new names should not cause any conflicts,
+     because the names of the formals must be portable C identifiers."))
   (b* (((when (endp mod-vars)) compst-var)
        (mod-var (car mod-vars))
        (ptr (cdr (assoc-eq mod-var pointer-subst))))
     (if ptr
         `(write-array (pointer->address ,ptr)
-                      ,mod-var
+                      ,(add-suffix-to-fn mod-var "-NEW")
                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
                                                       pointer-subst
                                                       compst-var))
       `(write-var (ident ,(symbol-name (car mod-vars)))
-                  ,(car mod-vars)
+                  ,(add-suffix-to-fn (car mod-vars) "-NEW")
                   ,(atc-gen-loop-final-compustate (cdr mod-vars)
                                                   pointer-subst
                                                   compst-var)))))
@@ -5247,9 +5268,10 @@
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)
                    ,(untranslate test-term nil wrld)))
-       (affect-binder (if (endp (cdr affect))
-                          (car affect)
-                        `(mv ,@affect)))
+       (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
+       (affect-binder (if (endp (cdr affect-new))
+                          (car affect-new)
+                        `(mv ,@affect-new)))
        (final-compst (atc-gen-loop-final-compustate affect
                                                     pointer-subst
                                                     compst-var))
@@ -5388,9 +5410,10 @@
                    ,@pointer-hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
-       (affect-binder (if (endp (cdr affect))
-                          (car affect)
-                        `(mv ,@affect)))
+       (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
+       (affect-binder (if (endp (cdr affect-new))
+                          (car affect-new)
+                        `(mv ,@affect-new)))
        (final-compst (atc-gen-loop-final-compustate affect
                                                     pointer-subst
                                                     compst-var))
