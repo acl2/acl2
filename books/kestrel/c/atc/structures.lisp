@@ -37,7 +37,7 @@
   (xdoc::topstring
    (xdoc::p
     "A member consists of a name and a value."))
-  ((member ident)
+  ((name ident)
    (value value))
   :tag :member
   :pred memberp)
@@ -49,7 +49,11 @@
   :elt-type member
   :true-listp t
   :elementp-of-nil nil
-  :pred member-lisp)
+  :pred member-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult member-list "lists of structure members")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,3 +69,79 @@
    (members member-list))
   :tag :struct
   :pred structp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult struct "structures")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define struct-read-member ((struct structp) (name identp))
+  :returns (val value-resultp)
+  :short "Read a member of a structure."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We look up the members in order;
+     given that the members have distinct names (see @(tsee struct),
+     the search order is immaterial."))
+  (struct-read-member-aux (struct->members struct) name)
+  :hooks (:fix)
+
+  :prepwork
+  ((define struct-read-member-aux ((members member-listp) (name identp))
+     :returns (val value-resultp)
+     :parents nil
+     (b* (((when (endp members))
+           (error (list :member-not-found (ident-fix name))))
+          ((member member) (car members))
+          ((when (equal member.name (ident-fix name)))
+           member.value))
+       (struct-read-member-aux (cdr members) name))
+     :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define struct-write-member ((struct structp) (name identp) (val valuep))
+  :returns (new-struct struct-resultp)
+  :short "Write a member of a structure."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We look up the members in order;
+     given that the members have distinct names (see @(tsee struct),
+     the search order is immaterial.
+     The new value must have the same type as the old value."))
+  (b* ((new-members (struct-write-member-aux (struct->members struct) name val))
+       ((when (errorp new-members)) new-members))
+    (change-struct struct :members new-members))
+  :hooks (:fix)
+
+  :prepwork
+  ((define struct-write-member-aux ((members member-listp)
+                                    (name identp)
+                                    (val valuep))
+     :returns (new-members
+               member-list-resultp
+               :hints
+               (("Goal"
+                 :in-theory
+                 (enable
+                  member-listp-when-member-list-resultp-and-not-errorp))))
+     :parents nil
+     (b* (((when (endp members))
+           (error (list :member-not-found (ident-fix name))))
+          ((member member) (car members))
+          ((when (equal member.name (ident-fix name)))
+           (if (equal (type-of-value member.value)
+                      (type-of-value val))
+               (cons (make-member :name name :value val)
+                     (member-list-fix (cdr members)))
+             (error (list :mistype-member (ident-fix name)
+                          :old-value member.value
+                          :new-value (value-fix val)))))
+          (new-cdr-members (struct-write-member-aux (cdr members) name val))
+          ((when (errorp new-cdr-members)) new-cdr-members))
+       (cons (member-fix (car members))
+             new-cdr-members))
+     :hooks (:fix))))
