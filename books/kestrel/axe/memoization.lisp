@@ -175,7 +175,7 @@
 ;(defconst *fns-not-to-memoize* '(step-state-with-pc-and-call-stack-height get-field))
 
 ;;;
-;;; memo-alist
+;;; memo-alistp
 ;;;
 
 (defun memo-alistp (alist)

@@ -366,3 +366,14 @@
                      :some (type-of-value val?.val)
                      :none (type-void))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type-list-of-value-list (x)
+  :guard (value-listp x)
+  :returns (types type-listp)
+  :short "Lift @(tsee type-of-value) to lists."
+  (type-of-value x)
+  ///
+  (fty::deffixequiv type-list-of-value-list
+    :args ((x value-listp))))

@@ -1328,7 +1328,7 @@
      and the indexed element is returned as result."))
   (b* ((arr (value-result-fix arr))
        ((when (errorp arr)) arr)
-       ((unless (pointerp arr)) (error (list :mistype-array :array
+       ((unless (pointerp arr)) (error (list :mistype-arrsub
                                              :required :pointer
                                              :supplied (type-of-value arr))))
        ((when (pointer-nullp arr)) (error (list :null-pointer)))
@@ -1403,6 +1403,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-memberp ((str value-resultp) (mem identp) (compst compustatep))
+  :returns (result value-resultp)
+  :short "Execute a structure pointer member expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for the @('->') operator.
+     The operand must be a non-null pointer to a structure
+     of type consistent with the structure.
+     The named member must be in the structure.
+     The value associated to the member is returned."))
+  (b* ((str (value-result-fix str))
+       ((when (errorp str)) str)
+       ((unless (pointerp str)) (error (list :mistype-memberp
+                                             :required :pointer
+                                             :supplied (type-of-value str))))
+       ((when (pointer-nullp str)) (error (list :null-pointer)))
+       (addr (pointer->address str))
+       (reftype (pointer->reftype str))
+       (struct (read-struct addr compst))
+       ((when (errorp struct))
+        (error (list :struct-not-found str (compustate-fix compst))))
+       ((unless (equal reftype
+                       (type-struct (struct->tag struct))))
+        (error (list :mistype-struct-read
+                     :pointer reftype
+                     :array (type-struct (struct->tag struct))))))
+    (struct-read-member struct mem))
+  :guard-hints
+  (("Goal" :in-theory (enable structp-when-struct-resultp-and-not-errorp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-expr-pure ((e exprp) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute a pure expression."
@@ -1436,7 +1470,9 @@
                           compst)
      :call (error (list :non-pure-expr e))
      :member (error (list :not-supported-yet e))
-     :memberp (error (list :not-supported-yet e))
+     :memberp (exec-memberp (exec-expr-pure e.target compst)
+                            e.name
+                            compst)
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
      :preinc (error (list :non-pure-expr e))
@@ -1629,8 +1665,11 @@
      (xdoc::ul
       (xdoc::li
        "A left-hand side consisting of
-        either a variable
-        or an array subscripting expression where the array is a variable.")
+        either a variable,
+        or an array subscripting expression
+        where the array is a variable,
+        or a structure pointer member expression
+        where the target is a variable.")
       (xdoc::li
        "A right-hand side consisting of a function call or a pure expression."))
      (xdoc::p
@@ -1668,7 +1707,7 @@
               (ptr (read-var var compst))
               ((when (errorp ptr)) ptr)
               ((unless (pointerp ptr))
-               (error (list :mistype-array :array
+               (error (list :mistype-array
                             :required :pointer
                             :supplied (type-of-value ptr))))
               ((when (pointer-nullp ptr)) (error (list :null-pointer)))
@@ -1755,6 +1794,31 @@
                                  (sllong-array-write array index val)
                                  compst)))
                  (t (error :impossible)))))
+        (:memberp
+         (b* ((str (expr-memberp->target left))
+              (mem (expr-memberp->name left))
+              ((unless (expr-case str :ident))
+               (error (list :expr-asg-memberp-not-var left)))
+              (var (expr-ident->get str))
+              (ptr (read-var var compst))
+              ((when (errorp ptr)) ptr)
+              ((unless (pointerp ptr))
+               (error (list :mistype-struct
+                            :required :pointer
+                            :supplied (type-of-value ptr))))
+              ((when (pointer-nullp ptr)) (error (list :null-pointer)))
+              (addr (pointer->address ptr))
+              (reftype (pointer->reftype ptr))
+              (struct (read-struct addr compst))
+              ((when (errorp struct)) struct)
+              ((unless (equal reftype
+                              (type-struct (struct->tag struct))))
+               (error (list :mistype-struct-read
+                            :pointer reftype
+                            :array (type-struct (struct->tag struct)))))
+              (new-struct (struct-write-member struct mem val))
+              ((when (errorp new-struct)) new-struct))
+           (write-struct addr new-struct compst)))
         (t (error (list :expr-asg-left-not-var-or-array-var-subscript left)))))
     :measure (nfix limit))
 
