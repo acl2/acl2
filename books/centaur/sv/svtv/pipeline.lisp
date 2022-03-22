@@ -273,27 +273,9 @@
 
          
 
-(define make-fast-alistlist (x)
-  :returns (new-x (equal new-x x))
-  (if (atom x)
-      x
-    (cons-with-hint
-     (make-fast-alist (car x))
-     (make-fast-alistlist (cdr x))
-     x)))
 
-(define fast-alistlist-clean-aux (x)
-  (if (atom x)
-      nil
-    (let ((ans1 (fast-alist-clean (car x))))
-      (declare (ignore ans1))
-      (fast-alistlist-clean-aux (cdr x)))))
 
-(define fast-alistlist-clean (x)
-  (mbe :logic x
-       :exec (let ((ans1 (fast-alistlist-clean-aux x)))
-               (declare (ignore ans1))
-               x)))
+
   
 
 (define base-fsm-run-compile ((ins svex-alistlist-p)
@@ -307,7 +289,7 @@
   (b* (((base-fsm x))
        ((acl2::with-fast x.nextstate x.values prev-st))
        (composedata (make-svtv-composedata :nextstates x.nextstate
-                                           :input-substs (make-fast-alistlist ins)
+                                           :input-substs (make-fast-alists ins)
                                            :initst prev-st
                                            :simp simp))
        (ans (base-fsm-run-compile-phases 0 signals x.values composedata)))

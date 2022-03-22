@@ -96,7 +96,7 @@
    (b* ((fsm (svtv-data->cycle-fsm svtv-data))
         ((pipeline-setup setup) (svtv-data->pipeline-setup svtv-data))
         (outvars (svtv-probealist-outvars setup.probes))
-        (outs (make-fast-alistlist (svtv-fsm-run-compile
+        (outs (make-fast-alists (svtv-fsm-run-compile
                                     setup.inputs setup.overrides setup.initst
                                     (make-svtv-fsm :base-fsm fsm
                                                    :namemap (svtv-data->namemap svtv-data))

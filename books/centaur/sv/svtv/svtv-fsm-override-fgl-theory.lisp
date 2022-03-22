@@ -12,7 +12,7 @@
 (include-book "centaur/fgl/fgl-object" :dir :system) ;; for syntaxp checks
 (include-book "../svex/lists")
 (include-book "../svex/env-ops")
-(include-book "../svex/override")
+(include-book "svtv-fsm-override")
 (local (include-book "centaur/bitops/ihsext-basics" :Dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
@@ -361,13 +361,26 @@
                 (acl2::true-list-fix x))
          :hints(("Goal" :in-theory (enable alist-keys)))))
 
+
+(define svex-env-p-fgl-enabled (x)
+  (if (atom x)
+      (eq x nil)
+    (and (consp (car x))
+         (svar-p (caar x))
+         (4vec-p (cdar x))
+         (svex-env-p-fgl-enabled (cdr x))))
+  ///
+  (defthm svex-env-p-fgl-enabled-elim
+    (Equal (svex-env-p-fgl-enabled x)
+           (svex-env-p x))))
+
 (fgl::def-fgl-rewrite svex-envs-agree-except-when-same-shape
   (implies (and (syntaxp (fgl::fgl-object-case vars :g-concrete))
                 (equal env1-keys (alist-keys env1))
                 (syntaxp (fgl::fgl-object-case env1-keys :g-concrete))
                 (equal env1-keys (alist-keys env2))
-                (svex-env-p env1)
-                (svex-env-p env2)
+                (svex-env-p-fgl-enabled env1)
+                (svex-env-p-fgl-enabled env2)
                 (not (acl2::hons-dups-p env1-keys))
                 (svarlist-p vars))
            (equal (svex-envs-agree-except vars env1 env2)
@@ -427,3 +440,93 @@
 
 
 
+(table fgl::magitastic-ev-definitions 'svex-envs-agree-except
+       '((vars env1 env2)
+         (SVEX-ENVS-AGREE
+          (HONS-SET-DIFF (BINARY-APPEND (ALIST-KEYS (SVEX-ENV-FIX$INLINE ENV1))
+                                        (ALIST-KEYS (SVEX-ENV-FIX$INLINE ENV2)))
+                         (SVARLIST-FIX$INLINE VARS))
+          ENV1 ENV2)))
+
+
+(defsection no-1s-lookup
+  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+  (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+
+  (define no-1s-fix-lower ((upper integerp)
+                           (lower integerp))
+    (logandc1 upper lower)
+    ///
+    (fgl::remove-fgl-rewrite no-1s-fix-lower)
+    (fgl::def-fgl-rewrite intcar-of-no-1s-fix-lower
+      (equal (fgl::intcar (no-1s-fix-lower upper lower))
+             (and (not (fgl::intcar upper)) (fgl::intcar lower) t)))
+
+    (fgl::def-fgl-rewrite intcdr-of-no-1s-fix-lower
+      (equal (fgl::intcdr (no-1s-fix-lower upper lower))
+             (no-1s-fix-lower (fgl::intcdr upper) (fgl::intcdr lower)))))
+
+  ;; (define 4vec-no-1s->lower ((x 4vec-p))
+  ;;   :enabled t
+  ;;   (4vec->lower x)
+  ;;   ///
+  ;;   (fgl::remove-fgl-rewrite 4vec-no-1s->lower)
+
+  ;;   (fgl::def-fgl-rewrite 4vec-no-1s->lower-of-4vec
+  ;;     (equal (4vec-no-1s->lower (4vec upper lower))
+  ;;            (ifix lower))))
+
+  (define 4vec-no-1s-fix ((x 4vec-p))
+    :returns (new-x 4vec-p)
+    :prepwork ((local (in-theory (enable no-1s-fix-lower))))
+    (b* (((4vec x)))
+      (4vec x.upper (no-1s-fix-lower x.upper x.lower)))
+    ///
+    (local (in-theory (enable 4vec-no-1s-p)))
+    (defret 4vec-no-1s-p-of-<fn>
+      (4vec-no-1s-p new-x))
+
+    (defret <fn>-when-4vec-no-1s-p
+      (implies (4vec-no-1s-p x)
+               (equal new-x (4vec-fix x)))
+      :hints ((acl2::logbitp-reasoning))))
+
+  (define svex-env-no-1s-lookup ((v svar-p) (x svex-env-p))
+    :enabled t
+    (svex-env-lookup v x)
+    ///
+    (fgl::remove-fgl-rewrite svex-env-no-1s-lookup))
+  
+  (defthmd svex-env-lookup-when-svex-env-no-1s-p
+    (implies (and (svex-env-keys-no-1s-p vars x)
+                  (member-equal (svar-fix v) (svarlist-fix vars)))
+             (equal (svex-env-lookup v x)
+                    (4vec-no-1s-fix (svex-env-no-1s-lookup v x)))))
+
+
+  (fgl::def-fgl-rewrite svex-env-keys-no-1s-p-expand
+    (implies (syntaxp (and (fgl::fgl-object-case vars :g-concrete)
+                           (fgl::fgl-object-case x
+                             :g-concrete t
+                             :g-cons t
+                             :g-map t
+                             :otherwise nil)))
+             (equal (svex-env-keys-no-1s-p vars x)
+                    (if (atom vars)
+                        t
+                      (and (4vec-no-1s-p (svex-env-lookup (car vars) x))
+                           (svex-env-keys-no-1s-p (cdr vars) x)))))
+    :hints(("Goal" :in-theory (enable svex-env-keys-no-1s-p))))
+
+  (fgl::def-fgl-rewrite svex-envlist-keys-no-1s*-p-expand
+    (implies (syntaxp (fgl::fgl-object-case vars :g-concrete))
+             (equal (svex-envlist-keys-no-1s*-p vars x)
+                    (if (atom vars)
+                        t
+                      (and (svex-env-keys-no-1s-p (car vars) (car x))
+                           (svex-envlist-keys-no-1s*-p (cdr vars) (cdr x))))))
+    :hints(("Goal" :in-theory (enable svex-envlist-keys-no-1s*-p))))
+
+  (fgl::remove-fgl-rewrite svex-env-keys-no-1s-p)
+
+  (fgl::add-fgl-rewrite svex-env-lookup-of-svex-env-fix-env))

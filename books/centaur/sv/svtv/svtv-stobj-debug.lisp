@@ -662,7 +662,7 @@
        (renamed-values (svtv-name-lhs-map-compose namemap fsm.values))
        ((with-fast renamed-values))
        (evaldata (make-svtv-evaldata :nextstate fsm.nextstate
-                                     :inputs (make-fast-alistlist ins)
+                                     :inputs (make-fast-alists ins)
                                      :initst initst))
        (res
         (svtv-probealist-eval probes renamed-values evaldata)))

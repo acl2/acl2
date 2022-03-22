@@ -1456,7 +1456,35 @@
                   (svex-envs-agree-except vars y z))
              (svex-envs-agree-except vars x z))
     :hints (("goal" :expand ((svex-envs-agree-except vars x z))
-             :in-theory (enable svex-envs-agree-except-implies)))))
+             :in-theory (enable svex-envs-agree-except-implies))))
+
+
+  (defthm-svex-eval-flag
+    (defthmd svex-eval-when-agree-except-non-intersecting
+      (implies (and (svex-envs-agree-except vars env1 env2)
+                    (not (intersectp-equal (svarlist-fix vars) (svex-vars x))))
+               (equal (svex-eval x env1)
+                      (svex-eval x env2)))
+      :hints ('(:expand ((svex-vars x)
+                         (:free (env) (svex-eval x env)))
+                :in-theory (enable svex-envs-agree-except-implies)))
+      :flag expr)
+    (defthmd svexlist-eval-when-agree-except-non-intersecting
+      (implies (and (svex-envs-agree-except vars env1 env2)
+                    (not (intersectp-equal (svarlist-fix vars) (svexlist-vars x))))
+               (equal (svexlist-eval x env1)
+                      (svexlist-eval x env2)))
+      :hints ('(:expand ((svexlist-vars x)
+                         (:free (env) (svexlist-eval x env1)))))
+      :flag list))
+
+  (defthmd svex-alist-eval-when-agree-except-non-intersecting
+    (implies (and (svex-envs-agree-except vars env1 env2)
+                  (not (intersectp-equal (svarlist-fix vars) (svex-alist-vars x))))
+             (equal (svex-alist-eval x env1)
+                    (svex-alist-eval x env2)))
+    :hints(("Goal" :in-theory (enable svex-alist-eval svex-alist-vars
+                                      svex-eval-when-agree-except-non-intersecting)))))
 
 
 

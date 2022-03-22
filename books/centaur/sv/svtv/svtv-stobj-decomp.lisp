@@ -627,11 +627,6 @@
            (equal (no-duplicatesp-equal x)
                   (not (acl2::hons-dups-p x)))))
 
-(defthmd base-fsm->nextstate-of-svtv-fsm->renamed-fsm
-  (equal (base-fsm->nextstate (svtv-fsm->renamed-fsm svtv-fsm))
-         (base-fsm->nextstate (svtv-fsm->base-fsm svtv-fsm)))
-  :hints(("Goal" :in-theory (enable svtv-fsm->renamed-fsm))))
-
 
 (add-to-ruleset! svtv-env-autoins-in-terms-of-svex-env-extract nil)
 (add-to-ruleset! svtv-pipeline-thms nil)
