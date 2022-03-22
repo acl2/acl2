@@ -22,6 +22,7 @@
    (implies (pos-listp x)
             (nat-listp x))))
 
+;;succeeds:
 (help-with
  (defthm nat-listp-when-pos-listp
    (implies (pos-listp x)
