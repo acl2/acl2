@@ -74,6 +74,7 @@
     (append (first xs) (append-all (rest xs)))))
 
 ;dup?
+;; Looks up all the KEYS in the ALIST, returning a list of the results (or nils, for absent keys).
 (defun lookup-all (keys alist)
   (declare (xargs :guard (and (symbol-listp keys)
                               (alistp alist))))
@@ -82,6 +83,7 @@
     (cons (cdr (assoc-eq (first keys) alist))
           (lookup-all (rest keys) alist))))
 
+;; Checks whether all the KEYS are bound in the ALIST
 (defun all-keys-boundp (keys alist)
   (if (endp keys)
       t
@@ -219,7 +221,6 @@
                  (rationalp x))
             (<= (floor x 1) 1000))))
 
-
 (defund open-problem-listp (probs)
   (declare (xargs :guard t))
   (if (atom probs)
@@ -252,13 +253,12 @@
   :hints (("Goal" :in-theory (enable open-problem-listp))))
 
 (std::defaggregate pending-problem
-                   ((name problem-namep) ; name for the formula being to be prove (not the problem = formula + technique)
-                    (formula pseudo-termp) ; or could store untranslated terms, or clauses
-                    (subproblem-names problem-name-listp)
-                    (main-events t) ; a list of events to be submitted after the proofs of the named subproblems, todo: strengthen guard?
-                    )
-                   :pred pending-problemp
-                   )
+  ((name problem-namep) ; name for the formula being to be prove (not the problem = formula + technique)
+   (formula pseudo-termp) ; or could store untranslated terms, or clauses
+   (subproblem-names problem-name-listp)
+   (main-events t) ; a list of events to be submitted after the proofs of the named subproblems, todo: strengthen guard?
+   )
+  :pred pending-problemp)
 
 (defund pending-problem-listp (probs)
   (declare (xargs :guard t))
@@ -269,16 +269,15 @@
 
 ;; A problem that we've not yet analyzed to determine which techniques may apply.
 (std::defaggregate raw-problem
-                   ((name problem-namep) ; name for the formula being to be prove (not the problem = formula + technique)
-                    (formula pseudo-termp) ; or could store untranslated terms, or clauses
-                    (benefit benefitp) ; benefit of solving this problem, from 0 to 1000 (with 1000 being as good as proving the top-level goal), todo: track benefits on behalf of each parent?
-                    (parents problem-name-listp)
-                    ;; (chance chancep)   ; estimated chance of success for this goal and technique
-                    ;; todo: estimated cost of applying this technique to prove this goal (including proving and subgoals)
-                    (old-techniques technique-listp) ; techniques to avoid trying again
-                    )
-                   :pred raw-problemp
-                   )
+  ((name problem-namep) ; name for the formula being to be prove (not the problem = formula + technique)
+   (formula pseudo-termp) ; or could store untranslated terms, or clauses
+   (benefit benefitp) ; benefit of solving this problem, from 0 to 1000 (with 1000 being as good as proving the top-level goal), todo: track benefits on behalf of each parent?
+   (parents problem-name-listp)
+   ;; (chance chancep)   ; estimated chance of success for this goal and technique
+   ;; todo: estimated cost of applying this technique to prove this goal (including proving and subgoals)
+   (old-techniques technique-listp) ; techniques to avoid trying again
+   )
+  :pred raw-problemp)
 
 (defund raw-problem-listp (probs)
   (declare (xargs :guard t))
@@ -311,7 +310,7 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable name-mapp))))
 
-(defthm symbol-listp-of-strip-cars
+(defthm symbol-listp-of-strip-cars-when-name-mapp
   (implies (name-mapp name-map)
            (symbol-listp (strip-cars name-map)))
   :hints (("Goal" :in-theory (enable name-mapp))))
