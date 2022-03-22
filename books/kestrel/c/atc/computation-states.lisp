@@ -783,7 +783,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-struct ((addr addressp) (compst compustatep))
-  :returns (struct-resultp)
+  :returns (struct struct-resultp)
   :short "Read a structure in the computation state."
   :long
   (xdoc::topstring
