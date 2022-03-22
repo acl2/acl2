@@ -32,6 +32,7 @@
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+(local (include-book "kestrel/alists-light/rassoc-equal" :dir :system))
 
 ;; TODO: Add more proof techniques!
 ;; TODO: After a successful proof, try to combine steps/hints
@@ -64,12 +65,6 @@
       (if (fn-definedp fn wrld)
           (cons fn (filter-defined-fns (rest fns) wrld))
         (filter-defined-fns (rest fns) wrld)))))
-
-(defthm consp-of-rassoc-equal
-  (implies (alistp alist)
-           (iff (consp (rassoc-equal x alist))
-                (rassoc-equal x alist)))
-  :hints (("Goal" :in-theory (enable rassoc-equal))))
 
 ;dup?
 (defun append-all (xs)
@@ -331,7 +326,7 @@
 (defthm problem-namep-of-car-of-rassoc-equal
   (implies (name-mapp name-map)
            (problem-namep (car (rassoc-equal formula name-map))))
-  :hints (("Goal" :in-theory (enable name-mapp))))
+  :hints (("Goal" :in-theory (enable name-mapp rassoc-equal))))
 
 ;; clause is: ((not <hyp1>) ... (not <hypn>) conc)
 (defun clause-to-implication (clause)
