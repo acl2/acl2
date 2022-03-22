@@ -12,7 +12,7 @@
 (in-package "C")
 
 (include-book "arrays")
-(include-book "values")
+(include-book "structures")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 
@@ -198,6 +198,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defflatsum object
+  :short "Fixtype of objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the objects in the heap (see @(tsee heap));
+     so it is a more restricted notion of object than in [C].
+     An object is either an array or a structure here."))
+  (:array array)
+  (:struct struct)
+  :pred objectp
+
+  :prepwork
+
+  ((defrulel car-when-arrayp
+     (implies (arrayp x)
+              (not (equal (car x) :struct)))
+     :rule-classes :tau-system
+     :enable (arrayp
+              uchar-arrayp
+              schar-arrayp
+              ushort-arrayp
+              sshort-arrayp
+              uint-arrayp
+              sint-arrayp
+              ulong-arrayp
+              slong-arrayp
+              ullong-arrayp
+              sllong-arrayp))
+
+   (defrulel car-when-structp
+     (implies (structp x)
+              (equal (car x) :struct))
+     :rule-classes :tau-system
+     :enable structp)
+
+   (defrulel not-structp-when-arrayp
+     (implies (arrayp x)
+              (not (structp x)))
+     :cases ((equal (car x) :struct)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defomap heap
   :short "Fixtype of heaps."
   :long
@@ -209,10 +252,10 @@
      However, `heap' is sufficiently commonly used
      that it seems adequate to use it here.")
    (xdoc::p
-    "For now we model the heap just as a finite map from addresses to arrays.
-     That is, we only really consider arrays initially."))
+    "For now we model the heap just as a finite map from addresses to objects,
+     which are arrays and structures (see @(tsee object))."))
   :key-type address
-  :val-type array
+  :val-type object
   :pred heapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -674,11 +717,13 @@
      can be used to read individual array elements."))
   (b* ((addr (address-fix addr))
        (heap (compustate->heap compst))
-       (addr+array (omap::in addr heap))
-       ((unless (consp addr+array))
+       (addr+obj (omap::in addr heap))
+       ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
-       (array (cdr addr+array)))
-    array)
+       (obj (cdr addr+obj))
+       ((unless (arrayp obj))
+        (error (list :address-not-array addr obj))))
+    obj)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -698,19 +743,21 @@
      can be used to write individual array elements."))
   (b* ((addr (address-fix addr))
        (heap (compustate->heap compst))
-       (addr+array (omap::in addr heap))
-       ((unless (consp addr+array))
+       (addr+obj (omap::in addr heap))
+       ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
-       (old-array (cdr addr+array))
+       (obj (cdr addr+obj))
+       ((unless (arrayp obj))
+        (error (list :address-not-array addr obj)))
        ((unless (equal (type-of-array-element array)
-                       (type-of-array-element old-array)))
+                       (type-of-array-element obj)))
         (error (list :array-type-mismatch
-                     :old (type-of-array-element old-array)
+                     :old (type-of-array-element obj)
                      :new (type-of-array-element array))))
        ((unless (equal (array-length array)
-                       (array-length old-array)))
+                       (array-length obj)))
         (error (list :array-length-mismatch
-                     :old (array-length old-array)
+                     :old (array-length obj)
                      :new (array-length array))))
        (new-heap (omap::update addr (array-fix array) heap))
        (new-compst (change-compustate compst :heap new-heap)))
