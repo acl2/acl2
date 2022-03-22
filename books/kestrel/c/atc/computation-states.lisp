@@ -740,7 +740,10 @@
     "Note that this function writes the array as a whole;
      it does not write an array element.
      Functions like @(tsee uchar-array-write-sint)
-     can be used to write individual array elements."))
+     can be used to write individual array elements.")
+   (xdoc::p
+    "Before overwriting the array,
+     we ensure that the new one has the same type and length."))
   (b* ((addr (address-fix addr))
        (heap (compustate->heap compst))
        (addr+obj (omap::in addr heap))
@@ -772,6 +775,104 @@
     :hints (("Goal" :in-theory (enable compustate-frames-number))))
 
   (defret compustate-scopes-numbers-of-write-array
+    (implies (compustatep new-compst)
+             (equal (compustate-scopes-numbers new-compst)
+                    (compustate-scopes-numbers compst)))
+    :hints (("Goal" :in-theory (enable compustate-scopes-numbers)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-struct ((addr addressp) (compst compustatep))
+  :returns (struct-resultp)
+  :short "Read a structure in the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check whether the heap has a structure at that address.
+     If this check succeeds, we return the structure.")
+   (xdoc::p
+    "Note that this function reads the structure as a whole;
+     it does not read a structure member.
+     The function @(tsee struct-read-member)
+     can be used to read individual structure members."))
+  (b* ((addr (address-fix addr))
+       (heap (compustate->heap compst))
+       (addr+obj (omap::in addr heap))
+       ((unless (consp addr+obj))
+        (error (list :address-not-found addr)))
+       (obj (cdr addr+obj))
+       ((unless (structp obj))
+        (error (list :address-not-struct addr obj))))
+    obj)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-struct ((addr addressp) (struct structp) (compst compustatep))
+  :returns (new-compst compustate-resultp)
+  :short "Write a structure in the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check whether the heap has a structure at the address.
+     If this checks succeed, we overwrite the structure in the heap.")
+   (xdoc::p
+    "Note that this function writes the structure as a whole;
+     it does not write a structure member.
+     The functions @(tsee struct-write-member)
+     can be used to write individual structure members.")
+   (xdoc::p
+    "Before overwriting the structure,
+     we ensure that the new one has
+     the same tag, member names, and member types."))
+  (b* ((addr (address-fix addr))
+       (heap (compustate->heap compst))
+       (addr+obj (omap::in addr heap))
+       ((unless (consp addr+obj))
+        (error (list :address-not-found addr)))
+       (obj (cdr addr+obj))
+       ((unless (structp obj))
+        (error (list :address-not-struct addr obj)))
+       ((unless (equal (struct->tag struct)
+                       (struct->tag obj)))
+        (error (list :struct-tag-mismatch
+                     :old (struct->tag obj)
+                     :new (struct->tag struct))))
+       ((unless (equal (member-list->name-list
+                        (struct->members struct))
+                       (member-list->name-list
+                        (struct->members obj))))
+        (error (list :struct-member-names-mismatch
+                     :old (member-list->name-list
+                           (struct->members obj))
+                     :new (member-list->name-list
+                           (struct->members struct)))))
+       ((unless (equal (type-list-of-value-list
+                        (member-list->value-list
+                         (struct->members struct)))
+                       (type-list-of-value-list
+                        (member-list->value-list
+                         (struct->members obj)))))
+        (error (list :struct-member-types-mismatch
+                     :old (type-list-of-value-list
+                           (member-list->value-list
+                            (struct->members obj)))
+                     :new (type-list-of-value-list
+                           (member-list->value-list
+                            (struct->members struct))))))
+       (new-heap (omap::update addr (struct-fix struct) heap))
+       (new-compst (change-compustate compst :heap new-heap)))
+    new-compst)
+  :hooks (:fix)
+  ///
+
+  (defret compustate-frames-number-of-write-struct
+    (implies (compustatep new-compst)
+             (equal (compustate-frames-number new-compst)
+                    (compustate-frames-number compst)))
+    :hints (("Goal" :in-theory (enable compustate-frames-number))))
+
+  (defret compustate-scopes-numbers-of-write-struct
     (implies (compustatep new-compst)
              (equal (compustate-scopes-numbers new-compst)
                     (compustate-scopes-numbers compst)))
