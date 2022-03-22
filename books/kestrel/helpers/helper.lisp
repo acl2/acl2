@@ -25,6 +25,8 @@
 (include-book "kestrel/terms-light/non-trivial-formals" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/negate-terms" :dir :system)
+(include-book "kestrel/terms-light/replace-term-with-term" :dir :system)
+(include-book "kestrel/terms-light/count-occurrences-in-term" :dir :system)
 (include-book "kestrel/lists-light/true-list-fix" :dir :system)
 (include-book "std/util/defaggregate" :dir :system) ; reduce?
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -45,12 +47,23 @@
 ;; TODO: Handle obviously unprovable goals, like nil!
 ;; TODO: Try to reoreder hyps to make a nice rule
 ;; TODO: Untranslate to make the forms?
+;; TODO: Assign better names to goals, based on their content
 
 (local (in-theory (disable natp acons)))
 
 ;;;
 ;;; Library stuff
 ;;;
+
+(defun filter-defined-fns (fns wrld)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (plist-worldp wrld))))
+  (if (endp fns)
+      nil
+    (let ((fn (first fns)))
+      (if (fn-definedp fn wrld)
+          (cons fn (filter-defined-fns (rest fns) wrld))
+        (filter-defined-fns (rest fns) wrld)))))
 
 (defthm consp-of-rassoc-equal
   (implies (alistp alist)
@@ -91,6 +104,10 @@
        (case (car x)
          ;; (:induct <term>)
          (:induct (and (true-listp (fargs x))
+                       (= 1 (len (fargs x)))
+                       (pseudo-termp (farg1 x))))
+         ;; (:generalize <term>)
+         (:generalize (and (true-listp (fargs x))
                        (= 1 (len (fargs x)))
                        (pseudo-termp (farg1 x))))
          ;; (:enable ...fns-or-runes...)
@@ -534,6 +551,48 @@
         name-map
         state)))
 
+;; Same return type as attack-open-problem.
+;; TODO: Since this doesn't call prove$, it should be quick and so could be done when we elaborate the problem
+(defund attack-generalize-problem (prob step-limit name-map state)
+  (declare (xargs :guard (and (open-problemp prob)
+                              (natp step-limit)
+                              (name-mapp name-map))
+                  :mode :program
+                  :stobjs state)
+           (ignore step-limit))
+  (b* ((name (open-problem->name prob))
+       (formula (open-problem->formula prob))
+       (benefit (open-problem->benefit prob))
+       (technique (open-problem->technique prob)) ; (:generalize <term>)
+       (old-techniques (open-problem->old-techniques prob))
+       ;; TODO: When generalizing, we might need to add a type hyp about the new var.
+       (term-to-generalize (farg1 technique))
+       (vars (free-vars-in-term formula))
+       (new-var (fresh-symbol 'x vars))
+       (generalized-formula (replace-term-with-term term-to-generalize new-var formula))
+       (- (cw " (Generalized Formula: ~x0)~%" generalized-formula))
+       ;; Spawn a subproblem for the generalized problem:
+       ((mv raw-subproblems subproblem-names name-map)
+        (spawn-subproblems-for-formulas (list generalized-formula)
+                                        name-map
+                                        (+ -1 benefit) ; slightly less good than solving the original problem
+                                        name
+                                        (cons technique old-techniques)
+                                        (pack$ name '-generalize-)
+                                        1 ; todo: suppress the use of numbered indices when there is only one subproblem?
+                                        nil nil))
+       (- (cw "Spawned ~x0 new subproblems.~%" (len raw-subproblems))))
+    (mv nil :split nil nil
+        (pending-problem name formula subproblem-names
+                         (list `(defthm ,name
+                                  ,(untranslate formula nil (w state))
+                                  :hints (("Goal" :in-theory nil
+                                           :use (:instance ,(first subproblem-names)
+                                                           (,new-var ,term-to-generalize)))))))
+        raw-subproblems
+        name-map
+        state)))
+
 ;; Returns (mv erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state), where RES is :proved, :updated, or :split.
 ;; If RES is :proved, then PROOF-EVENTS contain the proof.
 ;; If RES is :updated, then UPDATED-OPEN-PROBLEM is a replacement for PROB (e.g., with a higher last-step-limit)
@@ -555,6 +614,7 @@
       (case (car technique)
         (:induct (attack-induct-problem prob step-limit name-map state))
         (:enable (attack-enable-problem prob step-limit name-map state))
+        (:generalize (attack-generalize-problem prob step-limit name-map state))
         ;;todo
         (otherwise (prog2$ (er hard? 'attack-open-problem "Unknown technique in problem ~x0." prob)
                            (mv t nil nil nil nil nil name-map state))))
@@ -595,6 +655,38 @@
                     (make-induct-problems (rest subterms) name formula benefit parents old-techniques wrld))))
         (make-induct-problems (rest subterms) name formula benefit parents old-techniques wrld)))))
 
+;; For each function call subterm of the goal, this considers generalizing it.
+;; TODO: Try generalizing terms that only occur once.
+(defun make-generalize-problems (subterms name formula benefit parents old-techniques wrld)
+  (declare (xargs :guard (and (pseudo-term-listp subterms)
+                              (symbolp name)
+                              (pseudo-termp formula)
+                              (benefitp benefit)
+                              (problem-name-listp parents)
+                              (technique-listp old-techniques)
+                              (plist-worldp wrld))
+                  :guard-hints (("Goal" :in-theory (enable techniquep)))))
+  (if (endp subterms)
+      nil
+    (let ((subterm (first subterms)))
+      (if (and (consp subterm) ; not a var
+               (symbolp (ffn-symb subterm)) ; not a lambda
+               (not (eq 'quote (ffn-symb subterm))) ; not a quoted constant
+               (< 1 (count-occurences-in-term subterm formula)) ; for now, we only generalize terms that appear more than once
+               )
+          (let ((technique `(:generalize ,subterm)))
+            (if (member-equal technique old-techniques)
+                ;; already tried this technique, so skip:
+                (make-generalize-problems (rest subterms) name formula benefit parents old-techniques wrld)
+              (cons (open-problem name technique formula
+                                  benefit
+                                  parents
+                                  500 ; todo: chance
+                                  nil ; no step-limit tried yet
+                                  old-techniques)
+                    (make-generalize-problems (rest subterms) name formula benefit parents old-techniques wrld))))
+        (make-generalize-problems (rest subterms) name formula benefit parents old-techniques wrld)))))
+
 (defun make-enable-problems (items name formula benefit parents old-techniques wrld)
   (declare (xargs :guard (and (true-listp items) ; names and runes
                               (symbolp name)
@@ -633,22 +725,26 @@
        (old-techniques (raw-problem->old-techniques prob))
        (subterms (find-all-fn-call-subterms formula nil))
        (fns (all-fnnames formula)) ; todo: keep only defined ones?
-       (rec-fns (filter-rec-fns fns wrld))
-       (non-rec-fns (set-difference-eq fns rec-fns))
+       (defined-fns (filter-defined-fns fns wrld))
+       (defined-rec-fns (filter-rec-fns defined-fns wrld))
+       (defined-non-rec-fns (set-difference-eq defined-fns defined-rec-fns))
+       ;; TODO: Consider using alternate definition rules for fns
        ;; start with an empty list of problems:
        (probs nil)
        ;; todo: :direct
        ;; Add :enable problems:
-       (items-to-consider-enabling (append (set-difference-eq non-rec-fns *fns-not-worth-enabling*)
+       (items-to-consider-enabling (append (set-difference-eq defined-non-rec-fns *fns-not-worth-enabling*)
                                            ;; here we try enabling just the :definition of the recursive functions,
                                            ;; because elsewhere we try induction with them:
-                                           (wrap-all :definition rec-fns)))
+                                           (wrap-all :definition defined-rec-fns)))
        (probs (append (make-enable-problems items-to-consider-enabling name formula benefit parents old-techniques wrld)
                       probs))
        ;; Add :induct problems:
        (probs (append (make-induct-problems subterms name formula benefit parents old-techniques wrld)
                       probs))
-
+       ;; Add :generalize problems:
+       (probs (append (make-generalize-problems subterms name formula benefit parents old-techniques wrld)
+                      probs))
        (- (cw " Created ~x0 problems using these techniques:~| ~x1.)~%" (len probs) (map-open-problem->technique probs))))
     probs))
 
@@ -859,7 +955,7 @@
   (declare (xargs :mode :program
                   :stobjs state))
   (b* ((state (set-print-case :downcase state)) ; make printing of forms downcase, to support the use copyind and pasting them
-       (- (cw "~%~%Trying to help with ~x0.~%" form))
+       (- (cw "~%~%Trying to help with:~%~x0.~%" form))
        (theorem-type (car form))
        (body (if (eq 'thm theorem-type)
                  (second form)
@@ -886,7 +982,7 @@
        ((when (not provedp))
         (cw "Failed to prove.~%")
         (mv t nil state)))
-    (progn$ (cw "PROOF FOUND:~%~X01" proof-events nil)
+    (progn$ (cw "~% !!! PROOF FOUND:~%~X01" proof-events nil)
             (cw "Submitting proof now.~%")
             (mv nil `(progn ,@proof-events) state))))
 
