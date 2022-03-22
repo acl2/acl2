@@ -14,6 +14,7 @@
 (include-book "alistp")
 (include-book "acons")
 (include-book "assoc-equal")
+(include-book "rassoc-equal")
 (include-book "strip-cars")
 (include-book "strip-cdrs")
 
