@@ -7,3 +7,8 @@
            (iff (consp (rassoc-equal x alist))
                 (rassoc-equal x alist)))
   :hints (("Goal" :in-theory (enable rassoc-equal))))
+
+(defthm rassoc-equal-of-nil
+  (equal (rassoc-equal x nil)
+         nil)
+  :hints (("Goal" :in-theory (enable rassoc-equal))))
