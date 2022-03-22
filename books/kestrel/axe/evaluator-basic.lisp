@@ -44,6 +44,8 @@
     posp
     booleanp
     true-listp
+    (denominator denominator-unguarded)
+    (numerator numerator-unguarded)
     (coerce coerce-unguarded)
     all-natp
     all-unsigned-byte-p
