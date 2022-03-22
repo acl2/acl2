@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -894,14 +894,15 @@
     :parents nil
     (b* ((addr (address-fix addr))
          (heap (compustate->heap compst))
-         (addr+array (omap::in addr heap))
-         ((unless (consp addr+array)) nil)
-         (old-array (cdr addr+array))
+         (addr+obj (omap::in addr heap))
+         ((unless (consp addr+obj)) nil)
+         (obj (cdr addr+obj))
+         ((unless (arrayp obj)) nil)
          ((unless (equal (type-of-array-element array)
-                         (type-of-array-element old-array)))
+                         (type-of-array-element obj)))
           nil)
          ((unless (equal (array-length array)
-                         (array-length old-array)))
+                         (array-length obj)))
           nil))
       t)
     :hooks (:fix))
