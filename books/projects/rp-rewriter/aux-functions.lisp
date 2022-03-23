@@ -482,6 +482,7 @@
           (rp-term-listp (strip-cdrs ,bindings)))))
 
 (defun cons-count (x)
+  (declare (xargs :guard t))
   (cond ((atom x)
          1)
         (t
@@ -711,6 +712,7 @@
                  (acl2::fargn term 1)
                (acl2::fargn term 2))
              t))
+        ((nonnil-p term) (mv ''nil t))
         (t (mv `(if ,term 'nil 't) `(nil t t t)))))
 
 (encapsulate
@@ -1132,7 +1134,7 @@
    (define rp-equal-cnt (term1 term2 cnt)
      :enabled t
      (declare (xargs :mode :logic
-                     :verify-guards nil
+                     ;;:verify-guards nil
                      :guard (and (natp cnt)
                                  #|(rp-termp term1)||#
                                  #|(rp-termp term2)||#)))
@@ -1154,7 +1156,7 @@
    (define rp-equal-cnt-subterms (subterm1 subterm2 cnt)
      :enabled t
      (declare (xargs :mode :logic
-                     :verify-guards nil
+                     ;;:verify-guards nil
                      :guard (and (natp cnt)
                                  #|(rp-term-listp subterm1)||#
                                  #|(rp-term-listp subterm2)||#)))
@@ -1911,6 +1913,7 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (progn
   (defund binary-and** (x y)
+    (declare (xargs :guard t))
     (and x y))
 
   (DEFUN AND**-MACRO (ACL2::LST)
@@ -1926,7 +1929,8 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
     (and**-macro lst))
   
   (defund binary-or** (x y)
-    (and x y))
+    (declare (xargs :guard t))
+    (or x y))
 
   (DEFUN OR**-MACRO (ACL2::LST)
     (IF (ATOM ACL2::LST)
@@ -1941,4 +1945,5 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
     (or**-macro lst))
 
   (defund not** (x)
+    (declare (xargs :guard t))
     (not x)))

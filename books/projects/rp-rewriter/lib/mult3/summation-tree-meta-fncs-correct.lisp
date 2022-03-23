@@ -2351,8 +2351,8 @@
                              (:DEFINITION RP-TRANS-LST))))))
 
 (defret and-list-to-binary-and-aux-valid-sc
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state)
+  (implies (and ;;(rp-evl-meta-extract-global-facts :state state)
+                ;;(mult-formula-checks state)
                 (valid-sc-subterms lst a))
            (valid-sc res a))
   :fn and-list-to-binary-and-aux
@@ -2384,28 +2384,47 @@
   :hints (("Goal"
            :in-theory (e/d (and-list) ()))))
 
-(defret and-list-to-binary-and-correct
+(defthmd has-bitp-rp-force-hyp-rewrite
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
-                valid)
+                (valid-sc term a))
+           (equal (has-bitp-rp term)
+                  (and (hide (has-bitp-rp term))
+                       (bitp (rp-evlt term a))
+                       (bitp (rp-evlt (ex-from-rp term) a)))))
+  :hints (("Goal"
+           :expand (hide (has-bitp-rp term))
+           :use ((:instance pp-termp-is-bitp-lemma))
+           :in-theory (e/d () ()))))
+
+(defret and-list-to-binary-and-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
            (and (equal (rp-evlt res a)
                        (rp-evlt term a))
-                (integerp (rp-evlt res a))
-                (integerp (rp-evlt term a))))
+                (implies (and valid
+                              (valid-sc term a))
+                         (and (integerp (rp-evlt res a))
+                              (integerp (rp-evlt term a))))
+                (implies (and (valid-sc term a)
+                              valid)
+                         (and (bitp (rp-evlt res a))
+                              (bitp (rp-evlt term a))))))
   :fn and-list-to-binary-and
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (and-list-to-binary-and
+                             has-bitp-rp-force-hyp-rewrite
                              and-list
                              BINARY-FNC-P
                              regular-eval-lemmas
                              regular-eval-lemmas-with-ex-from-rp)
-                            ()))))
+                            (valid-sc)))))
 
 (defret and-list-to-binary-and-valid-sc
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state)
-                valid
+  (implies (and ;;(rp-evl-meta-extract-global-facts :state state)
+                ;;(mult-formula-checks state)
+                ;;valid
                 (valid-sc term a))
            (valid-sc res a))
   :fn and-list-to-binary-and
@@ -2424,7 +2443,8 @@
 
 (defret create-s-c-res-instance-correct
   (implies  (and (rp-evl-meta-extract-global-facts :state state)
-                 (mult-formula-checks state))
+                 (mult-formula-checks state)
+                 (valid-sc-subterms pp-lst a))
             (and #|(equal (ifix (rp-evlt res a))
              (sum (sum-list-eval s-lst a) ;
              (sum-list-eval pp-lst a) ;
@@ -5456,6 +5476,37 @@
                             (:DEFINITION RP-TRANS)
                             (:REWRITE EVL-OF-EXTRACT-FROM-RP-2))))))
 
+(defret pp-radix8+-fix-aux-precollect2-aux-valid-sc
+  (implies (and (valid-sc-subterms side-pp-lst a)
+                (valid-sc single-pp a))
+           (valid-sc-subterms res-side-pp-lst a))
+  :fn pp-radix8+-fix-aux-precollect2-aux
+  :hints (("Goal"
+           :in-theory (e/d (pp-radix8+-fix-aux-precollect2-aux
+                            is-rp
+                            is-if)
+                           ((:DEFINITION EVAL-AND-ALL)
+                            (:REWRITE VALID-SC-SUBTERMS-OF-CDR)
+                            (:REWRITE DEFAULT-CDR)
+                            (:DEFINITION RP-TRANS)
+                            (:REWRITE EVL-OF-EXTRACT-FROM-RP-2))))))
+
+(defret pp-radix8+-fix-aux-precollect2-valid-sc
+  (implies (valid-sc single-pp a)
+           (and (valid-sc single-s/c a)
+                (valid-sc res-pp a)
+                (valid-sc-subterms side-pp-lst a)))
+  :fn pp-radix8+-fix-aux-precollect2
+  :hints (("Goal"
+           :in-theory (e/d (pp-radix8+-fix-aux-precollect2
+                            is-rp
+                            is-if)
+                           ((:DEFINITION EVAL-AND-ALL)
+                            (:REWRITE VALID-SC-SUBTERMS-OF-CDR)
+                            (:REWRITE DEFAULT-CDR)
+                            (:DEFINITION RP-TRANS)
+                            (:REWRITE EVL-OF-EXTRACT-FROM-RP-2))))))
+
 (define and-eval-for-pp-radix8+-fix (single-s/c e-lst a)
   (if (equal (and-list 0 (rp-evlt-lst e-lst a)) 1)
       (rp-evlt single-s/c a)
@@ -5507,6 +5558,114 @@
                              rp-evlt-of-ex-from-rp
                              rp-trans-lst)))))
 
+(local
+ (defthm rp-evlt-ex-from-rp-with-binary-and
+   (implies (and (rp-evl-meta-extract-global-facts :state state)
+                 (mult-formula-checks state))
+            (equal (rp-evlt (ex-from-rp (list 'binary-and x y)) a)
+                   (binary-and (rp-evlt x a)(rp-evlt y a))))
+   :hints (("Goal"
+            :in-theory (e/d (ex-from-rp is-rp) ())))))
+
+(defret pp-radix8+-fix-aux-precollect2-aux-correct
+  (implies (and valid
+                (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (bit-listp (rp-evlt-lst side-pp-lst a)))
+           (and (equal (sum-list-eval res-side-pp-lst a)
+                       (and-eval-for-pp-radix8+-fix (list 'quote (sum-list-eval side-pp-lst a))
+                                                    (list single-pp)
+                                                    a))
+                (bit-listp (rp-evlt-lst res-side-pp-lst a))))
+  :fn pp-radix8+-fix-aux-precollect2-aux
+  :hints (("Goal"
+           :in-theory (e/d* (regular-rp-evl-of_s_when_mult-formula-checks
+                             regular-rp-evl-of_binary-and_when_mult-formula-checks
+                             regular-rp-evl-of_binary-and_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_bit-of_when_mult-formula-checks
+                             and-eval-for-pp-radix8+-fix;;-redef
+                             pp-radix8+-fix-aux-precollect2-aux
+                             rp-evlt-of-ex-from-rp-reverse
+                             and$
+                             BIT-LISTP
+                             bit-fix)
+                            (rp-trans
+                             RP-TRANS-OPENER
+                             (:definition valid-sc)
+                             (:rewrite valid-sc-subterms-cdr)
+                             (:definition eval-and-all)
+                             (:rewrite valid-sc-subterms-of-cdr)
+                             (:rewrite
+                              rp-trans-is-term-when-list-is-absent)
+                             rp-evlt-of-ex-from-rp
+                             rp-trans-lst)))))
+
+
+
+(local
+ (defthmd BINARY-?-rw-to-sum
+   (equal (binary-? x y z)
+          (sum (and$ x y)
+               (and$ (not$ x) z)))
+   :hints (("Goal"
+            :in-theory (e/d (binary-?
+                             BIT-FIX
+                             and$ not$)
+                            ())))))
+
+(defret pp-radix8+-fix-aux-precollect2-correct
+  (implies (and valid
+                (valid-sc single-pp a)
+                (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (and (equal
+                 (sum (sum-list-eval side-pp-lst a)
+                      (and-eval-for-pp-radix8+-fix single-s/c (list res-pp) a))
+                 #|(sum (binary-and (rp-evlt single-s/c a) (rp-evlt res-pp a))
+                      (and-eval-for-pp-radix8+-fix (list 'quote (sum-list-eval side-pp-lst a))
+                                                   (list single-pp)
+                                                   a))|#
+                 (rp-evlt single-pp a))
+                (bitp (rp-evlt single-pp a))
+                (bit-listp (rp-evlt-lst side-pp-lst a))
+                (bitp (rp-evlt single-s/c a))
+                (bitp (rp-evlt res-pp a))))
+  :fn pp-radix8+-fix-aux-precollect2
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (pp-radix8+-fix-aux-precollect2 SINGLE-PP) 
+           :in-theory (e/d* (bitp BINARY-?-rw-to-sum
+                             regular-rp-evl-of_s_when_mult-formula-checks
+                             regular-rp-evl-of_binary-and_when_mult-formula-checks
+                             regular-rp-evl-of_binary-and_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_binary-?_when_mult-formula-checks
+                             regular-rp-evl-of_binary-?_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_binary-not_when_mult-formula-checks
+                             regular-rp-evl-of_binary-not_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_binary-xor_when_mult-formula-checks
+                             regular-rp-evl-of_binary-xor_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_binary-or_when_mult-formula-checks
+                             regular-rp-evl-of_binary-or_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_bit-of_when_mult-formula-checks
+                             and-eval-for-pp-radix8+-fix;;-redef
+                             pp-radix8+-fix-aux-precollect2
+                             rp-evlt-of-ex-from-rp-reverse
+                             and$
+                             BIT-LISTP
+                             has-bitp-rp-force-hyp-rewrite
+                             bit-fix)
+                            (rp-trans
+                             RP-TRANS-OPENER
+                             (:definition valid-sc)
+                             (:rewrite valid-sc-subterms-cdr)
+                             (:definition eval-and-all)
+                             (:rewrite valid-sc-subterms-of-cdr)
+                             (:rewrite
+                              rp-trans-is-term-when-list-is-absent)
+                             rp-evlt-of-ex-from-rp
+                             rp-trans-lst)))))
+           
+
 (define and-lst-eval-for-pp-radix8+-fix (lst e-lst a)
   (if (atom lst)
       nil
@@ -5543,17 +5702,51 @@
                             and-list-redef-consp)
                            ()))))
 
+(defthm binary-fnc-p-implies-bitp
+  (implies (and (or (binary-fnc-p term)
+                    (binary-fnc-p (ex-from-rp term)))
+                (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (and (bitp (rp-evlt term a))
+                (bitp (rp-evlt (ex-from-rp term) a))
+                (integerp (rp-evlt term a))
+                (integerp (rp-evlt (ex-from-rp term) a))))
+  :hints (("Goal"
+           :in-theory (e/d* (regular-eval-lemmas
+                             binary-fnc-p
+                             regular-eval-lemmas-with-ex-from-rp)
+                            ()))))
+
+(defthm equal-with-zero-and-1-when-bitp
+  (and (implies (and (bitp x)
+                     (not (equal x 1)))
+                (equal (equal x 0) t))
+       (implies (and (bitp x)
+                     (not (equal x 1)))
+                (equal (equal (-- x) 0) t))
+       (implies (and (bitp x)
+                     (not (equal x 0)))
+                (equal (equal x 1) t))))  
+
+
+
 (defret pp-radix8+-fix-aux-for-pp-lst-correct
   (implies (and valid
                 (rp-evl-meta-extract-global-facts :state state)
+                (valid-sc-subterms pp-lst a)
                 (mult-formula-checks state))
            (equal (rp-evlt-lst res-pp-lst a)
                   (and-lst-eval-for-pp-radix8+-fix pp-lst e-lst a)))
   :fn pp-radix8+-fix-aux-for-pp-lst
   ;;:otf-flg t
   :hints (("goal"
+           :induct (pp-radix8+-fix-aux-for-pp-lst pp-lst e-lst)
+           :do-not-induct t
            :in-theory (e/d
-                       (regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp
+                       (;;binary-fnc-p
+                        regular-rp-evl-of_binary-and_when_mult-formula-checks
+                        regular-rp-evl-of_binary-and_when_mult-formula-checks_with-ex-from-rp
+                        regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_and-list_when_mult-formula-checks
                         regular-rp-evl-of_bit-of_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_bit-of_when_mult-formula-checks
@@ -5561,7 +5754,9 @@
                         regular-rp-evl-of_--_when_mult-formula-checks
                         pp-radix8+-fix-aux-for-pp-lst
                         and-eval-for-pp-radix8+-fix;;-redef
-                        and-lst-eval-for-pp-radix8+-fix)
+                        and-lst-eval-for-pp-radix8+-fix
+                        and$
+                        )
                        (rp-trans
                         rp-trans-opener
                         rp-evl-of-lambda
@@ -5578,14 +5773,19 @@
 (defret pp-radix8+-fix-aux-for-pp-lst-correct2
   (implies (and valid
                 (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
+                (mult-formula-checks state)
+                (valid-sc-subterms pp-lst a))
            (equal (sum-list-eval res-pp-lst a)
                   (sum-list (and-lst-eval-for-pp-radix8+-fix pp-lst e-lst a))))
   :fn pp-radix8+-fix-aux-for-pp-lst
   ;;:otf-flg t
   :hints (("goal"
+           :induct (pp-radix8+-fix-aux-for-pp-lst pp-lst e-lst)
+           :do-not-induct t
            :in-theory (e/d
-                       (regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp
+                       (regular-rp-evl-of_binary-and_when_mult-formula-checks
+                        regular-rp-evl-of_binary-and_when_mult-formula-checks_with-ex-from-rp
+                        regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_and-list_when_mult-formula-checks
                         regular-rp-evl-of_bit-of_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_bit-of_when_mult-formula-checks
@@ -5593,7 +5793,8 @@
                         regular-rp-evl-of_--_when_mult-formula-checks
                         pp-radix8+-fix-aux-for-pp-lst
                         and-eval-for-pp-radix8+-fix;;-redef
-                        and-lst-eval-for-pp-radix8+-fix)
+                        and-lst-eval-for-pp-radix8+-fix
+                        and$)
                        (rp-trans
                         rp-trans-opener
                         rp-evl-of-lambda
@@ -5644,6 +5845,13 @@
   (equal (valid-sc (list '-- x) a)
          (valid-sc x a)))
 
+(defthm valid-sc-of-binary-and
+  (equal (valid-sc (list 'binary-and x y) a)
+         (and (valid-sc x a)
+              (valid-sc y a)))
+  :hints (("Goal"
+           :in-theory (e/d (valid-sc is-rp is-if) ()))))
+
 (defret pp-radix8+-fix-aux-for-pp-lst-valid-sc
   (implies (and (valid-sc-subterms pp-lst a)
                 (valid-sc-subterms e-lst a))
@@ -5651,6 +5859,8 @@
   :fn pp-radix8+-fix-aux-for-pp-lst
   ;;:otf-flg t
   :hints (("goal"
+           :induct (pp-radix8+-fix-aux-for-pp-lst pp-lst e-lst)
+           :do-not-induct t
            :in-theory (e/d
                        (regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_and-list_when_mult-formula-checks
@@ -5670,6 +5880,9 @@
                          rp-trans-is-term-when-list-is-absent)
                         rp-evlt-of-ex-from-rp
                         rp-trans-lst)))))
+
+
+
 
 (defret pp-radix8+-fix-aux-for-s/c-valid-sc-subterms
   (implies (and (valid-sc single-s/c a)
@@ -5706,18 +5919,77 @@
                             rp-evlt-of-ex-from-rp
                             rp-trans-lst)))))
 
-(defthmd has-bitp-rp-force-hyp-rewrite
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state)
-                (valid-sc term a))
-           (equal (has-bitp-rp term)
-                  (and (hide (has-bitp-rp term))
-                       (bitp (rp-evlt term a))
-                       (bitp (rp-evlt (ex-from-rp term) a)))))
-  :hints (("Goal"
-           :expand (hide (has-bitp-rp term))
-           :use ((:instance pp-termp-is-bitp-lemma))
-           :in-theory (e/d () ()))))
+(defret pp-radix8+-fix-aux-for-s/c-lst-valid-sc-subterms
+  (implies (and (valid-sc-subterms s/c-lst a)
+                (valid-sc-subterms e-lst a)
+                (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (and (valid-sc-subterms res-s-lst a)
+                (valid-sc-subterms res-pp-lst a)
+                (valid-sc-subterms res-c-lst a)))
+  :fn pp-radix8+-fix-aux-for-s/c-lst
+  :hints (("goal"
+           :in-theory (e/d (pp-radix8+-fix-aux-for-s/c-lst
+                            and-eval-for-pp-radix8+-fix;;-redef
+                            )
+                           (rp-trans
+                            (:rewrite valid-sc-subterms-of-cdr)
+                            (:rewrite acl2::o-p-o-infp-car)
+                            (:rewrite acl2::fn-check-def-not-quote)
+                            (:rewrite valid-sc-when-list-instance)
+                            (:rewrite ex-from-synp-lemma1)
+                            (:rewrite acl2::o-p-def-o-finp-1)
+                            (:definition valid-sc)
+                            (:rewrite evl-of-extract-from-rp-2)
+                            (:rewrite default-car)
+                            (:rewrite valid-sc-subterms-cons)
+                            (:rewrite default-cdr)
+                            (:definition is-rp$inline)
+                            rp-trans-opener
+                            rp-evl-of-lambda
+                            rp-evl-of-variable
+                            (:definition eval-and-all)
+                            (:rewrite
+                             rp-trans-is-term-when-list-is-absent)
+                            rp-evlt-of-ex-from-rp
+                            rp-trans-lst)))))
+
+(defret pp-radix8+-fix-aux-for-s/c-main-valid-sc-subterms
+  (implies (and (valid-sc single-s/c a)
+                (valid-sc-subterms e-lst a)
+                (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (and (valid-sc-subterms res-s-lst a)
+                (valid-sc-subterms res-pp-lst a)
+                (valid-sc-subterms res-c-lst a)))
+  :fn pp-radix8+-fix-aux-for-s/c-main
+  :hints (("goal"
+           :in-theory (e/d (pp-radix8+-fix-aux-for-s/c-main
+                            and-eval-for-pp-radix8+-fix;;-redef
+                            )
+                           (rp-trans
+                            (:rewrite valid-sc-subterms-of-cdr)
+                            (:rewrite acl2::o-p-o-infp-car)
+                            (:rewrite acl2::fn-check-def-not-quote)
+                            (:rewrite valid-sc-when-list-instance)
+                            (:rewrite ex-from-synp-lemma1)
+                            (:rewrite acl2::o-p-def-o-finp-1)
+                            (:definition valid-sc)
+                            (:rewrite evl-of-extract-from-rp-2)
+                            (:rewrite default-car)
+                            (:rewrite valid-sc-subterms-cons)
+                            (:rewrite default-cdr)
+                            (:definition is-rp$inline)
+                            rp-trans-opener
+                            rp-evl-of-lambda
+                            rp-evl-of-variable
+                            (:definition eval-and-all)
+                            (:rewrite
+                             rp-trans-is-term-when-list-is-absent)
+                            rp-evlt-of-ex-from-rp
+                            rp-trans-lst)))))
+
+
 
 (local
  (defthm dummy-sum-lemma
@@ -5759,6 +6031,8 @@
                             )
                            (+-IS-SUM)))))
 
+
+
 (defret pp-radix8+-fix-aux-for-s/c-correct
   (implies (and valid
                 (valid-sc single-s/c a)
@@ -5769,6 +6043,7 @@
                             (sum-list-eval res-pp-lst a)
                             (sum-list-eval res-c-lst a))
                        (and-eval-for-pp-radix8+-fix single-s/c e-lst a))
+                (Integerp (rp-evlt single-s/c a))
                 ;;(bitp (rp-evlt single-s/c a))
                 ))
   :fn pp-radix8+-fix-aux-for-s/c
@@ -5816,6 +6091,93 @@
            :use ((:instance pp-radix8+-fix-aux-for-s/c-correct))
            :in-theory (e/d () (pp-radix8+-fix-aux-for-s/c-correct)))))
 
+(defret pp-radix8+-fix-aux-for-s/c-lst-correct
+  (implies (and valid
+                (valid-sc-subterms s/c-lst a)
+                (valid-sc-subterms e-lst a)
+                (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (and (equal (sum (sum-list-eval res-s-lst a)
+                            (sum-list-eval res-pp-lst a)
+                            (sum-list-eval res-c-lst a))
+                       (and-eval-for-pp-radix8+-fix
+                        (list 'quote (sum-list-eval s/c-lst a))
+                        e-lst a))
+                ;;(bitp (rp-evlt single-s/c a))
+                ))
+  :fn pp-radix8+-fix-aux-for-s/c-lst
+  :hints (("Goal"
+           :in-theory (e/d (pp-radix8+-fix-aux-for-s/c-lst
+                            AND-EVAL-FOR-PP-RADIX8+-FIX)
+                           ()))))
+
+(defret pp-radix8+-fix-aux-for-s/c-main-correct
+  (implies (and valid
+                (valid-sc single-s/c a)
+                (valid-sc-subterms e-lst a)
+                (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (and (equal (sum (sum-list-eval res-s-lst a)
+                            (sum-list-eval res-pp-lst a)
+                            (sum-list-eval res-c-lst a))
+                       (and-eval-for-pp-radix8+-fix single-s/c e-lst a))
+                ;;(bitp (rp-evlt single-s/c a))
+                ))
+  :fn pp-radix8+-fix-aux-for-s/c-main
+
+  :hints (("goal"
+           :do-not-induct t
+           :in-theory (e/d
+                       (pp-radix8+-fix-aux-for-s/c-main
+                        regular-rp-evl-of_s-c-res_when_mult-formula-checks_with-ex-from-rp
+                        regular-rp-evl-of_s-c-res_when_mult-formula-checks
+                        s-c-res
+                        AND-EVAL-FOR-PP-RADIX8+-FIX)
+                       (rp-trans
+                        pp-radix8+-fix-aux-for-s/c-correct-singled-out
+                        VALID-SC-SINGLE-STEP-3
+                        RP-TRANS-OPENER-WHEN-LIST
+                        EX-FROM-RP
+                        RP-EVL-OF-TRANS-LIST-LEMMA
+                        ENDP
+                        rp-evl-lst-of-cons
+                        rp-evlt-lst-of-cons
+                        rp-trans-lst-is-lst-when-list-is-absent
+                        rp-trans-opener
+                        rp-evl-of-lambda
+                        rp-evl-of-variable
+                        (:definition valid-sc)
+                        (:rewrite valid-sc-subterms-cdr)
+                        (:definition eval-and-all)
+                        (:rewrite valid-sc-subterms-of-cdr)
+                        (:rewrite
+                         rp-trans-is-term-when-list-is-absent)
+                        rp-evlt-of-ex-from-rp
+                        rp-trans-lst)))))
+
+(defret pp-radix8+-fix-aux-for-s/c-main-correct-singled-out
+  (implies (and valid
+                (valid-sc single-s/c a)
+                (valid-sc-subterms e-lst a)
+                (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (equal (sum-list-eval res-pp-lst a)
+                  (sum (and-eval-for-pp-radix8+-fix single-s/c e-lst a)
+                       (-- (sum-list-eval res-s-lst a))
+                       (-- (sum-list-eval res-c-lst a)))))
+  :fn pp-radix8+-fix-aux-for-s/c-main
+  :hints (("goal"
+           :use ((:instance pp-radix8+-fix-aux-for-s/c-main-correct))
+           :in-theory (e/d () (pp-radix8+-fix-aux-for-s/c-main-correct)))))
+
+(local
+ (defthm pp-radix8+-fix-aux-correct-dummy-lemma1
+   (equal (equal (sum (-- x) (-- y)) (-- z))
+          (equal (sum x y) (ifix z)))
+   :hints (("Goal"
+            :in-theory (e/d (sum --)
+                            (+-IS-SUM))))))
+
 (defret pp-radix8+-fix-aux-correct
   (implies (and valid
                 (valid-sc single-pp a)
@@ -5827,12 +6189,17 @@
                   (rp-evlt single-pp a)))
   :fn pp-radix8+-fix-aux
   :hints (("Goal"
+           :use ((:instance pp-radix8+-fix-aux-precollect2-correct
+                            (single-pp (cadr single-pp)))
+                 (:instance pp-radix8+-fix-aux-precollect2-correct))
            :in-theory (e/d (pp-radix8+-fix-aux
                             regular-rp-evl-of_--_when_mult-formula-checks_with-ex-from-rp
                             regular-rp-evl-of_--_when_mult-formula-checks
                             regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp
-                            regular-rp-evl-of_and-list_when_mult-formula-checks)
-                           (rp-trans
+                            regular-rp-evl-of_and-list_when_mult-formula-checks
+                            )
+                           (pp-radix8+-fix-aux-precollect2-correct
+                            rp-trans
                             rp-evl-lst-of-cons
                             rp-evlt-lst-of-cons
                             rp-trans-lst-is-lst-when-list-is-absent

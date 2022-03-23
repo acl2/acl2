@@ -55,16 +55,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Casesplit from context
 
-(defthmd implies-redef-with-casesplit-from-context-trig
-  (equal (implies p q)
-         (if p (casesplit-from-context-trig (if q t nil)) t))
+;; when the meta function is disabled
+(def-rp-rule casesplit-from-context-trig-expand
+  (equal (casesplit-from-context-trig x)
+         x)
   :hints (("Goal"
-           :in-theory (e/d (casesplit-from-context-trig
-                            implies)
+           :in-theory (e/d (casesplit-from-context-trig)
                            ()))))
 
-(add-rp-rule implies-redef-with-casesplit-from-context-trig
-             :outside-in t)
+(add-rp-rule casesplit-from-context-trig-expand
+             :outside-in :both)
 
 (local
  (in-theory (disable rp-equal-cnt

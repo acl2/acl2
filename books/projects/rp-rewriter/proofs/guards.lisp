@@ -68,7 +68,9 @@
   (verify-guards rp-equal)
   (verify-guards rp-equal-loose))
 
-(verify-guards rp-check-context
+(verify-guards cons-count)
+
+(verify-guards RP-CHECK-CONTEXT-FN
   :hints (("Goal"
            :in-theory (e/d () ()))))
 
@@ -677,7 +679,7 @@
                          VALID-RULES-ALISTP-IMPLIES-RULES-ALISTP)
                         (:DEFINITION VALID-RULES-ALISTP)
                         (:DEFINITION RP-EQUAL)
-                        (:DEFINITION RP-CHECK-CONTEXT)
+                        RP-CHECK-CONTEXT
                         (:REWRITE RP-EQUAL-IS-SYMMETRIC)
                         (:DEFINITION VALID-SC)
                         (:REWRITE RP-EQUAL-CNT-IS-RP-EQUAL)

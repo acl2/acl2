@@ -1891,6 +1891,42 @@
                             +-is-sum
                             SVL::BITS-OF-BITS-1)))))
 
+(progn
+  (def-rp-rule pull-out-dumb-twos-complement
+    (implies (and (bitp test)
+                  (integerp t1)
+                  (integerp else)
+                  (natp start)
+                  (natp size))
+	     (equal (sv::4vec-? test
+                                (sv::4vec-part-select start size
+                                                      (sv::4vec-plus t1 1))
+                                else)
+                    (progn$
+                     (cw "(:rewrite pull-out-dumb-twos-complement) applied ~%")
+                     (sv::4vec-bitor
+                      (sv::4vec-? test 0 else)
+                      (sv::4vec-part-select
+                       start size
+                       (sv::4vec-plus (sv::4vec-? test t1 0)
+                                      test))))))
+    :hints (("Goal"
+             :expand ((:free (x)
+                             (sv::4vec-plus 0 x)))
+             :in-theory (e/d (bitp
+                              SV::4VEC->UPPER
+                              SV::4VEC->lower)
+                             (RP::4VEC-PLUS++-IS-4VEC-ADDER)))))
+  (add-rp-rule pull-out-dumb-twos-complement
+               :outside-in :both))
+
+(def-rp-rule 4vec-reduction-and-of---bitp
+  (implies (bitp x)
+           (equal (sv::4vec-reduction-and (-- x))
+                  (- x)))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
+
 (bump-all-meta-rules)
 
 ;;(bump-down-rp-rule (:META medw-compress-meta . equal))

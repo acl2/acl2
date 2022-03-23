@@ -66,7 +66,8 @@
                  :in-theory (e/d (RP-STATEP) ())))
   :stobjs (rp-state)
   (b* ((cases (casesplitter-cases rp-state))
-       (cases (ex-from-rp-all2-lst cases)))
+       (cases (ex-from-rp-all2-lst cases))
+       (cases (reverse cases)))
     (casesplitter-aux term cases)))
 
 (local

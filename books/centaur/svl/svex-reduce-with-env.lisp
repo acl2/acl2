@@ -660,6 +660,8 @@
                                                 (- start c-size)
                                                 size
                                                 env))
+                    ((when (<= (+ start size) c-size))
+                     (svex-reduce-w/-env-masked term1 start size env))
                     ((when (and (< start c-size)
                                 (< c-size (+ start size))))
                      (b* ((term1 (svex-reduce-w/-env-masked term1
@@ -669,12 +671,11 @@
                           (term2 (svex-reduce-w/-env-masked term2
                                                             0
                                                             (- size (- c-size start))
-                                                            env)))
+                                                            env))
+                          ((when (equal term2 0)) term1))
                        (svex-reduce-w/-env-apply fn
                                                  (hons-list (- c-size start)
-                                                            term1 term2))))
-                    ((when (<= (+ start size) c-size))
-                     (svex-reduce-w/-env-masked term1 start size env)))
+                                                            term1 term2)))))
                  (hons-list 'sv::concat c-size ;; should never come to this case
                             (svex-reduce-w/-env-masked term1 0 c-size env)
                             (svex-reduce-w/-env term2 env))))
@@ -977,6 +978,7 @@ but did not resolve the branch ~%" first))))
                                                       args-evaluated)))
                          (second
                           (svex-reduce-w/-env-masked (second args) 0 size env))
+                         ((when (equal third 0)) second)
                          (args-evaluated (hons-list size second third)))
                       (svex-reduce-w/-env-apply fn args-evaluated)))
                    (t (b* ((args-evaluated (svex-reduce-w/-env-lst args env)))
