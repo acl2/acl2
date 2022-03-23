@@ -466,16 +466,29 @@ sub scan_src_run {
     my $fname = shift;
     my @events = ();
     if (open(my $file, "<", $fname)) {
+	my $acl2devel = 0;
 	while (my $the_line = <$file>) {
-	    my $event = scan_include_book($fname, $the_line)
-		|| scan_max_mem($fname, $the_line)
-		|| scan_max_time($fname, $the_line)
-		|| scan_ifdef($fname, $the_line)
-		|| scan_endif($fname, $the_line)
-		|| scan_ifdef_define($fname, $the_line)
-		|| scan_pbs($fname, $the_line);
-	    if ($event) {
-		push @events, $event;
+	    if ($the_line =~ m/^\s*$/) {
+		# just whitespace so skip, in particular don't remove $islocal or $acl2devel
+	    } else {
+		my $event = scan_include_book($fname, $the_line)
+		    || scan_max_mem($fname, $the_line)
+		    || scan_max_time($fname, $the_line)
+		    || scan_ifdef($fname, $the_line)
+		    || scan_endif($fname, $the_line)
+		    || scan_ifdef_define($fname, $the_line)
+		    || scan_pbs($fname, $the_line);
+		if ($event) {
+		    push @events, $event;
+		}
+		if ($acl2devel) {
+		    push @events, end_acl2devel_event();
+		    $acl2devel = 0;
+		}
+		$acl2devel = scan_acl2devel($fname, $the_line);
+		if ($acl2devel) {
+		    push @events, start_acl2devel_event();
+		}
 	    }
 	}
 	close($file);
