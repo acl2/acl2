@@ -40,3 +40,4 @@
 (include-book "svtv-stobj-pipeline-thm")
 (include-book "svtv-stobj-decomp")
 (include-book "svtv-stobj-pipeline-monotonicity")
+(include-book "svtv-fsm-override")

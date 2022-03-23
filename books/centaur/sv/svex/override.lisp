@@ -1420,7 +1420,7 @@
                            (k var)))
              :in-theory (disable svex-envs-similar-implies-equal-svex-env-lookup-2))))
 
-  (defthmd svex-envs-agree-by-witness
+  (defthmd svex-envs-agree-except-by-witness
     (equal (svex-envs-agree-except vars x y)
            (let ((var (svex-envs-agree-except-witness vars x y)))
              (implies (not (member-equal (svar-fix var) (svarlist-fix vars)))

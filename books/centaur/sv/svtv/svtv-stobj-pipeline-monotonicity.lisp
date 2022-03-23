@@ -1179,7 +1179,12 @@
 
 
 
-
+(defthmd svex-envs-agree-is-equal-of-extract
+  (equal (svex-envs-agree vars x y)
+         (equal (svex-env-extract vars x)
+                (svex-env-extract vars y)))
+  :hints(("Goal" :in-theory (enable svex-env-extract
+                                    svex-envs-disagree-witness))))
 
 
 
@@ -1204,18 +1209,42 @@
                      (svex-alistlist-check-monotonic (svtv-data-obj-pipeline-substs obj))))
               :hints(("Goal" :in-theory (enable (<export>))))))
 
-     (defconst *<svtv>-override-tests* '<override-vars>)
+     (defconst *<svtv>-override-test-vars* '<override-vars>)
+
+     (defund <svtv>-override-test-vars ()
+       (declare (xargs :guard t))
+       '<override-vars>)
      
      (local (defthm override-vars-of-<export>
               (equal (svtv-input-substs-extract-override-vars
                       (svtv-data-obj-pipeline-substs (<export>)))
-                     '<override-vars>)
-              :hints(("Goal" :in-theory (enable (<export>))))))
+                     (<svtv>-override-test-vars))
+              :hints(("Goal" :in-theory (enable (<export>) (<svtv>-override-test-vars))))))
 
      (defthm <svtv>-partial-monotonic
-       (svex-alist-partial-monotonic *<svtv>-override-tests*
+       (svex-alist-partial-monotonic (<svtv>-override-test-vars)
                                      (svtv->outexprs (<svtv>)))
-       :hints (("goal" :use ((:instance svtv-data-obj-pipeline-partial-monotonic-p (obj (<export>)))))))))
+       :hints (("goal" :use ((:instance svtv-data-obj-pipeline-partial-monotonic-p (obj (<export>)))))))
+
+     (defthm <svtv>-monotonicity
+       (implies (and (svex-envs-agree (<svtv>-override-test-vars) env1 env2)
+                     (svex-env-<<= env1 env2))
+           (svex-env-<<= (svtv-run (<svtv>) env1)
+                         (svtv-run (<svtv>) env2)))
+       :hints (("goal" :use <svtv>-partial-monotonic
+                :in-theory '(svtv-run
+                             svex-envs-agree-is-equal-of-extract
+                             eval-when-svex-alist-partial-monotonic
+                             return-type-of-svex-alist-eval-for-symbolic
+                             SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-EXTRACT-2
+                             SVEX-ENV-FIX-UNDER-SVEX-ENV-EQUIV
+                             SVEX-ALIST-EVAL-OF-SVEX-ALIST-FIX-X
+                             SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-<<=-1
+                             SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-<<=-2
+                             svex-env-equiv-refines-svex-envs-similar
+                             SVEX-ENV-EXTRACT-SVEX-ENV-EQUIV-CONGRUENCE-ON-ENV
+                             svex-env-equiv-is-an-equivalence
+                             SVEX-ALIST-EVAL-SVEX-ENV-EQUIV-CONGRUENCE-ON-ENV))))))
 
 (define svtv-data-partial-monotonic-errmsg ((svtv svtv-p) svtv-data)
   (b* (((unless (svtv-data->flatten-validp svtv-data))
@@ -1267,3 +1296,37 @@
 (defmacro def-svtv-partial-monotonic (svtv &key export (stobj 'svtv-data))
   (def-svtv-partial-monotonic-fn svtv export stobj))
     
+(defxdoc def-svtv-partial-monotonic
+  :parents (svtv-data)
+  :short "Prove that an SVTV is monotonic in all variables except override tests."
+  :long "
+<p>Usage:</p>
+@({
+ (def-svtv-partial-monotonic <svtv-name> :export <export-name>)
+ })
+
+<p>Prerequisite: The SVTV must be defined with @(see defsvtv$) or @(see
+defsvtv$-phasewise) (or otherwise result from populating a @(see svtv-data)
+stobj), and the contents of the stobj thus populated must be exported into a
+regular object @('<export-name>') using @('def-svtv-data-export').
+Additionally, the setting for the @('monotonify') argument must be
+@('t') (which is the default).</p>
+
+<p>This proves two theorems about the SVTV:</p>
+
+@({
+ (svex-alist-partial-monotonic (<svtv>-override-test-vars)
+                               (svtv->outexprs (<svtv>)))
+ })
+
+<p>and a direct consequence:</p>
+
+@({
+ (implies (and (svex-envs-agree (<svtv>-override-test-vars) env1 env2)
+               (svex-env-<<= env1 env2))
+          (svex-env-<<= (svtv-run (<svtv>) env1)
+                        (svtv-run (<svtv>) env2)))
+ })
+
+<p>This is useful for overrides; see @(see def-svtv-overrides-correct).</p>")
+
