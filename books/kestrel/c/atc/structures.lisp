@@ -131,7 +131,7 @@
   (xdoc::topstring
    (xdoc::p
     "We look up the members in order;
-     given that the members have distinct names (see @(tsee struct),
+     given that the members have distinct names (see @(tsee struct)),
      the search order is immaterial.
      The new value must have the same type as the old value."))
   (b* ((new-members (struct-write-member-aux (struct->members struct) name val))
