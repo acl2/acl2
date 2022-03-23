@@ -1573,6 +1573,16 @@
                                  compst)))
     :enable exec-expr-pure)
 
+  (defruled exec-expr-pure-when-memberp
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :memberp))
+             (equal (exec-expr-pure e compst)
+                    (exec-memberp (exec-expr-pure (expr-memberp->target e)
+                                                  compst)
+                                  (expr-memberp->name e)
+                                  compst)))
+    :enable exec-expr-pure)
+
   (defruled exec-expr-pure-when-unary
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :unary))
