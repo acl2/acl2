@@ -830,13 +830,14 @@ of @(see svex-env-lookup), and they bind the same variables.")
                       (svex-env-lookup var y))
                agree)))
 
-  (defretd <fn>-under-iff
-    (iff agree
-         (b* ((var (svex-envs-disagree-witness vars x y)))
-           (implies (member-equal (svar-fix var) (svarlist-fix vars))
-                    (equal (svex-env-lookup var x)
-                           (svex-env-lookup var y))))))
-
+  (defthmd svex-envs-agree-by-witness
+    (equal (svex-envs-agree vars x y)
+           (b* ((var (svex-envs-disagree-witness vars x y)))
+             (implies (member-equal (svar-fix var) (svarlist-fix vars))
+                      (equal (svex-env-lookup var x)
+                             (svex-env-lookup var y)))))
+    :rule-classes ((:definition :install-body nil)))
+  
   (defthm svex-envs-agree-witness-self
     (svex-envs-agree vars x x))
 

@@ -238,11 +238,11 @@
            (logand nice (loghead nice-len not-nice))))
   :hints(("Goal" :in-theory (enable fgl::integer-length-bound))))
 
-(fgl::def-fgl-rewrite svex-envs-disagree-witness-fgl
-  (iff (svex-envs-disagree-witness vars x y)
-       (not (svex-envs-agree vars x y))))
+;; (fgl::def-fgl-rewrite svex-envs-disagree-witness-fgl
+;;   (iff (svex-envs-disagree-witness vars x y)
+;;        (not (svex-envs-agree vars x y))))
 
-(fgl::remove-fgl-rewrite svex-envs-disagree-witness)
+;; (fgl::remove-fgl-rewrite svex-envs-disagree-witness)
 
 
 ;; Use FGL to prove that if pipeline input envs agree except on pipeline

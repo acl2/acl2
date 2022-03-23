@@ -1184,7 +1184,7 @@
          (equal (svex-env-extract vars x)
                 (svex-env-extract vars y)))
   :hints(("Goal" :in-theory (enable svex-env-extract
-                                    svex-envs-disagree-witness))))
+                                    svex-envs-agree))))
 
 
 
