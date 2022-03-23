@@ -53,7 +53,7 @@
     "We collect the rules in lists,
      each of which serves a particular symbolic execution purpose.
      Certain rules (proved elsewhere) may appear in multiple lists,
-     when they serve different symbolic execution purposes."))
+     when they serve multiple symbolic execution purposes."))
   :order-subtopics t
   :default-parent t)
 
@@ -1369,38 +1369,38 @@
            (xdoc::topstring
             (xdoc::p
              "The goal of these rules is to
-            rewrite @('(exec-binary-strict-pure op x y)')
-            to @('(op-type1-type2 x y)')
-            when @('x') has type @('type1'),
-            and @('y') has type @('type2').
-            We could have a rule for each combination of
-            @('op'), @('type1'), and @('type2'),
-            but that would lead to 1,600 rules being applicable to
-            @('(exec-binary-strict-pure op x y)').
-            So we stage the rewriting as follows:")
+              rewrite @('(exec-binary-strict-pure op x y)')
+              to @('(op-type1-type2 x y)')
+              when @('x') has type @('type1'),
+              and @('y') has type @('type2').
+              We could have a rule for each combination of
+              @('op'), @('type1'), and @('type2'),
+              but that would lead to 1,600 rules being applicable to
+              @('(exec-binary-strict-pure op x y)').
+              So we stage the rewriting as follows:")
             (xdoc::ul
              (xdoc::li
               "First, we rewrite @('(exec-binary-strict-pure op x y)')
-             to a call @('(exec-binary-strict-pure-of-op x y)'),
-             under the hypothesis that @('op') is a specific operator,
-             where @('exec-binary-strict-pure-of-op') is one of 16 functions,
-             one per binary strict operator.")
+               to a call @('(exec-binary-strict-pure-of-op x y)'),
+               under the hypothesis that @('op') is a specific operator,
+               where @('exec-binary-strict-pure-of-op') is one of 16 functions,
+               one per binary strict operator.")
              (xdoc::li
               "Next, we rewrite @('(exec-binary-strict-pure-of-op x y)')
-             to a call @('(exec-binary-strict-pure-of-op-and-type1 x y)'),
-             under the hypothesis that @('x') has type @('type1'),
-             where @('exec-binary-strict-pure-of-op-and-type1')
-             is one of 10 functions,
-            one per supported integer type.")
+               to a call @('(exec-binary-strict-pure-of-op-and-type1 x y)'),
+               under the hypothesis that @('x') has type @('type1'),
+               where @('exec-binary-strict-pure-of-op-and-type1')
+               is one of 10 functions,
+               one per supported integer type.")
              (xdoc::li
               "Finally, we rewrite
-             @('(exec-binary-strict-pure-of-op-and-type1 x y)')
-             to the call @('(op-type1-type2 x y)'),
-             under the hypothesis the @('y') has type @('type2'),
-             for each of the 10 supported integer types."))
+               @('(exec-binary-strict-pure-of-op-and-type1 x y)')
+               to the call @('(op-type1-type2 x y)'),
+               under the hypothesis the @('y') has type @('type2'),
+               for each of the 10 supported integer types."))
             (xdoc::p
              "Note that the intermediate functions used here
-            do not need guard verification."))
+              do not need guard verification."))
            ,@events
            (defval *atc-exec-binary-strict-pure-rules*
              '(,@names
