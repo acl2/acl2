@@ -37,7 +37,7 @@
      using the theorems about the called functions.")
    (xdoc::p
     "The dynamic semantics functions that perform the above actions,
-     namely @(tsee push-frame), @tsee enter-scope), @(tsee create-var), etc.,
+     namely @(tsee push-frame), @(tsee enter-scope), @(tsee create-var), etc.,
      go into the frame stack component of the computation state,
      via the @(tsee compustate->frames) accessor.
      That would lead to a complex symbolic term for the computation state.")
@@ -53,17 +53,17 @@
      but we leave these functions disabled during symbolic execution,
      so that the symbolic computation states has these additions explicit.
      Thus, the symbolic computation state is
-     a sequence of applications of the three functions below
+     a sequence of applications of those three functions
      to an initial symbolic computation state @('<compst>'):")
    (xdoc::codeblock
     "(add-var ... (enter-scope (add-var ... (add-frame ... <compst>)...)")
    (xdoc::p
     "The reason for introducing a new function @(tsee add-var),
-     instead of just using @(tsee create-var) (leaving it disabled),
+     instead of just using @(tsee create-var) (and leaving it disabled),
      is that @(tsee add-var) unconditionally satisfies certain properties
      that @(tsee create-var) satisfies when it does not return an error:
      @(tsee add-var) unconditionally returns a computation state,
-     and always ensured that the added variable is in the computation state.
+     and always ensures that the added variable is in the computation state.
      During symbolic execution,
      @(tsee create-var) is replaced with @(tsee add-var)
      via a rule that requires @(tsee create-var) to not return an error:
@@ -123,7 +123,7 @@
      for certain variables (i.e. identifiers)
      yields values of certain C types:
      this way, any of these @(tsee read-var) calls
-     arising during symbolic execution match those hypotheses.
+     arising during symbolic execution will match those hypotheses.
      A loop may write to those variables:
      in this case, after replacing @(tsee write-var) with @(tsee update-var)
      right away as explained earlier,
@@ -133,7 +133,7 @@
      This may happen for several different variables,
      leading to states of the form")
    (xdoc::codeblock
-    "(... (enter-scope (add-var (update-var ... (update-var ... <compst>)...)")
+    "(... (enter-scope (add-var ... (update-var ... (update-var ... <compst>)...)")
    (xdoc::p
     "Below we introduce rules to order these @(tsee update-var)s
      according to the variables,
@@ -174,11 +174,21 @@
      @(tsee pointer->address) applied to an ACL2 variable,
      while for a C loop it is
      @(tsee pointer->address) applied to a @('(read-var <identifier> ...)').
-     These two kinds of first arguments never appear together.
-     We prove rules that order according to the symbols,
-     which apply to proofs of theorems of C functions,
-     and we prove rules that order according to the identifiers,
+     These two kinds of first arguments never appear together,
+     i.e. in the same theorem,
+     because each theorem is for either a C function or a C loop.
+     We prove rules that order @(tsee update-array)s
+     according to the symbols,
+     which apply to proofs of theorems of C functions;
+     and we prove rules that order @(tsee update-array)s
+     according to the identifiers,
      which apply to proofs of theorems of C loops.")
+   (xdoc::p
+    "The treatment of structures is analogous to arrays.
+     We introduce a function @(tsee update-struct)
+     that replaces @(tsee write-struct) in symbolic execution.
+     We push calls of @(tsee update-struct) past all @(tsee update-array)s,
+     and we order them in the same way as @(tsee update-array)s.")
    (xdoc::p
     "After introducing the ACL2 functions
      that represent the canonical symbolic computation states,
@@ -322,6 +332,36 @@
     new-compst)
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define update-struct ((addr addressp) (struct structp) (compst compustatep))
+  :returns (new-compst compustatep)
+  :short (xdoc::topstring
+          "Update a structure in a "
+          (xdoc::seetopic "atc-symbolic-computation-states"
+                          "canonical representation of computation states")
+          ".")
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee write-struct), but it does not return an error.
+     We update the heap with the new structure regardless of
+     whether an old structure at that address exists or not,
+     and whether, if it exists,
+     its members and their types match the new structure.
+     This way, @(tsee update-struct) always guarantees that
+     the structure goes into the heap,
+     thus simplifying rules about it.
+     When we replace @(tsee write-struct) with @(tsee update-struct)
+     we ensure that all the conditions mentioned above hold,
+     so in a way @(tsee update-struct) caches the fact that
+     those conditions are satisfied."))
+  (b* ((heap (compustate->heap compst))
+       (new-heap (omap::update (address-fix addr) (struct-fix struct) heap))
+       (new-compst (change-compustate compst :heap new-heap)))
+    new-compst)
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-push-frame-rules
@@ -334,7 +374,7 @@
      Here we provide two theorems to turn that into a canonical representation.
      Assuming that @(tsee init-scope) is rewritten
      to a nest of @(tsee omap::update) calls
-     (as it is, because we use openers for @(tsee init-scope)),
+     (as it is, because we use rules for @(tsee init-scope) that do that),
      the two theorems below move the variables into @(tsee add-var) calls,
      and finally turn @(tsee push-frame) into @(tsee add-frame)."))
 
@@ -667,7 +707,8 @@
      if the two variables are the same, the value is returned;
      otherwise, we skip over the @(tsee update-var)
      in search for the variable.
-     The fourth theorem serves to move past array updates."))
+     The fourth and fifth theorems serve to move past
+     array and structure updates."))
 
   (defruled read-var-of-enter-scope
     (implies (not (equal (compustate-frames-number compst) 0))
@@ -720,11 +761,21 @@
              top-frame
              compustate-frames-number))
 
+  (defruled read-var-of-update-struct
+    (implies (not (equal (compustate-frames-number compst) 0))
+             (equal (read-var var (update-struct addr struct compst))
+                    (read-var var compst)))
+    :enable (read-var
+             update-struct
+             top-frame
+             compustate-frames-number))
+
   (defval *atc-read-var-rules*
     '(read-var-of-enter-scope
       read-var-of-add-var
       read-var-of-update-var
-      read-var-of-update-array)))
+      read-var-of-update-array
+      read-var-of-update-struct)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -872,7 +923,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The theorem about @(tsee write-array) turns it into @(tsee update-var),
+    "The theorem about @(tsee write-array) turns it into @(tsee update-array),
      similarly to how @(tsee write-var) is turned into @(tsee update-var).
      The condition for the replacement is captured by @('write-array-okp'),
      for which we supply rules to go through all the computation state layers.
@@ -1053,7 +1104,8 @@
   (xdoc::topstring
    (xdoc::p
     "We have rules to unconditionally push @(tsee update-array)
-     through all the layers except @(tsee update-array).")
+     through all the layers
+     except @(tsee update-array) and @(tsee update-struct).")
    (xdoc::p
     "When @(tsee update-array) is applied to @(tsee update-array),
      we have rules similar to the ones for @(tsee update-var).
@@ -1194,6 +1246,347 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-write-struct-rules
+  :short "Rules about @(tsee write-struct)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are analogous to the rules for @(tsee write-array).")
+   (xdoc::p
+    "There is an additional rule for @('write-array-okp')
+     to skip over @(tsee update-array).
+     This needs the hypothesis that the two addresses are different,
+     which is always present in the theorems generated by ATC."))
+
+  (define write-struct-okp ((addr addressp)
+                            (struct structp)
+                            (compst compustatep))
+    :returns (yes/no booleanp)
+    :parents nil
+    (b* ((addr (address-fix addr))
+         (heap (compustate->heap compst))
+         (addr+obj (omap::in addr heap))
+         ((unless (consp addr+obj)) nil)
+         (obj (cdr addr+obj))
+         ((unless (structp obj)) nil)
+         ((unless (equal (struct->tag struct)
+                         (struct->tag obj)))
+          nil)
+         ((unless (equal (member-list->name-list
+                          (struct->members struct))
+                         (member-list->name-list
+                          (struct->members obj))))
+          nil)
+         ((unless (equal (type-list-of-value-list
+                          (member-list->value-list
+                           (struct->members struct)))
+                         (type-list-of-value-list
+                          (member-list->value-list
+                           (struct->members obj)))))
+          nil))
+      t)
+    :hooks (:fix))
+
+  (defruled write-struct-okp-of-add-frame
+    (equal (write-struct-okp addr struct (add-frame fun compst))
+           (write-struct-okp addr struct compst))
+    :enable (write-struct-okp
+             add-frame
+             push-frame))
+
+  (defruled write-struct-okp-of-enter-scope
+    (equal (write-struct-okp addr struct (enter-scope compst))
+           (write-struct-okp addr struct compst))
+    :enable (write-struct-okp
+             enter-scope
+             push-frame
+             pop-frame))
+
+  (defruled write-struct-okp-of-add-var
+    (equal (write-struct-okp addr struct (add-var var val compst))
+           (write-struct-okp addr struct compst))
+    :enable (write-struct-okp
+             add-var
+             push-frame
+             pop-frame))
+
+  (defruled write-struct-okp-of-update-var
+    (equal (write-struct-okp addr struct (update-var var val compst))
+           (write-struct-okp addr struct compst))
+    :enable (write-struct-okp
+             update-var
+             push-frame
+             pop-frame))
+
+  (defruled write-struct-okp-of-update-array
+    (implies
+     (and (addressp addr)
+          (addressp addr2)
+          (not (equal addr addr2)))
+     (equal (write-struct-okp addr struct (update-array addr2 array compst))
+            (write-struct-okp addr struct compst)))
+    :enable (write-struct-okp
+             update-array
+             push-frame
+             pop-frame))
+
+  (defruled write-struct-okp-of-update-struct
+    (implies
+     (and (addressp addr)
+          (addressp addr2))
+     (equal (write-struct-okp addr struct (update-struct addr2 struct2 compst))
+            (if (equal addr addr2)
+                (and (equal (struct->tag struct)
+                            (struct->tag struct2))
+                     (equal (member-list->name-list
+                             (struct->members struct))
+                            (member-list->name-list
+                             (struct->members struct2)))
+                     (equal (type-list-of-value-list
+                             (member-list->value-list
+                              (struct->members struct)))
+                            (type-list-of-value-list
+                             (member-list->value-list
+                              (struct->members struct2)))))
+              (write-struct-okp addr struct compst))))
+    :enable (write-struct-okp
+             update-struct))
+
+  (defruled write-struct-okp-when-structp-of-read-struct
+    (implies (and (syntaxp (symbolp compst))
+                  (equal old-struct (read-struct addr compst))
+                  (structp old-struct))
+             (equal (write-struct-okp addr struct compst)
+                    (and (equal (struct->tag struct)
+                                (struct->tag old-struct))
+                         (equal (member-list->name-list
+                                 (struct->members struct))
+                                (member-list->name-list
+                                 (struct->members old-struct)))
+                         (equal (type-list-of-value-list
+                                 (member-list->value-list
+                                  (struct->members struct)))
+                                (type-list-of-value-list
+                                 (member-list->value-list
+                                  (struct->members old-struct)))))))
+    :enable (write-struct-okp read-struct)
+    :prep-lemmas
+    ((defrule lemma
+       (not (structp (error x)))
+       :enable (structp error))))
+
+  (defruled write-struct-to-update-struct
+    (implies (write-struct-okp addr struct compst)
+             (equal (write-struct addr struct compst)
+                    (update-struct addr struct compst)))
+    :enable (write-struct write-struct-okp update-struct))
+
+  (defval *atc-write-struct-rules*
+    '(write-struct-to-update-struct
+      write-struct-okp-of-add-frame
+      write-struct-okp-of-enter-scope
+      write-struct-okp-of-add-var
+      write-struct-okp-of-update-var
+      write-struct-okp-of-update-array
+      write-struct-okp-of-update-struct
+      write-struct-okp-when-structp-of-read-struct
+      addressp-of-pointer->address)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-read-struct-rules
+  :short "Rules about @(tsee read-struct)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are analogous to the rules for @(tsee read-array)."))
+
+  (defruled read-struct-of-add-frame
+    (equal (read-struct addr (add-frame fun compst))
+           (read-struct addr compst))
+    :enable (add-frame push-frame read-struct))
+
+  (defruled read-struct-of-enter-scope
+    (equal (read-struct addr (enter-scope compst))
+           (read-struct addr compst))
+    :enable (enter-scope
+             push-frame
+             pop-frame
+             read-struct))
+
+  (defruled read-struct-of-add-var
+    (equal (read-struct addr (add-var var val compst))
+           (read-struct addr compst))
+    :enable (add-var
+             push-frame
+             pop-frame
+             read-struct))
+
+  (defruled read-struct-of-update-var
+    (equal (read-struct addr (update-var var val compst))
+           (read-struct addr compst))
+    :enable (update-var
+             push-frame
+             pop-frame
+             read-struct))
+
+  (defruled read-struct-of-update-array
+    (implies (and (addressp addr)
+                  (addressp addr2)
+                  (not (equal addr addr2)))
+             (equal (read-struct addr (update-array addr2 array compst))
+                    (read-struct addr compst)))
+    :enable (read-struct
+             update-array))
+
+  (defruled read-struct-of-update-struct
+    (implies (and (addressp addr)
+                  (addressp addr2))
+             (equal (read-struct addr (update-struct addr2 struct compst))
+                    (if (equal addr addr2)
+                        (struct-fix struct)
+                      (read-struct addr compst))))
+    :enable (read-struct
+             update-struct))
+
+  (defval *atc-read-struct-rules*
+    '(read-struct-of-add-frame
+      read-struct-of-enter-scope
+      read-struct-of-add-var
+      read-struct-of-update-var
+      read-struct-of-update-array
+      read-struct-of-update-struct
+      addressp-of-pointer->address
+      struct-fix-when-structp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-update-struct-rules
+  :short "Rules about @(tsee update-struct)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are similar to the rules for @(tsee update-array)."))
+
+  (defruled update-struct-of-add-frame
+    (equal (update-struct addr struct (add-frame fun compst))
+           (add-frame fun (update-struct addr struct compst)))
+    :enable (update-struct
+             add-frame
+             push-frame))
+
+  (defruled update-struct-of-enter-scope
+    (equal (update-struct addr struct (enter-scope compst))
+           (enter-scope (update-struct addr struct compst)))
+    :enable (update-struct
+             enter-scope
+             push-frame
+             pop-frame
+             top-frame))
+
+  (defruled update-struct-of-add-var
+    (equal (update-struct addr struct (add-var var val compst))
+           (add-var var val (update-struct addr struct compst)))
+    :enable (update-struct
+             add-var
+             push-frame
+             pop-frame
+             top-frame))
+
+  (defruled update-struct-of-update-var
+    (equal (update-struct addr struct (update-var var val compst))
+           (update-var var val (update-struct addr struct compst)))
+    :enable (update-struct
+             update-var
+             push-frame
+             pop-frame
+             top-frame))
+
+  (defruled update-struct-of-update-array
+    (implies
+     (and (addressp addr)
+          (addressp addr2)
+          (not (equal addr addr2)))
+     (equal (update-struct addr struct (update-array addr2 array compst))
+            (update-array addr2 array (update-struct addr struct compst))))
+    :enable (update-struct update-array))
+
+  (defruled update-struct-of-update-struct-same
+    (equal (update-struct addr struct (update-struct addr struct2 compst))
+           (update-struct addr struct compst))
+    :enable update-struct)
+
+  (defruled update-struct-of-update-struct-less-symbol
+    (implies
+     (and (syntaxp (and (ffn-symb-p addr 'pointer->address)
+                        (ffn-symb-p addr2 'pointer->address)
+                        (b* ((ptr (fargn addr 1))
+                             (ptr2 (fargn addr2 1)))
+                          (and (symbolp ptr)
+                               (symbolp ptr2)
+                               (symbol< ptr2 ptr)))))
+          (addressp addr)
+          (addressp addr2)
+          (not (equal addr addr2)))
+     (equal (update-struct addr struct (update-struct addr2 struct2 compst))
+            (update-struct addr2 struct2 (update-struct addr struct compst))))
+    :enable update-struct)
+
+  (defruled update-struct-of-update-struct-less-ident
+    (implies
+     (and (syntaxp (and (ffn-symb-p addr 'pointer->address)
+                        (ffn-symb-p addr2 'pointer->address)
+                        (b* ((ptr (fargn addr 1))
+                             (ptr2 (fargn addr2 1)))
+                          (and (ffn-symb-p ptr 'read-var)
+                               (ffn-symb-p ptr2 'read-var)
+                               (<< (fargn ptr2 1)
+                                   (fargn ptr 1))))))
+          (addressp addr)
+          (addressp addr2)
+          (not (equal addr addr2)))
+     (equal (update-struct addr struct (update-struct addr2 struct2 compst))
+            (update-struct addr2 struct2 (update-struct addr struct compst))))
+    :enable update-struct)
+
+  (defruled update-struct-of-read-struct-same
+    (implies (and (syntaxp (symbolp compst))
+                  (addressp addr)
+                  (compustatep compst1)
+                  (structp (read-struct addr compst))
+                  (equal (read-struct addr compst)
+                         (read-struct addr compst1)))
+             (equal (update-struct addr (read-struct addr compst) compst1)
+                    compst1))
+    :enable (read-struct
+             update-struct
+             omap::update-of-cdr-of-in-when-in)
+    :prep-lemmas
+    ((defruled omap::update-of-cdr-of-in-when-in
+       (implies (consp (omap::in k m))
+                (equal (omap::update k (cdr (omap::in k m)) m)
+                       m))
+       :induct (omap::in k m)
+       :enable omap::in)
+     (defrule lemma
+       (implies (structp x)
+                (not (errorp x)))
+       :enable (structp errorp))))
+
+  (defval *atc-update-struct-rules*
+    '(update-struct-of-add-frame
+      update-struct-of-enter-scope
+      update-struct-of-add-var
+      update-struct-of-update-var
+      update-struct-of-update-array
+      update-struct-of-update-struct-same
+      update-struct-of-update-struct-less-symbol
+      update-struct-of-update-struct-less-ident
+      update-struct-of-read-struct-same
+      addressp-of-pointer->address)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-compustate-frames-number-rules
   :short "Rules about @(tsee compustate-frames-number)."
   :long
@@ -1207,7 +1600,8 @@
      satisfy that condition
      (by design, for @(tsee add-var) and @(tsee update-var)).")
    (xdoc::p
-    "The last theorem serves to skip over @(tsee update-array) calls."))
+    "The last theorems serve to skip over
+     @(tsee update-array) and @(tsee update-struct) calls."))
 
   (defruled compustate-frames-number-of-add-frame-not-zero
     (not (equal (compustate-frames-number (add-frame fun compst)) 0))
@@ -1231,12 +1625,19 @@
     :enable (update-array
              compustate-frames-number))
 
+  (defruled compustate-frames-number-of-update-struct
+    (equal (compustate-frames-number (update-struct addr struct compst))
+           (compustate-frames-number compst))
+    :enable (update-struct
+             compustate-frames-number))
+
   (defval *atc-compustate-frames-number-rules*
     '(compustate-frames-number-of-add-frame-not-zero
       compustate-frames-number-of-enter-scope-not-zero
       compustate-frames-number-of-add-var-not-zero
       compustate-frames-number-of-update-var-not-zero
-      compustate-frames-number-of-update-array)))
+      compustate-frames-number-of-update-array
+      compustate-frames-number-of-update-struct)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1252,4 +1653,7 @@
           *atc-write-array-rules*
           *atc-read-array-rules*
           *atc-update-array-rules*
+          *atc-write-struct-rules*
+          *atc-read-struct-rules*
+          *atc-update-struct-rules*
           *atc-compustate-frames-number-rules*))
