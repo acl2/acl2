@@ -655,3 +655,18 @@
                 (posp size))
            (equal (logext size (+ x (- (logext size y))))
                   (logext size (+ x (- y))))))
+
+(defthm logext-of-minus
+  (implies (and (integerp x)
+                (posp size)
+                )
+           (equal (logext size (- x))
+                  (if (and (equal 0 (bvchop (+ -1 size) x))
+                           (equal 1 (getbit (+ -1 size) x)))
+                      (+ (- (expt 2 size)) (- (logext size x)))
+                    (- (logext size x)))))
+  :hints (("Goal" :in-theory (e/d (logext logapp getbit slice logtail-of-bvchop bvchop-32-split-hack)
+                                  (;anti-slice
+                                   bvchop-1-becomes-getbit slice-becomes-getbit
+                                                           ;bvplus-recollapse
+                                                           bvchop-of-logtail)))))

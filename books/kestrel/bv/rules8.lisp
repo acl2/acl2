@@ -16,8 +16,6 @@
 (include-book "slice")
 (include-book "bvplus")
 (include-book "bvuminus")
-(include-book "sbvlt")
-(include-book "logext")
 (include-book "unsigned-byte-p-forced")
 (include-book "bv-syntax") ; for bind-var-to-bv-term-size
 (local (include-book "rules")) ;for logtail-of-minus
@@ -36,7 +34,7 @@
 ;drop or move hyps?
 ;expensive?
 (defthm mod-equal-impossible-value
-  (implies (and (<= j k)
+  (implies (and (<= j k) ; unusual
                 (natp i)
                 (natp j))
            (equal (equal k (mod i j))
@@ -91,21 +89,6 @@
                                        ;BVLT-OF-BVCHOP-ARG3
                                        )))))
 
-(defthm logext-of-minus
-  (implies (and (integerp x)
-                (posp size)
-                )
-           (equal (logext size (- x))
-                  (if (and (equal 0 (bvchop (+ -1 size) x))
-                           (equal 1 (getbit (+ -1 size) x)))
-                      (+ (- (expt 2 size)) (- (logext size x)))
-                    (- (logext size x)))))
-  :hints (("Goal" :in-theory (e/d (logext logapp getbit slice logtail-of-bvchop bvchop-32-split-hack)
-                                  (;anti-slice
-                                   bvchop-1-becomes-getbit slice-becomes-getbit
-                                                           ;bvplus-recollapse
-                                                           bvchop-of-logtail)))))
-
 ;i think we may need this to split into cases - but maybe delay that?
 (defthm bvuminus-when-smaller-bind-free
   (implies (and (bind-free (bind-var-to-bv-term-size 'free x))
@@ -118,20 +101,3 @@
                     (bvplus size (- (expt 2 size) (expt 2 free)) (bvuminus free x)))))
   :hints (("Goal" :use (:instance bvuminus-when-smaller)
            :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) ( bvuminus-when-smaller)))))
-
-;loops with defn sbvlt?
-(defthmd <=-of-logext-and--1
-  (equal (< -1 (logext size y))
-         (not (sbvlt size y 0)))
-  :hints (("Goal" :in-theory (enable sbvlt))))
-
-;move
-(defthm not-equal-of-bvchop-when-equal-of-getbit
-  (implies (and (syntaxp (quotep val))
-                (equal bit (getbit size2 y))
-                (syntaxp (quotep bit))
-                (not (equal bit (getbit size2 val)))
-                (< size2 size)
-                (natp size2)
-                (integerp size))
-           (not (equal val (bvchop size y)))))

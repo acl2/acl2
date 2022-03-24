@@ -782,7 +782,7 @@
             x86isa::integerp-when-canonical-address-p-cheap
             x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
-            acl2::cancel-<-+
+            acl2::<-of-+-cancel-2-1
             ash-negative-becomes-slice-axe
 
             ;;one-byte-opcode-execute ;shilpi leaves this enabled, but it seems dangerous

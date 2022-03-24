@@ -1,7 +1,7 @@
 ; More rules about unsigned-byte-p
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-;; This book includes theorems about unsigned-byte-p that mention non-built-in functions.
+;; This book includes theorems about unsigned-byte-p and non-built-in functions.
 
 (include-book "unsigned-byte-p")
 (include-book "kestrel/utilities/polarity" :dir :system)

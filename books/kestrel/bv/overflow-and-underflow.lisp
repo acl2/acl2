@@ -16,7 +16,7 @@
 (include-book "bvlt")
 (include-book "bvplus")
 (include-book "bvminus")
-(include-book "rules") ;reduce?
+(include-book "rules") ;reduce? for getbit-of-plus
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -40,13 +40,17 @@
        ;; if x is positive, the addition might overflow:
        (sbvlt size (bvminus size (- (expt 2 (- size 1)) 1) x) y))) ;implies that y is positive
 
+(defthm not-signed-addition-overflowsp-of-0-arg1
+  (not (signed-addition-overflowsp size 0 x)))
+
 ;testing for overflow is symmetric
 ;proof splits into many cases...
 (defthmd signed-addition-overflowsp-symmetric
   (implies (posp size)
            (equal (signed-addition-overflowsp size x y)
                   (signed-addition-overflowsp size y x)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-plus
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt
+                                          getbit-of-plus
                                           logext-cases
                                           bvminus bvuminus
                                           bvchop-when-top-bit-1
@@ -69,7 +73,8 @@
            (iff (signed-addition-overflowsp size x y)
                 ;; could also say "not signed-byte-p ..."
                 (<= (expt 2 (+ -1 size)) (+ (logext size x) (logext size y)))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt
+                                          GETBIT-OF-PLUS
                                           logext-cases
                                           bvminus  bvuminus
                                           BVCHOP-WHEN-TOP-BIT-1
@@ -104,6 +109,9 @@
   (and (sbvlt size x 0)
        ;; if x is negative, the addition might overflow:
        (sbvlt size y (bvminus size (- (expt 2 (- size 1))) x)))) ;implies that y is negative?
+
+(defthm not-signed-addition-underflowsp-of-0-arg1
+  (not (signed-addition-underflowsp size 0 x)))
 
 ;testing for underflow should be symmetric
 (defthmd signed-addition-underflowsp-symmetric
@@ -145,3 +153,19 @@
                 (posp size))
            (not (signed-addition-underflowsp size x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+
+(defthm not-signed-addition-overflowsp-when-signed-addition-underflowsp-cheap
+  (implies (and (signed-addition-underflowsp size x y)
+                (posp size))
+           (not (signed-addition-overflowsp size x y)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+  :hints (("Goal" :use (:instance sbvlt-transitive-2-a
+                                  (y x)
+                                  (k 0)
+                                  (free -1))
+           :in-theory (disable sbvlt-transitive-2-a sbvlt-of-0-arg2-polarity))))
+
+;add dual for overflow?
+(defthm signed-addition-underflowsp-of-min-int
+  (equal (signed-addition-underflowsp 32 2147483648 k)
+         (sbvlt 32 k 0)))
