@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+;; See also unroll-spec
+
 ;;TODO: What about xor simplification?  maybe ok to delay?
 
 (include-book "rewriter-basic")
