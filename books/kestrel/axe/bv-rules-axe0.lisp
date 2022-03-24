@@ -26,112 +26,102 @@
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/bv/rotate" :dir :system)
 
-; TODO: Disable all of these?
-
-(defthm integerp-of-bvplus
+(defthmd integerp-of-bvplus
   (integerp (bvplus size x y)))
 
-(defthm natp-of-bvplus
+(defthmd natp-of-bvplus
   (natp (bvplus size x y)))
 
-(defthm integerp-of-floor
+(defthmd integerp-of-floor
   (integerp (floor i j)))
 
-(defthm rational-of-floor
+(defthmd rational-of-floor
   (rationalp (floor i j)))
 
-(defthm acl2-numberp-of-floor
+(defthmd acl2-numberp-of-floor
   (acl2-numberp (floor i j)))
 
-(defthm integerp-of-leftrotate
+(defthmd integerp-of-leftrotate
   (integerp (leftrotate width amt val)))
 
-(defthm integerp-of-leftrotate32
+(defthmd integerp-of-leftrotate32
   (integerp (leftrotate32 amt val)))
 
-(defthm natp-of-leftrotate
+(defthmd natp-of-leftrotate
   (natp (leftrotate width amt val)))
 
-(defthm natp-of-leftrotate32
-  (natp (leftrotate32 amt val))
-  :hints (("Goal" :in-theory (enable leftrotate32))))
+(defthmd natp-of-leftrotate32
+  (natp (leftrotate32 amt val)))
 
-(defthm leftrotate32-non-negative
+(defthmd leftrotate32-non-negative
   (not (< (leftrotate32 amt val) 0))
   :hints (("Goal" :in-theory (enable leftrotate32))))
 
-(defthm integerp-of-rightrotate
+(defthmd integerp-of-rightrotate
   (integerp (rightrotate width amt val)))
 
-(defthm integerp-of-rightrotate32
+(defthmd integerp-of-rightrotate32
   (integerp (rightrotate32 amt val)))
 
-(defthm natp-of-rightrotate
+(defthmd natp-of-rightrotate
   (natp (rightrotate width amt val)))
 
-(defthm natp-of-rightrotate32
+(defthmd natp-of-rightrotate32
   (natp (rightrotate32 amt val))
   :hints (("Goal" :in-theory (enable rightrotate32))))
 
-(defthm integerp-of-bvcat
+(defthmd integerp-of-bvcat
   (integerp (bvcat highsize highval lowsize lowval)))
 
 ;improve logapp-<-0?
-(defthm bvcat-non-negative
-  (not (< (bvcat highsize highval lowsize lowval) 0))
-  :hints (("Goal" :in-theory (enable bvcat natp))))
+(defthmd bvcat-non-negative
+  (not (< (bvcat highsize highval lowsize lowval) 0)))
 
-(defthm integerp-of-bvxor
+(defthmd integerp-of-bvxor
   (integerp (bvxor size x y)))
 
-(defthm natp-of-bvxor
+(defthmd natp-of-bvxor
   (natp (bvxor size x y)))
 
-(defthm integerp-of-bitxor
+(defthmd integerp-of-bitxor
   (integerp (bitxor x y)))
 
-(defthm natp-of-bitxor
+(defthmd natp-of-bitxor
   (natp (bitxor x y)))
 
-(defthm natp-of-bvcat
+(defthmd natp-of-bvcat
   (natp (bvcat highsize highval lowsize lowval)))
 
-(defthm integerp-of-bvand
+(defthmd integerp-of-bvand
   (integerp (bvand size x y)))
 
-(defthm natp-of-bvand
+(defthmd natp-of-bvand
   (natp (bvand size x y)))
 
-(defthm integerp-of-bvor
+(defthmd integerp-of-bvor
   (integerp (bvor size x y)))
 
-(defthm natp-of-bvor
+(defthmd natp-of-bvor
   (natp (bvor size x y)))
 
-(defthm bvor-non-negative
+(defthmd bvor-non-negative
   (not (< (bvor size x y) 0)))
 
-;only needed by Axe
-(defthm integerp-of-bvnot
+(defthmd integerp-of-bvnot
   (integerp (bvnot size x)))
 
-;only needed by Axe
-(defthm natp-of-bvnot
+(defthmd natp-of-bvnot
   (natp (bvnot size x)))
 
-;only needed by Axe
-(defthm acl2-numberp-of-mod
+(defthmd acl2-numberp-of-mod
   (acl2-numberp (mod x y)))
 
-;; Only needed for Axe
-(defthm booleanp-of-sbvlt
+(defthmd booleanp-of-sbvlt
   (booleanp (sbvlt size x y)))
 
-;; Only needed for Axe
-(defthm booleanp-of-sbvle
+(defthmd booleanp-of-sbvle
   (booleanp (sbvle size x y)))
 
-;; Only needed for Axe
 ;or just open bvle
-(defthm booleanp-of-bvle
+(defthmd booleanp-of-bvle
   (booleanp (bvle size x y)))

@@ -23,7 +23,7 @@
 (include-book "kestrel/bv/unsigned-byte-p2" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv/rules8" :dir :system)
-(include-book "kestrel/bv/rules11" :dir :system)
+(include-book "kestrel/bv/rules11" :dir :system) ; for BVPLUS-OF-BVCAT-FITS-IN-LOW-BITS-CORE-NEGATIVE-K1-HELPER
 (include-book "kestrel/bv/sbvmoddown" :dir :system)
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these
@@ -165,15 +165,6 @@
   :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus ;+-BECOMES-BVPLUS-HACK ;looped
                                                         )))))
 
-
-(defthm move-minus-to-constant
-  (implies (syntaxp (quotep k))
-           (equal (equal k (- x))
-                  (if (acl2-numberp x)
-                      (and (equal (- k) x)
-                           (acl2-numberp k))
-                    (equal k 0))))
-  :hints (("Goal" :cases ((acl2-numberp k)))))
 
 (defthm plus-1-bvplus-minus-1
   (equal (+ 1 (bvplus 32 *minus-1* x))

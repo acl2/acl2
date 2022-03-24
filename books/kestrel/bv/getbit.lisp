@@ -34,10 +34,10 @@
 
 (in-theory (disable (:type-prescription getbit))) ;getbit-type is better
 
-(defthm integerp-of-getbit
+(defthmd integerp-of-getbit
   (integerp (getbit index x)))
 
-(defthm natp-of-getbit
+(defthmd natp-of-getbit
   (natp (getbit n x)))
 
 (defthm getbit-of-0
@@ -531,3 +531,14 @@
   :hints (("Goal" :use (:instance getbit-when-slice-is-known-constant
                                   (free (+ -1 (expt 2 (+ 1 high (- low))))))
            :in-theory (disable getbit-when-slice-is-known-constant))))
+
+;move
+(defthm not-equal-of-bvchop-when-equal-of-getbit
+  (implies (and (syntaxp (quotep k))
+                (equal bit (getbit n x)) ; bit is a free var
+                (syntaxp (quotep bit))
+                (not (equal bit (getbit n k)))
+                (< n size)
+                (natp n)
+                (integerp size))
+           (not (equal k (bvchop size x)))))

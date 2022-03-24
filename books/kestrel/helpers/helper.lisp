@@ -330,10 +330,12 @@
 ;; clause is: ((not <hyp1>) ... (not <hypn>) conc)
 (defun clause-to-implication (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
-  (if (endp (rest clause))
-      clause
-    `(implies ,(conjoin (negate-terms (butlast clause 1))) ; todo: not very readable, but this has to be a translated term
-              ,(car (last clause)))))
+  (if (endp clause)
+      *nil* ; empty disjunction is false
+    (if (endp (rest clause))
+        (first clause)
+      `(implies ,(conjoin (negate-terms (butlast clause 1))) ; todo: not very readable, but this has to be a translated term
+                ,(car (last clause))))))
 
 (defun clauses-to-implications (clauses)
   (declare (xargs :guard (pseudo-term-list-listp clauses)))

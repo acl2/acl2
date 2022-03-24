@@ -904,7 +904,7 @@
             alistp-of-bind
 
 ;    jvm::encode-unsigned ;;is a macro!
-            cancel-<-+
+            <-of-+-cancel-2-1
 
             s-same-s
             s-diff-s-axe
