@@ -1,7 +1,7 @@
 ; A tool to rewrite a term, e.g., to unroll a spec
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -30,6 +30,8 @@
   (append (amazing-rules-spec-and-dag) ;todo: reduce?
           (introduce-bv-array-rules)
           '(list-to-byte-array))) ;todo: add to a rule set (whatever mentions list-to-bv-array)
+
+(ensure-rules-known (unroll-spec-rules))
 
 ;; Is this really needed?
 (defttag invariant-risk)
