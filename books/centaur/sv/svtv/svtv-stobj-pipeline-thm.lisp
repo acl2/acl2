@@ -398,22 +398,39 @@
         (meta-extract-const-value cycle-term state))
        ((when (or cycle-term-err
                   (not (equal cycle-val (svtv-data->cycle-fsm svtv-data)))))
-        (mv "bad cycle value" nil))
+        (mv (msg "The cycle term given, ~x0, ~@1"
+                 cycle-term
+                 (if cycle-term-err
+                     "failed to evaluate."
+                   "does not equal the cycle FSM currently stored in the given svtv-data stobj."))
+            nil))
        ((mv namemap-term-err namemap-val)
         (meta-extract-const-value namemap-term state))
        ((when (or namemap-term-err
                   (not (equal namemap-val (svtv-data->namemap svtv-data)))))
-        (mv "bad namemap value" nil))
+        (mv (msg "The namemap term given, ~x0, ~@1"
+                 (if namemap-term-err
+                     "failed to evaluate."
+                   "does not equal the namemap currently stored in the given svtv-data stobj."))
+            nil))
        ((mv pipeline-setup-term-err pipeline-setup-val)
         (meta-extract-const-value pipeline-setup-term state))
        ((when (or pipeline-setup-term-err
                   (not (equal pipeline-setup-val (svtv-data->pipeline-setup svtv-data)))))
-        (mv "bad pipeline-setup value" nil))
+        (mv (msg "The pipeline-setup term given, ~x0, ~@1"
+                 (if pipeline-setup-term-err
+                     "failed to evaluate."
+                   "does not equal the pipeline-setup currently stored in the given svtv-data stobj."))
+            nil))
        ((mv pipeline-term-err pipeline-val)
         (meta-extract-const-value pipeline-term state))
        ((when (or pipeline-term-err
                   (not (equal pipeline-val (svtv-data->pipeline svtv-data)))))
-        (mv "bad pipeline value" nil)))
+        (mv (msg "The pipeline term given, ~x0, ~@1"
+                 (if pipeline-term-err
+                     "failed to evaluate."
+                   "does not equal the pipeline currently stored in the given svtv-data stobj."))
+            nil)))
     (mv nil
         `(((svtv-data$c->cycle-fsm$inline svtv-data$c) . ,(acl2::pseudo-term-fix cycle-term))
           ((svtv-data$c->namemap$inline svtv-data$c) . ,(acl2::pseudo-term-fix namemap-term))

@@ -1035,8 +1035,8 @@
 
 
 
-;; (defmacro svtv-decomp-hints (&key enables disables forcep fsm)
-;;   (svtv-decomp-hints-fn enables disables forcep fsm))
+(defmacro svtv-decomp-hints (&key enables disables forcep fsm)
+  (svtv-decomp-hints-fn enables disables forcep fsm))
 
 
 

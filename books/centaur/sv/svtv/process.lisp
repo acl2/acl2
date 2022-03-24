@@ -1621,7 +1621,12 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                   (member-equal (svar-fix key) include)
                 (not (member-equal (svar-fix key) skip)))
               (svex-lookup key (svtv->outexprs svtv))))
-    :hints(("Goal" :in-theory (enable svex-env-boundp svex-lookup)))))
+    :hints(("Goal" :in-theory (enable svex-env-boundp svex-lookup))))
+
+  (defthmd alist-keys-of-svtv-run
+    (Equal (alist-keys (svtv-run svtv env))
+           (svex-alist-keys (svtv->outexprs svtv)))
+    :hints(("Goal" :in-theory (enable svtv-run)))))
 
 (defthm svex-env-p-of-pairlis
   (implies (and (svarlist-p a)

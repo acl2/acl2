@@ -1209,11 +1209,15 @@
                      (svex-alistlist-check-monotonic (svtv-data-obj-pipeline-substs obj))))
               :hints(("Goal" :in-theory (enable (<export>))))))
 
-     (defconst *<svtv>-override-test-vars* '<override-vars>)
+     (make-event
+      `(defconst *<svtv>-override-test-vars*
+         ',(svtv-input-substs-extract-override-vars
+            (svtv-data-obj-pipeline-substs (<export>)))))
 
-     (defund <svtv>-override-test-vars ()
-       (declare (xargs :guard t))
-       '<override-vars>)
+     (make-event
+      `(define <svtv>-override-test-vars ()
+         :returns (vars svarlist-p)
+         ',*<svtv>-override-test-vars*))
      
      (local (defthm override-vars-of-<export>
               (equal (svtv-input-substs-extract-override-vars
@@ -1229,8 +1233,8 @@
      (defthm <svtv>-monotonicity
        (implies (and (svex-envs-agree (<svtv>-override-test-vars) env1 env2)
                      (svex-env-<<= env1 env2))
-           (svex-env-<<= (svtv-run (<svtv>) env1)
-                         (svtv-run (<svtv>) env2)))
+                (svex-env-<<= (svtv-run (<svtv>) env1)
+                              (svtv-run (<svtv>) env2)))
        :hints (("goal" :use <svtv>-partial-monotonic
                 :in-theory '(svtv-run
                              svex-envs-agree-is-equal-of-extract
@@ -1264,37 +1268,18 @@
         "Svtv->outexprs doesn't match svtv-data->pipeline"))
     nil))
 
-(defun def-svtv-partial-monotonic-export-fn (svtv-name export-name export-obj)
+(defun def-svtv-partial-monotonic-fn (svtv-name export-name pkg-sym)
   (declare (xargs :mode :program))
-  (b* ((override-vars (svtv-input-substs-extract-override-vars
-                       (svtv-data-obj-pipeline-substs export-obj))))
-    (acl2::template-subst *svtv-partial-monotonic-from-export-template*
-                          :atom-alist `((<svtv> . ,svtv-name)
-                                        (<export> . ,export-name)
-                                        (<override-vars> . ,override-vars))
-                          :str-alist `(("<SVTV>" . ,(symbol-name svtv-name))
-                                       ("<EXPORT>" . ,(symbol-name export-name)))
-                          :pkg-sym svtv-name)))
-
-(defun def-svtv-partial-monotonic-fn (svtv
-                                      export
-                                      stobj)
-  (b* (((unless export)
-        ;; We need to create a new export.  For this, the current SVTV-DATA must
-        ;; still be valid and have computed the pipeline of the svtv.
-        (b* ((export (intern-in-package-of-symbol (concatenate 'string (symbol-name svtv) "-EXPORT")
-                                                  svtv)))
-          `(encapsulate nil
-             (local (assert-event
-                     (not (svtv-data-partial-monotonic-errmsg (,svtv) ,stobj))
-                     :msg (svtv-data-partial-monotonic-errmsg (,svtv) ,stobj)))
-             (local (def-svtv-data-export ,export :stobj ,stobj))
-             (def-svtv-partial-monotonic ,svtv :export ,export :stobj ,stobj)))))
-    `(make-event (def-svtv-partial-monotonic-export-fn ',svtv ',export (,export)))))
+  (acl2::template-subst *svtv-partial-monotonic-from-export-template*
+                        :atom-alist `((<svtv> . ,svtv-name)
+                                      (<export> . ,export-name))
+                        :str-alist `(("<SVTV>" . ,(symbol-name svtv-name))
+                                     ("<EXPORT>" . ,(symbol-name export-name)))
+                        :pkg-sym (or pkg-sym svtv-name)))
 
 
-(defmacro def-svtv-partial-monotonic (svtv &key export (stobj 'svtv-data))
-  (def-svtv-partial-monotonic-fn svtv export stobj))
+(defmacro def-svtv-partial-monotonic (svtv export &key pkg-sym)
+  (def-svtv-partial-monotonic-fn svtv export pkg-sym))
     
 (defxdoc def-svtv-partial-monotonic
   :parents (svtv-data)
@@ -1302,15 +1287,15 @@
   :long "
 <p>Usage:</p>
 @({
- (def-svtv-partial-monotonic <svtv-name> :export <export-name>)
+ (def-svtv-partial-monotonic <svtv-name> <export-name>)
  })
 
 <p>Prerequisite: The SVTV must be defined with @(see defsvtv$) or @(see
 defsvtv$-phasewise) (or otherwise result from populating a @(see svtv-data)
 stobj), and the contents of the stobj thus populated must be exported into a
 regular object @('<export-name>') using @('def-svtv-data-export').
-Additionally, the setting for the @('monotonify') argument must be
-@('t') (which is the default).</p>
+Additionally, the setting for the @('monotonify') argument of the defsvtv$ form
+must have been @('t') (the default).</p>
 
 <p>This proves two theorems about the SVTV:</p>
 

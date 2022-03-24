@@ -91,9 +91,13 @@
   :hints(("Goal" :in-theory (enable intersectp-equal acl2::hons-intersect-p1 svex-lookup))))
 
 (defthmd subsetp-svex-alist-keys-by-hons-subset1
-  (iff (acl2::hons-subset1 x (svex-alist-fix y))
-       (subsetp-equal x (svex-alist-keys y)))
+  (iff (subsetp-equal x (svex-alist-keys y))
+       (acl2::hons-subset1 x (svex-alist-fix y)))
   :hints(("Goal" :in-theory (enable subsetp-equal acl2::hons-subset1 svex-lookup))))
+
+(defthmd intersectp-by-hons-intersect-p
+  (iff (intersectp-equal x y)
+       (acl2::hons-intersect-p x y)))
 
 
 (local (defthmd hons-assoc-equal-member-alist-keys
@@ -106,6 +110,11 @@
        (subsetp-equal x (alist-keys y)))
   :hints(("Goal" :in-theory (enable acl2::hons-subset1 subsetp-equal alist-keys
                                     hons-assoc-equal-member-alist-keys))))
+
+(defthmd subsetp-alist-keys-by-hons-subset1
+  (iff (subsetp-equal x (alist-keys y))
+       (acl2::hons-subset1 x y))
+  :hints(("Goal" :in-theory (enable hons-subset1-is-subsetp-alist-keys))))
 
 (defthm alist-keys-of-hons-put-list
   (implies (atom val)
@@ -123,6 +132,15 @@
 (defthmd subsetp-equal-by-hons-subset
   (iff (subsetp-equal x y)
        (acl2::hons-subset x y)))
+
+
+(defthmd append-set-diff-under-set-equiv
+  (implies (subsetp x y)
+           (set-equiv (append (set-difference-equal y x) x) y))
+  :hints(("Goal" :in-theory (enable acl2::set-unequal-witness-rw))))
+
+
+
 
 (define svex-override-triple-subsetlist-p-exec ((x svex-override-triplelistlist-p)
                                                 (triples-set))
@@ -1864,7 +1882,7 @@
                                        (<export>)))))))
   
   
-     (defthm <NAME>-overrides-correct
+     (defthm <NAME>-overrides-crux
        (b* ((spec-run (svtv-run  (<NAME>) spec-env))
             (triples (<NAME>-PIPELINE-OVERRIDE-TRIPLES))
             (testvars (svar-override-triplelist->testvars triples))
@@ -2004,7 +2022,7 @@
                :do-not-induct t))
        :otf-flg t)))
 
-(defmacro def-svtv-overrides-correct (name export-name &key pkg-sym)
+(defmacro def-svtv-overrides-crux (name export-name &key pkg-sym)
   (acl2::template-subst *overrides-crux-thm-template*
                         :atom-alist `((<export> . ,export-name))
                         :str-alist `(("<EXPORT>" . ,(symbol-name export-name))
@@ -2012,13 +2030,13 @@
                         :pkg-sym (or pkg-sym name)))
                         
 
-(Defxdoc def-svtv-overrides-correct
+(Defxdoc def-svtv-overrides-crux
   :parents (svtv-data)
   :short "Macro to prove a theorem showing that an SVTV's conditional overrides are \"correct\", i.e. can be eliminated."
   :long #{"""
 <p>Usage:</p>
 @({
- (def-svtv-overrides-correct <svtv-name> <export-name>)
+ (def-svtv-overrides-crux <svtv-name> <export-name>)
  })
 
 <p>Prerequisite: The SVTV must be defined with @(see defsvtv$) or @(see
@@ -2026,7 +2044,7 @@ defsvtv$-phasewise) (or otherwise result from populating a @(see svtv-data)
 stobj), and the contents of the stobj thus populated must be exported into a
 regular object @('<export-name>') using @('def-svtv-data-export').</p>
 
-<p>This proves a theorem @('<svtv-name>-overrides-correct') showing that the
+<p>This proves a theorem @('<svtv-name>-overrides-crux') showing that the
 conditional overrides of the SVTV are correct, for cases where each conditional
 override also corresponds to an output signal. E.g., if an SVTV has the
 following outputs and overrides in some phase:</p>
@@ -2043,7 +2061,7 @@ as if @('foo-ovr-test') were set to 0 (or X, or any value containing no 1-bits)
 with any setting of @('foo-ovr-val').  That is, if you override a wire to its
 own value, then it's just like not overriding it at all.</p>
 
-<p>The overrides-correct theorem is stated in terms of a set of triples
+<p>The overrides-crux theorem is stated in terms of a set of triples
 relating the corresponding override test, override value, and reference
 variable names, such as (in the above example) @('foo-ovr-test'),
 @('foo-ovr-val'), @('foo-ref').  This is defined automatically by this macro,
@@ -2067,9 +2085,14 @@ svtv-run on @('spec-env'), not its value in @('spec-env') itself.)</li>
 
 </ol>
 
-
 <p>Practically speaking, we want this theorem in order to generalize proofs
-done using FGL with overrides. This requires a few further steps.</p>
+done using FGL with overrides. This requires a few further steps.  See @(see
+def-svtv-overrides-correct) for a macro that helps with this.</p>
+
+<h3>Notes on reasoning about overrides -- not necessary reading for most.</h3>
+
+<p>In particular, a lot of this is described more simply here: @(see
+def-svtv-overrides-correct).</p>
 
 <p>For example, suppose we have proved the following lemma, where
 @('opcode') is an input signal and @('partial-products') is a conditional
@@ -2098,12 +2121,12 @@ override with an output signal of the same name and test variable
                    (sum-partial-products partial-products))))
  })
 
-<p>We'd like to be able to use the overrides-correct theorem, setting
+<p>We'd like to be able to use the overrides-crux theorem, setting
 @('overrides-env') to the env used in the lemma.  But there are two potential
 problems.</p>
 
 <p>First, per hypothesis 2 of the
-overrides-correct theorem, the two envs have to agree on all variables except
+overrides-crux theorem, the two envs have to agree on all variables except
 the override variables.  But in this case, variables that have nothing to do
 with the theorem at hand are unbound (therefore X) in the override-env and
 unspecified in the spec-env. (We don't want to assume them to be X in the
@@ -2112,7 +2135,7 @@ spec-env.  Why? Suppose partial-products is a function of inputs @('a'),
 our assumption @('(unsigned-byte-p 128 partial-products)'), making our theorem
 vacuous.)</p>
 
-<p>Second, per hypothesis 3 of the overrides-correct theorem, the override-env
+<p>Second, per hypothesis 3 of the overrides-crux theorem, the override-env
 should bind each override value variable to the corresponding reference
 variable's result from the spec run.  This is fine for
 @('partial-products') (we can instantiate the lemma with partial-products set
@@ -2141,7 +2164,7 @@ w)') means that for every bit of @('v') that is non-X, the corresponding bit of
 lemma says that the lookup of @('product') in our svtv-run is equal to
 @('sum-partial-products') (an integer), this means if we look up @('product')
 in a greater env we get the same value.  We can use this to construct an
-@('override-env') that satisfies hypotheses 2 and 3 of the overrides-correct
+@('override-env') that satisfies hypotheses 2 and 3 of the overrides-crux
 theorem.</p>
 
 <p>Note, however, the partial monotonicity theorem may specify a somewhat
@@ -2304,6 +2327,317 @@ the override value variables of the triples.</li>
                  (b* ((lit (car (last clause)))
                       (?witness `(svex-envs-disagree-witness . ,(cdr lit))))
                    `(:expand ((:with svex-envs-agree-by-witness ,lit))))))))
+
+
+(defconst *svtv-overrides-correct-template*
+  '(defsection <svtv>-full-overrides-thm
+
+     (local (defthm <svtv>-refvars-subset-of-output-vars
+              (subsetp-equal (svar-override-triplelist->refvars (<svtv>-pipeline-override-triples))
+                             (svex-alist-keys (svtv->outexprs (<svtv>))))
+              :hints(("Goal" :in-theory '(subsetp-svex-alist-keys-by-hons-subset1
+                                          (acl2::hons-subset1)
+                                          (svex-alist-fix)
+                                          (svtv->outexprs)
+                                          (<svtv>)
+                                          (svar-override-triplelist->refvars)
+                                          (<svtv>-pipeline-override-triples))))))
+
+     (local (defthm <svtv>-pipeline-override-triple-testvars-subset-of-monotonicity-testvars
+              (subsetp-equal (svar-override-triplelist->testvars (<svtv>-pipeline-override-triples))
+                             (<svtv>-override-test-vars))
+              :hints(("Goal" :in-theory '((svar-override-triplelist->testvars)
+                                          (<svtv>-pipeline-override-triples)
+                                          (<svtv>-override-test-vars)
+                                          (acl2::hons-subset)
+                                          subsetp-equal-by-hons-subset)))))
+
+     (make-event
+      `(define <svtv>-non-triple-override-tests ()
+         :returns (tests svarlist-p)
+         ',(acl2::hons-set-diff (<svtv>-override-test-vars)
+                                (svar-override-triplelist->testvars (<svtv>-pipeline-override-triples)))))
+
+     (local (defthm <svtv>-non-triple-override-tests-is-set-difference
+              (equal (<svtv>-non-triple-override-tests)
+                     (acl2::hons-set-diff (<svtv>-override-test-vars)
+                                          (svar-override-triplelist->testvars (<svtv>-pipeline-override-triples))))
+              :hints (("goal" :in-theory '((<svtv>-non-triple-override-tests)
+                                           (acl2::hons-set-diff)
+                                           (svar-override-triplelist->testvars)
+                                           (<svtv>-pipeline-override-triples)
+                                           (<svtv>-override-test-vars))))))
+
+     (local (defthm <svtv>-override-test-vars-under-set-equiv
+              (acl2::set-equiv (<svtv>-override-test-vars)
+                               (append (<svtv>-non-triple-override-tests)
+                                       (svar-override-triplelist->testvars (<svtv>-pipeline-override-triples))))
+              :hints (("Goal" :in-theory '(append-set-diff-under-set-equiv
+                                           acl2::set-equiv-is-an-equivalence
+                                           <SVTV>-NON-TRIPLE-OVERRIDE-TESTS-IS-SET-DIFFERENCE
+                                           <SVTV>-PIPELINE-OVERRIDE-TRIPLE-TESTVARS-SUBSET-OF-MONOTONICITY-TESTVARS
+                                           acl2::hons-set-diff-is-set-difference$)))))
+
+     (local (defthm <svtv>-override-test-vars-not-intersect-valvars
+              (not (intersectp-equal (<svtv>-override-test-vars)
+                                     (svar-override-triplelist->valvars (<svtv>-pipeline-override-triples))))
+              :hints (("goal" :in-theory '(intersectp-by-hons-intersect-p
+                                           (acl2::hons-intersect-p)
+                                           (<svtv>-override-test-vars)
+                                           (svar-override-triplelist->valvars)
+                                           (<svtv>-pipeline-override-triples))))))
+  
+     (defthm <svtv>-overrides-correct
+       (b* ((spec-run  (svtv-run (<svtv>) spec-env))
+            (lemma-run (svtv-run (<svtv>) lemma-env))
+            (triples (<svtv>-pipeline-override-triples)))
+         (implies (and (svex-env-<<= (svex-env-removekeys
+                                          (svar-override-triplelist-override-vars triples) lemma-env)
+                                         spec-env)
+                       (svex-env-<<=
+                        (svex-env-extract (svar-override-triplelist->valvars triples) lemma-env)
+                        (svtv-pipeline-override-triples-extract triples spec-run))
+                       (svex-envs-agree (<svtv>-non-triple-override-tests)
+                                            lemma-env spec-env)
+                       (svex-env-keys-no-1s-p (svar-override-triplelist->testvars triples) spec-env))
+                  (svex-env-<<= lemma-run spec-run)))
+       :hints (("Goal" :use ((:instance <SVTV>-MONOTONICITY
+                              (env1 lemma-env)
+                              (env2 (intermediate-override-env
+                                     (<svtv>-pipeline-override-triples)
+                                     (<svtv>-override-test-vars)
+                                     lemma-env spec-env
+                                     (svtv-run (<svtv>) spec-env))))
+                             (:instance <SVTV>-OVERRIDES-CRUX
+                              (spec-env spec-env)
+                              (overrides-env (intermediate-override-env
+                                              (<svtv>-pipeline-override-triples)
+                                              (<svtv>-override-test-vars)
+                                              lemma-env spec-env
+                                              (svtv-run (<svtv>) spec-env)))))
+                :in-theory '(SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-<<=-2
+                             ALIST-KEYS-OF-SVTV-RUN
+                             <SVTV>-NON-TRIPLE-OVERRIDE-TESTS-IS-SET-DIFFERENCE
+                             <SVTV>-REFVARS-SUBSET-OF-OUTPUT-VARS
+                             <SVTV>-OVERRIDE-TEST-VARS-NOT-INTERSECT-VALVARS
+                             <SVTV>-PIPELINE-OVERRIDE-TRIPLE-TESTVARS-SUBSET-OF-MONOTONICITY-TESTVARS
+                             ACL2::HONS-SET-DIFF-IS-SET-DIFFERENCE$
+                             INTERMEDIATE-OVERRIDE-ENV-=>>-LEMMA-ENV
+                             INTERMEDIATE-OVERRIDE-ENV-AGREES-WITH-LEMMA-ENV-ON-TEST-VARS
+                             INTERMEDIATE-OVERRIDE-ENV-AGREES-WITH-REFERENCE-VARS
+                             INTERMEDIATE-OVERRIDE-ENV-AGREES-WITH-SPEC-ENV-EXCEPT-OVERRIDE-VARS
+                             ACL2::SUBSETP-REFL
+                             SVARLIST-FIX-WHEN-SVARLIST-P
+                             SVARLIST-P-OF-<SVTV>-OVERRIDE-TEST-VARS
+                             SVARLIST-P-OF-SET-DIFFERENCE
+                             SVEX-ENV-FIX-WHEN-SVEX-ENV-P
+                             ACL2::SVEX-ENV-P-OF-SVTV-RUN
+                             SVEX-ENVS-AGREE-WHEN-SUBSET))))))
+
+(defmacro def-svtv-overrides-correct (name &key pkg-sym)
+  (acl2::template-subst *svtv-overrides-correct-template*
+                        :atom-alist `((<svtv> . ,name))
+                        :str-alist `(("<SVTV>" . ,(symbol-name name)))
+                        :pkg-sym (or pkg-sym name)))
+
+
+
+  
+
+(Defxdoc def-svtv-overrides-correct
+  :parents (svtv-data)
+  :short "Macro to prove a theorem relating an SVTV run with overrides to a generalized one without them."
+  :long #{"""
+<p>Usage:</p>
+@({
+ (def-svtv-overrides-correct <svtv-name>)
+ })
+
+<p>Prerequisites: this requires the following two events to be done first.  See
+@(see def-svtv-override-thms) which does all three:</p>
+@({
+ (def-svtv-partial-monotonic <svtv-name> <export-name>)
+ (def-svtv-overrides-crux <svtv-name> <export-name>)
+ })
+
+<p>This proves a theorem giving sufficient conditions under which a lemma
+involving an @(see svtv-run) using conditional overrides can be shown to imply
+a more general theorem about an svtv-run without these overrides. The form of
+the theorem is as follows:</p>
+
+@({
+ (b* ((spec-run  (svtv-run (<svtv>) spec-env))
+      (lemma-run (svtv-run (<svtv>) lemma-env))
+      (triples (<override-triples>)))
+   (implies (and (svex-env-<<= (svex-env-removekeys
+                                (svar-override-triplelist-override-vars triples) lemma-env)
+                               spec-env)
+                 (svex-env-<<=
+                  (svex-env-extract (svar-override-triplelist->valvars triples) lemma-env)
+                  (svtv-pipeline-override-triples-extract triples spec-run))
+                 (svex-envs-agree (<non-triple-override-tests>)
+                                  lemma-env spec-env)
+                 (svex-env-keys-no-1s-p (svar-override-triplelist->testvars triples) spec-env))
+            (svex-env-<<= lemma-run spec-run)))
+ })
+
+<p>We'll go through an example of how this might work.</p>
+
+
+<p>Suppose that @('multiplier-svtv') is set up as follows:</p>
+@({
+ (defsvtv-phasewise multiplier-svtv
+   :mod *multiplier-mod*
+   :phases
+    ((:label start
+      :inputs (("clk" 0 :toggle 1)
+               ("valid"  1)
+               ("opcode" opcode)
+               ("src1"   a)
+               ("src2"   b)))
+
+     (:label next :delay 2
+      :outputs (("mul.part_prods" partial-products-ref))
+      :overrides (("mul.part_prods" (partial-products override-partial-products))))
+
+     (:label finish :delay 2
+      :outputs (("mul_result" product)))))
+ })
+
+<p>Notice that #("mul.part_prods") is both an output and a conditional override
+signal at the same phase. (It would be fine to name the output variable the
+same as the override value variable; in this case we differentiate them for
+clarity.)  As usual with multipliers, we'll prove the result correct by
+splitting at the partial products.  In this case, suppose we prove the
+following lemma:</p>
+
+@({
+ (def-fgl-thm partial-prods-to-product
+   (implies (unsigned-byte-p 128 partial-products)
+            (equal (svex-env-lookup 'product (svtv-run (multipler-svtv)
+                                                       `((override-partial-products . -1)
+                                                         (partial-products . ,partial-products)
+                                                         (opcode . ,*mul-opcode*))))
+                   (sum-partial-products partial-products))))
+ })
+
+<p>We'd like to generalize this so that we can compose it with a proof about
+the partial product values.  A nice form of the generalized theorem would be
+something like this:</p>
+
+@({
+ (defthm partial-prods-to-product-gen
+    (let* ((run (svtv-run (multipler-svtv) env))
+           (partial-products (svex-env-lookup 'partial-products run)))
+      (implies (and (no-override-tests-set env)
+                    (equal (svex-env-lookup 'opcode env) *mul-opcode*)
+                    (unsigned-byte-p 128 partial-products))
+               (equal (svex-env-lookup 'product run)
+                      (sum-partial-products partial-products)))))
+ })
+
+<p>Our overrides-correct theorem can help prove something like this.  In
+particular, we can instantiate our override theorem with @('spec-env') set to
+@('env') and @('lemma-env') set to the following:</p>
+
+@({
+    `((override-partial-products . -1)
+      (partial-products . ,(svex-env-lookup 'partial-products-ref (svtv-run (multipler-svtv) env)))
+      (opcode . ,*mul-opcode*))
+ })
+
+<p>Here we've taken the env used in our lemma and instantiated the override
+variable with the value of its reference variable from the run on the
+generalized env.</p>
+
+<p>The overrides-correct theorem refers to two additional 0-ary functions:
+@('<override-triples>') and @('<non-triple-override-tests>'). The override
+triples are defined by the @('def-svtv-overrides-crux') event and contain
+triples of corresponding override test, override value, and reference output
+variables.  We'll assume that @('override-partial-products'),
+@('partial-products'), and @('partial-products-ref') is one such triple.  The
+@('<non-triple-override-tests>') will often be @('nil'), but will otherwise
+contain any override test variables not among the triples.</p>
+
+<ul>
+<li>The first hyp:
+@({
+   (svex-env-<<= (svex-env-removekeys
+                  (svar-override-triplelist-override-vars triples) lemma-env)
+                 spec-env)
+ })
+This says that for every variable other than the override-test and
+override-value variables of the triples, lemma-env's binding is @('4vec-<<=') that of spec-env. This is satisfied because the only such variable bound in lemma-env is @('opcode'), and we've assumed its binding in spec-env to be the same.</li>
+
+<li>The second hyp:
+@({
+  (svex-env-<<=
+   (svex-env-extract (svar-override-triplelist->valvars triples) lemma-env)
+   (svtv-pipeline-override-triples-extract triples spec-run))
+ })
+This says that for every override value variable of the triples, its binding in
+@('lemma-env') is @('4vec-<<=') the value of its corresponding reference
+variable from the @('svtv-run') with @('spec-env').  This is true because
+@('partial-products') is bound to exactly that reference variable value in our
+lemma-env, and no other override value variable of the triples is bound in
+lemma-env, meaning they are all implicitly @('4vec-x') and therefore
+@('4vec-<<=') any value.</li>
+
+<li>The third hyp:
+@({
+  (svex-envs-agree (<non-triple-override-tests>)
+                   lemma-env spec-env)
+ })
+says that any override test variables not among the triples must be bound to
+the same value in @('lemma-env') and @('spec-env').  We don't have any that are
+bound in @('lemma-env'), so if there were any such variables they would need to
+be assumed to also be @('x') in spec-env.</li>
+
+<li>The fourth hyp:
+@({
+  (svex-env-keys-no-1s-p (svar-override-triplelist->testvars triples) spec-env)
+ })
+should be assumed in the generalized theorem, instead of the placeholder hyp
+@('(no-override-tests-set env)') above.</li>
+</ul>
+
+<p>Having satisfied the hyps of our override theorem, we then can assume that
+the @('svtv-run') on the lemma-env is @('svex-env-<<=') the run of the
+spec-env.  We can use this to prove our conclusion, since (presumably)
+sum-of-partial-products returns an integer and this means any value greater in
+the 4vec lattice must be equal.</p>
+
+"""})
+
+
+(defmacro def-svtv-override-thms (name export &key pkg-sym)
+  `(progn
+     (def-svtv-partial-monotonic ,name ,export :pkg-sym ,pkg-sym)
+     (def-svtv-overrides-crux ,name ,export :pkg-sym ,pkg-sym)
+     (def-svtv-overrides-correct ,name :pkg-sym ,pkg-sym)))
+
+(defxdoc def-svtv-override-thms
+  :parents (svtv-data)
+  :short "Macro to prove several theorems about behavior of conditional overrides on an SVTV."
+  :long "
+<p>Usage:</p>
+@({
+ (def-svtv-override-thms <svtv-name> <export-name>)
+ })
+
+<p>Prerequisite: The SVTV must be defined with @(see defsvtv$) or @(see
+defsvtv$-phasewise) (or otherwise result from populating a @(see svtv-data)
+stobj), and the contents of the stobj thus populated must be exported into a
+regular object @('<export-name>') using @('def-svtv-data-export').
+Additionally, the setting for the @('monotonify') argument of the defsvtv$ form
+must have been @('t') (the default).  The export object may be defined
+locally.</p>
+
+<p>This simply combines the @(see def-svtv-partial-monotonic), @(see
+def-svtv-overrides-crux), and @(see def-svtv-overrides-correct) events.  See
+@(see def-svtv-overrides-correct) for the highest-level theorem that is
+proved.</p>")
+
 
 
 
