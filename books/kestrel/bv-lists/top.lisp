@@ -62,6 +62,8 @@
 (include-book "packing")
 
 (include-book "packbv-little")
+(include-book "unpackbv-little")
+(include-book "packbv-little-and-unpackbv-little")
 
 (include-book "bv-arrayp")
 (include-book "bv-array-read")
