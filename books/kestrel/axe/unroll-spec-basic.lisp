@@ -12,7 +12,8 @@
 
 (in-package "ACL2")
 
-;; See also unroll-spec
+;; See also unroll-spec.lisp.
+;; See also def-simplified.lisp.
 
 ;;TODO: What about xor simplification?  maybe ok to delay?
 

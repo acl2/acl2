@@ -12,7 +12,8 @@
 
 (in-package "ACL2")
 
-;; See also unroll-spec-basic.lisp
+;; See also unroll-spec-basic.lisp.
+;; See also def-simplified.lisp.
 
 (include-book "rewriter")
 (include-book "dag-to-term-with-lets")
