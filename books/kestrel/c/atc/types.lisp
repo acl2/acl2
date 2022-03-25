@@ -186,6 +186,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-to-maker ((type typep))
+  :returns (term "A term.")
+  :short "Turn a type into a term that makes (evaluates to) it."
+  (type-case
+   type
+   :void '(type-void)
+   :char '(type-char)
+   :schar '(type-schar)
+   :uchar '(type-uchar)
+   :sshort '(type-sshort)
+   :ushort '(type-ushort)
+   :sint '(type-sint)
+   :uint '(type-uint)
+   :slong '(type-slong)
+   :ulong '(type-ulong)
+   :sllong '(type-sllong)
+   :ullong '(type-ullong)
+   :struct `(type-struct (ident ,(ident->name (type-struct->tag type))))
+   :pointer `(type-pointer ,(type-to-maker (type-pointer->to type)))
+   :array `(type-array ,(type-to-maker (type-array->of type))))
+  :measure (type-count type)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tyspecseq-to-type ((tyspec tyspecseqp))
   :returns (type typep)
   :short "Turn a type specifier sequence into a type."
@@ -406,6 +431,51 @@
              :ulong 'ulong-arrayp
              :sllong 'sllong-arrayp
              :ullong 'ullong-arrayp
+             :struct nil
+             :pointer nil
+             :array nil)
+   :array nil)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-type-fixer ((type typep))
+  :returns (fix symbolp)
+  :short "ACL2 fixer corresponding to a C type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the fixers for
+     the predicates returned by @(tsee atc-type-predicate)."))
+  (type-case
+   type
+   :void nil
+   :char nil
+   :schar 'schar-fix
+   :uchar 'uchar-fix
+   :sshort 'sshort-fix
+   :ushort 'ushort-fix
+   :sint 'sint-fix
+   :uint 'uint-fix
+   :slong 'slong-fix
+   :ulong 'ulong-fix
+   :sllong 'sllong-fix
+   :ullong 'ullong-fix
+   :struct nil
+   :pointer (type-case
+             type.to
+             :void nil
+             :char nil
+             :schar 'schar-array-fix
+             :uchar 'uchar-array-fix
+             :sshort 'sshort-array-fix
+             :ushort 'ushort-array-fix
+             :sint 'sint-array-fix
+             :uint 'uint-array-fix
+             :slong 'slong-array-fix
+             :ulong 'ulong-array-fix
+             :sllong 'sllong-array-fix
+             :ullong 'ullong-array-fix
              :struct nil
              :pointer nil
              :array nil)
