@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -255,7 +255,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This includes the theorems for the function inputs and outputs,
+    "This includes the theorems for the function inputs and outputs
+     (if the function is in logic mode),
      as well as an event to record the function type in the table.")
    (xdoc::p
     "If the table already includes an entry for the function,
@@ -310,28 +311,30 @@
                    (atj-type-list-to-keyword-list
                     (atj-function-type->outputs main))))))
        (guard (guard fn nil wrld))
-       (input-thms (atj-main-function-type-input-theorems fn
-                                                          guard
-                                                          formals
-                                                          in-types
-                                                          hints
-                                                          wrld))
+       (input-thms (and (logicp fn wrld)
+                        (atj-main-function-type-input-theorems fn
+                                                               guard
+                                                               formals
+                                                               in-types
+                                                               hints
+                                                               wrld)))
        (output-thms
-        (if (= nresults 1)
-            (list (atj-main-function-type-output-theorem fn
-                                                         guard
-                                                         formals
-                                                         nil
-                                                         (car out-types)
-                                                         hints
-                                                         wrld))
-          (atj-main-function-type-output-theorems fn
-                                                  guard
-                                                  formals
-                                                  nresults
-                                                  (rev out-types)
-                                                  hints
-                                                  wrld)))
+        (and (logicp fn wrld)
+             (if (= nresults 1)
+                 (list (atj-main-function-type-output-theorem fn
+                                                              guard
+                                                              formals
+                                                              nil
+                                                              (car out-types)
+                                                              hints
+                                                              wrld))
+               (atj-main-function-type-output-theorems fn
+                                                       guard
+                                                       formals
+                                                       nresults
+                                                       (rev out-types)
+                                                       hints
+                                                       wrld))))
        (fn-ty (make-atj-function-type :inputs in-types
                                       :outputs out-types
                                       :arrays arrays))
