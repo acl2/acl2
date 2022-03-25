@@ -1484,7 +1484,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                (acl2::fal-extract outkeys svtv.outexprs)))
        (res
         (mbe :logic (svex-alist-eval-for-symbolic outs
-                                                  inalist
+                                                  (make-fast-alist inalist)
                                                   `((:vars . ,(alist-keys svtv.inmasks))
                                                     (:boolmasks . ,boolmasks)
                                                     (:simplify . ,simplify)
@@ -1501,7 +1501,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                      (svtv-print-alist-readable res)
                    (svtv-print-alist res))
                  (cw "~%")))
-    res)
+    (make-fast-alist res))
   ///
   (defalias stv-run svtv-run)
 
@@ -1622,6 +1622,30 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                 (not (member-equal (svar-fix key) skip)))
               (svex-lookup key (svtv->outexprs svtv))))
     :hints(("Goal" :in-theory (enable svex-env-boundp svex-lookup))))
+
+  (defthm svex-env-lookup-in-svtv-run-with-include
+    (implies (and (syntaxp (and (quotep include)
+                                (not (equal include ''nil))))
+                  (member (svar-fix signal) include))
+             (equal (svex-env-lookup signal (svtv-run
+                                             svtv inalist
+                                             :include include :skip skip :boolvars boolvars :allvars allvars
+                                             :simplify simplify :quiet quiet :readable readable))
+                    (svex-env-lookup signal (svtv-run svtv inalist))))
+    :hints(("Goal" :in-theory (e/d (svex-env-lookup)
+                                   (svex-env-lookup-of-svex-alist-eval)))))
+
+  (defthm svex-env-lookup-in-svtv-run-with-skip
+    (implies (and (syntaxp (and (quotep skip)
+                                (not (equal skip ''nil))))
+                  (not (member (svar-fix signal) skip)))
+             (equal (svex-env-lookup signal (svtv-run
+                                             svtv inalist
+                                             :include nil :skip skip :boolvars boolvars :allvars allvars
+                                             :simplify simplify :quiet quiet :readable readable))
+                    (svex-env-lookup signal (svtv-run svtv inalist))))
+    :hints(("Goal" :in-theory (e/d (svex-env-lookup)
+                                   (svex-env-lookup-of-svex-alist-eval)))))
 
   (defthmd alist-keys-of-svtv-run
     (Equal (alist-keys (svtv-run svtv env))

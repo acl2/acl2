@@ -41,3 +41,4 @@
 (include-book "svtv-stobj-decomp")
 (include-book "svtv-stobj-pipeline-monotonicity")
 (include-book "svtv-fsm-override")
+(include-book "svtv-override-fact")

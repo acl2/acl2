@@ -31,7 +31,6 @@
 (in-package "SV")
 
 (include-book "svtv-stobj-pipeline-thm")
-(include-book "centaur/meta/variable-free" :dir :system)
 (include-book "../svex/override")
 (include-book "process")
 (include-book "svtv-fsm-override")
@@ -575,8 +574,7 @@
 
 
 
-(defcong svex-envs-similar equal (svex-env-extract keys x) 2
-  :hints(("Goal" :in-theory (enable svex-env-extract))))
+
 
 (defcong svex-envs-equivalent equal (svex-env-reduce keys x) 2
   :hints(("Goal" :in-theory (enable svex-env-reduce-redef)

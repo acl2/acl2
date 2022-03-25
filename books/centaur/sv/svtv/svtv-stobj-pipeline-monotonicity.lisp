@@ -1230,13 +1230,14 @@
                                      (svtv->outexprs (<svtv>)))
        :hints (("goal" :use ((:instance svtv-data-obj-pipeline-partial-monotonic-p (obj (<export>)))))))
 
-     (defthm <svtv>-monotonicity
+     (defthmd <svtv>-monotonicity
        (implies (and (svex-envs-agree (<svtv>-override-test-vars) env1 env2)
                      (svex-env-<<= env1 env2))
                 (svex-env-<<= (svtv-run (<svtv>) env1)
                               (svtv-run (<svtv>) env2)))
        :hints (("goal" :use <svtv>-partial-monotonic
                 :in-theory '(svtv-run
+                             make-fast-alist
                              svex-envs-agree-is-equal-of-extract
                              eval-when-svex-alist-partial-monotonic
                              return-type-of-svex-alist-eval-for-symbolic
