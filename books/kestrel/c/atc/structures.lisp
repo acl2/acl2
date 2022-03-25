@@ -77,6 +77,13 @@
 
 (defresult member-list "lists of structure members")
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-errorp-when-member-listp
+  (implies (member-listp x)
+           (not (errorp x)))
+  :enable (member-listp errorp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod struct
