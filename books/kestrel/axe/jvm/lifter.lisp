@@ -4560,7 +4560,7 @@
            (if (eq (car output-indicator) :field)
                (let ((pair (farg1 output-indicator)))
                  (if (not (field-pair-okayp pair class-table-alist))
-                     (er hard? 'wrap-term-with-output-extractor "Bad field: ~x0." pair)
+                     (er hard? 'output-extraction-term-core "Bad field: ~x0." pair)
                    `(GET-FIELD ,(output-extraction-term-core (farg2 output-indicator) initial-locals-term class-table-alist)
                                ',pair
                                (jvm::heap replace-me))))
@@ -4568,7 +4568,7 @@
                  (let ((pair (farg1 output-indicator))
                        (local-num (farg2 output-indicator)))
                    (if (not (field-pair-okayp pair class-table-alist))
-                       (er hard? 'wrap-term-with-output-extractor "Bad field: ~x0." pair)
+                       (er hard? 'output-extraction-term-core "Bad field: ~x0." pair)
                      `(GET-FIELD (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
                                  ',pair
                                  (jvm::heap replace-me))))
