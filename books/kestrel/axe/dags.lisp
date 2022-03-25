@@ -1523,6 +1523,11 @@
   :hints (("Goal" :in-theory (enable all-dargp-less-than
                                      largest-non-quotep))))
 
+(defthm all-dargp-less-than-of-+-of-1-and-largest-non-quotep
+  (implies (all-dargp dargs)
+           (all-dargp-less-than dargs (+ 1 (largest-non-quotep dargs))))
+  :hints (("Goal" :in-theory (enable all-dargp-less-than largest-non-quotep))))
+
 (defthm <-of-largest-non-quotep-of-dargs-when-dag-exprp
   (implies (and (bounded-dag-exprp (+ 1 n) expr)
                 (consp expr)

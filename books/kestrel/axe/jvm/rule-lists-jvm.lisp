@@ -2020,8 +2020,8 @@
              ;;                                      BVCAT-EQUAL-REWRITE-ALT
 
 
-             ;;                                      BVXOR-COMMUTATIVE-DAG
-             ;;                                      BVXOR-COMMUTATIVE-2-DAG
+             ;;                                      BVXOR-COMMUTATIVE-AXE
+             ;;                                      BVXOR-COMMUTATIVE-2-AXE
              ;;                                      ;BVXOR-ASSOCIATIVE
              ;;                                      SLICE-OF-BVXOR
              ;;                                      EQUAL-OF-BITXOR-SAME
@@ -2132,8 +2132,8 @@
              consp-of-subrange
              getbit-of-leftrotate32-high
 ;fffixme do these contradict what simplifying bitxors does?
-             ;;BITXOR-COMMUTATIVE-dag
-             ;; BITXOR-COMMUTATIVE-2-dag
+             ;;BITXOR-commutative-axe
+             ;; BITXOR-commutative-2-axe
 
              bvxor-of-bvcat     ;dangerous?
              bvxor-of-bvcat-alt ;dangerous?
@@ -2289,11 +2289,11 @@
              bvand-of-bvand-of-bvnot-same-alt
 
              bvand-associative
-             bvand-commutative-2-dag
+             bvand-commutative-2-axe
 
              bvor-associative
-             bvor-commutative-2-dag
-             bvor-commutative-dag
+             bvor-commutative-2-axe
+             bvor-commutative-axe
 
              equal-of-bvor-and-bvxor
              equal-of-bvor-and-bvxor-alt
@@ -2452,8 +2452,8 @@
              equal-of-cons
 ;             bv-array-write-with-index-and-len-same ;mon jul 19 21:06:14 2010
 ;             bvxor-associative ;i can't believe this was missing!
-;             bvxor-commutative-dag
-;           bvxor-commutative-2-dag
+;             bvxor-commutative-axe
+;           bvxor-commutative-2-axe
              bv-array-read-trim-index
              bvlt-transitive-free2-back-constants
              bvlt-of-bvplus-constant-and-constant
@@ -2538,8 +2538,8 @@
      bvlt-of-bvif-arg2
      bvlt-of-bvif-arg3
      bvplus-commutative-2-sizes-differ ;after including dag prover rules
-     bvplus-commutative-dag    ;after including dag prover rules
-     bvplus-commutative-2-dag  ;after including dag prover rules
+     bvplus-commutative-axe    ;after including dag prover rules
+     bvplus-commutative-2-axe  ;after including dag prover rules
 ;     bvxor-all-ones            ;why? ;trying without
      )))
 
@@ -2572,8 +2572,8 @@
                                 (run-until-return-from-stack-height-rules-smart))
                         '(                ;;BVOR-WITH-SMALL-ARG2
                           getbit-of-bvxor ;new
-                          bvplus-commutative-dag
-                          bvplus-commutative-2-dag
+                          bvplus-commutative-axe
+                          bvplus-commutative-2-axe
                           bvplus-associative
                           bvuminus-of-bvplus ;can mess up the concat as shift and plus pattern
                           bvshr-rewrite-for-constant-shift-amount ;important for rotates?  could keep this but add rotate intro rules with slice instead of bvshr

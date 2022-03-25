@@ -26,11 +26,13 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (local (in-theory (disable nth)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Recognize a word (32-bits, according to the spec)
 (defund wordp (word)
   (declare (xargs :guard t))
   (unsigned-byte-p 32 word))
@@ -43,6 +45,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Modular sum of two words
 (defund word+ (u v)
   (declare (xargs :guard (and (wordp u)
                               (wordp v))))
@@ -54,6 +57,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; XOR of two words
 (defund wordxor (u v)
   (declare (xargs :guard (and (wordp u)
                               (wordp v))))
@@ -65,6 +69,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Leftrotation of word U by C places (chops C to 32 bits).
 (defund wordrot (u c)
   (declare (xargs :guard (and (wordp u)
                               (natp c))))
@@ -76,6 +81,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Recognizes a list of words.
 (defund word-listp (words)
   (declare (xargs :guard t))
   (if (atom words)
@@ -110,12 +116,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Helper function to support naming the elements of a list.
 ;; Returns (mv val0 val1 val2 val3).
 (defun split-list4 (l)
   (declare (xargs :guard (and (word-listp l)
                               (equal (len l) 4))))
   (mv (nth 0 l) (nth 1 l) (nth 2 l) (nth 3 l)))
 
+;; Helper function to support naming the elements of a list.
 ;; Returns (mv val0 val1 ... val15).
 (defun split-list16 (l)
   (declare (xargs :guard (and (word-listp l)
@@ -127,6 +135,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The quarterround operation from the spec.
 (defund quarterround (y)
   (declare (xargs :guard (and (word-listp y)
                               (equal (len y) 4))))
@@ -147,6 +156,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The rowround operation from the spec.
 (defund rowround (y)
   (declare (xargs :guard (and (word-listp y)
                               (equal (len y) 16))))
@@ -171,6 +181,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The columnround operation from the spec.
 (defund columnround (x)
   (declare (xargs :guard (and (word-listp x)
                               (equal (len x) 16))))
@@ -203,6 +214,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The doubleround operation from the spec.
 (defund doubleround (x)
   (declare (xargs :guard (and (word-listp x)
                               (equal (len x) 16))))
@@ -217,10 +229,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The littleendian packing function from the spec.
 (defund littleendian (b)
   (declare (xargs :guard (and (byte-listp b)
                               (equal (len b) 4))))
   (packbv-little 4 8 b))
+
+;; Ensures that our definition of littleendian matches the spec:
+(defthmd littleendian-alt-def
+  (implies (and (unsigned-byte-p 8 b0)
+                (unsigned-byte-p 8 b1)
+                (unsigned-byte-p 8 b2)
+                (unsigned-byte-p 8 b3))
+           (equal (littleendian (list b0 b1 b2 b3))
+                  (+ b0
+                     (* (expt 2 8) b1)
+                     (* (expt 2 16) b2)
+                     (* (expt 2 24) b3))))
+  :hints (("Goal" :in-theory (enable littleendian
+                                     packbv-little
+                                     acl2::packbv
+                                     acl2::bvcat
+                                     unsigned-byte-p
+                                     acl2::reverse-list))))
 
 (defthm wordp-of-littleendian
   (wordp (littleendian p))
@@ -229,6 +260,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Inverse of littleendian (does unpacking).
 (defund littleendian-inverse (word)
   (declare (xargs :guard (wordp word)))
   (unpackbv-little 4 8 word))
@@ -257,6 +289,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Applies doubleround N times, starting with X.
 (defund doubleround-n-times (n x)
   (declare (xargs :guard (and (natp n)
                               (word-listp x)

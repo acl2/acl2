@@ -31,8 +31,6 @@
 (acl2::add-known-boolean x86p)
 (acl2::add-known-boolean 64-bit-modep)
 ;(acl2::add-known-boolean addr-byte-alistp)
-(acl2::add-known-boolean byte-listp)
-(acl2::add-known-boolean signed-byte-p)
 (acl2::add-known-boolean subset-p)
 (acl2::add-known-boolean no-duplicates-p)
 (acl2::add-known-boolean member-p)

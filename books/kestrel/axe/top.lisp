@@ -74,7 +74,6 @@
 (include-book "dargp-less-than")
 (include-book "dargp")
 (include-book "def-dag-builder-theorems")
-(include-book "def-simplified")
 (include-book "depth-array")
 (include-book "doc")
 (include-book "elaborate-rule-items")
@@ -210,6 +209,7 @@
 (include-book "rewriter-basic")
 (include-book "prover-basic")
 (include-book "prover-basic-clause-processor")
+(include-book "def-simplified")
 (include-book "unroll-spec-basic")
 (include-book "defthm-axe-basic")
 

@@ -435,7 +435,7 @@
 
 ;or should we bring heavier terms to the front to increase sharing?
 ;ffixme these differe from what simplify-bitxors does in terms of the order of terms?!
-(defthmd bitxor-commutative-dag
+(defthmd bitxor-commutative-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bitxor x y dag-array))
            (equal (bitxor x y)
                   (bitxor y x))))
@@ -445,7 +445,7 @@
            (equal (bitxor x y)
                   (bitxor y x))))
 
-(defthmd bitxor-commutative-2-dag
+(defthmd bitxor-commutative-2-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bitxor x y dag-array))
            (equal (bitxor x (bitxor y z))
                   (bitxor y (bitxor x z)))))
@@ -457,16 +457,16 @@
 
 ;;; bvxor
 
-;rename to bvxor-commutative-increasing-dag
-(defthmd bvxor-commutative-dag
+;rename to bvxor-commutative-increasing-dag?
+(defthmd bvxor-commutative-axe
   (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvxor x y dag-array))
            (equal (bvxor size x y)
                   (bvxor size y x)))
   :hints (("Goal" :use (:instance bvxor-commutative)
            :in-theory (disable bvxor-commutative))))
 
-;rename to bvxor-commutative-dag
-(defthmd bvxor-commutative-dag-old
+;rename to bvxor-commutative-axe?
+(defthmd bvxor-commutative-axe-old
   (implies (axe-syntaxp (should-commute-args-dag 'bvxor x y dag-array))
            (equal (bvxor size x y)
                   (bvxor size y x)))
@@ -474,15 +474,15 @@
            :in-theory (disable bvxor-commutative))))
 
 ;rename to bvxor-commutative-2-increasing-dag
-(defthmd bvxor-commutative-2-dag
+(defthmd bvxor-commutative-2-axe
   (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvxor x y dag-array))
            (equal (bvxor size x (bvxor size y z))
                   (bvxor size y (bvxor size x z))))
   :hints (("Goal" :use (:instance bvxor-commutative-2)
            :in-theory (disable bvxor-commutative-2))))
 
-;rename to bvxor-commutative-2-dag
-(defthmd bvxor-commutative-2-dag-old
+;rename to bvxor-commutative-2-axe
+(defthmd bvxor-commutative-2-axe-old
   (implies (axe-syntaxp (should-commute-args-dag 'bvxor x y dag-array))
            (equal (bvxor size x (bvxor size y z))
                   (bvxor size y (bvxor size x z))))
@@ -491,13 +491,13 @@
 
 ;;; bvand
 
-(defthmd bvand-commutative-dag
+(defthmd bvand-commutative-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bvand x y dag-array))
            (equal (bvand size x y)
                   (bvand size y x)))
   :hints (("Goal" :in-theory (enable bvand))))
 
-(defthmd bvand-commutative-2-dag
+(defthmd bvand-commutative-2-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bvand y x dag-array))
            (equal (bvand size y (bvand size x z))
                   (bvand size x (bvand size y z))))
@@ -506,13 +506,13 @@
 
 ;;; bvor
 
-(defthmd bvor-commutative-dag
+(defthmd bvor-commutative-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bvor x y dag-array))
            (equal (bvor size x y)
                   (bvor size y x)))
   :hints (("Goal" :in-theory (enable bvor))))
 
-(defthmd bvor-commutative-2-dag
+(defthmd bvor-commutative-2-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bvor y x dag-array))
            (equal (bvor size y (bvor size x z))
                   (bvor size x (bvor size y z))))
@@ -521,7 +521,7 @@
 
 ;;; bvplus
 
-(defthmd bvplus-commutative-dag
+(defthmd bvplus-commutative-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bvplus x y dag-array))
            (equal (bvplus size x y)
                   (bvplus size y x))))
@@ -531,7 +531,7 @@
            (equal (bvplus size x y)
                   (bvplus size y x))))
 
-(defthmd bvplus-commutative-2-dag
+(defthmd bvplus-commutative-2-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bvplus x y dag-array))
            (equal (bvplus size x (bvplus size y z))
                   (bvplus size y (bvplus size x z)))))
@@ -543,7 +543,7 @@
 
 ;;; bvmult
 
-(defthmd bvmult-commutative-dag
+(defthmd bvmult-commutative-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bvmult x y dag-array))
            (equal (bvmult size x y)
                   (bvmult size y x))))
@@ -553,7 +553,7 @@
            (equal (bvmult size x y)
                   (bvmult size y x))))
 
-(defthmd bvmult-commutative-2-dag
+(defthmd bvmult-commutative-2-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bvmult x y dag-array))
            (equal (bvmult size x (bvmult size y z))
                   (bvmult size y (bvmult size x z))))
@@ -585,35 +585,35 @@
            :in-theory (enable getbit-too-high unsigned-byte-p-forced))))
 
 ;fixme ignore bitxor with 1?
-(defthmd bitand-commutative-dag
+(defthmd bitand-commutative-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bitand x y dag-array))
            (equal (bitand x y)
                   (bitand y x))))
 
 ;fixme ignore bitxor with 1?
-(defthmd bitand-commutative-2-dag
+(defthmd bitand-commutative-2-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bitand x y dag-array))
            (equal (bitand x (bitand y z))
                   (bitand y (bitand x z))))
   :hints (("Goal" :use (:instance bitand-commutative-2))))
 
-(defthmd bitor-commutative-dag
+(defthmd bitor-commutative-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bitor x y dag-array))
            (equal (bitor x y)
                   (bitor y x))))
 
-(defthmd bitor-commutative-2-dag
+(defthmd bitor-commutative-2-axe
   (implies (axe-syntaxp (should-commute-args-dag 'bitor x y dag-array))
            (equal (bitor x (bitor y z))
                   (bitor y (bitor x z))))
   :hints (("Goal" :use (:instance bitor-commutative-2))))
 
-(defthmd +-commutative-dag
+(defthmd +-commutative-axe
   (implies (axe-syntaxp (should-commute-args-dag 'binary-+ x y dag-array))
            (equal (+ x y)
                   (+ y x))))
 
-(defthmd +-commutative-2-dag
+(defthmd +-commutative-2-axe
   (implies (axe-syntaxp (should-commute-args-dag 'binary-+ x y dag-array))
            (equal (+ x (+ y z))
                   (+ y (+ x z))))

@@ -291,6 +291,6 @@
                  ACL2::BVCAT-OF-slice-AND-X-ADJACENT
                  ACL2::BVCAT-OF-GETBIT-AND-X-ADJACENT-2
                  ACL2::BVCAT-OF-slice-AND-X-ADJACENT-2
-                 ACL2::BVPLUS-COMMUTATIVE-DAG
+                 acl2::bvplus-commutative-axe
                  )
                ))

@@ -49,6 +49,8 @@
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
 (include-book "kestrel/lists-light/update-nth" :dir :system) ;for TRUE-LISTP-OF-UPDATE-NTH-2
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
+(include-book "kestrel/lists-light/cdr" :dir :system)
+(include-book "kestrel/lists-light/cons" :dir :system)
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/take2" :dir :system) ; for take-of-take
 (include-book "kestrel/lists-light/append" :dir :system)
@@ -70,14 +72,67 @@
 
 (ensure-rules-known (def-simplified-rules))
 
+;; ;; Union X into each of the YS.
+;; (defun union-equal-with-all (x ys)
+;;   (declare (xargs :guard (and (true-listp x)
+;;                               (true-list-listp ys))))
+;;   (if (endp ys)
+;;       nil
+;;     (cons (union-equal x (first ys))
+;;           (union-equal-with-all x (rest ys)))))
+
+;; ;; Subtract X from each of the YS.
+;; (defun set-difference-equal-from-all (x ys)
+;;   (declare (xargs :guard (and (true-listp x)
+;;                               (true-list-listp ys))))
+;;   (if (endp ys)
+;;       nil
+;;     (cons (set-difference-equal (first ys) x)
+;;           (set-difference-equal-from-all x (rest ys)))))
+
+;; TODO: Have this return a list of rule-lists and add the rule-lists arg back.
+;; Returns (mv erp rule-list).
+;todo: use this in unroll-spec and unroll-spec-basic
+(defun make-rule-list (rules
+                        ;;rule-lists
+                        extra-rules remove-rules default-rules)
+  (declare (xargs :guard (and (or (eq :auto rules)
+                                  (symbol-listp rules))
+                              ;; (or (eq :auto rule-lists)
+                              ;;     (symbol-list-listp rule-lists))
+                              (symbol-listp extra-rules)
+                              (symbol-listp remove-rules)
+                              (symbol-listp default-rules)
+                              )))
+  (b* (;; ((when (and (not (eq :auto rules))
+       ;;             (not (eq :auto rule-lists))))
+       ;;  (er hard? 'def-simplified-fn ":rules and :rule-lists should not both be given.")
+       ;;  (mv (erp-t) nil))
+       (rule-list ;; (if (not (eq :auto rule-lists))
+                   ;;     rule-lists
+                     (if (eq :auto rules)
+                       ;;(list
+                       default-rules
+                       ;)
+                         ;;(list
+                          rules
+                          ;)
+                     ))
+       (rule-list (union-equal ;-with-all
+                   extra-rules rule-list))
+       (rule-list (set-difference-equal ;-from-all ; note arg order
+                   rule-list
+                   remove-rules)))
+    rule-list))
+
 ;; TODO: Add more options, such as :print and :print-interval, to pass through to simp-term
 ;; Returns (mv erp event state)
 (defund def-simplified-fn (defconst-name ;should begin and end with *
                             term
+                            rules
+                            ;rule-lists
                             extra-rules
                             remove-rules
-                            rules
-                            ;;rule-alists
                             assumptions
                             interpreted-function-alist
                             monitor
@@ -91,10 +146,12 @@
                   :mode :program ;; because this calls translate (todo: factor that out)
                   :guard (and (symbolp defconst-name)
                               ;; (pseudo-termp term) ;; really an untranlated term
-                              (symbol-listp extra-rules)
-                              (symbol-listp remove-rules)
                               (or (eq :auto rules)
                                   (symbol-listp rules))
+                              ;; (or (eq :auto rule-lists)
+                              ;;     (symbol-list-listp rule-lists))
+                              (symbol-listp extra-rules)
+                              (symbol-listp remove-rules)
                               ;; (pseudo-term-listp assumptions) ;; untranslated terms
                               (interpreted-function-alistp interpreted-function-alist) ;todo: extract from the terms and rules?
                               (symbol-listp monitor)
@@ -106,25 +163,13 @@
            )
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
-       ((when (and (not (eq :auto rules)) extra-rules))
-        (er hard? 'def-simplified-fn ":rules and :extra-rules should not both be given.")
-        (mv (erp-t) nil state))
-       ((when (and (not (eq :auto rules)) remove-rules))
-        (er hard? 'def-simplified-fn ":rules and :remove-rules should not both be given.")
-        (mv (erp-t) nil state))
        (term (translate-term term 'def-simplified-fn (w state)))
        (assumptions (translate-terms assumptions 'def-simplified-fn (w state)))
+       ;; Choose which sequence of rules to use:
+       (rule-list (make-rule-list rules ;rule-lists
+                                  extra-rules remove-rules (def-simplified-rules)))
        ((mv erp rule-alist)
-        (make-rule-alist
-         (if (eq :auto rules)
-             ;; Use the default rules, plus any user-supplied extra rules,
-             ;; minus any user-supplied rules to remove:
-             (set-difference-eq (append (def-simplified-rules)
-                                        extra-rules)
-                                remove-rules)
-           ;; Use the rules explicitly given by the user:
-           rules)
-         (w state)))
+        (make-rule-alist rule-list (w state)))
        ((when erp) (mv erp nil state))
        ((mv erp dag)
         (simplify-term-basic term
@@ -135,7 +180,6 @@
                              memoizep
                              count-hitsp
                              (w state)
-                             ;; :assumptions assumptions
                              ;; :simplify-xorsp simplify-xorsp
                              ;; :print print
                              ))
@@ -169,6 +213,8 @@
 ;;         )
 ;; })
 
+;; <p>To decide which rewrite rules to use, the tool starts with either the @(':rules') if supplied, or a basic default set of rules, @('def-simplified-rules').  Then the @(':extra-rules') are added and the @(':remove-rules') are removed.<p>
+
 ;; <p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>")
 
 ;TODO: Automate even more by unrolling all functions down to the BV and array ops?
@@ -179,6 +225,7 @@
                                  (extra-rules 'nil) ; to add to the usual set of rules
                                  (remove-rules 'nil) ; to remove from to the usual set of rules
                                  (rules ':auto) ;to completely replace the usual set of rules
+                                 ;(rule-lists ':auto) ;to completely replace the usual set of rules
                                  ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
                                  (assumptions 'nil)
                                  (interpreted-function-alist 'nil)
@@ -190,10 +237,10 @@
   `(make-event-quiet (def-simplified-fn
                        ',defconst-name
                        ,term
+                       ,rules
+                       ;,rule-lists
                        ,extra-rules
                        ,remove-rules
-                       ,rules
-                       ;; ,rule-alists
                        ,assumptions
                        ,interpreted-function-alist
                        ,monitor

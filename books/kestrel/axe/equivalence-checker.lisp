@@ -11770,7 +11770,7 @@
        ;;                                                                                                           rewriter-rule-alist)
        ;;                                                                                        ;;gross to need to do all this list reasoning:
        ;;                                                                                        ;; use a use hint?
-       ;;                                                                                        ;; ,@(append (list-rules-etc) (list-rules-etc-executable-counterparts))
+       ;;                                                                                        ;; ,@(append (list-rules-etc) (list-rules2-executable-counterparts))
        ;;                                                                                        (extend-rule-alist (make-axe-rules `(,connection-relation-name
        ;;                                                                                                                          ,invariant-name
        ;;                                                                                                                          ;;,(pack$ fn '-leibniz) ;add this?
@@ -11806,9 +11806,8 @@
                                                                               equal-of-nthcdr-and-cons
                                                                               equal-of-cons-when-equal-nth-0
                                                                               LIST::NTHCDR-IFF
-                                                                              ,@(list-rules) ;new
-                                                                              ,@(list-rules-etc)
-                                                                              ,@(list-rules-etc-executable-counterparts)))
+                                                                              ,@(list-rules2)
+                                                                              ,@(list-rules2-executable-counterparts)))
                                           ;;i guess because of substitution, this may not be reliable:
                                           ;;:expand ((,connection-relation-name ,@update-expr-list ,@new-update-exprs ,@old-vars-in-explanations))
                                           :use ( ;,updates-preserve-invariant-theorem-name
@@ -11898,9 +11897,8 @@
                                  :hints (("Goal" :use (:instance ,fns-equal-helper2-theorem-name)
                                           :in-theory (union-theories '(,invariant-name
                                                                        ,connection-relation-name
-                                                                       ,@(append (list-rules) ;new
-                                                                                 (list-rules-etc)
-                                                                                 (list-rules-etc-executable-counterparts)) ;fixme why are we using these?
+                                                                       ,@(append (list-rules2)
+                                                                                 (list-rules2-executable-counterparts)) ;fixme why are we using these?
                                                                        ;;i found a case where we needed to prove (EQUAL (SUBRANGE 5 9 PARAMS) (FIRSTN 5 (NTHCDR 5 PARAMS)))
                                                                        ;;add some rules to list-rules-etc?
                                                                        )
@@ -13384,7 +13382,7 @@
 
  ;;                                                                     ;;gross to need to do all this list reasoning:
  ;;                                                                     ;;use a use hint?
- ;;                                                                     ;;,@(append (list-rules-etc) (list-rules-etc-executable-counterparts))
+ ;;                                                                     ;;,@(append (list-rules-etc) (list-rules2-executable-counterparts))
  ;;                                                                     )))
  ;;                                (and stable-under-simplificationp
  ;;                                     '(:clause-processor
@@ -21147,3 +21145,12 @@
   (if (equal (len lst1) (len lst2))
       (pairlis$ lst1 lst2)
     (hard-error 'pairlis$-safe "Lists lengths unequal" nil)))
+
+;; todo: use this more, in place of pairlis$-safe
+(defun assign-type-to-vars (type vars)
+  (declare (xargs :guard (and (axe-typep type)
+                              (symbol-listp vars))))
+  (if (endp vars)
+      nil
+    (acons (first vars) type
+           (assign-type-to-vars type (rest vars)))))
