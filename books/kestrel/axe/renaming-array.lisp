@@ -20,12 +20,6 @@
 ;; translation-array.lisp.  The renaming-array may be appropriate for bottom-up
 ;; algorithms that touch every node.
 
-
-(defthm all-dargp-less-than-of-+-of-1-and-largest-non-quotep
-  (implies (all-dargp dargs)
-           (all-dargp-less-than dargs (+ 1 (largest-non-quotep dargs))))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than largest-non-quotep))))
-
 ;; TODO: Can we define this using def-typed-acl2-array?
 
 ;;;
