@@ -15,4 +15,7 @@
   (declare (xargs :guard (and (symbolp fn)
                               (not (member-eq fn *stobjs-out-invalid*))
                               (plist-worldp wrld))))
-  (len (stobjs-out fn wrld)))
+  (if (not (function-symbolp fn wrld))
+      (prog2$ (er hard? 'num-return-values-of-fn "Undefined function: ~x0." fn)
+              1)
+    (len (stobjs-out fn wrld))))

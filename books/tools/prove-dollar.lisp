@@ -6,89 +6,125 @@
 
 (include-book "xdoc/top" :dir :system)
 
-(defmacro with-error-output? (flg form)
-  `(if ,flg
-       (with-output! :on error ,form)
-     ,form))
+(include-book "kestrel/utilities/tables" :dir :system)
 
-(defun prove$-fn (term state hints otf-flg ignore-ok ignore-ok-p
-                       with-translate-error)
+(defun prove$-fn (term state hints instructions otf-flg ignore-ok skip-proofs
+                       prover-error-output-off)
 
-; This function is based on thm-fn.  It returns (value t) if the proof
-; succeeds, else (value nil).
-
-; The step-limit mechanism is tricky, and seems to be responsible for allowing
-; this function to return (mv t nil state), which surprises me.
+; This function is based on thm-fn and defthm-fn1.  It returns (value t) if the
+; proof succeeds, else (value nil).  It returns a soft error if there is a
+; translation failure.
 
   (declare (xargs :mode :program :stobjs state))
-  (with-ctx-summarized
-   "( PROVE$ ...)"
-   (let ((wrld (w state))
-         (ens (ens state)))
-     (mv-let (erp val state)
-       (with-error-output?
-        with-translate-error
-        (er-let* ((wrld
-                   (value (cond ((null ignore-ok-p) wrld)
-                                (t (putprop 'acl2-defaults-table
-                                            'table-alist
-                                            (acons :ignore-ok
-                                                   ignore-ok
-                                                   (table-alist
-                                                    'acl2-defaults-table
-                                                    (w state)))
-                                            wrld)))))
-                  (hints (translate-hints+ 'thm
-                                           hints
-                                           (default-hints wrld)
-                                           ctx wrld state))
-                  (tterm (translate term t t t ctx wrld state)))
-          (value (cons hints tterm))))
-       (cond
-        ((and erp with-translate-error)
-         (mv :translate-error :translate-error state))
-        (t (let ((hints (car val))
-                 (tterm (cdr val)))
-; known-stobjs = t (stobjs-out = t)
-             (state-global-let*
-              ((abort-soft nil)) ; interrupts abort immediately to the top level
-              (prove tterm
-                     (make-pspv ens wrld state
-                                :displayed-goal term
-                                :otf-flg otf-flg)
-                     hints ens wrld ctx state)))))))))
+  (let ((ctx "( PROVE$ ...)"))
+    (state-global-let*
+     ((abort-soft nil) ; interrupts abort immediately to the top level
+      (ld-skip-proofsp (if (eq skip-proofs :same)
+                           (ld-skip-proofsp state)
+                         skip-proofs)))
+     (er-let* ((wrld0 (value (w state)))
+               (wrld1 (value (table-programmatic
+                              'acl2-defaults-table
+                              :ignore-ok ignore-ok wrld0)))
+               (tterm (translate term t t t ctx wrld1 state))
+               (instructions
+                (cond ((null instructions) (value nil))
+                      (hints (er soft ctx
+                                 "It is illegal to supply non-nil values for ~
+                                  both :hints and :instructions to ~x0."
+                                 'prove$))
+                      (t (translate-instructions nil instructions ctx wrld1
+                                                 state))))
+               (hints (translate-hints+ 'thm
+                                        hints
+                                        (and (null instructions)
+                                             (default-hints wrld0))
+                                        ctx wrld1 state)))
+       (revert-world
+        (er-progn
 
-(defmacro prove$-return (form)
-  `(mv-let (erp val state)
-     ,form
-     (cond ((and (eq erp :translate-error)
-                 (eq val :translate-error))
-            (silent-error state))
-           (erp (value nil))
-           (t (value t)))))
+; The following is based on (table inhibit-er-soft-table nil alist :clear).
+
+         (let ((alist (cond ((eq prover-error-output-off t)
+                             '(("Failure") ("Step-limit")))
+                            ((string-listp prover-error-output-off)
+                             (pairlis$ prover-error-output-off nil))
+                            (t (er hard ctx
+                                   "Illegal value for ~
+                                    :prover-error-output-off argument, ~x0 ~
+                                    (value must be t or a list of strings)"
+                                   prover-error-output-off)))))
+           (with-output!
+             :off (event summary)
+             (table-fn 'inhibit-er-soft-table
+                       `(nil ',alist :clear)
+                       state
+                       `(table inhibit-er-soft-table nil ',alist :clear))))
+         (mv-let (erp val state)
+           (let ((wrld (w state)))
+             (with-ctx-summarized
+              ctx
+              (cond (instructions
+                     (proof-builder nil tterm term nil instructions wrld state))
+                    (t
+                     (let ((ens (ens state)))
+                       (prove tterm
+                              (make-pspv ens wrld state
+                                         :displayed-goal term
+                                         :otf-flg otf-flg)
+                              hints ens wrld ctx state))))))
+           (declare (ignore val))
+           (value (null erp)))))))))
+
+(defun make-with-prover-time-limit (time form)
+  `(let ((with-prover-time-limit+-var ,time)) ; avoid duplicate evaluation
+     (if with-prover-time-limit+-var
+         (with-prover-time-limit with-prover-time-limit+-var
+                                 (check-vars-not-free
+                                  (with-prover-time-limit+-var)
+                                  ,form))
+       ,form)))
 
 (defmacro prove$ (term &key
-                       hints otf-flg
-                       (with-output '(:off :all :gag-mode nil))
+                       hints instructions otf-flg
+                       (with-output '(:off :all :on error :gag-mode nil))
                        time-limit
                        step-limit
-                       (ignore-ok 'nil ignore-ok-p)
-                       (with-translate-error 't))
+                       (ignore-ok 't)
+                       (skip-proofs ':same)
+                       (prover-error-output-off 't))
 
 ; All of the arguments except :with-output are evaluated.  The result is
 ; (mv nil t state) if the proof is successful, otherwise (mv nil nil state).
 
   (declare (xargs :guard (member-eq ignore-ok '(t nil :warn))))
-  (let* ((form `(prove$-fn ,term state ,hints ,otf-flg ,ignore-ok ,ignore-ok-p
-                           ,with-translate-error))
+
+  (let* ((form `(prove$-fn ,term state ,hints ,instructions ,otf-flg ,ignore-ok
+                           ,skip-proofs ,prover-error-output-off))
          (form `(with-output! ,@with-output ,form))
          (form (if time-limit
-                   `(with-prover-time-limit ,time-limit ,form)
+                   (make-with-prover-time-limit time-limit form)
                  form))
          (form (if step-limit
-                   `(with-prover-step-limit! ,step-limit ,form)
+
+; The following handling of the step-limit may be surprising.  It would be
+; natural to impose with-prover-time-limit! inside prove$-fn, but then the
+; subsequent value returned by (last-prover-steps state) fails to be negative
+; when the step-limit is exceeded, contradicting its specification.  The
+; failure is due to the way with-ctx-summarized handles step-limits.  So we
+; place with-prover-step-limit! on the outside of with-ctx-summarized, hence on
+; the outside of prove$-fn, with the consequence that we convert a soft error
+; to (value nil) below, as expected, by checking whether the step-limit has
+; been exceeded.
+
+                   `(mv-let (erp val state)
+                      (with-prover-step-limit! ,step-limit ,form)
+                      (let ((steps (last-prover-steps state)))
+                        (if (and steps (< steps 0))
+                            (value nil)
+                          (mv erp val state))))
                  form)))
-    `(prove$-return ,form)))
+    `,form))
 
 (set-guard-msg prove$
                (msg "Illegal value for :IGNORE-OK keyword of ~x0: ~x1.  The ~
@@ -105,33 +141,48 @@
 
  @({
  General Form:
- (prove$ term                  ; any term (translated or not)
+ (prove$ term                    ; any term (translated or not)
          &key
-         hints                 ; default nil
-         ignore-ok             ; default taken from acl2-defaults-table
-         otf-flg               ; default nil
-         with-output           ; default (:off :all :gag-mode nil)
-         time-limit            ; default nil
-         step-limit            ; default nil
-         with-translate-error) ; default t
+         hints                   ; default nil
+         ignore-ok               ; default t
+         instructions            ; default nil
+         otf-flg                 ; default nil
+         prover-error-output-off ; default t
+         skip-proofs             ; default :same
+         step-limit              ; default nil
+         time-limit              ; default nil
+         with-output)            ; default (:off :all :on error :gag-mode nil)
  })
 
  <p>where all arguments except @('with-output') are evaluated.  The value of
  keyword @(':with-output'), if supplied, should be a list containing arguments
  one would give to the macro, @(tsee with-output), hence a list that satisfies
- @(tsee keyword-value-listp).  The @(tsee hints), @(tsee otf-flg), @(tsee
- time-limit), and @(tsee step-limit) arguments are as one would expect for
- calls of the prover.  The @('ignore-ok') option has the same effect as if
- @(see set-ignore-ok) were called with that same value, immediately preceding
- the call of @('prove$') &mdash; but of course warning and error messages may
- be suppressed, depending on @('with-output').</p>
+ @(tsee keyword-value-listp).  The @(tsee hints), @(tsee instructions), @(tsee
+ otf-flg), @(tsee time-limit), and @(tsee step-limit) arguments are as one
+ would expect for calls of the prover; see @(see defthm).  It is illegal to
+ supply non-@('nil') values for both @('hints') and @('instructions').  The
+ @('ignore-ok') option has the same effect as if @(see set-ignore-ok) were
+ called with that same value, immediately preceding the call of @('prove$')
+ &mdash; but of course warning and error messages may be suppressed, depending
+ on @('with-output').  The @('skip-proofs') option defaults to @(':same'),
+ which causes @('prove$') to avoid proofs during @(tsee include-book) and, more
+ generally, any time that @('(ld-skip-proofsp state)') is not @('nil').  When
+ @('skip-proofs') is not @(':same') then proofs take place if and only if the
+ value of @('skip-proofs') is not @('nil'), as though @('(set-ld-skip-proofsp
+ state)') were evaluated immediately preceding evaluation of the @('prove$')
+ call.  Finally, the value of @('prover-error-output-off') must be either
+ @('t'), which represents the list @('(\"Failure\" \"Step-limit\")'), or a list
+ of strings; error messages arising during the proof whose type is one of these
+ strings is to be suppressed, as though @(tsee set-inhibit-er-soft) had been
+ executed on these strings.</p>
 
- <p>@('Prove$') returns an @(see error-triple), @('(mv erp val state)'), where
- @('val') is @('t') when @('term') is successfully proved, else @('nil').  By
- default, @('erp') is non-@('nil') if the given @('term') or @('hints') have
- illegal syntax, in which case a suitable error message is printed; otherwise
- @('erp') is @('nil') and the error message is only printed if error output is
- turned on by the @(':with-output') argument.  That default behavior is
- overridden if @(':with-translate-error') is supplied a value of @('nil'); in
- that case, @('erp') is always @('nil') and error messages are suppressed
- unless the @(':with-output') argument is supplied and allows them.</p>")
+ <p>@('Prove$') returns an @(see error-triple), @('(mv erp val state)').  If
+ there is a syntax error (so-called ``translation error'') in the given term,
+ hints, or instructions, then @('erp') is non-@('nil').  Otherwise, @('erp') is
+ @('nil') and @('val') is @('t') when term is successfully proved, else
+ @('nil').</p>
+
+ <p>Note that after evaluation of a @('prove$') call, you can evaluate the form
+ @('(last-prover-steps state)') to get the number of prover steps that were
+ taken &mdash; except, a negative number indicates a step-limit violation.  See
+ @(See last-prover-steps).</p>")

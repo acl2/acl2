@@ -89,7 +89,7 @@
                         (:rewrite car-of-ex-from-rp-is-not-rp)
                         (:definition falist-consistent)
                         (:rewrite default-cdr)
-                        (:rewrite acl2::o-p-o-infp-car)
+;;                        (:rewrite acl2::o-p-o-infp-car)
                         (:rewrite is-if-rp-termp)
                         (:rewrite default-car)
                         (:rewrite rp-termp-caddr)
@@ -99,7 +99,7 @@
                         (:rewrite rp-evl-of-rp-equal2)
                         (:rewrite rp-evl-of-rp-equal-loose)
                         (:rewrite rp-evl-of-rp-equal)
-                        (:rewrite acl2::o-p-def-o-finp-1)
+;;                        (:rewrite acl2::o-p-def-o-finp-1)
                         (:rewrite rp-termp-cadr)
                         rule-syntaxp
                         rp-trans
@@ -348,7 +348,7 @@
                                (:definition falist-consistent)
                                (:rewrite rp-evl-of-rp-equal2)
                                (:definition falist-consistent-aux)
-                               (:rewrite acl2::o-p-o-infp-car)
+;;                               (:rewrite acl2::o-p-o-infp-car)
                                (:type-prescription insert-iff-to-force))))))
 
    (defthm rp-evl-of-insert-off-to-force
@@ -1572,7 +1572,7 @@
                             (:DEFINITION MEMBER-EQUAL)
                             (:REWRITE
                              ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE IS-IF-RP-TERMP))))))
 
 (make-flag get-vars1 :defthm-macro-name defthm-get-vars)
@@ -1692,7 +1692,7 @@
              :in-theory (e/d (extract-from-force)
                              (rp-termp
                               (:REWRITE EX-FROM-SYNP-LEMMA1)
-                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:DEFINITION IS-SYNP$INLINE)
                               (:TYPE-PRESCRIPTION TRANS-LIST)
                               (:DEFINITION TRANS-LIST)
@@ -1786,7 +1786,7 @@
                                                    (:DEFINITION ALWAYS$)
                                                    (:DEFINITION SUBSETP-EQUAL)
                                                    (:DEFINITION MEMBER-EQUAL)
-                                                   (:REWRITE ACL2::PLAIN-UQI-INTEGER-LISTP)
+;;                                                   (:REWRITE ACL2::PLAIN-UQI-INTEGER-LISTP)
                                                    (:REWRITE ACL2::APPLY$-SYMBOL-ARITY-1)
                                                    (:DEFINITION ACL2::APPLY$-BADGEP)
                                                    (:REWRITE
@@ -1827,7 +1827,7 @@
                :in-theory (e/d ()
                                ((:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
                                 (:DEFINITION TRUE-LISTP)
-                                (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+;;                                (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
                                 (:DEFINITION ALWAYS$)
                                 (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
                                 (:DEFINITION RP-TERMP)
@@ -1919,10 +1919,10 @@
                                (:DEFINITION eval-and-all-nt)
                                get-vars1
                                (:DEFINITION SUBSETP-EQUAL)
-                               (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+;;                               (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
                                (:DEFINITION MEMBER-EQUAL)
                                (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:DEFINITION TRUE-LISTP)
                                (:DEFINITION RP-TERM-LISTP)
                                (:REWRITE
@@ -2242,7 +2242,7 @@
                             (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
                             (:DEFINITION RP-TERMP)
                             (:REWRITE DEFAULT-CDR)
-                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
+;;                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
                             (:REWRITE
                              ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
                             (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
@@ -2449,13 +2449,13 @@
                             (:TYPE-PRESCRIPTION HONS-ASSOC-EQUAL)
                             (:TYPE-PRESCRIPTION VALID-RULESP)
                             (:TYPE-PRESCRIPTION TRUE-LISTP)
-                            (:REWRITE
-                             ACL2::TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP)
+;;                            (:REWRITE
+;;                             ACL2::TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP)
                             (:REWRITE DEFAULT-CAR)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:TYPE-PRESCRIPTION O-P)
                             (:REWRITE ACL2::NTH-WHEN-PREFIXP)
-                            (:REWRITE ACL2::O-P-DEF-O-FINP-1)
+;;                            (:REWRITE ACL2::O-P-DEF-O-FINP-1)
                             (:REWRITE DEFAULT-CDR)
                             (:TYPE-PRESCRIPTION SHOW-USED-RULES-FLGP)
                             (:TYPE-PRESCRIPTION RULE-LIST-SYNTAXP)
@@ -2481,7 +2481,7 @@
                             (:DEFINITION ACL2::APPLY$-BADGEP)
                             (:DEFINITION SUBSETP-EQUAL)
                             (:DEFINITION MEMBER-EQUAL)
-                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
+;;                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
                             (:REWRITE
                              ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
                             (:REWRITE
@@ -2579,7 +2579,7 @@
                             (:DEFINITION ACL2::APPLY$-BADGEP)
                             (:DEFINITION SUBSETP-EQUAL)
                             (:DEFINITION MEMBER-EQUAL)
-                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
+;;                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
                             (:REWRITE
                              ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
                             (:REWRITE
@@ -2642,7 +2642,7 @@
                             (:DEFINITION MEMBER-EQUAL)
                             (:DEFINITION RP-TERM-LISTP)
                             (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
+;;                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
                             (:REWRITE
                              ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
                             (:REWRITE DEFAULT-CDR)
@@ -2682,7 +2682,8 @@
                             (:DEFINITION RP-TERM-LISTP)
                             (:REWRITE
                              ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
-                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA))))))
+;;                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
+                            )))))
 
 (defthm valid-rp-statep-rp-state-init-rules
   (implies (and (rp-statep rp-state)
@@ -2829,7 +2830,8 @@
                             (:DEFINITION RP-TERM-LISTP)
                             (:REWRITE
                              ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
-                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA))))))
+;;                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
+                            )))))
 
 (defthmd valid-rp-statep-implies-valid-rp-state-syntaxp
   (implies (and (rp-statep rp-state)

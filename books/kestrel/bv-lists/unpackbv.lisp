@@ -13,6 +13,7 @@
 
 (include-book "unpackbv-def")
 (include-book "all-unsigned-byte-p")
+(include-book "kestrel/bv-lists/byte-listp" :dir :system)
 (local (include-book "../bv/bvcat"))
 (local (include-book "../../ihs/ihs-lemmas")) ;why?
 (local (include-book "../lists-light/nthcdr"))
@@ -170,3 +171,7 @@
            (equal (unpackbv num size (bvchop n val))
                   (unpackbv num size val)))
   :hints (("Goal" :in-theory (enable unpackbv))))
+
+(defthm byte-listp-of-unpackbv
+  (byte-listp (unpackbv num 8 bv))
+  :hints (("Goal" :in-theory (enable unpackbv byte-listp))))

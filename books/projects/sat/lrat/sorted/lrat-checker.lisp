@@ -1248,6 +1248,76 @@
 
 (verify-guards valid-proofp$)
 
+(defun duplicate-literal (x)
+
+; This function assumes that there is a duplicate literal in x.
+
+  (declare (xargs :guard (literal-listp x)))
+  (if (atom x)
+      (er hard? 'duplicate-literal
+          "Implementation error: Failed to find a duplicate literal!")
+    (if (member (car x) (cdr x))
+        (car x)
+      (duplicate-literal (cdr x)))))
+
+(defun conflicting-literals (x)
+  (declare (xargs :guard (literal-listp x)))
+  (if (atom x)
+      (er hard? 'duplicate-literal
+          "Implementation error: Failed to find conflicting literals!")
+    (if (member (negate (car x)) (cdr x))
+        (car x)
+      (conflicting-literals (cdr x)))))
+
+(defun clause-or-assignment-p-error-msg (clause)
+
+; This function assumes that (clause-or-assignment-p clause) is nil.  We return
+; a message to be printed after "The formula contains ".
+
+  (declare (xargs :guard t))
+  (cond ((not (literal-listp clause))
+         (msg "the alleged clause ~x0, which is not a list of literals."
+              clause))
+        ((not (unique-literalsp clause))
+         (msg "the alleged clause ~x0, whcih contains ~x1 as a duplicate literal."
+              clause
+              (duplicate-literal clause)))
+        ((conflicting-literalsp clause)
+         (let ((lit (conflicting-literals clause)))
+           (msg "the alleged clause ~x0, which contains conflicting literals ~
+                 ~x1 and ~x2."
+                clause
+                lit
+                (negate lit))))
+        (t (er hard? 'clause-or-assignment-p-error-msg
+               "Implementation error: Expected the following to be nil, but ~
+                apparently it is not:~|~x0"
+               `(clause-or-assignment-p ',clause)))))
+
+(defun formula-p-error-msg (fal)
+
+; This function expects (formula-p fal) to be nil.
+
+  (declare (xargs :guard t))
+  (if (atom fal)
+      (msg "The alleged formula is not a true-list")
+    (let ((pair (car fal)))
+      (cond  ((not (consp pair))
+              (msg "A formula is represented internally as a list of pairs, ~
+                    but the following is not a pair: ~x0"
+                   pair))
+             ((not (posp (car pair)))
+              (msg "A formula is represented internally as a list of pairs.  ~
+                    The following pair is invalid, however, because its first ~
+                    element is expected to be a positive integer but is ~
+                    not:~|~x0"
+                   pair))
+             ((and (not (deleted-clause-p (cdr pair)))
+                   (not (clause-or-assignment-p (cdr pair))))
+              (msg "The formula contains ~@0"
+                   (clause-or-assignment-p-error-msg (cdr pair))))
+             (t (formula-p-error-msg (cdr fal)))))))
+
 (defun valid-proofp$-top (formula proof incomplete-okp)
   (declare (xargs :guard t))
   (if (formula-p formula)
@@ -1262,7 +1332,8 @@
             (er hard? 'valid-proofp$-top
                 "Invalid proof!"))))
     (er hard? 'valid-proofp$-top
-        "Invalid formula!")))
+        "Invalid formula!~|~@0"
+        (formula-p-error-msg formula))))
 
 (defun refutation-p$ (proof formula)
   (declare (xargs :guard t))

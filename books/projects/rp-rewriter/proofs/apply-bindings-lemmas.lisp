@@ -826,7 +826,7 @@
                               valid-sc
                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                               (:DEFINITION ACL2::APPLY$-BADGEP)
-                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:DEFINITION FALIST-CONSISTENT-AUX)
                               (:DEFINITION INCLUDE-FNC-SUBTERMS)
                               (:DEFINITION INCLUDE-FNC)
@@ -999,7 +999,7 @@
                                (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                                (:DEFINITION ACL2::APPLY$-BADGEP)
                                (:DEFINITION INCLUDE-FNC)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:REWRITE DEFAULT-CDR)
                                (:REWRITE VALID-SC-CADR)
                                (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)

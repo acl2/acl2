@@ -186,7 +186,7 @@
                 (,eval-function-name alist body interpreted-function-alist count))
             (let ((args-to-walk-down args)) ;why??
               (mv-let (hit val)
-                ,(make-apply-cases-for-arities max-arity
+                ,(make-apply-cases-for-arities-simple max-arity
                                                arity-fn-call-alist-alist
                                                nil      ;quoted-argsp
                                                t        ;innermost-callp
@@ -298,7 +298,7 @@
                (,eval-function-name alist body interpreted-function-alist *max-fixnum*))
            (let ((args-to-walk-down args)) ;why??
              (mv-let (hit val)
-               ,(make-apply-cases-for-arities max-arity
+               ,(make-apply-cases-for-arities-simple max-arity
                                               arity-fn-call-alist-alist
                                               t        ;quoted-argsp
                                               t        ;innermost-callp

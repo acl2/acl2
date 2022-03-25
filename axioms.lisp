@@ -1107,7 +1107,7 @@
           (replace-bad-lisp-object-list (cdr x)))))
 
 (defun-one-output wormhole-er (fn args)
-  (error-fms nil 'wormhole
+  (error-fms nil 'wormhole "Wormhole"
              "It is not possible to apply ~x0~#1~[~/ to ~&2~] in the current ~
               context because we are in a wormhole state."
              (list (cons #\0 fn)
@@ -2817,7 +2817,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 :test #'eq)))
           (let ((*standard-output* *error-output*)
                 (*wormholep* nil))
-            (error-fms t ctx str alist state)))
+            (error-fms t ctx nil str alist state)))
 
 ; Once upon a time hard-error took a throw-flg argument and did the
 ; following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
@@ -9778,7 +9778,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (let ((alist (make-fmt-bindings *base-10-chars* str-args))
         (severity-name (symbol-name severity)))
     (cond ((equal severity-name "SOFT")
-           (list 'error1 context str alist 'state))
+           (list 'error1 context nil str alist 'state))
           ((equal severity-name "VERY-SOFT")
            (list 'error1-safe context str alist 'state))
           ((equal severity-name "HARD?")
@@ -9814,7 +9814,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (let ((alist (make-fmt-bindings *base-10-chars* str-args))
         (severity-name (symbol-name severity)))
     (cond ((equal severity-name "SOFT")
-           (list 'error1@par context str alist 'state))
+           (list 'error1@par context nil str alist 'state))
           (t
 
 ; The final case should never happen.
@@ -14163,7 +14163,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     logic er deflabel mv-let program value-triple
     set-body comp set-bogus-defun-hints-ok
     dmr-stop defpkg set-measure-function
-    set-inhibit-warnings! defthm mv
+    set-inhibit-warnings! set-inhibit-er-soft! defthm mv
     f-big-clock-negative-p reset-prehistory
     mutual-recursion set-rewrite-stack-limit set-prover-step-limit
     add-match-free-override
@@ -14686,6 +14686,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; save n worlds for undoing undos.  If n is 0, no undoing of undos is possible.
 ; If n is 1, the last undo can be undone.
 
+    (useless-runes . nil)
     (user-home-dir . nil) ; set first time entering lp
     (verbose-theory-warning . t)
     (verify-termination-on-raw-program-okp . (apply$-lambda apply$-prim))
@@ -15494,9 +15495,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defconst *initial-ld-special-bindings*
 
+; Warning: Keep this in sync with f-get-ld-specials,
+; chk-acceptable-ld-fn1-pair, *initial-ld-special-bindings*, ld-alist-raw,
+; wormhole, and ld.
+
 ; This alist is used by initialize-acl2 to set the initial values of the LD
 ; specials.  It is assumed by reset-ld-specials that the first three are the
-; channels.
+; channels.  There are no entries for current-package or useless-runes, even
+; though these correspond to LD keyword arguments, because they are not LD
+; specials.
 
   `((standard-oi . ,*standard-oi*)
     (standard-co . ,*standard-co*)
@@ -21606,6 +21613,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;   ld-skip-proofsp ;;; used in macro skip-proofs; treat bogus values as t
     ld-redefinition-action
     current-package
+    useless-runes
     standard-oi
     standard-co
     proofs-co
@@ -22544,6 +22552,42 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro toggle-inhibit-warning (str)
   `(local (toggle-inhibit-warning! ,str)))
+
+#-acl2-loop-only
+(defmacro set-inhibit-er-soft! (&rest x)
+  (declare (ignore x))
+  nil)
+
+(table inhibit-er-soft-table nil nil
+       :guard
+       (stringp key))
+
+#+acl2-loop-only
+(defmacro set-inhibit-er-soft! (&rest lst)
+  (declare (xargs :guard (string-listp lst)))
+  `(with-output
+     :off (event summary)
+     (progn (table inhibit-er-soft-table nil ',(pairlis$ lst nil) :clear)
+            (value-triple ',lst))))
+
+(defmacro set-inhibit-er-soft (&rest lst)
+  `(local (set-inhibit-er-soft! ,@lst)))
+
+(defmacro set-inhibit-er-soft (&rest lst)
+  `(local (set-inhibit-er-soft! ,@lst)))
+
+(defmacro toggle-inhibit-er-soft! (str)
+  `(table inhibit-er-soft-table
+          nil
+          (let ((inhibited-er-soft
+                 (table-alist 'inhibit-er-soft-table world)))
+            (cond ((assoc-string-equal ',str inhibited-er-soft)
+                   (remove1-assoc-string-equal ',str inhibited-er-soft))
+                  (t (acons ',str nil inhibited-er-soft))))
+          :clear))
+
+(defmacro toggle-inhibit-er-soft (str)
+  `(local (toggle-inhibit-er-soft! ,str)))
 
 (defmacro set-inhibit-output-lst (lst)
 

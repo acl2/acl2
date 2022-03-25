@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -73,7 +73,8 @@
     (:e scope-listp)
     (:e scopep)
     (:e tyname)
-    (:e type-name-to-type)
+    (:e tyname-to-type)
+    (:e obj-adeclor-none)
     (:e type-pointer)
     (:e type-schar)
     (:e type-uchar)
@@ -805,9 +806,9 @@
      (cond
       ((endp types) nil)
       (t (b* ((type (car types))
-              (argfixtype (atc-integer-type-fixtype type))
+              (argfixtype (integer-type-to-fixtype type))
               (restype (if (eq op 'lognot) (type-sint) (promote-type type)))
-              (resfixtype (atc-integer-type-fixtype restype))
+              (resfixtype (integer-type-to-fixtype restype))
               (respred (pack resfixtype 'p)))
            (cons (pack respred '-of- op '- argfixtype)
                  (atc-integer-ops-1-return-names-loop-types op (cdr types)))))))
@@ -855,9 +856,9 @@
               (type (cond ((member-eq op '(lt gt le ge eq ne)) (type-sint))
                           ((member-eq op '(shl shr)) (promote-type ltype))
                           (t (uaconvert-types ltype rtype))))
-              (lfixtype (atc-integer-type-fixtype ltype))
-              (rfixtype (atc-integer-type-fixtype rtype))
-              (fixtype (atc-integer-type-fixtype type))
+              (lfixtype (integer-type-to-fixtype ltype))
+              (rfixtype (integer-type-to-fixtype rtype))
+              (fixtype (integer-type-to-fixtype type))
               (pred (pack fixtype 'p)))
            (cons
             (pack pred '-of- op '- lfixtype '- rfixtype)
@@ -927,8 +928,8 @@
       ((equal stype (car dtypes))
        (atc-integer-convs-return-names-loop-dst-types stype
                                                       (cdr dtypes)))
-      (t (b* ((sfixtype (atc-integer-type-fixtype stype))
-              (dfixtype (atc-integer-type-fixtype (car dtypes)))
+      (t (b* ((sfixtype (integer-type-to-fixtype stype))
+              (dfixtype (integer-type-to-fixtype (car dtypes)))
               (pred (pack dfixtype 'p)))
            (cons
             (pack pred '-of- dfixtype '-from- sfixtype)
@@ -966,8 +967,8 @@
      :parents nil
      (cond
       ((endp itypes) nil)
-      (t (b* ((afixtype (atc-integer-type-fixtype atype))
-              (ifixtype (atc-integer-type-fixtype (car itypes)))
+      (t (b* ((afixtype (integer-type-to-fixtype atype))
+              (ifixtype (integer-type-to-fixtype (car itypes)))
               (pred (pack afixtype 'p)))
            (cons
             (pack pred '-of- afixtype '-array-read- ifixtype)
@@ -1005,8 +1006,8 @@
      :parents nil
      (cond
       ((endp itypes) nil)
-      (t (b* ((afixtype (atc-integer-type-fixtype atype))
-              (ifixtype (atc-integer-type-fixtype (car itypes)))
+      (t (b* ((afixtype (integer-type-to-fixtype atype))
+              (ifixtype (integer-type-to-fixtype (car itypes)))
               (pred (pack afixtype '-arrayp)))
            (cons
             (pack pred '-of- afixtype '-array-write- ifixtype)
@@ -1114,7 +1115,7 @@
      (cond
       ((endp types) nil)
       (t (b* ((type (car types))
-              (fixtype (atc-integer-type-fixtype type)))
+              (fixtype (integer-type-to-fixtype type)))
            (cons
             (list :t (pack op '- fixtype))
             (atc-integer-ops-1-type-presc-rules-loop-types op (cdr types)))))))
@@ -1161,8 +1162,8 @@
      (cond
       ((endp rtypes) nil)
       (t (b* ((rtype (car rtypes))
-              (lfixtype (atc-integer-type-fixtype ltype))
-              (rfixtype (atc-integer-type-fixtype rtype)))
+              (lfixtype (integer-type-to-fixtype ltype))
+              (rfixtype (integer-type-to-fixtype rtype)))
            (cons
             (list :t (pack op '- lfixtype '- rfixtype))
             (atc-integer-ops-2-type-presc-rules-loop-right-types
@@ -1234,8 +1235,8 @@
       ((equal stype (car dtypes))
        (atc-integer-convs-type-presc-rules-loop-dst-types stype
                                                           (cdr dtypes)))
-      (t (b* ((sfixtype (atc-integer-type-fixtype stype))
-              (dfixtype (atc-integer-type-fixtype (car dtypes))))
+      (t (b* ((sfixtype (integer-type-to-fixtype stype))
+              (dfixtype (integer-type-to-fixtype (car dtypes))))
            (cons
             (list :t (pack dfixtype '-from- sfixtype))
             (atc-integer-convs-type-presc-rules-loop-dst-types
@@ -1274,8 +1275,8 @@
      :parents nil
      (cond
       ((endp itypes) nil)
-      (t (b* ((afixtype (atc-integer-type-fixtype atype))
-              (ifixtype (atc-integer-type-fixtype (car itypes))))
+      (t (b* ((afixtype (integer-type-to-fixtype atype))
+              (ifixtype (integer-type-to-fixtype (car itypes))))
            (cons
             (list :t (pack afixtype '-array-read- ifixtype))
             (atc-array-read-type-presc-rules-loop-index-types atype

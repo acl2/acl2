@@ -1,7 +1,7 @@
 ; Mixed rules 3
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -23,7 +23,7 @@
 (include-book "kestrel/bv/unsigned-byte-p2" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv/rules8" :dir :system)
-(include-book "kestrel/bv/rules11" :dir :system)
+(include-book "kestrel/bv/rules11" :dir :system) ; for BVPLUS-OF-BVCAT-FITS-IN-LOW-BITS-CORE-NEGATIVE-K1-HELPER
 (include-book "kestrel/bv/sbvmoddown" :dir :system)
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these
@@ -165,15 +165,6 @@
   :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus ;+-BECOMES-BVPLUS-HACK ;looped
                                                         )))))
 
-
-(defthm move-minus-to-constant
-  (implies (syntaxp (quotep k))
-           (equal (equal k (- x))
-                  (if (acl2-numberp x)
-                      (and (equal (- k) x)
-                           (acl2-numberp k))
-                    (equal k 0))))
-  :hints (("Goal" :cases ((acl2-numberp k)))))
 
 (defthm plus-1-bvplus-minus-1
   (equal (+ 1 (bvplus 32 *minus-1* x))
@@ -443,22 +434,6 @@
 (defthm <-of-+-cancel
   (equal (< (+ x y) x)
          (< y 0)))
-
-(defthm integerp-of-*-of-expt-and-expt
-  (implies (and (integerp i)
-                (integerp j))
-           (equal (integerp (* (expt 2 i) (expt 2 j)))
-                  (natp (+ i j))))
-  :hints (("Goal" :in-theory (disable ;integerp-of-expt
-                              ;;<-OF-0-AND-EXPT
-                              integerp-of-expt-when-natp)
-           :use (:instance integerp-of-expt-when-natp (r 2) (i (+ i j))))))
-
-(defthm *-of-expt-and-expt-of-1minus
-  (implies (integerp size)
-           (equal (* (expt 2 size) (expt 2 (+ 1 (- size))))
-                  2))
-  :hints (("Goal" :use (:instance exponents-add (r 2) (i size) (j (- 1 size))))))
 
 (defthm logtail-hack77
   (implies (posp size)
@@ -737,6 +712,7 @@
 
 ;this is probably done better elsewhere
 ;as a forward-chaining rule, this caused a big slowdown
+;rename
 (defthm expt-bound-fw
   (implies (and (<= k j)
                 (syntaxp (and (quotep k)
@@ -1429,8 +1405,8 @@
 
 ;can loop?
 (defthmd rewrite-<-when-sizes-dont-match
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'x-size x) (x-size))
-                (bind-free (bind-var-to-unsigned-term-size 'y-size y) (y-size))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'x-size x) (x-size))
+                (bind-free (bind-var-to-bv-term-size 'y-size y) (y-size))
                 (< y-size x-size)
                 (syntaxp (and (not (quotep x))
                               (not (quotep y))))
@@ -1451,8 +1427,8 @@
 
 ;can loop?
 (defthmd rewrite-<-when-sizes-dont-match2
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'x-size x) (x-size))
-                (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'y-size y) (y-size))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'x-size x) (x-size))
+                (bind-free (bind-var-to-bv-term-size-if-trimmable 'y-size y) (y-size))
                 (syntaxp (and (not (quotep x))
                               (not (quotep y))))
                 (< x-size y-size)
@@ -1701,7 +1677,7 @@
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
 
 (defthm bvuminus-when-smaller-no-split-bind-free
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'free x))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'free x))
                 (syntaxp (quotep size))
                 (syntaxp (quotep free))
                 (< free size)
@@ -2632,7 +2608,7 @@
 
 ;non-dag
 (defthm slice-trim
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< (+ 1 high) xsize)
                 (natp high)
                 (natp low)
@@ -2648,7 +2624,7 @@
 
 ;non-dag
 (defthm bvplus-trim-arg1
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< size xsize)
                 (natp size)
                 (posp xsize))
@@ -2658,7 +2634,7 @@
 
 ;non-dag
 (defthm bvplus-trim-arg2
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< size xsize)
                 (natp size)
                 (posp xsize))
@@ -2947,8 +2923,8 @@
 ;;   :hints (("Goal" :in-theory (e/d ( bvplus) (anti-bvplus)))))
 
 (defthm bvplus-tighten-non-dag
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x))
-                (bind-free (bind-var-to-unsigned-term-size 'ysize y))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'ysize y))
                 (< (+ 1 (max xsize ysize)) size)
                 (force (unsigned-byte-p-forced xsize x))
                 (force (unsigned-byte-p-forced ysize y))
@@ -3010,8 +2986,8 @@
 
 ;-alt?
 (defthm bvlt-tighten-non-dag
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x))
-                (bind-free (bind-var-to-unsigned-term-size 'ysize y))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'ysize y))
                 (< (max xsize ysize) size)
                 (force (unsigned-byte-p-forced xsize x))
                 (force (unsigned-byte-p-forced ysize y))
@@ -3033,7 +3009,7 @@
 
 ;non-dag
 (defthm bvlt-trim-arg1
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< size xsize)
                 (natp size)
                 (posp xsize))
@@ -3046,7 +3022,7 @@
 
 ;non-dag
 (defthm bvlt-trim-arg2
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< size xsize)
                 (natp size)
                 (posp xsize))
@@ -3127,7 +3103,7 @@
                                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
 (defthm bvlt-tighten-non-dag-strong-arg3
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (< xsize size)
                 (natp size)
                 (posp xsize)
@@ -3145,7 +3121,7 @@
                                     <-of-bvplus-becomes-bvlt-arg2)))))
 
 (defthm bvlt-tighten-non-dag-strong-arg2
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (< xsize size)
                 (natp size)
                 (posp xsize)
@@ -3178,7 +3154,7 @@
                                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
 (defthm bvplus-of-bvuminus-tighten-gen
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (< xsize n) ;this means the bvuminus is not tight
                 (<= n size)
                 (natp n)
@@ -3342,7 +3318,7 @@
 
 ;non-dag
 (defthm getbit-trim
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< (+ 1 n) xsize)
                 (natp n)
                 (integerp xsize))
@@ -3676,21 +3652,45 @@
                                                                                bvlt-of-plus-arg2
                                                                                )))) )
 
-(defthm equal-of-bvchop-extend
-  (implies (and (syntaxp (quotep k))
-                (syntaxp (want-to-strengthen (equal k (bvchop size x))))
-                (equal free (getbit size x)) ;this is treated as a binding hyp by acl2? (TODO: Would just using a backchaim limit of 0 suffice?)
-                ;; try to ensure the equality really appears in the clause
-                ;; (without this, I've seen this rule loop by repeatedly
-                ;; extending the size of the bvchop):
-                (syntaxp (or (want-to-strengthen (equal free (getbit size x)))
-                             (want-to-strengthen (equal (getbit size x) free))))
+;; todo: loops with tightening rules?
+(defthmd equal-of-bvchop-extend
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (syntaxp (or (want-to-strengthen (equal k (bvchop size x)))
+                             (want-to-strengthen (equal (bvchop size x) k))))
+                (equal (getbit size x) free) ; not a binding hyp, hope it matches either way
+                ;; ;; try to ensure the equality really appears in the clause
+                ;; ;; (without this, I've seen this rule loop by repeatedly
+                ;; ;; extending the size of the bvchop):
+                ;; (syntaxp (or (want-to-strengthen (equal free (getbit size x)))
+                ;;              (want-to-strengthen (equal (getbit size x) free))))
                 (syntaxp (quotep free))
                 (natp size)
                 (unsigned-byte-p size k)
                 )
-           (equal (equal k (bvchop size x))
-                  (equal (bvcat 1 free size k) (bvchop (+ 1 size) x)))))
+           (equal (equal k (bvchop size x)) ; hope this matches either way
+                  (equal (bvcat 1 free size k) ; gets computed
+                         (bvchop (+ 1 size) x)))))
+
+(defthmd equal-of-bvchop-extend-with-1
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (syntaxp (or (want-to-strengthen (equal k (bvchop size x)))
+                             (want-to-strengthen (equal (bvchop size x) k))))
+                (equal (getbit size x) free) ; not a binding hyp, hope it matches either way
+                ;; ;; try to ensure the equality really appears in the clause
+                ;; ;; (without this, I've seen this rule loop by repeatedly
+                ;; ;; extending the size of the bvchop):
+                ;; (syntaxp (or (want-to-strengthen (equal free (getbit size x)))
+                ;;              (want-to-strengthen (equal (getbit size x) free))))
+                (syntaxp (quotep free))
+                (equal free 1) ; this case
+                (natp size)
+                (unsigned-byte-p size k)
+                )
+           (equal (equal k (bvchop size x)) ; hope this matches either way
+                  (equal (bvcat 1 1 size k) ; gets computed
+                         (bvchop (+ 1 size) x)))))
 
 (in-theory (disable BVCHOP-EQUAL-CONSTANT-REDUCE-WHEN-TOP-BIT-3-2-4)) ;if it's a hyp we don't want to reduce it..
 
@@ -3791,7 +3791,7 @@
 
 (defthm bvlt-of-constant-when-usb
   (implies (and (syntaxp (quotep k))
-                (bind-free (bind-var-to-unsigned-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (<= (expt 2 xsize) (bvchop size k))
                 (<= xsize size)
                 (natp xsize)
@@ -4317,7 +4317,7 @@
 
 
 (defthm rewrite-unsigned-byte-p-when-term-size-is-larger-better
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'x-size x)
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'x-size x)
                            (x-size))
                 (< n x-size)
                 (natp n)
@@ -4455,7 +4455,7 @@
          (if test (bvchop n a) (bvchop n b))))
 
 (defthm bvuminus-trim
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< (+ 1 n) xsize)
                 (natp n)
                 (integerp xsize))
@@ -4507,7 +4507,7 @@
   (IMPLIES (AND (syntaxp (and (quotep size)
                               (quotep k)
                               (quotep n)))
-                (bind-free (bind-var-to-unsigned-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (< XSIZE N)
                 (not (EQUAL 0 X))
                 (<= N SIZE)
@@ -4881,15 +4881,6 @@
                                                   <-of-bvmult-hack ;bozo
                                                   <-of-bvplus-becomes-bvlt-arg1
                                                   <-of-bvplus-becomes-bvlt-arg2)))))
-
-
-
-
-
-
-
-
-
 
 ;gen!
 (defthm slice-equal-0-when-top-bit-known
@@ -6036,7 +6027,7 @@
 
 ;move
 (defthm leftrotate32-trim
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< 5 xsize)
                 (integerp xsize)
                 (natp x))
@@ -6217,7 +6208,7 @@
            (< x 4)))
 
 (DEFTHM BVPLUS-TIGHTEN-NON-DAG-arg2-from-rules
-  (IMPLIES (AND (BIND-FREE (BIND-VAR-TO-UNSIGNED-TERM-SIZE 'XSIZE X) (xsize))
+  (IMPLIES (AND (BIND-FREE (BIND-VAR-TO-BV-TERM-SIZE 'XSIZE X) (xsize))
                 (bind-from-rules (UNSIGNED-BYTE-P (:free YSIZE) Y))
                 (< (+ 1 (MAX XSIZE YSIZE)) SIZE)
                 (FORCE (UNSIGNED-BYTE-P-FORCED XSIZE X)) (NATP SIZE)
@@ -6562,7 +6553,7 @@
 
 (defthm equal-1-becomes-bvlt
   (implies (and (syntaxp (want-to-weaken (equal 1 x)))
-                (bind-free (bind-var-to-unsigned-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (not (equal x 0))
                 (natp xsize)
                 (force (unsigned-byte-p-forced xsize x))
@@ -7138,7 +7129,7 @@
 
 ;gen the k (i.e., the -1)?
 (defthm bvplus-of-minus-1-tighten
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (< xsize size2)
                 (equal k (+ -1 (expt 2 size2)))
                 (posp size2)
@@ -12028,8 +12019,8 @@
                   (not (equal 0 (len x))))))
 
 (defthm bvdiv-tighten
-  (implies (and (bind-free (bind-var-to-unsigned-term-size 'xsize x))
-                (bind-free (bind-var-to-unsigned-term-size 'ysize y))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'ysize y))
                 (< (max xsize ysize) size)
                 (force (unsigned-byte-p-forced xsize x))
                 (force (unsigned-byte-p-forced ysize y))
@@ -16844,7 +16835,8 @@
                 (NATP SIZE))
            (EQUAL (BVLT SIZE X y)
                   (BVLT (max FREE1 free2) X y)))
-  :hints (("Goal" :in-theory (disable BVLT-WHEN-UNSIGNED-BYTE-P-BETTER-NON-CONSTANT)
+  :hints (("Goal" :in-theory (disable BVLT-WHEN-UNSIGNED-BYTE-P-BETTER-NON-CONSTANT
+                                      NOT-BVLT-WHEN-BVLT-OPPOSITE-SMALLER-AND-UNSIGNED-BYTE-P)
            :use (:instance BVLT-TIGHTEN-FREE (k y) (free (max free1 free2))))))
 
 

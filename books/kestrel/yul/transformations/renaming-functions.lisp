@@ -31,15 +31,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fun-renamefun ((old identifierp)
-                       (new identifierp)
-                       (ren renamingp))
+(define fun-renamefun ((old identifierp) (new identifierp) (ren renamingp))
   :returns (_ resulterr-optionp)
   :short "Check if two function names are related by function renaming."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check is the two function names form an association pair in the omap."))
+    "We check if the two function names form a pair in the renaming list."))
   (b* ((old (identifier-fix old))
        (new (identifier-fix new)))
     (if (member-equal (cons old new) (renaming->list ren))
@@ -235,7 +233,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines statements/blocks/cases/fundefs-renamefun
-  :short "Mutually recursive functions to check if
+  :short "Mutually recursive ACL2 functions to check if
           statements, blocks, cases, and function definitions are
           related by function renaming."
 
@@ -261,7 +259,9 @@
        we extend the renaming list according to
        the function definitions in the initialization block,
        and then we process the rest of the statement
-       with the updated renaming list."))
+       with the updated renaming list.
+       However, the renaming list after the loop is the same as the one before:
+       a loop does not permanently introduce new variables."))
     (statement-case
      old
      :block
@@ -462,11 +462,17 @@
     :returns (_ resulterr-optionp)
     :short "Check if two switch cases are
             related by function renaming."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The value literals must be identical
+       (since they do not contain functions),
+       and the bodies must be related."))
     (b* (((unless (equal (swcase->value old)
                          (swcase->value new)))
           (err (list :mismatch-case-value
-                 (swcase->value old)
-                 (swcase->value new)))))
+                (swcase->value old)
+                (swcase->value new)))))
       (block-renamefun (swcase->body old) (swcase->body new) ren))
     :measure (swcase-count old))
 
@@ -521,4 +527,54 @@
   ///
   (verify-guards statement-renamefun)
 
-  (fty::deffixequiv-mutual statements/blocks/cases/fundefs-renamefun))
+  (fty::deffixequiv-mutual statements/blocks/cases/fundefs-renamefun)
+
+  (defruled same-statement-kind-when-statement-renamefun
+    (implies (not (resulterrp (statement-renamefun old new ren)))
+             (equal (statement-kind new)
+                    (statement-kind old)))
+    :expand (statement-renamefun old new ren)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fundef-list-renamefun ((old fundef-listp)
+                               (new fundef-listp)
+                               (ren renamingp))
+  :returns (_ resulterr-optionp)
+  :short "Check if two lists of function definitions are
+          related by function renaming."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is just a lifting of @(tsee fundef-renamefun) to lists.
+     It does not add anything new to the definition of function renaming,
+     but it is a useful derived concept.")
+   (xdoc::p
+    "We prove that if two lists of statements are related by function renaming,
+     then the lists of function definitions extracted from the statements
+     are also related by function renaming.
+     We prove this by simultaneous induction on the two lists of statements."))
+  (b* (((when (endp old))
+        (if (endp new)
+            nil
+          (err (list :mismatch-extra-new (fundef-list-fix new)))))
+       ((when (endp new))
+        (err (list :mismatch-extra-old (fundef-list-fix old))))
+       ((ok &) (fundef-renamefun (car old) (car new) ren)))
+    (fundef-list-renamefun (cdr old) (cdr new) ren))
+  :hooks (:fix)
+  ///
+
+  (defrule fundef-list-renamefun-of-statement-to-fundefs
+    (implies (not (resulterrp (statement-list-renamefun old new ren)))
+             (not (resulterrp
+                   (fundef-list-renamefun (statements-to-fundefs old)
+                                          (statements-to-fundefs new)
+                                          ren))))
+    :induct (acl2::cdr-cdr-induct old new)
+    :enable (statement-renamefun
+             statement-list-renamefun
+             statements-to-fundefs
+             same-statement-kind-when-statement-renamefun)
+
+    :prep-books ((include-book "std/basic/inductions" :dir :system))))

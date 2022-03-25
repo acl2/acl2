@@ -404,7 +404,8 @@
                               (booleanp prune-branches)
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp))
-                              (symbol-listp param-names)
+                              (or (eq :auto param-names)
+                                  (symbol-listp param-names))
                               (or (natp steps)
                                   (eq :auto steps)))))
   (b* (((when (command-is-redundantp whole-form state))
@@ -561,16 +562,17 @@
        ;; todo: make optional and avoid this on huge terms by default
        ((mv erp result-dag state)
         (if prune-branches
-            (prune-dag result-dag
-                       assumptions
-                       (set-difference-eq
-                        ;; no actual symbolic execution is done here:
-                        (union-eq (unroll-java-code2-rules)
-                                  extra-rules)
-                        remove-rules)
-                       monitor
-                       call-stp
-                       state)
+            (prune-dag-new result-dag
+                           assumptions
+                           (set-difference-eq
+                            ;; no actual symbolic execution is done here:
+                            (union-eq (unroll-java-code2-rules)
+                                      extra-rules)
+                            remove-rules)
+                           nil ; interpreted-fns
+                           monitor
+                           call-stp
+                           state)
           (mv nil result-dag state)))
        ((when erp) (mv erp nil state))
        ;; Now simplify the pruned dag (TODO, repeatedly simplifying and pruning might help?)
@@ -721,7 +723,7 @@
           (abstract-state-components 'nil) ;todo: make t the default
           (prune-branches 't)
           (call-stp 'nil)
-          (param-names 'nil)
+          (param-names ':auto)
           (extra-proof-rules 'nil)
           (print-interval '1000)
           (steps ':auto))
@@ -778,7 +780,7 @@
          (call-stp                 "whether to call STP when pruning (t, nil, or a number of conflicts before giving up)")
          (extra-proof-rules "Extra rules to support proving the result with ACL2")
          (print-interval "Number of DAG nodes to create before printing intermediate results (or nil for no limit).")
-         (param-names "Names to use for the parameters (e.g., if no debugging information is available).")
+         (param-names "Names to use for the parameters (e.g., if no debugging information is available), or :auto.")
          (steps "A number of steps to run.  A natural number (for debugging only), or :auto, meaning run until the method returns.")
          )
   :description "<p>This uses lifting theorems for subroutine calls that have already been lifted.  Otherwise, it effectively inlines the subroutine call.</p>

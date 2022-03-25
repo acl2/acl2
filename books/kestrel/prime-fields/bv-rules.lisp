@@ -162,7 +162,7 @@
                 (natp highsize)
                 )
            (equal (add (acl2::bvcat highsize highval lowsize 0)
-                       ;; todo: why does the single bit here intercede?
+                       ;; todo: why does the single bit here intervene?
                        (add (acl2::bvcat 1 bit 31 lowval)
                             extra
                             p)
@@ -186,7 +186,7 @@
                 (natp highsize)
                 (natp lowsize2))
            (equal (add (acl2::bvcat highsize highval lowsize 0)
-                       ;; todo: why does the highval2 here intercede in the blake proof?
+                       ;; todo: why does the highval2 here intervene in the blake proof?
                        (add (acl2::bvcat highsize2 highval2 lowsize2 lowval)
                             extra
                             p)

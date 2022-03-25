@@ -18,6 +18,7 @@
 (include-book "kestrel/jvm/jvm" :dir :system) ;for JVM::CALL-STACK-SIZE
 (include-book "kestrel/jvm/method-designator-strings" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
+(local (include-book "kestrel/lists-light/len" :dir :system))
 
 ;;These rules just get rid of all branches with exception/error states (totally
 ;;unsound, but helpful to guess an invariant to be checked later). ffffffixme:
@@ -172,7 +173,8 @@
 ;replace things like (contents <blah>) with (GET-FIELD <blah> '("ARRAY" "contents" . "dummy-descriptor") (JVM::HEAP <state-var>))
 (mutual-recursion
  (defun desugar-calls-of-contents-in-term (term heap-term)
-   (declare (xargs :guard (pseudo-termp term)))
+   (declare (xargs :guard (and (pseudo-termp term)
+                               (pseudo-termp heap-term))))
    (if (atom term)
        term
      (if (quotep term)
@@ -191,11 +193,35 @@
              ;;normal case:
              (cons fn new-args)))))))
  (defun desugar-calls-of-contents-in-terms (terms heap-term)
-   (declare (xargs :guard (pseudo-term-listp terms)))
+   (declare (xargs :guard (and (pseudo-term-listp terms)
+                               (pseudo-termp heap-term))))
    (if (endp terms)
        nil
      (cons (desugar-calls-of-contents-in-term (first terms) heap-term)
            (desugar-calls-of-contents-in-terms (rest terms) heap-term)))))
+
+(make-flag desugar-calls-of-contents-in-term)
+
+(defthm-flag-desugar-calls-of-contents-in-term
+  (defthm len-of-of-desugar-calls-of-contents-in-terms-skip
+    :skip t
+    :flag desugar-calls-of-contents-in-term)
+  (defthm len-of-of-desugar-calls-of-contents-in-terms
+    (equal (len (desugar-calls-of-contents-in-terms terms heap-term))
+           (len terms))
+    :flag desugar-calls-of-contents-in-terms))
+
+(defthm-flag-desugar-calls-of-contents-in-term
+  (defthm pseudo-termp-of-desugar-calls-of-contents-in-term
+    (implies (and (pseudo-termp term)
+                  (pseudo-termp heap-term))
+             (pseudo-termp (desugar-calls-of-contents-in-term term heap-term)))
+    :flag desugar-calls-of-contents-in-term)
+  (defthm pseudo-term-listp-of-desugar-calls-of-contents-in-terms
+    (implies (and (pseudo-term-listp terms)
+                  (pseudo-termp heap-term))
+             (pseudo-term-listp (desugar-calls-of-contents-in-terms terms heap-term)))
+    :flag desugar-calls-of-contents-in-terms))
 
 ; A dummy function that has special meaning when used in invariants (it gets
 ; replaced by a term representing the local var with the given name in the
@@ -397,22 +423,23 @@
            (symbolp (lookup-equal slot alist)))
   :hints (("Goal" :in-theory (enable param-slot-to-name-alistp lookup-equal assoc-equal))))
 
-;; todo: use :auto as the default for param-names, not nil
+;; The alist returned is ordered by slot.
 (defun make-param-slot-to-name-alist-aux (parameter-types slot local-variable-table param-names)
   (declare (xargs :guard (and (true-listp parameter-types)
                               (jvm::all-typep parameter-types)
                               (natp slot)
                               (jvm::local-variable-tablep local-variable-table)
-                              (symbol-listp param-names))
+                              (or (eq :auto param-names)
+                                  (and (symbol-listp param-names)
+                                       (equal (len param-names)
+                                              (len parameter-types)))))
                   :verify-guards nil ;;done below
                   ))
   (if (endp parameter-types)
-      (if (not (endp param-names))
-          (er hard? 'make-param-slot-to-name-alist-aux "Extra param-names given: ~x0." param-names)
-        nil)
+      nil
     (b* ((type (first parameter-types))
          (slot-count (jvm::type-slot-count type))
-         ((mv erp name) (if param-names ;use user-supplied param-names, if given
+         ((mv erp name) (if (not (eq :auto param-names)) ;use user-supplied param-names, if given
                             (mv (erp-nil) (first param-names))
                           (if local-variable-table
                               (let ((name-and-type
@@ -421,16 +448,20 @@
                                 (if (not name-and-type)
                                     (prog2$ (er hard? 'make-param-slot-to-name-alist-aux "No binding found in the local var table for param ~x0." slot)
                                             (mv (erp-t) nil))
-                                  (if (not (STANDARD-CHAR-LISTP (COERCE (car name-and-type) 'LIST)))
+                                  (if (not (standard-char-listp (coerce (car name-and-type) 'list)))
                                       (prog2$ (er hard? 'make-param-slot-to-name-alist-aux "Name contains non-standard characters: ~x0." (car name-and-type))
                                               (mv (erp-t) nil))
                                     (mv (erp-nil)
                                         (pack$ (string-upcase (car name-and-type)))))))
                             ;; There is no local variable table, so just call it PARAM<N>:
                             ;;todo: should param numbering start at 1 here?
+                            ;; TODO: Should param numbering not increase by 2 for doubles/longs (that is, not follow the slots)?
                             (mv (erp-nil) (pack$ 'param slot)))))
          ((when erp) nil) ;could return the error...
-         (res (make-param-slot-to-name-alist-aux (rest parameter-types) (+ slot-count slot) local-variable-table (rest param-names))))
+         (res (make-param-slot-to-name-alist-aux (rest parameter-types) (+ slot-count slot) local-variable-table
+                                                 (if (eq :auto param-names)
+                                                     param-names
+                                                   (rest param-names)))))
       (if (member-eq name (strip-cdrs res))
           ;; Can happen if two param names differe only in case:
           (er hard? 'make-param-slot-to-name-alist-aux "Parameter name clash on ~x0." name)
@@ -446,7 +477,8 @@
                 (jvm::all-typep parameter-types)
                 (natp slot)
                 (jvm::local-variable-tablep local-variable-table)
-                (symbol-listp param-names))
+                (or (eq :auto param-names)
+                    (symbol-listp param-names)))
            (param-slot-to-name-alistp (make-param-slot-to-name-alist-aux parameter-types slot local-variable-table param-names)))
   :hints (("Goal" :induct (make-param-slot-to-name-alist-aux parameter-types slot local-variable-table param-names)
            :in-theory (enable param-slot-to-name-alistp STRIP-CARS))))
@@ -455,14 +487,16 @@
 ;; param-names if given, else use the local-variable-table if present,
 ;; otherwise, call them param0, param1, etc.  If this is an instance method, we
 ;; skip param0 because it would represent "this".
-;todo: this duplicates code in parameter-assumptions
+;; Some similar code is in parameter-assumptions.
+;; The alist returned is ordered by slot.
 (defun make-param-slot-to-name-alist (method-info
                                       param-names ;often nil
                                       )
   (declare (xargs :guard (and (jvm::method-infop method-info)
-                              (symbol-listp param-names))))
+                              (or (eq :auto param-names)
+                                  (symbol-listp param-names)))))
   (b* ((parameter-types (lookup-eq :parameter-types method-info)) ;does not include "this"
-       ((when (and param-names
+       ((when (and (not (eq :auto param-names))
                    (not (eql (len param-names) (len parameter-types)))))
         (er hard? 'parameter-names "Wrong number of parameter names given.  Names: ~x0.  Types: ~x1." param-names parameter-types))
        (local-variable-table (lookup-eq :local-variable-table method-info)) ;may be nil
@@ -473,9 +507,9 @@
 
 (defthm param-slot-to-name-alistp-of-make-param-slot-to-name-alist
   (implies (and (jvm::method-infop method-info)
-                (symbol-listp param-names))
+                (or (eq :auto param-names)
+                    (symbol-listp param-names)))
            (param-slot-to-name-alistp (make-param-slot-to-name-alist method-info param-names))))
-
 
 ;; A triple of name, index, and type, e.g., ("i" 4 :INT).
 (defund local-var-for-pcp (x)
@@ -530,17 +564,27 @@
     (let ((entry (first alist)))
       (acons (cdr entry) (car entry) (reflect-alist (rest alist))))))
 
-(defun assumptions-that-classes-are-initialized (class-names state-var)
+(defund assumptions-that-classes-are-initialized (class-names state-var)
   (if (endp class-names)
       nil
     (cons `(memberp ',(first class-names) (jvm::initialized-classes ,state-var))
           (assumptions-that-classes-are-initialized (rest class-names) state-var))))
 
-(defun assumptions-that-classes-are-uninitialized (class-names state-var)
+(defthm pseudo-term-listp-of-assumptions-that-classes-are-initialized
+  (implies (symbolp state-var)
+           (pseudo-term-listp (assumptions-that-classes-are-initialized class-names state-var)))
+  :hints (("Goal" :in-theory (enable assumptions-that-classes-are-initialized))))
+
+(defund assumptions-that-classes-are-uninitialized (class-names state-var)
   (if (endp class-names)
       nil
     (cons `(not (memberp ',(first class-names) (jvm::initialized-classes ,state-var)))
           (assumptions-that-classes-are-uninitialized (rest class-names) state-var))))
+
+(defthm pseudo-term-listp-of-assumptions-that-classes-are-uninitialized
+  (implies (symbolp state-var)
+           (pseudo-term-listp (assumptions-that-classes-are-uninitialized class-names state-var)))
+  :hints (("Goal" :in-theory (enable assumptions-that-classes-are-uninitialized))))
 
 (defun add-stack-pops-for-parameters-above (parameter-types-above ;; these are in parameter order (early ones correspond to deeper stack items)
                                             stack-term)
@@ -556,6 +600,12 @@
 
 ;;(add-stack-pops-for-parameters-above '(:long :int :int) 'foo) = (JVM::POP-OPERAND (JVM::POP-OPERAND (JVM::POP-LONG FOO)))
 
+(defthm pseudo-termp-of-add-stack-pops-for-parameters-above
+  (implies (and (jvm::all-typep parameter-types-above)
+                (true-listp parameter-types-above)
+                (pseudo-termp stack-term))
+           (pseudo-termp (add-stack-pops-for-parameters-above parameter-types-above stack-term))))
+
 (defun stack-item-term (type ;the type of this stack item
                         parameter-types-above ;; these are in parameter order (early ones correspond to deeper stack items)
                         stack-term)
@@ -565,6 +615,13 @@
   (if (member-eq type jvm::*two-slot-types*)
       `(jvm::top-long ,(add-stack-pops-for-parameters-above parameter-types-above stack-term))
     `(jvm::top-operand ,(add-stack-pops-for-parameters-above parameter-types-above stack-term))))
+
+(defthm pseudo-termp-of-stack-item-term
+  (implies (and (jvm::all-typep parameter-types-above)
+                (true-listp parameter-types-above)
+                (jvm::typep type)
+                (pseudo-termp stack-term))
+           (pseudo-termp (stack-item-term type parameter-types-above stack-term))))
 
 ;; TODO: Compare to parameter-assumptions-aux
 (defun assumptions-about-parameters-on-stack (parameter-types
@@ -707,7 +764,7 @@
             (eq :param-field (ffn-symb x))
             (class-name-field-id-pairp (farg1 x))
             (natp (farg2 x)))
-       (and (true-listp x) ;;(:tuple ...)
+       (and (true-listp x) ; (:tuple <indicator1> ... <indicatorn>)
             (<= 1 (len (fargs x))) ;disallow the empty tuple
             (eq :tuple (ffn-symb x))
             (output-indicatorp-aux-lst (fargs x)))))

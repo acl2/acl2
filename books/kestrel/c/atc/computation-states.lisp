@@ -12,7 +12,7 @@
 (in-package "C")
 
 (include-book "arrays")
-(include-book "values")
+(include-book "structures")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 
@@ -198,6 +198,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defflatsum object
+  :short "Fixtype of objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the objects in the heap (see @(tsee heap));
+     so it is a more restricted notion of object than in [C].
+     An object is either an array or a structure here."))
+  (:array array)
+  (:struct struct)
+  :pred objectp
+
+  :prepwork
+
+  ((defrulel car-when-arrayp
+     (implies (arrayp x)
+              (not (equal (car x) :struct)))
+     :rule-classes :tau-system
+     :enable (arrayp
+              uchar-arrayp
+              schar-arrayp
+              ushort-arrayp
+              sshort-arrayp
+              uint-arrayp
+              sint-arrayp
+              ulong-arrayp
+              slong-arrayp
+              ullong-arrayp
+              sllong-arrayp))
+
+   (defrulel car-when-structp
+     (implies (structp x)
+              (equal (car x) :struct))
+     :rule-classes :tau-system
+     :enable structp)
+
+   (defrulel not-structp-when-arrayp
+     (implies (arrayp x)
+              (not (structp x)))
+     :cases ((equal (car x) :struct)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defomap heap
   :short "Fixtype of heaps."
   :long
@@ -209,10 +252,10 @@
      However, `heap' is sufficiently commonly used
      that it seems adequate to use it here.")
    (xdoc::p
-    "For now we model the heap just as a finite map from addresses to arrays.
-     That is, we only really consider arrays initially."))
+    "For now we model the heap just as a finite map from addresses to objects,
+     which are arrays and structures (see @(tsee object))."))
   :key-type address
-  :val-type array
+  :val-type object
   :pred heapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -674,11 +717,13 @@
      can be used to read individual array elements."))
   (b* ((addr (address-fix addr))
        (heap (compustate->heap compst))
-       (addr+array (omap::in addr heap))
-       ((unless (consp addr+array))
+       (addr+obj (omap::in addr heap))
+       ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
-       (array (cdr addr+array)))
-    array)
+       (obj (cdr addr+obj))
+       ((unless (arrayp obj))
+        (error (list :address-not-array addr obj))))
+    obj)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -695,22 +740,27 @@
     "Note that this function writes the array as a whole;
      it does not write an array element.
      Functions like @(tsee uchar-array-write-sint)
-     can be used to write individual array elements."))
+     can be used to write individual array elements.")
+   (xdoc::p
+    "Before overwriting the array,
+     we ensure that the new one has the same type and length."))
   (b* ((addr (address-fix addr))
        (heap (compustate->heap compst))
-       (addr+array (omap::in addr heap))
-       ((unless (consp addr+array))
+       (addr+obj (omap::in addr heap))
+       ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
-       (old-array (cdr addr+array))
+       (obj (cdr addr+obj))
+       ((unless (arrayp obj))
+        (error (list :address-not-array addr obj)))
        ((unless (equal (type-of-array-element array)
-                       (type-of-array-element old-array)))
+                       (type-of-array-element obj)))
         (error (list :array-type-mismatch
-                     :old (type-of-array-element old-array)
+                     :old (type-of-array-element obj)
                      :new (type-of-array-element array))))
        ((unless (equal (array-length array)
-                       (array-length old-array)))
+                       (array-length obj)))
         (error (list :array-length-mismatch
-                     :old (array-length old-array)
+                     :old (array-length obj)
                      :new (array-length array))))
        (new-heap (omap::update addr (array-fix array) heap))
        (new-compst (change-compustate compst :heap new-heap)))
@@ -725,6 +775,87 @@
     :hints (("Goal" :in-theory (enable compustate-frames-number))))
 
   (defret compustate-scopes-numbers-of-write-array
+    (implies (compustatep new-compst)
+             (equal (compustate-scopes-numbers new-compst)
+                    (compustate-scopes-numbers compst)))
+    :hints (("Goal" :in-theory (enable compustate-scopes-numbers)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-struct ((addr addressp) (compst compustatep))
+  :returns (struct struct-resultp)
+  :short "Read a structure in the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check whether the heap has a structure at that address.
+     If this check succeeds, we return the structure.")
+   (xdoc::p
+    "Note that this function reads the structure as a whole;
+     it does not read a structure member.
+     The function @(tsee struct-read-member)
+     can be used to read individual structure members."))
+  (b* ((addr (address-fix addr))
+       (heap (compustate->heap compst))
+       (addr+obj (omap::in addr heap))
+       ((unless (consp addr+obj))
+        (error (list :address-not-found addr)))
+       (obj (cdr addr+obj))
+       ((unless (structp obj))
+        (error (list :address-not-struct addr obj))))
+    obj)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-struct ((addr addressp) (struct structp) (compst compustatep))
+  :returns (new-compst compustate-resultp)
+  :short "Write a structure in the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check whether the heap has a structure at the address.
+     If this checks succeed, we overwrite the structure in the heap.")
+   (xdoc::p
+    "Note that this function writes the structure as a whole;
+     it does not write a structure member.
+     The functions @(tsee struct-write-member)
+     can be used to write individual structure members.")
+   (xdoc::p
+    "Before overwriting the structure,
+     we ensure that the new one has
+     the same tag, member names, and member types."))
+  (b* ((addr (address-fix addr))
+       (heap (compustate->heap compst))
+       (addr+obj (omap::in addr heap))
+       ((unless (consp addr+obj))
+        (error (list :address-not-found addr)))
+       (obj (cdr addr+obj))
+       ((unless (structp obj))
+        (error (list :address-not-struct addr obj)))
+       ((unless (equal (struct->tag struct)
+                       (struct->tag obj)))
+        (error (list :struct-tag-mismatch
+                     :old (struct->tag obj)
+                     :new (struct->tag struct))))
+       ((unless (equal (members-to-infos (struct->members struct))
+                       (members-to-infos (struct->members obj))))
+        (error (list :struct-members-mismatch
+                     :old (members-to-infos (struct->members obj))
+                     :new (members-to-infos (struct->members struct)))))
+       (new-heap (omap::update addr (struct-fix struct) heap))
+       (new-compst (change-compustate compst :heap new-heap)))
+    new-compst)
+  :hooks (:fix)
+  ///
+
+  (defret compustate-frames-number-of-write-struct
+    (implies (compustatep new-compst)
+             (equal (compustate-frames-number new-compst)
+                    (compustate-frames-number compst)))
+    :hints (("Goal" :in-theory (enable compustate-frames-number))))
+
+  (defret compustate-scopes-numbers-of-write-struct
     (implies (compustatep new-compst)
              (equal (compustate-scopes-numbers new-compst)
                     (compustate-scopes-numbers compst)))

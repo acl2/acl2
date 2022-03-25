@@ -3,13 +3,13 @@
 ; Proof of the Banach-Tarski theorem on S^2.
 ;
 ;
-; Copyright (C) 2021 University of Wyoming
+; Copyright (C) 2022 University of Wyoming
 ;
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 ;
-; Main Authors: Jagadish Bapanapally (jagadishb285@gmail.com)
+; Main Author: Jagadish Bapanapally (jagadishb285@gmail.com)
 ;
-; Contributing Authors:
+; Contributing Author:
 ;   Ruben Gamboa (ruben@uwyo.edu)
 
 (in-package "ACL2")
@@ -77,6 +77,14 @@
            :in-theory (enable aref2)
            ))
   )
+
+(defthmd r3-matrixp-r3d
+  (implies (and (realp angle)
+                (point-in-r3 u))
+           (r3-matrixp (rotation-3d angle u)))
+  :hints (("goal"
+           :in-theory (enable aref2 header dimensions array2p)
+           )))
 
 (encapsulate
  ()

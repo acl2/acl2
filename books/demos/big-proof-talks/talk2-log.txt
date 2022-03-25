@@ -955,7 +955,8 @@ Subgoal 4
 Subgoal 3
 (MEMB 'CATHY (RM 'BOB (RM 'ALICE X)))
 
-ACL2 Error in ( DEFTHM PERM-REMARKABLY-FAST-SORT ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFTHM PERM-REMARKABLY-FAST-SORT ...):  See
+:DOC failure.
 
 ******** FAILED ********
 ACL2 !>>'(END OF DEMO 1)
@@ -1163,7 +1164,7 @@ Subgoal *1/2.1
          (PERM (AP B (CDR A))
                (RM (CAR A) (AP B A))))
 
-ACL2 Error in ( DEFTHM PERM-AP ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFTHM PERM-AP ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTHM MEMB-AP
@@ -1797,7 +1798,7 @@ Subgoal *1/2''
          (EQUAL (ISORT (INSERT (CAR X) (ISORT (CDR X))))
                 (INSERT (CAR X) (ISORT (CDR X)))))
 
-ACL2 Error in ( DEFTHM ISORT-IDEMPOTENT ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFTHM ISORT-IDEMPOTENT ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTHM ISORT-IDENTITY
@@ -2021,7 +2022,8 @@ Goal'
 Subgoal *1/3'
 (CONSP A)
 
-ACL2 Error in ( DEFTHM THIS-IS-NOT-A-THEOREM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFTHM THIS-IS-NOT-A-THEOREM ...):  See :DOC
+failure.
 
 ******** FAILED ********
 ACL2 !>>'(END OF DEMO 2)

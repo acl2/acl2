@@ -51,7 +51,7 @@
     (let ((fn (ffn-symb term)))
       (if (or (eq 'quote fn)
               (eq 'cons fn))
-          (if (not (and (syntactic-true-listp term)
+          (if (not (and (syntactic-explicit-true-listp term) ; weaken?
                         (= (syntactic-length term) num-values)))
               (er hard? 'restore-mv-in-branches "Failed to restore ~x0 to a term with ~x1 values." term num-values)
             `(mv ,@(syntactic-list-elements term)))
@@ -70,9 +70,11 @@
                       (eq 'do$ fn) ; Matt K. mod 11/2021 for addition to *stobjs-out-invalid*
                       )
                   term
-                (if (= (num-return-values-of-fn fn wrld) num-values)
-                    term
-                  (er hard? 'restore-mv-in-branches "Failed to restore ~x0 to a term with ~x1 values." term num-values))))))))))
+                (if (not (function-symbolp fn wrld))
+                    (er hard? 'restore-mv-in-branches "Undefined function: ~x0." fn)
+                  (if (= (num-return-values-of-fn fn wrld) num-values)
+                      term
+                    (er hard? 'restore-mv-in-branches "Failed to restore ~x0 to a term with ~x1 values." term num-values)))))))))))
 
 (defthm pseudo-termp-of-restore-mv-in-branches
   (implies (and (pseudo-termp term)

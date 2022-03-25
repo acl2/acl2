@@ -449,7 +449,7 @@
                  (:rewrite rp::rp-termp-ex-from-rp)
                  (:rewrite sv::svar-p-of-car-when-svarlist-p)
                  (:rewrite natp-implies-integerp)
-                 (:rewrite acl2::o-p-o-infp-car)
+;;                 (:rewrite acl2::o-p-o-infp-car)
                  (:rewrite rp::rp-termp-extract-from-rp)
 
                  (:rewrite sv::4vec-p-of-car-when-4veclist-p)

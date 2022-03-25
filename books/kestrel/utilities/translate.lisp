@@ -33,6 +33,7 @@
 ;; lambdas, etc.).  Returns the translation of TERM, or throws an informative
 ;; hard error if something is wrong.  I think this is based on something Matt
 ;; K. wrote.  See also check-user-term.
+;; See also translate-term-allowing-ignored-vars.
 (defun translate-term (term ctx wrld)
   (declare (xargs :mode :program
                   ;; todo: guard

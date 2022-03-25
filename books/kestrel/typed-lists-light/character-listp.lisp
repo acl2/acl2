@@ -57,8 +57,8 @@
   (implies (character-listp (double-rewrite x))
            (character-listp (nthcdr n x)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (;simpler-take
-                            nthcdr character-listp) ()))))
+           :in-theory (enable ;simpler-take
+                       nthcdr character-listp))))
 
 ;dup in std/typed-lists/character-listp.lisp
 (defthm character-listp-of-cons

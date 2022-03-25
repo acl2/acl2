@@ -1130,6 +1130,7 @@
                                            monitored-symbols internal-context-array context-for-all-nodes known-booleans work-hard-when-instructedp tag limits state)
         ;;expr is a variable or function call (TODO: Split out the var case):
         (let* ((context-for-this-node (if internal-context-array (aref1 'context-array internal-context-array nodenum) (true-context)))
+               ;; TODO: instead of conjoin-contexts, just check for contradictory context and then handle the context-for-this-node and context-for-all-nodes separately below?
                (full-context (conjoin-contexts context-for-all-nodes context-for-this-node))) ;todo: reverse the args to conjoin-contexts?
           (if (false-contextp full-context)
               ;; The node is in a false context, so we can rewrite it to whatever we want:
@@ -1143,7 +1144,7 @@
                        monitored-symbols internal-context-array context-for-all-nodes known-booleans work-hard-when-instructedp tag limits state))
             (b* ((node-replacement-alist-for-this-node (node-replacement-alist-for-context full-context dag-array known-booleans print)) ;fffixme this gets redone over and over for context-for-all-nodes?
                  ;; This is an attempt to include the context information in the assumptions used for free var matching:
-                 (context-exprs-for-this-node (context-to-exprs full-context dag-array))
+                 (context-exprs-for-this-node (context-to-exprs full-context dag-array)) ;fffixme this gets redone over and over for context-for-all-nodes?
                  (refined-assumption-alist-for-this-node (extend-refined-assumption-alist context-exprs-for-this-node refined-assumption-alist))
                  ;;(context-assumptions (get-extra-assumptions full-context predicate-nodenum-term-alist))
                  ;;(dummy (and context-assumptions (cw "Using ~x0 context assumption(s) for node ~x1.~%" (len context-assumptions) nodenum)))
@@ -2141,7 +2142,7 @@
       (mv nil nil nil state) ;failed to simplify anything
     (let ((term (first terms-to-simplify)))
       (mv-let (erp result-dag state)
-        ;; could instead to rewrite-term...
+        ;; could instead call rewrite-term...
         (simp-term term :rule-alist rule-alist
                    :assumptions (remove-equal term all-terms) ;don't use the term to simplify itself!
                    :monitor monitored-rules)

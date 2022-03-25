@@ -1804,20 +1804,7 @@
       (return-from oneify-cltl-code
                    `(,(*1*-symbol (car def)) nil
                      (throw-raw-ev-fncall ; as in oneify-fail-form
-                      (list 'ev-fncall-creator-er ',(car def))))))
-     ((and (null (cdr (cadr def))) ; optimization
-           (stobj-fixerp (car def) wrld))
-
-; We don't want the raw-Lisp stobj fixer ever to execute during a proof, thus
-; potentially creating a live stobj.  So we arrange that its *1* function is
-; defined to be the oneification of the body, without passing to the raw Lisp
-; version after a guard check as is generally done when oneifying a definition
-; body.  If the *1* function for creator is therefore called during a proof,
-; its usual throw will be handled just fine.
-
-      (return-from oneify-cltl-code
-                   `(,(*1*-symbol (car def)) ,(cadr def)
-                     ,(oneify (car (last def)) nil wrld nil))))))
+                      (list 'ev-fncall-creator-er ',(car def))))))))
 
   (when (null defun-mode)
 
@@ -7169,7 +7156,9 @@
   (f-put-global 'global-enabled-structure
                 (initial-global-enabled-structure "ENABLED-ARRAY-")
                 *the-live-state*)
-  (f-put-ld-specials *initial-ld-special-bindings* *the-live-state*)
+  (f-put-ld-specials *initial-ld-special-bindings*
+                     nil ; no changes to useless-runes (not an LD special)
+                     *the-live-state*)
 
 ; The next set-w will avail itself of the empty frame left above.
 
@@ -7358,6 +7347,7 @@
     (standard-co . ,*standard-co*)
     (proofs-co . ,*standard-co*)
     (current-package . "ACL2")
+    (useless-runes . nil)
     (ld-skip-proofsp . ,ld-skip-proofsp)
     (ld-redefinition-action . nil)
     (ld-prompt . ,(if ld-skip-proofsp nil t))
@@ -7812,6 +7802,22 @@
                      (not (cdr (assoc-eq x *boot-strap-invariant-risk-alist*)))
                      collect x)))))
 
+(defun computed-type-expr-to-type-spec-alist (state)
+  (pair-type-expressions-with-type-specs
+   *type-spec-templates*
+   '((-3   . int-lo)
+     (5    . int-hi)
+     (2    . nat)
+     (-1/7 . rat-lo)
+     (1/11 . rat-hi))
+   '(('-3   . int-lo)
+     ('5    . int-hi)
+     ('2    . nat)
+     ('-1/7 . rat-lo)
+     ('1/11 . rat-hi))
+   nil
+   (w state)))
+
 (defun check-built-in-constants (&aux (state *the-live-state*))
 
 ; Certain defconsts are problematic because they build in values that one
@@ -7977,6 +7983,14 @@
                      (strip-cars *primitive-formals-and-guards*)
                      (ens state)
                      (w state)))))
+    (cond
+     ((not
+       (equal *type-expr-to-type-spec-alist*
+              (computed-type-expr-to-type-spec-alist state)))
+      (interface-er str
+                    '*type-expr-to-type-spec-alist*
+                    *type-expr-to-type-spec-alist*
+                    (computed-type-expr-to-type-spec-alist state))))
     (cond
      ((not (getpropc 'booleanp 'tau-pair))
       (interface-er
@@ -8558,7 +8572,9 @@
 ; LDs above make reference to some of them so they must be bound).
 ; But the LD above changes them so we now initialize them again.
 
-     (f-put-ld-specials *initial-ld-special-bindings* *the-live-state*)
+     (f-put-ld-specials *initial-ld-special-bindings*
+                        nil ; no changes to useless-runes (not an LD special)
+                        *the-live-state*)
 
 ; We now check certain invariants, for example, that we have defined certain
 ; built-in constants correctly.
@@ -9145,8 +9161,8 @@
 ; A non-nil value of this variable indicates that we are to use the "book-hash"
 ; mechanism of storing an alist in the .cert file, instead of a numeric
 ; checksum.  Starting in June 2016, storing such an alist is the default.  That
-; default is defeated when the indicated environment variable is empty or (up
-; to case) "NIL".
+; default is defeated when the indicated environment variable has value (up to
+; case) "NIL".
 
                (let ((s (getenv$-raw "ACL2_BOOK_HASH_ALISTP")))
                  (or (null s) ; default case

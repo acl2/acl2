@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; January 2022
+;; March 2022
 
 (in-package "RTL")
 
@@ -13,6 +13,7 @@
                  bits-upper-bound
                  bvecp-bitn-1
                  expo-fl
+                 expo-spn
                  expo-lpn
                  expo-shift
                  expo-ndecode
@@ -25,6 +26,8 @@
                  rdn-upper-bound
                  rtz-upper-pos
                  raz-lower-pos
+                 rto-positive
+                 rto-negative
                  roundup-pos)
                 (rnd-positive
                  rnd-negative)))
@@ -744,6 +747,13 @@
   :hints (("Goal" :in-theory (enable manf)))
   :rule-classes :linear)
 
+(defthm-nl sigf-upper-bound
+  (implies (formatp f)
+           (< (sigf x f)
+              (expt 2 (prec f))))
+  :hints (("Goal" :in-theory (enable sigf sigw)))
+  :rule-classes :linear)
+
 (defthm sigf-=-manf
   (implies (not (explicitp f))
            (equal (sigf x f)
@@ -780,6 +790,17 @@
                 (not (normp x f))))
   :hints (("Goal" :in-theory (enable snanp qnanp nanp infp zerp normp denormp
                                      encodingp expw formatp))))
+
+(defthm zerp-zencode
+  (implies (formatp f)
+           (zerp (zencode sgn f) f))
+  :hints (("Goal" :in-theory (enable zerp
+                                     zencode
+                                     encodingp
+                                     expf sigf
+                                     cat
+                                     bits
+                                     bvecp))))
 
 (defthmd zerp-decode-rel
   (implies (encodingp x f)
@@ -1420,12 +1441,6 @@
 
 ;; ======================================================================
 
-(defthm expo-spn
-  (implies (formatp f)
-           (equal (expo (spn f))
-                  (- 1 (bias f))))
-  :hints (("Goal" :in-theory (enable spn))))
-
 (defthm smallest-spn-linear
   (implies (nrepp x f)
            (<= (spn f) (abs x)))
@@ -1549,8 +1564,7 @@
                      (bits x
                            (expo x)
                            (- (1+ (expo x)) k)))))
-  :hints (("Goal" :use (:instance bits-rtz
-                                  (n (1+ (expo x)))))))
+  :hints (("Goal" :use (:instance bits-rtz (n (1+ (expo x)))))))
 
 (defthm-nl rna-neg-bits
   (implies (and (< n 0)
@@ -1625,6 +1639,29 @@
            :in-theory (e/d (rto-exact
                             nrepp)
                            (nrepp-ndecode)))))
+
+(defthm rto-lpn
+  (implies (formatp f)
+           (equal (rto (lpn f) (prec f))
+                  (lpn f)))
+  :hints (("Goal"
+           :use nrepp-lpn
+           :in-theory (e/d (formatp prec rto-exact nrepp)
+                           (nrepp-lpn)))))
+
+(defthm nrepp-rto
+  (implies (and (formatp f)
+                (rationalp x)
+                (<= (spn f) (abs x))
+                (<= (abs x) (lpn f)))
+           (nrepp (rto x (prec f)) f))
+  :hints (("Goal"
+           :use ((:instance expo-monotone
+                            (x (spn f))
+                            (y x))
+                 (:instance expo-monotone
+                            (y (lpn f))))
+           :in-theory (enable nrepp))))
 
 (encapsulate
   ()

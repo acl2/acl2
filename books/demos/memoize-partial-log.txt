@@ -1591,7 +1591,8 @@ as the last argument of each recursive call).
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See :DOC failure.
+ACL2 Error [Failure] in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See
+:DOC failure.
 
 Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)
@@ -1629,7 +1630,8 @@ formal parameters.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See :DOC failure.
+ACL2 Error [Failure] in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See
+:DOC failure.
 
 Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)
@@ -1695,7 +1697,8 @@ have different final elements (of BOUND and BOUND2, respectively).
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See :DOC failure.
+ACL2 Error [Failure] in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See
+:DOC failure.
 
 Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)
@@ -1852,7 +1855,8 @@ The key is a non-recursive function symbol.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See :DOC failure.
+ACL2 Error [Failure] in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See
+:DOC failure.
 
 Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)
@@ -1881,7 +1885,8 @@ list of functions is (EVENLP-BDD ODDLP-BDD).
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See :DOC failure.
+ACL2 Error [Failure] in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See
+:DOC failure.
 
 Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)
@@ -1906,7 +1911,8 @@ list of functions is (EVENLP-BDD ODDLP-BDD).
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See :DOC failure.
+ACL2 Error [Failure] in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See
+:DOC failure.
 
 Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)
@@ -1937,7 +1943,8 @@ list of functions is (EVENLP-BDD ODDLP-BDD).
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See :DOC failure.
+ACL2 Error [Failure] in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See
+:DOC failure.
 
 Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)
@@ -2062,7 +2069,8 @@ The following event is missing:
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See :DOC failure.
+ACL2 Error [Failure] in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See
+:DOC failure.
 
 ACL2 Warning in ( ENCAPSULATE NIL (DEFCHOOSE EVENLP2-BDD-CHANGE ...)
 ...):  The attempted ENCAPSULATE has failed while trying to establish
@@ -2174,7 +2182,8 @@ The following events are missing:
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See :DOC failure.
+ACL2 Error [Failure] in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See
+:DOC failure.
 
 ACL2 Warning in ( ENCAPSULATE NIL (DEFCHOOSE EVENLP2-BDD-CHANGE ...)
 ...):  The attempted ENCAPSULATE has failed while trying to establish

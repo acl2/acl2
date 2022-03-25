@@ -130,7 +130,7 @@
   (declare (xargs :stobjs x86
                   :verify-guards nil ;todo
                   ))
-  (let ((text-section-bytes (acl2::get-mach-o-code parsed-mach-o)) ;all the code, not just the given method
+  (let ((text-section-bytes (acl2::get-mach-o-code parsed-mach-o)) ;all the code, not just the given subroutine
         (text-section-address (acl2::get-mach-o-code-address parsed-mach-o))
         (subroutine-address (acl2::subroutine-address-mach-o subroutine-name parsed-mach-o)))
     (standard-assumptions-core-64 text-section-bytes
@@ -150,7 +150,7 @@
   (declare (xargs :stobjs x86
                   :verify-guards nil ;todo
                   ))
-  (b* ((text-section-bytes (acl2::lookup-eq :raw-data (acl2::get-pe-text-section parsed-pe))) ;all the code, not just the given method
+  (b* ((text-section-bytes (acl2::lookup-eq :raw-data (acl2::get-pe-text-section parsed-pe))) ;all the code, not just the given subroutine
        (symbol-table (acl2::lookup-eq-safe :symbol-table parsed-pe))
        ((when (eq :none symbol-table))
         (er hard 'standard-assumptions-pe-64 "No symbol table present."))

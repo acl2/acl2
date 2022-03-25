@@ -19,6 +19,13 @@
        (set::in key (keys map)))
   :enable in)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled set-in-keys-to-in
+  (iff (set::in key (keys map))
+       (in key map))
+  :enable in)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule keys-of-restrict
@@ -40,6 +47,20 @@
                    (set::in x keys))
               (set::in x (keys (restrict keys map))))
      :enable restrict)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled in-of-restrict-1
+  (implies (set::in key keys)
+           (equal (in key (restrict keys map))
+                  (in key map)))
+  :enable restrict)
+
+(defruled in-of-restrict-2
+  (equal (in key (restrict keys map))
+         (and (set::in key keys)
+              (in key map)))
+  :enable restrict)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

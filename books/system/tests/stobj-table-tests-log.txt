@@ -22,9 +22,9 @@ ACL2 !>>(DEFUN BASIC-1 (TOP)
                           VAL1))
 
 
-ACL2 Error in ( DEFUN BASIC-1 ...):  The variable ST1 is bound in a
-stobj-let form to the expression (TBL-GET 'ST1 TOP (CREATE-ST1)), which
-has the form of a stobj-table access.
+ACL2 Error [Translate] in ( DEFUN BASIC-1 ...):  The variable ST1 is
+bound in a stobj-let form to the expression (TBL-GET 'ST1 TOP (CREATE-ST1)),
+which has the form of a stobj-table access.
 However, that alleged stobj-table access is illegal because ST1 is
 not the name of a stobj.  See :DOC stobj-table.  The form 
 (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1)))) (VAL1) (FLD1 ST1) VAL1)
@@ -54,12 +54,12 @@ ACL2 !>>(DEFUN BAD (TOP)
                           VAL1))
 
 
-ACL2 Error in ( DEFUN BAD ...):  The stobj-let binding of variable
-ST1 to expression (TBL-GET 'ST1 TOP) is illegal.  If a stobj-table
-access was intended, the stobj creator for ST1 should be called as
-a third argument of that expression; see :DOC stobj-table.  The form
-(STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP))) (VAL1) (FLD1 ST1) VAL1) is thus
-illegal.  See :DOC stobj-let.
+ACL2 Error [Translate] in ( DEFUN BAD ...):  The stobj-let binding
+of variable ST1 to expression (TBL-GET 'ST1 TOP) is illegal.  If a
+stobj-table access was intended, the stobj creator for ST1 should be
+called as a third argument of that expression; see :DOC stobj-table.
+The form (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP))) (VAL1) (FLD1 ST1) VAL1)
+is thus illegal.  See :DOC stobj-let.
 
 ACL2 !>>(DEFUN UPDATE-1 (TOP)
                (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
@@ -366,7 +366,8 @@ ACL2 !>>(DEFUN UPDATE-1A-BAD (TOP)
                           (MV VAL3 VAL3A TOP)))
 
 
-ACL2 Error in ( DEFUN UPDATE-1A-BAD ...):  The stobj-let binding expressions
+ACL2 Error [Translate] in ( DEFUN UPDATE-1A-BAD ...):  The stobj-let
+binding expressions 
 ((TBL-GET 'ST3 TOP (CREATE-ST3)) (TBL-GET 'ST3 TOP (CREATE-ST3))) both
 read stobj TOP with accessor TBL-GET using identical stobj keys.  Since
 variables ST3 and ST3A are to be updated (i.e., they are among the
@@ -397,9 +398,10 @@ ACL2 !>>(DEFUN UPDATE-1A-BAD (TOP)
                           (MV VAL3 VAL3A TOP)))
 
 
-ACL2 Error in ( DEFUN UPDATE-1A-BAD ...):  The variable ST3A is bound
-in a stobj-let form to the expression (TBL-GET 'ST3 TOP (CREATE-ST3A)),
-which has the form of a stobj-table access.
+ACL2 Error [Translate] in ( DEFUN UPDATE-1A-BAD ...):  The variable
+ST3A is bound in a stobj-let form to the expression 
+(TBL-GET 'ST3 TOP (CREATE-ST3A)), which has the form of a stobj-table
+access.
 However, the stobj creator for ST3 is CREATE-ST3, not CREATE-ST3A.
 See :DOC stobj-table.  The form 
 (STOBJ-LET ((ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
@@ -785,10 +787,10 @@ ACL2 !>>>Bye.
 ACL2 !>>(ASSERT-EVENT (EQUAL (TBL2-COUNT TOP2) 3))
 
 
-ACL2 Error in ASSERT-EVENT:  The symbol TBL2-COUNT (in package "ACL2")
-has neither a function nor macro definition in ACL2.  Please define
-it.  See :DOC near-misses.  Note:  this error occurred in the context
-(TBL2-COUNT TOP2).
+ACL2 Error [Translate] in ASSERT-EVENT:  The symbol TBL2-COUNT (in
+package "ACL2") has neither a function nor macro definition in ACL2.
+Please define it.  See :DOC near-misses.  Note:  this error occurred
+in the context (TBL2-COUNT TOP2).
 
 ACL2 !>>(DEFSTOBJ TOP0 (TBL0 :TYPE (STOBJ-TABLE))
                   :CONGRUENT-TO TOP)
@@ -1065,72 +1067,7 @@ TBL field of TOP-BAD, namely STOBJ-TABLE, is not recognized by ACL2
 as a type-spec (see :DOC type-spec) or as a user-defined stobj name.
 
 
-ACL2 Error in ( DEFSTOBJ TOP-BAD ...):  See :DOC failure.
-ACL2 !>>(ST1$FIX T)
-
-
-ACL2 Error in TOP-LEVEL:  It is illegal to call ST1$FIX in this context
-because it is a stobj fixer.  Note that stobj fixers cannot be called
-directly except in theorems or, in a specific way, when accessing stobj-
-tables (see :DOC stobj-table).  See :DOC stobj.  Note:  this error
-occurred in the context (ST1$FIX T).
-
-ACL2 !>>(DEFUN FOO NIL (ST1$FIX T))
-
-
-ACL2 Error in ( DEFUN FOO ...):  It is illegal to call ST1$FIX in this
-context because it is a stobj fixer.  Note that stobj fixers cannot
-be called directly except in theorems or, in a specific way, when accessing
-stobj-tables (see :DOC stobj-table).  See :DOC stobj.  Note:  this
-error occurred in the context (ST1$FIX T).
-
-ACL2 !>>(WITH-OUTPUT :ON :ALL :OFF PROOF-TREE
-                     (THM (EQUAL (ST1$FIX T) (CREATE-ST1))))
-
-By the simple :definition CREATE-ST1 we reduce the conjecture to
-
-Goal'
-(EQUAL (ST1$FIX T) '(0)).
-
-But simplification reduces this to T, using the :definitions CREATE-ST1
-and ST1$FIX and the :executable-counterparts of EQUAL and ST1P.
-
-Q.E.D.
-
-Summary
-Form:  ( THM ...)
-Rules: ((:DEFINITION CREATE-ST1)
-        (:DEFINITION ST1$FIX)
-        (:EXECUTABLE-COUNTERPART EQUAL)
-        (:EXECUTABLE-COUNTERPART ST1P))
-
-Proof succeeded.
-ACL2 !>>(WITH-OUTPUT
-             :ON :ALL :OFF PROOF-TREE
-             (THM (EQUAL (ST1$FIX T) (CREATE-ST1))
-                  :HINTS (("Goal" :IN-THEORY (ENABLE (:E ST1$FIX))))))
-
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
-
-By the simple :definition CREATE-ST1 we reduce the conjecture to
-
-Goal'
-(EQUAL (ST1$FIX T) '(0)).
-
-But simplification reduces this to T, using the :definitions CREATE-ST1
-and ST1$FIX and the :executable-counterparts of EQUAL and ST1P.
-
-Q.E.D.
-
-Summary
-Form:  ( THM ...)
-Rules: ((:DEFINITION CREATE-ST1)
-        (:DEFINITION ST1$FIX)
-        (:EXECUTABLE-COUNTERPART EQUAL)
-        (:EXECUTABLE-COUNTERPART ST1P))
-
-Proof succeeded.
+ACL2 Error [Failure] in ( DEFSTOBJ TOP-BAD ...):  See :DOC failure.
 ACL2 !>>(ENCAPSULATE
              NIL (DEFSTOBJ ST5 FLD5)
              (DEFUN SET-ST-IN-STOBJ-TABLE (FLD-VAL TOP)
@@ -1158,8 +1095,8 @@ ACL2 !>>(ENCAPSULATE
                                   STATE TOP))))
 
 
-ACL2 Error in ( DEFUN SET-ST-IN-STOBJ-TABLE ...):  The variable ST5
-is bound in a stobj-let form to the expression 
+ACL2 Error [Translate] in ( DEFUN SET-ST-IN-STOBJ-TABLE ...):  The
+variable ST5 is bound in a stobj-let form to the expression 
 (TBL-GET 'ST5 TOP (CREATE-ST5)), which has the form of a stobj-table
 access.
 However, that alleged stobj-table access is illegal because ST5 is
@@ -1194,9 +1131,10 @@ ACL2 !>>(DEFUN UPDATE-1-1 (TOP)
                           (MV E TOP)))
 
 
-ACL2 Error in ( DEFUN UPDATE-1-1 ...):  The variable ST1 is bound in
-a stobj-let form to the expression (TOP-TBL-GET 'ST1 TOP (CREATE-ST1)),
-which has the form of a stobj-table access.
+ACL2 Error [Translate] in ( DEFUN UPDATE-1-1 ...):  The variable ST1
+is bound in a stobj-let form to the expression 
+(TOP-TBL-GET 'ST1 TOP (CREATE-ST1)), which has the form of a stobj-
+table access.
 However, the stobj creator for ST1 is NEW-ST1, not CREATE-ST1.  See
 :DOC stobj-table.  The form 
 (STOBJ-LET ((ST1 (TOP-TBL-GET 'ST1 TOP (CREATE-ST1))))
@@ -1218,9 +1156,9 @@ ACL2 !>>(DEFUN UPDATE-1-2 (TOP)
                           (MV E TOP)))
 
 
-ACL2 Error in ( DEFUN UPDATE-1-2 ...):  The name TBL-GET is not the
-name of a field accessor for the stobj TOP, or even one congruent to
-it.  The form 
+ACL2 Error [Translate] in ( DEFUN UPDATE-1-2 ...):  The name TBL-GET
+is not the name of a field accessor for the stobj TOP, or even one
+congruent to it.  The form 
 (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (NEW-ST1))))
            (ST1 E)
            (LET* ((VAL1 (FLD1 ST1))
@@ -1240,10 +1178,10 @@ ACL2 !>>(DEFUN UPDATE-1-3 (TOP)
                           (MV E TOP)))
 
 
-ACL2 Error in ( DEFUN UPDATE-1-3 ...):  The stobj-let bindings have
-specified implicitly that the stobj field updater corresponding to
-accessor TOP-TBL-GET is TOP-TBL-PUT, but the actual corresponding updater
-is TBL-PUT.  The form 
+ACL2 Error [Translate] in ( DEFUN UPDATE-1-3 ...):  The stobj-let bindings
+have specified implicitly that the stobj field updater corresponding
+to accessor TOP-TBL-GET is TOP-TBL-PUT, but the actual corresponding
+updater is TBL-PUT.  The form 
 (STOBJ-LET ((ST1 (TOP-TBL-GET 'ST1 TOP (NEW-ST1))))
            (ST1 E)
            (LET* ((VAL1 (FLD1 ST1))
@@ -1352,15 +1290,17 @@ ACL2 !>>(THM
            (IMPLIES (STOBJ-TABLEP STOBJ-TABLE)
                     (INTEGERP (READ-FLD-FROM-STOBJ-TABLE-TRY1 STOBJ-TABLE))))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 ACL2 !>>(DEFUN
           READ-FLD-FROM-STOBJ-TABLE (STOBJ-TABLE)
           (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
-          (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
-                     (VAL)
-                     (MBE :LOGIC (NON-EXEC (LET ((ST (ST$FIX ST))) (FLD ST)))
-                          :EXEC (FLD ST))
-                     VAL))
+          (STOBJ-LET
+               ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+               (VAL)
+               (MBE :LOGIC (NON-EXEC (LET ((ST (IF (STP ST) ST (CREATE-ST))))
+                                          (FLD ST)))
+                    :EXEC (FLD ST))
+               VAL))
  READ-FLD-FROM-STOBJ-TABLE
 ACL2 !>>(THM (IMPLIES (STOBJ-TABLEP STOBJ-TABLE)
                       (INTEGERP (READ-FLD-FROM-STOBJ-TABLE STOBJ-TABLE))))

@@ -699,8 +699,8 @@
 
                (all-nils (getpropc fn 'stobjs-out nil wrld)))
 
-; Note that stobj creators and fixers take no stobjs in but return stobjs.  We
-; don't want any such functions in our answer!
+; Note that stobj creators take no stobjs in but return stobjs.  We don't want
+; any such functions in our answer!
 
           (first-order-like-terms-and-out-arities1
            (cdr fns)

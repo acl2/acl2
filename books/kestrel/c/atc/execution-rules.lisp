@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -53,7 +53,7 @@
     "We collect the rules in lists,
      each of which serves a particular symbolic execution purpose.
      Certain rules (proved elsewhere) may appear in multiple lists,
-     when they serve different symbolic execution purposes."))
+     when they serve multiple symbolic execution purposes."))
   :order-subtopics t
   :default-parent t)
 
@@ -399,8 +399,8 @@
     :returns (names symbol-listp)
     :parents nil
     (cond ((endp itypes) nil)
-          (t (b* ((afixtype (atc-integer-type-fixtype atype))
-                  (ifixtype (atc-integer-type-fixtype (car itypes))))
+          (t (b* ((afixtype (integer-type-to-fixtype atype))
+                  (ifixtype (integer-type-to-fixtype (car itypes))))
                (cons
                 (pack afixtype
                       '-array-length-of-
@@ -830,12 +830,12 @@
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
     :parents nil
-    (b* ((lfixtype (atc-integer-type-fixtype ltype))
-         (rfixtype (atc-integer-type-fixtype rtype))
+    (b* ((lfixtype (integer-type-to-fixtype ltype))
+         (rfixtype (integer-type-to-fixtype rtype))
          (lpred (pack lfixtype 'p))
          (rpred (pack rfixtype 'p))
          (type (uaconvert-types ltype rtype))
-         (fixtype (atc-integer-type-fixtype type))
+         (fixtype (integer-type-to-fixtype type))
          (lterm (if (equal type ltype)
                     'x
                   `(,(pack fixtype '-from- lfixtype) x)))
@@ -916,8 +916,8 @@
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
     :parents nil
-    (b* ((afixtype (atc-integer-type-fixtype atype))
-         (ifixtype (atc-integer-type-fixtype itype))
+    (b* ((afixtype (integer-type-to-fixtype atype))
+         (ifixtype (integer-type-to-fixtype itype))
          (apred (pack afixtype '-arrayp))
          (ipred (pack ifixtype 'p))
          (atype-array-itype-index-okp
@@ -1001,7 +1001,7 @@
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
     :parents nil
-    (b* ((fixtype (atc-integer-type-fixtype type))
+    (b* ((fixtype (integer-type-to-fixtype type))
          (pred (pack fixtype 'p))
          (op-kind (unop-kind op))
          (exec-op (pack 'exec- op-kind))
@@ -1095,11 +1095,11 @@
                 (type-integerp stype))
     :returns (mv (name symbolp) (event pseudo-event-formp))
     :parents nil
-    (b* ((dfixtype (atc-integer-type-fixtype dtype))
-         (sfixtype (atc-integer-type-fixtype stype))
+    (b* ((dfixtype (integer-type-to-fixtype dtype))
+         (sfixtype (integer-type-to-fixtype stype))
          (spred (pack sfixtype 'p))
          (name (pack 'exec-cast-of- dfixtype '-when- spred))
-         (dtyname (integer-type-to-type-name dtype))
+         (dtyname (type-to-tyname dtype))
          (dtype-from-stype (pack dfixtype '-from- sfixtype))
          (dtype-from-stype-okp (pack dtype-from-stype '-okp))
          (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
@@ -1189,8 +1189,8 @@
                 (type-integerp rtype))
     :returns (mv (name symbolp) (event pseudo-event-formp))
     :parents nil
-    (b* ((lfixtype (atc-integer-type-fixtype ltype))
-         (rfixtype (atc-integer-type-fixtype rtype))
+    (b* ((lfixtype (integer-type-to-fixtype ltype))
+         (rfixtype (integer-type-to-fixtype rtype))
          (rpred (pack rfixtype 'p))
          (op-kind (binop-kind op))
          (exec-op (pack 'exec- op-kind))
@@ -1263,7 +1263,7 @@
     :parents nil
     (b* (((when (endp ltypes)) (mv nil nil))
          (ltype (car ltypes))
-         (lfixtype (atc-integer-type-fixtype ltype))
+         (lfixtype (integer-type-to-fixtype ltype))
          (lpred (pack lfixtype 'p))
          (ltype-fix (pack lfixtype '-fix))
          (op-kind (binop-kind op))
@@ -1369,38 +1369,38 @@
            (xdoc::topstring
             (xdoc::p
              "The goal of these rules is to
-            rewrite @('(exec-binary-strict-pure op x y)')
-            to @('(op-type1-type2 x y)')
-            when @('x') has type @('type1'),
-            and @('y') has type @('type2').
-            We could have a rule for each combination of
-            @('op'), @('type1'), and @('type2'),
-            but that would lead to 1,600 rules being applicable to
-            @('(exec-binary-strict-pure op x y)').
-            So we stage the rewriting as follows:")
+              rewrite @('(exec-binary-strict-pure op x y)')
+              to @('(op-type1-type2 x y)')
+              when @('x') has type @('type1'),
+              and @('y') has type @('type2').
+              We could have a rule for each combination of
+              @('op'), @('type1'), and @('type2'),
+              but that would lead to 1,600 rules being applicable to
+              @('(exec-binary-strict-pure op x y)').
+              So we stage the rewriting as follows:")
             (xdoc::ul
              (xdoc::li
               "First, we rewrite @('(exec-binary-strict-pure op x y)')
-             to a call @('(exec-binary-strict-pure-of-op x y)'),
-             under the hypothesis that @('op') is a specific operator,
-             where @('exec-binary-strict-pure-of-op') is one of 16 functions,
-             one per binary strict operator.")
+               to a call @('(exec-binary-strict-pure-of-op x y)'),
+               under the hypothesis that @('op') is a specific operator,
+               where @('exec-binary-strict-pure-of-op') is one of 16 functions,
+               one per binary strict operator.")
              (xdoc::li
               "Next, we rewrite @('(exec-binary-strict-pure-of-op x y)')
-             to a call @('(exec-binary-strict-pure-of-op-and-type1 x y)'),
-             under the hypothesis that @('x') has type @('type1'),
-             where @('exec-binary-strict-pure-of-op-and-type1')
-             is one of 10 functions,
-            one per supported integer type.")
+               to a call @('(exec-binary-strict-pure-of-op-and-type1 x y)'),
+               under the hypothesis that @('x') has type @('type1'),
+               where @('exec-binary-strict-pure-of-op-and-type1')
+               is one of 10 functions,
+               one per supported integer type.")
              (xdoc::li
               "Finally, we rewrite
-             @('(exec-binary-strict-pure-of-op-and-type1 x y)')
-             to the call @('(op-type1-type2 x y)'),
-             under the hypothesis the @('y') has type @('type2'),
-             for each of the 10 supported integer types."))
+               @('(exec-binary-strict-pure-of-op-and-type1 x y)')
+               to the call @('(op-type1-type2 x y)'),
+               under the hypothesis the @('y') has type @('type2'),
+               for each of the 10 supported integer types."))
             (xdoc::p
              "Note that the intermediate functions used here
-            do not need guard verification."))
+              do not need guard verification."))
            ,@events
            (defval *atc-exec-binary-strict-pure-rules*
              '(,@names
@@ -1571,6 +1571,16 @@
                     (exec-arrsub (exec-expr-pure (expr-arrsub->arr e) compst)
                                  (exec-expr-pure (expr-arrsub->sub e) compst)
                                  compst)))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-memberp
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :memberp))
+             (equal (exec-expr-pure e compst)
+                    (exec-memberp (exec-expr-pure (expr-memberp->target e)
+                                                  compst)
+                                  (expr-memberp->name e)
+                                  compst)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-unary
@@ -1817,8 +1827,8 @@
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
     :parents nil
-    (b* ((afixtype (atc-integer-type-fixtype atype))
-         (ifixtype (atc-integer-type-fixtype itype))
+    (b* ((afixtype (integer-type-to-fixtype atype))
+         (ifixtype (integer-type-to-fixtype itype))
          (apred (pack afixtype '-arrayp))
          (epred (pack afixtype 'p))
          (ipred (pack ifixtype 'p))
@@ -2010,9 +2020,9 @@
                   (equal compst1 (mv-nth 1 val?+compst1))
                   (value-optionp val?)
                   (equal (type-of-value-option val?)
-                         (type-name-to-type
-                          (make-tyname :specs (fun-info->result info)
-                                       :pointerp nil))))
+                         (tyname-to-type
+                          (make-tyname :tyspec (fun-info->result info)
+                                       :declor (obj-adeclor-none)))))
              (equal (exec-fun fun args compst fenv limit)
                     (mv val? (pop-frame compst1))))
     :enable exec-fun)
@@ -2142,22 +2152,19 @@
                   (equal (block-item-kind item) :declon)
                   (not (zp limit))
                   (equal declon (block-item-declon->get item))
-                  (declon-case declon :var)
+                  (equal var+tyname+init
+                         (obj-declon-to-ident+tyname+init declon))
+                  (equal var (mv-nth 0 var+tyname+init))
+                  (equal tyname (mv-nth 1 var+tyname+init))
+                  (equal init (mv-nth 2 var+tyname+init))
                   (equal val+compst1
-                         (exec-expr-call-or-pure (declon-var->init declon)
-                                                 compst
-                                                 fenv
-                                                 (1- limit)))
+                         (exec-expr-call-or-pure init compst fenv (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
-                  (equal declor (declon-var->declor declon))
                   (equal (type-of-value val)
-                         (type-name-to-type
-                          (make-tyname :specs (declon-var->type declon)
-                                       :pointerp (declor->pointerp declor))))
-                  (equal compst2
-                         (create-var (declor->ident declor) val compst1))
+                         (tyname-to-type tyname))
+                  (equal compst2 (create-var var val compst1))
                   (compustatep compst2))
              (equal (exec-block-item item compst fenv limit)
                     (mv nil compst2)))
@@ -2180,12 +2187,8 @@
       (:e block-item-kind)
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
-      (:e declon-kind)
-      (:e declon-var->type)
-      (:e declon-var->declor)
-      (:e declon-var->init)
-      (:e declor->pointerp)
-      (:e declor->ident))))
+      (:e obj-declon-to-ident+tyname+init)
+      (:e tyname-to-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2231,23 +2234,26 @@
     "The base case is a call @('(init-scope nil nil)'),
      which is handled by the executable counterpart of @(tsee init-scope).
      For the step case, during symbolic execution we expect that
-     there is always the same number of formals and actuals."))
+     there is always the same number of formals and actuals.")
+   (xdoc::p
+    "We need to enable @(tsee eq) because it arises from
+     the translation of @('(obj-declor-case declor :pointer)')
+     in one of the hypotheses of the rule."))
 
   (defruled init-scope-when-consp
     (implies (and (syntaxp (quotep formals))
                   (consp formals)
                   (equal formal (car formals))
                   (param-declonp formal)
-                  (equal declor (param-declon->declor formal))
                   (valuep val)
+                  (equal name+tyname (param-declon-to-ident+tyname formal))
+                  (equal name (mv-nth 0 name+tyname))
+                  (equal tyname (mv-nth 1 name+tyname))
                   (equal (type-of-value val)
-                         (type-name-to-type
-                          (make-tyname :specs (param-declon->type formal)
-                                       :pointerp (declor->pointerp declor))))
+                         (tyname-to-type tyname))
                   (value-listp vals)
                   (equal scope (init-scope (cdr formals) vals))
                   (scopep scope)
-                  (equal name (declor->ident declor))
                   (not (omap::in name scope)))
              (equal (init-scope formals (cons val vals))
                     (omap::update name val scope)))
@@ -2255,9 +2261,8 @@
 
   (defval *atc-init-scope-rules*
     '(init-scope-when-consp
+      eq
       (:e init-scope)
       (:e param-declonp)
-      (:e param-declon->type)
-      (:e param-declon->declor)
-      (:e declor->pointerp)
-      (:e declor->ident))))
+      (:e param-declon-to-ident+tyname)
+      (:e tyname-to-type))))

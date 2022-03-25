@@ -24,6 +24,12 @@
 ;; We can build the node-replacement-array by calling make-into-array on the
 ;; node-replacement-alist produced by make-node-replacement-alist-and-add-to-dag-array.
 
+;; TODO: Consider chains of replacement, e.g., if the array indicates to
+;; replace B with C, and we add a replacement entry to replace A with B, should
+;; we actually add an entry to replace A with C?  That may make it impossible
+;; to later unassume the replacement of B, unless we've already unassumed the
+;; replacement of A...  We could instead address this by a repeated lookup.
+
 ;; See also node-replacement-array2.lisp.
 
 (local (in-theory (disable ;symbolp-of-car-of-car-when-symbol-term-alistp
@@ -173,13 +179,11 @@
 ;;todo: make a variant that bakes in the name
 (def-typed-acl2-array2 bounded-node-replacement-arrayp
   (or (null val)
-      (myquotep val)
-      (and (natp val)
-           (< val bound)))
+      (dargp-less-than val bound))
   :extra-vars (bound)
   :extra-guards ((natp bound)))
 
-(defthmd bounded-natp-alistp-when-node-replacement-alistp ;todo: are these the same?
+(defthmd bounded-natp-alistp-when-node-replacement-alistp
   (implies (node-replacement-alistp alist bound)
            (bounded-natp-alistp alist bound))
   :hints (("Goal" :in-theory (enable bounded-natp-alistp node-replacement-alistp))))
@@ -196,6 +200,7 @@
                                      make-into-array ;todo
                                      aref1 ;todo
                                      make-into-array-with-len ;todo
+                                     DARGP-LESS-THAN-OF-CDR-OF-ASSOC-EQUAL-WHEN-NODE-REPLACEMENT-ALISTP
                                      ))))
 
 (defthm bounded-node-replacement-arrayp-of-make-into-array
@@ -248,51 +253,54 @@
            (node-replacement-arrayp name array))
   :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp
                                      node-replacement-arrayp))))
+
 ;;;
-;;; lookup-in-node-replacement-array
+;;; apply-node-replacement-array
 ;;;
 
-;; Returns nil (no replacement for NODENUM) or a nodenum/quotep with which to replace NODENUM.
-;; TODO: Make a version that gives back NODENUM if no replacement is made.  We
+;; Returns NODENUM (no replacement for NODENUM) or a nodenum/quotep with which to replace NODENUM.
+;; TODO: Consider We
 ;; could even have the array map non-replaced nodes to themselves, to avoid
 ;; having to check whether the result is nil.
-(defund lookup-in-node-replacement-array (nodenum node-replacement-array num-valid-nodes)
+(defund apply-node-replacement-array (nodenum node-replacement-array num-valid-nodes)
   (declare (xargs :guard (and (natp nodenum)
                               (natp num-valid-nodes)
                               (node-replacement-arrayp 'node-replacement-array node-replacement-array)
                               (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))))
-  (if (<= num-valid-nodes nodenum) ;can't possibly be replaced, and looking it up would be illegal
-      nil
+  (if (<= num-valid-nodes nodenum) ;can't possibly be replaced, and looking it up might be illegal
+      nodenum
     ;; either nil or a replacement (a nodenum or quotep):
-    (aref1 'node-replacement-array node-replacement-array nodenum)))
+    (let ((res (aref1 'node-replacement-array node-replacement-array nodenum)))
+      (or res nodenum))))
 
-(defthm dargp-of-lookup-in-node-replacement-array
-  (implies (and (lookup-in-node-replacement-array nodenum node-replacement-array num-valid-nodes) ;; node is being replaced with something
+(defthm dargp-of-apply-node-replacement-array
+  (implies (and ;(apply-node-replacement-array nodenum node-replacement-array num-valid-nodes) ;; node is being replaced with something
                 (natp nodenum)
                 (natp num-valid-nodes)
                 (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array))
-           (dargp (lookup-in-node-replacement-array nodenum node-replacement-array num-valid-nodes)))
+           (dargp (apply-node-replacement-array nodenum node-replacement-array num-valid-nodes)))
   :hints (("Goal" :use (:instance type-of-aref1-when-node-replacement-arrayp
                                   (array-name 'node-replacement-array)
                                   (array node-replacement-array)
                                   (index nodenum))
-           :in-theory (e/d (lookup-in-node-replacement-array) (type-of-aref1-when-bounded-node-replacement-arrayp)))))
+           :in-theory (e/d (apply-node-replacement-array) (type-of-aref1-when-bounded-node-replacement-arrayp)))))
 
-(defthm dargp-less-than-of-lookup-in-node-replacement-array
-  (implies (and (lookup-in-node-replacement-array nodenum node-replacement-array num-valid-nodes) ;; node is being replaced with something
-                (natp nodenum)
+(defthm dargp-less-than-of-apply-node-replacement-array
+  (implies (and (natp nodenum)
+                (< nodenum bound)
                 (natp num-valid-nodes)
                 (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                 (natp bound)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
-           (dargp-less-than (lookup-in-node-replacement-array nodenum node-replacement-array num-valid-nodes)
+           (dargp-less-than (apply-node-replacement-array nodenum node-replacement-array num-valid-nodes)
                             bound))
   :hints (("Goal" :use (:instance type-of-aref1-when-bounded-node-replacement-arrayp
                                   (array-name 'node-replacement-array)
                                   (array node-replacement-array)
                                   (index nodenum))
-           :in-theory (e/d (lookup-in-node-replacement-array) (type-of-aref1-when-bounded-node-replacement-arrayp)))))
+           :in-theory (e/d (apply-node-replacement-array)
+                           (type-of-aref1-when-bounded-node-replacement-arrayp)))))
 
 ;;;
 ;;; add-node-replacement-entry-and-maybe-expand

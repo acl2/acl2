@@ -767,7 +767,7 @@
                                                  state))))
           (er-progn
            (cond (erp ; erp is a ctx, lst is a msg
-                  (er soft erp "~@0" lst))
+                  (er-soft erp "Translate" "~@0" lst))
                  (non-executablep
                   (chk-non-executable-bodies names arglists lst
                                              non-executablep (cdr names)
@@ -6027,34 +6027,34 @@
 
 ; See also with-useless-runes.
 
-; There are three cases, according to whether we are reading a
-; @useless-runes.lsp file, write such a file, or neither.  The "neither" case
-; applies when skipping proofs.  Assuming that we are not skipping proofs,
-; these cases are described in the next three paragraphs respectively.
+; There are two interesting cases: reading and writing a @useless-runes.lsp
+; file.  (Neither applies in some cases, in particular when skipping proofs and
+; when name is nil.)
 
-; Suppose that state global 'certify-book-info has a non-nil value whose
-; :useless-runes-info field is of the form (FAST-ALIST . fal), and suppose that
-; name is a non-nil symbol that is associated in the alist fal with a non-nil
-; list, lst.  So, lst is a list of lists of syntactic runes, that is, objects
-; that are runes syntactically but might not all be legal runes.  Then this
-; function returns (mv 'read certify-book-info-1 certify-book-info-2), where
-; certify-book-info-1 is to be used when processing the event named name and
-; certify-book-info-2 is to be used after that completes.  Thus if thy is the
-; augmented theory corresponding to (car lst), then certify-book-info-1 is the
-; result of updating the :useless-runes-info field of certify-book-info with
-; (THEORY . thy) and certify-book-info-2 is the result of updating the
-; :useless-runes-info field of certify-book-info with (FAST-ALIST . fal'),
-; where fal' is the update of fal obtained by associating name with (cdr lst).
+; First consider the case of reading a useless-runes file, where state global
+; 'useless-runes is non-nil with :tag FAST-ALIST and :data fal, a fast alist,
+; and name is a non-nil symbol that is associated in fal with a non-nil list,
+; lst.  So, lst is a list of lists of syntactic runes, that is, objects that
+; are runes syntactically but might not all be legal runes.  Then this function
+; returns (mv 'read useless-runes-1 useless-runes-2), where useless-runes-1 is
+; to be used when processing the event named name and useless-runes-2 is to be
+; used after that completes.  Thus if thy is the augmented runic theory
+; corresponding to (car lst), then useless-runes-1 is the result of updating
+; the current useless-runes by setting the :tag to THEORY and the :data to thy,
+; and useless-runes-2 is the result of updating the :data field of
+; useless-runes, by modifying fal to associate name with (cdr lst).
 
-; Suppose that state global 'certify-book-info has a non-nil value whose
-; :useless-runes-info field is of the form (CHANNEL chan ...).  Then we return
-; (mv 'write chan certify-book-info).
+; Next consider the case of writing a useless-runes file, where state global
+; 'useless-runes has a non-nil value whose :tag is CHANNEL and :data is data
+; (which provides a channel and a list of package names).  Then we return (mv
+; 'write data useless-runes).
 
-; Otherwise we return (mv nil nil certify-book-info).
+; Otherwise we return (mv nil nil useless-runes).
 
-  (let ((certify-book-info (f-get-global 'certify-book-info state)))
+  (let ((useless-runes (f-get-global 'useless-runes state)))
     (cond
-     ((or (null certify-book-info)
+     ((or (null useless-runes)
+          (null name)
           (ld-skip-proofsp state)
 
 ; The following should generally be false when not skipping proofs.  But it is
@@ -6065,48 +6065,33 @@
 ; sense also not to read a non-existent entry in the "read" mode of using an
 ; existing @useless-runes.lsp.
 
-          (global-val 'include-book-path (w state))
-
-; The following test is probably unnecessary because the include-book phase of
-; certify-book has a non-nil include-book-path.  But it's cheap, so we include
-; it for robustness.
-
-          (access certify-book-info certify-book-info :include-book-phase))
-      (mv nil nil certify-book-info))
-     (t
-      (let* ((wrld (w state))
-             (useless-runes-info (and name
-                                      certify-book-info
-                                      (access certify-book-info certify-book-info
-                                              :useless-runes-info))))
-        (cond ((eq (car useless-runes-info) 'fast-alist)
-               (let* ((fal (cdr useless-runes-info))
-                      (lst (cdr (hons-get name fal))))
-                 (cond ((consp lst)
-                        (let* ((runes (car lst))
-                               (fal (hons-acons name (cdr lst) fal))
-                               (certify-book-info-2
-                                (change certify-book-info certify-book-info
-                                        :useless-runes-info
-                                        (cons 'FAST-ALIST fal))))
-                          (cond
-                           #+acl2-par
-                           ((f-get-global 'waterfall-parallelism state)
-                            (mv nil nil certify-book-info-2))
-                           (t
-                            (mv 'read
-                                (change certify-book-info
-                                        certify-book-info
-                                        :useless-runes-info
-                                        (cons 'THEORY
-                                              (augment-theory-weak runes wrld)))
-                                certify-book-info-2)))))
-                       (t (mv nil nil certify-book-info)))))
-              ((and (eq (car useless-runes-info) 'channel)
-                    #+acl2-par
-                    (not (f-get-global 'waterfall-parallelism state)))
-               (mv 'write (cdr useless-runes-info) certify-book-info))
-              (t (mv nil nil certify-book-info))))))))
+          (global-val 'include-book-path (w state)))
+      (mv nil nil useless-runes))
+     ((eq (access useless-runes useless-runes :tag) 'FAST-ALIST)
+      (let* ((fal (access useless-runes useless-runes :data))
+             (lst (cdr (hons-get name fal))))
+        (cond ((consp lst)
+               (let* ((runes (car lst))
+                      (fal (hons-acons name (cdr lst) fal))
+                      (useless-runes-2 (change useless-runes useless-runes
+                                               :data fal)))
+                 (cond
+                  #+acl2-par
+                  ((f-get-global 'waterfall-parallelism state)
+                   (mv nil nil useless-runes-2))
+                  (t (mv 'read
+                         (change useless-runes useless-runes
+                                 :tag 'THEORY
+                                 :data (augment-theory-weak runes (w state)))
+                         useless-runes-2)))))
+              (t (mv nil nil useless-runes)))))
+     ((and (eq (access useless-runes useless-runes :tag) 'CHANNEL)
+           #+acl2-par
+           (not (f-get-global 'waterfall-parallelism state)))
+      (mv 'write
+          (access useless-runes useless-runes :data)
+          useless-runes))
+     (t (mv nil nil useless-runes)))))
 
 (defun accp-info (state)
   #-acl2-loop-only
@@ -6244,7 +6229,7 @@
 
 ; We are given an output channel for a @useless-runes.lsp file.  We print an
 ; entry into the indicated channel of the form (name . (pairlis$ frames thy)),
-; where thy is the :list output for useless runes that is associated with the
+; where thy is the :list output for useless-runes that is associated with the
 ; event named name that is now completing.  Note that each useless-rune is of
 ; the form (frames tries rune).  These are sorted by accumulated-persistence,
 ; highest first.  We omit any rune whose base symbol is not among the known
@@ -6271,7 +6256,7 @@
               (not (member-equal (symbol-package-name name) known-pkgs)))
              (useless-runes0 (remove-executable-counterpart-useless-runes
                               (useless-runes accp-info)))
-             (bad-tuples (and (not bad-pkg) ; else print all useless runes
+             (bad-tuples (and (not bad-pkg) ; else print all useless-runes
                               (bad-useless-runes useless-runes0 known-pkgs
                                                  nil)))
              (useless-runes (if (null bad-tuples) ; optimization
@@ -6417,22 +6402,22 @@
 ; would fail at that point but would succeed in a hint given to "Goal", which
 ; might the enabled-structure actually used by that event.
 
-  (let ((useless-runes (active-useless-runes state)))
+  (let ((active-useless-runes (active-useless-runes state)))
     (cond
-     (useless-runes
+     (active-useless-runes
       (let ((ens-theory (cdr (access enabled-structure ens :theory-array)))
             (index-of-last-enabling (access enabled-structure ens
                                             :index-of-last-enabling)))
         (mv-let (index-of-last-enabling thy)
-          (cond ((<= (caar useless-runes) index-of-last-enabling)
+          (cond ((<= (caar active-useless-runes) index-of-last-enabling)
                  (mv index-of-last-enabling
                      (set-difference-augmented-theories ens-theory
-                                                        useless-runes
+                                                        active-useless-runes
                                                         nil)))
                 (t
-                 (mv (caar useless-runes)
+                 (mv (caar active-useless-runes)
                      (extend-set-difference-theories ens-theory
-                                                     useless-runes
+                                                     active-useless-runes
                                                      index-of-last-enabling
                                                      wrld))))
           (load-theory-into-enabled-structure-1
@@ -6451,41 +6436,41 @@
 ; for more details; in particular, (with-useless-runes name wrld form) is
 ; essentially just form when skipping proofs.
 
-; When reading such a file (during certification), then state global
-; certify-book-info is a certify-book-info record whose :useless-runes-info
-; field is of the form (FAST-ALIST . fal).  If name is associated with a
-; non-empty list of augmented theory in fal, the first such theory, thy, is
-; popped from that list, but during the processing of form, the
-; :useless-runes-info field of certify-book-info is replaced by (THEORY . thy).
+; When reading such a file (during certification or execution of an ld call),
+; then state global useless-runes is a useless-runes record whose :tag and
+; :data are 'FAST-ALIST and fal, a fast-alist.  If name is associated with a
+; non-empty list of augmented runic theories in fal, the first such theory,
+; thy, is popped from that list, but during the processing of form the
+; useless-runes record is changed to have :tag and data 'THEORY and thy.
 
-; When writing such a file we get a suitable channel from the certify-book-info
+; When writing such a file we get a suitable channel from the useless-runes
 ; record.
 
-  `(let ((purf-name ,name)
-         (purf-wrld ,wrld))
-     (mv-let (r/w purf-1 purf-2)
-       (with-useless-runes-aux purf-name state)
+  `(let ((wur-name ,name)
+         (wur-wrld ,wrld))
+     (mv-let (r/w wur-1 wur-2)
+       (with-useless-runes-aux wur-name state)
        (pprogn
         (case r/w
-          (read (f-put-global 'certify-book-info purf-2 state))
+          (read (f-put-global 'useless-runes wur-2 state))
           (write (prog2$ (accumulated-persistence t) state))
           (otherwise state))
         (state-global-let*
-         ((certify-book-info
+         ((useless-runes
            (case r/w
-             (read purf-1)
-             (otherwise purf-2)))
+             (read wur-1)
+             (otherwise wur-2)))
           (global-enabled-structure
            (case r/w
-             (read (useless-runes-ens (ens state) purf-wrld state))
+             (read (useless-runes-ens (ens state) wur-wrld state))
              (otherwise (ens state)))))
          (mv-let (erp val state)
-           (check-vars-not-free (purf-name purf-wrld purf-1 purf-2)
+           (check-vars-not-free (wur-name wur-wrld wur-1 wur-2)
                                 ,form)
            (case r/w
-             (write (pprogn (print-useless-runes purf-name
-                                                 (car purf-1)
-                                                 (cdr purf-1)
+             (write (pprogn (print-useless-runes wur-name
+                                                 (car wur-1)
+                                                 (cdr wur-1)
                                                  state)
                             (prog2$ (accumulated-persistence nil)
                                     (mv erp val state))))

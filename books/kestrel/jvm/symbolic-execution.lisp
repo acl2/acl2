@@ -15,8 +15,6 @@
 
 ;BBOZO think about this stuff
 
-;FIXME: verify-guards !
-
 ;move these?
 
 ;fixme pull most of this into a function and prove that that function returns a well-formed state?
@@ -74,9 +72,9 @@
 (defun build-run-term-for-method ( ;method-name TODO: add back these parameters
                                   ;;method-descriptor ; a string
                                   method-info locals class-name heap class-table initialized-classes)
-  (declare (xargs :guard (and  (jvm::method-infop method-info)
-                               (jvm::class-namep class-name)
-                               (pseudo-termp locals)
+  (declare (xargs :guard (and (jvm::method-infop method-info)
+                              (jvm::class-namep class-name)
+                              (pseudo-termp locals)
                               (pseudo-termp heap)
                               (pseudo-termp class-table)
                               (pseudo-termp initialized-classes))))

@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -597,13 +597,15 @@
       ";; :predicate is nil,"
       ";; m = 1,"
       ";; and isomaps includes :result1 (or :result):"
-      ""
       "(defun new (x1 ... xn)"
       "  (if (mbt$ (and (newp1 x1)"
       "                 ..."
       "                 (newpn xn)))"
       "      (forth_r1 old-body<(back1 x1),...,(backn xn)>)"
       "    nil))"
+      ";; where forth_r1 is actually pushed into"
+      ";; the 'if' branches of old-body if it starts with 'if',"
+      ";; and recursively into their 'if' branches (if any)"
       ""
       ";; when old is not recursive,"
       ";; :predicate is nil,"
@@ -693,6 +695,9 @@
       "                                                  ...,"
       "                                                  (backn xn)>)))>)"
       "    nil))"
+      ";; where forth_r1 is actually pushed into"
+      ";; the 'if' branches of old-body if it starts with 'if',"
+      ";; and recursively into their 'if' branches (if any)"
       ""
       ";; when old is recursive,"
       ";; :predicate is nil,"
@@ -712,7 +717,7 @@
       "                        (forthn update1-xn<(back1 x1),"
       "                                           ...,"
       "                                           (backn xn)>))"
-      "                   (mv (forth_r1 y1) ... (forth_rm ym))),"
+      "                   (mv (back_r1 y1) ... (back_rm ym))),"
       "                 ..."
       "                 (mv-let (y1 ... ym)"
       "                   (new (forth1 updater-x1<(back1 x1),"
@@ -722,7 +727,7 @@
       "                        (forthn updater-xn<(back1 x1),"
       "                                           ...,"
       "                                           (backn xn)>))"
-      "                   (mv (forth_r1 y1) ... (forth_rm ym)))>"
+      "                   (mv (back_r1 y1) ... (back_rm ym)))>"
       "        (mv (forth_r1 y1) ... (forth_rm ym)))"
       "    (mv nil ... nil)))")
      (xdoc::p
@@ -797,7 +802,7 @@
       ";; and isomaps includes :result1 (or :result):"
       "(implies (and (newp1 x1)"
       "              ..."
-      "              (newp1 xn))"
+      "              (newpn xn))"
       "         (equal (new x1 ... xn)"
       "                (forth_r1 (old (back1 x1) ... (backn xn)))))"
       ""
@@ -806,16 +811,11 @@
       ";; and isomaps includes some :resultj:"
       "(implies (and (newp1 x1)"
       "              ..."
-      "              (newp1 xn))"
-      "         (and (equal (mv-nth 0 (new x1 ... xn))"
-      "                     (forth_r1 (mv-nth 0 (old (back1 x1)"
-      "                                              ..."
-      "                                              (backn xn)))))"
-      "              ..."
-      "              (equal (mv-nth m-1 (new x1 ... xn))"
-      "                     (forth_rm (mv-nth m-1 (old (back1 x1)"
-      "                                                ..."
-      "                                                (backn xn)))))))")
+      "              (newpn xn))"
+      "         (equal (new x1 ... xn)"
+      "                (mv-let (y1 ... ym)"
+      "                  (old (back1 x1) ... (backn xn))"
+      "                  (mv (forth_r1 y1) ... (forth_rm ym)))))")
      (xdoc::p
       "In the " *isodata-design-notes* ",
        @('new-to-old') is denoted by
@@ -861,15 +861,10 @@
       "  (implies (and (oldp1 x1)"
       "                ..."
       "                (oldpn xn))"
-      "           (and (equal (mv-nth 0 (old x1 ... xn))"
-      "                       (back_r1 (mv-nth 0 (new (forth1 x1)"
-      "                                               ..."
-      "                                               (forthn xn)))))"
-      "                ..."
-      "                (equal (mv-nth m-1 (old x1 ... xn))"
-      "                       (back_rm (mv-nth m-1 (new (forth1 x1)"
-      "                                                 ..."
-      "                                                 (forthn xn))))))))")
+      "         (equal (old x1 ... xn)"
+      "                (mv-let (y1 ... ym)"
+      "                  (new (forth1 x1) ... (forthn xn))"
+      "                  (mv (back_r1 y1) ... (back_rm ym)))))")
      (xdoc::p
       "In the " *isodata-design-notes* ",
        @('old-to-new') is denoted by

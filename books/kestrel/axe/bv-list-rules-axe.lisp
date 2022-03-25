@@ -15,6 +15,7 @@
 (include-book "known-booleans")
 (include-book "kestrel/bv-lists/all-all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
+(include-book "kestrel/bv-lists/byte-listp" :dir :system)
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
 (include-book "kestrel/typed-lists-light/all-true-listp" :dir :system)
 (include-book "kestrel/lists-light/prefixp" :dir :system) ;drop?
@@ -26,6 +27,7 @@
 (add-known-boolean all-all-unsigned-byte-p)
 (add-known-boolean prefixp) ;move?
 (add-known-boolean all-integerp)
+(add-known-boolean byte-listp)
 
 ;TODO: I forgot the extra parens around the claim, and it treated AND as one claim and so on...
 ;use def-constant-opener?

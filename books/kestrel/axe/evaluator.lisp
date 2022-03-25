@@ -68,85 +68,6 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
-;;;
-;;; lg-unguarded
-;;;
-
-(defund lg-unguarded (x)
-  (declare (xargs :guard t))
-  (lg (ifix x)))
-
-;supports the correctness of the evaluator
-(defthm lg-unguarded-correct
-  (equal (lg-unguarded x)
-         (lg x))
-  :hints (("Goal" :in-theory (enable lg lg-unguarded integer-length))))
-
-(defund bitnot-unguarded (x)
-  (declare (xargs :guard t))
-  (bitnot (ifix x)))
-
-(defthm bitnot-unguarded-correct
-  (equal (bitnot-unguarded x)
-         (bitnot x))
-  :hints (("Goal" :in-theory (enable bitnot-unguarded getbit-when-val-is-not-an-integer))))
-
-(defund bitor-unguarded (x y)
-  (declare (xargs :guard t))
-  (bitor (ifix x) (ifix y)))
-
-(defthm bitor-unguarded-correct
-  (equal (bitor-unguarded x y)
-         (bitor x y))
-  :hints (("Goal" :in-theory (enable bitor-unguarded bitor bvor getbit-when-val-is-not-an-integer))))
-
-(defund bitxor-unguarded (x y)
-  (declare (xargs :guard t))
-  (bitxor (ifix x) (ifix y)))
-
-(defthm bitxor-unguarded-correct
-  (equal (bitxor-unguarded x y)
-         (bitxor x y))
-  :hints (("Goal" :in-theory (e/d (bitxor-unguarded bitxor getbit-when-val-is-not-an-integer) (bvxor-1-becomes-bitxor)))))
-
-(defund bitand-unguarded (x y)
-  (declare (xargs :guard t))
-  (bitand (ifix x) (ifix y)))
-
-(defthm bitand-unguarded-correct
-  (equal (bitand-unguarded x y)
-         (bitand x y))
-  :hints (("Goal" :in-theory (e/d (bitand-unguarded bitand bvand getbit-when-val-is-not-an-integer) ()))))
-
-(defund getbit-unguarded (n x)
-  (declare (xargs :guard t))
-  (getbit (nfix n) (ifix x)))
-
-(defthm getbit-unguarded-correct
-  (equal (getbit-unguarded n x)
-         (getbit n x))
-  :hints (("Goal" :in-theory (e/d (getbit-unguarded getbit bitand getbit-when-val-is-not-an-integer slice) (BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
-
-(defund bvnot-unguarded (size i)
-  (declare (xargs :guard t))
-  (bvnot (nfix size) (ifix i)))
-
-(defthm bvnot-unguarded-correct
-  (equal (bvnot-unguarded size i)
-         (bvnot size i))
-  :hints (("Goal" :in-theory (enable bvnot-unguarded bvnot))))
-
-(defund bvuminus-unguarded (size i)
-  (declare (xargs :guard t))
-  (bvuminus (nfix size) i))
-
-(defthm bvuminus-unguarded-correct
-  (equal (bvuminus-unguarded size i)
-         (bvuminus size i))
-  :hints (("Goal" :in-theory (e/d (bvuminus-unguarded bvuminus bvminus) ()))))
-
-
-
 ;; Restricts ALIST to just the given KEYS.
 (defun get-entries-eq (keys alist)
   (declare (xargs :guard (and (symbol-listp keys)
@@ -343,14 +264,7 @@
          (bvnot-list           size lst))
   :hints (("Goal" :in-theory (enable bvnot-list-unguarded bvnot-list BVNOT-UNGUARDED-CORRECT))))
 
-(defund bvlt-unguarded (size x y)
-  (declare (xargs :guard t))
-  (bvlt (nfix size) (ifix x) (ifix y)))
 
-(defthm bvlt-unguarded-correct
-  (equal (bvlt-unguarded size x y)
-         (bvlt size x y))
-  :hints (("Goal" :in-theory (enable bvlt-unguarded bvlt))))
 
 (defund bvle-unguarded (size x y)
   (declare (xargs :guard t))
@@ -372,69 +286,6 @@
   (equal (bvxor-list-unguarded size x y)
          (bvxor-list size x y))
   :hints (("Goal" :in-theory (enable bvxor-list bvxor-list-unguarded))))
-
-
-(defund bvor-unguarded (size x y)
-  (declare (xargs :guard t))
-  (bvor (nfix size) (ifix x) (ifix y)))
-
-(defthm bvor-unguarded-correct
-  (equal (bvor-unguarded size x y)
-         (bvor size x y))
-  :hints (("Goal" :in-theory (enable bvor bvor-unguarded))))
-
-(defund bvand-unguarded (size x y)
-  (declare (xargs :guard t))
-  (bvand (nfix size) (ifix x) (ifix y)))
-
-(defthm bvand-unguarded-correct
-  (equal (bvand-unguarded size x y)
-         (bvand size x y))
-  :hints (("Goal" :in-theory (enable bvand bvand-unguarded))))
-
-(defund bvmult-unguarded (size x y)
-  (declare (xargs :guard t))
-  (bvmult (nfix size) (ifix x) (ifix y)))
-
-(defthm bvmult-unguarded-correct
-  (equal (bvmult-unguarded size x y)
-         (bvmult size x y))
-  :hints (("Goal" :in-theory (enable bvmult bvmult-unguarded))))
-
-(defund bvminus-unguarded (size x y)
-  (declare (xargs :guard t))
-  (bvminus (nfix size) (ifix x) (ifix y)))
-
-(defthm bvminus-unguarded-correct
-  (equal (bvminus-unguarded size x y)
-         (bvminus size x y))
-  :hints (("Goal" :in-theory (enable bvminus bvminus-unguarded))))
-
-(defund bvmod-unguarded (size x y)
-  (declare (xargs :guard t))
-  (if (not (posp size))
-      0
-    (if (equal 0 (bvchop size (ifix y)))
-        (bvchop size (ifix x))
-      (bvmod size (ifix x) (ifix y)))))
-
-(defthm bvmod-unguarded-correct
-  (equal (bvmod-unguarded size x y)
-         (bvmod size x y))
-:hints (("Goal" :in-theory (enable bvmod bvmod-unguarded))))
-
-(defund bvdiv-unguarded (size x y)
-  (declare (xargs :guard t))
-  (if (not (posp size))
-      0
-    (if (equal 0 (bvchop size (ifix y)))
-        0
-      (bvdiv size (ifix x) (ifix y)))))
-
-(defthm bvdiv-unguarded-correct
-  (equal (bvdiv-unguarded size x y)
-         (bvdiv size x y))
-:hints (("Goal" :in-theory (enable bvdiv bvdiv-unguarded))))
 
 ;TODO finish removing all guards!
 (defund unpackbv-less-guarded (num size bv)
@@ -460,55 +311,6 @@
 ;;   (equal (bvsx-unguarded new-size old-size val)
 ;;          (bvsx new-size old-size val))
 ;;   :hints (("Goal" :in-theory (enable bvsx bvsx-unguarded))))
-
-
-;; (defund sbvlt-unguarded (size x y)
-;;   (declare (xargs :guard t))
-;;   (sbvlt (nfix size) (ifix x) (ifix y)))
-
-;; (defthm sbvlt-unguarded-correct
-;;   (equal (sbvlt-unguarded size x y)
-;;          (sbvlt size x y))
-;;   :hints (("Goal" :in-theory (enable sbvlt sbvlt-unguarded))))
-
-(defund char-code-unguarded (x)
-  (declare (xargs :guard t))
-  (if (characterp x)
-      (char-code x)
-    0))
-
-(defthm char-code-unguarded-correct
-  (equal (char-code-unguarded x)
-         (char-code x))
-  :hints (("Goal" :in-theory (enable char-code-unguarded))))
-
-(defund code-char-unguarded (x)
-  (declare (xargs :guard t))
-  (if (and (integerp x)
-           (<= 0 x)
-           (< x 256))
-      (code-char x)
-    (code-char 0)))
-
-(defthm code-char-unguarded-correct
-  (equal (code-char-unguarded x)
-         (code-char x))
-  :hints (("Goal" :in-theory (enable code-char-unguarded)
-           :use ((:instance completion-of-code-char)))))
-
-(defund coerce-unguarded (x y)
-  (declare (xargs :guard t))
-  (cond ((equal y 'list)
-         (if (stringp x)
-             (coerce x 'list)
-           nil))
-        (t (coerce (make-character-list x) 'string))))
-
-(defthm coerce-unguarded-correct
-  (equal (coerce-unguarded x y)
-         (coerce x y))
-  :hints (("Goal" :in-theory (enable coerce-unguarded)
-           :use (:instance completion-of-coerce))))
 
 (defund symbol-package-name-unguarded (x)
   (declare (xargs :guard t))
@@ -544,16 +346,6 @@
   (equal (set::in-unguarded a x)
          (set::in a x))
   :hints (("Goal" :in-theory (enable set::in-unguarded))))
-
-(defund bvcat-unguarded (highsize highval lowsize lowval)
-  (declare (xargs :guard t))
-  (logapp (nfix lowsize)
-          (ifix lowval) (bvchop (nfix highsize) (ifix highval))))
-
-(defthm bvcat-unguarded-correct
-  (equal (bvcat-unguarded highsize highval lowsize lowval)
-         (bvcat highsize highval lowsize lowval))
-  :hints (("Goal" :in-theory (e/d (bvcat bvcat-unguarded) ()))))
 
 (defund bvif-unguarded (size test thenpart elsepart)
   (declare (xargs :guard t))
@@ -735,7 +527,7 @@
                   (floor floor arg1 arg2)
 ;                  (logext-list logext-list arg1 arg2)
 ;                  (list::memberp list::memberp arg1 arg2)
-                  (member-equal member-equal arg1 arg2)
+                  (member-equal member-equal-unguarded arg1 arg2)
 ;                  (member-eq member-eq arg1 arg2)
                   (g g arg1 arg2) ;unguarded
 ;                  (repeat repeat-unguarded arg1 arg2) ;see repeat-unguarded-correct ; can blow up!

@@ -229,7 +229,7 @@
 (include-book "result-array-stobj")
 (include-book "defconst-computed2")
 (include-book "strengthen-facts")
-(include-book "letify-term")
+(include-book "letify-term-via-dag")
 
 ;; Legacy Axe tools (many of these depend on skip-proofs):
 (include-book "prover")

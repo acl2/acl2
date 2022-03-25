@@ -20,7 +20,7 @@
 (local (include-book "times-and-divides"))
 (local (include-book "nonnegative-integer-quotient"))
 (local (include-book "integerp"))
-(local (include-book "expt"))
+;(local (include-book "expt"))
 (local (include-book "../../meta/meta-plus-lessp"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -33,6 +33,15 @@
                     (< x 1))))
   :hints (("Goal" :use (:instance rational-implies2)
            :in-theory (disable rational-implies2))))
+
+;where should this go?
+(defthm <-of---of-numerator-and-denominator-same
+  (implies (rationalp x)
+           (equal (< (- (numerator x)) (denominator x))
+                  (or (<= 0 x)
+                      (< -1 x))))
+  :hints (("Goal" :use (:instance <-of-numerator-and-denominator-same (x (- x)))
+           :in-theory (disable <-of-numerator-and-denominator-same))))
 
 (in-theory (disable floor))
 
@@ -1235,7 +1244,7 @@
                   (and (natp n)
                        (unsigned-byte-p (+ 1 n) x))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p
-                                     expt-of-+
+                                     ;expt-of-+
                                      <-of-floor-arg1
                                      ))))
 

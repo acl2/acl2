@@ -808,9 +808,9 @@
                                    EXTRACT-FROM-SYNP-PSEUDO-TERM-LISTP)
                                   (:REWRITE DEFAULT-CDR)
                                   (:TYPE-PRESCRIPTION O<)
-                                  (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                                  (:REWRITE ACL2::O-P-O-INFP-CAR)
                                   (:REWRITE DEFAULT-CAR)
-                                  (:REWRITE ACL2::O-P-DEF-O-FINP-1)
+;;                                  (:REWRITE ACL2::O-P-DEF-O-FINP-1)
                                   (:TYPE-PRESCRIPTION O-P)
                                   rp-termp
                                   (:REWRITE ACL2::MV-NTH-OF-CONS)))))

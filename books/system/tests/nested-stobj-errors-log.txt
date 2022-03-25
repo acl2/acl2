@@ -28,10 +28,10 @@ ACL2 !>>(DEFUN F1 (X TOP1)
                           TOP1))
 
 
-ACL2 Error in ( DEFUN F1 ...):  The stobj-let bindings have specified
-implicitly that the stobj field updater corresponding to accessor TOP1-FLD
-is UPDATE-TOP1-FLD, but the actual corresponding updater is !TOP1-FLD.
-The form 
+ACL2 Error [Translate] in ( DEFUN F1 ...):  The stobj-let bindings
+have specified implicitly that the stobj field updater corresponding
+to accessor TOP1-FLD is UPDATE-TOP1-FLD, but the actual corresponding
+updater is !TOP1-FLD.  The form 
 (STOBJ-LET ((SUB1 (TOP1-FLD TOP1))) (SUB1) (UPDATE-SUB1-FLD1 X SUB1) TOP1)
 is thus illegal.  See :DOC stobj-let.
 
@@ -40,7 +40,7 @@ Summary
 Form:  ( DEFUN F1 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN F1 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN F1 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN F1 (X TOP1)
@@ -51,10 +51,10 @@ ACL2 !>>(DEFUN F1 (X TOP1)
                           TOP1))
 
 
-ACL2 Error in ( DEFUN F1 ...):  The stobj-let bindings have specified
-that the stobj field updater corresponding to accessor TOP1-FLD is
-UPDATE-TOP1-FLD, but the actual corresponding updater is !TOP1-FLD.
-The form 
+ACL2 Error [Translate] in ( DEFUN F1 ...):  The stobj-let bindings
+have specified that the stobj field updater corresponding to accessor
+TOP1-FLD is UPDATE-TOP1-FLD, but the actual corresponding updater is
+!TOP1-FLD.  The form 
 (STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
            (SUB1)
            (UPDATE-SUB1-FLD1 X SUB1)
@@ -66,7 +66,7 @@ Summary
 Form:  ( DEFUN F1 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN F1 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN F1 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN F1 (TOP1)
@@ -77,11 +77,11 @@ ACL2 !>>(DEFUN F1 (TOP1)
                           VAL))
 
 
-ACL2 Error in ( DEFUN F1 ...):  The stobj-let bindings have specified
-that the stobj field updater corresponding to accessor TOP1-FLD is
-UPDATE-TOP1-FLD, but the actual corresponding updater is !TOP1-FLD.
-(This error can be eliminated by replacing the offending binding, 
-(SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD), by (SUB1 (TOP1-FLD TOP1)).)
+ACL2 Error [Translate] in ( DEFUN F1 ...):  The stobj-let bindings
+have specified that the stobj field updater corresponding to accessor
+TOP1-FLD is UPDATE-TOP1-FLD, but the actual corresponding updater is
+!TOP1-FLD.  (This error can be eliminated by replacing the offending
+binding, (SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD), by (SUB1 (TOP1-FLD TOP1)).)
 The form 
 (STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
            (VAL)
@@ -94,7 +94,7 @@ Summary
 Form:  ( DEFUN F1 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN F1 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN F1 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN F1 (TOP1)

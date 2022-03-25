@@ -167,6 +167,7 @@
 (defun def-unrolled-fn-aux (lifted-name
                             extra-rules
                             remove-rules
+                            extra-assumption-rules
                             produce-theorem
                             prove-theorem ;whether to try to prove the theorem with ACL2 (rarely works)
                             output
@@ -188,6 +189,7 @@
                               (booleanp non-executable)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
+                              (natp step-limit)
                               (acl2::step-incrementp step-increment)
                               (member print-base '(10 16))
                               (executable-typep executable-type))
@@ -215,8 +217,7 @@
        ;; others, because opening things like read64 involves testing
        ;; canonical-addressp (which we know from other assumptions is true):
        ((mv erp rule-alist)
-        (acl2::make-rule-alist (assumption-simplification-rules) (w state)) ;todo: include the :extra-rules?
-        )
+        (acl2::make-rule-alist (append extra-assumption-rules (assumption-simplification-rules)) (w state)))
        ((when erp) (mv erp nil state))
        ((mv erp assumptions state)
         (acl2::simplify-terms-using-each-other assumptions
@@ -322,6 +323,7 @@
                         stack-slots
                         extra-rules
                         remove-rules
+                        extra-assumption-rules
                         whole-form
                         produce-theorem
                         prove-theorem ;whether to try to prove the theorem with ACL2 (rarely works)
@@ -346,6 +348,8 @@
                               (booleanp non-executable)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
+                              (natp step-limit)
+                              (acl2::step-incrementp step-increment)
                               (booleanp memoizep)
                               (member print-base '(10 16))
                               (booleanp suppress-assumptions))
@@ -399,6 +403,7 @@
         (def-unrolled-fn-aux lifted-name
           extra-rules
           remove-rules
+          extra-assumption-rules
           produce-theorem
           prove-theorem ;whether to try to prove the theorem with ACL2 (rarely works)
           output
@@ -428,6 +433,7 @@
                                (target ':entry-point) ;; where to start lifting (see lifter-targetp)
                                (extra-rules 'nil) ;Rules to use in addition to (lifter-rules32) or (lifter-rules64).
                                (remove-rules 'nil) ;Rules to turn off
+                               (extra-assumption-rules 'nil) ; Extra rules to use when simplifying assumptions
                                (produce-theorem 't) ;whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting
                                (prove-theorem 'nil) ;whether to try to prove the theorem with ACL2 (rarely works)
                                (output ':all)
@@ -451,6 +457,7 @@
       ',stack-slots
       ,extra-rules             ;not quoted!
       ,remove-rules            ;not quoted!
+      ,extra-assumption-rules  ;not quoted!
       ',whole-form
       ',produce-theorem
       ',prove-theorem

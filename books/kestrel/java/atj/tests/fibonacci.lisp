@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -9,6 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+(include-book "../atj" :ttags ((:open-output-channel!) (:oslib) (:quicklisp) :quicklisp.osicat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -61,3 +63,45 @@
     ("FibonacciTail10" (fib-tail 10 0 1))
     ("FibonacciTail20" (fib-tail 20 0 1))
     ("FibonacciTail30" (fib-tail 30 0 1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Specialize input and output types, for shallow embedding with guards.
+
+(java::atj-main-function-type fib (:ainteger) :ainteger)
+
+(java::atj-main-function-type fib-tail
+                              (:ainteger :ainteger :ainteger)
+                              :ainteger)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate Java code, with tests.
+
+(java::atj fib
+           fib-tail
+           :deep t
+           :guards nil
+           :java-class "FibonacciDeepUnguarded"
+           :tests *fib-tests*)
+
+(java::atj fib
+           fib-tail
+           :deep t
+           :guards t
+           :java-class "FibonacciDeepGuarded"
+           :tests *fib-tests*)
+
+(java::atj fib
+           fib-tail
+           :deep nil
+           :guards nil
+           :java-class "FibonacciShallowUnguarded"
+           :tests *fib-tests*)
+
+(java::atj fib
+           fib-tail
+           :deep nil
+           :guards t
+           :java-class "FibonacciShallowGuarded"
+           :tests *fib-tests*)

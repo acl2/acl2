@@ -26,6 +26,7 @@
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
+(include-book "kestrel/std/system/add-suffix-to-fn-lst" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/measure-plus" :dir :system)
@@ -40,8 +41,10 @@
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
-(local (include-book "projects/apply/top" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
+
+(local (include-book "projects/apply/loop" :dir :system))
+(local (in-theory (disable acl2::loop-book-theory)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -615,33 +618,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-integer-fixtype-to-type ((fixtype symbolp))
-  :returns (type type-optionp)
-  :short "Integer type corresponding to a fixtype name, if any."
-  (case fixtype
-    (schar (type-schar))
-    (uchar (type-uchar))
-    (sshort (type-sshort))
-    (ushort (type-ushort))
-    (sint (type-sint))
-    (uint (type-uint))
-    (slong (type-slong))
-    (ulong (type-ulong))
-    (sllong (type-sllong))
-    (ullong (type-ullong))
-    (t nil))
-  ///
-
-  (defret type-integerp-of-atc-integer-fixtype-to-type
-    (implies type
-             (type-integerp type)))
-
-  (defret type-arithmeticp-of-atc-integer-fixtype-to-type
-    (implies type
-             (type-arithmeticp type))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-check-iconst ((term pseudo-termp) (ctx ctxp) state)
   :returns (mv erp
                (val (tuple (yes/no booleanp)
@@ -770,7 +746,7 @@
        ((pseudo-term-fncall term) term)
        ((mv okp op fixtype) (atc-check-symbol-2part term.fn))
        ((when (not okp)) (no))
-       (in-type (atc-integer-fixtype-to-type fixtype))
+       (in-type (fixtype-to-integer-type fixtype))
        ((when (not in-type)) (no))
        ((unless (list-lenp 1 term.args)) (no))
        (arg (first term.args)))
@@ -815,9 +791,9 @@
        ((pseudo-term-fncall term) term)
        ((mv okp op fixtype1 fixtype2) (atc-check-symbol-3part term.fn))
        ((when (not okp)) (no))
-       (in-type1 (atc-integer-fixtype-to-type fixtype1))
+       (in-type1 (fixtype-to-integer-type fixtype1))
        ((when (not in-type1)) (no))
-       (in-type2 (atc-integer-fixtype-to-type fixtype2))
+       (in-type2 (fixtype-to-integer-type fixtype2))
        ((when (not in-type2)) (no))
        ((unless (list-lenp 2 term.args)) (no))
        (arg1 (first term.args))
@@ -895,13 +871,13 @@
        ((unless (and okp
                      (eq from 'from)))
         (no))
-       (in-type (atc-integer-fixtype-to-type stype))
+       (in-type (fixtype-to-integer-type stype))
        ((when (not in-type)) (no))
-       (out-type (atc-integer-fixtype-to-type dtype))
+       (out-type (fixtype-to-integer-type dtype))
        ((when (not out-type)) (no))
        ((unless (list-lenp 1 term.args)) (no))
        (arg (first term.args))
-       (tyname (integer-type-to-type-name out-type)))
+       (tyname (type-to-tyname out-type)))
     (mv t tyname arg in-type out-type))
   ///
 
@@ -940,10 +916,10 @@
                      (eq array 'array)
                      (eq read 'read)))
         (no))
-       (out-type (atc-integer-fixtype-to-type etype))
+       (out-type (fixtype-to-integer-type etype))
        ((when (not out-type)) (no))
        (in-type1 (type-pointer out-type))
-       (in-type2 (atc-integer-fixtype-to-type itype))
+       (in-type2 (fixtype-to-integer-type itype))
        ((when (not in-type2)) (no))
        ((unless (list-lenp 2 term.args)) (no))
        (arr (first term.args))
@@ -1041,7 +1017,7 @@
                      (eq boolean 'boolean)
                      (eq from 'from)))
         (no))
-       (in-type (atc-integer-fixtype-to-type type))
+       (in-type (fixtype-to-integer-type type))
        ((when (not in-type)) (no))
        ((unless (list-lenp 1 args)) (no)))
     (mv t (first args) in-type))
@@ -1234,9 +1210,9 @@
                      (eq array 'array)
                      (eq write 'write)))
         (no))
-       (sub-type (atc-integer-fixtype-to-type itype))
+       (sub-type (fixtype-to-integer-type itype))
        ((unless sub-type) (no))
-       (elem-type (atc-integer-fixtype-to-type etype))
+       (elem-type (fixtype-to-integer-type etype))
        ((when (not elem-type)) (no))
        ((unless (list-lenp 3 val.args)) (no))
        (arr (first val.args))
@@ -1384,6 +1360,7 @@
                               collect (pack '* i))))
         (mv nil nil 0 nil)))
     (mv t wrapper n wrapped))
+  :prepwork ((local (in-theory (enable acl2::loop-book-theory))))
   ///
 
   (defret pseudo-term-count-of-atc-check-declar/assign-n-wrapped
@@ -1943,39 +1920,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-tyspecseq ((type typep))
-  :guard (not (type-case type :pointer))
-  :returns (tyspecseq tyspecseqp)
-  :short "Generate a type specifier sequence for a type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is always called on a non-pointer type currently."))
-  (type-case type
-             :void (tyspecseq-void)
-             :char (tyspecseq-char)
-             :schar (tyspecseq-schar)
-             :sshort (tyspecseq-sshort)
-             :sint (tyspecseq-sint)
-             :slong (tyspecseq-slong)
-             :sllong (tyspecseq-sllong)
-             :uchar (tyspecseq-uchar)
-             :ushort (tyspecseq-ushort)
-             :uint (tyspecseq-uint)
-             :ulong (tyspecseq-ulong)
-             :ullong (tyspecseq-ullong)
-             :pointer (prog2$ (impossible) (irr-tyspecseq)))
-  :hooks (:fix)
-  ///
-
-  (defrule type-name-to-type-of-tyname-of-atc-gen-tyspecseq
-    (implies (not (type-case type :pointer))
-             (equal (type-name-to-type (tyname (atc-gen-tyspecseq type) nil))
-                    (type-fix type)))
-    :enable type-name-to-type))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-var-assignablep ((var symbolp)
                              (innermostp booleanp)
                              (affect symbol-listp))
@@ -2427,17 +2371,11 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val var vars init-affect))
-                   ((when (type-case init-type :pointer))
-                    (er-soft+ ctx t irr
-                              "The term ~x0 to which the variable ~x1 is bound ~
-                               must not have a C pointer type, ~
-                               but it has type ~x2 instead."
-                              val var init-type))
-                   (declon (make-declon-var :type (atc-gen-tyspecseq init-type)
-                                            :declor (make-declor
-                                                     :ident
-                                                     (make-ident
-                                                      :name (symbol-name var)))
+                   ((mv tyspec declor) (ident+type-to-tyspec+declor
+                                        (make-ident :name (symbol-name var))
+                                        init-type))
+                   (declon (make-obj-declon :tyspec tyspec
+                                            :declor declor
                                             :init init-expr))
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
@@ -2497,6 +2435,9 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val var vars rhs-affect))
+                   ((when (type-case rhs-type :array))
+                    (raise "Internal error: array type ~x0." rhs-type)
+                    (acl2::value irr))
                    ((when (type-case rhs-type :pointer))
                     (er-soft+ ctx t irr
                               "The term ~x0 to which the variable ~x1 is bound ~
@@ -2599,7 +2540,12 @@
              ((mv okp sub elem sub-type elem-type)
               (atc-check-array-write var val))
              ((when okp)
-              (b* (((unless (member-eq var affect))
+              (b* (((unless (eq wrapper? nil))
+                    (er-soft+ ctx t irr
+                              "The array write term ~x0 to which ~x1 is bound ~
+                               has the ~x2 wrapper, which is disallowed."
+                              val var wrapper?))
+                   ((unless (member-eq var affect))
                     (er-soft+ ctx t irr
                               "The array ~x0 is being written to, ~
                                but it is not among the variables ~x1 ~
@@ -2706,17 +2652,11 @@
                                must not affect any variables, ~
                                but it affects ~x2 instead."
                               val var init-affect))
-                   ((when (type-case init-type :pointer))
-                    (er-soft+ ctx t irr
-                              "The term ~x0 to which the variable ~x1 is bound ~
-                               must not have a C pointer type, ~
-                               but it has type ~x2 instead."
-                              val var init-type))
-                   (declon (make-declon-var :type (atc-gen-tyspecseq init-type)
-                                            :declor (make-declor
-                                                     :ident
-                                                     (make-ident
-                                                      :name (symbol-name var)))
+                   ((mv tyspec declor) (ident+type-to-tyspec+declor
+                                        (make-ident :name (symbol-name var))
+                                        init-type))
+                   (declon (make-obj-declon :tyspec tyspec
+                                            :declor declor
                                             :init init-expr))
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
@@ -2774,6 +2714,9 @@
                                must not affect any variables, ~
                                but it affects ~x2 instead."
                               val var rhs-affect))
+                   ((when (type-case rhs-type :array))
+                    (raise "Internal error: array type ~x0." rhs-type)
+                    (acl2::value irr))
                    ((when (type-case rhs-type :pointer))
                     (er-soft+ ctx t irr
                               "The term ~x0 to which the variable ~x1 is bound ~
@@ -2813,9 +2756,10 @@
              ((unless (atc-affecting-term-for-let-p val prec-fns))
               (er-soft+ ctx t irr
                         "When generating C code for the function ~x0, ~
-                         we encountered an unwrapped term ~x1 ~
-                         to which a LET variable is bound ~
-                         that is neither an IF or a loop function call. ~
+                         we encountered a term ~x1, ~
+                         to which a LET variable is bound, ~
+                         tha is not wrapped by C::DECLAR or C::ASSIGN, ~
+                         and that is neither an IF or a loop function call. ~
                          This is disallowed."
                         fn val))
              ((er (list xform-items xform-type xform-limit))
@@ -3022,6 +2966,9 @@
                   fn term eaffect affect))
        ((when (type-case type :void))
         (raise "Internal error: return term ~x0 has type void." term)
+        (acl2::value irr))
+       ((when (type-case type :array))
+        (raise "Internal error: array type ~x0." type)
         (acl2::value irr))
        ((when (type-case type :pointer))
         (er-soft+ ctx t irr
@@ -3527,17 +3474,10 @@
                    another formal parameter among ~x2; ~
                    this is disallowed, even if the package names differ."
                   formal fn cdr-formals))
-       ((mv pointerp ref-type)
-        (if (type-case type :pointer)
-            (mv t (type-pointer->referenced type))
-          (mv nil type)))
-       ((when (type-case ref-type :pointer))
-        (raise "Internal error: pointer type to pointer type ~x0." ref-type)
-        (acl2::value nil))
-       (param (make-param-declon
-               :declor (make-declor :ident (make-ident :name name)
-                                    :pointerp pointerp)
-               :type (atc-gen-tyspecseq ref-type)))
+       ((mv tyspec declor) (ident+type-to-tyspec+declor (make-ident :name name)
+                                                        type))
+       (param (make-param-declon :tyspec tyspec
+                                 :declor declor))
        ((er params)
         (atc-gen-param-declon-list (cdr typed-formals) fn ctx state)))
     (acl2::value (cons param params)))
@@ -3592,51 +3532,6 @@
                                :hints hints
                                :enable nil)))
     (mv (list event) thm-name names-to-avoid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-type-predicate ((type typep))
-  :returns (pred symbolp)
-  :short "ACL2 predicate corresponding to a C type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For a supported integer type,
-     the predicate is the recognizer of values of that type.
-     For a pointer to integer type,
-     the predicate is the recognizer of arrays with that element type.
-     (So for a pointer type it is not a recognizer of pointer values.)
-     We return @('nil') for other types."))
-  (type-case
-   type
-   :void nil
-   :char nil
-   :schar 'scharp
-   :uchar 'ucharp
-   :sshort 'sshortp
-   :ushort 'ushortp
-   :sint 'sintp
-   :uint 'uintp
-   :slong 'slongp
-   :ulong 'ulongp
-   :sllong 'sllongp
-   :ullong 'ullongp
-   :pointer (type-case
-             type.referenced
-             :void nil
-             :char nil
-             :schar 'schar-arrayp
-             :uchar 'uchar-arrayp
-             :sshort 'sshort-arrayp
-             :ushort 'ushort-arrayp
-             :sint 'sint-arrayp
-             :uint 'uint-arrayp
-             :slong 'slong-arrayp
-             :ulong 'ulong-arrayp
-             :sllong 'sllong-arrayp
-             :ullong 'ullong-arrayp
-             :pointer nil))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3891,10 +3786,10 @@
           (nonnil-conjunct? (and index? (list theresult)))
           (arraylength-conjunct?
            (b* (((unless (type-case type :pointer)) nil)
-                (reftype (type-pointer->referenced type))
+                (reftype (type-pointer->to type))
                 ((unless (type-integerp reftype))
                  (raise "Internal error: pointer type ~x0 for ~x1." type name))
-                (reftype-array-length (pack (atc-integer-type-fixtype reftype)
+                (reftype-array-length (pack (integer-type-to-fixtype reftype)
                                             '-array-length)))
              (list `(equal (,reftype-array-length ,theresult)
                            (,reftype-array-length ,name))))))
@@ -3951,7 +3846,7 @@
      @(tsee exec-fun) takes pointers to those arrays.
      So we introduce variables for the pointers,
      named after the formals of @('fn') that are arrays:
-     we add \"-PTR\" to the formals of @('fn'),
+     we add @('-PTR') to the formals of @('fn'),
      which should not cause name conflicts because
      the names of the formals must be portable C identifiers.
      For each array formal @('a') of @('fn'),
@@ -3965,7 +3860,7 @@
      @('a-ptr') is a non-null pointer of the appropriate type;
      the type is determined from the type of the formal @('a').
      Along with the binding and the hypotheses,
-     we also generate an alist element @('(a a-ptr)'),
+     we also generate an alist element @('(a . a-ptr)'),
      returned as part of the @('pointer-subst') result,
      that is used to generate the argument list of @(tsee exec-fun),
      by applying the substitution @('pointer-subst') to the formals of @('fn'):
@@ -4050,7 +3945,7 @@
                   (list `(pointerp ,formal-ptr)
                         `(not (pointer-nullp ,formal-ptr))
                         `(equal (pointer->reftype ,formal-ptr)
-                                ',(type-pointer->referenced type)))))
+                                ',(type-pointer->to type)))))
        (inst (if fn-recursivep
                  (if arrayp
                      (list `(,formal (read-array (pointer->address
@@ -4131,7 +4026,7 @@
      yields an optional result (absent if the function is @('void'))
      and a computation state obtained by modifying
      one or more arrays in the computation state.
-     These are the arrays affected by the loop,
+     These are the arrays affected by the C function,
      which the correctness theorem binds to the results of
      the ACL2 function that represents the C function.
      The modified computation state is expressed as
@@ -4140,22 +4035,27 @@
    (xdoc::p
     "The parameter @('mod-arrs') passed to this code
      consists of the formals of @('fn') that represent arrays
-     affected by the body of @('fn').
+     affected by the body of the ACL2 function that represents the C function.
      The parameter @('pointer-subst') is
      the result of @(tsee atc-gen-outer-bindings-and-hyps)
-     that maps array formals of @('fn')
+     that maps array formals of the ACL2 function
      to the corresponding pointer variables used by the correctness theorems.
      Thus, we go through @('mod-arrs'),
      looking up the corresponding pointer variables in @('pointer-subst'),
      and we construct each nested @(tsee write-array) call,
-     which needs both a pointer and an array.
-     Note that, in the correctness theorem,
-     the array variables are bound to
-     the possibly modified arrays returned by @('fn')."))
+     which needs both a pointer and an array.")
+   (xdoc::p
+    "Note that, in the correctness theorem,
+     the new array variables are bound to
+     the possibly modified arrays returned by the ACL2 function:
+     these new array variables are obtained by adding @('-NEW')
+     to the corresponding formals of the ACL2 function;
+     these new names should not cause any conflicts,
+     because the names of the formals must be portable C identifiers."))
   (cond ((endp mod-arrs) compst-var)
         (t `(write-array (pointer->address
                           ,(cdr (assoc-eq (car mod-arrs) pointer-subst)))
-                         ,(car mod-arrs)
+                         ,(add-suffix-to-fn (car mod-arrs) "-NEW")
                          ,(atc-gen-cfun-final-compustate (cdr mod-arrs)
                                                          pointer-subst
                                                          compst-var)))))
@@ -4200,9 +4100,15 @@
      an optional C result and zero or more modified arrays.
      If it returns a C result (i.e. if the C function is not @('void')),
      we bind a result variable to it;
-     this is @('nil') if the C function is @('void').
+     the value is @('nil') if the C function is @('void').
      We also bind the formals that are arrays
-     to the (other or only) results of @('fn') (if any).")
+     to the (other or only) results of @('fn') (if any).
+     We actually use new variables for the latter,
+     for greater clarity in the theorem formulation:
+     the new variables are obtained by adding @('-NEW')
+     to the corresponding array formals of @('fn');
+     these new names should not cause any conflicts,
+     because the names of the formals must be portable C identifiers.")
    (xdoc::p
     "The guard of @('fn') is used as hypothesis,
      along with the fact that @('compst') is a computation state.")
@@ -4315,10 +4221,11 @@
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
        (exec-fun-args (fsublis-var-lst pointer-subst formals))
+       (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (fn-results (append (if (type-case type :void)
                                nil
                              (list result-var))
-                           affect))
+                           affect-new))
        (fn-binder (if (endp (cdr fn-results))
                       (car fn-results)
                     `(mv ,@fn-results)))
@@ -4637,9 +4544,11 @@
          (raise "Internal error: ~
                  the function ~x0 has return type ~x1."
                 fn type)))
-       (fundef (make-fundef :result (atc-gen-tyspecseq type)
-                            :name (make-ident :name name)
-                            :params params
+       (id (make-ident :name name))
+       ((mv tyspec &) (ident+type-to-tyspec+declor id type))
+       (fundef (make-fundef :tyspec tyspec
+                            :declor (make-fun-declor :name id
+                                                     :params params)
                             :body items))
        (ext (ext-declon-fundef fundef))
        (finfo (fun-info-from-fundef fundef))
@@ -5234,18 +5143,26 @@
      in the computation state.
      The modified computation state is expressed as
      a nest of @(tsee write-var) and @(tsee write-array) calls.
-     This ACL2 code here generates that nest."))
+     This ACL2 code here generates that nest.")
+   (xdoc::p
+    "Note that, in the correctness theorem,
+     the new array variables are bound to
+     the possibly modified arrays returned by the ACL2 function:
+     these new array variables are obtained by adding @('-NEW')
+     to the corresponding formals of the ACL2 function;
+     these new names should not cause any conflicts,
+     because the names of the formals must be portable C identifiers."))
   (b* (((when (endp mod-vars)) compst-var)
        (mod-var (car mod-vars))
        (ptr (cdr (assoc-eq mod-var pointer-subst))))
     (if ptr
         `(write-array (pointer->address ,ptr)
-                      ,mod-var
+                      ,(add-suffix-to-fn mod-var "-NEW")
                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
                                                       pointer-subst
                                                       compst-var))
       `(write-var (ident ,(symbol-name (car mod-vars)))
-                  ,(car mod-vars)
+                  ,(add-suffix-to-fn (car mod-vars) "-NEW")
                   ,(atc-gen-loop-final-compustate (cdr mod-vars)
                                                   pointer-subst
                                                   compst-var)))))
@@ -5302,9 +5219,10 @@
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)
                    ,(untranslate test-term nil wrld)))
-       (affect-binder (if (endp (cdr affect))
-                          (car affect)
-                        `(mv ,@affect)))
+       (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
+       (affect-binder (if (endp (cdr affect-new))
+                          (car affect-new)
+                        `(mv ,@affect-new)))
        (final-compst (atc-gen-loop-final-compustate affect
                                                     pointer-subst
                                                     compst-var))
@@ -5443,9 +5361,10 @@
                    ,@pointer-hyps
                    ,@diff-pointer-hyps
                    ,(untranslate (uguard+ fn wrld) nil wrld)))
-       (affect-binder (if (endp (cdr affect))
-                          (car affect)
-                        `(mv ,@affect)))
+       (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
+       (affect-binder (if (endp (cdr affect-new))
+                          (car affect-new)
+                        `(mv ,@affect-new)))
        (final-compst (atc-gen-loop-final-compustate affect
                                                     pointer-subst
                                                     compst-var))

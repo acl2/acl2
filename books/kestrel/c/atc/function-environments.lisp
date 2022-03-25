@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-operations")
 (include-book "errors")
 
 (include-book "kestrel/fty/defomap" :dir :system)
@@ -66,9 +66,10 @@
 (define fun-info-from-fundef ((fundef fundefp))
   :returns (finfo fun-infop)
   :short "Create information for a function definition."
-  (b* (((fundef fundef) fundef))
-    (make-fun-info :params fundef.params
-                   :result fundef.result
+  (b* (((fundef fundef) fundef)
+       ((fun-declor fundef.declor) fundef.declor))
+    (make-fun-info :params fundef.declor.params
+                   :result fundef.tyspec
                    :body fundef.body))
   :hooks (:fix))
 
@@ -121,10 +122,11 @@
      this operation returns an error."))
   (b* ((fenv (fun-env-fix fenv))
        ((fundef fundef) fundef)
-       ((when (fun-env-lookup fundef.name fenv))
-        (error (list :duplicate-function-definition fundef.name)))
+       (name (fundef->name fundef))
+       ((when (fun-env-lookup name fenv))
+        (error (list :duplicate-function-definition name)))
        (info (fun-info-from-fundef fundef)))
-    (omap::update fundef.name info fenv))
+    (omap::update name info fenv))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -151,7 +153,8 @@
           (declon (car declons)))
        (ext-declon-case
         declon
-        :declon (error :external-declaration-is-not-a-function)
+        :obj-declon (error :external-declaration-is-not-a-function)
+        :tag-declon (error :external-declaration-is-not-a-function)
         :fundef (b* ((fenv (fun-env-extend declon.get fenv))
                      ((when (errorp fenv)) fenv))
                   (init-fun-env-aux (cdr declons) fenv))))

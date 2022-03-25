@@ -17,6 +17,7 @@
 (include-book "kestrel/bv/bytep" :dir :system)
 
 ;; Matches what's in books/kestrel/fty
+;; TODO: Disable
 (defun byte-listp (x)
   (declare (xargs :guard t
                   :measure (acl2-count x)))
@@ -26,3 +27,23 @@
         (eq x nil)
       (and (bytep (car x))
            (byte-listp (cdr x))))))
+
+(defthm byte-listp-forward-to-true-listp
+  (implies (byte-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable byte-listp))))
+
+(defthm unsigned-byte-p-8-of-nth-when-byte-listp
+  (implies (and (byte-listp bytes)
+                (natp n)
+                (< n (len bytes)))
+           (unsigned-byte-p 8 (nth n bytes)))
+  :hints (("Goal" :in-theory (enable byte-listp nth))))
+
+;avoid name clash with std
+(defthm byte-listp-of-append-2
+  (equal (byte-listp (append x y))
+         (and (byte-listp (true-list-fix x))
+              (byte-listp y)))
+  :hints (("Goal" :in-theory (enable byte-listp append))))

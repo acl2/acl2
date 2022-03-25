@@ -18,6 +18,7 @@
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/expt2"))
+(local (include-book "../arithmetic-light/integer-length"))
 (local (include-book "lognot"))
 (local (include-book "logand"))
 (local (include-book "logior"))
@@ -156,3 +157,26 @@
                 (signed-byte-p size j))
            (signed-byte-p size (logxor i j)))
   :hints (("Goal" :in-theory (e/d (logxor) (signed-byte-p)))))
+
+;gen?
+(defthm <-of-logxor-and-expt-of-2
+  (implies (and (< i (expt 2 n))
+                (< j (expt 2 n))
+                (natp i)
+                (natp j)
+                (natp n))
+           (< (logxor i j) (expt 2 n)))
+  :hints (("goal" :in-theory (enable logxor logeqv logorc1))))
+
+(defthm <-of-logxor-when-constant
+  (implies (and (syntaxp (quotep k))
+                (posp k)
+                ;; when k is a power of 2, the expt calls will evaluate to k:
+                (< i (expt 2 (+ -1 (integer-length k))))
+                (< j (expt 2 (+ -1 (integer-length k))))
+                (natp i)
+                (natp j))
+           (< (logxor i j) k))
+  :hints (("Goal" :use (:instance <-of-logxor-and-expt-of-2
+                                  (n (+ -1 (integer-length k))))
+           :in-theory (disable <-of-logxor-and-expt-of-2))))

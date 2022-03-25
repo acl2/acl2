@@ -27,3 +27,4 @@
  (2 2 (:REWRITE DEFAULT-<-1))
  (2 2 (:DEFINITION NOT))
  )
+(MV-NTH-OF-IF)

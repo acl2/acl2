@@ -299,7 +299,7 @@ Subgoal *1/1.2'
 Note: There is one additional key checkpoint under a top-level induction.
 See :DOC set-checkpoint-summary-limit to change the number printed.
 
-ACL2 Error in ( DEFTHM FOO ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(CHECKPOINT-TESTS)
@@ -665,7 +665,7 @@ Subgoal *1/1''
               (EQUAL Y (APPEND Y X)))
          (NOT (CDDR (H X Y))))
 
-ACL2 Error in ( DEFTHM NULL-CDDR-H ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFTHM NULL-CDDR-H ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(CHECKPOINT-TESTS)
@@ -978,7 +978,7 @@ a full proof.
 (IMPLIES (NOT (CONSP X))
          (EQUAL Y (APPEND Y X)))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(CHECKPOINT-TESTS)
@@ -1150,7 +1150,7 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 Subgoal 1
 (EQUAL (CAR X) X)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(CHECKPOINT-TESTS)
@@ -1279,7 +1279,7 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 Subgoal 1
 (EQUAL (CAR X) X)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(CHECKPOINT-TESTS)
@@ -1949,7 +1949,7 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 Subgoal 1
 (EQUAL (CAR X) X)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(ASSERT-EVENT

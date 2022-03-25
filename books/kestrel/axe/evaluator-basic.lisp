@@ -44,15 +44,21 @@
     posp
     booleanp
     true-listp
+    (denominator denominator-unguarded)
+    (numerator numerator-unguarded)
+    (coerce coerce-unguarded)
     all-natp
     all-unsigned-byte-p
     (endp endp-unguarded)
     (take take-unguarded)
+    (char-code char-code-unguarded)
+    (code-char code-char-unguarded)
     (nthcdr nthcdr-unguarded)
     (reverse-list reverse-list-unguarded)
     repeat-tail
     (repeat repeat-unguarded)
     (binary-append binary-append-unguarded)
+    (member-equal member-equal-unguarded)
     (unary-- unary---unguarded)
     (expt expt-unguarded)
     (= =-unguarded)
@@ -63,11 +69,14 @@
     (floor floor-unguarded)
     (ceiling ceiling-unguarded)
     equal
+    (eql eql-unguarded) ; not strictly needed if we turn EQL into EQUAL
+    (eq eq-unguarded) ; not strictly needed if we turn EQ into EQUAL
     (< <-unguarded)
     (zp zp-unguarded)
     not
     len
     (assoc-equal assoc-equal-unguarded)
+    (lookup-equal lookup-equal-unguarded)
     (symbol< symbol<-unguarded)
     unsigned-byte-p
     unsigned-byte-p-forced
@@ -85,9 +94,26 @@
     ;; bv functions:
     (trim trim-unguarded)
     (bvchop bvchop-unguarded)
+    (getbit getbit-unguarded)
     (bvplus bvplus-unguarded)
+    (bvmult bvmult-unguarded)
+    (bvuminus bvuminus-unguarded)
     (bvxor bvxor-unguarded)
+    (bvor bvor-unguarded)
+    (bvand bvand-unguarded)
+    (bvnot bvnot-unguarded)
+    (bvlt bvlt-unguarded)
+    (bvminus bvminus-unguarded)
+    (bvmod bvmod-unguarded)
+    (bvdiv bvdiv-unguarded)
+    (bvcat bvcat-unguarded)
+    (sbvlt sbvlt-unguarded)
     (leftrotate32 leftrotate32-unguarded)
+    (lg lg-unguarded)
+    (bitnot bitnot-unguarded)
+    (bitor bitor-unguarded)
+    (bitxor bitxor-unguarded)
+    (bitand bitand-unguarded)
 
     ;; bv-array functions:
     (bv-array-read bv-array-read-unguarded)

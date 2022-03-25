@@ -15,6 +15,9 @@
 (include-book "unsigned-byte-p")
 (include-book "bvlt") ;hmmm
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 
 ;fixme what should this do if y is 0?
 (defund bvmod (n x y)
@@ -196,3 +199,16 @@
            (equal (equal (bvmod size x y) (mod x y))
                   t))
   :hints (("Goal" :in-theory (enable bvmod))))
+
+;gen
+(defthm bvchop-of-256-arg3
+  (implies (natp size)
+           (equal (bvmod size x 256)
+                  (if (<= 8 size)
+                      (bvchop 8 x)
+                    (bvchop size x))))
+  :hints (("Goal" :use (:instance mod-of-expt-and-expt
+                                  (i1 size)
+                                  (i2 8))
+           :in-theory (enable bvmod bvchop
+                              mod-of-mod-when-multiple))))

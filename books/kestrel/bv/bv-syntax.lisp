@@ -1,7 +1,7 @@
 ; Syntactic utilities for bit-vector terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,9 +14,10 @@
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system) ;reduce?
 
-;;TODO: Add support here for the rotate ops: leftrotate32 rightrotate32 leftrotate rightrotate.  bvnth?
+;;TODO: Add support here for the rotate ops: leftrotate32 rightrotate32 leftrotate rightrotate.
+;;TODO: Maybe support bvnth?
 
-;; Some BV operators, such as BVXOR and BVPLUS, can be trimmed in the sense
+;; Many BV operators, such as BVXOR and BVPLUS, can be trimmed in the sense
 ;; that if we are chopping their result we can also chop their arguments
 ;; without affecting the (chopped) result.
 
@@ -59,80 +60,91 @@
   (append *trimmable-operators*
           *non-trimmable-bv-operators*))
 
-;BOZO could drop the fixes if we had a better guard (saying all quoted indices
-;in RTL terms are integers)
 ;TODO: Could make a faster version restricted to trimmable terms?
 ;TODO: Compare to get-type-of-bv-expr-axe.
-(defun unsigned-term-size (term)
+;; Returns a natural number, or nil.
+(defun bv-term-size (term)
   (declare (xargs :guard (pseudo-termp term)))
-  (if (not (consp term)) ;must be a variable
+  (if (variablep term)
       nil
-    (if (quotep term)
-        (if (natp (unquote term))
-            (integer-length (unquote term))
-          nil)
-      (if (member-eq (ffn-symb term) '(getbit bitxor bitnot bitand bitor bool-to-bit))
-          1
-        (if (member-eq (ffn-symb term) '(bvxor bvand bvor bvnot bvif
-                                               bvchop ;$inline
-                                               bvplus bvmult bvminus bvuminus
-                                               bvdiv bvmod
-                                               bv-array-read ;new
-                                               bvsx
-                                               repeatbit
-                                               ))
-            (if (quotep (farg1 term))
-                (unquote (farg1 term))
-              nil)
-;BOZO move this case down -- or remove it?
-          (if (eq (ffn-symb term) 'myif)
-              (let ((arg2size (unsigned-term-size (farg2 term)))
-                    (arg3size (unsigned-term-size (farg3 term))))
+    (let ((fn (ffn-symb term)))
+      (case fn
+        (quote (if (natp (unquote term))
+                   (integer-length (unquote term))
+                 nil))
+        ((getbit bitxor bitnot bitand bitor bool-to-bit)
+         ;; these operators always have size 1
+         1)
+        ((bvxor bvand bvor bvnot bvif
+                bvchop ;$inline
+                bvplus bvmult bvminus bvuminus
+                bvdiv bvmod
+                bv-array-read ;new
+                bvsx
+                repeatbit
+                )
+         (let ((size-arg (farg1 term)))
+           (if (and (quotep size-arg)
+                    (natp (unquote size-arg)))
+               (unquote size-arg)
+             nil)))
+        (slice (if (and (quotep (farg1 term))
+                        (quotep (farg2 term))
+                        (natp (unquote (farg1 term)))
+                        (natp (unquote (farg2 term)))
+                        ;; low <= high
+                        (<= (unquote (farg2 term))
+                            (unquote (farg1 term))))
+                   (+ 1
+                      (- (unquote (farg1 term))
+                         (unquote (farg2 term))))
+                 nil))
+        (bvcat (if (and (quotep (farg1 term))
+                        (quotep (farg3 term))
+                        (natp (unquote (farg1 term)))
+                        (natp (unquote (farg3 term))))
+                   (+ (unquote (farg1 term))
+                      (unquote (farg3 term)))
+                 nil))
+        ;; todo: drop this case?
+        (myif (let ((arg2size (bv-term-size (farg2 term)))
+                    (arg3size (bv-term-size (farg3 term))))
                 (if (equal arg2size arg3size)
                     arg2size
-                  nil))
-            (if (eq (ffn-symb term) 'slice)
-                (if (and (quotep (farg1 term))
-                         (quotep (farg2 term)))
-                    (+ 1
-                       (- (fix (unquote (farg1 term)))
-                          (fix (unquote (farg2 term)))))
-                  nil)
-              (if (eq (ffn-symb term) 'bvcat)
-                  (if (and (quotep (farg1 term))
-                           (quotep (farg3 term)))
-                      (+ (fix (unquote (farg1 term)))
-                         (fix (unquote (farg3 term))))
-                    nil)
-                nil))))))))
+                  nil)))
+        (otherwise nil)))))
 
-;todo: rename unsigned-term -> bv
-(defun bind-var-to-unsigned-term-size (var term)
+;; just to check:
+(thm
+ (or (natp (bv-term-size term))
+     (null (bv-term-size term))))
+
+(defun bind-var-to-bv-term-size (var term)
   (declare (xargs :guard (pseudo-termp term)))
-  (let ((size (unsigned-term-size term)))
+  (let ((size (bv-term-size term)))
     (if (natp size)
         (acons var
-               (list 'quote size) ;todo: don't re-quote here given that unsigned-term-size unquotes
+               (list 'quote size) ;todo: don't re-quote here given that bv-term-size unquotes
                nil)
       nil)))
 
 ;fixme use this more?
 ;speed this up?
 ;todo: make a version restricted to non-arithmetic ops?
-(defun bind-var-to-unsigned-term-size-if-trimmable (var-name term)
+(defun bind-var-to-bv-term-size-if-trimmable (var-name term)
   (declare (xargs :guard (and (symbolp var-name)
                               (pseudo-termp term))))
   (if (atom term)
       nil
     (if (or (quotep term)
             (member-eq (ffn-symb term) *trimmable-operators*))
-        (bind-var-to-unsigned-term-size var-name term)
+        (bind-var-to-bv-term-size var-name term)
       nil)))
 
-(defund term-should-be-trimmed2-helper (width term operators)
+(defund term-should-be-trimmed-helper (width term operators)
   (declare (xargs :guard (and (natp width)
                               (pseudo-termp term)
-                              (member-eq operators '(all non-arithmetic)))))
+                              (member-eq operators '(:all :non-arithmetic)))))
   (if (quotep term)
       (or (not (natp (unquote term)))
           ;;(< width (integer-length (unquote term)))
@@ -152,19 +164,19 @@
              ;;                    (and (eq 'bv-array-read (ffn-symb term))
              ;;                         (quotep (farg4 term)))
              )
-         (let ((size (unsigned-term-size term)))
+         (let ((size (bv-term-size term)))
            (and (natp size)
                 (< width size))))))
 
 ;TODO: Does this functionality already exist?
-;OPERATORS should be 'all or 'non-arithmetic
+;OPERATORS should be ':all or ':non-arithmetic
 ;maybe we should add the option to not trim logical ops?  but that's not as dangerous as trimming arithmetic ops...
-(defund term-should-be-trimmed2 (quoted-width term operators)
+(defund term-should-be-trimmed (quoted-width term operators)
   (declare (xargs :guard (and (myquotep quoted-width)
                               (natp (unquote quoted-width))
                               (pseudo-termp term)
-                              (member-eq operators '(all non-arithmetic)))))
+                              (member-eq operators '(:all :non-arithmetic)))))
   (if (not (quotep quoted-width)) ;check natp or posp?
       nil                         ;; warning or error?
     (let ((width (unquote quoted-width)))
-      (term-should-be-trimmed2-helper width term operators))))
+      (term-should-be-trimmed-helper width term operators))))

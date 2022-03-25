@@ -47,8 +47,7 @@
                       val
                     (nth m l))))
   :hints
-  (("Goal" :in-theory (e/d (update-nth2)
-                           ()))))
+  (("Goal" :in-theory (enable update-nth2))))
 
 (defthm nth-update-nth2-safe
   (implies (and (syntaxp (and (quotep m)
@@ -76,8 +75,7 @@
                 (integerp key))
            (equal (update-nth2 len key val lst)
                   (take len lst)))
-  :hints (("Goal" :in-theory (e/d (update-nth2)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable update-nth2))))
 
 ;only needed by axe?
 (defthm true-listp-of-update-nth2

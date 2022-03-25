@@ -15,12 +15,13 @@
 ;; trivially bound (that is, that is not bound to itself).  Trivial bindings
 ;; often arise because lambdas in ACL2 must be complete.
 
+(include-book "non-trivial-formals")
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
 ;; Returns (mv non-trivial-formals non-trivial-args).
-(defun non-trivial-formals-and-args (formals args)
+(defund non-trivial-formals-and-args (formals args)
   (declare (xargs :guard (and (symbol-listp formals)
                               (true-listp args) ;; not necessarily pseudo-terms
                               )))
@@ -38,37 +39,28 @@
 
 (defthm symbol-listp-of-mv-nth-0-of-non-trivial-formals-and-args
   (implies (symbol-listp formals)
-           (symbol-listp (mv-nth 0 (non-trivial-formals-and-args formals args)))))
+           (symbol-listp (mv-nth 0 (non-trivial-formals-and-args formals args))))
+  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
 
 (defthm true-listp-of-mv-nth-0-of-non-trivial-formals-and-args
   (implies (symbol-listp formals)
-           (true-listp (mv-nth 0 (non-trivial-formals-and-args formals args)))))
+           (true-listp (mv-nth 0 (non-trivial-formals-and-args formals args))))
+  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
 
 (defthm true-listp-of-mv-nth-1-of-non-trivial-formals-and-args
   (implies (true-listp args)
-           (true-listp (mv-nth 1 (non-trivial-formals-and-args formals args)))))
+           (true-listp (mv-nth 1 (non-trivial-formals-and-args formals args))))
+  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
 
 (defthm pseudo-term-listp-of-mv-nth-1-of-non-trivial-formals-and-args
   (implies (pseudo-term-listp args)
-           (pseudo-term-listp (mv-nth 1 (non-trivial-formals-and-args formals args)))))
+           (pseudo-term-listp (mv-nth 1 (non-trivial-formals-and-args formals args))))
+  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
 
 (defthm len-of-mv-nth-1-of-non-trivial-formals-and-args
   (equal (len (mv-nth 1 (non-trivial-formals-and-args formals args)))
          (len (mv-nth 0 (non-trivial-formals-and-args formals args))))
   :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
-
-;; Returns the members of formals that don't correspond to themselves in the args.
-(defun non-trivial-formals (formals args)
-  (declare (xargs :guard (and (symbol-listp formals)
-                              (pseudo-term-listp args))))
-  (if (endp formals)
-      nil
-    (b* ((formal (first formals))
-         (arg (first args)))
-      (if (equal formal arg)
-          ;; skip since trivial:
-          (non-trivial-formals (rest formals) (rest args))
-        (cons formal (non-trivial-formals (rest formals) (rest args)))))))
 
 (mutual-recursion
  ;; Gather all the vars that are bound in lambdas in TERM, except don't include

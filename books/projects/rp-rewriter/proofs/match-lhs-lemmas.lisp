@@ -622,7 +622,7 @@
 ;                             (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
                               (:REWRITE NOT-INCLUDE-RP)
                               (:DEFINITION FALIST-CONSISTENT-AUX)
-                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:REWRITE
                                ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)))))))
 
@@ -643,7 +643,7 @@
                             (:DEFINITION VALID-RULEP)
                             (:DEFINITION TRUE-LISTP)
                             (:DEFINITION ALWAYS$)
-                            (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+;;                            (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
                             (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
                             (:DEFINITION VALID-RULEP-SK)
                             (:DEFINITION VALID-RULEP-SK-BODY)
@@ -677,7 +677,7 @@
                             (:DEFINITION MEMBER-EQUAL)
                             (:DEFINITION TRUE-LISTP)
                             (:DEFINITION ALWAYS$)
-                            (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+;;                            (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
                             (:DEFINITION VALID-RULEP-SK)
                             (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
                             (:DEFINITION VALID-SC)
@@ -698,7 +698,7 @@
                                (:DEFINITION MEMBER-EQUAL)
                                (:DEFINITION TRUE-LISTP)
                                (:DEFINITION ALWAYS$)
-                               (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+;;                               (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
                                (:DEFINITION VALID-RULEP-SK)
                                (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
                                (:DEFINITION VALID-SC)
@@ -953,7 +953,8 @@
                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                               (:TYPE-PRESCRIPTION INCLUDE-FNC)
                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                              (:REWRITE ACL2::O-P-O-INFP-CAR))))))
+;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+                              )))))
 
   (local
    (defthm lemma1
@@ -1052,7 +1053,7 @@
                               (:DEFINITION MEMBER-EQUAL)
                               (:DEFINITION TRUE-LISTP)
                               (:DEFINITION ALWAYS$)
-                              (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+;;                              (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
                               (:DEFINITION RP-TERMP)
                               (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
                               (:REWRITE
@@ -1179,7 +1180,7 @@
 ; Obsolete (see Matt K. comment above):
 ;                             (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
                               (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:DEFINITION FALIST-CONSISTENT)
                               (:DEFINITION FALIST-CONSISTENT-AUX)
                               (:DEFINITION SUBSETP-EQUAL))))))
@@ -1202,7 +1203,7 @@
                                      (:DEFINITION TRUE-LISTP)
                                      (:DEFINITION MEMBER-EQUAL)
                                      (:DEFINITION ALWAYS$)
-                                     (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+;;                                     (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
                                      (:DEFINITION RP-TERMP)
                                      (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
                                      (:REWRITE
@@ -1314,7 +1315,7 @@
                    (
 ; Obsolete (see Matt K. comment above):
 ;                   (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
-                    (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                    (:REWRITE ACL2::O-P-O-INFP-CAR)
                     (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                     (:DEFINITION ACL2::APPLY$-BADGEP)
                     (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)

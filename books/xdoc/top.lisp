@@ -38,6 +38,7 @@
 (in-package "XDOC")
 (include-book "base")
 (include-book "book-thms")
+(include-book "full-escape-symbol")
 
 (defun bootstrap-revappend-chars-aux (x n xl y)
   (declare (xargs :mode :program)
@@ -57,28 +58,7 @@
            (type string x))
   (bootstrap-revappend-chars-aux x 0 (length x) acc))
 
-(defun bar-escape-chars (x)
-  (declare (xargs :mode :program))
-  (cond ((atom x)
-         nil)
-        ((eql (car x) #\|)
-         (list* #\\ #\| (bar-escape-chars (cdr x))))
-        (t
-         (cons (car x) (bar-escape-chars (cdr x))))))
 
-(defun bar-escape-string (x)
-  (declare (xargs :mode :program)
-           (type string x))
-  ;; Dumb optimization: don't need to escape anything unless there's a #\|
-  ;; somewhere.
-  (if (position #\| x)
-      (coerce (bar-escape-chars (coerce x 'list)) 'string)
-    x))
-
-(defun full-escape-symbol (x)
-  (declare (xargs :mode :program))
-  (concatenate 'string "|" (bar-escape-string (symbol-package-name x)) "|::|"
-               (bar-escape-string (symbol-name x)) "|"))
 
 (defun revappend-bar-escape-string (x n xl acc)
   (declare (xargs :mode :program)
@@ -506,15 +486,13 @@
 
 (defmacro defpointer (from to &optional keyword-p)
   (declare (xargs :guard (and (symbolp from) (symbolp to))))
-  (let ((from-name (acl2::string-downcase (symbol-name         from)))
-        (to-pkg    (acl2::string-downcase (symbol-package-name to)))
-        (to-name   (acl2::string-downcase (symbol-name         to))))
+  (let ((from-name (acl2::string-downcase (symbol-name         from))))
     `(defxdoc ,from
        :parents (pointers)
        :short ,(concatenate
                 'string
                 "See @(see "
-                to-pkg "::" to-name
+                (full-escape-symbol to)
                 ")"
                 (if keyword-p
                     (concatenate

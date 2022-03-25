@@ -752,7 +752,7 @@
 
             x86isa::create-canonical-address-list-1
 
-            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric
+            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb
             x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
             x86isa::canonical-address-listp-of-cons
             x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
@@ -782,7 +782,7 @@
             x86isa::integerp-when-canonical-address-p-cheap
             x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
-            acl2::cancel-<-+
+            acl2::<-of-+-cancel-2-1
             ash-negative-becomes-slice-axe
 
             ;;one-byte-opcode-execute ;shilpi leaves this enabled, but it seems dangerous
@@ -866,7 +866,7 @@
             acl2::bvchop-identity
 ;            combine-bytes-and-byte-ify
             x86isa::open-ash-positive-constants
-            acl2::logext-bvchop-better
+            acl2::logext-of-bvchop-same
             acl2::logext-identity
             ;x86isa::rgfi-is-i64p ;targets signed-byte-of-xr
 ;            x86isa::xw-xr-same
@@ -1072,11 +1072,17 @@
      standard-assumptions-mach-o-64
      standard-assumptions-pe-64
      bytes-loaded-in-text-section-64
+     ;; Mach-O stuff:
      acl2::get-mach-o-code
      acl2::subroutine-address-mach-o
      acl2::get-mach-o-code-address
-     acl2::get-mach-o-segment
-     acl2::get-mach-o-section
+     acl2::get-mach-o-section-base-1
+     acl2::get-mach-o-section-base-2
+     acl2::get-mach-o-section-unroll
+     acl2::get-mach-o-segment-base-1
+     acl2::get-mach-o-segment-base-2
+     acl2::get-mach-o-segment-unroll-1
+     acl2::get-mach-o-segment-unroll-2
      acl2::get-symbol-entry-mach-o-base-1
      acl2::get-symbol-entry-mach-o-base-2
      acl2::get-symbol-entry-mach-o-unroll
@@ -1092,6 +1098,7 @@
      acl2::get-mach-o-load-command-base-1
      acl2::get-mach-o-load-command-base-2
      acl2::get-mach-o-load-command-unroll
+     ;; PE stuff:
      acl2::get-pe-sections
      acl2::get-pe-section
      acl2::get-pe-text-section

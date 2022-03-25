@@ -1,6 +1,6 @@
 ; Kestrel Books
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -50,6 +50,7 @@
 (include-book "std/top")
 (include-book "strings-light/top")
 ;; (include-book "typed-lists-light/top") ; TODO: Name clash on perm
+(include-book "syntheto/top")
 (include-book "unicode-light/top")
 (include-book "utilities/top")
 (include-book "x86/top")

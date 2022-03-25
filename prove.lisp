@@ -5664,7 +5664,8 @@
 ; ttree is an alist assigning state global variables to values.
 
                (mv-let@par (erp val state)
-                           (error1@par ctx (car clauses) (cdr clauses) state)
+                           (error1@par ctx "Prove" (car clauses) (cdr clauses)
+                                       state)
                            (declare (ignore erp val))
                            (mv@par 'error nil nil nil nil state)))
               ((eq signal 'miss)

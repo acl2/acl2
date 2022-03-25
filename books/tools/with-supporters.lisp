@@ -190,50 +190,70 @@
 
 (defmacro with-supporters (local-event &rest events)
   (mv-let
-   (names events)
-   (cond ((eq (car events) :names)
-          (cond ((null (cdr events))
-                 (mv (er hard 'with-supporters
-                         "No argument was supplied for :NAMES!")
-                     nil))
-                ((not (symbol-listp (cadr events)))
-                 (mv (er hard 'with-supporters
-                         "The value of :NAMES must be a list of symbols, ~
-                          which ~x0 is not."
-                         (cadr events))
-                     nil))
-                (t (mv (cadr events) (cddr events)))))
-         ((atom (car events))
-          (mv (er hard 'with-supporters
-                  "An event must be a cons, but your first event was ~x0. ~
-                   Perhaps you intended to use :NAMES?")
-              nil))
-         ((or (eq local-event :names)
-              (member-eq :names (cdr events)))
-          (mv (er hard 'with-supporters
-                  "The :NAMES keyword of WITH-SUPPORTERS must appear ~
-                   immediately after the (initial) LOCAL event.")
-              nil))
-         (t (mv nil events)))
-   `(make-event
-     (let ((num (max-absolute-event-number (w state))))
-       (er-progn (progn ,local-event ,@events)
-                 (er-let* ((fns (supporting-fns ',events nil nil num
-                                                (macro-aliases (w state))
-                                                (w state)
-                                                state))
-                           (named-events
-                            (get-events (sort-supporting-fns ',names (w state))
-                                        'with-supporters
-                                        (w state)
-                                        state)))
-                   (value (list* 'encapsulate
-                                 ()
-                                 ',local-event
-                                 (append named-events
-                                         (cons `(std::defredundant
-                                                  :names ,fns)
-                                               ',events))))))))))
+    (names events)
+    (cond ((not (and (true-listp local-event)
+                     (eq (car local-event) 'local)
+                     (consp (cdr local-event))
+                     (null (cddr local-event))))
+           (mv (er hard 'with-supporters
+                   "The first argument of ~x0 should be of the form (LOCAL ~
+                    ...), but that argument is ~x1."
+                   'with-supporters local-event)
+               nil))
+          ((eq (car events) :names)
+           (cond ((null (cdr events))
+                  (mv (er hard 'with-supporters
+                          "No argument was supplied for :NAMES!")
+                      nil))
+                 ((not (symbol-listp (cadr events)))
+                  (mv (er hard 'with-supporters
+                          "The value of :NAMES must be a list of symbols, ~
+                           which ~x0 is not."
+                          (cadr events))
+                      nil))
+                 (t (mv (cadr events) (cddr events)))))
+          ((atom (car events))
+           (mv (er hard 'with-supporters
+                   "An event must be a cons, but your first event was ~x0. ~
+                    Perhaps you intended to use :NAMES?" (car events))
+               nil))
+          ((member-eq :names (cdr events))
+           (mv (er hard 'with-supporters
+                   "The :NAMES keyword of WITH-SUPPORTERS must appear ~
+                    immediately after the (initial) LOCAL event.")
+               nil))
+          (t (mv nil events)))
+    `(make-event
+      (let ((num (max-absolute-event-number (w state))))
+
+; Below, we remove LOCAL from local-event for the make-event expansion, and we
+; use std::defredundant-fn rather than what might seem more elegant,
+; std::defredundant.  These changes are necessary in order for defredundant to
+; work when including uncertified books or, more generally, when state global
+; 'ld-skip-proofsp has value 'include-book.  Before 2/18/2022 we did not have
+; these changes, and Eric Smith pointed out that the form (include-book
+; "projects/x86isa/machine/instructions/fp/base" :dir :system) fails when
+; "base" is uncertified, because of a failed call of with-supporters in that
+; uncertified book.
+
+        (er-progn (progn ,(cadr local-event) ,@events)
+                  (er-let* ((fns (supporting-fns ',events nil nil num
+                                                 (macro-aliases (w state))
+                                                 (w state)
+                                                 state))
+                            (named-events
+                             (get-events (sort-supporting-fns ',names (w state))
+                                         'with-supporters
+                                         (w state)
+                                         state)))
+                    (value
+                     (list* 'encapsulate
+                            ()
+                            ',local-event
+                            (append
+                             named-events
+                             (cons (std::defredundant-fn fns nil state)
+                                   ',events))))))))))
 
 (defmacro with-supporters-after (name &rest events)
   (declare (xargs :guard (symbolp name)))
@@ -279,8 +299,8 @@
   })
 
   <p>where @('local-event') and each event @('event-i') and (if supplied)
-  @('name-i') are @(see events) and @('local-event') is @(see local).  The
-  effect is the same as</p>
+  @('name-i') are @(see events) and @('local-event') is of the form @('(local
+  <event>)').  The effect is the same as</p>
 
   @({((encapsulate () local-event EXTRA event-1 ... event-k)})
 

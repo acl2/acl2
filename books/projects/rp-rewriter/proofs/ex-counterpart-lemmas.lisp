@@ -88,7 +88,7 @@
                             (:TYPE-PRESCRIPTION RP-STATEP)
                             (:REWRITE DEFAULT-CDR)
                             (:TYPE-PRESCRIPTION RULE-LIST-SYNTAXP)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:TYPE-PRESCRIPTION O<)
                             GET-GLOBAL
                             GLOBAL-TABLE
@@ -120,7 +120,7 @@
                             (:TYPE-PRESCRIPTION RP-STATEP)
                             (:REWRITE DEFAULT-CDR)
                             (:TYPE-PRESCRIPTION RULE-LIST-SYNTAXP)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:TYPE-PRESCRIPTION O<)
                             (:DEFINITION BITP)
                             (:DEFINITION NATP)

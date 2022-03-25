@@ -90,7 +90,7 @@ Goal
 (IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
          (P2 A D))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :ALL T)
@@ -161,7 +161,7 @@ Form:  ( DEFAXIOM P2-TRANS ...)
 Rules: NIL
 Warnings:  Free
 
-ACL2 Error in ( DEFAXIOM P2-TRANS ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFAXIOM P2-TRANS ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFAXIOM P2-TRANS
@@ -179,7 +179,7 @@ Summary
 Form:  ( DEFAXIOM P2-TRANS ...)
 Rules: NIL
 
-ACL2 Error in ( DEFAXIOM P2-TRANS ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFAXIOM P2-TRANS ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFAXIOM P2-TRANS
@@ -214,7 +214,7 @@ Goal
 (IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
          (P2 A D))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :ALL (:REWRITE P2-TRANS))
@@ -274,7 +274,7 @@ Goal
 (IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
          (P2 A D))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :ALL T)
@@ -497,7 +497,7 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 Goal
 (IMPLIES (P2 (A) Y) (P3 (A)))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :CLEAR)
@@ -858,7 +858,7 @@ Goal
               (P2 X3 Y3 Z1))
          (PROP U0))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(UBU! 'START)
@@ -1161,7 +1161,7 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 Goal
 (EQUAL (G (H1 A)) (H2 A))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(UBU! 'START)
@@ -1323,7 +1323,7 @@ Goal
 (IMPLIES (AND (F A) (F B))
          (EQUAL (G X) X))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTTAG :BRR-FREE-VARIABLES)

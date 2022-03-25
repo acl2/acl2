@@ -50,34 +50,34 @@
   (implies (axe-syntaxp (should-commute-args-dag 'boolor x y dag-array))
            (equal (boolor x y)
                   (boolor y x)))
-  :hints (("Goal" :in-theory (e/d (boolor) ()))))
+  :hints (("Goal" :in-theory (enable boolor))))
 
 (defthmd boolor-commutative-2-dag
   (implies (axe-syntaxp (should-commute-args-dag 'boolor x y dag-array))
            (equal (boolor x (boolor y z))
                   (boolor y (boolor x z))))
-  :hints (("Goal" :in-theory (e/d (boolor) ()))))
+  :hints (("Goal" :in-theory (enable boolor))))
 
 (defthmd booland-commutative-dag
   (implies (axe-syntaxp (should-commute-args-dag 'booland x y dag-array))
            (equal (booland x y)
                   (booland y x)))
-  :hints (("Goal" :in-theory (e/d (booland) ()))))
+  :hints (("Goal" :in-theory (enable booland))))
 
 (defthmd booland-commutative-2-dag
   (implies (axe-syntaxp (should-commute-args-dag 'booland x y dag-array))
            (equal (booland x (booland y z))
                   (booland y (booland x z))))
-  :hints (("Goal" :in-theory (e/d (booland) ()))))
+  :hints (("Goal" :in-theory (enable booland))))
 
 (defthmd boolxor-commutative-dag
   (implies (axe-syntaxp (should-commute-args-dag 'boolxor x y dag-array))
            (equal (boolxor x y)
                   (boolxor y x)))
-  :hints (("Goal" :in-theory (e/d (boolxor) ()))))
+  :hints (("Goal" :in-theory (enable boolxor))))
 
 (defthmd boolxor-commutative-2-dag
   (implies (axe-syntaxp (should-commute-args-dag 'boolxor x y dag-array))
            (equal (boolxor x (boolxor y z))
                   (boolxor y (boolxor x z))))
-  :hints (("Goal" :in-theory (e/d (boolxor) ()))))
+  :hints (("Goal" :in-theory (enable boolxor))))

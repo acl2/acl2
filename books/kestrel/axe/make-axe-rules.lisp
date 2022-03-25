@@ -1229,9 +1229,9 @@
                 (axe-rule-listp acc)
                 (all-axe-syntaxp-hypsp extra-hyps))
            (axe-rule-listp (add-axe-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld acc)))
-  :hints (("Goal" :in-theory (e/d ( ;axe-rulep
-                                   ;;symbol-listp
-                                   add-axe-rule-for-conjunct) ()))))
+  :hints (("Goal" :in-theory (enable ;axe-rulep
+                              ;;symbol-listp
+                              add-axe-rule-for-conjunct))))
 
 (defthm true-listp-of-add-axe-rule-for-conjunct
   (implies (true-listp acc)
@@ -1383,7 +1383,7 @@
 
 (defthm true-listp-of-mv-nth-1-of-make-axe-rules-from-theorem
   (true-listp (mv-nth 1 (make-axe-rules-from-theorem theorem-body rule-symbol rule-classes known-boolean-fns print wrld)))
-  :hints (("Goal" :in-theory (e/d (make-axe-rules-from-theorem) ()))))
+  :hints (("Goal" :in-theory (enable make-axe-rules-from-theorem))))
 
 ;; Returns the axe-rules.  Does not return erp.
 (defund make-axe-rules-from-theorem! (theorem-body rule-symbol rule-classes known-boolean-fns print wrld)

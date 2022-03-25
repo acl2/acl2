@@ -1,7 +1,7 @@
 ; Versions of primitive functions with guards of t
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -90,3 +90,25 @@
   (equal (unary-/-unguarded x)
          (unary-/ x))
   :hints (("Goal" :in-theory (enable unary-/-unguarded))))
+
+(defund numerator-unguarded (x)
+  (declare (xargs :guard t))
+  (if (rationalp x)
+      (numerator x)
+    0))
+
+(defthm numerator-unguarded-correct
+  (equal (numerator-unguarded x)
+         (numerator x))
+  :hints (("Goal" :in-theory (enable numerator-unguarded))))
+
+(defund denominator-unguarded (x)
+  (declare (xargs :guard t))
+  (if (rationalp x)
+      (denominator x)
+    1))
+
+(defthm denominator-unguarded-correct
+  (equal (denominator-unguarded x)
+         (denominator x))
+  :hints (("Goal" :in-theory (enable denominator-unguarded))))

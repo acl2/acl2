@@ -1,7 +1,7 @@
 ; The tactic-based prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,7 +21,9 @@
 ;; TODO: Make a lighter-weight version that does not depend on skip-proofs.
 
 (include-book "prune")
+(include-book "rewriter") ; for simp-dag
 (include-book "dag-size")
+(include-book "equivalent-dags")
 (include-book "dagify") ;todo
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
@@ -89,6 +91,9 @@
 (defttag invariant-risk)
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
 
+;;
+;; Tactic Results
+;;
 
 ;; These constants ensure we don't mis-type the keywords:
 ;(defconst *valid* :valid) ; already defined
@@ -138,11 +143,12 @@
 
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 ;; Could return the rules used as the INFO return value.
-(defun apply-tactic-rewrite (problem rule-alist monitor simplify-xors print state)
+(defun apply-tactic-rewrite (problem rule-alist interpreted-function-alist monitor simplify-xors print state)
   (declare (xargs :stobjs (state)
                   :mode :program ;todo ;because of simp-dag
                   :guard (and (proof-problemp problem)
                               (rule-alistp rule-alist)
+                              (interpreted-function-alistp interpreted-function-alist)
                               (booleanp simplify-xors))))
   (b* ((dag (first problem))
        (assumptions (second problem))
@@ -150,6 +156,7 @@
        ((mv erp new-dag state)
         (simp-dag dag
                   :rule-alist rule-alist
+                  :interpreted-function-alist interpreted-function-alist
                   :monitor monitor
                   :assumptions assumptions
                   :use-internal-contextsp t
@@ -169,6 +176,7 @@
 ;;
 
 ;; TODO: Deprecate?
+;; Prune with no rules.
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 (defun apply-tactic-prune (problem print call-stp-when-pruning state)
   (declare (xargs :stobjs (state)
@@ -180,11 +188,12 @@
        (- (and print (cw "(Pruning branches without rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
        (term (dag-to-term dag))
        ((mv erp term state)
-        (prune-term-with-rule-alist term assumptions
-                                    (empty-rule-alist) ;no rules (but see :prune-with-rules below)
-                                    nil ;no point in monitoring anything
-                                    call-stp-when-pruning
-                                    state))
+        (prune-term-new term assumptions
+                        (empty-rule-alist) ;no rules (but see :prune-with-rules below)
+                        nil                ;no interpreted-fns (todo)
+                        nil                ;no point in monitoring anything
+                        call-stp-when-pruning ;todo: does it make sense for this to be nil, since we are not rewriting?
+                        state))
        ((when erp) (mv *error* nil state)) ;todo: perhaps add erp to the return signature of this and similar functions (and remove the *error* case from tactic-resultp)
        ((mv erp new-dag) (dagify-term2 term))
        ((when erp) (mv *error* nil state))
@@ -196,21 +205,22 @@
 ;;
 
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
-(defun apply-tactic-prune-with-rules (problem rule-alist monitor print call-stp-when-pruning state)
+(defun apply-tactic-prune-with-rules (problem rule-alist interpreted-function-alist monitor print call-stp-when-pruning state)
   (declare (xargs :stobjs (state)
                   :mode :program ;todo
                   :guard (and (proof-problemp problem)
                               (rule-alistp rule-alist)
+                              (interpreted-function-alistp interpreted-function-alist)
                               (booleanp call-stp-when-pruning))))
   (b* ((dag (first problem))
        (assumptions (second problem))
        (- (and print (cw "(Pruning branches with rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
        (term (dag-to-term dag))
        ((mv erp term state)
-        (prune-term-with-rule-alist term assumptions rule-alist
-                                    monitor
-                                    call-stp-when-pruning
-                                    state))
+        (prune-term-new term assumptions rule-alist interpreted-function-alist
+                        monitor
+                        call-stp-when-pruning
+                        state))
        ((when erp) (mv *error* nil state))
        ((mv erp new-dag) (dagify-term2 term))
        ((when erp) (mv *error* nil state))
@@ -416,20 +426,21 @@
 ;todo: add more printing
 ;todo: print message if a tactic has no effect
 ;todo: print an error if :cases is given followed by no more tactics?
-(defun apply-proof-tactic (problem tactic rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning state)
+(defun apply-proof-tactic (problem tactic rule-alist interpreted-function-alist monitor simplify-xors print max-conflicts call-stp-when-pruning state)
   (declare (xargs :stobjs (state)
                   :mode :program
                   :guard (and (proof-problemp problem)
                               (rule-alistp rule-alist)
+                              (interpreted-function-alistp interpreted-function-alist)
                               (tacticp tactic)
                               (booleanp call-stp-when-pruning)
                               (booleanp simplify-xors))))
   (if (eq :rewrite tactic)
-      (apply-tactic-rewrite problem rule-alist monitor simplify-xors print state)
+      (apply-tactic-rewrite problem rule-alist interpreted-function-alist monitor simplify-xors print state)
     (if (eq :prune tactic) ;todo: deprecate in favor of :prune-with-rules?
         (apply-tactic-prune problem print call-stp-when-pruning state)
       (if (eq :prune-with-rules tactic)
-          (apply-tactic-prune-with-rules problem rule-alist monitor print call-stp-when-pruning state)
+          (apply-tactic-prune-with-rules problem rule-alist interpreted-function-alist monitor print call-stp-when-pruning state)
         (if (eq :acl2 tactic)
             (apply-tactic-acl2 problem print state)
           (if (eq :stp tactic)
@@ -447,13 +458,14 @@
 (mutual-recursion
  ;; Apply the given TACTICS in order, to try to prove the PROBLEM
  ;; (mv result info-acc state), where result is :valid, :invalid, :error, or :unknown.
- (defun apply-proof-tactics-to-problem (problem tactics rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning info-acc state)
+ (defun apply-proof-tactics-to-problem (problem tactics rule-alist interpreted-function-alist monitor simplify-xors print max-conflicts call-stp-when-pruning info-acc state)
    (declare (xargs :stobjs (state)
                    :mode :program
                    :guard (and (or (null max-conflicts)
                                    (natp max-conflicts))
                                (proof-problemp problem)
                                (rule-alistp rule-alist)
+                               (interpreted-function-alistp interpreted-function-alist)
                                (tacticsp tactics)
                                (booleanp call-stp-when-pruning)
                                (booleanp simplify-xors))))
@@ -469,7 +481,7 @@
                  (mv *unknown* info-acc state)))
      (b* ((tactic (first tactics))
           ((mv result info state)
-           (apply-proof-tactic problem tactic rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning state))
+           (apply-proof-tactic problem tactic rule-alist interpreted-function-alist monitor simplify-xors print max-conflicts call-stp-when-pruning state))
           (info-acc (add-to-end info info-acc)))
        (if (eq *valid* result)
            (prog2$ (and (rest tactics) (cw "(Tactics not used: ~x0)~%" (rest tactics)))
@@ -481,20 +493,20 @@
              (if (eq *no-change* result)
                  ;; This tactic did nothing, so try the remaining tactics:
                  (prog2$ (cw "(No change: ~x0.)~%" tactic)
-                         (apply-proof-tactics-to-problem problem (rest tactics) rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning info-acc state)
+                         (apply-proof-tactics-to-problem problem (rest tactics) rule-alist interpreted-function-alist monitor simplify-xors print max-conflicts call-stp-when-pruning info-acc state)
                          )
                ;; This tactic returned one or more subproblems to solve (TODO: What if there are zero subproblems returned -- should return :valid instead..)?
                (if (and (consp result)
                         (eq *problems* (car result)))
                    ;; Apply the rest of the tactics to all the residual problems:
-                   (apply-proof-tactics-to-problems 1 (cdr result) (rest tactics) rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning info-acc nil state)
+                   (apply-proof-tactics-to-problems 1 (cdr result) (rest tactics) rule-alist interpreted-function-alist monitor simplify-xors print max-conflicts call-stp-when-pruning info-acc nil state)
                  (prog2$ (er hard 'apply-proof-tactics-to-problem "Bad tactic result: ~x0." result)
                          (mv *error* nil state))))))))))
 
  ;; Apply the given TACTICS to try to prove each of the PROBLEMS
  ;; Returns (mv result info-acc state), where result is :valid, :invalid, :error, or :unknown.
  ;; Returns info about the last problem for each step that has multiple problems.
- (defun apply-proof-tactics-to-problems (num problems tactics rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning
+ (defun apply-proof-tactics-to-problems (num problems tactics rule-alist interpreted-function-alist monitor simplify-xors print max-conflicts call-stp-when-pruning
                                              info-acc ;includes info for all previous steps, but not other problems in this step
                                              prev-info ; may include info for previous problems in the current step (list of problems)
                                              state)
@@ -504,6 +516,7 @@
                                    (natp max-conflicts))
                                (proof-problemsp problems)
                                (rule-alistp rule-alist)
+                               (interpreted-function-alistp interpreted-function-alist)
                                (tacticsp tactics)
                                (booleanp call-stp-when-pruning)
                                (booleanp simplify-xors))))
@@ -513,11 +526,11 @@
      (b* ( ;; Try to prove the first problem:
           (- (cw "(Attacking sub-problem ~x0 of ~x1.~%" num (+ num (- (len problems) 1))))
           ((mv result new-info-acc state)
-           (apply-proof-tactics-to-problem (first problems) tactics rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning info-acc state))
+           (apply-proof-tactics-to-problem (first problems) tactics rule-alist interpreted-function-alist monitor simplify-xors print max-conflicts call-stp-when-pruning info-acc state))
           (new-info (car (last new-info-acc))))
        (if (eq result *valid*)
            (prog2$ (cw "Proved problem ~x0.)~%" num)
-                   (apply-proof-tactics-to-problems (+ 1 num) (rest problems) tactics rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning
+                   (apply-proof-tactics-to-problems (+ 1 num) (rest problems) tactics rule-alist interpreted-function-alist monitor simplify-xors print max-conflicts call-stp-when-pruning
                                                     info-acc
                                                     new-info ;replaces the prev-info (todo: use it somehow?)
                                                     state))
@@ -584,6 +597,7 @@
                             max-conflicts ;a number of conflicts, or nil for no max
                             call-stp-when-pruning
                             rules
+                            interpreted-fns
                             monitor
                             simplify-xors
                             type
@@ -631,7 +645,10 @@
        (- (cw "Variables in DAG: ~x0~%" vars))
        ((mv result info-acc state)
         (apply-proof-tactics-to-problem (make-problem dag assumptions)
-                                        tactics rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning nil state)))
+                                        tactics
+                                        rule-alist
+                                        (make-interpreted-function-alist interpreted-fns (w state))
+                                        monitor simplify-xors print max-conflicts call-stp-when-pruning nil state)))
     ;;todo: returning the dag and assumptions here seems a bit gross:
     (mv result info-acc dag assumptions state)))
 
@@ -651,6 +668,7 @@
                               max-conflicts ;a number of conflicts, or nil for no max
                               call-stp-when-pruning
                               rules
+                              interpreted-fns
                               monitor
                               simplify-xors
                               rule-classes
@@ -668,6 +686,7 @@
                               (booleanp simplify-assumptions)
                               (booleanp debug)
                               (symbol-listp rules)
+                              (symbol-listp interpreted-fns)
                               (booleanp call-stp-when-pruning)
                               (booleanp simplify-xors))))
   (b* (((when (command-is-redundantp whole-form state))
@@ -681,6 +700,7 @@
                              max-conflicts
                              call-stp-when-pruning
                              rules
+                             interpreted-fns
                              monitor
                              simplify-xors
                              type
@@ -731,6 +751,7 @@
                               (debug 'nil)
                               (max-conflicts '*default-stp-max-conflicts*) ;1000 here broke proofs
                               (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include rules for the :acl2 tactic
+                              (interpreted-fns 'nil)
                               (monitor 'nil)
                               (simplify-xors 't)
                               (rule-classes '(:rewrite))
@@ -750,6 +771,7 @@
                                       ,max-conflicts
                                       ,call-stp-when-pruning
                                       ,rules
+                                      ,interpreted-fns
                                       ,monitor
                                       ,simplify-xors
                                       ',rule-classes
@@ -777,6 +799,7 @@
                               max-conflicts
                               call-stp-when-pruning
                               rules
+                              interpreted-fns
                               monitor
                               simplify-xors
                               different-vars-ok
@@ -791,6 +814,7 @@
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (symbol-listp rules)
+                              (symbol-listp interpreted-fns)
                               (tacticsp tactics)
                               (booleanp call-stp-when-pruning)
                               (booleanp simplify-xors))))
@@ -821,7 +845,7 @@
        ((mv result info-acc state)
         (apply-proof-tactics-to-problem
          (make-problem dag assumptions)
-         tactics rule-alist monitor simplify-xors print max-conflicts call-stp-when-pruning nil state))
+         tactics rule-alist (make-interpreted-function-alist interpreted-fns (w state)) monitor simplify-xors print max-conflicts call-stp-when-pruning nil state))
        (state (maybe-remove-temp-dir state)))
     (if (eq result *valid*)
         (b* ((- (cw "Proof of equivalence succeeded.~%"))
@@ -881,6 +905,7 @@
                               ;;(debug 'nil)
                               (max-conflicts '*default-stp-max-conflicts*)
                               (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include acl2 rules here...
+                              (interpeted-fns 'nil)
                               (monitor 'nil)
                               (simplify-xors 't)
                               (different-vars-ok 'nil)
@@ -898,6 +923,7 @@
                                       ,max-conflicts
                                       ,call-stp-when-pruning
                                       ,rules
+                                      ,interpeted-fns
                                       ,monitor
                                       ,simplify-xors
                                       ',different-vars-ok

@@ -324,7 +324,8 @@
            (rule-list-syntaxp (rp-get-rules-for-term fn rules-alist)))
   :hints (("Goal" :in-theory (e/d (hons-get HONS-ASSOC-EQUAL
                                             rules-alistp)
-                                  ((:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+                                  (
+;;                                   (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
                                    (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
                                    (:DEFINITION TRUE-LISTP)
                                    (:DEFINITION ALWAYS$)
@@ -420,7 +421,7 @@
                             rp-evl-of-rp-equal2
                             (:TYPE-PRESCRIPTION IS-RP$INLINE)
                             (:DEFINITION RP-TRANS-BINDINGS)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:DEFINITION IS-FALIST)
                             (:DEFINITION TRANS-LIST)
                             (:REWRITE RP-EVL-OF-LAMBDA)
@@ -2247,7 +2248,7 @@ a)
                               rp-rw-subterms)
                              (rp-rw
                               valid-sc
-                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:REWRITE
                                EVAL-AND-ALL-CONTEXT-FROM-WHEN-VALID-SC)
                               (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
@@ -3165,7 +3166,7 @@ a)
                               rp-termp
                               is-rp
                               rp-evl-of-variable
-                              (:rewrite acl2::o-p-o-infp-car)
+;;                              (:rewrite acl2::o-p-o-infp-car)
                               (:definition eval-and-all)
                               (:type-prescription valid-sc)
                               (:type-prescription ex-from-synp)
@@ -3178,8 +3179,8 @@ a)
                               (:type-prescription should-not-rw$inline)
                               (:rewrite valid-sc-cons)
                               (:rewrite not-include-rp-means-valid-sc)
-                              (:forward-chaining
-                               acl2::|a <= b & ~(a = b)  =>  a < b|)
+;;                              (:forward-chaining
+;;                               acl2::|a <= b & ~(a = b)  =>  a < b|)
                               (:type-prescription check-if-relieved-with-rp)
                               (:rewrite not-include-rp)
                               (:rewrite evl-of-extract-from-rp-2)

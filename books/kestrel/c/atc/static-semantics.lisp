@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,7 @@
 (include-book "integers")
 (include-book "types")
 (include-book "errors")
+(include-book "tag-environments")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
@@ -376,14 +377,69 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only accept integer constants.
-     The other kinds of constants are placeholders in our abstract syntax,
-     anyhow."))
+    "For now we only accept integer constants."))
   (const-case c
               :int (check-iconst c.get)
               :float (error (list :unsupported-float-const (const-fix c)))
               :enum (error (list :unsupported-enum-const (const-fix c)))
               :char (error (list :unsupported-char-const (const-fix c))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-tyspecseq ((tyspec tyspecseqp) (tagenv tag-envp))
+  :returns (wf? wellformed-resultp)
+  :short "Check a type specifier sequence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We only accept certain type specifier sequences for now,
+     namely the ones that have corresponding types (see @(tsee type)).
+     The tag of a structure type specifier sequence
+     must be in the tag environment.
+     All the other (supported) type specifier sequences
+     are always well-formed."))
+  (tyspecseq-case
+   tyspec
+   :void :wellformed
+   :char :wellformed
+   :schar :wellformed
+   :uchar :wellformed
+   :sshort :wellformed
+   :ushort :wellformed
+   :sint :wellformed
+   :uint :wellformed
+   :slong :wellformed
+   :ulong :wellformed
+   :sllong :wellformed
+   :ullong :wellformed
+   :bool :wellformed
+   :float :wellformed
+   :double :wellformed
+   :ldouble :wellformed
+   :struct (b* ((info (tag-env-lookup tyspec.tag tagenv)))
+             (tag-info-option-case
+              info
+              :some (if (tag-info-case info.val :struct)
+                        :wellformed
+                      (error (list :struct-tag-mismatch tyspec.tag info.val)))
+              :none (error (list :no-tag-found tyspec.tag))))
+   :union (error (list :not-supported-union tyspec.tag))
+   :enum (error (list :not-supported-enum tyspec.tag))
+   :typedef (error (list :not-supported-typedef tyspec.name)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-tyname ((tyname tynamep) (tagenv tag-envp))
+  :returns (wf? wellformed-resultp)
+  :short "Check a type name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The underlying type specifier sequence must be well-formed.
+     There are no constraints on the declarator."))
+  (check-tyspecseq (tyname->tyspec tyname) tagenv)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -701,6 +757,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define apconvert-type ((type typep))
+  :returns (type1 typep)
+  :short "Convert array type to pointer type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Under certain circumstances,
+     an array is converted to a pointer to the first element of the array
+     [C:6.2.3.1/3].
+     Indeed, arrays are used like pointers most of the time.
+     This conversion is captured, at the level of types, here.
+     Non-array types are left unchanged."))
+  (if (type-case type :array)
+      (type-pointer (type-array->of type))
+    (type-fix type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-arrsub ((arr-expr exprp) (arr-type typep)
                       (sub-expr exprp) (sub-type typep))
   :returns (type type-resultp)
@@ -713,7 +788,14 @@
      The first expression must have a pointer type [C:6.5.2.1/1].
      The second expression must have an integer type [C:6.5.2.1/1].
      The type of the array subscripting expression
-     is the type referenced by the pointer."))
+     is the type referenced by the pointer.")
+   (xdoc::p
+    "For now we do not allow the roles of the expressions to be swapped,
+     i.e. that the second expression is a pointer and the first one an integer;
+     note the symmetry in [C:6.5.2.1/2].")
+   (xdoc::p
+    "The pointer type may be the result of an array-to-pointer conversion,
+     via @(tsee apconvert-type) in @(tsee check-expr-pure)."))
   (b* (((unless (type-case arr-type :pointer))
         (error (list :array-mistype (expr-fix arr-expr)
                      :required :pointer
@@ -722,108 +804,287 @@
         (error (list :subscript-mistype (expr-fix sub-expr)
                      :required :integer
                      :supplied (type-fix sub-type)))))
-    (type-pointer->referenced arr-type))
+    (type-pointer->to arr-type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-expr-pure ((e exprp) (vartab var-tablep))
+(fty::defprod expr-type
+  :short "Fixtype of expression types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Certain C expressions are lvalues [C:6.3.2/1],
+     i.e. they evaluate to object designations rather than values [C:6.5/1].
+     In many cases, lvalue conversion [C:6.3.2/2]
+     turns an object designation into the value of the designated object,
+     but some operators (e.g. assignments) require lvalues.
+     Thus, the static semantics must calculate, for each expression,
+     not only its type, but also whether it is an lvalue or not.
+     This information is captured via a type and an lvalue flag.")
+   (xdoc::p
+    "Expressions may also evaluate to function designations [C:6.5/1].
+     We do not cover that case for now,
+     because our subset of C makes a limited use of functions;
+     in particular, it has no function pointers.
+     However, in the future this fixtype could be extended accordingly."))
+  ((type type)
+   (lvalue bool))
+  :tag :expr-type
+  :pred expr-typep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult expr-type "expression types")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define struct-member-lookup ((tag identp) (mem identp) (tagenv tag-envp))
   :returns (type type-resultp)
+  :short "Look up a member in a structure type in the tag environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We first look up the tag, ensuring we find a structure type.
+     Then we look for the member in the structure type,
+     returning its type if successful.
+     We propagate errors.")
+   (xdoc::p
+    "This is used to check member expressions,
+     both the @('.') and the @('->') kind."))
+  (b* ((info (tag-env-lookup tag tagenv))
+       ((when (tag-info-option-case info :none))
+        (error (list :struct-not-found
+                     (ident-fix tag)
+                     (tag-env-fix tagenv))))
+       (info (tag-info-option-some->val info))
+       ((unless (tag-info-case info :struct))
+        (error (list :tag-not-struct
+                     (ident-fix tag)
+                     info)))
+       (members (tag-info-struct->members info))
+       (type (member-info-lookup mem members))
+       ((when (type-option-case type :none))
+        (error (list :member-not-found
+                     (ident-fix tag)
+                     (ident-fix mem)
+                     members))))
+    (type-option-some->val type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-expr-pure ((e exprp) (vartab var-tablep) (tagenv tag-envp))
+  :returns (etype expr-type-resultp)
   :short "Check a pure expression."
   :long
   (xdoc::topstring
    (xdoc::p
     "More precisely, we check whether an expression is pure and well-formed.
-     If all the checks are satisfied, we return the type of the expression.")
+     If all the checks are satisfied,
+     we return the expression type of the expression
+     (see @(tsee expr-type)).")
+   (xdoc::p
+    "We disallow function calls and pre/post-increment/decrement,
+     since they are not pure.")
    (xdoc::p
     "An identifier must be in the variable table.
-     Its type is looked up there.")
+     Its type is looked up there.
+     An identifier is always an lvalue.")
+   (xdoc::p
+    "A constant is never an lvalue.")
+   (xdoc::p
+    "For an array subscripting expression,
+     we do lvalue conversion for both operands,
+     via @(tsee expr-type->type).
+     According to [C:6.3.2/2],
+     we should not do this for the first operand,
+     if it has an array type;
+     however, according to [C:6.3.2/3],
+     we should convert the array to a pointer
+     (which we do via @(tsee apconvert-type)),
+     and thus in the end the result is the same:
+     we have a pointer type, which we pass to @(tsee check-arrsub).
+     In fact, we use @(tsee apconvert-type) on both operands,
+     because the roles of the array and index may be swapped,
+     as noted in @(tsee check-arrsub),
+     even though we do not handle the swapping in that function for now.
+     If an operand is an integer, @(tsee apconvert-type) has no effect.
+     An array subscripting expression is always an lvalue;
+     recall that it is like a form of the @('*') dereferencing expression.")
+   (xdoc::p
+    "For unary and binary operators, we apply
+     both lvalue conversion and array-to-pointer conversion to the operand(s).
+     The latter is needed because some operators work on scalars,
+     and array-to-pointer conversion may produce a scalar.
+     Unary and binary expressions are never lvalues;
+     this is the case for the unary operators that we currently cover.")
    (xdoc::p
     "A cast is allowed between scalar types.
+     Since we check that the type name denotes a scalar type,
+     we do not need to check its well-formedness against the tag environment.
      The result has the type indicated in the cast.
      See [C:6.5.4]; note that the additional requirements on the type
-     do not apply to our currently simplified model of C types.")
+     do not apply to our currently simplified model of C types.
+     We apply lvalue conversion to the operand.
+     We also apply array-to-pointer conversion,
+     which could turn an array into a pointer (and thus scalar) type.
+     A cast expression is never an lvalue.")
    (xdoc::p
     "The test of a conditional expression must be scalar.
      For now we require the two branches to have arithmetic types;
      the result has the type resulting from the usual arithmetic conversions.
-     See [C:6.5.15/3]."))
+     See [C:6.5.15/3].
+     We apply both lvalue conversion and array-to-pointer conversion.
+     A conditional expression is never an lvalue.")
+   (xdoc::p
+    "For a member expression with @('.') [C:6.5.2.3],
+     we first check the target, ensuring it has a structure type.
+     We do not do need to do array-to-pointer conversion,
+     because we require the type to be a structure type,
+     which rejects both array and pointer types.
+     We look up the structure type and its member.
+     We return its type, and we preserve the lvalue status:
+     if the target is an lvalue, so is the member;
+     if the target is not an lvalue, neither is the member.")
+   (xdoc::p
+    "For a member expression with @('->') [C:6.5.2.3],
+     we first check the target,
+     ensuring it has a pointer type to a structure type.
+     We perform array-to-pointer conversion on this type,
+     prior to ensuring it is a pointer to structure,
+     as an array type would become a pointer type via that conversion.
+     We look up the structure type and its member.
+     We return the member type, with the lvalue flag set."))
   (b* ((e (expr-fix e)))
     (expr-case
      e
      :ident (b* ((type (var-table-lookup e.get vartab))
                  ((unless type) (error (list :var-not-found e.get))))
-              type)
-     :const (check-const e.get)
-     :arrsub (b* ((arr-type (check-expr-pure e.arr vartab))
-                  ((when (errorp arr-type))
-                   (error (list :arrsub e arr-type)))
-                  (sub-type (check-expr-pure e.sub vartab))
-                  ((when (errorp sub-type))
-                   (error (list :arrsub e sub-type))))
-               (check-arrsub e.arr arr-type e.sub sub-type))
+              (make-expr-type :type type :lvalue t))
+     :const (b* ((type (check-const e.get))
+                 ((when (errorp type)) type))
+              (make-expr-type :type type :lvalue nil))
+     :arrsub (b* ((arr-etype (check-expr-pure e.arr vartab tagenv))
+                  ((when (errorp arr-etype))
+                   (error (list :arrsub e arr-etype)))
+                  (arr-type (expr-type->type arr-etype))
+                  (arr-type (apconvert-type arr-type))
+                  (sub-etype (check-expr-pure e.sub vartab tagenv))
+                  ((when (errorp sub-etype))
+                   (error (list :arrsub e sub-etype)))
+                  (sub-type (expr-type->type sub-etype))
+                  (sub-type (apconvert-type sub-type))
+                  (type (check-arrsub e.arr arr-type e.sub sub-type))
+                  ((when (errorp type)) type))
+               (make-expr-type :type type :lvalue t))
      :call (error (list :expr-non-pure e))
-     :member (error (list :not-supported-yet e))
-     :memberp (error (list :not-supported-yet e))
+     :member (b* ((etype (check-expr-pure e.target vartab tagenv))
+                  ((when (errorp etype)) etype)
+                  (type (expr-type->type etype))
+                  (lvalue (expr-type->lvalue etype))
+                  ((unless (type-case type :struct))
+                   (error (list :dot-target-not-struct e)))
+                  (tag (type-struct->tag type))
+                  (memtype (struct-member-lookup tag e.name tagenv))
+                  ((when (errorp memtype)) memtype))
+               (make-expr-type :type memtype :lvalue lvalue))
+     :memberp (b* ((etype (check-expr-pure e.target vartab tagenv))
+                   ((when (errorp etype)) etype)
+                   (type (expr-type->type etype))
+                   (type (apconvert-type type))
+                   ((unless (type-case type :pointer))
+                    (error (list :arrow-operator-not-pointer e)))
+                   (type (type-pointer->to type))
+                   ((unless (type-case type :struct))
+                    (error (list :arrow-operator-not-pointer-to-struct e)))
+                   (tag (type-struct->tag type))
+                   (memtype (struct-member-lookup tag e.name tagenv))
+                   ((when (errorp memtype)) memtype))
+                (make-expr-type :type memtype :lvalue t))
      :postinc (error (list :expr-non-pure e))
      :postdec (error (list :expr-non-pure e))
      :preinc (error (list :expr-non-pure e))
      :predec (error (list :expr-non-pure e))
-     :unary (b* ((arg-type (check-expr-pure e.arg vartab))
-                 ((when (errorp arg-type))
-                  (error (list :unary-error arg-type))))
-              (check-unary e.op e.arg arg-type))
-     :cast (b* ((arg-type (check-expr-pure e.arg vartab))
-                ((when (errorp arg-type))
-                 (error (list :cast-error arg-type)))
+     :unary (b* ((arg-etype (check-expr-pure e.arg vartab tagenv))
+                 ((when (errorp arg-etype))
+                  (error (list :unary-error arg-etype)))
+                 (arg-type (expr-type->type arg-etype))
+                 (arg-type (apconvert-type arg-type))
+                 (type (check-unary e.op e.arg arg-type))
+                 ((when (errorp type)) type))
+              (make-expr-type :type type :lvalue nil))
+     :cast (b* ((arg-etype (check-expr-pure e.arg vartab tagenv))
+                ((when (errorp arg-etype))
+                 (error (list :cast-error arg-etype)))
+                (arg-type (expr-type->type arg-etype))
+                (arg-type (apconvert-type arg-type))
                 ((unless (type-scalarp arg-type))
                  (error (list :cast-mistype-operand e
                               :required :scalar
                               :supplied arg-type)))
-                (type (type-name-to-type e.type))
+                (type (tyname-to-type e.type))
                 ((unless (type-scalarp type))
                  (error (list :cast-mistype-type e
                               :required :scalar
                               :supplied type))))
-             type)
+             (make-expr-type :type type :lvalue nil))
      :binary (b* (((unless (binop-purep e.op))
                    (error (list :binary-non-pure e)))
-                  (arg1-type (check-expr-pure e.arg1 vartab))
-                  ((when (errorp arg1-type))
-                   (error (list :binary-left-error arg1-type)))
-                  (arg2-type (check-expr-pure e.arg2 vartab))
-                  ((when (errorp arg2-type))
-                   (error (list :binary-right-error arg2-type))))
-               (check-binary-pure e.op e.arg1 arg1-type e.arg2 arg2-type))
-     :cond (b* ((test-type (check-expr-pure e.test vartab))
-                ((when (errorp test-type))
-                 (error (list :cond-test-error test-type)))
+                  (arg1-etype (check-expr-pure e.arg1 vartab tagenv))
+                  ((when (errorp arg1-etype))
+                   (error (list :binary-left-error arg1-etype)))
+                  (arg1-type (expr-type->type arg1-etype))
+                  (arg1-type (apconvert-type arg1-type))
+                  (arg2-etype (check-expr-pure e.arg2 vartab tagenv))
+                  ((when (errorp arg2-etype))
+                   (error (list :binary-right-error arg2-etype)))
+                  (arg2-type (expr-type->type arg2-etype))
+                  (arg2-type (apconvert-type arg2-type))
+                  (type (check-binary-pure e.op
+                                           e.arg1 arg1-type
+                                           e.arg2 arg2-type))
+                  ((when (errorp type)) type))
+               (make-expr-type :type type :lvalue nil))
+     :cond (b* ((test-etype (check-expr-pure e.test vartab tagenv))
+                ((when (errorp test-etype))
+                 (error (list :cond-test-error test-etype)))
+                (test-type (expr-type->type test-etype))
+                (test-type (apconvert-type test-type))
                 ((unless (type-scalarp test-type))
                  (error (list :cond-mistype-test e.test e.then e.else
                               :required :scalar
                               :supplied test-type)))
-                (then-type (check-expr-pure e.then vartab))
-                ((when (errorp then-type))
-                 (error (list :cond-then-error then-type)))
+                (then-etype (check-expr-pure e.then vartab tagenv))
+                ((when (errorp then-etype))
+                 (error (list :cond-then-error then-etype)))
+                (then-type (expr-type->type then-etype))
+                (then-type (apconvert-type then-type))
                 ((unless (type-arithmeticp then-type))
                  (error (list :cond-mistype-then e.test e.then e.else
                               :required :arithmetic
                               :supplied then-type)))
-                (else-type (check-expr-pure e.else vartab))
-                ((when (errorp else-type))
-                 (error (list :cond-else-error else-type)))
+                (else-etype (check-expr-pure e.else vartab tagenv))
+                ((when (errorp else-etype))
+                 (error (list :cond-else-error else-etype)))
+                (else-type (expr-type->type else-etype))
+                (else-type (apconvert-type else-type))
                 ((unless (type-arithmeticp else-type))
                  (error (list :cond-mistype-else e.test e.then e.else
                               :required :arithmetic
-                              :supplied else-type))))
-             (uaconvert-types then-type else-type))))
+                              :supplied else-type)))
+                (type (uaconvert-types then-type else-type))
+                ((when (errorp type)) type))
+             (make-expr-type :type type :lvalue nil))))
   :measure (expr-count e)
   :verify-guards :after-returns
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-expr-pure-list ((es expr-listp) (vartab var-tablep))
+(define check-expr-pure-list ((es expr-listp)
+                              (vartab var-tablep)
+                              (tagenv tag-envp))
   :returns (types type-list-resultp
                   :hints (("Goal"
                            :in-theory
@@ -834,11 +1095,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This lifts @(tsee check-expr-pure) to lists."))
+    "This is used for arguments of function calls.
+     The expression types returned by the expressions
+     are subjected to lvalue conversion and array-to-pointer conversion."))
   (b* (((when (endp es)) nil)
-       (type (check-expr-pure (car es) vartab))
-       ((when (errorp type)) type)
-       (types (check-expr-pure-list (cdr es) vartab))
+       (etype (check-expr-pure (car es) vartab tagenv))
+       ((when (errorp etype)) etype)
+       (type (expr-type->type etype))
+       (type (apconvert-type type))
+       (types (check-expr-pure-list (cdr es) vartab tagenv))
        ((when (errorp types)) types))
     (cons type types))
   :hooks (:fix))
@@ -848,7 +1113,8 @@
 (define check-expr-call ((fun identp)
                          (args expr-listp)
                          (funtab fun-tablep)
-                         (vartab var-tablep))
+                         (vartab var-tablep)
+                         (tagenv tag-envp))
   :returns (type type-resultp)
   :short "Check an expression that is a function call."
   :long
@@ -860,10 +1126,12 @@
      and we compare the input types with the argument types;
      this is more restrictive than allowed in [C],
      but it is adequate for now.
-     We return the output type."))
+     We return the output type.
+     A function call is never an lvalue;
+     thus, we return a plain type, not an expression type."))
   (b* ((fun (ident-fix fun))
        (args (expr-list-fix args))
-       (types (check-expr-pure-list args vartab))
+       (types (check-expr-pure-list args vartab tagenv))
        ((when (errorp types))
         (error (list :call-args-error fun args types)))
        (ftype (fun-table-lookup fun funtab))
@@ -879,7 +1147,8 @@
 
 (define check-expr-call-or-pure ((e exprp)
                                  (funtab fun-tablep)
-                                 (vartab var-tablep))
+                                 (vartab var-tablep)
+                                 (tagenv tag-envp))
   :returns (type type-resultp)
   :short "Check an expression that must be
           a function call or a pure expression."
@@ -890,38 +1159,50 @@
    (xdoc::p
     "If the expression is not a function call,
      it must be a pure expression,
-     which we resort to check it as such."))
+     which we resort to check it as such.")
+   (xdoc::p
+    "We return a plain type, not an expression type,
+     because the caller of this function
+     do not need to differentiate between lvalues and not lvalues."))
   (if (expr-case e :call)
-      (check-expr-call (expr-call->fun e) (expr-call->args e) funtab vartab)
-    (check-expr-pure e vartab))
+      (check-expr-call (expr-call->fun e)
+                       (expr-call->args e)
+                       funtab
+                       vartab
+                       tagenv)
+    (b* ((etype (check-expr-pure e vartab tagenv))
+         ((when (errorp etype)) etype))
+      (expr-type->type etype)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-expr-asg ((e exprp)
                         (funtab fun-tablep)
-                        (vartab var-tablep))
+                        (vartab var-tablep)
+                        (tagenv tag-envp))
   :returns (wf? wellformed-resultp)
   :short "Check an expression that must be an assignment exrpression."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now, we only allow simple assignment expressions, with:")
-   (xdoc::ul
-    (xdoc::li
-     "A left-hand side consisting of
-      either a variable in scope
-      or an array subscripting expression
-      where the array is a variable in scope.")
-    (xdoc::li
-     "A right-hand side consisting of a function call or a pure expression."))
+    "For now, we only allow simple assignment expressions.
+     The left-hand side expression must be a pure lvalue.
+     The right-hand side must be a function call or a pure expression;
+     we implicitly apply lvalue conversion to it
+     (because @(tsee check-expr-call-or-pure) returns a plain type;
+     we apply array-to-pointer conversion to it as well.")
    (xdoc::p
     "The two sides must have the same type,
      which is more restrictive than [C:6.5.16.1].
      Since it is an invariant (currently not formally proved)
      that variables never have @('void') type,
-     the equality of types implies that the function must not return @('void').
-     We do not return any type information because
+     the equality of types implies that,
+     if the right-hand side is a function call,
+     the function must not return @('void').
+     We require the left type (and thus the right type)
+     to be arithmetic or structure or pointer [C:6.5.16.1].
+     We do not return any type information from the assignment because
      an expression statement throws away the expression's value;
      indeed, we are only interested in the side effects of assignment here."))
   (b* (((unless (expr-case e :binary))
@@ -931,40 +1212,22 @@
        (right (expr-binary->arg2 e))
        ((unless (binop-case op :asg))
         (error (list :expr-asg-not-asg op)))
-       (ltype (cond ((expr-case left :ident)
-                     (b* ((var (expr-ident->get left))
-                          (ltype (var-table-lookup var vartab))
-                          ((when (not ltype))
-                           (error (list :expr-asg-var-not-found var))))
-                       ltype))
-                    ((expr-case left :arrsub)
-                     (b* ((arr (expr-arrsub->arr left))
-                          (sub (expr-arrsub->sub left))
-                          ((unless (expr-case arr :ident))
-                           (error (list :expr-asg-arrsub-not-var left)))
-                          (var (expr-ident->get arr))
-                          (arr-type (var-table-lookup var vartab))
-                          ((when (not arr-type))
-                           (error (list :expr-asg-arrsub-array-not-found left)))
-                          ((unless (type-case arr-type :pointer))
-                           (error (list :array-mistype arr
-                                        :required :pointer
-                                        :supplied arr-type)))
-                          (sub-type (check-expr-pure sub vartab))
-                          ((when (errorp sub-type)) sub-type)
-                          ((unless (type-integerp sub-type))
-                           (error (list :subscript-mistype sub
-                                        :required :integer
-                                        :supplid sub-type))))
-                       (type-pointer->referenced arr-type)))
-                    (t (error (list :expr-asg-disallowed left)))))
-       ((when (errorp ltype)) ltype)
-       (rtype (check-expr-call-or-pure right funtab vartab))
-       ((when (errorp rtype)) rtype)
-       ((unless (equal ltype rtype))
+       (left-etype (check-expr-pure left vartab tagenv))
+       ((when (errorp left-etype)) left-etype)
+       ((unless (expr-type->lvalue left-etype))
+        (error (list :asg-left-not-lvalue (expr-fix e))))
+       (left-type (expr-type->type left-etype))
+       (right-type (check-expr-call-or-pure right funtab vartab tagenv))
+       ((when (errorp right-type)) right-type)
+       (right-type (apconvert-type right-type))
+       ((unless (equal left-type right-type))
         (error (list :asg-mistype left right
-                     :required ltype
-                     :supplied rtype))))
+                     :required left-type
+                     :supplied right-type)))
+       ((unless (or (type-arithmeticp left-type)
+                    (type-case left-type :struct)
+                    (type-case left-type :pointer)))
+        (error (list :expr-asg-disallowed-type left-type))))
     :wellformed)
   :hooks (:fix))
 
@@ -972,7 +1235,8 @@
 
 (define check-expr-call-or-asg ((e exprp)
                                 (funtab fun-tablep)
-                                (vartab var-tablep))
+                                (vartab var-tablep)
+                                (tagenv tag-envp))
   :returns (wf? wellformed-resultp)
   :short "Check an expression that must be a function call or an assignment."
   :long
@@ -998,12 +1262,13 @@
       (b* ((type (check-expr-call (expr-call->fun e)
                                   (expr-call->args e)
                                   funtab
-                                  vartab))
+                                  vartab
+                                  tagenv))
            ((when (errorp type)) type)
            ((unless (type-case type :void))
             (error (list :nonvoid-function-result-discarded (expr-fix e)))))
         :wellformed)
-    (check-expr-asg e funtab vartab))
+    (check-expr-asg e funtab vartab tagenv))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1141,44 +1406,54 @@
      and we combine (i.e. take the union of) all the return types,
      after removing @('void') from the types of the first block item."))
 
-  (define check-stmt ((s stmtp) (funtab fun-tablep) (vartab var-tablep))
+  (define check-stmt ((s stmtp)
+                      (funtab fun-tablep)
+                      (vartab var-tablep)
+                      (tagenv tag-envp))
     :returns (stype stmt-type-resultp)
     (stmt-case
      s
      :labeled (error (list :unsupported-labeled s.label s.body))
      :compound (b* ((ext-vartab (var-table-add-block vartab))
-                    (stype (check-block-item-list s.items funtab ext-vartab))
+                    (stype (check-block-item-list s.items
+                                                  funtab
+                                                  ext-vartab
+                                                  tagenv))
                     ((when (errorp stype))
                      (error (list :stmt-compound-error stype))))
                  (change-stmt-type stype :variables vartab))
-     :expr (b* ((wf (check-expr-call-or-asg s.get funtab vartab))
+     :expr (b* ((wf (check-expr-call-or-asg s.get funtab vartab tagenv))
                 ((when (errorp wf)) (error (list :expr-stmt-error wf))))
              (make-stmt-type :return-types (set::insert (type-void) nil)
                              :variables (var-table-fix vartab)))
      :null (error :unsupported-null-stmt)
-     :if (b* ((type (check-expr-pure s.test vartab))
-              ((when (errorp type)) (error (list :if-test-error type)))
+     :if (b* ((etype (check-expr-pure s.test vartab tagenv))
+              ((when (errorp etype)) (error (list :if-test-error etype)))
+              (type (expr-type->type etype))
+              (type (apconvert-type type))
               ((unless (type-scalarp type))
                (error (list :if-test-mistype s.test s.then :noelse
                             :required :scalar
                             :supplied type)))
-              (stype-then (check-stmt s.then funtab vartab))
+              (stype-then (check-stmt s.then funtab vartab tagenv))
               ((when (errorp stype-then))
                (error (list :if-then-error stype-then))))
            (make-stmt-type
             :return-types (set::union (stmt-type->return-types stype-then)
                                       (set::insert (type-void) nil))
             :variables vartab))
-     :ifelse (b* ((type (check-expr-pure s.test vartab))
-                  ((when (errorp type)) (error (list :if-test-error type)))
+     :ifelse (b* ((etype (check-expr-pure s.test vartab tagenv))
+                  ((when (errorp etype)) (error (list :if-test-error etype)))
+                  (type (expr-type->type etype))
+                  (type (apconvert-type type))
                   ((unless (type-scalarp type))
                    (error (list :if-test-mistype s.test s.then s.else
                                 :required :scalar
                                 :supplied type)))
-                  (stype-then (check-stmt s.then funtab vartab))
+                  (stype-then (check-stmt s.then funtab vartab tagenv))
                   ((when (errorp stype-then))
                    (error (list :if-then-error stype-then)))
-                  (stype-else (check-stmt s.else funtab vartab))
+                  (stype-else (check-stmt s.else funtab vartab tagenv))
                   ((when (errorp stype-else))
                    (error (list :if-else-error stype-else))))
                (make-stmt-type
@@ -1186,13 +1461,15 @@
                                           (stmt-type->return-types stype-else))
                 :variables vartab))
      :switch (error (list :unsupported-switch s.ctrl s.body))
-     :while (b* ((type (check-expr-pure s.test vartab))
-                 ((when (errorp type)) (error (list :while-test-error type)))
+     :while (b* ((etype (check-expr-pure s.test vartab tagenv))
+                 ((when (errorp etype)) (error (list :while-test-error etype)))
+                 (type (expr-type->type etype))
+                 (type (apconvert-type type))
                  ((unless (type-scalarp type))
                   (error (list :while-test-mistype s.test s.body
                                :required :scalar
                                :supplied type)))
-                 (stype-body (check-stmt s.body funtab vartab))
+                 (stype-body (check-stmt s.body funtab vartab tagenv))
                  ((when (errorp stype-body))
                   (error (list :while-error stype-body))))
               (make-stmt-type
@@ -1205,8 +1482,9 @@
      :continue (error :unsupported-continue)
      :break (error :unsupported-break)
      :return (b* (((unless s.value) (error (list :unsupported-return-void)))
-                  (type (check-expr-call-or-pure s.value funtab vartab))
+                  (type (check-expr-call-or-pure s.value funtab vartab tagenv))
                   ((when (errorp type)) (error (list :return-error type)))
+                  (type (apconvert-type type))
                   ((when (type-case type :void))
                    (error (list :return-void-expression s.value))))
                (make-stmt-type :return-types (set::insert type nil)
@@ -1215,52 +1493,50 @@
 
   (define check-block-item ((item block-itemp)
                             (funtab fun-tablep)
-                            (vartab var-tablep))
+                            (vartab var-tablep)
+                            (tagenv tag-envp))
     :returns (stype stmt-type-resultp)
     (block-item-case
      item
      :declon
-     (b* (((unless (declon-case item.get :var))
-           (error (list :struct-declaration-in-block-item item.get)))
-          (type (declon-var->type item.get))
-          (declor (declon-var->declor item.get))
-          (init (declon-var->init item.get))
-          ((when (tyspecseq-case type :void))
-           (error (list :declon-error-type-void item.get)))
-          (pointerp (declor->pointerp declor))
-          (var (declor->ident declor))
+     (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
+          (wf (check-tyname tyname tagenv))
+          ((when (errorp wf)) (error (list :declon-error-type wf)))
           (wf (check-ident var))
           ((when (errorp wf)) (error (list :declon-error-var wf)))
-          (type (type-name-to-type (make-tyname :specs type
-                                                :pointerp pointerp)))
-          (init-type (check-expr-call-or-pure init funtab vartab))
+          (type (tyname-to-type tyname))
+          ((when (type-case type :void))
+           (error (list :declon-error-type-void item.get)))
+          (init-type (check-expr-call-or-pure init funtab vartab tagenv))
           ((when (errorp init-type))
            (error (list :declon-error-init init-type)))
+          (init-type (apconvert-type init-type))
           ((unless (equal init-type type))
            (error (list
-                   :declon-mistype type declor init
+                   :declon-mistype item.get
                    :required type
                    :supplied init-type)))
           (vartab (var-table-add-var var type vartab))
           ((when (errorp vartab)) (error (list :declon-error vartab))))
        (make-stmt-type :return-types (set::insert (type-void) nil)
                        :variables vartab))
-     :stmt (check-stmt item.get funtab vartab))
+     :stmt (check-stmt item.get funtab vartab tagenv))
     :measure (block-item-count item))
 
   (define check-block-item-list ((items block-item-listp)
                                  (funtab fun-tablep)
-                                 (vartab var-tablep))
+                                 (vartab var-tablep)
+                                 (tagenv tag-envp))
     :returns (stype stmt-type-resultp)
     (b* (((when (endp items))
           (make-stmt-type :return-types (set::insert (type-void) nil)
                           :variables vartab))
-         (stype (check-block-item (car items) funtab vartab))
+         (stype (check-block-item (car items) funtab vartab tagenv))
          ((when (errorp stype)) (error (list :block-item-error stype)))
          ((unless (set::in (type-void) (stmt-type->return-types stype))) stype)
          (rtypes1 (set::delete (type-void) (stmt-type->return-types stype)))
          (vartab (stmt-type->variables stype))
-         (stype (check-block-item-list (cdr items) funtab vartab))
+         (stype (check-block-item-list (cdr items) funtab vartab tagenv))
          ((when (errorp stype)) (error (list :block-item-list-error stype)))
          (rtypes2 (stmt-type->return-types stype))
          (vartab (stmt-type->variables stype)))
@@ -1277,7 +1553,7 @@
   (local
    (defthm-check-stmt-flag
      (defthm check-stmt-var-table
-       (b* ((result (check-stmt s funtab vartab)))
+       (b* ((result (check-stmt s funtab vartab tagenv)))
          (implies (stmt-typep result)
                   (equal (stmt-type->variables result)
                          (var-table-fix vartab))))
@@ -1290,17 +1566,19 @@
        t
        :rule-classes nil
        :flag check-block-item-list)
-     :hints (("Goal" :expand ((check-stmt s funtab vartab))))))
+     :hints (("Goal" :expand ((check-stmt s funtab vartab tagenv))))))
 
   (defrule check-stmt-var-table-no-change
-    (b* ((result (check-stmt s funtab vartab)))
+    (b* ((result (check-stmt s funtab vartab tagenv)))
       (implies (stmt-typep result)
                (equal (stmt-type->variables result)
                       (var-table-fix vartab))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-param-declon ((param param-declonp) (vartab var-tablep))
+(define check-param-declon ((param param-declonp)
+                            (vartab var-tablep)
+                            (tagenv tag-envp))
   :returns (new-vartab var-table-resultp)
   :short "Check a parameter declaration."
   :long
@@ -1317,24 +1595,24 @@
     "We disallow @('void') as type of a parameter,
      because parameters must have complete types [C:6.7.6.3/4],
      but @('void') is incomplete [C:6.2.5/19]."))
-  (b* (((param-declon param) param)
-       ((when (tyspecseq-case param.type :void))
-        (error (list :param-error-void (param-declon-fix param))))
-       (pointerp (declor->pointerp param.declor))
-       (var (declor->ident param.declor))
+  (b* (((mv var tyname) (param-declon-to-ident+tyname param))
+       (wf (check-tyname tyname tagenv))
+       ((when (errorp wf)) (error (list :param-type-error wf)))
        (wf (check-ident var))
-       ((when (errorp wf)) (error (list :param-error wf))))
-    (var-table-add-var var
-                       (type-name-to-type (make-tyname :specs param.type
-                                                       :pointerp pointerp))
-                       vartab))
+       ((when (errorp wf)) (error (list :param-error wf)))
+       (type (tyname-to-type tyname))
+       ((when (type-case type :void))
+        (error (list :param-error-void (param-declon-fix param)))))
+    (var-table-add-var var type vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-param-declon-list ((params param-declon-listp) (vartab var-tablep))
+(define check-param-declon-list ((params param-declon-listp)
+                                 (vartab var-tablep)
+                                 (tagenv tag-envp))
   :returns (new-vartab var-table-resultp)
-  :short "Check a list of parameter declaration."
+  :short "Check a list of parameter declarations."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1342,23 +1620,60 @@
      calling @(tsee check-param-declon)
      and threading the variable table through."))
   (b* (((when (endp params)) (var-table-fix vartab))
-       (vartab (check-param-declon (car params) vartab))
+       (vartab (check-param-declon (car params) vartab tagenv))
        ((when (errorp vartab)) (error (list :param-error vartab))))
-    (check-param-declon-list (cdr params) vartab))
+    (check-param-declon-list (cdr params) vartab tagenv))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-fundef ((fundef fundefp) (funtab fun-tablep))
+(define check-fun-declor ((declor fun-declorp) (tagenv tag-envp))
+  :returns (vartab var-table-resultp)
+  :short "Check a function declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check the identifier and the list of parameter declarations.
+     We start with the empty variable table,
+     and we return the final variable table that contains the parameters.
+     This table is used when checking function definitions."))
+  (b* (((fun-declor declor) declor)
+       (wf (check-ident declor.name))
+       ((when (errorp wf)) wf))
+    (check-param-declon-list declor.params (var-table-init) tagenv))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-fun-declon ((declon fun-declonp) (tagenv tag-envp))
+  :returns (wf wellformed-resultp)
+  :short "Check a function declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check the type specifier sequence and the declarator.
+     We do not return anything, because a function declaration,
+     unlike a function definition, does not have a body to check
+     (for which we need the variable table that contains the parameters)."))
+  (b* (((fun-declon declon) declon)
+       (wf (check-tyspecseq declon.tyspec tagenv))
+       ((when (errorp wf)) wf)
+       (vartab (check-fun-declor declon.declor tagenv))
+       ((when (errorp vartab)) vartab))
+    :wellformed)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-fundef ((fundef fundefp) (funtab fun-tablep) (tagenv tag-envp))
   :returns (new-funtab fun-table-resultp)
   :short "Check a function definition."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Starting with an initial variable table,
-     we process the parameter declarations and obtain the variable table
-     in which the function body must be checked.
-     Critically, the block items are checked in the initial variable table,
+    "We check type specifier sequence and declarator,
+     obtaining the variable table that contains the parameters.
+     Importantly, the block items are checked in the initial variable table,
      which has the types for the function parameters,
      without creating a new scope for the block (i.e. the compound statement):
      the reason is that the scope of function parameters
@@ -1381,23 +1696,26 @@
      the function definitions in the translation unit in order,
      we extend the function table."))
   (b* (((fundef fundef) fundef)
-       (in-types (type-name-list-to-type-list
-                  (param-declon-list->tyname-list fundef.params)))
-       (out-type (type-name-to-type (make-tyname :specs fundef.result
-                                                 :pointerp nil)))
-       (ftype (make-fun-type :inputs in-types :output out-type))
-       (funtab (fun-table-add-fun fundef.name ftype funtab))
-       ((when (errorp funtab)) (error (list :fundef funtab)))
-       (wf (check-ident fundef.name))
-       ((when (errorp wf)) (error (list :fundef-name-error wf)))
-       (vartab (var-table-init))
-       (vartab (check-param-declon-list fundef.params vartab))
+       ((fun-declor fundef.declor) fundef.declor)
+       (out-tyname (make-tyname :tyspec fundef.tyspec
+                                :declor (obj-adeclor-none)))
+       (wf (check-tyname out-tyname tagenv))
+       ((when (errorp wf))
+        (error (list :bad-fun-out-type fundef.declor.name wf)))
+       (out-type (tyname-to-type out-tyname))
+       (vartab (check-fun-declor fundef.declor tagenv))
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
-       (stype (check-block-item-list fundef.body funtab vartab))
+       ((mv & in-tynames)
+        (param-declon-list-to-ident+tyname-lists fundef.declor.params))
+       (in-types (type-name-list-to-type-list in-tynames))
+       (ftype (make-fun-type :inputs in-types :output out-type))
+       (funtab (fun-table-add-fun fundef.declor.name ftype funtab))
+       ((when (errorp funtab)) (error (list :fundef funtab)))
+       (stype (check-block-item-list fundef.body funtab vartab tagenv))
        ((when (errorp stype)) (error (list :fundef-body-error stype)))
        ((unless (equal (stmt-type->return-types stype)
                        (set::insert out-type nil)))
-        (error (list :fundef-return-mistype fundef.name
+        (error (list :fundef-return-mistype fundef.declor.name
                      :required out-type
                      :inferred (stmt-type->return-types stype)))))
     funtab)
@@ -1405,32 +1723,129 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-ext-declon ((ext ext-declonp) (funtab fun-tablep))
-  :returns (new-funtab fun-table-resultp)
-  :short "Check an external declaration."
+(define check-struct-declon-list ((declons struct-declon-listp)
+                                  (tagenv tag-envp))
+  :returns (members member-info-list-resultp)
+  :short "Check a list of structure declarations."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only allow function definitions."))
-  (ext-declon-case
-   ext
-   :fundef (check-fundef ext.get funtab)
-   :declon (error (list :top-level-declaraion-not-supported ext.get)))
+    "These specify the members of a structure or union type
+     (see @(tsee struct-declon)).
+     We go through the declarations
+     and turn each of them into member information (see @(tsee member-info)).
+     We ensure that each member name is well-formed;
+     we will also need to check that each member type is well-formed,
+     but we need to extend our static semantics for that.
+     By using @(tsee member-info-add-first),
+     we ensure that there are no duplicate member names."))
+  (b* (((when (endp declons)) nil)
+       (members (check-struct-declon-list (cdr declons) tagenv))
+       ((when (errorp members)) members)
+       ((mv name tyname) (struct-declon-to-ident+tyname (car declons)))
+       (wf (check-tyname tyname tagenv))
+       ((when (errorp wf)) (error (list :bad-member-type wf)))
+       (wf (check-ident name))
+       ((when (errorp wf)) (error (list :bad-member-name wf)))
+       (type (tyname-to-type tyname))
+       (members-opt (member-info-add-first name type members)))
+    (member-info-list-option-case members-opt
+                                  :some members-opt.val
+                                  :none (error (list :duplicate-member name))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-ext-declon-list ((exts ext-declon-listp) (funtab fun-tablep))
-  :returns (new-funtab fun-table-resultp)
+(define check-tag-declon ((declon tag-declonp) (tagenv tag-envp))
+  :returns (new-tagenv tag-env-resultp)
+  :short "Check a tag declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support structure type declarations,
+     not union or enumeration type declarations.
+     For a structure type declaration, we first check the members,
+     obtaining a list of member information if successful.
+     We ensure that there is at least one member [C:6.2.5/20].
+     We use @(tsee tag-env-add) to ensure that there is not already
+     another structure or union or enumeration type with the same tag,
+     since these share one name space [C:6.2.3]."))
+  (tag-declon-case
+   declon
+   :struct
+   (b* ((members (check-struct-declon-list declon.members tagenv))
+        ((when (errorp members)) members)
+        ((unless (consp members))
+         (error (list :empty-struct (tag-declon-fix declon))))
+        (info (tag-info-struct members))
+        (tagenv-opt (tag-env-add declon.tag info tagenv)))
+     (tag-env-option-case tagenv-opt
+                          :some tagenv-opt.val
+                          :none (error (list :duplicate-tag declon.tag))))
+   :union (error (list :union-not-supported (tag-declon-fix declon)))
+   :enum (error (list :enum-not-supported (tag-declon-fix declon))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod funtab+tagenv
+  :short "Fixtype of pairs consisting of
+          a function table and a tag environment."
+  ((funs fun-tablep)
+   (tags tag-envp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult funtab+tagenv
+  "pairs consisting of a function table and a tag environment")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-ext-declon ((ext ext-declonp)
+                          (funtab fun-tablep)
+                          (tagenv tag-envp))
+  :returns (new-funtab+tagenv funtab+tagenv-resultp)
+  :short "Check an external declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only allow function definitions and tag declarations.")
+   (xdoc::p
+    "If successful, we return updated function table and tag environment."))
+  (ext-declon-case
+   ext
+   :fundef (b* ((funtab (check-fundef ext.get funtab tagenv))
+                ((when (errorp funtab)) funtab))
+             (make-funtab+tagenv :funs funtab
+                                 :tags (tag-env-fix tagenv)))
+   :obj-declon (error
+                (list :file-level-object-declaraion-not-supported ext.get))
+   :tag-declon (b* ((tagenv (check-tag-declon ext.get tagenv))
+                    ((when (errorp tagenv)) tagenv))
+                 (make-funtab+tagenv :funs (fun-table-fix funtab)
+                                     :tags tagenv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-ext-declon-list ((exts ext-declon-listp)
+                               (funtab fun-tablep)
+                               (tagenv tag-envp))
+  :returns (new-funtab+tagenv funtab+tagenv-resultp)
   :short "Check a list of external declarations."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We thread the function table through."))
-  (b* (((when (endp exts)) (fun-table-fix funtab))
-       (funtab (check-ext-declon (car exts) funtab))
-       ((when (errorp funtab)) (error (list :ext-declon-error funtab))))
-    (check-ext-declon-list (cdr exts) funtab))
+    "We thread the function table and tag environment through."))
+  (b* (((when (endp exts))
+        (make-funtab+tagenv :funs (fun-table-fix funtab)
+                            :tags (tag-env-fix tagenv)))
+       (funtab+tagenv (check-ext-declon (car exts) funtab tagenv))
+       ((when (errorp funtab+tagenv))
+        (error (list :ext-declon-error funtab+tagenv))))
+    (check-ext-declon-list (cdr exts)
+                           (funtab+tagenv->funs funtab+tagenv)
+                           (funtab+tagenv->tags funtab+tagenv)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1447,7 +1862,9 @@
      and discarding the final one (it served its pupose)."))
   (b* (((transunit tunit) tunit)
        (funtab (fun-table-init))
-       (funtab (check-ext-declon-list tunit.declons funtab))
-       ((when (errorp funtab)) (error (list :transunit-error funtab))))
+       (tagenv (tag-env-init))
+       (funtab+tagenv (check-ext-declon-list tunit.declons funtab tagenv))
+       ((when (errorp funtab+tagenv))
+        (error (list :transunit-error funtab+tagenv))))
     :wellformed)
   :hooks (:fix))

@@ -13,13 +13,13 @@ ACL2 !>>(F-PUT-GLOBAL 'TRACE-CO
                       (@ STANDARD-CO)
                       STATE)
 <state>
-ACL2 !>>(INCLUDE-BOOK "projects/apply/top"
+ACL2 !>>(INCLUDE-BOOK "projects/apply/loop"
                       :DIR :SYSTEM)
 
 Summary
-Form:  ( INCLUDE-BOOK "projects/apply/top" ...)
+Form:  ( INCLUDE-BOOK "projects/apply/loop" ...)
 Rules: NIL
- "[books]/projects/apply/top.lisp"
+ "[books]/projects/apply/loop.lisp"
 ACL2 !>>(DEFCONST
          *TESTS*
          '((TRACE$ HELLO)
@@ -195,9 +195,10 @@ on HELLO because HELLO is not a known function symbol.
 ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
 
 
-ACL2 Error in TOP-LEVEL:  The symbol HELLO (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context (HELLO E).
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol HELLO (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (HELLO E).
 
 ACL2 !>>>(APPLY$ (CONS 'LAMBDA
                        (CONS (CONS 'E 'NIL)
@@ -212,26 +213,28 @@ on HELLO because HELLO is not a known function symbol.
 ACL2 !>>>(APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
 
 
-ACL2 Error in TOP-LEVEL:  The symbol HELLO (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(HELLO 'JOHN).
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol HELLO (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (HELLO 'JOHN).
 
 ACL2 !>>>(LOOP$ FOR E IN '(JOHN MARY)
                 COLLECT (HELLO E))
 
 
-ACL2 Error in TOP-LEVEL:  The symbol HELLO (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context (HELLO E).
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol HELLO (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (HELLO E).
 
 ACL2 !>>>(LOOP$ FOR E IN '("John" "Mary")
                 COLLECT (HELLO E))
 
 
-ACL2 Error in TOP-LEVEL:  The symbol HELLO (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context (HELLO E).
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol HELLO (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (HELLO E).
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
 
@@ -243,9 +246,10 @@ ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
                COLLECT (HELLO E))
 
 
-ACL2 Error in TOP-LEVEL:  The symbol HELLO (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context (HELLO E).
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol HELLO (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (HELLO E).
 
 ACL2 >>>(SET-GUARD-CHECKING T)
 
@@ -266,7 +270,7 @@ Summary
 Form:  ( DEFUN CALLER1 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN CALLER1 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN CALLER1 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(VERIFY-GUARDS CALLER1)
@@ -281,7 +285,7 @@ Summary
 Form:  ( VERIFY-GUARDS CALLER1)
 Rules: NIL
 
-ACL2 Error in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
+ACL2 Error [Failure] in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(TRACE$ CALLER1)
@@ -295,18 +299,18 @@ using option :native, :def, or :formals.  See :DOC trace$.
 ACL2 !>>>(CALLER1 'JOHN)
 
 
-ACL2 Error in TOP-LEVEL:  The symbol CALLER1 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER1 'JOHN).
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol CALLER1 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER1 'JOHN).
 
 ACL2 !>>>(CALLER1 "Mary and Tom")
 
 
-ACL2 Error in TOP-LEVEL:  The symbol CALLER1 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER1 "Mary and Tom").
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol CALLER1 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER1 "Mary and Tom").
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
 
@@ -317,10 +321,10 @@ recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
 ACL2 >>>(CALLER1 "Mary and Tom")
 
 
-ACL2 Error in TOP-LEVEL:  The symbol CALLER1 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER1 "Mary and Tom").
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol CALLER1 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER1 "Mary and Tom").
 
 ACL2 >>>(SET-GUARD-CHECKING T)
 
@@ -335,17 +339,17 @@ ACL2 !>>>(DEFUN CALLER2 (E)
                         (LIST E)))
 
 
-ACL2 Error in ( DEFUN CALLER2 ...):  The symbol HELLO (in package "ACL2")
-has neither a function nor macro definition in ACL2.  Please define
-it.  See :DOC near-misses.  Note:  this error occurred in the context
-(HELLO D).
+ACL2 Error [Translate] in ( DEFUN CALLER2 ...):  The symbol HELLO (in
+package "ACL2") has neither a function nor macro definition in ACL2.
+Please define it.  See :DOC near-misses.  Note:  this error occurred
+in the context (HELLO D).
 
 
 Summary
 Form:  ( DEFUN CALLER2 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN CALLER2 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN CALLER2 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(VERIFY-GUARDS CALLER2)
@@ -360,7 +364,7 @@ Summary
 Form:  ( VERIFY-GUARDS CALLER2)
 Rules: NIL
 
-ACL2 Error in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
+ACL2 Error [Failure] in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(TRACE$ CALLER2)
@@ -374,18 +378,18 @@ using option :native, :def, or :formals.  See :DOC trace$.
 ACL2 !>>>(CALLER2 'JOHN)
 
 
-ACL2 Error in TOP-LEVEL:  The symbol CALLER2 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER2 'JOHN).
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol CALLER2 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER2 'JOHN).
 
 ACL2 !>>>(CALLER2 "Mary and Tom")
 
 
-ACL2 Error in TOP-LEVEL:  The symbol CALLER2 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER2 "Mary and Tom").
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol CALLER2 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER2 "Mary and Tom").
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
 
@@ -396,10 +400,10 @@ recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
 ACL2 >>>(CALLER2 "Mary and Tom")
 
 
-ACL2 Error in TOP-LEVEL:  The symbol CALLER2 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER2 "Mary and Tom").
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol CALLER2 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER2 "Mary and Tom").
 
 ACL2 >>>(SET-GUARD-CHECKING T)
 
@@ -428,24 +432,24 @@ Goal
 (EQUAL (APPLY$ 'HELLO '(JOHN))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
                      '(HI JOHN)))
 
 
-ACL2 Error in ( THM ...):  The symbol HELLO (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(HELLO 'JOHN).
+ACL2 Error [Translate] in ( THM ...):  The symbol HELLO (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (HELLO 'JOHN).
 
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM
@@ -492,7 +496,7 @@ Goal''
 (EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
@@ -500,17 +504,17 @@ ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
               :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
 
 
-ACL2 Error in ( THM ...):  The symbol HELLO (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(HELLO 'JOHN).
+ACL2 Error [Translate] in ( THM ...):  The symbol HELLO (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (HELLO 'JOHN).
 
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
@@ -518,49 +522,49 @@ ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
                               '(HI JOHN))))
 
 
-ACL2 Error in ( THM ...):  The symbol APPLY$-WARRANT-HELLO (in package
-"ACL2") has neither a function nor macro definition in ACL2.  Please
-define it.  See :DOC near-misses.  Note:  this error occurred in the
-context (APPLY$-WARRANT-HELLO).
+ACL2 Error [Translate] in ( THM ...):  The symbol APPLY$-WARRANT-HELLO
+(in package "ACL2") has neither a function nor macro definition in
+ACL2.  Please define it.  See :DOC near-misses.  Note:  this error
+occurred in the context (APPLY$-WARRANT-HELLO).
 
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
 
 
-ACL2 Error in ( THM ...):  The symbol CALLER1 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER1 'JOHN).
+ACL2 Error [Translate] in ( THM ...):  The symbol CALLER1 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER1 'JOHN).
 
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
 
 
-ACL2 Error in ( THM ...):  The symbol CALLER2 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER2 'JOHN).
+ACL2 Error [Translate] in ( THM ...):  The symbol CALLER2 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER2 'JOHN).
 
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(DEFUN CALLER3 (E)
@@ -655,7 +659,7 @@ Goal'
 (EQUAL (APPLY$ 'HELLO '(JOHN))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>Bye.
@@ -703,17 +707,17 @@ on HELLO because HELLO has not been badged.
 ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
 
 
-ACL2 Error in TOP-LEVEL:  The body of a LAMBDA object, lambda$ term,
-or loop$ statement should be fully badged but HELLO is used in (HELLO E)
-and has no badge.  See :DOC gratuitous-lambda-object-restrictions for
-a workaround if you really mean to have an ill-formed LAMBDA-like constant
-in your code.  You may see this message without having explicitly typed
-a LAMBDA if you used a loop$ statement.  Loop$ statements are translated
-into calls of scions that use LAMBDA objects generated from constituent
-expressions.  If you are defining a function that calls itself recursively
-from within a loop$ you must include the xargs :LOOP$-RECURSION T and
-an explicit :MEASURE.  Note:  this error occurred in the context 
-(LAMBDA$ (E) (HELLO E)).
+ACL2 Error [Translate] in TOP-LEVEL:  The body of a LAMBDA object,
+lambda$ term, or loop$ statement should be fully badged but HELLO is
+used in (HELLO E) and has no badge.  See :DOC gratuitous-lambda-object-
+restrictions for a workaround if you really mean to have an ill-formed
+LAMBDA-like constant in your code.  You may see this message without
+having explicitly typed a LAMBDA if you used a loop$ statement.  Loop$
+statements are translated into calls of scions that use LAMBDA objects
+generated from constituent expressions.  If you are defining a function
+that calls itself recursively from within a loop$ you must include
+the xargs :LOOP$-RECURSION T and an explicit :MEASURE.  Note:  this
+error occurred in the context (LAMBDA$ (E) (HELLO E)).
 
 ACL2 !>>>(APPLY$ (CONS 'LAMBDA
                        (CONS (CONS 'E 'NIL)
@@ -728,32 +732,32 @@ on HELLO because HELLO has not been badged.
 ACL2 !>>>(APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
 
 
-ACL2 Error in TOP-LEVEL:  The body of a LAMBDA object, lambda$ term,
-or loop$ statement should be fully badged but HELLO is used in (HELLO 'JOHN)
-and has no badge.  See :DOC gratuitous-lambda-object-restrictions for
-a workaround if you really mean to have an ill-formed LAMBDA-like constant
-in your code.  You may see this message without having explicitly typed
-a LAMBDA if you used a loop$ statement.  Loop$ statements are translated
-into calls of scions that use LAMBDA objects generated from constituent
-expressions.  If you are defining a function that calls itself recursively
-from within a loop$ you must include the xargs :LOOP$-RECURSION T and
-an explicit :MEASURE.  Note:  this error occurred in the context 
-(LAMBDA$ NIL (HELLO 'JOHN)).
+ACL2 Error [Translate] in TOP-LEVEL:  The body of a LAMBDA object,
+lambda$ term, or loop$ statement should be fully badged but HELLO is
+used in (HELLO 'JOHN) and has no badge.  See :DOC gratuitous-lambda-
+object-restrictions for a workaround if you really mean to have an
+ill-formed LAMBDA-like constant in your code.  You may see this message
+without having explicitly typed a LAMBDA if you used a loop$ statement.
+Loop$ statements are translated into calls of scions that use LAMBDA
+objects generated from constituent expressions.  If you are defining
+a function that calls itself recursively from within a loop$ you must
+include the xargs :LOOP$-RECURSION T and an explicit :MEASURE.  Note:
+this error occurred in the context (LAMBDA$ NIL (HELLO 'JOHN)).
 
 ACL2 !>>>(LOOP$ FOR E IN '(JOHN MARY)
                 COLLECT (HELLO E))
 
 
-ACL2 Error in TOP-LEVEL:  The body of a LAMBDA object, lambda$ term,
-or loop$ statement should be fully badged but HELLO is used in 
-((LAMBDA (E) (HELLO E)) LOOP$-IVAR) and has no badge.  See :DOC gratuitous-
-lambda-object-restrictions for a workaround if you really mean to have
-an ill-formed LAMBDA-like constant in your code.  You may see this
-message without having explicitly typed a LAMBDA if you used a loop$
-statement.  Loop$ statements are translated into calls of scions that
-use LAMBDA objects generated from constituent expressions.  If you
-are defining a function that calls itself recursively from within a
-loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
+ACL2 Error [Translate] in TOP-LEVEL:  The body of a LAMBDA object,
+lambda$ term, or loop$ statement should be fully badged but HELLO is
+used in ((LAMBDA (E) (HELLO E)) LOOP$-IVAR) and has no badge.  See
+:DOC gratuitous-lambda-object-restrictions for a workaround if you
+really mean to have an ill-formed LAMBDA-like constant in your code.
+You may see this message without having explicitly typed a LAMBDA if
+you used a loop$ statement.  Loop$ statements are translated into calls
+of scions that use LAMBDA objects generated from constituent expressions.
+If you are defining a function that calls itself recursively from within
+a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
 :MEASURE.  Note:  this error occurred in the context 
 (LAMBDA$ (LOOP$-IVAR)
          (LET ((E LOOP$-IVAR))
@@ -765,16 +769,16 @@ ACL2 !>>>(LOOP$ FOR E IN '("John" "Mary")
                 COLLECT (HELLO E))
 
 
-ACL2 Error in TOP-LEVEL:  The body of a LAMBDA object, lambda$ term,
-or loop$ statement should be fully badged but HELLO is used in 
-((LAMBDA (E) (HELLO E)) LOOP$-IVAR) and has no badge.  See :DOC gratuitous-
-lambda-object-restrictions for a workaround if you really mean to have
-an ill-formed LAMBDA-like constant in your code.  You may see this
-message without having explicitly typed a LAMBDA if you used a loop$
-statement.  Loop$ statements are translated into calls of scions that
-use LAMBDA objects generated from constituent expressions.  If you
-are defining a function that calls itself recursively from within a
-loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
+ACL2 Error [Translate] in TOP-LEVEL:  The body of a LAMBDA object,
+lambda$ term, or loop$ statement should be fully badged but HELLO is
+used in ((LAMBDA (E) (HELLO E)) LOOP$-IVAR) and has no badge.  See
+:DOC gratuitous-lambda-object-restrictions for a workaround if you
+really mean to have an ill-formed LAMBDA-like constant in your code.
+You may see this message without having explicitly typed a LAMBDA if
+you used a loop$ statement.  Loop$ statements are translated into calls
+of scions that use LAMBDA objects generated from constituent expressions.
+If you are defining a function that calls itself recursively from within
+a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
 :MEASURE.  Note:  this error occurred in the context 
 (LAMBDA$ (LOOP$-IVAR)
          (LET ((E LOOP$-IVAR))
@@ -792,16 +796,16 @@ ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
                COLLECT (HELLO E))
 
 
-ACL2 Error in TOP-LEVEL:  The body of a LAMBDA object, lambda$ term,
-or loop$ statement should be fully badged but HELLO is used in 
-((LAMBDA (E) (HELLO E)) LOOP$-IVAR) and has no badge.  See :DOC gratuitous-
-lambda-object-restrictions for a workaround if you really mean to have
-an ill-formed LAMBDA-like constant in your code.  You may see this
-message without having explicitly typed a LAMBDA if you used a loop$
-statement.  Loop$ statements are translated into calls of scions that
-use LAMBDA objects generated from constituent expressions.  If you
-are defining a function that calls itself recursively from within a
-loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
+ACL2 Error [Translate] in TOP-LEVEL:  The body of a LAMBDA object,
+lambda$ term, or loop$ statement should be fully badged but HELLO is
+used in ((LAMBDA (E) (HELLO E)) LOOP$-IVAR) and has no badge.  See
+:DOC gratuitous-lambda-object-restrictions for a workaround if you
+really mean to have an ill-formed LAMBDA-like constant in your code.
+You may see this message without having explicitly typed a LAMBDA if
+you used a loop$ statement.  Loop$ statements are translated into calls
+of scions that use LAMBDA objects generated from constituent expressions.
+If you are defining a function that calls itself recursively from within
+a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
 :MEASURE.  Note:  this error occurred in the context 
 (LAMBDA$ (LOOP$-IVAR)
          (LET ((E LOOP$-IVAR))
@@ -828,7 +832,7 @@ Summary
 Form:  ( DEFUN CALLER1 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN CALLER1 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN CALLER1 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(VERIFY-GUARDS CALLER1)
@@ -843,7 +847,7 @@ Summary
 Form:  ( VERIFY-GUARDS CALLER1)
 Rules: NIL
 
-ACL2 Error in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
+ACL2 Error [Failure] in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(TRACE$ CALLER1)
@@ -857,18 +861,18 @@ using option :native, :def, or :formals.  See :DOC trace$.
 ACL2 !>>>(CALLER1 'JOHN)
 
 
-ACL2 Error in TOP-LEVEL:  The symbol CALLER1 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER1 'JOHN).
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol CALLER1 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER1 'JOHN).
 
 ACL2 !>>>(CALLER1 "Mary and Tom")
 
 
-ACL2 Error in TOP-LEVEL:  The symbol CALLER1 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER1 "Mary and Tom").
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol CALLER1 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER1 "Mary and Tom").
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
 
@@ -879,10 +883,10 @@ recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
 ACL2 >>>(CALLER1 "Mary and Tom")
 
 
-ACL2 Error in TOP-LEVEL:  The symbol CALLER1 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER1 "Mary and Tom").
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol CALLER1 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER1 "Mary and Tom").
 
 ACL2 >>>(SET-GUARD-CHECKING T)
 
@@ -897,24 +901,25 @@ ACL2 !>>>(DEFUN CALLER2 (E)
                         (LIST E)))
 
 
-ACL2 Error in ( DEFUN CALLER2 ...):  The body of a LAMBDA object, lambda$
-term, or loop$ statement should be fully badged but HELLO is used in
-(HELLO D) and has no badge.  See :DOC gratuitous-lambda-object-restrictions
-for a workaround if you really mean to have an ill-formed LAMBDA-like
-constant in your code.  You may see this message without having explicitly
-typed a LAMBDA if you used a loop$ statement.  Loop$ statements are
-translated into calls of scions that use LAMBDA objects generated from
-constituent expressions.  If you are defining a function that calls
-itself recursively from within a loop$ you must include the xargs :LOOP$-
-RECURSION T and an explicit :MEASURE.  Note:  this error occurred in
-the context (LAMBDA$ (D) (DECLARE (XARGS :GUARD (SYMBOLP D))) (HELLO D)).
+ACL2 Error [Translate] in ( DEFUN CALLER2 ...):  The body of a LAMBDA
+object, lambda$ term, or loop$ statement should be fully badged but
+HELLO is used in (HELLO D) and has no badge.  See :DOC gratuitous-
+lambda-object-restrictions for a workaround if you really mean to have
+an ill-formed LAMBDA-like constant in your code.  You may see this
+message without having explicitly typed a LAMBDA if you used a loop$
+statement.  Loop$ statements are translated into calls of scions that
+use LAMBDA objects generated from constituent expressions.  If you
+are defining a function that calls itself recursively from within a
+loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
+:MEASURE.  Note:  this error occurred in the context 
+(LAMBDA$ (D) (DECLARE (XARGS :GUARD (SYMBOLP D))) (HELLO D)).
 
 
 Summary
 Form:  ( DEFUN CALLER2 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN CALLER2 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN CALLER2 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(VERIFY-GUARDS CALLER2)
@@ -929,7 +934,7 @@ Summary
 Form:  ( VERIFY-GUARDS CALLER2)
 Rules: NIL
 
-ACL2 Error in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
+ACL2 Error [Failure] in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(TRACE$ CALLER2)
@@ -943,18 +948,18 @@ using option :native, :def, or :formals.  See :DOC trace$.
 ACL2 !>>>(CALLER2 'JOHN)
 
 
-ACL2 Error in TOP-LEVEL:  The symbol CALLER2 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER2 'JOHN).
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol CALLER2 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER2 'JOHN).
 
 ACL2 !>>>(CALLER2 "Mary and Tom")
 
 
-ACL2 Error in TOP-LEVEL:  The symbol CALLER2 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER2 "Mary and Tom").
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol CALLER2 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER2 "Mary and Tom").
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
 
@@ -965,10 +970,10 @@ recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
 ACL2 >>>(CALLER2 "Mary and Tom")
 
 
-ACL2 Error in TOP-LEVEL:  The symbol CALLER2 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER2 "Mary and Tom").
+ACL2 Error [Translate] in TOP-LEVEL:  The symbol CALLER2 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER2 "Mary and Tom").
 
 ACL2 >>>(SET-GUARD-CHECKING T)
 
@@ -997,31 +1002,31 @@ Goal
 (EQUAL (APPLY$ 'HELLO '(JOHN))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
                      '(HI JOHN)))
 
 
-ACL2 Error in ( THM ...):  The body of a LAMBDA object, lambda$ term,
-or loop$ statement should be fully badged but HELLO is used in (HELLO 'JOHN)
-and has no badge.  See :DOC gratuitous-lambda-object-restrictions for
-a workaround if you really mean to have an ill-formed LAMBDA-like constant
-in your code.  You may see this message without having explicitly typed
-a LAMBDA if you used a loop$ statement.  Loop$ statements are translated
-into calls of scions that use LAMBDA objects generated from constituent
-expressions.  If you are defining a function that calls itself recursively
-from within a loop$ you must include the xargs :LOOP$-RECURSION T and
-an explicit :MEASURE.  Note:  this error occurred in the context 
-(LAMBDA$ NIL (HELLO 'JOHN)).
+ACL2 Error [Translate] in ( THM ...):  The body of a LAMBDA object,
+lambda$ term, or loop$ statement should be fully badged but HELLO is
+used in (HELLO 'JOHN) and has no badge.  See :DOC gratuitous-lambda-
+object-restrictions for a workaround if you really mean to have an
+ill-formed LAMBDA-like constant in your code.  You may see this message
+without having explicitly typed a LAMBDA if you used a loop$ statement.
+Loop$ statements are translated into calls of scions that use LAMBDA
+objects generated from constituent expressions.  If you are defining
+a function that calls itself recursively from within a loop$ you must
+include the xargs :LOOP$-RECURSION T and an explicit :MEASURE.  Note:
+this error occurred in the context (LAMBDA$ NIL (HELLO 'JOHN)).
 
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM
@@ -1068,7 +1073,7 @@ Goal''
 (EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
@@ -1076,24 +1081,24 @@ ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
               :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
 
 
-ACL2 Error in ( THM ...):  The body of a LAMBDA object, lambda$ term,
-or loop$ statement should be fully badged but HELLO is used in (HELLO 'JOHN)
-and has no badge.  See :DOC gratuitous-lambda-object-restrictions for
-a workaround if you really mean to have an ill-formed LAMBDA-like constant
-in your code.  You may see this message without having explicitly typed
-a LAMBDA if you used a loop$ statement.  Loop$ statements are translated
-into calls of scions that use LAMBDA objects generated from constituent
-expressions.  If you are defining a function that calls itself recursively
-from within a loop$ you must include the xargs :LOOP$-RECURSION T and
-an explicit :MEASURE.  Note:  this error occurred in the context 
-(LAMBDA$ NIL (HELLO 'JOHN)).
+ACL2 Error [Translate] in ( THM ...):  The body of a LAMBDA object,
+lambda$ term, or loop$ statement should be fully badged but HELLO is
+used in (HELLO 'JOHN) and has no badge.  See :DOC gratuitous-lambda-
+object-restrictions for a workaround if you really mean to have an
+ill-formed LAMBDA-like constant in your code.  You may see this message
+without having explicitly typed a LAMBDA if you used a loop$ statement.
+Loop$ statements are translated into calls of scions that use LAMBDA
+objects generated from constituent expressions.  If you are defining
+a function that calls itself recursively from within a loop$ you must
+include the xargs :LOOP$-RECURSION T and an explicit :MEASURE.  Note:
+this error occurred in the context (LAMBDA$ NIL (HELLO 'JOHN)).
 
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
@@ -1101,49 +1106,49 @@ ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
                               '(HI JOHN))))
 
 
-ACL2 Error in ( THM ...):  The symbol APPLY$-WARRANT-HELLO (in package
-"ACL2") has neither a function nor macro definition in ACL2.  Please
-define it.  See :DOC near-misses.  Note:  this error occurred in the
-context (APPLY$-WARRANT-HELLO).
+ACL2 Error [Translate] in ( THM ...):  The symbol APPLY$-WARRANT-HELLO
+(in package "ACL2") has neither a function nor macro definition in
+ACL2.  Please define it.  See :DOC near-misses.  Note:  this error
+occurred in the context (APPLY$-WARRANT-HELLO).
 
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
 
 
-ACL2 Error in ( THM ...):  The symbol CALLER1 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER1 'JOHN).
+ACL2 Error [Translate] in ( THM ...):  The symbol CALLER1 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER1 'JOHN).
 
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
 
 
-ACL2 Error in ( THM ...):  The symbol CALLER2 (in package "ACL2") has
-neither a function nor macro definition in ACL2.  Please define it.
-See :DOC near-misses.  Note:  this error occurred in the context 
-(CALLER2 'JOHN).
+ACL2 Error [Translate] in ( THM ...):  The symbol CALLER2 (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (CALLER2 'JOHN).
 
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(DEFUN CALLER3 (E)
@@ -1238,7 +1243,7 @@ Goal'
 (EQUAL (APPLY$ 'HELLO '(JOHN))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>Bye.
@@ -1354,7 +1359,7 @@ Summary
 Form:  ( VERIFY-GUARDS CALLER1)
 Rules: NIL
 
-ACL2 Error in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
+ACL2 Error [Failure] in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(TRACE$ CALLER1)
@@ -1428,7 +1433,7 @@ Summary
 Form:  ( VERIFY-GUARDS CALLER2)
 Rules: NIL
 
-ACL2 Error in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
+ACL2 Error [Failure] in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(TRACE$ CALLER2)
@@ -1489,7 +1494,7 @@ Goal
 (EQUAL (APPLY$ 'HELLO '(JOHN))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
@@ -1533,7 +1538,7 @@ Goal''
                   NIL))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM
@@ -1580,7 +1585,7 @@ Goal''
 (EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
@@ -1608,7 +1613,7 @@ Goal
 (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
@@ -1616,22 +1621,21 @@ ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
                               '(HI JOHN))))
 
 
-ACL2 Error in ( THM ...):  The symbol APPLY$-WARRANT-HELLO (in package
-"ACL2") has neither a function nor macro definition in ACL2.  Please
-define it.  See :DOC near-misses.  Note:  this error occurred in the
-context (APPLY$-WARRANT-HELLO).
+ACL2 Error [Translate] in ( THM ...):  The symbol APPLY$-WARRANT-HELLO
+(in package "ACL2") has neither a function nor macro definition in
+ACL2.  Please define it.  See :DOC near-misses.  Note:  this error
+occurred in the context (APPLY$-WARRANT-HELLO).
 
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER1 JOHN)
-  2> (ACL2_*1*_ACL2::CALLER1 JOHN)
 Goal'
 
 ([ A key checkpoint:
@@ -1663,12 +1667,11 @@ Goal'
 (EQUAL (APPLY$ 'HELLO '(JOHN))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER2 JOHN)
-  2> (ACL2_*1*_ACL2::CALLER2 JOHN)
 Goal'
 Goal''
 
@@ -1716,7 +1719,7 @@ Goal''
                 '((D . JOHN))))
      '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(DEFUN CALLER3 (E)
@@ -1812,7 +1815,7 @@ Goal'
 (EQUAL (APPLY$ 'HELLO '(JOHN))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>Bye.
@@ -1948,7 +1951,7 @@ Summary
 Form:  ( VERIFY-GUARDS CALLER1)
 Rules: NIL
 
-ACL2 Error in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
+ACL2 Error [Failure] in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(TRACE$ CALLER1)
@@ -2019,7 +2022,7 @@ Summary
 Form:  ( VERIFY-GUARDS CALLER2)
 Rules: NIL
 
-ACL2 Error in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
+ACL2 Error [Failure] in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(TRACE$ CALLER2)
@@ -2082,7 +2085,7 @@ Goal
 (EQUAL (APPLY$ 'HELLO '(JOHN))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
@@ -2126,7 +2129,7 @@ Goal''
                   NIL))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM
@@ -2173,7 +2176,7 @@ Goal''
 (EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
@@ -2201,7 +2204,7 @@ Goal
 (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
@@ -2209,22 +2212,21 @@ ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
                               '(HI JOHN))))
 
 
-ACL2 Error in ( THM ...):  The symbol APPLY$-WARRANT-HELLO (in package
-"ACL2") has neither a function nor macro definition in ACL2.  Please
-define it.  See :DOC near-misses.  Note:  this error occurred in the
-context (APPLY$-WARRANT-HELLO).
+ACL2 Error [Translate] in ( THM ...):  The symbol APPLY$-WARRANT-HELLO
+(in package "ACL2") has neither a function nor macro definition in
+ACL2.  Please define it.  See :DOC near-misses.  Note:  this error
+occurred in the context (APPLY$-WARRANT-HELLO).
 
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER1 JOHN)
-  2> (ACL2_*1*_ACL2::CALLER1 JOHN)
 Goal'
 
 ([ A key checkpoint:
@@ -2256,12 +2258,11 @@ Goal'
 (EQUAL (APPLY$ 'HELLO '(JOHN))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER2 JOHN)
-  2> (ACL2_*1*_ACL2::CALLER2 JOHN)
 Goal'
 Goal''
 
@@ -2309,7 +2310,7 @@ Goal''
                 '((D . JOHN))))
      '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(DEFUN CALLER3 (E)
@@ -2404,7 +2405,7 @@ Goal'
 (EQUAL (APPLY$ 'HELLO '(JOHN))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>Bye.
@@ -2517,7 +2518,7 @@ Summary
 Form:  ( VERIFY-GUARDS CALLER1)
 Rules: NIL
 
-ACL2 Error in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
+ACL2 Error [Failure] in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(TRACE$ CALLER1)
@@ -2583,7 +2584,7 @@ Summary
 Form:  ( VERIFY-GUARDS CALLER2)
 Rules: NIL
 
-ACL2 Error in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
+ACL2 Error [Failure] in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(TRACE$ CALLER2)
@@ -2670,7 +2671,7 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-HELLO)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
@@ -2724,7 +2725,7 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-HELLO)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM
@@ -2787,7 +2788,7 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-HELLO)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
@@ -2831,7 +2832,7 @@ Goal'
 (EQUAL (APPLY$ (LAMBDA$ NIL '(HI JOHN)) NIL)
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
@@ -2852,10 +2853,9 @@ Rules: ((:EXECUTABLE-COUNTERPART CAR)
 Proof succeeded.
 ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER1 JOHN)
-  2> (ACL2_*1*_ACL2::CALLER1 JOHN)
 Goal'
-    3> (ACL2_*1*_ACL2::HELLO JOHN)
-    <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+  2> (ACL2_*1*_ACL2::HELLO JOHN)
+  <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
 Forcing Round 1 is pending (caused first by Goal').
 
@@ -2903,15 +2903,14 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-HELLO)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER2 JOHN)
-  2> (ACL2_*1*_ACL2::CALLER2 JOHN)
 Goal'
-    3> (ACL2_*1*_ACL2::HELLO JOHN)
-    <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+  2> (ACL2_*1*_ACL2::HELLO JOHN)
+  <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
 Forcing Round 1 is pending (caused first by Goal').
 
@@ -2960,7 +2959,7 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-HELLO)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(DEFUN CALLER3 (E)
@@ -3075,7 +3074,7 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-HELLO)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>Bye.
@@ -3401,7 +3400,7 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-HELLO)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
@@ -3457,7 +3456,7 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-HELLO)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM
@@ -3522,7 +3521,7 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-HELLO)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
@@ -3568,7 +3567,7 @@ Goal'
 (EQUAL (APPLY$ (LAMBDA$ NIL '(HI JOHN)) NIL)
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
@@ -3592,13 +3591,11 @@ Proof succeeded.
 ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER1 JOHN)
   2> (CALLER1 JOHN)
-    3> (ACL2_*1*_ACL2::CALLER1 JOHN)
-      4> (CALLER1 JOHN)
 Goal'
-        5> (ACL2_*1*_ACL2::HELLO JOHN)
-          6> (HELLO JOHN)
-          <6 (HELLO (HI JOHN))
-        <5 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+    3> (ACL2_*1*_ACL2::HELLO JOHN)
+      4> (HELLO JOHN)
+      <4 (HELLO (HI JOHN))
+    <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
 Forcing Round 1 is pending (caused first by Goal').
 
@@ -3646,19 +3643,17 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-HELLO)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
 1> (ACL2_*1*_ACL2::CALLER2 JOHN)
   2> (CALLER2 JOHN)
-    3> (ACL2_*1*_ACL2::CALLER2 JOHN)
-      4> (CALLER2 JOHN)
 Goal'
-        5> (ACL2_*1*_ACL2::HELLO JOHN)
-          6> (HELLO JOHN)
-          <6 (HELLO (HI JOHN))
-        <5 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+    3> (ACL2_*1*_ACL2::HELLO JOHN)
+      4> (HELLO JOHN)
+      <4 (HELLO (HI JOHN))
+    <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
 Forcing Round 1 is pending (caused first by Goal').
 
@@ -3707,7 +3702,7 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-HELLO)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(DEFUN CALLER3 (E)
@@ -3826,7 +3821,7 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-HELLO)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>Bye.
@@ -3838,17 +3833,17 @@ ACL2 !>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (UNDEFINED 'JOHN))
                     (APPLY$ 'UNDEFINED '(JOHN))))
 
 
-ACL2 Error in ( THM ...):  The symbol UNDEFINED (in package "ACL2")
-has neither a function nor macro definition in ACL2.  Please define
-it.  See :DOC near-misses.  Note:  this error occurred in the context
-(UNDEFINED 'JOHN).
+ACL2 Error [Translate] in ( THM ...):  The symbol UNDEFINED (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (UNDEFINED 'JOHN).
 
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
@@ -3895,7 +3890,7 @@ Goal''
 (EQUAL (HIDE (EV$ '(UNDEFINED 'JOHN) NIL))
        (APPLY$ 'UNDEFINED '(JOHN)))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
@@ -3943,7 +3938,7 @@ Goal'
                NIL)
        (APPLY$ 'UNDEFINED '(JOHN)))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN PROGRAM-MODE-WITH-NO-BADGE (X)
@@ -3959,17 +3954,17 @@ ACL2 !>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (PROGRAM-MODE-WITH-NO-BADGE 'JOHN))
                     '(HI JOHN)))
 
 
-ACL2 Error in ( THM ...):  The body of a LAMBDA object, lambda$ term,
-or loop$ statement should be fully badged but PROGRAM-MODE-WITH-NO-BADGE
-is used in (PROGRAM-MODE-WITH-NO-BADGE 'JOHN) and has no badge.  See
-:DOC gratuitous-lambda-object-restrictions for a workaround if you
-really mean to have an ill-formed LAMBDA-like constant in your code.
-You may see this message without having explicitly typed a LAMBDA if
-you used a loop$ statement.  Loop$ statements are translated into calls
-of scions that use LAMBDA objects generated from constituent expressions.
-If you are defining a function that calls itself recursively from within
-a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
-:MEASURE.  Note:  this error occurred in the context 
+ACL2 Error [Translate] in ( THM ...):  The body of a LAMBDA object,
+lambda$ term, or loop$ statement should be fully badged but 
+PROGRAM-MODE-WITH-NO-BADGE is used in (PROGRAM-MODE-WITH-NO-BADGE 'JOHN)
+and has no badge.  See :DOC gratuitous-lambda-object-restrictions for
+a workaround if you really mean to have an ill-formed LAMBDA-like constant
+in your code.  You may see this message without having explicitly typed
+a LAMBDA if you used a loop$ statement.  Loop$ statements are translated
+into calls of scions that use LAMBDA objects generated from constituent
+expressions.  If you are defining a function that calls itself recursively
+from within a loop$ you must include the xargs :LOOP$-RECURSION T and
+an explicit :MEASURE.  Note:  this error occurred in the context 
 (LAMBDA$ NIL (PROGRAM-MODE-WITH-NO-BADGE 'JOHN)).
 
 
@@ -3977,7 +3972,7 @@ Summary
 Form:  ( THM ...)
 Rules: NIL
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
@@ -4026,7 +4021,7 @@ Goal''
                   NIL))
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
@@ -4074,7 +4069,7 @@ Goal'
                NIL)
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT
@@ -4141,7 +4136,7 @@ Goal''
       NIL))
  '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
@@ -4289,7 +4284,7 @@ Subgoal 10'
                   NIL)))
   '(HI JOHN)))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
@@ -4323,7 +4318,7 @@ Goal
                NIL)
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT (X)
@@ -4376,7 +4371,7 @@ Goal
                NIL)
        '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
@@ -4430,7 +4425,7 @@ Goal''
         NIL))
  '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
@@ -4576,7 +4571,7 @@ Subgoal 10'
                     NIL)))
   '(HI JOHN)))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFWARRANT PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT)
@@ -4666,7 +4661,7 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
@@ -4750,7 +4745,7 @@ Goal''
          NIL)))
   '(HI JOHN)))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
@@ -4786,7 +4781,7 @@ Goal
                         NIL)
                 '(HI JOHN)))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN RUN-THIS-VERSION-1 (X)
@@ -4805,7 +4800,8 @@ Summary
 Form:  ( DEFUN RUN-THIS-VERSION-1 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN RUN-THIS-VERSION-1 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN RUN-THIS-VERSION-1 ...):  See :DOC
+failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN RUN-THIS-VERSION-1 (X)
@@ -4846,8 +4842,8 @@ Summary
 Form:  ( VERIFY-GUARDS PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT)
 Rules: NIL
 
-ACL2 Error in ( VERIFY-GUARDS PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT):
-See :DOC failure.
+ACL2 Error [Failure] in ( VERIFY-GUARDS 
+PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN RUN-THIS-VERSION-2 (X)
@@ -4902,7 +4898,8 @@ Summary
 Form:  ( VERIFY-GUARDS RUN-THIS-VERSION-2)
 Rules: NIL
 
-ACL2 Error in ( VERIFY-GUARDS RUN-THIS-VERSION-2):  See :DOC failure.
+ACL2 Error [Failure] in ( VERIFY-GUARDS RUN-THIS-VERSION-2):  See :DOC
+failure.
 
 ******** FAILED ********
 ACL2 !>>(THM (EQUAL (RUN-THIS-VERSION-2 'JOHN)
@@ -4972,7 +4969,7 @@ Goal''
           '((LOOP$-IVAR . JOHN))))
  '(HI JOHN))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN RUN-THIS-VERSION-3 (X)
@@ -5026,16 +5023,13 @@ RUN-THIS-VERSION-3 is compliant with Common Lisp.
 
 Summary
 Form:  ( VERIFY-GUARDS RUN-THIS-VERSION-3)
-Rules: ((:DEFINITION NOT)
-        (:DEFINITION SYNP)
+Rules: ((:DEFINITION MEMBER-EQUAL)
+        (:DEFINITION NOT)
         (:EXECUTABLE-COUNTERPART APPLY$-GUARD)
-        (:EXECUTABLE-COUNTERPART APPLY$-PRIMP)
+        (:EXECUTABLE-COUNTERPART CONSP)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
-        (:META APPLY$-PRIM-META-FN-CORRECT)
-        (:REWRITE ALWAYS$-SINGLETON)
-        (:REWRITE APPLY$-PRIMITIVE)
         (:REWRITE CAR-CONS)
-        (:REWRITE PLAIN-UQI-SYMBOL-LISTP))
+        (:REWRITE CDR-CONS))
  RUN-THIS-VERSION-3
 ACL2 !>>(THM (EQUAL (RUN-THIS-VERSION-3 'JOHN)
                     '((HI JOHN))))
@@ -5091,7 +5085,7 @@ a full proof.
 [1]Goal
 (APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
@@ -5142,7 +5136,7 @@ Goal'
    (RUN-THIS-VERSION-3 'JOHN)))
  '((HI JOHN)))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>Bye.

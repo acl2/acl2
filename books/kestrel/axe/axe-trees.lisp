@@ -23,18 +23,21 @@
 
 ;todo: can variables always occur?
 ;like pseudo-termp but allows integers (nodenums in some DAG) to also appear
-;might also need to be able to say that the nodenums are in range
+;; See also bounded-axe-treep.
 (mutual-recursion
  (defun axe-treep (tree)
    (declare (xargs :guard t))
    (if (atom tree)
-       (or (symbolp tree)
-           (natp tree) ;a nodenum
+       (or (symbolp tree) ; a variable
+           (natp tree) ; a nodenum
            )
      (let ((fn (ffn-symb tree)))
        (if (eq fn 'quote)
+           ;; a quoted constant;
            (and (= 1 (len (fargs tree)))
                 (true-listp (fargs tree)))
+         ;; the application of a function symbol or lambda to args that are axe trees:
+         ;; TODO: Can we require the lambda to be closed?
          (and (all-axe-treep (fargs tree))
               (true-listp (fargs tree))
               (or (symbolp fn)
@@ -42,7 +45,7 @@
                        (equal (len fn) 3)
                        (eq (car fn) 'lambda)
                        (symbol-listp (cadr fn))
-                       (pseudo-termp (caddr fn)) ;todo: can an axe tree appear here?
+                       (pseudo-termp (caddr fn))
                        (equal (len (cadr fn))
                               (len (fargs tree))))))))))
  (defun all-axe-treep (trees)
@@ -100,6 +103,7 @@
 
 (mutual-recursion
  ;; Check that all nodenums in TREE are less than BOUND.
+ ;; TODO: Perhaps rename to is-bounded-axe-treep.
  (defun bounded-axe-treep (tree bound)
    (declare (xargs :guard (and (axe-treep tree)
                                (integerp bound))))

@@ -22,7 +22,9 @@
                                   assign
                                   boolean
                                   byte
+                                  defstruct
                                   error
+                                  member
                                   pi
                                   pprint-indent
                                   schar
@@ -116,6 +118,7 @@
                pos-listp
                pseudo-event-form-listp
                pseudo-event-formp
+               pseudo-event-form
                pseudo-fn-args-p
                pseudo-fn-p
                pseudo-lambda

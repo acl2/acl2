@@ -234,7 +234,7 @@ Goal''
                      (RETURN)))
        ???)
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 M1 >>'(END OF DEMO 1)

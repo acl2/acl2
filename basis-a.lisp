@@ -502,6 +502,7 @@
 (defmacro wormhole (name entry-lambda input form
                          &key
                          (current-package 'same current-packagep)
+                         (useless-runes 'same useless-runesp)
                          (ld-skip-proofsp 'same ld-skip-proofspp)
                          (ld-redefinition-action 'save ld-redefinition-actionp)
                          (ld-prompt ''wormhole-prompt)
@@ -515,6 +516,11 @@
                          (ld-query-control-alist 'same ld-query-control-alistp)
                          (ld-verbose 'same ld-verbosep)
                          (ld-user-stobjs-modified-warning ':same))
+
+; Warning: Keep this in sync with f-get-ld-specials, f-put-ld-specials,
+; *initial-ld-special-bindings*, ld-alist-raw, chk-acceptable-ld-fn1-pair, and
+; ld.
+
   `(with-wormhole-lock
     (prog2$
      (wormhole-eval ,name ,entry-lambda
@@ -531,6 +537,9 @@
        ,@(append
           (if current-packagep
               (list `(cons 'current-package ,current-package))
+            nil)
+          (if useless-runesp
+              (list `(cons 'useless-runes ,useless-runes))
             nil)
           (if ld-skip-proofspp
               (list `(cons 'ld-skip-proofsp ,ld-skip-proofsp))
@@ -4947,7 +4956,34 @@
                             (fmt-ctx ctx col channel state)
                             (fmt1 ":  " nil col channel state nil)))))))
 
-(defun error-fms-channel (hardp ctx str alist channel state)
+(defun er-soft-off-p1 (summary wrld)
+
+; This function is used by er-soft to determine whether a given error should be
+; printed.
+
+  (declare (xargs :guard (and (or (null summary)
+                                  (and (stringp summary)
+                                       (standard-string-p summary)))
+                              (plist-worldp wrld)
+                              (standard-string-alistp
+                               (table-alist 'inhibit-er-soft-table wrld)))))
+  (and summary
+       (assoc-string-equal
+        summary
+        (table-alist 'inhibit-er-soft-table wrld))))
+
+(defun er-soft-off-p (summary state)
+  (declare (xargs :stobjs state
+                  :guard (and (or (null summary)
+                                  (and (stringp summary)
+                                       (standard-string-p summary)))
+                              (state-p state)
+                              (standard-string-alistp
+                               (table-alist 'inhibit-er-soft-table
+                                            (w state))))))
+  (er-soft-off-p1 summary (w state)))
+
+(defun error-fms-channel (hardp ctx summary str alist channel state newlines)
 
 ; This function prints the "ACL2 Error" banner and ctx, then the
 ; user's str and alist, and then two carriage returns.  It returns state.
@@ -4961,28 +4997,44 @@
 ; by our er macro.  We rewrote the function this way simply so we
 ; would not have to remember that some variables are special.
 
-  (mv-let (col state)
-          (fmt1 (if hardp
-                    "HARD ACL2 ERROR"
-                  "ACL2 Error")
-                nil 0 channel state nil)
-          (mv-let (col state)
-                  (fmt-in-ctx ctx col channel state)
-                  (fmt-abbrev str alist col channel state ""))))
+  (cond ((er-soft-off-p summary state)
+         state)
+        (t
+         (flet ((newlines (n channel state)
+                          (case n
+                            (0 state)
+                            (1 (newline channel state))
+                            (2 (pprogn (newline channel state)
+                                       (newline channel state)))
+                            (t (prog2$ (er hard 'error-fms-channel
+                                           "Error: The NEWLINES argument of ~
+                                            error-fms-channel must be 0, 1, ~
+                                            or 2, hence ~x0 is illegal."
+                                           n)
+                                       state)))))
+           (with-output-lock
+            (pprogn
+             (newlines newlines channel state)
+             (mv-let (col state)
+               (fmt1 (if hardp
+                         "HARD ACL2 ERROR~#0~[~/ [~s1]~]"
+                       "ACL2 Error~#0~[~/ [~s1]~]")
+                     (list (cons #\0 (if summary 1 0))
+                           (cons #\1 summary))
+                     0 channel state nil)
+               (mv-let (col state)
+                 (fmt-in-ctx ctx col channel state)
+                 (fmt-abbrev str alist col channel state "")))
+             (newlines newlines channel state)))))))
 
-(defun error-fms (hardp ctx str alist state)
+(defun error-fms (hardp ctx summary str alist state)
 
 ; See error-fms-channel.  Here we also print extra newlines.
 
 ; Keep in sync with error-fms-cw.
 
-  (with-output-lock
-   (let ((chan (f-get-global 'standard-co state)))
-     (pprogn (newline chan state)
-             (newline chan state)
-             (error-fms-channel hardp ctx str alist chan state)
-             (newline chan state)
-             (newline chan state)))))
+  (let ((chan (f-get-global 'standard-co state)))
+    (error-fms-channel hardp ctx summary str alist chan state 2)))
 
 #-acl2-loop-only
 (defvar *accumulated-warnings* nil)
@@ -5985,17 +6037,17 @@
        (member-eq token
                   (f-get-global 'inhibit-output-lst state))))
 
-(defun error1 (ctx str alist state)
+(defun error1 (ctx summary str alist state)
 
 ; Warning: Keep this in sync with error1-safe and error1@par.
 
   (pprogn
-   (io? error nil state (alist str ctx)
-        (error-fms nil ctx str alist state))
+   (io? error nil state (alist str ctx summary)
+        (error-fms nil ctx summary str alist state))
    (mv t nil state)))
 
 #+acl2-par
-(defun error1@par (ctx str alist state)
+(defun error1@par (ctx summary str alist state)
 
 ; Keep in sync with error1.  We accept state so that calls to error1 and
 ; error1@par look the same.
@@ -6003,8 +6055,8 @@
   (declare (ignore state))
   (prog2$
    (our-with-terminal-input ; probably not necessary because of (io? ... t ...)
-    (io? error t state (alist str ctx)
-         (error-fms nil ctx str alist state)
+    (io? error t state (alist str ctx summary)
+         (error-fms nil ctx summary str alist state)
          :chk-translatable nil))
    (mv@par t nil state)))
 
@@ -6016,7 +6068,7 @@
 
   (pprogn
    (io? error nil state (alist str ctx)
-        (error-fms nil ctx str alist state))
+        (error-fms nil ctx nil str alist state))
    (mv nil nil state)))
 
 (defconst *uninhibited-warning-summaries*
@@ -6244,6 +6296,14 @@
     `(or (output-ignored-p ',tp state)
          (warning-off-p ,summary state))))
 
+(defmacro er-soft (context summary str &rest str-args)
+  (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
+    (list 'error1 context summary str alist 'state)))
+
+(defmacro er-soft@par (context summary str &rest str-args)
+  (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
+    (list 'error1@par context summary str alist 'state)))
+
 (defmacro observation1-body (commentp)
   `(io? observation ,commentp state
         (str alist ctx abbrev-p)
@@ -6326,7 +6386,7 @@
 
 (defrec defstobj-template
   ((congruent-to . non-memoizable)
-   (recognizer creator . fixer)
+   (recognizer . creator)
    field-templates
    inline
    . non-executable)
@@ -6387,14 +6447,6 @@
         (t :scalar))
     :scalar))
 
-(defconst *stobj-fixer-suffix*
-
-; This is used by both defstobj and defabsstobj.  It was tempting to use "-FIX"
-; instead, but as of this writing in late August 2021, many books already
-; define functions st-FIX for stobjs st (concrete or abstract).
-
-  "$FIX")
-
 (defun defstobj-fnname (root key1 key2 renaming-alist)
 
 ; Warning: Keep this in sync with stobj-updater-guess-from-accessor.
@@ -6402,13 +6454,12 @@
 ; This function generates the actual name we will use for a function generated
 ; by defstobj.  Root and renaming-alist are, respectively, a symbol and an
 ; alist.  Key1 describes which function name we are to generate and is one of
-; :length, :resize, :recognizer, :accessor, :updater, :creator, or :fixer.
-; Key2 describes the ``type'' of root.  It is :top if root is the name of the
-; stobj and it is otherwise either :array, :hash-table, :stobj-table, or
-; :scalar (see defstobj-fnname-key2).  Note that if renaming-alist is nil, then
-; this function returns the ``default'' name used.  If renaming-alist pairs
-; some default name with an illegal name, the result is, of course, an illegal
-; name.
+; :length, :resize, :recognizer, :accessor, :updater, or :creator.  Key2
+; describes the ``type'' of root.  It is :top if root is the name of the stobj
+; and it is otherwise either :array, :hash-table, :stobj-table, or :scalar (see
+; defstobj-fnname-key2).  Note that if renaming-alist is nil, then this
+; function returns the ``default'' name used.  If renaming-alist pairs some
+; default name with an illegal name, the result is, of course, an illegal name.
 
   (let* ((default-fnname
            (case key1
@@ -6440,8 +6491,6 @@
                 (otherwise (packn-pos (list "UPDATE-" root) root))))
              (:creator
               (packn-pos (list "CREATE-" root) root))
-             (:fixer
-              (packn-pos (list root *stobj-fixer-suffix*) root))
              (:boundp
               (and (or (eq key2 :hash-table)
                        (eq key2 :stobj-table))
@@ -6662,7 +6711,6 @@
        (make defstobj-template
              :recognizer (defstobj-fnname name :recognizer :top renaming)
              :creator (defstobj-fnname name :creator :top renaming)
-             :fixer (defstobj-fnname name :fixer :top renaming)
              :field-templates (defstobj-field-templates
                                 field-descriptors renaming wrld)
              :non-memoizable non-memoizable
@@ -6762,7 +6810,6 @@
             (:A (mv nil "$A")) ; abstract
             (:C (mv nil "$C")) ; concrete (really, foundation)
             (:CREATOR (mv "CREATE-" nil))
-            (:FIXER (mv nil *stobj-fixer-suffix*))
             (:RECOGNIZER (mv nil "P"))
             (:RECOGNIZER-LOGIC (mv nil "$AP"))
             (:RECOGNIZER-EXEC (mv nil "$CP"))
@@ -6798,7 +6845,7 @@
 (defrec stobj-property
   ((recognizer . creator)
    names ; accessors and updaters
-   (fixer . live-var))
+   . live-var)
   nil)
 
 (defun get-stobj-creator (stobj wrld)
@@ -7600,32 +7647,6 @@
         ((endp (cdr l)) nil)
         (t (cons (car l) (all-but-last (cdr l))))))
 
-(defun defstobj-fixer-body (name recognizer-name creator-name rawp)
-
-; We return the definition body of a fixer for a stobj with the given name,
-; which is associated with the supplied recognizer and creator names.  The
-; definition is to be in the logic if rawp is nil and for raw Lisp if rawp is
-; non-nil.
-
-; This fixer returns the given stobj unchanged if it indeed satisfies the given
-; recognizer-name; otherwise, it returns a fresh such stobj (as produced by the
-; given creator-name).  The fixer will only be applied after looking up a stobj
-; with the given name in a stobj-table.  In raw Lisp that value will always
-; satisfy the stobj recognizer for name (i.e., recognizer-name) unless it is
-; nil, so we optimize a bit for the case rawp.
-
-  (if rawp
-      `(or ,name (,creator-name))
-    `(if (,recognizer-name ,name)
-         ,name
-       (,creator-name))))
-
-(defun defstobj-fixer-def (name fixer-name recognizer-name creator-name rawp)
-  `(,fixer-name
-    (,name)
-    (declare (xargs :guard t :verify-guards t))
-    ,(defstobj-fixer-body name recognizer-name creator-name rawp)))
-
 (defun defstobj-raw-defs (name template congruent-stobj-rep wrld)
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
@@ -7649,7 +7670,6 @@
 
   (let* ((recog (access defstobj-template template :recognizer))
          (creator (access defstobj-template template :creator))
-         (fixer (access defstobj-template template :fixer))
          (field-templates (access defstobj-template template :field-templates))
          (inline (access defstobj-template template :inline)))
     (append
@@ -7666,7 +7686,6 @@
                             field-templates 0 name nil)))))
        (,creator ()
                  ,(defstobj-raw-init template))
-       ,(defstobj-fixer-def name fixer recog creator t)
        ,@(defstobj-field-fns-raw-defs
            name
            (cond

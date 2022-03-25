@@ -549,7 +549,7 @@ ACL2 !>>(WITH-OUTPUT
              :HINTS (("Goal" :INSTRUCTIONS ((CL-PROC :FUNCTION SIMPLE-CL-PROC
                                                      :HINT NIL))))))
 
-ACL2 Error in ( THM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 
 ACL2 Error in CHK-ABSSTOBJ-INVARIANTS:  Possible invariance violation

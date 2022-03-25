@@ -1447,7 +1447,8 @@ Subgoal 1'
                               (HALT)))
                 XXX))
 
-ACL2 Error in ( DEFTHM THIS-IS-NOT-A-THEOREM ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFTHM THIS-IS-NOT-A-THEOREM ...):  See :DOC
+failure.
 
 ******** FAILED ********
 M1 !>>'(END OF DEMO 2)

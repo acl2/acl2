@@ -43,7 +43,7 @@
     :measure (+ (expression-count old) (expression-count new)))
 
   (define expression-list-induct2 ((old expression-listp)
-                                      (new expression-listp))
+                                   (new expression-listp))
     (cond ((endp old) nil)
           ((endp new) nil)
           (t (list (expression-induct2 (car old) (car new))

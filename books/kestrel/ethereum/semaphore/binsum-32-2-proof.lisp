@@ -223,7 +223,7 @@
                  acl2::bvcat-of-bvchop-high
                  acl2::mod-when-<
                  acl2::bvcat-numeric-bound
-                 ACL2::NOT-<-OF-BVCAT-AND-0)
+                 acl2::bvcat-non-negative)
  :rule-lists '( ;; recognize bitp idioms before we start changing things:
                (pfield::bitp-idiom-1
                 pfield::bitp-idiom-1-alt)

@@ -41,7 +41,7 @@
 (include-book "unroller")
 (include-book "contexts2")
 (include-book "concretize-with-contexts")
-(include-book "letify-term")
+(include-book "letify-term-via-dag")
 (include-book "subdagp") ; for subdag-of-somep
 (include-book "arrays-of-alists")
 ;(include-book "generic-head-aux-proof")
@@ -2788,8 +2788,7 @@
 (defun max-width-of-widest-int (lst-of-lsts)
   (declare (xargs :guard (and (true-listp lst-of-lsts)
                               (all-integer-listp lst-of-lsts))
-                  :guard-hints (("Goal" :in-theory (e/d (ALL-INTEGERP) ()))) ;fixme
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable ALL-INTEGERP)))))
   (if (endp lst-of-lsts)
       0
     (max (width-of-widest-int (first lst-of-lsts))
@@ -12028,9 +12027,9 @@
                                     (declare (xargs :normalize nil)) ;this may be crucial, since we turn off all rules to prove the theorem, we don't want any smarts used to transform the body
 ;ffixme where else should we use :normalize nil?
 ;the letify calls are new ;Tue Feb 22 17:47:32 2011
-                                    (if ,combined-exit-test ;(letify-term combined-exit-test)
-                                        ,new-base-case ;(letify-term new-base-case)
-                                      ,new-rec-case ;(letify-term new-rec-case)
+                                    (if ,combined-exit-test ;(letify-term-via-dag combined-exit-test)
+                                        ,new-base-case ;(letify-term-via-dag new-base-case)
+                                      ,new-rec-case ;(letify-term-via-dag new-rec-case)
                                       )))
 
                                  (defthm ,peel-theorem-name
@@ -12106,10 +12105,10 @@
                  (newer-fn-theorem-name (packnew new-fn '-and- newer-fn '-equivalent))
                  (replacement-theorem-name (packnew fn '-becomes- newer-fn))
                  (newer-term (rename-fn new-fn newer-fn new-term))
-                 ((mv erp letified-base-case) (letify-term base-case) ;Tue Feb 22 18:02:32 2011
+                 ((mv erp letified-base-case) (letify-term-via-dag base-case) ;Tue Feb 22 18:02:32 2011
                   )
                  ((when erp) (mv erp :error analyzed-function-table state result-array-stobj))
-                 ((mv erp letified-newer-term) (letify-term newer-term)) ;Tue Feb 22 22:23:09 2011
+                 ((mv erp letified-newer-term) (letify-term-via-dag newer-term)) ;Tue Feb 22 22:23:09 2011
                  ((when erp) (mv erp :error analyzed-function-table state result-array-stobj))
                  (state (submit-events `((defun ,newer-fn-exit-test-name ,exit-test-vars
                                            (declare (xargs :normalize nil))
@@ -12120,7 +12119,7 @@
                                             (declare (xargs :normalize nil))
                                             (if (,newer-fn-exit-test-name ,@exit-test-vars) ;only this is different from new-fn
                                                 ,letified-base-case
-                                              ,(rename-fn new-fn newer-fn recursive-case) ;(letify-term (rename-fn new-fn newer-fn recursive-case))
+                                              ,(rename-fn new-fn newer-fn recursive-case) ;(letify-term-via-dag (rename-fn new-fn newer-fn recursive-case))
                                               )))
 
                                          (defthm ,newer-fn-exit-tests-theorem-name

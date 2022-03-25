@@ -1694,7 +1694,7 @@
                              (:REWRITE ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 2)
                              (:REWRITE DEFAULT-CAR)
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                              (:TYPE-PRESCRIPTION RP-TERM-LISTP)
                              (:DEFINITION NATP)
                              (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 3)
@@ -2591,7 +2591,7 @@
                              (:REWRITE VALID-SC-EX-FROM-RP-2)
                              (:DEFINITION EVAL-AND-ALL)
                              valid-sc
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                              (:REWRITE DEFAULT-CDR)
                              (:DEFINITION RP-TERMP)
                              (:TYPE-PRESCRIPTION VALID-SC)
@@ -2695,7 +2695,7 @@
                              (:REWRITE VALID-SC-EX-FROM-RP-2)
                              (:DEFINITION EVAL-AND-ALL)
                              valid-sc
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                              (:REWRITE DEFAULT-CDR)
                              (:DEFINITION RP-TERMP)
                              (:TYPE-PRESCRIPTION VALID-SC)
@@ -2831,7 +2831,7 @@
                             ;;(:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
                             (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                             (:DEFINITION RP-TRANS)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:DEFINITION TRANS-LIST)
                             include-fnc
                             (:REWRITE DEFAULT-CDR)
@@ -2949,7 +2949,7 @@
                              not-include-rp-means-valid-sc
                              rp-trans
                              (:rewrite ex-from-synp-lemma1)
-                             (:rewrite acl2::o-p-o-infp-car)
+;;                             (:rewrite acl2::o-p-o-infp-car)
                              (:definition is-synp$inline)
                              (:rewrite not-include-rp)
                              pp-term-to-pp-lists-extract-sign
@@ -2984,7 +2984,7 @@
                              NOT-INCLUDE-RP-MEANS-VALID-SC
                              rp-trans
                              (:REWRITE EX-FROM-SYNP-LEMMA1)
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                              (:DEFINITION IS-SYNP$INLINE)
                              (:REWRITE NOT-INCLUDE-RP)
                              PP-TERM-TO-PP-LISTS-EXTRACT-SIGN
@@ -3114,7 +3114,7 @@
                                (:TYPE-PRESCRIPTION VALID-SC)
                                (:TYPE-PRESCRIPTION MULT-FORMULA-CHECKS)
                                (:TYPE-PRESCRIPTION BIT-LISTP)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                                (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
                                (:DEFINITION INCLUDE-FNC)
@@ -3234,13 +3234,13 @@
                               (:TYPE-PRESCRIPTION INCLUDE-FNC)
                               (:TYPE-PRESCRIPTION O-P)
                               (:TYPE-PRESCRIPTION IS-RP$INLINE)
-                              (:REWRITE ACL2::O-P-O-INFP-CAR)
-                              (:FORWARD-CHAINING
-                               ACL2::|a <= b & b <= c  =>  a <= c|)
-                              (:FORWARD-CHAINING
-                               ACL2::|a <= b & b < c  =>  a < c|)
-                              (:FORWARD-CHAINING
-                               ACL2::|a <= b & ~(a = b)  =>  a < b|)
+;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                              (:FORWARD-CHAINING
+;;                               ACL2::|a <= b & b <= c  =>  a <= c|)
+;;                              (:FORWARD-CHAINING
+;;                               ACL2::|a <= b & b < c  =>  a < c|)
+;;                              (:FORWARD-CHAINING
+;;                               ACL2::|a <= b & ~(a = b)  =>  a < b|)
                               (:REWRITE
                                REGULAR-RP-EVL-OF_IFIX_WHEN_MULT-FORMULA-CHECKS)
                               (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
@@ -3307,7 +3307,7 @@
                                 (:rewrite default-cdr)
                                 (:type-prescription o<)
                                 (:rewrite default-car)
-                                (:rewrite acl2::o-p-o-infp-car)
+;;                                (:rewrite acl2::o-p-o-infp-car)
                                 include-fnc-subterms
                                 include-fnc
                                 (:rewrite ex-from-synp-lemma1)
@@ -3348,7 +3348,7 @@
                                (:DEFINITION EVAL-AND-ALL)
                                (:REWRITE DEFAULT-CDR)
                                (:REWRITE DEFAULT-CAR)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                                (:DEFINITION RP-TRANS)
                                (:REWRITE ATOM-RP-TERMP-IS-SYMBOLP)

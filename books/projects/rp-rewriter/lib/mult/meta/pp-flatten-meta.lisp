@@ -2027,7 +2027,7 @@
                              (:REWRITE ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 2)
                              (:REWRITE DEFAULT-CAR)
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                              (:TYPE-PRESCRIPTION RP-TERM-LISTP)
                              (:DEFINITION NATP)
                              (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 3)
@@ -2895,7 +2895,7 @@
                             (:REWRITE VALID-SC-EX-FROM-RP-2)
                             (:DEFINITION EVAL-AND-ALL)
                             valid-sc
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE DEFAULT-CDR)
                             (:DEFINITION RP-TERMP)
                             (:TYPE-PRESCRIPTION VALID-SC)

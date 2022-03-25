@@ -261,7 +261,7 @@
      ((or (eq kind 'qnan) (eq kind 'indef))
       (let ((exp-width exp-width2)
             (frac (ash frac (- frac-width2 frac-width1))))
-        (mv t sign (fp-max-exp) implicit frac invalid)))
+        (mv t sign (fp-max-exp exp-width) implicit frac invalid)))
      ((eq kind 'inf)
       (let ((exp-width exp-width2)
             (frac-width frac-width2))

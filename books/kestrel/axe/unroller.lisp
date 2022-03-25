@@ -26,7 +26,7 @@
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/utilities/printing" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
-;(include-book "letify-term") ;; TODO: Try using something from kestrel-acl2/transformations/letify
+;(include-book "letify-term-via-dag") ;; TODO: Try using something from kestrel-acl2/transformations/letify
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
@@ -279,7 +279,7 @@
         `((skip-proofs ;FIXME handle termination better (if the original function terminated, the new function should too)
            (defun ,new-function-name ,formals
              (declare (xargs :normalize nil)) ;this was crucial, since we turn off all rules to prove the unrolling, we don't want any smarts used to transform the body
-             ,unrolled-body ;(letify-term unrolled-body) ;Tue Feb 22 17:29:36 2011 ;fixme to put these back we'll need to add support for combining base cases when lets intervene
+             ,unrolled-body ;(letify-term-via-dag unrolled-body) ;Tue Feb 22 17:29:36 2011 ;fixme to put these back we'll need to add support for combining base cases when lets intervene
              ))
 
           ;; usually is automatic:

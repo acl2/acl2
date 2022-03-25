@@ -746,8 +746,8 @@
                 (unsigned-byte-p-forced xsize x))
            (equal (equal k x)
                   nil))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)))
-  :rule-classes nil)
+  :rule-classes nil ; because of xsize
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 ;fixme more rules like this?
 (defthmd mod-becomes-bvmod
@@ -1020,7 +1020,7 @@
   :hints (("Goal" :use (:instance bvmult-tighten)
            :in-theory (disable bvmult-tighten))))
 
-(defthm not-equal-nil-when-syntactically-a-bv-axe
+(defthmd not-equal-nil-when-syntactically-a-bv-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p-forced xsize x))
            (not (equal nil x)))
@@ -1033,12 +1033,6 @@
            (equal (rightrotate32 amt x)
                   (rightrotate32 (trim 5 amt) x)))
   :hints (("Goal" :in-theory (e/d (rightrotate32 rightrotate leftrotate trim MOD-OF-EXPT-OF-2-CONSTANT-VERSION) ()))))
-
-
-(defthm cancel-<-+
-  (equal (< (+ k x) x)
-         (< k 0)))
-
 
 ;drop? rename?
 (defthmd logtail-becomes-slice-dag
@@ -1512,7 +1506,7 @@
                                     ) (;anti-bvplus ;max
                                     sum-bound-lemma)))))
 
-(defthm if-becomes-bvif
+(defthmd if-becomes-bvif
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced xsize x)
@@ -1522,7 +1516,6 @@
                 )
            (equal (if test x y)
                   (bvif (max xsize ysize) test x y)))
-  :rule-classes nil
   :hints (("Goal" :in-theory (enable bvif myif))))
 
 ;free var rule from usb to integerp of the index?
@@ -1945,18 +1938,14 @@
                                       ))))
 
 ;move
-(defthm myif-same-arg1-arg2-when-booleanp-axe
+(defthmd myif-same-arg1-arg2-when-booleanp-axe
   (implies (and (axe-syntaxp (not (syntactic-constantp x dag-array))) ;avoid loops
                 (booleanp x))
            (equal (myif x x y)
                   (myif x t y)))
   :hints (("Goal" :in-theory (enable myif))))
 
-;only needed for axe
-(defthm not-<-of-bvcat-and-0
-  (not (< (bvcat highsize highval lowsize lowval) 0)))
-
-(defthm sbvrem-when-positive-work-hard
+(defthmd sbvrem-when-positive-work-hard
   (implies (and (work-hard (sbvle size 0 x))
                 (work-hard (sbvle size 0 y))
                 (posp size))
@@ -1965,7 +1954,7 @@
   :hints (("Goal" :use (:instance sbvrem-when-positive)
            :in-theory (disable sbvrem-when-positive))))
 
-(defthm logext-trim-arg-axe-all
+(defthmd logext-trim-arg-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                 (posp size))
            (equal (logext size x)

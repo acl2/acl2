@@ -17,9 +17,10 @@
 
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
+(include-book "kestrel/utilities/defopeners" :dir :system)
 
 ;; Get the first element of LOAD-COMMANDS that has :cmd type CMD-TYPE.
-(defun get-mach-o-load-command (cmd-type load-commands)
+(defund get-mach-o-load-command (cmd-type load-commands)
 ;  (declare (xargs :guard (true-listp load-commands)))
   (if (endp load-commands)
       (er hard 'get-mach-o-load-command "Can't find a load command of type: ~x0." cmd-type)
@@ -29,7 +30,9 @@
           load-command
         (get-mach-o-load-command cmd-type (rest load-commands))))))
 
-(defun get-mach-o-segment (segname load-commands)
+(defopeners get-mach-o-load-command)
+
+(defund get-mach-o-segment (segname load-commands)
   (if (endp load-commands)
       (er hard 'get-mach-o-segment "Can't find a segment named: ~x0." segname)
     (let* ((load-command (first load-commands))
@@ -42,6 +45,8 @@
               load-command
             (get-mach-o-segment segname (rest load-commands))))))))
 
+(defopeners get-mach-o-segment)
+
 (defun get-mach-o-section (name sections)
   (if (endp sections)
       (er hard 'get-mach-o-section "Can't find a section named: ~x0." name)
@@ -51,6 +56,7 @@
           section
         (get-mach-o-section name (rest sections))))))
 
+(defopeners get-mach-o-section)
 
 ;; Get the code from the __TEXT,__text section
 (defund get-mach-o-code (mach-o)

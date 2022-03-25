@@ -25,6 +25,7 @@
 (include-book "r1cs/doc")
 (include-book "r1cs/sparse/doc")
 (include-book "blake/top")
+(include-book "salsa/salsa20")
 
 (include-book "attachments/top")
 

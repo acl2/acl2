@@ -16,7 +16,6 @@
 (include-book "translate-dag-to-stp")
 (include-book "conjunctions-and-disjunctions") ; for possibly-negated-nodenump?
 (include-book "make-term-into-dag-array-basic") ;for make-terms-into-dag-array-basic
-(include-book "kestrel/utilities/suppress-invariant-risk" :dir :system)
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -179,6 +178,16 @@
           (farg2 term))
     (mv nil ;no hyps
         term)))
+
+(defthm pseudo-term-listp-of-mv-nth-0-of-term-hyps-and-conc
+  (implies (pseudo-termp term)
+           (pseudo-term-listp (mv-nth 0 (term-hyps-and-conc term))))
+  :hints (("Goal" :in-theory (enable term-hyps-and-conc))))
+
+(defthm pseudo-termp-of-mv-nth-1-of-term-hyps-and-conc
+  (implies (pseudo-termp term)
+           (pseudo-termp (mv-nth 1 (term-hyps-and-conc term))))
+  :hints (("Goal" :in-theory (enable term-hyps-and-conc))))
 
 (defthm plus-of-half-and-half
   (implies (acl2-numberp x)
@@ -2204,6 +2213,7 @@
                                              base-filename print max-conflicts
                                              counterexamplep state))))))))
 
+;move
 (defthmd myquotep-when-axe-disjunctionp
   (implies (axe-disjunctionp d)
            (equal (MYQUOTEP d)
@@ -2211,14 +2221,13 @@
                       (equal (false-disjunction) d))))
   :hints (("Goal" :in-theory (enable axe-disjunctionp))))
 
+;move
 (defthmd quotep-when-axe-disjunctionp
   (implies (axe-disjunctionp d)
            (equal (QUOTEP d)
                   (or (equal (true-disjunction) d)
                       (equal (false-disjunction) d))))
   :hints (("Goal" :in-theory (enable axe-disjunctionp))))
-
-
 
 ;fixme move this to the translate-dag-to-stp book?
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
@@ -2343,11 +2352,11 @@
 ;todo: deprecate in favor of a version that just takes a single term (note that we may need to look into the boolean structure of the term to get assumptions that tell us the types of things?)
 (defun prove-clause-with-stp (clause counterexamplep max-conflicts print base-filename state)
   (declare (xargs :stobjs state
-                  :verify-guards nil ;todo: need properties of MAKE-TERMS-INTO-DAG-ARRAY, etc
                   :guard (and (pseudo-term-listp clause)
                               (booleanp counterexamplep)
                               (or (null max-conflicts)
-                                  (natp max-conflicts)))))
+                                  (natp max-conflicts))
+                              (stringp base-filename))))
   (b* ( ;; Check for bad input (todo: drop this check?):
        ((when (not (pseudo-term-listp clause)))
         (er hard 'prove-clause-with-stp "Some disjunct in the clause is not a pseudo-term: ~x0." clause)
@@ -2383,12 +2392,12 @@
 ;; is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>)..
 (defund prove-implication-with-stp (conc hyps counterexamplep max-conflicts print base-filename state)
   (declare (xargs :stobjs state
-                  :verify-guards nil ;todo: verify-guards for subfunctions first
                   :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
                               (booleanp counterexamplep)
                               (or (null max-conflicts)
-                                  (natp max-conflicts)))))
+                                  (natp max-conflicts))
+                              (stringp base-filename))))
   (b* ((negated-hyps (wrap-all 'not hyps)) ;inefficient - also could remove double negation?
        (clause (cons conc negated-hyps)))
     (prove-clause-with-stp clause
@@ -2419,29 +2428,38 @@
 
  ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 (defun prove-term-with-stp (term counterexamplep max-conflicts print base-filename state)
-  (declare (xargs :stobjs state
-                  :verify-guards nil ;todo: verify-guards for subfunctions first
-                  :guard (and (pseudo-termp term)
+  (declare (xargs :guard (and (pseudo-termp term)
                               (booleanp counterexamplep)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
-                              (stringp base-filename))))
+                              (stringp base-filename))
+                  :stobjs state))
   (b* (((mv hyps conc) (term-hyps-and-conc term))) ;split term into hyps and conclusion
     (prove-implication-with-stp conc hyps counterexamplep max-conflicts print base-filename state)))
 
-(defttag translate-dag-to-stp) ;reusing this ;due to the suppress-invariant-risk
+;; This version avoids imposing invariant-risk on callers, because it has a guard that is just a stobj recognizer.
+;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+(defun prove-term-with-stp-unguarded (term counterexamplep max-conflicts print base-filename state)
+  (declare (xargs :stobjs state))
+  (if (and (pseudo-termp term)
+           (booleanp counterexamplep)
+           (or (null max-conflicts)
+               (natp max-conflicts))
+           (stringp base-filename))
+      (prove-term-with-stp term counterexamplep max-conflicts print base-filename state)
+    (prog2$ (er hard? 'prove-term-with-stp-unguarded "Bad input.")
+            (mv :error state))))
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-(suppress-invariant-risk
- (defun translate-and-prove-term-with-stp (term counterexamplep max-conflicts print base-filename state)
-   (declare (xargs :stobjs state
-                   :mode :program ;because of translate-term
-                   :guard (and (booleanp counterexamplep)
-                               (or (null max-conflicts)
-                                   (natp max-conflicts))
-                               (stringp base-filename))))
-   (prove-term-with-stp (translate-term term 'translate-and-prove-term-with-stp (w state))
-                        counterexamplep max-conflicts print base-filename state)))
+(defun translate-and-prove-term-with-stp (term counterexamplep max-conflicts print base-filename state)
+  (declare (xargs :guard (and (booleanp counterexamplep)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (stringp base-filename))
+                  :mode :program ;because of translate-term
+                  :stobjs state))
+  (prove-term-with-stp-unguarded (translate-term term 'translate-and-prove-term-with-stp (w state))
+                                 counterexamplep max-conflicts print base-filename state))
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;TODO: Deprecate in favor of defthm-stp?
@@ -2454,32 +2472,32 @@
   `(translate-and-prove-term-with-stp ,term ',counterexample ,max-conflicts ',print
                                       "USER-QUERY"
                                       state))
-
 ;;
 ;; Testing Utilities
 ;;
 
-;returns (mv erp result state) where if things go well, result is an empty progn
-;for tests that are expected to prove
-(suppress-invariant-risk
- (defun must-prove-with-stp-fn (name term counterexamplep max-conflicts print state)
-   (declare (xargs :stobjs state
-                   :mode :program ;because this ultimately calls translate-term
-                   :guard (and (symbolp name)
-                               (booleanp counterexamplep)
-                               (or (null max-conflicts)
-                                   (natp max-conflicts)))))
-   (mv-let (result state)
-     (translate-and-prove-term-with-stp term counterexamplep max-conflicts print (symbol-name name) state)
-     (if (eq *error* result)
-         (prog2$ (hard-error 'must-prove-with-stp "Error ~x0 running test." (acons #\0 name nil))
-                 (mv (erp-t) :error state))
-       (if (not (eq *valid* result))
-           (prog2$ (hard-error 'must-prove-with-stp "Test ~x0 was supposed to prove." (acons #\0 name nil))
-                   (mv (erp-t) :fail state))
-         (prog2$ (cw "TEST ~x0 PASSED.~%" name)
-                 (mv (erp-nil) '(progn) state)))))))
+;; Ensures that STP can prove the TERM.
+;; Returns (mv erp result state) where if things go well, RESULT is an empty progn.
+(defun must-prove-with-stp-fn (name term counterexamplep max-conflicts print state)
+  (declare (xargs :guard (and (symbolp name)
+                              (booleanp counterexamplep)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts)))
+                  :mode :program ;because this ultimately calls translate-term
+                  :stobjs state))
+  (mv-let (result state)
+    (translate-and-prove-term-with-stp term counterexamplep max-conflicts print (symbol-name name) state)
+    (if (eq *error* result)
+        (prog2$ (er hard? 'must-prove-with-stp "Error ~x0 running test." name)
+                (mv (erp-t) :error state))
+      (if (not (eq *valid* result))
+          (prog2$ (er hard? 'must-prove-with-stp "Test ~x0 was supposed to prove." name)
+                  (mv (erp-t) :fail state))
+        (prog2$ (cw "TEST ~x0 PASSED.~%" name)
+                (mv (erp-nil) '(progn) state))))))
 
+;; Ensures that STP can prove the TERM.
+;; Returns (mv erp result state) where if things go well, RESULT is an empty progn.
 (defmacro must-prove-with-stp (name term
                                     &key
                                     (counterexample 't)
@@ -2489,27 +2507,29 @@
 
 ;fixme test the new depth bound when the prover calls stp? huh?
 
-;returns (mv erp result state) where if things go well, result is an empty progn
-(suppress-invariant-risk
- (defun must-not-prove-with-stp-fn (name term counterexamplep max-conflicts print state)
-   (declare (xargs :stobjs state
-                   :mode :program ;because this ultimately calls translate-term
-                   :guard (and (symbolp name)
-                               (booleanp counterexamplep)
-                               (or (null max-conflicts)
-                                   (natp max-conflicts)))))
-   (mv-let (result state)
-     (translate-and-prove-term-with-stp term counterexamplep max-conflicts print (symbol-name name) state)
-     (if (eq *error* result)
-         (prog2$ (hard-error 'must-not-prove-with-stp "Error running test ~x0." (acons #\0 name nil))
-                 (mv (erp-t) :error state))
-       (if (eq *valid* result)
-           (prog2$ (hard-error 'must-not-prove-with-stp "Test ~x0 was supposed to fail" (acons #\0 name nil))
-                   (mv (erp-t) :fail state))
-         (prog2$ (cw "TEST ~x0 PASSED" name)
-                 (mv (erp-nil) '(progn) state)))))))
+;; Ensures that STP cannot prove the TERM.
+;; Returns (mv erp result state) where if things go well, RESULT is an empty progn.
+(defun must-not-prove-with-stp-fn (name term counterexamplep max-conflicts print state)
+  (declare (xargs :stobjs state
+                  :mode :program ;because this ultimately calls translate-term
+                  :guard (and (symbolp name)
+                              (booleanp counterexamplep)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts)))))
+  (mv-let (result state)
+    (translate-and-prove-term-with-stp term counterexamplep max-conflicts print (symbol-name name) state)
+    (if (eq *error* result)
+        (prog2$ (er hard? 'must-not-prove-with-stp "Error running test ~x0." name)
+                (mv (erp-t) :error state))
+      (if (eq *valid* result)
+          (prog2$ (er hard? 'must-not-prove-with-stp "Test ~x0 was supposed to fail" name)
+                  (mv (erp-t) :fail state))
+        (prog2$ (cw "TEST ~x0 PASSED" name)
+                (mv (erp-nil) '(progn) state))))))
 
-;TODO: Can we just use must-fail for this?
+;; Ensures that STP cannot prove the TERM.
+;; Returns (mv erp result state) where if things go well, RESULT is an empty progn.
+;; We could perhaps use must-fail, but this more informative messages.
 (defmacro must-not-prove-with-stp (name term
                                         &key
                                         (counterexample 't)

@@ -118,7 +118,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We only support the execution of integer constants."))
+    "We only support the execution of integer constants for now."))
   (const-case c
               :int (exec-iconst c.get)
               :float (error :exec-const-float)
@@ -1123,7 +1123,7 @@
      because a scalar type is required [C:6.5.4/2]."))
   (b* ((arg (value-result-fix arg))
        ((when (errorp arg)) arg)
-       (type (type-name-to-type tyname))
+       (type (tyname-to-type tyname))
        (err (error (list :cast-undefined :from arg :to type)))
        (todo (error (list :cast-todo :from arg :to type)))
        (void (error (list :cast-void :from arg :to type))))
@@ -1142,7 +1142,9 @@
             :slong (if (slong-from-uchar-okp arg) (slong-from-uchar arg) err)
             :ullong (ullong-from-uchar arg)
             :sllong (if (sllong-from-uchar-okp arg) (sllong-from-uchar arg) err)
-            :pointer todo))
+            :struct todo
+            :pointer todo
+            :array todo))
           ((scharp arg)
            (type-case
             type
@@ -1158,7 +1160,9 @@
             :slong (slong-from-schar arg)
             :ullong (ullong-from-schar arg)
             :sllong (sllong-from-schar arg)
-            :pointer todo))
+            :struct todo
+            :pointer todo
+            :array todo))
           ((ushortp arg)
            (type-case
             type
@@ -1174,7 +1178,9 @@
             :slong (if (slong-from-ushort-okp arg) (slong-from-ushort arg) err)
             :ullong (ullong-from-ushort arg)
             :sllong (if (sllong-from-ushort-okp arg) (sllong-from-ushort arg) err)
-            :pointer todo))
+            :struct todo
+            :pointer todo
+            :array todo))
           ((sshortp arg)
            (type-case
             type
@@ -1190,7 +1196,9 @@
             :slong (slong-from-sshort arg)
             :ullong (ullong-from-sshort arg)
             :sllong (sllong-from-sshort arg)
-            :pointer todo))
+            :struct todo
+            :pointer todo
+            :array todo))
           ((uintp arg)
            (type-case
             type
@@ -1206,7 +1214,9 @@
             :slong (if (slong-from-uint-okp arg) (slong-from-uint arg) err)
             :ullong (ullong-from-uint arg)
             :sllong (if (sllong-from-uint-okp arg) (sllong-from-uint arg) err)
-            :pointer todo))
+            :struct todo
+            :pointer todo
+            :array todo))
           ((sintp arg)
            (type-case
             type
@@ -1222,7 +1232,9 @@
             :slong (slong-from-sint arg)
             :ullong (ullong-from-sint arg)
             :sllong (sllong-from-sint arg)
-            :pointer todo))
+            :struct todo
+            :pointer todo
+            :array todo))
           ((ulongp arg)
            (type-case
             type
@@ -1238,7 +1250,9 @@
             :slong (if (slong-from-ulong-okp arg) (slong-from-ulong arg) err)
             :ullong (ullong-from-ulong arg)
             :sllong (if (sllong-from-ulong-okp arg) (sllong-from-ulong arg) err)
-            :pointer todo))
+            :struct todo
+            :pointer todo
+            :array todo))
           ((slongp arg)
            (type-case
             type
@@ -1254,7 +1268,9 @@
             :slong arg
             :ullong (ullong-from-slong arg)
             :sllong (sllong-from-slong arg)
-            :pointer todo))
+            :struct todo
+            :pointer todo
+            :array todo))
           ((ullongp arg)
            (type-case
             type
@@ -1270,7 +1286,9 @@
             :slong (if (slong-from-ullong-okp arg) (slong-from-ullong arg) err)
             :ullong arg
             :sllong (if (sllong-from-ullong-okp arg) (sllong-from-ullong arg) err)
-            :pointer todo))
+            :struct todo
+            :pointer todo
+            :array todo))
           ((sllongp arg)
            (type-case
             type
@@ -1286,7 +1304,9 @@
             :slong (if (slong-from-sllong-okp arg) (slong-from-sllong arg) err)
             :ullong (ullong-from-sllong arg)
             :sllong arg
-            :pointer todo))
+            :struct todo
+            :pointer todo
+            :array todo))
           ((pointerp arg) todo)
           (t (error (impossible)))))
   :hooks (:fix))
@@ -1308,7 +1328,7 @@
      and the indexed element is returned as result."))
   (b* ((arr (value-result-fix arr))
        ((when (errorp arr)) arr)
-       ((unless (pointerp arr)) (error (list :mistype-array :array
+       ((unless (pointerp arr)) (error (list :mistype-arrsub
                                              :required :pointer
                                              :supplied (type-of-value arr))))
        ((when (pointer-nullp arr)) (error (list :null-pointer)))
@@ -1383,6 +1403,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-memberp ((str value-resultp) (mem identp) (compst compustatep))
+  :returns (result value-resultp)
+  :short "Execute a structure pointer member expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for the @('->') operator.
+     The operand must be a non-null pointer to a structure
+     of type consistent with the structure.
+     The named member must be in the structure.
+     The value associated to the member is returned."))
+  (b* ((str (value-result-fix str))
+       ((when (errorp str)) str)
+       ((unless (pointerp str)) (error (list :mistype-memberp
+                                             :required :pointer
+                                             :supplied (type-of-value str))))
+       ((when (pointer-nullp str)) (error (list :null-pointer)))
+       (addr (pointer->address str))
+       (reftype (pointer->reftype str))
+       (struct (read-struct addr compst))
+       ((when (errorp struct))
+        (error (list :struct-not-found str (compustate-fix compst))))
+       ((unless (equal reftype
+                       (type-struct (struct->tag struct))))
+        (error (list :mistype-struct-read
+                     :pointer reftype
+                     :array (type-struct (struct->tag struct))))))
+    (struct-read-member mem struct))
+  :guard-hints
+  (("Goal" :in-theory (enable structp-when-struct-resultp-and-not-errorp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-expr-pure ((e exprp) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute a pure expression."
@@ -1416,7 +1470,9 @@
                           compst)
      :call (error (list :non-pure-expr e))
      :member (error (list :not-supported-yet e))
-     :memberp (error (list :not-supported-yet e))
+     :memberp (exec-memberp (exec-expr-pure e.target compst)
+                            e.name
+                            compst)
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
      :preinc (error (list :non-pure-expr e))
@@ -1515,12 +1571,8 @@
        ((when (errorp scope)) scope)
        (formal (car formals))
        (actual (car actuals))
-       (declor (param-declon->declor formal))
-       (pointerp (declor->pointerp declor))
-       (name (declor->ident declor))
-       (formal-type (type-name-to-type
-                     (make-tyname :specs (param-declon->type formal)
-                                  :pointerp pointerp)))
+       ((mv name tyname) (param-declon-to-ident+tyname formal))
+       (formal-type (tyname-to-type tyname))
        (actual-type (type-of-value actual))
        ((unless (equal formal-type actual-type))
         (error (list :formal-actual-mistype
@@ -1613,8 +1665,11 @@
      (xdoc::ul
       (xdoc::li
        "A left-hand side consisting of
-        either a variable
-        or an array subscripting expression where the array is a variable.")
+        either a variable,
+        or an array subscripting expression
+        where the array is a variable,
+        or a structure pointer member expression
+        where the target is a variable.")
       (xdoc::li
        "A right-hand side consisting of a function call or a pure expression."))
      (xdoc::p
@@ -1652,7 +1707,7 @@
               (ptr (read-var var compst))
               ((when (errorp ptr)) ptr)
               ((unless (pointerp ptr))
-               (error (list :mistype-array :array
+               (error (list :mistype-array
                             :required :pointer
                             :supplied (type-of-value ptr))))
               ((when (pointer-nullp ptr)) (error (list :null-pointer)))
@@ -1739,6 +1794,31 @@
                                  (sllong-array-write array index val)
                                  compst)))
                  (t (error :impossible)))))
+        (:memberp
+         (b* ((str (expr-memberp->target left))
+              (mem (expr-memberp->name left))
+              ((unless (expr-case str :ident))
+               (error (list :expr-asg-memberp-not-var left)))
+              (var (expr-ident->get str))
+              (ptr (read-var var compst))
+              ((when (errorp ptr)) ptr)
+              ((unless (pointerp ptr))
+               (error (list :mistype-struct
+                            :required :pointer
+                            :supplied (type-of-value ptr))))
+              ((when (pointer-nullp ptr)) (error (list :null-pointer)))
+              (addr (pointer->address ptr))
+              (reftype (pointer->reftype ptr))
+              (struct (read-struct addr compst))
+              ((when (errorp struct)) struct)
+              ((unless (equal reftype
+                              (type-struct (struct->tag struct))))
+               (error (list :mistype-struct-read
+                            :pointer reftype
+                            :array (type-struct (struct->tag struct)))))
+              (new-struct (struct-write-member mem val struct))
+              ((when (errorp new-struct)) new-struct))
+           (write-struct addr new-struct compst)))
         (t (error (list :expr-asg-left-not-var-or-array-var-subscript left)))))
     :measure (nfix limit))
 
@@ -1807,9 +1887,9 @@
          (compst (pop-frame compst))
          ((when (errorp val?)) (mv val? compst))
          ((unless (equal (type-of-value-option val?)
-                         (type-name-to-type
-                          (make-tyname :specs info.result
-                                       :pointerp nil))))
+                         (tyname-to-type
+                          (make-tyname :tyspec info.result
+                                       :declor (obj-adeclor-none)))))
           (mv (error (list :return-value-mistype
                            :required info.result
                            :supplied (type-of-value-option val?)))
@@ -1955,12 +2035,7 @@
       (block-item-case
        item
        :declon
-       (b* (((unless (declon-case item.get :var))
-             (mv (error (list :struct-declaration-in-block-item item.get))
-                 (compustate-fix compst)))
-            (type (declon-var->type item.get))
-            (declor (declon-var->declor item.get))
-            (init (declon-var->init item.get))
+       (b* (((mv var tyname init) (obj-declon-to-ident+tyname+init item.get))
             ((mv init compst) (exec-expr-call-or-pure init
                                                       compst
                                                       fenv
@@ -1969,11 +2044,7 @@
             ((when (not init))
              (mv (error (list :void-initializer (block-item-fix item)))
                  compst))
-            (var (declor->ident declor))
-            (pointerp (declor->pointerp declor))
-            (type (type-name-to-type
-                   (make-tyname :specs type
-                                :pointerp pointerp)))
+            (type (tyname-to-type tyname))
             ((unless (equal type (type-of-value init)))
              (mv (error (list :decl-var-mistype var
                               :required type

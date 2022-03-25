@@ -56,7 +56,7 @@
 (include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
 
 (defxdoc wrap-output
-  :parents (transformations)
+  :parents (apt::apt)
   :short "Push an external computation into a function (by pushing it
 through the top-level if-branches of the function)."
 
@@ -82,8 +82,6 @@ mutually recursive.</p>
    })
 
 <p>where @('free-1'), ..., @('free-k') are free variables possibly introduced in @('wrapper') if it is a lambda term.</p>
-
-<p>This transformation is in some sense the dual of @(see wrap-input).</p>
 
 <h3>Example Scenarios</h3>
 
@@ -122,7 +120,6 @@ functions that axe has lifted).</li>
 @({
     (wrap-output fn                        ;; Function to refine
                  wrapper                   ;; A unary function or unary lambda, where free variables are added as arguments
-;; TODO: add check that free variables are not function parameters! (or that they don't do bad things)
                  [:theorem-disabled bool]  ;; Whether to disable the theorem(s) that replace the old function with the new, Default: nil
                  [:function-disabled bool] ;; Whether to disable the new function, Default: nil
                                            ;; In a mutual-recursion nest this applies to all functions
@@ -138,7 +135,12 @@ functions that axe has lifted).</li>
 })
 
 
-<p>TODO: Add check: For now, the wrapper should only be over one variable.</p>")
+<p>TODO: Add check: For now, the wrapper should only be over one variable.</p>"
+ 
+  ;; TODO: add check that free variables are not function parameters! (or that they don't do bad things)
+  ;; TODO: When wrap-input is added to community books, restore the following:
+  ;; <p>This transformation is in some sense the dual of @(see wrap-input).</p>
+  )
 
 (defun untranslated-lambdap (x)
   (declare (xargs :guard t))

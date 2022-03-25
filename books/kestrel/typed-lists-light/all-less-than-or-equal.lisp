@@ -30,7 +30,7 @@
                 (natp x)
                 )
            (<= (nth n items) x))
-  :hints (("Goal" :in-theory (e/d (all-<= nth) ()))))
+  :hints (("Goal" :in-theory (enable all-<= nth))))
 
 (defthm <=-of-nth-when-all-<=-free
   (implies (and (all-<= items x2)
@@ -39,7 +39,7 @@
                 (natp x)
                 )
            (<= (nth n items) x))
-  :hints (("Goal" :in-theory (e/d (all-<= nth) ()))))
+  :hints (("Goal" :in-theory (enable all-<= nth))))
 
 (defthm not-all-<=-when-<-and-member-equal
   (implies (and (< n free)

@@ -40,6 +40,7 @@
 ;the generated term returns (mv hitp val) or (mv hitp val trace) depending on tracingp
 ;do the fns get tested in reverse order??
 ;the alist should have no duplicates
+;; TODO; Would the generated code be faster if it used CASE instead of an IF nest?  Perhaps not a large effect.
 (defun make-eval-case-for-fns (fn-call-alist current-arity tracingp acc)
 ;;  (declare (xargs :guard (and (symbol-alistp fn-call-alist))))
   (if (endp fn-call-alist)
@@ -77,42 +78,33 @@
 ;;     (cons (pack$ 'arg (nat-to-string n))
 ;;           (arg-names (+ -1 n)))))
 
+;only used for simple evaluators
 ;the generated term returns (mv hitp val) or (mv hitp val trace) depending on tracingp
-(defun make-apply-cases-for-arities (current-arity arity-fn-call-alist-alist quoted-argsp innermost-callp tracingp acc)
+(defun make-apply-cases-for-arities-simple (current-arity arity-fn-call-alist-alist quoted-argsp innermost-callp tracingp acc)
   (declare (xargs :measure (nfix (+ 1 current-arity))))
   (if (not (natp current-arity))
       acc
     (let* ((calls-for-this-arity (lookup current-arity arity-fn-call-alist-alist)))
-      (make-apply-cases-for-arities (+ -1 current-arity)
-                                    arity-fn-call-alist-alist
-                                    quoted-argsp
-                                    nil ;not innermost-call
-                                    tracingp
-                                    `(if (endp args-to-walk-down)
-                                         ,(if (not calls-for-this-arity)
-                                              '(mv nil ;no hit
-                                                   nil)
-                                            `(let (,@(bind-args-to-nths quoted-argsp current-arity))
-                                               ,@(let ((eval-case-for-this-arity (make-eval-case-for-fns calls-for-this-arity
-                                                                                                         current-arity
-                                                                                                         tracingp
-                                                                                                         '(mv nil ;no hit
-                                                                                                              nil))))
-                                                   (if (and (= current-arity 4)
-                                                            (= (len calls-for-this-arity) 2))
-                                                       ;; special cases for arity 4 and 8 if we only have self-functions to eval, since arg4/arg8 is overwritten by the array-depth param
-                                                       `((declare (ignore arg4)) ;todo: don't even let bind it
-                                                         ,eval-case-for-this-arity)
-                                                     (if (and (= current-arity 8) ;todo: don't even let bind it
-                                                              (= (len calls-for-this-arity) 1))
-                                                         `((declare (ignore arg8))
-                                                           ,eval-case-for-this-arity)
-                                                       ;; normal case:
-                                                       `(,eval-case-for-this-arity))))))
-                                       ,(if innermost-callp ;leave off the let:
-                                            acc
-                                          `(let ((args-to-walk-down (cdr args-to-walk-down)))
-                                             ,acc)))))))
+      (make-apply-cases-for-arities-simple (+ -1 current-arity)
+                                           arity-fn-call-alist-alist
+                                           quoted-argsp
+                                           nil ;not innermost-call
+                                           tracingp
+                                           `(if (endp args-to-walk-down)
+                                                ,(if (not calls-for-this-arity)
+                                                     '(mv nil ;no hit
+                                                          nil)
+                                                   `(let (,@(bind-args-to-nths quoted-argsp current-arity))
+                                                      ,@(let ((eval-case-for-this-arity (make-eval-case-for-fns calls-for-this-arity
+                                                                                                                current-arity
+                                                                                                                tracingp
+                                                                                                                '(mv nil ;no hit
+                                                                                                                     nil))))
+                                                          `(,eval-case-for-this-arity))))
+                                              ,(if innermost-callp ;leave off the let:
+                                                   acc
+                                                 `(let ((args-to-walk-down (cdr args-to-walk-down)))
+                                                    ,acc)))))))
 
 (defun strip-cars-list (items)
   (if (endp items)

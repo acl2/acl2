@@ -19,6 +19,14 @@
 ; Returns (mv nil t state).
 (must-succeed-pi (prove$ '(equal x x)))
 
+(must-succeed-pi
+ (prove$ '(equal (append (append x y) z) (append x y z))
+         :instructions '(induct prove prove)))
+
+(must-fail-pi
+ (prove$ '(equal (append (append x y) z) (append x y z))
+         :instructions '(induct prove)))
+
 ; Returns (mv nil nil state).  Notice that unlike the other arguments, the
 ; :with-output argument is not evaluated.
 (must-fail-pi
@@ -99,6 +107,10 @@
 ; Error: bad term
 (must-fail (prove$ '(t)))
 
-(must-succeed-pi (er-let* ((val (prove$ '(t)
-                                        :with-translate-error nil)))
-                   (value (null val))))
+; Example from Eric Smith: :ignore-ok now has default t
+(must-succeed-pi (prove$ '(let ((w 1)) (equal (car (cons x y)) x))))
+
+; Example from Eric Smith: time-limit need not be supplied as a number
+(must-succeed-pi
+ (let ((time-limit nil))
+   (prove$ '(equal (car (cons x y)) x) :time-limit time-limit)))

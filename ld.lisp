@@ -238,6 +238,9 @@
 (defun chk-acceptable-ld-fn1-pair (pair ld-missing-input-ok ctx state
                                         co-string co-channel)
 
+; Warning: Keep this in sync with f-get-ld-specials, f-put-ld-specials,
+; *initial-ld-special-bindings*, ld-alist-raw, wormhole, and ld.
+
 ; We check that pair, which is of the form (var . val) where var is a symbolp,
 ; specifies a legitimate "binding" for the LD special var.  This means that we
 ; check that var is one of the state globals that LD appears to bind (i.e.,
@@ -336,6 +339,7 @@
           (current-package
            (er-progn (chk-current-package val ctx state)
                      (value pair)))
+          (useless-runes (value pair)) ; updated in chk-acceptable-ld-fn1
           (ld-skip-proofsp
            (er-progn (chk-ld-skip-proofsp val ctx state)
                      (value pair)))
@@ -417,7 +421,8 @@
        (close-channels (cdr channel-closing-alist) state)))))
 
 (defun chk-acceptable-ld-fn1 (alist ld-missing-input-ok ctx state co-string
-                                    co-channel new-alist channel-closing-alist)
+                                    co-channel new-alist channel-closing-alist
+                                    standard-oi0)
 
 ; We copy alist (reversing it) onto new-alist, checking that each pair in it
 ; binds an LD special to a legitimate value.  We open the requested files as we
@@ -426,6 +431,8 @@
 ; the channels we have opened.  We return a pair consisting of the new-alist
 ; and the final channel-closing-alist.  See chk-acceptable-ld-fn1-pair for an
 ; explanation of co-string and co-channel.
+
+; Note that standard-oi0 reflects the :dir argument supplied to ld, if any.
 
 ; Implementation Note: This odd structure has the single redeeming feature that
 ; if any given pair of alist causes an error, we have in our hands enough
@@ -482,12 +489,27 @@
 
   (cond
    ((null alist)
-    (let ((new-alist
-           (cond ((eq ld-missing-input-ok :missing)
-                  (put-assoc-eq 'ld-verbose nil
-                                (put-assoc-eq 'ld-prompt nil new-alist)))
-                 (t new-alist))))
-      (value (cons new-alist channel-closing-alist))))
+    (er-let* ((u-r-pair (value (assoc-eq 'useless-runes new-alist)))
+              (useless-runes
+               (let* ((useless-runes-r/w (cdr u-r-pair))
+                      (useless-runes-r/w-p (consp u-r-pair)))
+                 (initial-useless-runes standard-oi0
+                                        useless-runes-r/w useless-runes-r/w-p
+                                        t 'ld state))))
+      (let* ((new-alist
+
+; We always put a useless-runes pair into the result, even if useless-runes is
+; nil, since we do not want to inherit useless-runes (via the state global's
+; value) from a superior call of certify-book (which for example can call
+; wormhole, and hence ld, during a proof) or ld.
+
+              (put-assoc-eq 'useless-runes useless-runes new-alist))
+             (new-alist (cond ((eq ld-missing-input-ok :missing)
+                               (put-assoc-eq 'ld-verbose nil
+                                             (put-assoc-eq 'ld-prompt nil
+                                                           new-alist)))
+                              (t new-alist))))
+        (value (cons new-alist channel-closing-alist)))))
    (t (mv-let
        (erp pair state)
        (chk-acceptable-ld-fn1-pair (car alist) ld-missing-input-ok ctx state
@@ -534,9 +556,10 @@
                       (eq (car pair) 'proofs-co))
                   (stringp (cdr (car alist))))
              (cons (cons (cdr pair) 'co) channel-closing-alist))
-            (t channel-closing-alist))))))))))
+            (t channel-closing-alist))
+           standard-oi0))))))))
 
-(defun chk-acceptable-ld-fn (alist state)
+(defun chk-acceptable-ld-fn (alist standard-oi0 state)
 
 ; Alist is an alist that pairs LD specials with proposed values.  We check
 ; that those values are legitimate and that only authorized LD specials are
@@ -545,6 +568,8 @@
 ; for the values in the alist.  We return a pair consisting of the modified
 ; alist and a channel closing alist that pairs opened channels with the
 ; type information it takes to close them.
+
+; Note that standard-oi0 reflects the :dir argument supplied to ld, if any.
 
   (let ((ctx 'ld))
     (er-progn
@@ -575,23 +600,45 @@
                   (duplicates (strip-cars alist)))))
      (chk-acceptable-ld-fn1 alist
                             (cdr (assoc-eq 'ld-missing-input-ok alist))
-                            ctx state nil nil nil nil))))
+                            ctx state nil nil nil nil standard-oi0))))
 
-(defun f-put-ld-specials (alist state)
+(defun f-put-ld-specials (alist uurp state)
 
-; Alist is an alist that pairs LD specials with their new values.  We
+; Warning: Keep this in sync with f-get-ld-specials,
+; chk-acceptable-ld-fn1-pair, *initial-ld-special-bindings*, ld-alist-raw,
+; wormhole, and ld.
+
+; Alist is an alist that pairs state globals, most of them LD specials (but
+; current-package and useless-runes are exceptions), with their new values.  We
 ; f-put-global each special.  Because f-put-global requires an explicitly
-; quoted variable, we case split on the authorized LD-specials.  This is
-; easier and safer than making translate give us special treatment.  To add
-; a new LD-special you must change this function, as well as
+; quoted variable, we case split on the authorized LD-specials (and
+; exceptions).  This is easier and safer than making translate give us special
+; treatment.  To add a new LD-special you must change this function, as well as
 ; f-get-ld-specials and the checker chk-acceptable-ld-fn1-pair.
+
+; Uurp stands for "update useless-runes property".  It should be nil when
+; f-put-ld-specials is called early in ld, before processing forms, and it
+; should be t when cleaning up in ld after processing forms.  It was added to
+; handle useless-runes properly in the case that ld is called inside
+; certify-book or another call of ld.  It's unfortunate to give such arcane
+; handling to one specific state global here, but there's a bit of precedent in
+; that current-package is also not an LD special.  Unlike current package,
+; however, we want to do some cleaning up when updating useless-runes (in
+; particular when exiting, to restore the old value).
 
 ; Warning: Somebody else better have checked that the values assigned are
 ; legitimate.  For example, we here set 'current-package to whatever we are
 ; told to set it.  This is not a function the user should call!
 
   (cond
-   ((null alist) state)
+   ((null alist)
+    (cond (uurp (update-useless-runes nil state))
+          (t state)))
+   ((eq (caar alist) 'useless-runes)
+    (pprogn (cond (uurp
+                   (update-useless-runes (cdar alist) state))
+                  (t (f-put-global 'useless-runes (cdar alist) state)))
+            (f-put-ld-specials (cdr alist) nil state)))
    (t (pprogn
        (case
         (caar alist)
@@ -640,14 +687,18 @@
                       (caar alist))))
            (declare (ignore x))
            state)))
-       (f-put-ld-specials (cdr alist) state)))))
+       (f-put-ld-specials (cdr alist) uurp state)))))
 
 (defun f-get-ld-specials (state)
 
+; Warning: Keep this in sync with chk-acceptable-ld-fn1-pair,
+; f-put-ld-specials, *initial-ld-special-bindings*, ld-alist-raw, wormhole, and
+; ld.
+
 ; Make an alist, suitable for giving to f-put-ld-specials, that records the
-; current values of all LD-specials.  To add a new LD-special you must
-; change this function, f-put-ld-specials, and the checker
-; chk-acceptable-ld-fn1-pair.
+; current values of all LD-specials (and selected other state globals).  To add
+; a new LD-special you must change this function, f-put-ld-specials, and the
+; checker chk-acceptable-ld-fn1-pair.
 
   (list (cons 'standard-oi
               (f-get-global 'standard-oi state))
@@ -657,6 +708,8 @@
               (f-get-global 'proofs-co state))
         (cons 'current-package
               (f-get-global 'current-package state))
+        (cons 'useless-runes
+              (f-get-global 'useless-runes state))
         (cons 'ld-skip-proofsp
               (f-get-global 'ld-skip-proofsp state))
         (cons 'ld-redefinition-action
@@ -1069,8 +1122,7 @@
   (make ld-history-entry))
 
 (defun ld-history (state)
-  (declare (xargs :stobjs state
-                  :guard (f-boundp-global 'ld-history state)))
+  (declare (xargs :stobjs state))
   (f-get-global 'ld-history state))
 
 (defun ld-history-entry-input (x)
@@ -1103,7 +1155,7 @@
   (declare (xargs :guard (weak-ld-history-entry-p x)))
   (access ld-history-entry x :user-data))
 
-(defstub set-ld-history-entry-user-data (* * * state) => *)
+(defproxy set-ld-history-entry-user-data (* * * state) => *)
 
 (defun set-ld-history-entry-user-data-default (input error-flg stobjs-out/value
                                                  state)
@@ -1463,6 +1515,8 @@
 ; occurred (because its increment was undone by the hidden acl2-unwind in
 ; ld-loop, mentioned above, and it was decremented at every abort).
 
+; Note that standard-oi0 reflects the :dir argument supplied to ld, if any.
+
   #+(and acl2-par (not acl2-loop-only))
   (when (and (not *wormholep*)
 
@@ -1492,7 +1546,7 @@
     (reset-all-parallelism-variables))
 
   (pprogn
-    (f-put-ld-specials new-ld-specials-alist state)
+    (f-put-ld-specials new-ld-specials-alist nil state)
     (update-cbd standard-oi0 state)
     (cond (#+acl2-loop-only (ld-verbose state)
            #-acl2-loop-only (and *first-entry-to-ld-fn-body-flg*
@@ -1505,7 +1559,8 @@
              (fms (if (eq standard-oi0 *standard-oi*)
                       "ACL2 loading *standard-oi*.~%"
                       "ACL2 loading ~x0.~%")
-                  (list (cons #\0 (cond ((consp standard-oi0) (kwote standard-oi0))
+                  (list (cons #\0 (cond ((consp standard-oi0)
+                                         (kwote standard-oi0))
                                         (t standard-oi0))))
                   (standard-co state)
                   state
@@ -1532,7 +1587,8 @@
              (fms (if (eq standard-oi0 *standard-oi*)
                       "Finished loading *standard-oi*.~%"
                       "Finished loading ~x0.~%")
-                  (list (cons #\0 (cond ((consp standard-oi0) (kwote standard-oi0))
+                  (list (cons #\0 (cond ((consp standard-oi0)
+                                         (kwote standard-oi0))
                                         (t standard-oi0))))
                   (standard-co state)
                   state
@@ -1549,11 +1605,13 @@
 ; than just decrementing the then current value is that we do not know how many
 ; times the cleanup form will be tried before it is not interrupted.
 
+; Note that standard-oi0 reflects the :dir argument supplied to ld, if any.
+
   (let* ((old-ld-level (f-get-global 'ld-level state))
          (new-ld-level (1+ old-ld-level))
          (old-cbd (f-get-global 'connected-book-directory state)))
     (er-let*
-     ((pair (chk-acceptable-ld-fn alist state)))
+     ((pair (chk-acceptable-ld-fn alist standard-oi0 state)))
      (let ((old-ld-specials-alist (f-get-ld-specials state))
            (new-ld-specials-alist (car pair))
            (channel-closing-alist (cdr pair)))
@@ -1566,12 +1624,12 @@
             (pprogn
              (f-put-global 'ld-level old-ld-level state)
              (f-put-global 'connected-book-directory old-cbd state)
-             (f-put-ld-specials old-ld-specials-alist state)
+             (f-put-ld-specials old-ld-specials-alist t state)
              (close-channels channel-closing-alist state))
             (pprogn
              (f-put-global 'ld-level old-ld-level state)
              (f-put-global 'connected-book-directory old-cbd state)
-             (f-put-ld-specials old-ld-specials-alist state)
+             (f-put-ld-specials old-ld-specials-alist t state)
              (close-channels channel-closing-alist state)))
          (acl2-unwind-protect
           "ld-fn"
@@ -1580,11 +1638,18 @@
           (f-put-global 'ld-level old-ld-level state)
           (f-put-global 'ld-level old-ld-level state)))))))
 
-(defun ld-fn-alist (alist state)
-  (let ((standard-oi (cdr (assoc 'standard-oi alist)))
-        (dir         (cdr (assoc 'dir alist)))
-        (ctx         'ld)
-        (os (os (w state))))
+(defun ld-fn-alist (alist bind-flg state)
+  (let* ((standard-oi (cdr (assoc 'standard-oi alist)))
+         (dir         (cdr (assoc 'dir alist)))
+         (ctx         'ld)
+         (os (os (w state)))
+         (alist (if (null bind-flg)
+
+; We don't want any useless-runes activity for calls using bind-flg = nil.  See
+; the Essay on Useless-runes.
+
+                    (put-assoc-eq 'useless-runes nil alist)
+                  alist)))
     (cond ((and (stringp standard-oi)
                 dir)
            (let ((standard-oi-expanded
@@ -1637,10 +1702,12 @@
 ; substituted below.  Ld-fn1 is just a way to avoid duplication of code and has
 ; nothing to do with the unwind protection we are really implementing.
 
-  (let ((alist (ld-fn-alist alist state)))
+  (let* ((alist (ld-fn-alist alist bind-flg state))
+         (standard-oi0 ; reflects :dir argument if that was supplied
+          (cdr (assoc-eq 'standard-oi alist))))
 
     #+acl2-loop-only
-    (ld-fn1 (cdr (assoc-eq 'standard-oi alist)) alist state bind-flg)
+    (ld-fn1 standard-oi0 alist state bind-flg)
 
 ; The part in UPPERCASE below is raw lisp that manages the unwind stack and
 ; *ld-level*.  The part in lowercase is identical to the pure ACL2 in ld-fn1
@@ -1666,7 +1733,7 @@
                     (old-cbd (f-get-global 'connected-book-directory state)))
                (MV-LET
                 (ERP pair STATE)
-                (chk-acceptable-ld-fn alist state)
+                (chk-acceptable-ld-fn alist standard-oi0 state)
                 (COND
                  (ERP (ACL2-UNWIND (1- *LD-LEVEL*) NIL) (MV ERP PAIR STATE))
                  (T
@@ -1684,6 +1751,7 @@
                                   (f-put-global 'connected-book-directory
                                                 old-cbd state)
                                   (f-put-ld-specials old-ld-specials-alist
+                                                     t ; update useless-runes
                                                      state)
                                   (close-channels channel-closing-alist
                                                   state))))
@@ -1803,7 +1871,7 @@
                          (ACL2-UNWIND (1- *LD-LEVEL*) NIL)
                          (RETURN-FROM LD-FN0
                                       (MV LD-ERP LD-VAL STATE)))))))))))))))
-     (T (ld-fn1 (cdr (assoc-eq 'standard-oi alist)) alist state bind-flg)))))
+     (T (ld-fn1 standard-oi0 alist state bind-flg)))))
 
 (defun ld-fn (alist state bind-flg)
 
@@ -1882,6 +1950,7 @@
               (standard-co 'same standard-cop)
               (proofs-co 'same proofs-cop)
               (current-package 'same current-packagep)
+              (useless-runes 'nil useless-runes-p)
               (ld-skip-proofsp 'same ld-skip-proofspp)
               (ld-redefinition-action 'same ld-redefinition-actionp)
               (ld-prompt 'same ld-promptp)
@@ -1895,6 +1964,11 @@
               (ld-query-control-alist 'same ld-query-control-alistp)
               (ld-verbose 'same ld-verbosep)
               (ld-user-stobjs-modified-warning ':same))
+
+; Warning: Keep this in sync with f-get-ld-specials, f-put-ld-specials,
+; *initial-ld-special-bindings*, ld-alist-raw, wormhole, and
+; chk-acceptable-ld-fn1-pair.
+
   `(ld-fn
     (list ,@(append
              (list `(cons 'standard-oi ,standard-oi))
@@ -1909,6 +1983,9 @@
                  nil)
              (if current-packagep
                  (list `(cons 'current-package ,current-package))
+                 nil)
+             (if useless-runes-p
+                 (list `(cons 'useless-runes ,useless-runes))
                  nil)
              (if ld-skip-proofspp
                  (list `(cons 'ld-skip-proofsp ,ld-skip-proofsp))
@@ -2006,6 +2083,7 @@
   (f-put-ld-specials
    (cond (reset-channels-flg *initial-ld-special-bindings*)
          (t (cdddr *initial-ld-special-bindings*)))
+   nil ; no changes to useless-runes (not an LD special)
    state))
 
 (defmacro reset-ld-specials (reset-channels-flg)

@@ -70,13 +70,14 @@ value G1.  See :DOC memoize.
 
 
 
-ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Evaluation aborted.  To
-debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  Evaluation
+aborted.  To debug see :DOC print-gv, see :DOC trace, and see :DOC
+wet.
 
 
 
-ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  The TABLE :guard for MEMOIZE-TABLE
-on the key F1 and value 
+ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  The TABLE
+:guard for MEMOIZE-TABLE on the key F1 and value 
 ((:CONDITION-FN)
  (:INLINE)
  (:COMMUTATIVE)
@@ -93,7 +94,7 @@ Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 
-ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
+ACL2 Error [Failure] in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -101,7 +102,8 @@ Summary
 Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
 Rules: NIL
 
-ACL2 Error in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See :DOC failure.
+ACL2 Error [Failure] in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See
+:DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTHM |F1-is-G1| (EQUAL (F1 X) (G1 X))
@@ -288,13 +290,14 @@ value FIB2.  See :DOC memoize.
 
 
 
-ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Evaluation aborted.  To
-debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  Evaluation
+aborted.  To debug see :DOC print-gv, see :DOC trace, and see :DOC
+wet.
 
 
 
-ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  The TABLE :guard for MEMOIZE-TABLE
-on the key FIB and value 
+ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  The TABLE
+:guard for MEMOIZE-TABLE on the key FIB and value 
 ((:CONDITION-FN)
  (:INLINE)
  (:COMMUTATIVE)
@@ -311,7 +314,7 @@ Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 
-ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
+ACL2 Error [Failure] in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -319,7 +322,8 @@ Summary
 Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
 Rules: NIL
 
-ACL2 Error in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See :DOC failure.
+ACL2 Error [Failure] in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See
+:DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTHM |FIB-is-FIB2| (EQUAL (FIB N) (FIB2 N))
@@ -449,13 +453,14 @@ value G2.  See :DOC memoize.
 
 
 
-ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Evaluation aborted.  To
-debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  Evaluation
+aborted.  To debug see :DOC print-gv, see :DOC trace, and see :DOC
+wet.
 
 
 
-ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  The TABLE :guard for MEMOIZE-TABLE
-on the key F2 and value 
+ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  The TABLE
+:guard for MEMOIZE-TABLE on the key F2 and value 
 ((:CONDITION-FN)
  (:INLINE)
  (:COMMUTATIVE)
@@ -472,7 +477,7 @@ Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 
-ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
+ACL2 Error [Failure] in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
 
 ******** FAILED ********
 
@@ -480,7 +485,8 @@ Summary
 Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
 Rules: NIL
 
-ACL2 Error in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See :DOC failure.
+ACL2 Error [Failure] in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See
+:DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(VERIFY-GUARD-IMPLICATION F2 G2)

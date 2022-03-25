@@ -321,14 +321,13 @@
 
 ;rename
 (defthm logand-of-negative-and-negative
-  (implies (and (integerp j)
-                (<= j (- (expt 2 n))) ; think about this
+  (implies (and (<= j (- (expt 2 n))) ; think about this
                 ;; (< j 0)
-                (integerp i)
                 (<= i (- (expt 2 n))) ; think about this
                 ;; (< i 0)
                 )
-           (< (logand i j) (expt 2 n))))
+           (< (logand i j) (expt 2 n)))
+  :hints (("Goal" :cases ((integerp i)))))
 
 ;gen?
 (defthm <-of-logand

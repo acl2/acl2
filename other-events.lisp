@@ -2656,6 +2656,23 @@
         (t (reverse (revappend-delete-augmented-runes-based-on-symbols1
                      pairs symbols ans)))))
 
+(defun current-theory-fn1 (wrld1 wrld)
+
+; See current-theory-fn.  Here, wrld is a given logical world for which we are
+; evaluating (current-theory name), where wrld1 is a tail of wrld ending with
+; an event-tuple.  This part of the current-theory code is factored out so that
+; tools can do their own computation of wrld1 rather than only computing it as
+; the current-theory as of some logical name.  We might do the same for other
+; functions, e.g., universal-theory-fn.
+
+; See universal-theory-fn for an explanation of the production of wrld2.
+
+  (let* ((redefined (collect-redefined wrld nil))
+         (wrld2 (putprop-x-lst1 redefined 'runic-mapping-pairs
+                                *acl2-property-unbound* wrld1)))
+    (assert$-runic-theoryp (current-theory1 wrld2 nil nil)
+                           wrld)))
+
 (defun current-theory-fn (logical-name wrld)
 
 ; Warning: Keep this in sync with union-current-theory-fn and
@@ -2664,20 +2681,14 @@
 ; We return the theory that was enabled in the world created by the
 ; event that introduced logical-name.
 
-; See universal-theory-fn for an explanation of the production of wrld2.
-
-  (let* ((wrld1 (decode-logical-name logical-name wrld))
-         (redefined (collect-redefined wrld nil))
-         (wrld2 (putprop-x-lst1 redefined 'runic-mapping-pairs
-                                *acl2-property-unbound* wrld1)))
+  (let ((wrld1 (decode-logical-name logical-name wrld)))
     (prog2$
      (or wrld1
          (er hard 'current-theory
              "The name ~x0 was not found in the current ACL2 logical ~
               world; hence no current-theory can be computed for that name."
              logical-name))
-     (assert$-runic-theoryp (current-theory1 wrld2 nil nil)
-                            wrld))))
+     (current-theory-fn1 wrld1 wrld))))
 
 (defun current-theory1-augmented (lst ans redefined)
 
@@ -9110,10 +9121,10 @@
 ; include-book-alists with equality on that component, not ``alist equality.''
 ; So we are NOT free to drop or rearrange keys in these annotations.
 
-; If the book is uncertified, the book-hash value is nil.  Otherwise it is a
-; checksum by default, but if the value of state global 'book-hash-alistp was
-; non-nil at certification time, then the book-hash value is an alist; see
-; function book-hash-alist and see :doc book-hash.
+; If the book is uncertified, the book-hash value is nil.  Otherwise it is an
+; alist by default, but if the value of state global 'book-hash-alistp was nil
+; at certification time, then the book-hash value is a checksum; see function
+; book-hash-alist and see :doc book-hash.
 
 ; Suppose the two alist arguments are each include-book-alists from different
 ; times.  We check that the first is a subset of the second, in the sense that
@@ -16019,18 +16030,67 @@
                       (cons obj acc))))))))
    state))
 
-(defun read-useless-runes (full-book-name envp useless-runes-r/w val ctx state)
+(defun useless-runes-env-info (useless-runes-r/w useless-runes-r/w-p ldp state)
 
-; Envp and val come from function useless-runes-value: val is a rational number
-; from -1 to 1 inclusive whose absolute value indicates the fraction of runes
-; to collect from the appropriate @useless-runes.lsp file for each event (a
-; negative number indicates that it's OK if that file does not exist) and envp
-; is the value of environment variable ACL2_USELESS_RUNES when that supplies
+; We return an error triple whose value is either nil, indicating that the
+; useless-runes value does not come from an environment variable, or else a
+; triple (var val . val-ld) where: var is an environment variable (either
+; ACL2_USELESS_RUNES or ACL2_USELESS_RUNES_LD); val is the value of that
+; variable (a non-empty string); and val-ld is the value of
+; ACL2_USELESS_RUNES_LD when that value is string-equal to "CERT" and thus
+; points to ACL2_USELESS_RUNES, else is nil.
+
+  (cond
+   ((and useless-runes-r/w-p
+         (or (null useless-runes-r/w)
+             ldp))
+
+; If :useless-runes was supplied explicitly as nil to certify-book, or was
+; supplied as any value to ld, then ignore environment variabless.
+
+    (value nil))
+   ((null ldp)
+    (er-let* ((val (getenv! "ACL2_USELESS_RUNES" state))  )
+      (value (and val (list* "ACL2_USELESS_RUNES" val nil)))))
+   (t (er-let* ((val-ld (getenv! "ACL2_USELESS_RUNES_LD" state))
+                (val (getenv! "ACL2_USELESS_RUNES" state)))
+        (cond
+         ((string-equal val-ld "CERT")
+          (value (and val (list* "ACL2_USELESS_RUNES" val val-ld))))
+         (t
+          (value (and val-ld (list* "ACL2_USELESS_RUNES_LD" val-ld nil)))))))))
+
+(defun useless-runes-source-msg (env-info useless-runes-r/w ldp)
+  (cond (env-info
+         (let ((val (car env-info))
+               (var (cadr env-info))
+               (val-ld (cddr env-info)))
+           (msg "the value ~x0 of environment variable ~s1~@2"
+                val var
+                (if val-ld
+                    (assert$
+                     ldp
+                     (msg " (because environment variable ~
+                           ACL2_USELESS_RUNES_LD has value ~s0)"
+                          val-ld))
+                  ""))))
+        (t (msg "~x0 keyword option :useless-runes ~x1"
+                (if ldp 'ld 'certify-book)
+                useless-runes-r/w))))
+
+(defun read-useless-runes (full-book-name env-info useless-runes-r/w val ldp
+                                          ctx state)
+
+; Env-info and val come from function useless-runes-value: val is a rational
+; number from -1 to 1 inclusive whose absolute value indicates the fraction of
+; runes to collect from the appropriate @useless-runes.lsp file for each event
+; (a negative number indicates that it's OK if that file does not exist); and
+; env-info, which is only used for error reporting, indicates the source of
 ; val.
 
-; This function returns an error triple whose value is a fast-alist mapping each
-; key, a name, to a list of lists of runes.  The call of read-file causes an
-; error if the @useless-runes.lsp file doesn't exist (or isn't readable).
+; This function returns an error triple whose value is a fast-alist mapping
+; each key, a name, to a list of lists of runes.  The call of read-file causes
+; an error if the @useless-runes.lsp file doesn't exist (or isn't readable).
 
 ; We copy code from read-file, but avoid that funciton so that we can fail
 ; silently.
@@ -16039,18 +16099,19 @@
 ; ACL2 reads a @useless-runes.lsp file, there isn't a reader error due to an
 ; unknown package.  One way we could have done this is to read the
 ; @useless-runes.lsp on demand, getting the next form for each event, rather
-; than to read the entire file early in the certification process as we do now.
-; That would work fine initially: the next name would match the next name of a
-; defun(s), defthm, or verify-guards event, and by then the corresponding list
-; of runes would use only known packages.  But imagine what happens as, over
-; time, the book is edited to rearrange, add, or remove events.  The
-; @useless-runes.lsp would be much less tolerant of those changes than it is
-; during the implemented approach, which is to use with-packages-unhidden to
-; "unhide" hidden packages from the book's portcullis, so that we can (we
-; think) get all packages from sub-books before reading the @useless-runes.lsp.
-; Those packages are logically there anyhow after reading the portcullis
-; commands -- it's just a courtesy to the user to cause errors when an
-; operation (especially symbol-package-name) relies on a hidden package.
+; than to read the entire file early in the certification or ld process as we
+; do now.  That would work fine initially: the next name would match the next
+; name of a defun(s), defthm, or verify-guards event, and by then the
+; corresponding list of runes would use only known packages.  But imagine what
+; happens as, over time, the book is edited to rearrange, add, or remove
+; events.  The @useless-runes.lsp would be much less tolerant of those changes
+; than it is during the implemented approach, which is to use
+; with-packages-unhidden to "unhide" hidden packages from the book's
+; portcullis, so that we can (we think) get all packages from sub-books before
+; reading the @useless-runes.lsp.  Those packages are logically there anyhow
+; after reading the portcullis commands -- it's just a courtesy to the user to
+; cause errors when an operation (especially symbol-package-name) relies on a
+; hidden package.
 
   (assert$
    (and (rationalp val)
@@ -16066,7 +16127,8 @@
                  (read-file-iterate-safe channel nil state)
                  (pprogn (io? event nil state
                               (useless-runes-filename)
-                              (fms! "Note: Consulting useless-runes file, ~s0."
+                              (fms! "; Note: Consulting useless-runes ~
+                                     file,~|; ~s0."
                                     (list (cons #\0 useless-runes-filename))
                                     (standard-co state) state nil))
                          (close-input-channel channel state)
@@ -16075,45 +16137,48 @@
                                               ctx state))))
               ((< val 0) (value nil))
               (t (er soft ctx
-                     "Unable to open file ~x0 for reading useless-runes data ~
-                      (as specified by ~@1); see :DOC useless-runes."
+                     "Unable to open file ~x0 for reading useless-runes data, ~
+                      as specified by ~@1; see :DOC useless-runes."
                      useless-runes-filename
-                     (if envp
-                         (msg "the value ~x0 of environment variable ~
-                               ACL2_USELESS_RUNES"
-                              envp)
-                       (msg "certify-book option :useless-runes ~x0"
-                            useless-runes-r/w))))))))))
+                     (useless-runes-source-msg env-info
+                                               useless-runes-r/w
+                                               ldp)))))))))
 
-(defun free-useless-runes-info (certify-book-info state)
-  (let ((useless-runes-info (access certify-book-info certify-book-info
-                                    :useless-runes-info)))
-    (case-match useless-runes-info
-      (('FAST-ALIST . fal) (prog2$ (fast-alist-free fal) state))
-      (('CHANNEL chan . &) (close-output-channel chan state))
-      (& (prog2$ (or (null useless-runes-info)
-                     (er hard 'free-useless-runes-info
-                         "Implementation error: Unexpected value of ~
-                          useless-runes-info, ~x0"
-                         useless-runes-info))
-                 state)))))
+(defun free-useless-runes (useless-runes state)
+  (cond
+   ((null useless-runes) state)
+   (t (case (access useless-runes useless-runes :tag)
+        (FAST-ALIST
+         (prog2$ (fast-alist-free (access useless-runes useless-runes :data))
+                 state))
+        (CHANNEL
+         (close-output-channel (car (access useless-runes useless-runes :data))
+                               state))
+        (t (prog2$ (er hard 'free-useless-runes
+                       "Implementation error: Unexpected value of ~
+                        useless-runes, ~x0"
+                       useless-runes)
+                   state))))))
 
-(defun useless-runes-value (useless-runes-r/w useless-runes-r/w-p ctx state)
+(defun useless-runes-value (useless-runes-r/w useless-runes-r/w-p
+                                              ldp ctx state)
 
-; Useless-runes-r/w is the value given to certify-book option :useless-runes,
-; if any; useless-runes-r/w-p is true when that option is supplied, else nil.
+; Useless-runes-r/w is the value supplied with option :useless-runes of
+; certify-book (when ldp is nil) or ld (when ldp is t), if that is supplied;
+; useless-runes-r/w-p is true when that option is supplied, else nil.
 
-; We return an error triple whose value is a pair (envp . val), where: envp is
-; the value of environment variable ACL2_USELESS_RUNES if that is responsible
-; for the value, val, else nil; and val is WRITE, nil, or a non-zero rational
-; between -1 and 1 inclusive whose absolute value represents the fraction of
-; the useless runes for a given event that should be kept disabled.  (An
-; exception is that the value may be nil, which represents envp = val = nil.)
-; A negative number indicates that the @useless-runes.lsp need not exist, while
-; a positive number results in an error if that file does not exist.
+; We return an error triple whose value is a pair (env-info . val), where:
+; env-info indicates the role of environment variables responsible for the
+; value, val, if any -- see useless-runes-env-info -- else nil; and val is
+; WRITE, nil, or a non-zero rational between -1 and 1 inclusive whose absolute
+; value represents the fraction of the useless-runes for a given event that
+; should be kept disabled.  An exception is that the "pair" may be nil, which
+; represents env-info = val = nil.  A negative number indicates that the
+; @useless-runes.lsp need not exist, while a positive number results in an
+; error if that file does not exist.
 
-; (We could allow 0 but that would mean the same as nil, which could perhaps
-; lead to confusion somehow.)
+; (We could allow 0 for val, but that would mean the same as nil, and we
+; prefer not to have two values that mean the same thing.)
 
 ; We ignore useless-runes info in ACL2(r), by making it seem that the call to
 ; certify-book always includes ":useless-runes nil".  If we decide later not to
@@ -16129,112 +16194,186 @@
         (useless-runes-r/w-p
          #+non-standard-analysis t
          #-non-standard-analysis useless-runes-r/w-p))
-    (er-let* ((str
+    (er-let* ((env-info (useless-runes-env-info useless-runes-r/w
+                                                useless-runes-r/w-p
+                                                ldp
+                                                state)))
+      (mv-let (env-var env-val val-ld)
+        (cond (env-info (mv (car env-info) (cadr env-info) (cddr env-info)))
+              (t (mv nil nil nil)))
+        (cond
+         ((and env-info
+               (string-equal env-val "WRITE")
+               (not ldp))
 
-; If :useless-runes nil was supplied explicitly to certify-book, then ignore
-; the value of the indicated environment variable.  Otherwise the environment
-; variable takes priority over the value of :useless-runes.
+; A value of "write" from an environment variable takes priority over a non-nil
+; :useless-runes option of certify-book.
 
-               (if (and useless-runes-r/w-p (null useless-runes-r/w))
-                   (value nil)
-                 (getenv! "ACL2_USELESS_RUNES" state))))
-      (cond
-       ((and str
-             (string-equal str "WRITE"))
+          (value (cons env-info 'write)))
+         (t
+          (case useless-runes-r/w
+            (:write (value (cons nil 'write)))
+            (:read  (value (cons nil 1)))
+            (:read? (value (cons nil -1)))
+            ((nil)
+             (cond
+              (useless-runes-r/w-p (value nil)) ; honor an explicit nil value
+              ((or (null env-info)
+                   (string-equal env-val "NIL"))
+               (value nil))
+              ((or (string-equal env-val "READ")
+                   (equal env-val "100"))
+               (value (cons env-info 1)))
+              ((or (string-equal env-val "READ?")
+                   (equal env-val "-100"))
+               (value (cons env-info -1)))
+              (t ; read a number between 1 and 99
+               (let* ((len (length env-val))
+                      (sign (if (and (not (zerop len))
+                                     (eql (char env-val 0) #\-))
+                                1
+                              0))
+                      (str (if (int= sign 1)
+                               (subseq env-val 1 len)
+                             env-val))
+                      (len2 (if (int= sign 1)
+                                (1- len)
+                              len))
+                      (percent (and (or (int= len2 1)
+                                        (int= len2 2))
+                                    (all-digits-p (coerce str 'list) 10)
+                                    (decimal-string-to-number str len2 0))))
+                 (cond (percent (value
+                                 (cons env-info
+                                       (/ percent
+                                          (if (int= sign 1) -100 100)))))
+                       (t (er soft ctx
+                              "Illegal value ~x0 for environment variable ~
+                               ~@1.  See :DOC useless-runes."
+                              env-val
+                              (cond
+                               (val-ld
+                                (assert$
+                                 ldp
+                                 (msg " (because environment variable ~
+                                       ACL2_USELESS_RUNES_LD has value ~s0)"
+                                      val-ld)))
+                               (t env-var)))))))))
+            (t ; should be an integer value
+             (cond
+              ((and (integerp useless-runes-r/w)
+                    (not (zerop useless-runes-r/w))
+                    (<= -100 useless-runes-r/w)
+                    (<= useless-runes-r/w 100))
+               (value (cons nil (/ useless-runes-r/w 100))))
+              (t (er soft ctx
+                     "Illegal value ~x0 for certify-book parameter ~
+                      :USELESS-RUNES.  See :DOC useless-runes."
+                     useless-runes-r/w)))))))))))
 
-; A value of "write" for the environment variable takes priority over the value
-; of the :useless-runes option of certify-book.
+(defun initial-useless-runes (full-book-name useless-runes-r/w
+                                             useless-runes-r/w-p
+                                             ldp ctx state)
 
-        (value (cons str 'write)))
-       (t
-        (case useless-runes-r/w
-          (:write (value (cons nil 'write)))
-          (:read  (value (cons nil 1)))
-          (:read? (value (cons nil -1)))
-          ((nil)
-           (cond
-            (useless-runes-r/w-p (value nil)) ; honor an explicit nil value
-            ((null str) (value nil))
-            ((or (string-equal str "READ")
-                 (equal str "100"))
-             (value (cons str 1)))
-            ((or (string-equal str "READ?")
-                 (equal str "-100"))
-             (value (cons str -1)))
-            (t ; read a number between 1 and 99
-             (let* ((len (length str))
-                    (sign (if (and (not (zerop len))
-                                   (eql (char str 0) #\-))
-                              1
-                            0))
-                    (str2 (if (int= sign 1)
-                              (subseq str 1 len)
-                            str))
-                    (len2 (if (int= sign 1)
-                              (1- len)
-                            len))
-                    (percent (and (or (int= len2 1)
-                                      (int= len2 2))
-                                  (all-digits-p (coerce str2 'list) 10)
-                                  (decimal-string-to-number str2 len2 0))))
-               (cond (percent (value
-                               (cons str
-                                     (/ percent
-                                        (if (int= sign 1) -100 100)))))
-                     (t (er soft ctx
-                            "Illegal value ~x0 for environment variable ~
-                             ACL2_USELESS_RUNES.  See :DOC useless-runes."
-                            str)))))))
-          (t ; should be an integer value
-           (cond
-            ((and (integerp useless-runes-r/w)
-                  (not (zerop useless-runes-r/w))
-                  (<= -100 useless-runes-r/w)
-                  (<= useless-runes-r/w 100))
-             (value (cons nil (/ useless-runes-r/w 100))))
-            (t (er soft ctx
-                   "Illegal value ~x0 for certify-book parameter ~
-                    :USELESS-RUNES.  See :DOC useless-runes."
-                   useless-runes-r/w))))))))))
+; This function is called only for initializing the state global 'useless-runes
+; for a call of certify-book or ld.  When it does so, it opens a suitable
+; channel in the 'write case, and it reads in the fast-alist in the 'read case.
 
-(defun useless-runes-info (full-book-name useless-runes-r/w useless-runes-r/w-p
-                                          ctx state)
-  (er-let* ((pair (useless-runes-value useless-runes-r/w useless-runes-r/w-p
-                                       ctx state)))
-    (let ((envp (car pair))
-          (val (cdr pair)))
-      (cond
-       ((null val) (value nil))
-       ((eq val 'write)
-        (let ((useless-runes-filename (useless-runes-filename full-book-name)))
-          (mv-let (chan state)
-            (open-output-channel useless-runes-filename :character state)
-            (cond
-             ((null chan)
-              (er soft ctx
-                  "Unable to open file ~x0 for writing useless runes data (as ~
-                   specified by ~@1); see :DOC useless-runes."
-                  useless-runes-filename
-                  (if envp
-                      (msg "the value ~x0 of environment variable ~
-                            ACL2_USELESS_RUNES"
-                           envp)
-                    (msg "certify-book option :useless-runes ~x0"
-                         useless-runes-r/w))))
-             (t (value `(CHANNEL ,chan
-                                 ,@(strip-cars
-                                    (known-package-alist state)))))))))
-       (t
-        (assert$
-         (and (rationalp val)
-              (<= -1 val)
-              (not (zerop val))
-              (<= val 1))
-         (er-let* ((fal (read-useless-runes full-book-name
-                                            envp
-                                            useless-runes-r/w
-                                            val ctx state)))
-           (value `(FAST-ALIST . ,fal)))))))))
+  (let ((bookp (and (stringp full-book-name)
+                    (let ((len (length full-book-name)))
+                      (and (< 5 len)
+                           (terminal-substringp
+                            ".lisp" full-book-name 4 (1- len)))))))
+    (cond
+     ((not (or useless-runes-r/w-p
+               bookp))
+
+; Since the :useless-runes keyword argument was not supplied, and since the
+; filename argument is not a string ending in ".lisp", we don't consult the
+; environment.
+
+      (value nil))
+     (t
+      (er-let* ((pair (useless-runes-value useless-runes-r/w useless-runes-r/w-p
+                                           ldp ctx state))
+                (env-info (value (car pair)))
+                (val (value (cdr pair)))
+                (full-book-name
+                 (cond ((or (null val) ; then full-book-name is irrelevant
+                            (not ldp))
+                        (value full-book-name))
+                       (bookp
+                        (value (extend-pathname
+                                (f-get-global 'connected-book-directory state)
+                                full-book-name
+                                state)))
+                       (t ; hence useless-runes-r/w-p is true
+                        (er soft ctx
+                            "A non-nil :useless-runes argument is only ~
+                             permitted for a call of ~x0 when the first ~
+                             argument is a string ending in \".lisp\".  But ~
+                             the first argument is ~x1."
+                            'ld full-book-name)))))
+        (cond
+         ((null val) (value nil))
+         ((eq val 'write)
+          (let ((useless-runes-filename (useless-runes-filename full-book-name)))
+            (mv-let (chan state)
+              (open-output-channel useless-runes-filename :character state)
+              (cond
+               ((null chan)
+                (er soft ctx
+                    "Unable to open file ~x0 for writing useless-runes data (as ~
+                 specified by ~@1); see :DOC useless-runes."
+                    useless-runes-filename
+                    (useless-runes-source-msg env-info useless-runes-r/w ldp)))
+               (t (value (make useless-runes
+                               :tag 'CHANNEL
+                               :data (cons chan
+                                           (strip-cars
+                                            (known-package-alist state)))
+                               :full-book-name full-book-name)))))))
+         (t
+          (assert$
+           (and (rationalp val)
+                (<= -1 val)
+                (not (zerop val))
+                (<= val 1))
+           (er-let* ((fal (read-useless-runes full-book-name
+                                              env-info
+                                              useless-runes-r/w
+                                              val ldp ctx state)))
+             (value (make useless-runes
+                          :tag 'FAST-ALIST
+                          :data fal
+                          :full-book-name full-book-name)))))))))))
+
+(defun maybe-refresh-useless-runes (useless-runes)
+
+; This function is called by f-put-ld-specials to restore useless-runes after
+; completion of a subsidiary call of ld or certify-book.  It's not clear that
+; this is necessary, but we play it safe in case the fast-alist has somehow
+; been stolen.
+
+  (cond ((and useless-runes
+              (eq (access useless-runes useless-runes :tag)
+                  'FAST-ALIST))
+         (change useless-runes useless-runes
+                 :data
+                 (make-fast-alist (access useless-runes useless-runes :data))))
+        (t useless-runes)))
+
+(defun update-useless-runes (useless-runes state)
+
+; Call this when the value of state global 'useless-runes is to be replaced
+; with the given useless-runes (a useless-runes record or nil) with no further
+; use of the old value.
+
+  (pprogn (free-useless-runes (f-get-global 'useless-runes state)
+                              state)
+          (f-put-global 'useless-runes
+                        (maybe-refresh-useless-runes useless-runes)
+                        state)))
 
 (defun certify-book-fn (user-book-name k compile-flg defaxioms-okp
                                        skip-proofs-okp ttags ttagsx ttagsxp
@@ -16403,11 +16542,6 @@
                                 ctx state))
                         (certify-book-info-0
                          (value (make certify-book-info
-
-; We fill in the :useless-runes-alist field below, after ensuring that all
-; portcullis commands have been run (consider the case k=t), so that packages
-; are all available.
-
                                       :full-book-name full-book-name
                                       :cert-op cert-op
                                       :include-book-phase nil))))
@@ -16467,11 +16601,19 @@
                              suspect-book-action-alist cert-op k ctx state))
                            (portcullis-cmds0 (value (access cert-obj cert-obj
                                                             :cmds)))
-                           (useless-runes-info
-                            (useless-runes-info full-book-name
-                                                useless-runes-r/w
-                                                useless-runes-r/w-p
-                                                ctx state))
+                           (old-useless-runes
+                            (value (f-get-global 'useless-runes state)))
+                           (useless-runes
+
+
+; By now, we should have ensured that all portcullis commands have been run
+; (consider the case of certify-book with k=t), so that packages are all
+; available.
+
+                            (initial-useless-runes full-book-name
+                                                   useless-runes-r/w
+                                                   useless-runes-r/w-p
+                                                   nil ctx state))
                            (ignore (cond (write-port
                                           (write-port-file full-book-name
                                                            portcullis-cmds0
@@ -16482,14 +16624,9 @@
                           (wrld1-known-package-alist
                            (global-val 'known-package-alist wrld1))
                           (acl2x-file
-                           (convert-book-name-to-acl2x-name full-book-name))
-                          (certify-book-info-1
-                           (change certify-book-info certify-book-info-0
-                                   :useless-runes-info useless-runes-info)))
+                           (convert-book-name-to-acl2x-name full-book-name)))
                      (pprogn
-                      (f-put-global 'certify-book-info
-                                    certify-book-info-1
-                                    state)
+                      (f-put-global 'useless-runes useless-runes state)
                       (io? event nil state
                            (full-book-name cert-op)
                            (fms "CERTIFICATION ATTEMPT~@0 FOR ~x1~%~s2~%~%*~ ~
@@ -16845,15 +16982,8 @@
                                     (fast-alist-free-cert-data-on-exit
                                      cert-data-pass1-saved
                                      (pprogn
-                                      (free-useless-runes-info
-                                       certify-book-info-1 state)
-                                      (f-put-global 'certify-book-info
-                                                    (change
-                                                     certify-book-info
-                                                     certify-book-info-1
-                                                     :useless-runes-info nil
-                                                     :include-book-phase t)
-                                                    state)
+                                      (update-useless-runes old-useless-runes
+                                                            state)
                                       (assert$
                                        (listp index/old-wrld)
                                        (print-certify-book-step-3
@@ -18518,7 +18648,6 @@
    ((endp field-descriptors)
     (let ((default-names (list* (defstobj-fnname name :recognizer :top nil)
                                 (defstobj-fnname name :creator :top nil)
-                                (defstobj-fnname name :fixer :top nil)
                                 (reverse default-names)))
           (domain (strip-cars renaming)))
       (cond
@@ -18602,12 +18731,11 @@
 
 ; To discuss the guard issue, we name the functions introduced by defstobj,
 ; following the convention used in the comment in defstobj-template.  The
-; recognizer for the stobj itself will be called namep, the creator will be
-; called create-name, and the fixer will be called name$fix.  For each field,
-; the following names are introduced: recog-name - recognizer for the field
-; value; accessor-name - accessor for the field; updater-name - updater for the
-; field; length-name - length of array field; resize-name - resizing function
-; for array field.
+; recognizer for the stobj itself will be called namep, and the creator will be
+; called create-name.  For each field, the following names are introduced:
+; recog-name - recognizer for the field value; accessor-name - accessor for the
+; field; updater-name - updater for the field; length-name - length of array
+; field; resize-name - resizing function for array field.
 
 ; We are interested in determining the conditions we must check to ensure that
 ; each of these functions is Common Lisp compliant.  Both the guard and the
@@ -18662,12 +18790,10 @@
    ((endp ftemps)
     (let* ((recog-name (defstobj-fnname name :recognizer :top renaming))
            (creator-name (defstobj-fnname name :creator :top renaming))
-           (fixer-name (defstobj-fnname name :fixer :top renaming))
-           (names (list* recog-name creator-name fixer-name names)))
+           (names (list* recog-name creator-name names)))
       (er-progn
        (chk-all-but-new-name recog-name ctx 'function wrld state)
        (chk-all-but-new-name creator-name ctx 'function wrld state)
-       (chk-all-but-new-name fixer-name ctx 'function wrld state)
        (chk-acceptable-defstobj-renaming name field-descriptors renaming
                                          ctx state nil)
        (cond ((and renaming
@@ -19371,12 +19497,6 @@
       (defstobj-creator-def
         (access defstobj-template template :creator)
         field-templates wrld)
-      (defstobj-fixer-def
-        name
-        (access defstobj-template template :fixer)
-        (access defstobj-template template :recognizer)
-        (access defstobj-template template :creator)
-        nil)
       (defstobj-field-fns-axiomatic-defs
         (access defstobj-template template :recognizer)
         name 0 field-templates wrld)))))
@@ -19514,7 +19634,6 @@
 ;      fn                  stobjs-in          stobjs-out
 ; topmost recognizer       (name)             (nil)
 ; creator                  ()                 (name)
-; fixer                    (nil)              (name)
 ; field recogs             (nil ...)          (nil)
 ; simple accessor          (name)             (nil)
 ; hash-table accessor      (nil name)         (nil)
@@ -19540,20 +19659,16 @@
 
   (let ((recog-name (access defstobj-template template :recognizer))
         (creator-name (access defstobj-template template :creator))
-        (fixer-name (access defstobj-template template :fixer))
         (field-templates (access defstobj-template template :field-templates)))
     (put-stobjs-in-and-outs1 name
                              field-templates
-                             (putprop fixer-name
+                             (putprop creator-name
                                       'STOBJS-OUT
                                       (list name)
-                                      (putprop creator-name
-                                               'STOBJS-OUT
+                                      (putprop recog-name
+                                               'STOBJS-IN
                                                (list name)
-                                               (putprop recog-name
-                                                        'STOBJS-IN
-                                                        (list name)
-                                                        wrld))))))
+                                               wrld)))))
 
 (defun defconst-name-alist (lst n)
   (if (endp lst)
@@ -19671,7 +19786,6 @@
                  (raw-def-lst (defstobj-raw-defs name template nil wrld1))
                  (recog-name (access defstobj-template template :recognizer))
                  (creator-name (access defstobj-template template :creator))
-                 (fixer-name (access defstobj-template template :fixer))
                  (names
 
 ; Warning: Each updater should immediately follow the corresponding accessor --
@@ -19723,9 +19837,8 @@
                                           (pairlis-x1 'defun ax-def-lst)
                                           defconsts
 
-; We disable the executable-counterpart of the creator and fixer functions.
-; The creator's *1* function always does a throw, which is not useful during
-; proofs, and the fixer function can call the creator function.
+; We disable the executable-counterpart of the creator function.  The creator's
+; *1* function always does a throw, which is not useful during proofs.
 
                                           `((encapsulate
                                              ()
@@ -19733,9 +19846,7 @@
                                              (in-theory
                                               (disable
                                                (:executable-counterpart
-                                                ,creator-name)
-                                               (:executable-counterpart
-                                                ,fixer-name))))))
+                                                ,creator-name))))))
                                          0
                                          t ; might as well do make-event check
                                          (f-get-global 'cert-data state)
@@ -19802,14 +19913,12 @@
                                      :live-var the-live-var
                                      :recognizer recog-name
                                      :creator creator-name
-                                     :fixer fixer-name
                                      :names
 ; See the comment in the binding of names above.
                                      (append (set-difference-eq
                                               names
                                               (list recog-name
-                                                    creator-name
-                                                    fixer-name))
+                                                    creator-name))
                                              field-const-names))
                                (putprop-x-lst1
                                 names 'stobj-function name
@@ -19938,7 +20047,7 @@
 ; f_E and f_L for the function symbols associated with f (perhaps by default)
 ; by the :EXEC and :LOGIC keywords, respectively; these may be called the :EXEC
 ; (s-)primitive and :LOGIC (s-)primitive.  A stobj primitive other than the
-; recognizer, creator, or fixer may be called a "stobj export".
+; recognizer or creator may be called a "stobj export".
 
 ; This Essay models evaluation using live stobjs, as performed in the top-level
 ; loop.  (We do not consider here evaluation without live stobjs, as is carried
@@ -20728,7 +20837,7 @@
                               name
                               &key
                               foundation
-                              recognizer creator fixer exports
+                              recognizer creator exports
                               protect-default
                               congruent-to
                               &allow-other-keys)
@@ -20747,7 +20856,6 @@
          (creator-name (if (consp creator)
                            (car creator)
                          creator))
-         (fixer (or fixer (absstobj-name name :FIXER)))
          (congruent-stobj-rep (if congruent-to
                                   (congruent-stobj-rep-raw congruent-to)
                                 name))
@@ -20798,9 +20906,7 @@
 ; See the comment above in the binding of fields, about a guarantee that the
 ; first two methods must be for the recognizer and creator, respectively.
 
-                       (defabsstobj-raw-defs name methods
-                         (defstobj-fixer-def name fixer recognizer creator-name
-                           t)))
+                       (defabsstobj-raw-defs name methods))
              (let* ((old-pair (assoc-eq ',name *user-stobj-alist*))
                     (d (and old-pair
                             (get ',the-live-name
@@ -20848,7 +20954,7 @@
                               name
                               &key
                               foundation
-                              recognizer creator fixer corr-fn exports
+                              recognizer creator corr-fn exports
                               protect-default
                               congruent-to missing-only)
   (declare (xargs :guard (and (symbolp name)
@@ -20858,7 +20964,6 @@
         (list 'quote foundation)
         (list 'quote recognizer)
         (list 'quote creator)
-        (list 'quote fixer)
         (list 'quote corr-fn)
         (list 'quote exports)
         (list 'quote protect-default)
@@ -20881,7 +20986,7 @@
                                              name
                                              &key
                                              foundation
-                                             recognizer creator fixer
+                                             recognizer creator
                                              corr-fn exports protect-default
                                              congruent-to)
   (declare (xargs :guard (symbolp name)))
@@ -20891,7 +20996,6 @@
           (list 'quote foundation)
           (list 'quote recognizer)
           (list 'quote creator)
-          (list 'quote fixer)
           (list 'quote corr-fn)
           (list 'quote exports)
           (list 'quote protect-default)
@@ -22093,7 +22197,7 @@
                (cond (msg (mv msg nil nil))
                      (t (mv nil accessors updaters))))))))
 
-(defun chk-acceptable-defabsstobj (name st$c recognizer st$ap creator fixer
+(defun chk-acceptable-defabsstobj (name st$c recognizer st$ap creator
                                         corr-fn exports protect-default
                                         congruent-to see-doc ctx wrld state
                                         event-form)
@@ -22120,15 +22224,6 @@
         "The symbol ~x0 is not the name of a stobj in the current ACL2 world. ~
          ~ ~@1"
         st$c see-doc))
-   ((or (not (symbolp fixer))
-        (null fixer)
-        (keywordp fixer)
-        (booleanp fixer))
-    (er soft ctx
-        "The value of a ~x0 :FIXER argument must be a non-nil symbol that is ~
-         neither a kwyword nor a Boolean.  The :FIXER argument ~x1 is thus ~
-         illegal.  ~@2"
-        'defabsstobj fixer see-doc))
    ((not (true-listp exports))
     (er soft ctx
         "DEFABSSTOBJ requires the value of its :EXPORTS keyword argument to ~
@@ -22177,9 +22272,9 @@
                                     protect-default congruent-to see-doc ctx
                                     wrld2 state nil nil))))))
 
-(defun defabsstobj-axiomatic-defs (methods fixer-def)
+(defun defabsstobj-axiomatic-defs (methods)
   (cond
-   ((endp methods) (list fixer-def))
+   ((endp methods) nil)
    (t (cons (let ((method (car methods)))
               (mv-let (name formals guard-post logic stobjs-in-logic)
                 (mv (access absstobj-method method :NAME)
@@ -22228,7 +22323,7 @@
 ; primitives in the logic.)
 
                         (,logic ,@formals))))
-            (defabsstobj-axiomatic-defs (cdr methods) fixer-def)))))
+            (defabsstobj-axiomatic-defs (cdr methods))))))
 
 (defun with-inside-absstobj-update (temp saved name form)
 
@@ -22288,15 +22383,15 @@
                           ',name ,form0)))))
     (list name '(&rest args) body)))
 
-(defun defabsstobj-raw-defs-rec (methods fixer-def)
+(defun defabsstobj-raw-defs-rec (methods)
 
 ; See defabsstobj-raw-defs.
 
-  (cond ((endp methods) (list fixer-def))
+  (cond ((endp methods) nil)
         (t (cons (defabsstobj-raw-def (car methods))
-                 (defabsstobj-raw-defs-rec (cdr methods) fixer-def)))))
+                 (defabsstobj-raw-defs-rec (cdr methods))))))
 
-(defun defabsstobj-raw-defs (st-name methods fixer-def)
+(defun defabsstobj-raw-defs (st-name methods)
 
 ; Warning: Each method, which is an absstobj-method record, might only have
 ; valid :NAME, :LOGIC, :EXEC, and :PROTECT fields filled in.  Do not use other
@@ -22330,7 +22425,7 @@
           (exec (access absstobj-method method :EXEC)))
      (assert$ (not (eq exec 'args)) ; ACL2 built-in
               `(,name (&rest args) (cons ',exec args))))
-   (defabsstobj-raw-defs-rec (cddr methods) fixer-def)))
+   (defabsstobj-raw-defs-rec (cddr methods))))
 
 (defun expand-recognizer (st-name recognizer see-doc ctx state)
   (cond ((null recognizer)
@@ -22572,7 +22667,7 @@
 
   (congruent-absstobj-tuples-rec tuples1 tuples2 tuples1 tuples2))
 
-(defun defabsstobj-fn1 (st-name st$c recognizer creator fixer corr-fn exports
+(defun defabsstobj-fn1 (st-name st$c recognizer creator corr-fn exports
                                 protect-default congruent-to missing-only
                                 ctx state event-form)
   (let* ((wrld0 (w state))
@@ -22584,8 +22679,6 @@
          (creator-name (if (consp creator)
                            (car creator)
                          creator))
-         (fixer (or fixer
-                    (absstobj-name st-name :FIXER)))
          (corr-fn (or corr-fn
                       (absstobj-name st-name :CORR-FN))))
     (er-let* ((recognizer (expand-recognizer st-name recognizer see-doc ctx
@@ -22593,7 +22686,7 @@
               (st$ap (value (cadr (assoc-keyword :logic (cdr recognizer)))))
               (missing/methods/wrld1
                (chk-acceptable-defabsstobj
-                st-name st$c recognizer st$ap creator fixer corr-fn exports
+                st-name st$c recognizer st$ap creator corr-fn exports
                 protect-default congruent-to see-doc ctx wrld0 state
                 event-form)))
       (cond
@@ -22683,23 +22776,14 @@
                                    (defabsstobj-logic-subst methods0)
                                    methods0))
                          (wrld1 (cddr missing/methods/wrld1))
-                         (ax-def-lst (defabsstobj-axiomatic-defs
-                                       methods
-                                       (defstobj-fixer-def
-                                         st-name fixer
-                                         (car recognizer)
-                                         creator-name nil)))
+                         (ax-def-lst (defabsstobj-axiomatic-defs methods))
                          (raw-def-lst
 
 ; The first method in methods is for the recognizer, as is guaranteed by
 ; chk-acceptable-defabsstobj (as explained in a comment there that refers to
 ; the present function, defabsstobj-fn1).
 
-                          (defabsstobj-raw-defs st-name methods
-                            (defstobj-fixer-def
-                              st-name fixer
-                              (car recognizer)
-                              creator-name t)))
+                          (defabsstobj-raw-defs st-name methods))
                          (names (strip-cars ax-def-lst))
                          (the-live-var (the-live-var st-name)))
                     (er-progn
@@ -22738,9 +22822,7 @@
                               (in-theory
                                (disable
                                 (:executable-counterpart
-                                 ,creator-name)
-                                (:executable-counterpart
-                                 ,fixer))))))
+                                 ,creator-name))))))
                          0
                          t ; might as well do make-event check
                          (f-get-global 'cert-data state)
@@ -22789,7 +22871,6 @@
 
                                              :recognizer (car names)
                                              :creator (cadr names)
-                                             :fixer (car (last names))
                                              :names
                                              (sort-absstobj-names
                                               (butlast (cddr names) 1)
@@ -22800,11 +22881,9 @@
                                         (putprop
                                          the-live-var 'stobj-live-var st-name
                                           (putprop
-                                           fixer 'stobjs-out (list st-name)
-                                           (putprop
-                                            the-live-var 'symbol-class
-                                            :common-lisp-compliant
-                                            wrld2))))))))))))
+                                           the-live-var 'symbol-class
+                                           :common-lisp-compliant
+                                           wrld2)))))))))))
                                (discriminator
                                 (cons 'defabsstobj
                                       (make
@@ -22843,7 +22922,7 @@
                                            wrld3
                                            state))))))))))))))))))))))
 
-(defun defabsstobj-fn (st-name st$c recognizer creator fixer corr-fn exports
+(defun defabsstobj-fn (st-name st$c recognizer creator corr-fn exports
                                protect-default congruent-to missing-only
                                state event-form)
 
@@ -22859,7 +22938,7 @@
   (with-ctx-summarized
    (make-ctx-for-event event-form
                        (msg "( DEFABSSTOBJ ~x0 ...)" st-name))
-   (defabsstobj-fn1 st-name st$c recognizer creator fixer corr-fn exports
+   (defabsstobj-fn1 st-name st$c recognizer creator corr-fn exports
      protect-default congruent-to missing-only ctx state event-form)))
 
 (defun create-state ()
@@ -24395,7 +24474,7 @@
          (er-cmp-fn-trace-form
           '(er-cmp-fn :entry ; body of error1, to avoid second break on error1
                       (pprogn (io? error nil state (ctx msg)
-                                   (error-fms nil ctx
+                                   (error-fms nil ctx nil
                                               "~|[Breaking on cmp error:]~|~@0"
                                               (list (cons #\0 msg))
                                               state))
@@ -30171,12 +30250,13 @@
 
                 nil))
    (error "~a" (channel-to-string
-                (error-fms-channel t ctx str alist chan
+                (error-fms-channel t ctx nil str alist chan
 
 ; Leave the following as state, not *the-live-state*, to avoid compiler
 ; warning.
 
-                                   state)
+                                   state
+                                   0)
                 chan nil nil t))))
 
 ; Essay on Memoization with Attachments

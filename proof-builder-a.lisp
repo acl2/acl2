@@ -1228,7 +1228,7 @@
     (declare (ignore erp))
     (cond (msg (pprogn (f-put-global 'illegal-to-certify-message msg state)
                        (f-put-global 'ld-pre-eval-filter :illegal-state state)
-                       (error-fms nil 'chk-absstobj-invariants
+                       (error-fms nil 'chk-absstobj-invariants nil
                                   "~@0"
                                   (list (cons #\0 msg))
                                   state)))

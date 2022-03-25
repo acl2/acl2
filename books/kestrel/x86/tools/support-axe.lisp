@@ -31,8 +31,6 @@
 (acl2::add-known-boolean x86p)
 (acl2::add-known-boolean 64-bit-modep)
 ;(acl2::add-known-boolean addr-byte-alistp)
-(acl2::add-known-boolean byte-listp)
-(acl2::add-known-boolean signed-byte-p)
 (acl2::add-known-boolean subset-p)
 (acl2::add-known-boolean no-duplicates-p)
 (acl2::add-known-boolean member-p)
@@ -186,8 +184,6 @@
 (acl2::defopeners ACL2::GET-ALL-SECTIONS-FROM-MACH-O-LOAD-COMMANDS)
 
 (acl2::defopeners ACL2::GET-SECTION-NUMBER-MACH-O-AUX)
-
-(acl2::defopeners ACL2::GET-MACH-O-LOAD-COMMAND)
 
 (acl2::defopeners ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX)
 

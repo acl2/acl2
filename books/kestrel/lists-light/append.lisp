@@ -118,7 +118,7 @@
 (defthm take-of-len-and-append
   (equal (take (len x) (append x y))
          (true-list-fix x))
-  :hints (("Goal" :in-theory (enable append nthcdr))))
+  :hints (("Goal" :in-theory (enable append))))
 
 (defthm append-of-true-list-fix-arg1
   (equal (append (true-list-fix x) y)
@@ -133,16 +133,10 @@
                      (true-list-fix y))
               (equal (nthcdr (len y) x)
                      z)))
-  :hints (("Goal" :do-not-induct t
-           :use ((:instance append-of-true-list-fix-arg1
-                            (x y)
-                            (y (NTHCDR (LEN Y) X)))
-                 (:instance append-of-take-and-nthcdr-2
-                            (n (len y))
-                            (l x)))
-           :in-theory (e/d (nthcdr-when-<-of-len)
-                           (append-of-true-list-fix-arg1
-                            append-of-take-and-nthcdr-2)))))
+  :hints (("Goal" :use ((:instance append-of-true-list-fix-arg1
+                                   (x y)
+                                   (y (nthcdr (len y) x))))
+           :in-theory (disable append-of-true-list-fix-arg1))))
 
 (defthm equal-of-append-and-append-when-equal-of-len-and-len
   (implies (equal (len x1) (len x2))

@@ -86,9 +86,9 @@
                             ',(array-contents-pair)
                             (jvm::heap xxx)))
                ,term)
-           (if (eq (car output-indicator) :array-local) ;;this means "get the final value of the array that was initially pointed to be array local N.  TODO: This could be an abbreviation for a :field of a :local...
+           (if (eq (car output-indicator) :array-local) ;;this means "get the final value of the array that was initially pointed to by array local N.  TODO: This could be an abbreviation for a :field of a :local...
                (let ((local-num (cadr output-indicator)))
-                 `(get-field (jvm::nth-local ',local-num ,original-locals) ;;note: these are the original locals
+                 `(get-field (jvm::nth-local ',local-num ,original-locals) ;;note: these are the locals in the original state
                              ',(array-contents-pair)
                              (jvm::heap ,term)))
              (if (eq (car output-indicator) :field)
@@ -150,12 +150,26 @@
   (and (symbol-alistp alist)
        (all-natp (strip-cdrs alist))))
 
+;move
+(local
+ (defthm natp-of-lookup-equal-2
+   (implies (and (all-natp (strip-cdrs alist))
+                 (lookup-equal key alist))
+            (natp (lookup-equal key alist)))
+   :hints (("Goal" :in-theory (enable strip-cdrs)))))
+
+(local
+ (defthm pseudo-termp-of-lookup-equal-when-param-slot-to-name-alistp
+   (implies (param-slot-to-name-alistp param-slot-to-name-alist)
+            (pseudo-termp (lookup-equal current-slot param-slot-to-name-alist)))
+   :hints (("Goal" :in-theory (enable param-slot-to-name-alistp)))))
+
 ;; assumes locals-term is a term that represents the locals in the appropriate state
 ;; TODO: Compare to make-input-assumptions and param-assumptions-and-vars-aux
 ;; TOOD: Should we assume that params that are references are non-null?  We do for arrays...
 ;; TODO: Add an option to avoid generating non-null assumptions for arrays (implied by array-refp) and references.
 ;; TODO: Add option for stricter assumptions about subtypes of int
-(defun parameter-assumptions-aux (current-slot parameter-types param-slot-to-name-alist array-length-alist locals-term heap-term vars-for-array-elements method-designator-string)
+(defund parameter-assumptions-aux (current-slot parameter-types param-slot-to-name-alist array-length-alist locals-term heap-term vars-for-array-elements method-designator-string)
   (declare (xargs :guard (and (natp current-slot)
                               (true-listp parameter-types)
                               (jvm::all-typep parameter-types)
@@ -164,7 +178,9 @@
                               (pseudo-termp locals-term)
                               (pseudo-termp heap-term)
                               (member-eq vars-for-array-elements '(t nil :bits))
-                              (method-designator-stringp method-designator-string))))
+                              (method-designator-stringp method-designator-string))
+                  :guard-hints (("Goal" :in-theory (e/d (symbolp-of-lookup-equal-when-param-slot-to-name-alistp)
+                                                        (natp))))))
   (if (endp parameter-types)
       nil
     (let* ((type (first parameter-types))
@@ -265,6 +281,20 @@
                                          vars-for-array-elements
                                          method-designator-string)))))
 
+(defthm pseudo-term-listp-of-parameter-assumptions-aux
+  (implies (and (natp current-slot)
+                (true-listp parameter-types)
+                (jvm::all-typep parameter-types)
+                (param-slot-to-name-alistp param-slot-to-name-alist)
+                (array-length-alistp array-length-alist)
+                (pseudo-termp locals-term)
+                (pseudo-termp heap-term)
+                (member-eq vars-for-array-elements '(t nil :bits))
+                (method-designator-stringp method-designator-string))
+           (pseudo-term-listp (parameter-assumptions-aux current-slot parameter-types param-slot-to-name-alist array-length-alist locals-term heap-term vars-for-array-elements method-designator-string)))
+  :hints (("Goal" :in-theory (enable parameter-assumptions-aux
+                                     symbolp-of-lookup-equal-when-param-slot-to-name-alistp))))
+
 ;; Make assumptions for the parameters of the given method.  These will be
 ;; terms over LOCALS-TERM and HEAP-TERM (TODO: and the names of local vars...). ARRAY-LENGTH-ALIST is an alist from
 ;; parameter names to naturals representing the lengths of the
@@ -288,6 +318,17 @@
                                                    (not (null-refp (jvm::nth-local '0 ,locals-term)))))))
     (append assumptions-about-this
             (parameter-assumptions-aux first-param-slot parameter-types param-slot-to-name-alist array-length-alist locals-term heap-term vars-for-array-elements method-designator-string))))
+
+(defthm pseudo-term-listp-of-parameter-assumptions
+  (implies (and (jvm::method-infop method-info)
+                (array-length-alistp array-length-alist)
+                (pseudo-termp locals-term)
+                (pseudo-termp heap-term)
+                (member-eq vars-for-array-elements '(t nil :bits))
+                (param-slot-to-name-alistp param-slot-to-name-alist)
+                (method-designator-stringp method-designator-string))
+           (pseudo-term-listp (parameter-assumptions method-info array-length-alist locals-term heap-term vars-for-array-elements param-slot-to-name-alist method-designator-string)))
+  :hints (("Goal" :in-theory (enable parameter-assumptions))))
 
 
 ;; ;move and use more (or just trans this stuff?)

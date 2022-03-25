@@ -30,6 +30,7 @@
 
 (in-package "ACL2")
 (include-book "xdoc/base" :dir :system)
+(include-book "xdoc/full-escape-symbol" :dir :system)
 
 (defxdoc b*
   :parents (macro-libraries)
@@ -693,18 +694,22 @@ for more details.</p>")
                               decls
                               body)
   (let* ((macro-name (macro-name-for-patbind name))
-         (short      (if short-p
-                         short
+         (doc-p (or parents  ; Todo: Don't create doc if there is no short or long provided?
+                 short-p long-p))
+         (short (if short-p
+                    short
+                  (and doc-p
                        (concatenate 'string
                                     "@(see acl2::b*) binder form @('" (symbol-name name)
-                                    "') (placeholder).")))
-         (long       (if long-p
-                         long
-                       (concatenate 'string
-                                    "<p>This is a b* binder introduced with @(see acl2::def-b*-binder).</p>
-                                     @(def " (symbol-name macro-name) ")"))))
+                                         "') (placeholder)."))))
+         (long (if long-p
+                   long
+                 (and doc-p
+                      (concatenate 'string
+                                   "<p>This is a b* binder introduced with @(see acl2::def-b*-binder).</p>
+                                     @(def " (xdoc::full-escape-symbol macro-name) ")")))))
     `(progn
-       ,@(if (or parents short long)
+       ,@(if doc-p
              ;; Want to be able to turn off documentation, e.g., for ret binders
              `((defxdoc ,macro-name :parents ,parents :short ,short :long ,long))
            nil)

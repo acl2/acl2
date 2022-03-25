@@ -335,10 +335,10 @@
                  (nthcdr (+ n -1 (- start end)) lst)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use (:instance append-subrange-nthcdr)
-           :in-theory (e/d () (append-subrange-nthcdr
+           :in-theory (disable append-subrange-nthcdr
 ;                               LIST::EQUAL-APPEND-REDUCTION!  ;bozo
                                equal-of-append
-                                     )))))
+                               ))))
 
 
 ;; (thm
@@ -874,12 +874,12 @@
 (defthm len-of-update-nth-last-val
   (equal (len (update-nth (len lst) val lst))
          (+ 1 (len lst)))
-  :hints (("Goal" :in-theory (e/d ( update-nth) ()))))
+  :hints (("Goal" :in-theory (enable update-nth))))
 
 (defthm update-nth-len-lst-becomes-append
   (equal (update-nth (len lst) val lst)
          (append lst (list val)))
-  :hints (("Goal" :in-theory (e/d (update-nth) ()))))
+  :hints (("Goal" :in-theory (enable update-nth))))
 
 (defthmd update-nth-len-lst-becomes-append-strong
   (implies (equal n (len lst))
@@ -918,10 +918,10 @@
            (not (memberp a (take n lst))))
   :hints (("Goal" :in-theory (enable take))))
 
-(defun sub1-sub1-cdr-induct (m n lst)
-  (if (zp n)
-      (list m n lst)
-    (sub1-sub1-cdr-induct (+ -1 m) (+ -1 n) (cdr lst))))
+;; (defun sub1-sub1-cdr-induct (m n lst)
+;;   (if (zp n)
+;;       (list m n lst)
+;;     (sub1-sub1-cdr-induct (+ -1 m) (+ -1 n) (cdr lst))))
 
 (defthm nth-of-take-too-high
   (implies (and (<= m n)
@@ -930,7 +930,7 @@
            (equal (nth n (take m data))
                   nil))
   :hints (("Goal"
-           :induct (sub1-sub1-cdr-induct m n data)
+;           :induct (sub1-sub1-cdr-induct m n data)
            :in-theory (e/d (take ;list::nth-of-cons
                             )
                            (;update-nth-becomes-update-nth2-extend-gen

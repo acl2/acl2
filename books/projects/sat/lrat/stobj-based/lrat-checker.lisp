@@ -2261,7 +2261,8 @@
             (er hard? 'valid-proofp$-top
                 "Invalid proof!"))))
     (er hard? 'valid-proofp$-top
-        "Invalid formula!")))
+        "Invalid formula!~|~@0"
+        (formula-p-error-msg formula))))
 
 (defun refutation-p$ (proof formula)
   (declare (xargs :guard t))

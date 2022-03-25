@@ -1520,10 +1520,10 @@
     "<test-block>"
     "<type> <tmp>;"
     "if (<test>) {"
-    "    <then-blocks>"
+    "    <then-block>"
     "    <tmp> = <then-expr>;"
     "} else {"
-    "    <else-blocks>"
+    "    <else-block>"
     "    <tmp> = <else-expr>;"
     "}")
    (xdoc::p

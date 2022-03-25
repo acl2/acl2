@@ -212,7 +212,7 @@
 
    (xdoc::p
     "ATJ generates Java code with public methods to
-     (1) initialize the AIJ's Java representation of the ACL2 environment and
+     (1) initialize AIJ's Java representation of the ACL2 environment and
      (2) call the Java representations of the ACL2 functions
      (see the `Generated Java Code' section for details).
      AIJ provides public classes and methods to translate
@@ -386,7 +386,7 @@
       Otherwise, erroneous computations may occur."))
 
    (xdoc::desc
-    "@(':no-aij-types') &mdash; deafult @('nil')"
+    "@(':no-aij-types') &mdash; default @('nil')"
     (xdoc::p
      "Specifies whether the generated code
       should not make use of the AIJ types:")
@@ -417,7 +417,7 @@
        are mapped to Java booleans and characters
        when @(':deep') is @('nil') and @(':guards') is @('t').
        The built-in functions @(tsee equal), @(tsee if), and @(tsee not)
-       are expected from this requirement.")
+       are excepted from this requirement.")
      (xdoc::li
       "The unnormalized body (or attachment, as explained earlier) of @('fn'),
        after the pre-translation steps that remove code (i.e.
@@ -511,7 +511,8 @@
       If this input is @('nil'),
       the generated Java class is called @('Acl2Code').")
     (xdoc::p
-     "An additional auxiliary class is generated,
+     "Unless @(':no-aij-type') is @('t'),
+      an additional auxiliary class is generated,
       whose name is obtained by appending @('Environment')
       at the end of the name of the main class.
       This auxiliary class contains boilerplate code

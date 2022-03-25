@@ -1,7 +1,7 @@
 ; Utilities for querying the ACL2 logical world.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2015-2017, Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -220,16 +220,16 @@
 ;; If NAME is non-recursive, return nil.
 ;; TODO: Use get-clique instead?  But it needs to be fully lifted to :logic mode.
 ;; TODO: Is the order here guaranteed to be the order of functions in the clique?
-(defund fn-recursive-partners (name state)
-  (declare (xargs :stobjs (state)
-                  :guard (symbolp name)))
-  (let ((partners (getpropc name 'recursivep)))
+(defund fn-recursive-partners (name wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))))
+  (let ((partners (getpropc name 'recursivep nil wrld)))
     (if (not (symbol-listp partners))
-        (er hard? 'fn-recursive-partners "The recursive partners of ~x0 are ill-formed." name)
+        (er hard? 'fn-recursive-partners "The recursive partners of ~x0 are unknown or ill-formed." name)
       partners)))
 
 (defthm symbol-listp-of-fn-recursive-partners
-  (symbol-listp (fn-recursive-partners fn state))
+  (symbol-listp (fn-recursive-partners fn wrld))
   :hints (("Goal" :in-theory (enable fn-recursive-partners))))
 
 ;todo: just take wrld
@@ -446,6 +446,18 @@
             (if (eq prop 'theorem)
                 (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world defuns-acc (cons symb defthms-acc))
               (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world defuns-acc defthms-acc))))))))
+
+(defthm symbol-listp-of-mv-nth-0-of-defuns-and-defthms-in-world
+  (implies (and (plist-worldp world)
+                (symbol-listp defuns-acc))
+           (symbol-listp (mv-nth 0 (defuns-and-defthms-in-world world triple-to-stop-at whole-world defuns-acc defthms-acc))))
+  :hints (("Goal" :in-theory (enable defuns-and-defthms-in-world))))
+
+(defthm symbol-listp-of-mv-nth-1-of-defuns-and-defthms-in-world
+  (implies (and (plist-worldp world)
+                (symbol-listp defthms-acc))
+           (symbol-listp (mv-nth 1 (defuns-and-defthms-in-world world triple-to-stop-at whole-world defuns-acc defthms-acc))))
+  :hints (("Goal" :in-theory (enable defuns-and-defthms-in-world))))
 
 ;; Extracts the triples that represent defthms in WORLD.  If
 ;; MAYBE-TRIPLE-TO-STOP-AT is nil, or is not a triple in WORLD, all of the

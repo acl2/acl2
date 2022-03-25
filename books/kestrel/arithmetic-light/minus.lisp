@@ -64,3 +64,12 @@
   (equal (< x (- x))
          (< x 0))
   :hints (("Goal" :cases ((< x 0)))))
+
+(defthm move-minus-to-constant
+  (implies (syntaxp (quotep k))
+           (equal (equal k (- x))
+                  (if (acl2-numberp x)
+                      (and (equal (- k) x)
+                           (acl2-numberp k))
+                    (equal k 0))))
+  :hints (("Goal" :cases ((acl2-numberp k)))))

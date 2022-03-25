@@ -1400,11 +1400,13 @@
 
 ;; move these?
 
+;; TODO: Put darg in name
 (defun quoted-natp (item)
   (declare (xargs :guard (dargp item)))
   (and (consp item)
        (natp (unquote item))))
 
+;; TODO: Put darg in name
 (defun quoted-posp (item)
   (declare (xargs :guard (dargp item)))
   (and (consp item)

@@ -966,8 +966,12 @@
 (defmacro make-lambda (args body)
   `(list 'lambda ,args ,body))
 
-(defmacro make-let (bindings body)
-  `(list 'let ,bindings ,body))
+(defun make-let (bindings ignores type-dcls body)
+  `(let ,bindings
+     ,@(and (or ignores type-dcls)
+            `((declare ,@(and ignores `((ignore ,@ignores)))
+                       ,@type-dcls)))
+     ,body))
 
 (defun doublet-listp (x)
   (declare (xargs :guard t))

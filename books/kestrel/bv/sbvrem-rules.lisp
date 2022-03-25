@@ -168,3 +168,12 @@
                                      sbvrem-when-y-negative
                                      sbvrem-when-x-negative
                                      sbvrem-when-both-negative))))
+
+;gen
+(defthm unsigned-byte-p-8-of-sbvrem
+  (implies (and (posp size)
+                (equal size 32) ;gen!
+                (sbvle size 0 x))
+           (unsigned-byte-p 8 (sbvrem size x 256)))
+  :hints (("Goal" :cases ((< 8 size))
+           :in-theory (enable sbvrem-when-positive))))

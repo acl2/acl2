@@ -634,7 +634,7 @@
     equal-of-same-cancel-3
     equal-of-same-cancel-4
 
-    LOGEXT-OF-BVCHOP-SMALLER-BETTER
+    LOGEXT-OF-BVCHOP-SMALLER
     thread-TOP-FRAME-of-MYIF
     ;;G-DIFF-S ;use a safe version?
 
@@ -4554,21 +4554,21 @@
                        (jvm::heap replace-me))
          (if (eq (car output-indicator) :array-local) ;;this means "get the final value of the array that was initially pointed to by array local N.  TODO: This could be an abbreviation for a :field of a :local...
              (let ((local-num (cadr output-indicator)))
-               `(GET-FIELD (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
+               `(get-field (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
                            ',(array-contents-pair)
                            (jvm::heap replace-me)))
            (if (eq (car output-indicator) :field)
                (let ((pair (farg1 output-indicator)))
                  (if (not (field-pair-okayp pair class-table-alist))
-                     (er hard? 'wrap-term-with-output-extractor "Bad field: ~x0." pair)
-                   `(GET-FIELD ,(output-extraction-term-core (farg2 output-indicator) initial-locals-term class-table-alist)
+                     (er hard? 'output-extraction-term-core "Bad field: ~x0." pair)
+                   `(get-field ,(output-extraction-term-core (farg2 output-indicator) initial-locals-term class-table-alist)
                                ',pair
                                (jvm::heap replace-me))))
              (if (eq (car output-indicator) :param-field)
                  (let ((pair (farg1 output-indicator))
                        (local-num (farg2 output-indicator)))
                    (if (not (field-pair-okayp pair class-table-alist))
-                       (er hard? 'wrap-term-with-output-extractor "Bad field: ~x0." pair)
+                       (er hard? 'output-extraction-term-core "Bad field: ~x0." pair)
                      `(GET-FIELD (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
                                  ',pair
                                  (jvm::heap replace-me))))
@@ -6071,20 +6071,21 @@
         ;; Prune unreachable branches:
         ;; TODO: May need to repeatedly prune branches and rewrite?
         ((mv erp state-dag state)
-         (maybe-prune-dag (g :prune-branches options)
-                          state-dag
-                          hyps
-                          (set-difference-eq
-                           ;;todo: improve?:
-                           (append (amazing-rules-spec-and-dag)
-                                   (map-rules)
-                                   ;; (jvm-semantics-rules)
-                                   (jvm-simplification-rules)
-                                   (g :extra-rules options))
-                           (g :remove-rules options))
-                          (g :monitor options)
-                          (g :call-stp options)
-                          state))
+         (maybe-prune-dag-new (g :prune-branches options)
+                              state-dag
+                              hyps
+                              (set-difference-eq
+                               ;;todo: improve?:
+                               (append (amazing-rules-spec-and-dag)
+                                       (map-rules)
+                                       ;; (jvm-semantics-rules)
+                                       (jvm-simplification-rules)
+                                       (g :extra-rules options))
+                               (g :remove-rules options))
+                              nil ; interpreted-fns
+                              (g :monitor options)
+                              (g :call-stp options)
+                              state))
         ((when erp) (mv erp nil nil nil nil nil nil state))
         (- (cw " Done attempting to run all branches.)~%")))
      (if (member-eq 'run-until-exit-segment-or-hit-loop-header (dag-fns state-dag))
@@ -6432,7 +6433,9 @@
                           (booleanp use-prover-for-invars)
                           (or (eq branches :smart)
                               (eq branches :split))
-                          (symbol-listp param-names) ;; todo: what else to check here?
+                          (or (eq :auto param-names)
+                              (symbol-listp param-names) ;; todo: what else to check here?
+                              )
                           (booleanp disable-loop-openers)
                           )
                   :mode :program))
@@ -6584,21 +6587,25 @@
        ((when erp) (mv erp nil state))
        ;; TODO: This seemed necessary, but why?!:  maybe because for :array-return-value, we have multiple occs of the IF nest in the output term and then the getfield-of-myif rules fire
        ;; handle better since the two if nests are in sync...
+       ;; ((when (not (pseudo-term-listp assumptions)))
+       ;;   (er hard? 'lift-java-code-fn "Hyps are not pseudo-terms: ~X01" assumptions nil)
+       ;;   (mv t nil state))
        ((mv erp output-dag state)
-        (maybe-prune-dag (g :prune-branches options)
-                         output-dag
-                         assumptions ;todo think about this
-                         (set-difference-eq
-                           ;todo: improve?:
-                          (append (amazing-rules-spec-and-dag)
-                                  (map-rules)
-                                  ;; (jvm-semantics-rules)
-                                  (jvm-simplification-rules)
-                                  (g :extra-rules options))
-                          (g :remove-rules options))
-                         (g :monitor options)
-                         (g :call-stp options)
-                         state))
+        (maybe-prune-dag-new (g :prune-branches options)
+                             output-dag
+                             assumptions ;todo think about this
+                             (set-difference-eq
+                              ;;todo: improve?:
+                              (append (amazing-rules-spec-and-dag)
+                                      (map-rules)
+                                      ;; (jvm-semantics-rules)
+                                      (jvm-simplification-rules)
+                                      (g :extra-rules options))
+                              (g :remove-rules options))
+                             nil ; interpreted-fns
+                             (g :monitor options)
+                             (g :call-stp options)
+                             state))
        ((when erp) (mv erp nil state))
        (- (and print (progn$ (cw "(Output DAG:~%")
                              (print-list output-dag)
@@ -6638,7 +6645,7 @@
                                  method-designator-string
                                  program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
                                  &key
-                                 (param-names 'nil)
+                                 (param-names ':auto)
                                  (output ':auto) ;an output-indicatorp
                                  (array-length-alist 'nil)
                                  (assumptions 'nil)

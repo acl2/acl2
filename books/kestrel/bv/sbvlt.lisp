@@ -1,7 +1,7 @@
 ; Signed bit-vector "less than" comparison
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -393,3 +393,9 @@
                 (posp size))
            (not (sbvlt size k x)))
   :hints (("Goal" :in-theory (e/d (sbvlt) nil))))
+
+;loops with defn sbvlt?
+(defthmd <=-of-logext-and--1
+  (equal (< -1 (logext size y))
+         (not (sbvlt size y 0)))
+  :hints (("Goal" :in-theory (enable sbvlt))))

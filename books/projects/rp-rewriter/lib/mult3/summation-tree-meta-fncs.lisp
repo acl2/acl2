@@ -438,7 +438,7 @@
                              (:REWRITE MEASURE-LEMMA1)
                              (:REWRITE MEASURE-LEMMA1-2)
                              (:REWRITE DEFAULT-CAR)
-                             (:REWRITE ACL2::O<=-O-FINP-DEF)
+;;                             (:REWRITE ACL2::O<=-O-FINP-DEF)
                              ))))))
 
 (local
@@ -461,7 +461,7 @@
                              (:REWRITE MEASURE-LEMMA1-2)
 
                              (:REWRITE DEFAULT-CAR)
-                             (:REWRITE ACL2::O<=-O-FINP-DEF)
+;;                             (:REWRITE ACL2::O<=-O-FINP-DEF)
 
                              ))))))
 (local
@@ -603,7 +603,7 @@
                               list-to-lst)
                              (measure-lemma1
                               measure-lemma1-2
-                              (:rewrite acl2::o-p-o-infp-car)
+;;                              (:rewrite acl2::o-p-o-infp-car)
                               (:rewrite default-car)
                               not-include-rp)))))
 
@@ -989,7 +989,7 @@
                 (in-theory (e/d (measure-lemmas)
                                 ((:REWRITE MEASURE-LEMMA1)
                                  (:REWRITE DEFAULT-CAR)
-                                 (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                                 (:REWRITE ACL2::O-P-O-INFP-CAR)
                                  (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
                                  (:TYPE-PRESCRIPTION RP-TERM-LISTP)
                                  (:TYPE-PRESCRIPTION RP-TERMP)
@@ -1053,7 +1053,7 @@
                 (in-theory (e/d (measure-lemmas)
                                 ((:REWRITE MEASURE-LEMMA1)
                                  (:REWRITE DEFAULT-CAR)
-                                 (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                                 (:REWRITE ACL2::O-P-O-INFP-CAR)
                                  (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
                                  (:TYPE-PRESCRIPTION RP-TERM-LISTP)
                                  (:TYPE-PRESCRIPTION RP-TERMP)
@@ -4507,7 +4507,8 @@
             :do-not-induct t
             :expand ((NEW-SUM-MERGE-AUX SUM-LST))
             :induct (new-sum-merge-aux sum-lst)
-            :in-theory (e/d ((:REWRITE ACL2::O-P-O-INFP-CAR)
+            :in-theory (e/d (
+;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                              (:induction new-sum-merge-aux))
                             ((:definition new-sum-merge-aux)
                              (:e tau-system)

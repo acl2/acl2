@@ -1,7 +1,7 @@
 ; Theorems about bvsx
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,10 @@
 (include-book "ihs/basic-definitions" :dir :system) ;for logext
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
+(local (include-book "bvchop"))
+(local (include-book "slice"))
+(local (include-book "repeatbit"))
+(local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -81,8 +85,8 @@
            :cases ((equal (GETBIT (+ -1 n) X) 0) (equal (GETBIT (+ -1 n) X) 1)))))
 
 (defthm unsigned-byte-p-of-bvsx-simple
-  (implies (natp size)
-           (unsigned-byte-p size (bvsx size m x)))
+  (equal (unsigned-byte-p size (bvsx size m x))
+         (natp size))
   :hints (("Goal" :cases ((posp m))
            :in-theory (enable bvsx))))
 
@@ -131,3 +135,51 @@
            (equal (bvsx new-size old-size val)
                   (bvchop new-size val)))
   :hints (("Goal" :in-theory (enable repeatbit bvsx))))
+
+(defthmd bvsx-alt-def-2
+  (implies (and; (integerp val)
+                (posp old-size)
+                (<= old-size new-size)
+                (integerp new-size))
+           (equal (bvsx new-size old-size val)
+                  (if (equal 0 (getbit (+ -1 old-size) val))
+                      (bvchop (+ -1 old-size) val)
+                    (bvcat (- new-size old-size)
+                           (+ -1 (expt 2 (- new-size old-size)))
+                           old-size
+                           val))))
+  :hints (("Goal" :in-theory (e/d (bvsx) (EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT)))))
+
+(defthmd equal-of-bvsx-and-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep new-size)
+                              (quotep old-size)))
+                (<= old-size new-size)
+                (natp new-size)
+                (posp old-size))
+           (equal (equal k (bvsx new-size old-size x))
+                  (and (unsigned-byte-p new-size k)
+                       (if (equal (slice (+ -1 new-size) (+ -1 old-size) k) 0) ; gets computed
+                           (equal k (bvchop old-size x))
+                         (if (equal (slice (+ -1 new-size) (+ -1 old-size) k) (+ -1 (expt 2 (+ 1 (- new-size old-size))))) ; gets computed
+                             (equal (bvchop old-size k) (bvchop old-size x))
+                           nil)))))
+  :hints (("Goal"
+           :in-theory (e/d (bvsx-alt-def-2
+                            unsigned-byte-p-of-bvchop-one-more
+                            getbit-when-slice-is-known-to-be-all-ones
+                            slice-low-cases)
+                           ( ;GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT
+                            ;;EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT
+                            ;;BVCAT-EQUAL-REWRITE-ALT
+                            ;;BVCAT-EQUAL-REWRITE
+                            )))))
+
+(defthm equal-of-bvsx-and-bvsx
+  (implies (and (< lowsize n)
+                (posp lowsize)
+                (integerp n))
+           (equal (equal (bvsx n lowsize x) (bvsx n lowsize y))
+                  (equal (bvchop lowsize x)
+                         (bvchop lowsize y))))
+  :hints (("Goal" :in-theory (enable bvsx))))

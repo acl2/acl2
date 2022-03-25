@@ -1,7 +1,7 @@
 ; BV Library: slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -311,6 +311,18 @@
            :in-theory (e/d (unsigned-byte-p)
                            (unsigned-byte-p-of-slice-gen)))))
 
+(defthm <-of-slice-and-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep high)
+                              (quotep low)))
+                (< (+ -1 (expt 2 (+ 1 high (- low)))) k)
+                (integerp high)
+                (integerp low)
+                (<= low high))
+           (< (slice high low x) k))
+  :hints (("Goal" :use (:instance slice-upper-bound-linear)
+           :in-theory (disable slice-upper-bound-linear))))
+
 (defthmd logtail-becomes-slice
   (implies (and (unsigned-byte-p m x) ;m is a free var
                 (< n m)
@@ -585,3 +597,28 @@
            (equal (slice high low (ash x low))
                   (bvchop (+ 1 (- high low)) x)))
   :hints (("Goal" :cases ((<= n 0)))))
+
+(defthm slices-same-when-bvchops-same
+  (implies (and (equal (bvchop free x) (bvchop free y))
+                (< high free)
+                (natp free)
+                (natp high)
+                (natp low))
+           (equal (equal (slice high low x) (slice high low y))
+                  t))
+  :hints (("Goal" :use ((:instance slice-of-bvchop-low (n free) (x x))
+                        (:instance slice-of-bvchop-low (n free) (x y)))
+           :in-theory (disable slice-of-slice))))
+
+;move
+(defthm slice-of-+-of--1-and-expt
+  (implies (and (< high i)
+                (posp n)
+                (natp low)
+                (integerp high)
+                (<= low high)
+                (natp i)
+                )
+           (equal (slice high low (+ -1 (expt 2 i)))
+                  (+ -1 (expt 2 (+ 1 high (- low))))))
+  :hints (("Goal" :in-theory (enable SLICE-ALT-DEF))))

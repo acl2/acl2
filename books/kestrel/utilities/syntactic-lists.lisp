@@ -24,9 +24,10 @@
 (defthm pseudo-term-listp-of-enquote-list
   (pseudo-term-listp (enquote-list items)))
 
-;; Test whether TERM is syntactically a true-list: a nest of CONSes
-;; terminating in a quoted true list (often 'nil).
-(defund syntactic-true-listp (term)
+;; Test whether TERM is syntactically a true-list with explicit elements: a
+;; nest of CONSes terminating in a quoted true list (often 'nil).
+;; TODO: Make a version that recognizes many more forms, like IF, or a call of a function whose body is a syntactic true-list.
+(defund syntactic-explicit-true-listp (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (variablep term)
       nil
@@ -34,18 +35,18 @@
       (case fn
         (quote (true-listp (unquote term)))
         (cons (and (= 2 (len (fargs term)))
-                   (syntactic-true-listp (farg2 term))))
+                   (syntactic-explicit-true-listp (farg2 term))))
         (otherwise nil)))))
 
-(defthm syntactic-true-listp-forward-to-consp
-  (implies (syntactic-true-listp term)
+(defthm syntactic-explicit-true-listp-forward-to-consp
+  (implies (syntactic-explicit-true-listp term)
            (consp term))
-  :hints (("Goal" :in-theory (enable syntactic-true-listp))))
+  :hints (("Goal" :in-theory (enable syntactic-explicit-true-listp))))
 
 ;; Gets the length of a term that syntactically is clearly a list.
 (defund syntactic-length (term)
   (declare (xargs :guard (and (pseudo-termp term)
-                              (syntactic-true-listp term))
+                              (syntactic-explicit-true-listp term))
                   :verify-guards nil ; done below
                   ))
   (if (not (mbt (consp term))) ;for termination
@@ -56,13 +57,13 @@
         ;; must be a cons:
         (+ 1 (syntactic-length (farg2 term)))))))
 
-(verify-guards syntactic-length :hints (("Goal" :in-theory (enable syntactic-true-listp))))
+(verify-guards syntactic-length :hints (("Goal" :in-theory (enable syntactic-explicit-true-listp))))
 
 ;; Extracts the elements of a syntactic list
 (defun syntactic-list-elements (term)
   (declare (xargs :guard (and (pseudo-termp term)
-                              (syntactic-true-listp term))
-                  :guard-hints (("Goal" :in-theory (enable syntactic-true-listp)))))
+                              (syntactic-explicit-true-listp term))
+                  :guard-hints (("Goal" :in-theory (enable syntactic-explicit-true-listp)))))
   (if (not (mbt (consp term))) ;for termination
       nil
     (if (quotep term)
@@ -73,6 +74,6 @@
 
 (defthm pseudo-term-listp-of-syntactic-list-elements
   (implies (and (pseudo-termp term)
-                (syntactic-true-listp term))
+                (syntactic-explicit-true-listp term))
            (pseudo-term-listp (syntactic-list-elements term)))
-  :hints (("Goal" :in-theory (enable syntactic-true-listp))))
+  :hints (("Goal" :in-theory (enable syntactic-explicit-true-listp))))

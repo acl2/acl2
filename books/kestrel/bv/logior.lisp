@@ -20,6 +20,7 @@
 (local (include-book "../arithmetic-light/floor-mod-expt"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/integerp"))
+(local (include-book "../arithmetic-light/integer-length"))
 (local (include-book "../../meta/meta-plus-equal"))
 (local (include-book "../../meta/meta-plus-lessp"))
 (local (include-book "logand")) ;;logior is defined in terms of logand
@@ -311,9 +312,7 @@
 
 (defthm <-of-logior-and-expt-of-2
   (implies (and (< i (expt 2 n))
-                (natp i)
                 (< j (expt 2 n))
-                (natp j)
                 (natp n))
            (< (logior i j) (expt 2 n)))
   :hints (("Goal" :use (:instance logand-lower-bound-negative-2-alt
@@ -326,15 +325,26 @@
 ;; special case
 (defthm <-of-logior-and-256
   (implies (and (< i 256)
-                (natp i)
-                (< j 256)
-                (natp j))
+                (< j 256))
            (< (logior i j) 256))
-  :hints (("Goal" :use (:instance  <-of-logior-and-expt-of-2 (n 8))
-           :in-theory (disable  <-of-logior-and-expt-of-2))))
+  :hints (("Goal" :use (:instance <-of-logior-and-expt-of-2 (n 8))
+           :in-theory (disable <-of-logior-and-expt-of-2))))
 
 (defthm signed-byte-p-of-logior
   (implies (and (signed-byte-p size i)
                 (signed-byte-p size j))
            (signed-byte-p size (logior i j)))
   :hints (("Goal" :in-theory (e/d (logior) (signed-byte-p)))))
+
+(defthm <-of-logior-when-constant
+  (implies (and (syntaxp (quotep k))
+                (posp k)
+                ;; when k is a power of 2, the expt calls will evaluate to k:
+                (< i (expt 2 (+ -1 (integer-length k))))
+                (< j (expt 2 (+ -1 (integer-length k))))
+                (natp i)
+                (natp j))
+           (< (logior i j) k))
+  :hints (("Goal" :use (:instance <-of-logior-and-expt-of-2
+                                  (n (+ -1 (integer-length k))))
+           :in-theory (disable <-of-logior-and-expt-of-2))))

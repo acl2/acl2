@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -366,3 +366,146 @@
                      :some (type-of-value val?.val)
                      :none (type-void))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type-list-of-value-list (x)
+  :guard (value-listp x)
+  :returns (types type-listp)
+  :short "Lift @(tsee type-of-value) to lists."
+  (type-of-value x)
+  ///
+  (fty::deffixequiv type-list-of-value-list
+    :args ((x value-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection value-predicates-to-type-of-value-equalities
+  :short "Rules that rewrite predicates for values
+          to equalities of the types of the values."
+
+  (local (in-theory (enable type-of-value)))
+
+  (defruled ucharp-to-type-of-value
+    (implies (valuep x)
+             (equal (ucharp x)
+                    (equal (type-of-value x)
+                           (type-uchar)))))
+
+  (defruled scharp-to-type-of-value
+    (implies (valuep x)
+             (equal (scharp x)
+                    (equal (type-of-value x)
+                           (type-schar)))))
+
+  (defruled ushortp-to-type-of-value
+    (implies (valuep x)
+             (equal (ushortp x)
+                    (equal (type-of-value x)
+                           (type-ushort)))))
+
+  (defruled sshortp-to-type-of-value
+    (implies (valuep x)
+             (equal (sshortp x)
+                    (equal (type-of-value x)
+                           (type-sshort)))))
+
+  (defruled uintp-to-type-of-value
+    (implies (valuep x)
+             (equal (uintp x)
+                    (equal (type-of-value x)
+                           (type-uint)))))
+
+  (defruled sintp-to-type-of-value
+    (implies (valuep x)
+             (equal (sintp x)
+                    (equal (type-of-value x)
+                           (type-sint)))))
+
+  (defruled ulongp-to-type-of-value
+    (implies (valuep x)
+             (equal (ulongp x)
+                    (equal (type-of-value x)
+                           (type-ulong)))))
+
+  (defruled slongp-to-type-of-value
+    (implies (valuep x)
+             (equal (slongp x)
+                    (equal (type-of-value x)
+                           (type-slong)))))
+
+  (defruled ullongp-to-type-of-value
+    (implies (valuep x)
+             (equal (ullongp x)
+                    (equal (type-of-value x)
+                           (type-ullong)))))
+
+  (defruled sllongp-to-type-of-value
+    (implies (valuep x)
+             (equal (sllongp x)
+                    (equal (type-of-value x)
+                           (type-sllong)))))
+
+  (defruled pointerp-to-type-of-value
+    (implies (valuep x)
+             (equal (pointerp x)
+                    (equal (type-of-value x)
+                           (type-pointer (pointer->reftype x)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection value-predicates-to-type-of-value-forward
+  :short "Forward-chaining rules from predicates for values
+          to equalities of the types of the values."
+
+  (local (in-theory (enable type-of-value)))
+
+  (defruled type-of-value-when-ucharp-forward
+    (implies (ucharp x)
+             (equal (type-of-value x)
+                    (type-uchar))))
+
+  (defruled type-of-value-when-scharp-forward
+    (implies (scharp x)
+             (equal (type-of-value x)
+                    (type-schar))))
+
+  (defruled type-of-value-when-ushortp-forward
+    (implies (ushortp x)
+             (equal (type-of-value x)
+                    (type-ushort))))
+
+  (defruled type-of-value-when-sshortp-forward
+    (implies (sshortp x)
+             (equal (type-of-value x)
+                    (type-sshort))))
+
+  (defruled type-of-value-when-uintp-forward
+    (implies (uintp x)
+             (equal (type-of-value x)
+                    (type-uint))))
+
+  (defruled type-of-value-when-sintp-forward
+    (implies (sintp x)
+             (equal (type-of-value x)
+                    (type-sint))))
+
+  (defruled type-of-value-when-ulongp-forward
+    (implies (ulongp x)
+             (equal (type-of-value x)
+                    (type-ulong))))
+
+  (defruled type-of-value-when-slongp-forward
+    (implies (slongp x)
+             (equal (type-of-value x)
+                    (type-slong))))
+
+  (defruled type-of-value-when-ullongp-forward
+    (implies (ullongp x)
+             (equal (type-of-value x)
+                    (type-ullong))))
+
+  (defruled type-of-value-when-sllongp-forward
+    (implies (sllongp x)
+             (equal (type-of-value x)
+                    (type-sllong)))))

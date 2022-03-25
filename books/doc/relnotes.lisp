@@ -1,5 +1,5 @@
 ; ACL2 Community Books Release Notes
-; Copyright (C) 2013-2014 Centaur Technology
+; Copyright (C) 2013-2022 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -123,7 +123,66 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Syntheto")
+
+   (xdoc::p
+    "Syntheto is a surface language for ACL2 and APT,
+     aimed at a wider range of users than typical ACL2 and APT experts.
+     Our implementation of Syntheto consists of
+     a front-end (in a separate repository)
+     and a back-end (in @('[books]/kestrel/syntheto/')).
+     See the Syntheto documentation in @('[books]/kestrel/syntheto/')
+     for details.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h3 "Changes to Existing Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
+
+   (xdoc::p
+    "Some preliminary parsing generation tools have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "@(tsee Apply$) and @(tsee loop$) libraries")
+
+   (xdoc::p
+    "@('[books]/projects/apply/') has changed significantly.  In previous
+     versions of ACL2 there was one user-level book on that directory,
+     @('top.lisp').")
+
+   (xdoc::p
+    "Now there are three: @('apply.lisp'), @('loop.lisp'), and @('top.lisp').
+     The first is most appropriate if you are using @('apply$') but not
+     @('loop$').  The second is most appropriate if you are using @('loop$').
+     Since @('loop$') uses @('apply$'), the second book includes the first.
+     The new @('top.lisp') includes both @('apply.lisp') and @('loop.lisp') and
+     thus is equivalent to @('loop.lisp').")
+
+   (xdoc::p
+    "The old @('top.lisp') included many books that were not explicitly
+     concerned with @('apply$') or @('loop$'), including")
+
+   (xdoc::p
+    "@('[books]/ordinals/lexicographic-ordering-without-arithmetic.lisp'),<br/>
+     @('[books]/sorting/perm.lisp'),<br/>
+     @('[books]/sorting/term-ordered-perms.lisp'),<br/>
+     @('[books]/sorting/convert-perm-to-how-many.lisp'), and<br/>
+     @('[books]/sorting/merge-sort-term-order.lisp').")
+
+   (xdoc::p
+    "Furthermore, these books were included non-locally so that their rules
+     were added when @('top.lisp') was included.  Now they are local to
+     @('top.lisp') and @('loop.lisp').  This means that user books dependent on
+     the old @('top.lisp') might mention or depend on rules that are no longer
+     available when the new @('top.lisp') is included.")
+
+   (xdoc::p
+    "Finally, the new @('loop.lisp') defines three theory constants that may be
+     of use.  See the comment in @('loop.lisp').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -132,6 +191,86 @@
    (xdoc::p
     "The @(tsee apt::simplify) transformation now does a better job of
      preserving @(tsee mbt) calls.")
+
+   (xdoc::p
+    "The @(tsee apt::restrict) transformation
+     now accepts @(':guard') as a special value for its @('restriction') input,
+     to specify the guard of the target function.")
+
+   (xdoc::p
+    "The @(tsee apt::isodata) transformation
+     now generates new-to-old and old-to-new theorems
+     of a more general and useful form.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC, the C Code Generator for ACL2"))
+
+   (xdoc::p
+    "ATC has been extended to cover a larger subset of C.
+     See the user documentation of ATC for more details.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "ecurve::elliptic-curves"
+                             "Elliptic Curve Library"))
+
+   (xdoc::p
+    "Several theorems have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "event-macros" "Event Macros Library"))
+
+   (xdoc::p
+    "The @(tsee make-event-terse) utility has been extended
+     to handle the recently added new kind of ACL2 comment output.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Definition Library"))
+
+   (xdoc::p
+    "A new macro @(tsee fty::defresult) has been added
+     to define flat unions of a fixtype of errors
+     with any fixtype that is disjoint from those errors.
+     This is accompanied by @(tsee b*) binders to check and propagate errors.")
+
+   (xdoc::p
+    "Several fixtypes have been added, under @('[books]/kestrel/fty/'.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "isar::isar" "Isar Library"))
+
+   (xdoc::p
+    "This library has undergone some improvements.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "java::java" "Java Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "java::atj"
+                             "ATJ, the Java Code Generator for ACL2"))
+
+   (xdoc::p
+    "An option has been added to check that
+     no AIJ types are referenced by the generated Java code,
+     i.e. that the generated Java code exclusively manipulates
+     Java primitive values and arrays.
+     If that is the case, the environment class is not generated,
+     and the main class is much smaller than without this option.")
+
+   (xdoc::p
+    "If a Java package name is specified,
+     the generated Java code is saved in a subdirectory of the output directory
+     that corresponds to the typical Java convention.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -150,6 +289,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
+                             "PFCS (Prime Field Constraint System) Library"))
+
+   (xdoc::p
+    "This library has undergone several improvements,
+     including the addition of some initial support
+     for verifying properties of PFCS instances.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "quicklisp" "Quicklisp Library"))
 
    (xdoc::p
@@ -162,6 +311,44 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std::std/basic" "Standard Basic Library"))
+
+   (xdoc::p
+    "A fixer @(tsee maybe-string-fix) for @(tsee maybe-stringp)
+     has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std::std/strings" "Standard Strings Library"))
+
+   (xdoc::p
+    "The names of several functions, and associated theorems,
+     have been made more uniform and descriptive.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std::std/system" "Standard System Library"))
+
+   (xdoc::p
+    "Some theorems about @(tsee fsublis-var) and @(tsee fsublis-var-lst)
+     have been added.")
+
+   (xdoc::p
+    "A fixer for @(tsee pseudo-event-formp) has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std::std/typed-alists"
+                             "Standard Typed Alists Library"))
+
+   (xdoc::p
+    "A book of theorems about @(tsee symbol-alistp) has been added.")
+
+   (xdoc::p
+    "A definition of alists from strings to symbols has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
@@ -169,6 +356,14 @@
      book.  This has been fixed by tweaking a @(tsee defsection) utility to set
      the ``most recent function'' non-locally.  This fixes GitHub Issue
      #1302.")
+
+   (xdoc::p
+    "@(tsee defmapping), along with its wrappers
+     @(tsee defiso), @(tsee definj), and @(tsee defsurj),
+     has been extended with a @(':thm-enable') option
+     to control whether the generated theorems are enabled or not.
+     They are disabled by default.
+     See the documentation of @(tsee defmapping) for details.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -180,13 +375,54 @@
      @('prove$') to return @('(mv nil nil state)').  Also if the given term and
      (if supplied) hints have illegal syntax, an error now occurs.")
 
+   (xdoc::p
+    "New keyword options @(':ignore-ok') and @(':prover-error-output-off') are
+     now available for @(tsee prove$).")
+
+   (xdoc::p
+    "Evaluation of @('prover-steps-counted state)') returns the prover steps
+     counted for the most recently completed event.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA"))
+
+   (xdoc::p
+    "The dependency of CPUID features on the x86 state has been removed.
+     Now the CPUID features are arbitrary but fixed in the model.
+     See the documentation in the @(tsee x86isa::cpuid) topic for details.")
+
+   (xdoc::p
+    "Support has been added for the MOVD and MOVQ instruction variants
+     that move data from/to the XMM registers.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "yul::yul" "Yul Library"))
+
+   (xdoc::p
+    "This library now contains a complete formalization of generic Yul,
+     and a partial formalization of the EVM dialect of Yul.
+     It also contains formalizations and correctness proofs
+     of some of the Yul transformations performed in the Solidity compiler.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "zcash::zcash" "Zcash Library"))
+
+   (xdoc::p
+    "This library has been extended with several theorems
+     and with a formalization of several gadgets.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Build System Updates")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Hons Always Enabled")
 
@@ -196,6 +432,8 @@
      The build system has been similarly updated, in particular by eliminating
      the @('hons-only') value for @('cert_param') and the exported variable
      @('ACL2_HAS_HONS').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Useless Runes Updates")
 
@@ -247,10 +485,6 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Miscellaneous")
-
-   (xdoc::p
-    "A new keyword option @(':ignore-ok') is now available for @(tsee
-     prove$).")
 
    ))
 
@@ -569,7 +803,7 @@
    includes parsers for PE and Mach-O executables.  See
    @('[books]/kestrel/x86/').")
 
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "yul::yul" "Yul Library"))
 
@@ -585,7 +819,7 @@
    (xdoc::h4 (xdoc::seetopic "zcash::zcash" "Zcash Library"))
 
    (xdoc::p
-    "This is a library about the Zcash blockchain currency,
+    "This is a library about the Zcash blockchain,
      which is based on zero-knowledge proofs.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2729,7 +2963,7 @@
 
    (xdoc::p
     "The generic composite constructor @('xdoc::seeurl')
-     has been renmed to @(tsee xdoc::seetopic).
+     has been renamed to @(tsee xdoc::seetopic).
      The previous name is still temporarily available as a synonym,
      for compatibility with existing uses.")
 

@@ -633,6 +633,30 @@
   :hints (("Goal" :use (:instance merge-terms-into-dag-array-basic-return-type)
            :in-theory (disable merge-terms-into-dag-array-basic-return-type))))
 
+(defthm pseudo-dag-arrayp-after-merge-terms-into-dag-array-basic
+  (implies (and (pseudo-term-listp terms)
+                (true-listp terms)
+                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                (symbol-alistp var-replacement-alist)
+                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                (interpreted-function-alistp interpreted-function-alist)
+                (not (mv-nth 0 (merge-terms-into-dag-array-basic
+                                terms
+                                var-replacement-alist
+                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                interpreted-function-alist))))
+           (mv-let (erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (merge-terms-into-dag-array-basic
+              terms
+              var-replacement-alist
+              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+              interpreted-function-alist)
+             (declare (ignore erp nodenums-or-quoteps dag-parent-array dag-constant-alist dag-variable-alist))
+             (pseudo-dag-arrayp dag-array-name dag-array dag-len)))
+  :hints (("Goal" :use (:instance wf-dagp-of-merge-terms-into-dag-array-basic)
+           :in-theory (disable WF-DAGP-OF-MERGE-TERMS-INTO-DAG-ARRAY-BASIC
+                               merge-terms-into-dag-array-basic-return-type))))
+
 (defthm-flag-merge-term-into-dag-array-basic
   (defthm true-listp-of-mv-nth-1-of-merge-terms-into-dag-array-basic-dummy
     t

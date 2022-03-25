@@ -61,7 +61,7 @@
            (prog2$
             (and (member second-char '(#\p #\q))
                  ;; TODO: Add an option to suppress this:
-                 (cw "Note: Deprecated command ~x0 used in format-string ~x1.~%" second-char whole-string))
+                 (cw "Note: Deprecated command ~~~s0 used in format-string ~x1.~%" (coerce (list second-char) 'string) whole-string))
             (if (endp (rest (rest chars)))
                 (cw "ERROR: Bad format string: ~x0~%." whole-string) ;todo: print the context with things like this
               (let ((third-char (third chars)))
@@ -75,7 +75,7 @@
            (prog2$
             (and (member second-char '( #\P #\Q))
                  ;; TODO: Add an option to suppress this:
-                 (cw "Note: Deprecated command ~x0 used in format-string ~x1.~%" second-char whole-string))
+                 (cw "Note: Deprecated command ~~~s0 used in format-string ~x1.~%" (coerce (list second-char) 'string) whole-string))
             (if (or (endp (rest (rest chars)))
                     (endp (rest (rest (rest chars)))))
                 (cw "ERROR: Bad format string: ~x0~%." whole-string)

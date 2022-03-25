@@ -85,13 +85,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-fn ((args true-listp) (call pseudo-event-formp) (ctx ctxp) state)
-  :returns (mv erp
-               (result "Always @('(value-triple :invisible)').")
-               state)
+  :returns (mv erp (event "A @('pseudo-event-formp').") state)
   :mode :program
   :parents (atc-implementation)
   :short "Process the inputs and
-          generate the constant definition and the C file."
+          generate the events and code."
   (b* (((when (atc-table-lookup call (w state)))
         (acl2::value '(value-triple :redundant)))
        ((er (list fn1...fnp

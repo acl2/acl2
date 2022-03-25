@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-operations")
 (include-book "errors")
 
 (include-book "std/util/defval" :dir :system)
@@ -40,32 +40,28 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only model
-     the @('void') type,
-     the plain @('char') type, and
-     the standard signed and unsigned integer types (except @('_Bool'),
-     as well as pointer types.
-     The referenced type of a pointer type may be any type (that we model),
-     including a pointer type.
-     The recursion bottoms out at the integer types.")
-   (xdoc::p
-    "This semantic model is more general
-     than its syntactic counterpart @(tsee tyname):
-     the latter only allows one level of pointers currently.
-     In any case, initially we make a limited use of pointer types."))
+    "We model a subset of the types denoted by
+     the type names that we currently model;
+     see @(tsee tyspecseq), @(tsee obj-adeclor), and @(tsee tyname).
+     In essence, this fixtype combines
+     a subset of the cases of @(tsee tyspecseq)
+     (abstracting away the flags that model different syntactic variants),
+     with the recursive structure of @(tsee obj-adeclor)."))
   (:void ())
   (:char ())
   (:schar ())
-  (:sshort ())
-  (:sint ())
-  (:slong ())
-  (:sllong ())
   (:uchar ())
+  (:sshort ())
   (:ushort ())
+  (:sint ())
   (:uint ())
+  (:slong ())
   (:ulong ())
+  (:sllong ())
   (:ullong ())
-  (:pointer ((referenced type)))
+  (:struct ((tag ident)))
+  (:pointer ((to type)))
+  (:array ((of type)))
   :pred typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,79 +186,186 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-name-to-type ((tyname tynamep))
+(define type-to-maker ((type typep))
+  :returns (term "A term.")
+  :short "Turn a type into a term that makes (evaluates to) it."
+  (type-case
+   type
+   :void '(type-void)
+   :char '(type-char)
+   :schar '(type-schar)
+   :uchar '(type-uchar)
+   :sshort '(type-sshort)
+   :ushort '(type-ushort)
+   :sint '(type-sint)
+   :uint '(type-uint)
+   :slong '(type-slong)
+   :ulong '(type-ulong)
+   :sllong '(type-sllong)
+   :ullong '(type-ullong)
+   :struct `(type-struct (ident ,(ident->name (type-struct->tag type))))
+   :pointer `(type-pointer ,(type-to-maker (type-pointer->to type)))
+   :array `(type-array ,(type-to-maker (type-array->of type))))
+  :measure (type-count type)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tyspecseq-to-type ((tyspec tyspecseqp))
+  :returns (type typep)
+  :short "Turn a type specifier sequence into a type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a subroutine of @(tsee tyname-to-type).
+     A type specifier sequence already denotes a type (of certain kinds);
+     but in general it is type names that denote types (of all kidns)."))
+  (tyspecseq-case tyspec
+                  :void (type-void)
+                  :char (type-char)
+                  :schar (type-schar)
+                  :uchar (type-uchar)
+                  :sshort (type-sshort)
+                  :ushort (type-ushort)
+                  :sint (type-sint)
+                  :uint (type-uint)
+                  :slong (type-slong)
+                  :ulong (type-ulong)
+                  :sllong (type-sllong)
+                  :ullong (type-ullong)
+                  :bool (prog2$
+                         (raise "Internal error: ~
+                                            _Bool not supported yet.")
+                         (irr-type))
+                  :float (prog2$
+                          (raise "Internal error: ~
+                                             float not supported yet.")
+                          (irr-type))
+                  :double (prog2$
+                           (raise "Internal error: ~
+                                              double not supported yet.")
+                           (irr-type))
+                  :ldouble (prog2$
+                            (raise "Internal error: ~
+                                               long double not supported yet.")
+                            (irr-type))
+                  :struct (type-struct tyspec.tag)
+                  :union (prog2$
+                          (raise "Internal error: ~
+                                             union ~x0 not supported yet."
+                                 tyspec.tag)
+                          (irr-type))
+                  :enum (prog2$
+                         (raise "Internal error: ~
+                                            enum ~x0 not supported yet."
+                                tyspec.tag)
+                         (irr-type))
+                  :typedef (prog2$
+                            (raise "Internal error: ~
+                                               typedef ~x0 not supported yet."
+                                   tyspec.name)
+                            (irr-type)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tyname-to-type ((tyname tynamep))
   :returns (type typep)
   :short "Turn a type name into a type."
   :long
   (xdoc::topstring
    (xdoc::p
     "A type name denotes a type [C:6.7.7/2].
-     This ACL2 function returns the denoted type."))
-  (b* ((tyspecseq (tyname->specs tyname))
-       (type (tyspecseq-case tyspecseq
-                             :void (type-void)
-                             :char (type-char)
-                             :schar (type-schar)
-                             :sshort (type-sshort)
-                             :sint (type-sint)
-                             :slong (type-slong)
-                             :sllong (type-sllong)
-                             :uchar (type-uchar)
-                             :ushort (type-ushort)
-                             :uint (type-uint)
-                             :ulong (type-ulong)
-                             :ullong (type-ullong)
-                             :struct (prog2$
-                                      (raise "Internal error: ~
-                                              struct ~x0 not supported yet."
-                                             tyspecseq.tag)
-                                      (irr-type)))))
-    (if (tyname->pointerp tyname)
-        (type-pointer type)
-      type))
-  :hooks (:fix))
+     This ACL2 function returns the denoted type.
+     As mentioned in @(tsee type),
+     a semantic type is an abstraction of a type name:
+     this function reifies that abstraction."))
+  (tyname-to-type-aux (tyname->tyspec tyname)
+                      (tyname->declor tyname))
+  :hooks (:fix)
+
+  :prepwork
+  ((define tyname-to-type-aux ((tyspec tyspecseqp) (declor obj-adeclorp))
+     :returns (type typep)
+     :parents nil
+     (obj-adeclor-case
+      declor
+      :none (tyspecseq-to-type tyspec)
+      :pointer (type-pointer (tyname-to-type-aux tyspec declor.to))
+      :array (type-array (tyname-to-type-aux tyspec declor.of)))
+     :measure (obj-adeclor-count declor)
+     :verify-guards :after-returns
+     :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection type-name-list-to-type-list ((x tyname-listp))
   :result-type type-listp
-  :short "Lift @(tsee type-name-to-type) to lists."
-  (type-name-to-type x)
+  :short "Lift @(tsee tyname-to-type) to lists."
+  (tyname-to-type x)
   ///
   (fty::deffixequiv type-name-list-to-type-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define integer-type-to-type-name ((type typep))
-  :guard (type-integerp type)
+(define type-to-tyname ((type typep))
   :returns (tyname tynamep)
-  :short "Turn an integer type into a type name."
+  :short "Turn a type into a type name."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Our model of type names does not cover all the types we model;
-     specifically, our type names only have one level of pointers allowed,
-     while our types allow multiple levels.
-     So at the moment we cannot have a total function
-     from all our types to our type names.
-     For now we actually only need the mapping for integer types,
-     so we define this function on integer types for now."))
-  (case (type-kind type)
-    (:char (make-tyname :specs (tyspecseq-char) :pointerp nil))
-    (:schar (make-tyname :specs (tyspecseq-schar) :pointerp nil))
-    (:uchar (make-tyname :specs (tyspecseq-uchar) :pointerp nil))
-    (:sshort (make-tyname :specs (tyspecseq-sshort) :pointerp nil))
-    (:ushort (make-tyname :specs (tyspecseq-ushort) :pointerp nil))
-    (:sint (make-tyname :specs (tyspecseq-sint) :pointerp nil))
-    (:uint (make-tyname :specs (tyspecseq-uint) :pointerp nil))
-    (:slong (make-tyname :specs (tyspecseq-slong) :pointerp nil))
-    (:ulong (make-tyname :specs (tyspecseq-ulong) :pointerp nil))
-    (:sllong (make-tyname :specs (tyspecseq-sllong) :pointerp nil))
-    (:ullong (make-tyname :specs (tyspecseq-ullong) :pointerp nil))
-    (t (prog2$ (impossible) (irr-tyname))))
-  :guard-hints (("Goal" :in-theory (enable type-integerp
-                                           type-signed-integerp
-                                           type-unsigned-integerp)))
+    "We pick a particular choice of type specifier sequence,
+     and thus of type name, for each integer type."))
+  (b* (((mv tyspec declor) (type-to-tyname-aux type)))
+    (make-tyname :tyspec tyspec :declor declor))
+  :hooks (:fix)
+
+  :prepwork
+  ((define type-to-tyname-aux ((type typep))
+     :returns (mv (tyspec tyspecseqp) (declor obj-adeclorp))
+     :parents nil
+     (type-case
+      type
+      :void (mv (tyspecseq-void) (obj-adeclor-none))
+      :char (mv (tyspecseq-char) (obj-adeclor-none))
+      :schar (mv (tyspecseq-schar) (obj-adeclor-none))
+      :uchar (mv (tyspecseq-uchar) (obj-adeclor-none))
+      :sshort (mv (tyspecseq-sshort nil nil) (obj-adeclor-none))
+      :ushort (mv (tyspecseq-ushort nil) (obj-adeclor-none))
+      :sint (mv (tyspecseq-sint nil t) (obj-adeclor-none))
+      :uint (mv (tyspecseq-uint t) (obj-adeclor-none))
+      :slong (mv (tyspecseq-slong nil nil) (obj-adeclor-none))
+      :ulong (mv (tyspecseq-ulong nil) (obj-adeclor-none))
+      :sllong (mv (tyspecseq-sllong nil nil) (obj-adeclor-none))
+      :ullong (mv (tyspecseq-ullong nil) (obj-adeclor-none))
+      :struct (mv (tyspecseq-struct type.tag) (obj-adeclor-none))
+      :pointer (b* (((mv tyspec declor) (type-to-tyname-aux type.to)))
+                 (mv tyspec (obj-adeclor-pointer declor)))
+      :array (b* (((mv tyspec declor) (type-to-tyname-aux type.of)))
+               (mv tyspec (obj-adeclor-array declor))))
+     :measure (type-count type)
+     :verify-guards :after-returns
+     :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ident+type-to-tyspec+declor ((id identp) (type typep))
+  :returns (mv (tyspec tyspecseqp) (declor obj-declorp))
+  :short "Turn an identifier and a type into
+          a type specifier sequence and an object declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This function provides the consituents to construct
+     a declaration of an identifier with a given type.
+     The type specifier sequence and the object declarator
+     can be used to construct various kinds of declarations
+     (see our C abstract syntax).")
+   (xdoc::p
+    "Note that we pick a specific type specifier sequence for each type,
+     out of possibly multiple ones possible,
+     via the use of @(tsee type-to-tyname)."))
+  (ident+tyname-to-tyspec+declor id (type-to-tyname type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -284,3 +387,97 @@
         (type-ulong)
         (type-sllong)
         (type-ullong)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-type-predicate ((type typep))
+  :returns (pred symbolp)
+  :short "ACL2 predicate corresponding to a C type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For a supported integer type,
+     the predicate is the recognizer of values of that type.
+     For a pointer to integer type,
+     the predicate is the recognizer of arrays with that element type.
+     (So for a pointer type it is not a recognizer of pointer values.)
+     We return @('nil') for other types."))
+  (type-case
+   type
+   :void nil
+   :char nil
+   :schar 'scharp
+   :uchar 'ucharp
+   :sshort 'sshortp
+   :ushort 'ushortp
+   :sint 'sintp
+   :uint 'uintp
+   :slong 'slongp
+   :ulong 'ulongp
+   :sllong 'sllongp
+   :ullong 'ullongp
+   :struct nil
+   :pointer (type-case
+             type.to
+             :void nil
+             :char nil
+             :schar 'schar-arrayp
+             :uchar 'uchar-arrayp
+             :sshort 'sshort-arrayp
+             :ushort 'ushort-arrayp
+             :sint 'sint-arrayp
+             :uint 'uint-arrayp
+             :slong 'slong-arrayp
+             :ulong 'ulong-arrayp
+             :sllong 'sllong-arrayp
+             :ullong 'ullong-arrayp
+             :struct nil
+             :pointer nil
+             :array nil)
+   :array nil)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-type-fixer ((type typep))
+  :returns (fix symbolp)
+  :short "ACL2 fixer corresponding to a C type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the fixers for
+     the predicates returned by @(tsee atc-type-predicate)."))
+  (type-case
+   type
+   :void nil
+   :char nil
+   :schar 'schar-fix
+   :uchar 'uchar-fix
+   :sshort 'sshort-fix
+   :ushort 'ushort-fix
+   :sint 'sint-fix
+   :uint 'uint-fix
+   :slong 'slong-fix
+   :ulong 'ulong-fix
+   :sllong 'sllong-fix
+   :ullong 'ullong-fix
+   :struct nil
+   :pointer (type-case
+             type.to
+             :void nil
+             :char nil
+             :schar 'schar-array-fix
+             :uchar 'uchar-array-fix
+             :sshort 'sshort-array-fix
+             :ushort 'ushort-array-fix
+             :sint 'sint-array-fix
+             :uint 'uint-array-fix
+             :slong 'slong-array-fix
+             :ulong 'ulong-array-fix
+             :sllong 'sllong-array-fix
+             :ullong 'ullong-array-fix
+             :struct nil
+             :pointer nil
+             :array nil)
+   :array nil)
+  :hooks (:fix))

@@ -6894,7 +6894,7 @@
   (declare (ignorable state)) ; only used in raw Lisp
   #-acl2-loop-only
   (when *step-limit-error-p*
-    (er soft ctx str start where)
+    (er-soft ctx "Step-limit" str start where)
     (setq *step-limit-error-p* 'error)
     (throw 'step-limit-tag ; irrelevant value
            t))
@@ -6912,10 +6912,10 @@
         (ctx ''step-limit))
     (cond
      (superior-context-p
-      `(er soft ,ctx
-           ,str
-           (step-limit-start state)
-           "context immediately above the one just completed"))
+      `(er-soft ,ctx "Step-limit"
+                ,str
+                (step-limit-start state)
+                "context immediately above the one just completed"))
      (t
       `(the-fixnum
         (step-limit-error1 ,ctx
@@ -7860,7 +7860,7 @@
               (declare (ignore latches))
               (cond
                (erp (pprogn
-                     (error-fms nil ctx (car okp) (cdr okp) state)
+                     (error-fms nil ctx nil (car okp) (cdr okp) state)
                      (er soft ctx
                          "The break condition installed on ~x0 could not be ~
                           evaluated."

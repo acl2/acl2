@@ -1003,7 +1003,7 @@
                      pp-sum-reorder)
                     (p+
                      (:REWRITE EX-FROM-SYNP-LEMMA1)
-                     (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                     (:REWRITE ACL2::O-P-O-INFP-CAR)
                      (:REWRITE DEFAULT-CDR)
                      (:REWRITE ACL2::PREFER-POSITIVE-ADDENDS-EQUAL)
                      (:DEFINITION EX-FROM-RP)
@@ -1838,7 +1838,7 @@
                                 (:DEFINITION INCLUDE-FNC-SUBTERMS)
                                 (:REWRITE EX-FROM-SYNP-LEMMA1)
                                 (:REWRITE DEFAULT-CDR)
-                                (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                                (:REWRITE ACL2::O-P-O-INFP-CAR)
                                 (:REWRITE VALID-SC-CADR)
                                 (:REWRITE VALID-SC-IMPLIES-3)
                                 (:REWRITE VALID-SC-CADDR)

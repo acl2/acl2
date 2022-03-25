@@ -1,7 +1,7 @@
 ; BV Library: getbit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,6 +22,7 @@
 (local (include-book "../arithmetic-light/floor")) ;for FLOOR-DIVIDE-BY-same
 (local (include-book "../arithmetic-light/floor2"))
 (local (include-book "../arithmetic-light/times"))
+(local (include-book "../arithmetic-light/plus-and-minus"))
 (local (include-book "unsigned-byte-p"))
 
 (defthm getbit-type
@@ -33,10 +34,10 @@
 
 (in-theory (disable (:type-prescription getbit))) ;getbit-type is better
 
-(defthm integerp-of-getbit
+(defthmd integerp-of-getbit
   (integerp (getbit index x)))
 
-(defthm natp-of-getbit
+(defthmd natp-of-getbit
   (natp (getbit n x)))
 
 (defthm getbit-of-0
@@ -402,13 +403,15 @@
                              bvchop-1-becomes-getbit))))))
 
 (defthmd unsigned-byte-p-of-bvchop-one-more
-   (implies (and (equal size-1 (+ -1 size))
-                 (posp size))
-            (equal (unsigned-byte-p size-1 (bvchop size x))
-                   (equal 0 (getbit size-1 x))))
-   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvchop-one-more-helper
-                                   (x (bvchop size x)))
-            :in-theory (disable unsigned-byte-p-of-bvchop-one-more-helper))))
+  (implies (equal size-1 (+ -1 size))
+           (equal (unsigned-byte-p size-1 (bvchop size x))
+                  (if (not (posp size))
+                      (natp size-1)
+                    (equal 0 (getbit size-1 x)))))
+  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvchop-one-more-helper
+                                  (x (bvchop size x)))
+           :cases ((posp size))
+           :in-theory (disable unsigned-byte-p-of-bvchop-one-more-helper))))
 
 (defthm getbit-of-*-of-2
   (implies (and (natp n)
@@ -472,3 +475,70 @@
            :in-theory
            (e/d (getbit)
                 (bvchop-1-becomes-getbit slice-becomes-getbit bvchop-of-*-of-bvchop)))))
+
+(defthm getbit-when-slice-is-known-constant
+  (implies (and (equal free (slice high low x)) ;reversed the equality
+                (syntaxp (quotep free))
+                (<= low n)
+                (<= n high)
+                (natp low)
+                (integerp n)
+                (integerp high))
+           (equal (getbit n x)
+                  (getbit (- n low) free))))
+
+;make a rule to substitute?
+(defthm getbits-same-when-bvchops-same
+  (implies (and (equal (bvchop free x) (bvchop free y))
+                (< n free)
+                (natp free)
+                (natp n)
+                )
+           (equal (equal (getbit n x) (getbit n y))
+                  t))
+  :hints (("Goal" :use ((:instance GETBIT-OF-BVCHOP (m n) (n free) (x x))
+                        (:instance GETBIT-OF-BVCHOP (m n) (n free) (x y)))
+           :in-theory (disable GETBIT-OF-BVCHOP))))
+
+(defthm getbit-of-+-of--1-and-expt
+ (implies (and (natp n)
+               (natp i))
+          (equal (getbit n (+ -1 (expt 2 i)))
+                 (if (< n i)
+                     1
+                   0)))
+ :hints (("Goal" :in-theory
+          (e/d (getbit slice bvchop) ; todo: disable less
+               (bvchop-1-becomes-getbit slice-becomes-getbit bvchop-of-*-of-bvchop)))))
+
+(defthm getbit-of-0-and-+-of-1-and-*-of-2
+  (implies (integerp x)
+           (equal (getbit 0 (+ 1 (* 2 x)))
+                  1))
+  :hints (("Goal" :in-theory (e/d (getbit bvchop)
+                                  (bvchop-1-becomes-getbit slice-becomes-getbit)))))
+
+(defthmd getbit-when-slice-is-known-to-be-all-ones
+  (implies (and (equal free (+ 1 (slice high low x))) ; tries to match the normal form
+                (equal free (expt 2 (+ 1 high (- low))))
+                (<= low n)
+                (<= n high)
+                (natp low)
+                (integerp n)
+                (integerp high))
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :use (:instance getbit-when-slice-is-known-constant
+                                  (free (+ -1 (expt 2 (+ 1 high (- low))))))
+           :in-theory (disable getbit-when-slice-is-known-constant))))
+
+;move
+(defthm not-equal-of-bvchop-when-equal-of-getbit
+  (implies (and (syntaxp (quotep k))
+                (equal bit (getbit n x)) ; bit is a free var
+                (syntaxp (quotep bit))
+                (not (equal bit (getbit n k)))
+                (< n size)
+                (natp n)
+                (integerp size))
+           (not (equal k (bvchop size x)))))

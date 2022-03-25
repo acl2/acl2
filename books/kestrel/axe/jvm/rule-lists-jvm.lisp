@@ -788,7 +788,7 @@
             jvm::operand-stack-size-of-push-long
             jvm::operand-stack-size-of-pop-long
             jvm::operand-stack-size-of-nil
-            jvm::operand-stack-size-bound ;renme
+            jvm::operand-stack-size-bound ;rename
 
             ;; rules about popn-operands:
             jvm::popn-operands-base
@@ -904,7 +904,7 @@
             alistp-of-bind
 
 ;    jvm::encode-unsigned ;;is a macro!
-            cancel-<-+
+            <-of-+-cancel-2-1
 
             s-same-s
             s-diff-s-axe

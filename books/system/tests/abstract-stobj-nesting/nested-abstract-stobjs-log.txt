@@ -558,12 +558,12 @@ The non-trivial part of the guard conjecture for FOO is
 
 Goal
 (IMPLIES (TOPP TOP)
-         (LET ((SUB$C (SUB0 TOP)))
-              (MV-LET (SUB$C)
-                      (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
-                             (SUB$C-VAL (FLD0$C SUB$C)))
-                            (LIST SUB$C SUB$C-VAL))
-                      (NATP (FLD0$C SUB$C))))).
+         (LET* ((SUB$C (SUB0 TOP))
+                (MV (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                           (SUB$C-VAL (FLD0$C SUB$C)))
+                          (LIST SUB$C SUB$C-VAL)))
+                (SUB$C (MV-NTH 0 MV)))
+               (NATP (FLD0$C SUB$C)))).
 Goal'
 
 Q.E.D.
@@ -612,11 +612,11 @@ ACL2 !>>(DEFUN FOO-BAD (TOP)
                           (MV TOP SUB$C-VAL SUB$C-CONG-VAL)))
 
 
-ACL2 Error in ( DEFUN FOO-BAD ...):  The stobj-let binding expressions
-((SUB0 TOP) (SUB0-AGAIN TOP)) both ultimately read concrete stobj TOP$C
-with accessor SUB0$C.  Since variables SUB$C and SUB$C-CONG are to
-be updated (i.e., they are among the stobj-let form's producer variables),
-this aliasing is illegal.  The form 
+ACL2 Error [Translate] in ( DEFUN FOO-BAD ...):  The stobj-let binding
+expressions ((SUB0 TOP) (SUB0-AGAIN TOP)) both ultimately read concrete
+stobj TOP$C with accessor SUB0$C.  Since variables SUB$C and SUB$C-CONG
+are to be updated (i.e., they are among the stobj-let form's producer
+variables), this aliasing is illegal.  The form 
 (STOBJ-LET ((SUB$C (SUB0 TOP))
             (SUB$C-CONG (SUB0-AGAIN TOP)
                         UPDATE-SUB0))
@@ -635,7 +635,7 @@ Summary
 Form:  ( DEFUN FOO-BAD ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN FOO-BAD ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN FOO-BAD ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTHM CREATE-TOP2{CORRESPONDENCE}
@@ -790,12 +790,12 @@ The non-trivial part of the guard conjecture for FOO2 is
 
 Goal
 (IMPLIES (TOP2P TOP2)
-         (LET ((SUB$C (SUB02 TOP2)))
-              (MV-LET (SUB$C)
-                      (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
-                             (SUB$C-VAL (FLD0$C SUB$C)))
-                            (LIST SUB$C SUB$C-VAL))
-                      (NATP (FLD0$C SUB$C))))).
+         (LET* ((SUB$C (SUB02 TOP2))
+                (MV (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                           (SUB$C-VAL (FLD0$C SUB$C)))
+                          (LIST SUB$C SUB$C-VAL)))
+                (SUB$C (MV-NTH 0 MV)))
+               (NATP (FLD0$C SUB$C)))).
 Goal'
 
 Q.E.D.
@@ -837,11 +837,11 @@ ACL2 !>>(DEFUN FOO2-BAD (TOP2)
                           (MV TOP2 SUB$C-VAL SUB$C-CONG-VAL)))
 
 
-ACL2 Error in ( DEFUN FOO2-BAD ...):  The stobj-let binding expressions
-((SUB02 TOP2) (SUB02-AGAIN TOP2)) both ultimately read concrete stobj
-TOP$C with accessor SUB0$C.  Since variables SUB$C and SUB$C-CONG are
-to be updated (i.e., they are among the stobj-let form's producer variables),
-this aliasing is illegal.  The form 
+ACL2 Error [Translate] in ( DEFUN FOO2-BAD ...):  The stobj-let binding
+expressions ((SUB02 TOP2) (SUB02-AGAIN TOP2)) both ultimately read
+concrete stobj TOP$C with accessor SUB0$C.  Since variables SUB$C and
+SUB$C-CONG are to be updated (i.e., they are among the stobj-let form's
+producer variables), this aliasing is illegal.  The form 
 (STOBJ-LET ((SUB$C (SUB02 TOP2))
             (SUB$C-CONG (SUB02-AGAIN TOP2)
                         UPDATE-SUB02))
@@ -860,7 +860,7 @@ Summary
 Form:  ( DEFUN FOO2-BAD ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN FOO2-BAD ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN FOO2-BAD ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFLABEL START-EXAMPLE-3)
@@ -1172,7 +1172,7 @@ Goal
             (MV N$2 N$)
             (LET* ((N$ (UPDATE-N$VAL (N$2VAL N$2) N$))
                    (N$ (UPDATE-N$VAL (+ 1 (N$2VAL N$2)) N$)))
-                  (LIST N$2 N$)))
+                  (MV N$2 N$)))
     (AND
      (OR
       (NOT (UENVALID TWO-ORDERED-NUMS))
@@ -1403,7 +1403,7 @@ Summary
 Form:  ( DEFABSSTOBJ ST3 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFABSSTOBJ ST3 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST3 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFSTOBJ ST3-AUX FLD3-AUX)
@@ -1528,10 +1528,11 @@ ACL2 !>>(DEFUN BIND-NON-CHILD-STOBJ-FIELD (TOP)
                           (MV TOP SUB$C-VAL MISC-VAL)))
 
 
-ACL2 Error in ( DEFUN BIND-NON-CHILD-STOBJ-FIELD ...):  The name MISC
-is not the name of a field accessor for the stobj TOP.  Note that even
-though MISC is an abstract stobj primitive (for TOP), it is not an
-accessor because it is not associated with an :UPDATER.  The form 
+ACL2 Error [Translate] in ( DEFUN BIND-NON-CHILD-STOBJ-FIELD ...):
+The name MISC is not the name of a field accessor for the stobj TOP.
+Note that even though MISC is an abstract stobj primitive (for TOP),
+it is not an accessor because it is not associated with an :UPDATER.
+The form 
 (STOBJ-LET ((SUB$C (SUB0 TOP))
             (MISC-VAL (MISC TOP)))
            (SUB$C SUB$C-VAL VAL)
@@ -1546,7 +1547,8 @@ Summary
 Form:  ( DEFUN BIND-NON-CHILD-STOBJ-FIELD ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN BIND-NON-CHILD-STOBJ-FIELD ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN BIND-NON-CHILD-STOBJ-FIELD ...):  See
+:DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN BIND-NON-FUNCTION (TOP)
@@ -1560,8 +1562,8 @@ ACL2 !>>(DEFUN BIND-NON-FUNCTION (TOP)
                           (MV TOP SUB$C-VAL MISC-VAL)))
 
 
-ACL2 Error in ( DEFUN BIND-NON-FUNCTION ...):  The name ABC is not
-the name of a field accessor for the stobj TOP.  The form 
+ACL2 Error [Translate] in ( DEFUN BIND-NON-FUNCTION ...):  The name
+ABC is not the name of a field accessor for the stobj TOP.  The form
 (STOBJ-LET ((SUB$C (SUB0 TOP))
             (MISC-VAL (ABC TOP)))
            (SUB$C SUB$C-VAL VAL)
@@ -1576,7 +1578,7 @@ Summary
 Form:  ( DEFUN BIND-NON-FUNCTION ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN BIND-NON-FUNCTION ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN BIND-NON-FUNCTION ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN SUB0-VAL (TOP)
@@ -1611,8 +1613,9 @@ ACL2 !>>(DEFUN BIND-NON-FIELD-FUNCTION (TOP)
                           (MV TOP SUB$C-VAL MISC-VAL)))
 
 
-ACL2 Error in ( DEFUN BIND-NON-FIELD-FUNCTION ...):  The name SUB0-VAL
-is not the name of a field accessor for the stobj TOP.  The form 
+ACL2 Error [Translate] in ( DEFUN BIND-NON-FIELD-FUNCTION ...):  The
+name SUB0-VAL is not the name of a field accessor for the stobj TOP.
+The form 
 (STOBJ-LET ((SUB$C (SUB0 TOP))
             (VAL (SUB0-VAL TOP)))
            (SUB$C SUB$C-VAL VAL)
@@ -1627,7 +1630,8 @@ Summary
 Form:  ( DEFUN BIND-NON-FIELD-FUNCTION ...)
 Rules: NIL
 
-ACL2 Error in ( DEFUN BIND-NON-FIELD-FUNCTION ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFUN BIND-NON-FIELD-FUNCTION ...):  See
+:DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFSTOBJ ST4$C-FLD FLD4$C-SUB)
@@ -2018,7 +2022,7 @@ Summary
 Form:  ( DEFABSSTOBJ ST4 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFABSSTOBJ ST4
@@ -2042,7 +2046,7 @@ Summary
 Form:  ( DEFABSSTOBJ ST4 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFSTUB STUB (X) T)
@@ -2071,7 +2075,7 @@ Summary
 Form:  ( DEFABSSTOBJ ST4 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(UBT 'STUB)
@@ -2113,7 +2117,7 @@ Summary
 Form:  ( DEFABSSTOBJ ST4 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(UBT 'FLD4$A-NON-GV)
@@ -2135,7 +2139,7 @@ Summary
 Form:  ( DEFABSSTOBJ ST4 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFABSSTOBJ ST4
@@ -2155,7 +2159,7 @@ Summary
 Form:  ( DEFABSSTOBJ ST4 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFABSSTOBJ ST4
@@ -2173,7 +2177,7 @@ Summary
 Form:  ( DEFABSSTOBJ ST4 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFABSSTOBJ ST4
@@ -2195,7 +2199,7 @@ Summary
 Form:  ( DEFABSSTOBJ ST4 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFABSSTOBJ ST4
@@ -2217,7 +2221,7 @@ Summary
 Form:  ( DEFABSSTOBJ ST4 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFSTOBJ ST5$C FLD5$C)
@@ -2332,7 +2336,7 @@ Summary
 Form:  ( DEFABSSTOBJ ST5 ...)
 Rules: NIL
 
-ACL2 Error in ( DEFABSSTOBJ ST5 ...):  See :DOC failure.
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST5 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTTAG :BOGUS-CERT)

@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+(local (include-book "append"))
+
 (in-theory (disable update-nth))
 
 ;; Match what's in STD
@@ -145,3 +147,10 @@
            (equal (nthcdr n1 (update-nth n2 val list))
                   (nthcdr n1 list)))
   :hints (("Goal" :in-theory (enable update-nth nthcdr))))
+
+(defthm update-nth-of-append
+  (equal (update-nth n val (append x y))
+         (if (< (nfix n) (len x))
+             (append (update-nth n val x) y)
+           (append x (update-nth (- n (len x)) val y))))
+  :hints (("Goal" :in-theory (enable equal-of-append))))

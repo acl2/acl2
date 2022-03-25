@@ -24,7 +24,8 @@
 (include-book "unroll-java-code-common")
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/doc" :dir :system)
-(include-book "../dag-size-fast")
+;(include-book "../dag-size-fast")
+(include-book "../rewriter") ; for simp-dag (todo: use something better?)
 (include-book "../prune") ;brings in the rewriter
 
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))
@@ -146,12 +147,12 @@
                                 call-stp ;t, nil, or a max-conflicts
                                 steps
                                 branches
-                                param-names
+                                param-names ; may be :auto
                                 chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
                                 error-on-incomplete-runsp ;whether to throw a hard error
                                 state)
   (declare (xargs :stobjs (state)
-                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, PRUNE-DAG-WITH-RULE-ALIST, SIMP-TERM-FN and TRANSLATE-TERMS
+                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
                   :guard (and (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
@@ -167,7 +168,8 @@
                                   (natp steps))
                               (or (eq :smart branches)
                                   (eq :split branches))
-                              (symbol-listp param-names) ;todo: check for dups and keywords and case clashes
+                              (or (eq :auto param-names)
+                                  (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
                               (booleanp error-on-incomplete-runsp)
                               (booleanp simplify-xorsp))
@@ -204,6 +206,7 @@
        (user-assumptions (translate-terms user-assumptions 'unroll-java-code-fn (w state))) ;throws an error on bad input
        (user-assumptions (desugar-calls-of-contents-in-terms user-assumptions initial-heap-term))
        (param-slot-to-name-alist (make-param-slot-to-name-alist method-info param-names))
+       (parameter-names (strip-cdrs param-slot-to-name-alist)) ; the actual names used
        (parameter-assumptions (parameter-assumptions method-info array-length-alist locals-term initial-heap-term
                                                      vars-for-array-elements
                                                      param-slot-to-name-alist
@@ -213,7 +216,6 @@
                                   )
                                 user-assumptions
                                 parameter-assumptions))
-       (parameter-names (strip-cdrs param-slot-to-name-alist))
        (- (and print (cw "(Parameter names are: ~x0.)~%" parameter-names)))
        ((when (not (no-duplicatesp parameter-names)))
         (mv t
@@ -319,12 +321,13 @@
         (mv erp nil nil nil nil nil state))
        ((mv erp dag state)
         (if prune-branches
-            (prune-dag-with-rule-alist dag
-                                       all-assumptions ;are they all needed?
-                                       (first rule-alists) ;what should we use here?
-                                       monitored-rules
-                                       call-stp
-                                       state)
+            (prune-dag-with-rule-alist-new dag
+                                           all-assumptions ;are they all needed?
+                                           (first rule-alists) ;what should we use here?
+                                           nil ; interpreted-function-alist
+                                           monitored-rules
+                                           call-stp
+                                           state)
           (mv nil dag state)))
        ((when erp) (mv erp nil nil nil nil nil state))
        (dag-fns (dag-fns dag)))
@@ -374,7 +377,7 @@
                              whole-form
                              state)
   (declare (xargs :stobjs (state)
-                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, PRUNE-DAG-WITH-RULE-ALIST, SIMP-TERM-FN and TRANSLATE-TERMS
+                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
                   :guard (and (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
@@ -393,7 +396,8 @@
                                   (natp steps))
                               (or (eq :smart branches)
                                   (eq :split branches))
-                              (symbol-listp param-names) ;todo: check for dups and keywords and case clashes
+                              (or (eq :auto param-names)
+                                  (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
                               (booleanp simplify-xorsp))
                   :verify-guards nil))
@@ -494,7 +498,7 @@
                                       (call-stp 'nil)
                                       (steps ':auto)
                                       (branches ':smart) ;; either :smart (try to merge at join points) or :split (split the execution and don't re-merge)
-                                      (param-names 'nil)
+                                      (param-names ':auto)
                                       (chunkedp 'nil)
                                       (produce-theorem 'nil)
                                       (produce-function 'nil))
@@ -557,7 +561,7 @@
          (memoizep "Whether to memoize rewrites during unrolling (boolean, default t).")
          (steps "A number of steps to run, or :auto, meaning run until the method returns. (Consider using :output :all when using :steps, especially if the computation may not complete after that many steps.)")
          (branches "How to handle branches in the execution. Either :smart (try to merge at join points) or :split (split the execution and don't re-merge).")
-         (param-names "Names to use for the parameters (e.g., if no debugging information is available).")
+         (param-names "Names to use for the parameters (e.g., if no debugging information is available), or :auto.")
          (produce-theorem "Whether to produce a theorem about the result of the lifting (currently has to be trusted).")
          (produce-function "Whether to produce a defun in addition to a DAG (default t).")
          (chunkedp "whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code)")

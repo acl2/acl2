@@ -78,7 +78,7 @@
                      (:DEFINITION SUBSETP-EQUAL)
                      (:DEFINITION MEMBER-EQUAL)
                      (:REWRITE DEFAULT-CDR)
-                     (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
+;;                     (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
                      (:REWRITE
                       ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1))))
 

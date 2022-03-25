@@ -117,13 +117,13 @@
         (mv :bad-input nil state)))
     (acl2::def-simplified-fn name-of-defconst
                              term-to-simplify
+                             rules ;to override the default
                              ;; The extra rules:
                              (if (not (eq :auto rules))
-                                 nil ;rules are given below, so extra-rules are not allowed
+                                 nil ;rules are given, so extra-rules are not allowed (TODO: reconsider this)
                                (append (lift-r1cs-rules)
                                        extra-rules))
                              remove-rules
-                             rules ;to override the default
                              ;; nil ;rule-alists
                              ;; drop? but we need to know that all lookups of vars give integers:
                              ;; TODO: Use the more compact machinery for this?:

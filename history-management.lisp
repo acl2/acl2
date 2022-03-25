@@ -2427,14 +2427,12 @@
 (defun print-failure1 (erp ctx state)
   (let ((channel (proofs-co state)))
     (pprogn
-     (newline channel state)
-     (error-fms-channel nil ctx "~@0See :DOC failure."
+     (error-fms-channel nil ctx "Failure" "~@0See :DOC failure."
                         (list (cons #\0
                                     (if (tilde-@p erp)
                                         erp
                                       "")))
-                        channel state)
-     (newline channel state)
+                        channel state 1)
      (io? summary nil state (channel)
           (fms *proof-failure-string* nil channel state nil)))))
 
@@ -3968,7 +3966,7 @@
             deferred-ttag-notes       ;;; see comment immediately above
             deferred-ttag-notes-saved ;;; see comment immediately above
 
-            certify-book-info         ;;; need effect from with-useless-runes
+            useless-runes             ;;; need changes from with-useless-runes
 
 ; The following two are protected a different way; see
 ; protect-system-state-globals.
@@ -7468,7 +7466,6 @@
                                 (access stobj-property prop :live-var)
                                 (access stobj-property prop :recognizer)
                                 (access stobj-property prop :creator)
-                                (access stobj-property prop :fixer)
                                 (access stobj-property prop :names)))
                        renewal-mode wrld)))
         (t (value (renew-name name renewal-mode wrld)))))))))
@@ -18540,11 +18537,12 @@
            (declare (ignore latches))
            (cond
             (erp (pprogn
-                  (error-fms nil ctx (car ev-result) (cdr ev-result) state)
-                  (er soft ctx
-                      "The TABLE :guard for ~x0 on the key ~x1 and value ~x2 ~
-                      could not be evaluated."
-                      name key val)))
+                  (error-fms nil ctx "Table-guard"
+                             (car ev-result) (cdr ev-result) state)
+                  (er-soft ctx "Table-guard"
+                           "The TABLE :guard for ~x0 on the key ~x1 and value ~
+                            ~x2 could not be evaluated."
+                           name key val)))
             ((if mvp (car ev-result) ev-result)
              (value nil))
             ((and mvp (cadr ev-result))
@@ -18861,8 +18859,8 @@
                        ctx wrld state)
 
 ; Note that since known-stobjs above is '(state), no stobj can be returned.
-; Note that translate11 doesn't allow calls of stobj creators or fixers for
-; execution even when there is an active trust tag.
+; Note that translate11 doesn't allow calls of stobj creators for execution
+; even when there is an active trust tag.
 
            (cond
             (erp (silent-error state)) ; already printed any message
@@ -18882,7 +18880,7 @@
                          (msg "has output signature"
                               (cons 'mv stobjs-out))
                        (assert$
-; See comment above about stobj creators and fixers.
+; See comment above about stobj creators.
                         (eq (car stobjs-out) 'state)
                         (msg "returns STATE"
                              (car stobjs-out))))))
