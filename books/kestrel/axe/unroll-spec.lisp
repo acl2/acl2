@@ -1,7 +1,7 @@
 ; A tool to rewrite a term, e.g., to unroll a spec
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,8 @@
 
 (in-package "ACL2")
 
-;; See also unroll-spec-basic.lisp
+;; See also unroll-spec-basic.lisp.
+;; See also def-simplified.lisp.
 
 (include-book "rewriter")
 (include-book "dag-to-term-with-lets")
@@ -30,15 +31,20 @@
           (introduce-bv-array-rules)
           '(list-to-byte-array))) ;todo: add to a rule set (whatever mentions list-to-bv-array)
 
+(ensure-rules-known (unroll-spec-rules))
+
 ;; Is this really needed?
 (defttag invariant-risk)
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
 
 ;; TODO: Add more options, such as :print and :print-interval, to pass through to simp-term
 ;; Returns (mv erp event state)
+;; TODO: Redo the rule computation: base set, then changes for the extra-rule and remove-rules.  Also change unroll-spec-basic.
 (defun unroll-spec-fn (defconst-name ;should begin and end with *
                         term extra-rules remove-rules
-                        rules rule-alists assumptions monitor simplify-xorsp
+                        rules
+                        rule-alists
+                        assumptions monitor simplify-xorsp
                         produce-function
                         disable-function
                         function-type
@@ -172,15 +178,21 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
 
 @({
      (unroll-spec
-        defconst-name             ;; The name of the DAG to create (will be a defconst)
+        defconst-name        ;; The name of the constant DAG to create (will be a defconst)
         term                 ;; The term to simplify
         [:rules]             ;; If non-nil, rules to use to completely replace the usual set of rules
         [:extra-rules]       ;; Rules to add to the usual set of rules, Default: nil
         [:remove-rules]      ;; Rules to remove from the usual set of rules, Default: nil
         [:assumptions]       ;; Assumptions to use when unrolling, Default: nil
-        [:monitor]           ;; List of symbols to monitor, Default: nil
+        [:monitor]           ;; List of rule names (symbols) to monitor, Default: nil
+        [:simplify-xorsp]    ;; Whether to apply special handling to nests of XORs, Default: t
+        [:produce-function]  ;; Whether to produce a function, in addition to a constant DAG, Default: nil
+        [:disable-function]  ;; Whether to disable the function produced, Default: nil
+        [:produce-theorem]   ;; Whether to produce a theorem (without proof), asserting that lifiting produces the given result, Default: nil
         )
 })
+
+<p> By default, the set of rules used is @('(unroll-spec-rules)'), with any of the @(':extra-rules') added and then the @(':remove-rules') removed.  Or the user can specify @(':rules') to completely replace the set of rules.</p>
 
 <p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>")
 
@@ -189,10 +201,11 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                               defconst-name ;; The name of the dag to create
                               term     ;; The term to simplify
                               &key
+                              (rules 'nil) ;to completely replace the usual set of rules (TODO: default should be auto?)
+                              (rule-alists 'nil) ;to completely replace the usual set of rules (TODO: default should be auto?) ;TODO: Deprecate but used in rc2 (use rule-lists instead)
                               (extra-rules 'nil) ; to add to the usual set of rules
                               (remove-rules 'nil) ; to remove from to the usual set of rules
-                              (rules 'nil) ;to completely replace the usual set of rules (TODO: default should be auto?)
-                              (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
+                              ;; TODO: Add support for rule-lists...
                               (assumptions 'nil)
                               (monitor 'nil)
                               (simplify-xorsp 't)
