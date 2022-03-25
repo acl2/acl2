@@ -58,6 +58,17 @@
   :elementp-of-nil nil
   :pred member-info-listp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection member-info-list->name-list (x)
+  :guard (member-info-listp x)
+  :returns (names ident-listp)
+  :short "Lift @(tsee member-info->name) to lists."
+  (member-info->name x)
+  ///
+  (fty::deffixequiv member-info-list->name-list
+    :args ((x member-info-listp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum member-info-list-option
