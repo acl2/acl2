@@ -1272,17 +1272,8 @@
          ((unless (equal (struct->tag struct)
                          (struct->tag obj)))
           nil)
-         ((unless (equal (member-list->name-list
-                          (struct->members struct))
-                         (member-list->name-list
-                          (struct->members obj))))
-          nil)
-         ((unless (equal (type-list-of-value-list
-                          (member-list->value-list
-                           (struct->members struct)))
-                         (type-list-of-value-list
-                          (member-list->value-list
-                           (struct->members obj)))))
+         ((unless (equal (members-to-infos (struct->members struct))
+                         (members-to-infos (struct->members obj))))
           nil))
       t)
     :hooks (:fix))
@@ -1338,16 +1329,8 @@
             (if (equal addr addr2)
                 (and (equal (struct->tag struct)
                             (struct->tag struct2))
-                     (equal (member-list->name-list
-                             (struct->members struct))
-                            (member-list->name-list
-                             (struct->members struct2)))
-                     (equal (type-list-of-value-list
-                             (member-list->value-list
-                              (struct->members struct)))
-                            (type-list-of-value-list
-                             (member-list->value-list
-                              (struct->members struct2)))))
+                     (equal (members-to-infos (struct->members struct))
+                            (members-to-infos (struct->members struct2))))
               (write-struct-okp addr struct compst))))
     :enable (write-struct-okp
              update-struct))
@@ -1357,18 +1340,11 @@
                   (equal old-struct (read-struct addr compst))
                   (structp old-struct))
              (equal (write-struct-okp addr struct compst)
-                    (and (equal (struct->tag struct)
-                                (struct->tag old-struct))
-                         (equal (member-list->name-list
-                                 (struct->members struct))
-                                (member-list->name-list
-                                 (struct->members old-struct)))
-                         (equal (type-list-of-value-list
-                                 (member-list->value-list
-                                  (struct->members struct)))
-                                (type-list-of-value-list
-                                 (member-list->value-list
-                                  (struct->members old-struct)))))))
+                    (and
+                     (equal (struct->tag struct)
+                            (struct->tag old-struct))
+                     (equal (members-to-infos (struct->members struct))
+                            (members-to-infos (struct->members old-struct))))))
     :enable (write-struct-okp read-struct)
     :prep-lemmas
     ((defrule lemma

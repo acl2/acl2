@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "values")
+(include-book "tag-environments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,6 +78,13 @@
 
 (defresult member-list "lists of structure members")
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-errorp-when-member-listp
+  (implies (member-listp x)
+           (not (errorp x)))
+  :enable (member-listp errorp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod struct
@@ -98,7 +106,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define struct-read-member ((struct structp) (name identp))
+(define struct-read-member ((name identp) (struct structp))
   :returns (val value-resultp)
   :short "Read a member of a structure."
   :long
@@ -107,11 +115,11 @@
     "We look up the members in order;
      given that the members have distinct names (see @(tsee struct),
      the search order is immaterial."))
-  (struct-read-member-aux (struct->members struct) name)
+  (struct-read-member-aux name (struct->members struct))
   :hooks (:fix)
 
   :prepwork
-  ((define struct-read-member-aux ((members member-listp) (name identp))
+  ((define struct-read-member-aux ((name identp) (members member-listp))
      :returns (val value-resultp)
      :parents nil
      (b* (((when (endp members))
@@ -119,12 +127,12 @@
           ((member member) (car members))
           ((when (equal member.name (ident-fix name)))
            member.value))
-       (struct-read-member-aux (cdr members) name))
+       (struct-read-member-aux name (cdr members)))
      :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define struct-write-member ((struct structp) (name identp) (val valuep))
+(define struct-write-member ((name identp) (val valuep) (struct structp))
   :returns (new-struct struct-resultp)
   :short "Write a member of a structure."
   :long
@@ -134,15 +142,15 @@
      given that the members have distinct names (see @(tsee struct)),
      the search order is immaterial.
      The new value must have the same type as the old value."))
-  (b* ((new-members (struct-write-member-aux (struct->members struct) name val))
+  (b* ((new-members (struct-write-member-aux name val (struct->members struct)))
        ((when (errorp new-members)) new-members))
     (change-struct struct :members new-members))
   :hooks (:fix)
 
   :prepwork
-  ((define struct-write-member-aux ((members member-listp)
-                                    (name identp)
-                                    (val valuep))
+  ((define struct-write-member-aux ((name identp)
+                                    (val valuep)
+                                    (members member-listp))
      :returns (new-members
                member-list-resultp
                :hints
@@ -162,8 +170,32 @@
              (error (list :mistype-member (ident-fix name)
                           :old-value member.value
                           :new-value (value-fix val)))))
-          (new-cdr-members (struct-write-member-aux (cdr members) name val))
+          (new-cdr-members (struct-write-member-aux name val (cdr members)))
           ((when (errorp new-cdr-members)) new-cdr-members))
        (cons (member-fix (car members))
              new-cdr-members))
      :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define member-to-info ((member memberp))
+  :returns (meminfo member-infop)
+  :short "Turn a member into its information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @(tsee member-info) is the static counterpart of a @(tsee member)."))
+  (make-member-info :name (member->name member)
+                    :type (type-of-value (member->value member)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection members-to-infos (x)
+  :guard (member-listp x)
+  :returns (infos member-info-listp)
+  :short "Lift @(tsee member-to-info) to lists."
+  (member-to-info x)
+  ///
+  (fty::deffixequiv members-to-infos
+    :args ((x member-listp))))
