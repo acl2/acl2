@@ -838,28 +838,11 @@
         (error (list :struct-tag-mismatch
                      :old (struct->tag obj)
                      :new (struct->tag struct))))
-       ((unless (equal (member-list->name-list
-                        (struct->members struct))
-                       (member-list->name-list
-                        (struct->members obj))))
-        (error (list :struct-member-names-mismatch
-                     :old (member-list->name-list
-                           (struct->members obj))
-                     :new (member-list->name-list
-                           (struct->members struct)))))
-       ((unless (equal (type-list-of-value-list
-                        (member-list->value-list
-                         (struct->members struct)))
-                       (type-list-of-value-list
-                        (member-list->value-list
-                         (struct->members obj)))))
-        (error (list :struct-member-types-mismatch
-                     :old (type-list-of-value-list
-                           (member-list->value-list
-                            (struct->members obj)))
-                     :new (type-list-of-value-list
-                           (member-list->value-list
-                            (struct->members struct))))))
+       ((unless (equal (members-to-infos (struct->members struct))
+                       (members-to-infos (struct->members obj))))
+        (error (list :struct-members-mismatch
+                     :old (members-to-infos (struct->members obj))
+                     :new (members-to-infos (struct->members struct)))))
        (new-heap (omap::update addr (struct-fix struct) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)
