@@ -1325,7 +1325,7 @@
 
 ;    bvxor-all-ones ;do we want this? ;trying without...
 
-;    bvxor-commutative-dag ;hope this is okay
+;    bvxor-commutative-axe ;hope this is okay
 
     bvif-of-getbit-arg1
     bvif-of-getbit-arg2
@@ -1523,15 +1523,15 @@
             leftrotate32-trim-amt-all ;move to trim rules?
 
             ;;bvplus rules:
-            bvplus-commutative-dag
-            bvplus-commutative-2-dag ;seemed to fire a lot?! in rc4 example
+            bvplus-commutative-axe
+            bvplus-commutative-2-axe ;seemed to fire a lot?! in rc4 example
             bvplus-associative
 
             bvuminus-trim-dag-all
             bvuminus-1
             bvuminus-of-bvplus
 
-            bvand-commutative-dag
+            bvand-commutative-axe
 ;    bvxor-smaller-term-becomes-cat-arg1 ;yuck? Sat Jan 22 01:06:43 2011
 ;   bvxor-smaller-term-becomes-cat-arg2 ;yuck? Sat Jan 22 01:06:45 2011
 
@@ -1539,7 +1539,7 @@
 
             bvmult-of-2-gen
 ;trying these:
-            bitand-commutative-dag
+            bitand-commutative-axe
 
             bitnot-of-getbit-0 ;bozo more like this
             bvnot-1-becomes-bitnot-better
@@ -1678,8 +1678,8 @@
 ;;   '(bitxor-associative
 ;;     bitxor-combine-constants
 ;;     bitxor-same-2 ;add bitxor-same?
-;;     bitxor-commutative-2-dag
-;;     bitxor-commutative-dag))
+;;     bitxor-commutative-2-axe
+;;     bitxor-commutative-axe))
 
 ;used for sha1 and md5?: ;fixme deprecate?
 ;also called by axe-rules.
@@ -1937,8 +1937,8 @@
 ;                               bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:16:05 2010
      <-becomes-bvlt-alt-dag
      assoc-equal-of-cons
-     bvplus-commutative-dag
-     bvplus-commutative-2-dag
+     bvplus-commutative-axe
+     bvplus-commutative-2-axe
 
      all-unsigned-byte-p-of-cdr
      true-listp-of-cdr
