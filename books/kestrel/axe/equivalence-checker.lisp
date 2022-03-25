@@ -21145,3 +21145,12 @@
   (if (equal (len lst1) (len lst2))
       (pairlis$ lst1 lst2)
     (hard-error 'pairlis$-safe "Lists lengths unequal" nil)))
+
+;; todo: use this more, in place of pairlis$-safe
+(defun assign-type-to-vars (type vars)
+  (declare (xargs :guard (and (axe-typep type)
+                              (symbol-listp vars))))
+  (if (endp vars)
+      nil
+    (acons (first vars) type
+           (assign-type-to-vars type (rest vars)))))
