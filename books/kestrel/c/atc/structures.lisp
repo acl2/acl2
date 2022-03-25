@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "values")
+(include-book "tag-environments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -174,3 +175,27 @@
        (cons (member-fix (car members))
              new-cdr-members))
      :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define member-to-info ((member memberp))
+  :returns (meminfo member-infop)
+  :short "Turn a member into its information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @(tsee member-info) is the static counterpart of a @(tsee member)."))
+  (make-member-info :name (member->name member)
+                    :type (type-of-value (member->value member)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection members-to-infos (x)
+  :guard (member-listp x)
+  :returns (infos member-info-listp)
+  :short "Lift @(tsee member-to-info) to lists."
+  (member-to-info x)
+  ///
+  (fty::deffixequiv members-to-infos
+    :args ((x member-listp))))
