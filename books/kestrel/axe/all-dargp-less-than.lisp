@@ -1,7 +1,7 @@
 ; Apply dargp-less-than to all elements of a list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -9,7 +9,6 @@
 ; Author: Eric Smith (eric.smith@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 (in-package "ACL2")
 
@@ -20,7 +19,8 @@
 ;;; all-dargp-less-than
 ;;;
 
-;recognizes the args of a function call node in the dag
+;; Checks that each of the ITEMS is a dargp less than the BOUND.
+;; Recognizes the args of a function call node in a DAG.
 (defforall all-dargp-less-than (items bound) (dargp-less-than items bound)
   :fixed bound
   :declares ((type (integer 0 *) bound)))

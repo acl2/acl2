@@ -327,4 +327,4 @@
                  acl2::bvcat-of-slice-and-x-adjacent
                  acl2::bvcat-of-getbit-and-x-adjacent-2
                  acl2::bvcat-of-slice-and-x-adjacent-2
-                 acl2::bvplus-commutative-dag)))
+                 acl2::bvplus-commutative-axe)))

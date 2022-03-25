@@ -870,7 +870,7 @@
             acl2::logext-identity
             ;x86isa::rgfi-is-i64p ;targets signed-byte-of-xr
 ;            x86isa::xw-xr-same
-            ;; acl2::bvplus-commutative-dag ;is this based on nodenum or term weight?
+            ;; acl2::bvplus-commutative-axe ;is this based on nodenum or term weight?
 
 
 
@@ -972,7 +972,7 @@
             acl2::natp-of-+
             acl2::natp-of-nfix
             ;;introduce-read64 ; does this mess up our normal form? need some rules about it!  also need to apply this to the assumptions if we use it here
-            acl2::bvmult-commutative-dag
+            acl2::bvmult-commutative-axe
             acl2::bvmult-of-bvcat-of-0
             acl2::bvmult-of-bvchop-arg3
 
@@ -1122,7 +1122,7 @@
      the-check
      acl2::lookup-eq-safe
      eql
-     acl2::+-commutative-dag
+     acl2::+-commutative-axe
      unicity-of-0
      all-addreses-of-stack-slots
      ms X86ISA::ms$A
