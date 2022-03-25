@@ -49,6 +49,8 @@
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
 (include-book "kestrel/lists-light/update-nth" :dir :system) ;for TRUE-LISTP-OF-UPDATE-NTH-2
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
+(include-book "kestrel/lists-light/cdr" :dir :system)
+(include-book "kestrel/lists-light/cons" :dir :system)
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/take2" :dir :system) ; for take-of-take
 (include-book "kestrel/lists-light/append" :dir :system)

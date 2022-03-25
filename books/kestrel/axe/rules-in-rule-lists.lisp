@@ -73,7 +73,7 @@
 (ensure-rules-known (core-rules-bv))
 (ensure-rules-known (update-nth2-rules))
 (ensure-rules-known (list-rules))
-(ensure-rules-known (list-rules-etc))
+(ensure-rules-known (list-rules2))
 (ensure-rules-known (jvm-rules-list))
 ;(ensure-rules-known (jvm-rules-alist)) ; todo?
 (ensure-rules-known (core-rules-non-bv))

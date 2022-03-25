@@ -651,7 +651,20 @@
 
 (defun list-rules ()
   (declare (xargs :guard t))
-  '(len-update-nth ;pretty aggressive
+  '(;; rules about take:
+    take-of-0 ;take-when-zp-n ;sun feb 20 00:29:56 2011
+    take-of-append
+    len-of-take
+    consp-of-take
+    take-of-cons
+    true-listp-of-take
+    take-does-nothing ; introduces true-list-fix
+    ;; rules about cdr:
+    true-listp-of-cdr
+    cdr-cons
+    ;; mixed rules:
+    true-listp-of-cons
+    len-update-nth ;pretty aggressive
     true-listp-of-update-nth-2
     nthcdr-of-nil
     nth-of-take-gen2 ;quite aggressive
@@ -679,13 +692,13 @@
     len-of-true-list-fix
     atom ;thu mar  4 22:01:54 2010
     endp ;fri dec 24 16:32:13 2010
-    take-of-0 ;take-when-zp-n ;sun feb 20 00:29:56 2011
+
     consp-of-cons ;also elsewhere
     true-list-fix-when-true-listp
     true-listp-of-repeat
     len-of-repeat  ;since initializing an array calls repeat
     car-cons
-    cdr-cons
+
     len-of-cons
     nth-of-cons-constant-version
     integerp-of-len
@@ -694,80 +707,86 @@
     nthcdr-of-append-gen
     firstn-of-append ;todo: do we prefer firstn or take?  are rules about both needed?
     firstn-becomes-take-gen
-    take-of-append
     consp-of-reverse-list
     nth-of-reverse-list ;sat dec  4 13:20:17 2010
-    len-of-take
-    consp-of-take
     reverse-list-of-cons
     car-of-reverse-list ;sun feb  6 11:15:00 2011
     cdr-of-reverse-list ;sun feb  6 11:15:00 2011
     len-of-reverse-list ;sun feb  6 11:15:00 2011
-    take-of-cons
     len-of-append
     nth-of-append ;may be bad if we can't resolve the if test?
     len-of-firstn ;sun feb  6 11:16:17 2011
     equal-cons-nil-1
     equal-cons-nil-2))
 
-(defun list-rules-etc ()
+;; TODO: Move some of these into list-rules.
+(defun list-rules2 ()
   (declare (xargs :guard t))
-  '(finalcdr-iff
-    ;;consp-of-finalcdr ;wed sep 22 17:46:19 2010
-    nth-of-firstn ;sun sep  5 23:11:14 2010
-    cons-equal-rewrite-constant-version ;sun sep  5 05:09:23 2010
-    nthcdr-of-nthcdr ;sun sep  5 05:01:31 2010
-    consp-of-firstn ;fri sep  3 04:06:54 2010
-    ;;list::nthcdr-of-len-or-more ;make a cheap version?
-    subrange-out-of-order
-    equal-of-subrange-opener ;not in the usual rule set
-    cons-nth-0-equal-self
-    nth-of-subrange ;-gen
-    append-of-firstn-and-subrange
-    subrange-of-cdr
-    equal-of-take-and-firstn
-    firstn-when-<=-of-len
-    nth-of-take-2
-    append-of-firstn-and-cons-when-nth
-    append-of-firstn-of-cons-of-nth
-    len-of-firstn
-    true-listp-of-true-list-fix2
-    cons-nth-onto-subrange-alt
-    len-of-true-list-fix
-    len-of-take
-    equal-subrange-nthcdr-rewrite
-    true-listp-of-firstn
-    true-listp-of-take
-    cdr-of-nthcdr
-    consp-of-nthcdr
-    ;firstn-of-cdr-becomes-subrange ; drop?
-    append-of-take-and-cons-when-nth ;could be expensive
-    append-subrange-subrange-adjacent-alt
-    equal-of-append-arg1
-    cons-of-nth-and-nth-plus-1
-    len-of-nthcdr
-    nthcdr-of-cdr-combine
-    nth-of-nthcdr
-    subrange-of-0
-    append-of-take-and-subrange-alt
-    equal-of-cons
-    cdr-iff
-    nth-of-cons-constant-version
-    car-becomes-nth-of-0
-    append-of-nil-arg2
-    true-list-fix-when-true-listp ;also in list-rules
-    true-listp-of-cdr
-    take-does-nothing
-    nth-of-cdr
-    consp-of-cdr
-    len-of-cdr
-    nthcdr-iff
-    +-combine-constants
-    <-of-+-arg2-when-negative-constant
-    nth-append-1
-    nth-append-2
-    len-of-subrange
-    true-listp-of-subrange))
+  (append (list-rules)
+          '(finalcdr-iff
+            ;;consp-of-finalcdr ;wed sep 22 17:46:19 2010
+            nth-of-firstn               ;sun sep  5 23:11:14 2010
+            cons-equal-rewrite-constant-version ;sun sep  5 05:09:23 2010
+            nthcdr-of-nthcdr                    ;sun sep  5 05:01:31 2010
+            consp-of-firstn                     ;fri sep  3 04:06:54 2010
+            ;;list::nthcdr-of-len-or-more ;make a cheap version?
+            subrange-out-of-order
+            equal-of-subrange-opener ;not in the usual rule set
+            cons-nth-0-equal-self
+            nth-of-subrange ;-gen
+            append-of-firstn-and-subrange
+            subrange-of-cdr
+            equal-of-take-and-firstn
+            firstn-when-<=-of-len
+            nth-of-take-2
+            append-of-firstn-and-cons-when-nth
+            append-of-firstn-of-cons-of-nth
+            len-of-firstn
+            true-listp-of-true-list-fix2
+            cons-nth-onto-subrange-alt
+            len-of-true-list-fix
+            equal-subrange-nthcdr-rewrite
+            true-listp-of-firstn
+            cdr-of-nthcdr
+            consp-of-nthcdr
+;firstn-of-cdr-becomes-subrange ; drop?
+            append-of-take-and-cons-when-nth ;could be expensive
+            append-subrange-subrange-adjacent-alt
+            equal-of-append-arg1
+            cons-of-nth-and-nth-plus-1
+            len-of-nthcdr
+            nthcdr-of-cdr-combine
+            nth-of-nthcdr
+            subrange-of-0
+            append-of-take-and-subrange-alt
+            equal-of-cons
+            cdr-iff
+            nth-of-cons-constant-version
+            car-becomes-nth-of-0
+            append-of-nil-arg2
+            true-list-fix-when-true-listp ;also in list-rules
+            nth-of-cdr
+            consp-of-cdr
+            len-of-cdr
+            nthcdr-iff
+            +-combine-constants
+            <-of-+-arg2-when-negative-constant
+            nth-append-1
+            nth-append-2
+            len-of-subrange
+            true-listp-of-subrange)))
+
+;; These are ACL2 runes, not legal axe rules names.
+(defun list-rules2-executable-counterparts ()
+  (declare (xargs :guard t))
+  '((:executable-counterpart zp)
+    (:executable-counterpart min)
+    (:executable-counterpart max)
+    (:executable-counterpart <)
+    (:executable-counterpart len)
+    (:executable-counterpart binary-+)
+    (:executable-counterpart nfix)
+    (:executable-counterpart natp)))
 
 ;; TODO: Rename
 ;these are just list rules?
@@ -799,7 +818,6 @@
     len-of-subrange
     true-listp-of-subrange
 
-    take-does-nothing
     union-equal-of-nil-arg1
     union-equal-of-nil-arg2
 
@@ -2646,18 +2664,6 @@
 ;; ;;     bvplus-trim-arg1-all
 ;; ;;     bvplus-trim-arg2-all ;sometime this trims a whole huge nest...
 ;;     ))
-
-;; These are not legal axe-runes
-(defun list-rules-etc-executable-counterparts ()
-  (declare (xargs :guard t))
-  '((:executable-counterpart zp)
-    (:executable-counterpart min)
-    (:executable-counterpart max)
-    (:executable-counterpart <)
-    (:executable-counterpart len)
-    (:executable-counterpart binary-+)
-    (:executable-counterpart nfix)
-    (:executable-counterpart natp)))
 
 ;todo: use this more?
 (defun phased-bv-axe-rule-sets (state) ;bozo redo the state stuff here
