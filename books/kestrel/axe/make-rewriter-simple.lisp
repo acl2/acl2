@@ -354,11 +354,10 @@
                                                     refined-assumption-alist
                                                     node-replacement-array-num-valid-nodes
                                                     print interpreted-function-alist known-booleans monitored-symbols count))
-
         ;; functions after the main mutual recursion:
-        (simplify-term-name (pack$ 'simplify-term- suffix))
-        (simp-term-name (pack$ 'simp-term- suffix))
-        (simp-terms-name (pack$ 'simp-terms- suffix))
+        (simplify-term-name (pack$ 'simplify-term- suffix)) ; produces a DAG
+        (simp-term-name (pack$ 'simp-term- suffix)) ; produces a term
+        (simp-terms-name (pack$ 'simp-terms- suffix)) ; produces a list of terms
         )
     `(encapsulate ()
 
