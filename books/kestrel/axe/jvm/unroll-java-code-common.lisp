@@ -86,9 +86,9 @@
                             ',(array-contents-pair)
                             (jvm::heap xxx)))
                ,term)
-           (if (eq (car output-indicator) :array-local) ;;this means "get the final value of the array that was initially pointed to be array local N.  TODO: This could be an abbreviation for a :field of a :local...
+           (if (eq (car output-indicator) :array-local) ;;this means "get the final value of the array that was initially pointed to by array local N.  TODO: This could be an abbreviation for a :field of a :local...
                (let ((local-num (cadr output-indicator)))
-                 `(get-field (jvm::nth-local ',local-num ,original-locals) ;;note: these are the original locals
+                 `(get-field (jvm::nth-local ',local-num ,original-locals) ;;note: these are the locals in the original state
                              ',(array-contents-pair)
                              (jvm::heap ,term)))
              (if (eq (car output-indicator) :field)

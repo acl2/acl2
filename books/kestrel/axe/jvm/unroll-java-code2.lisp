@@ -404,7 +404,8 @@
                               (booleanp prune-branches)
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp))
-                              (symbol-listp param-names)
+                              (or (eq :auto param-names)
+                                  (symbol-listp param-names))
                               (or (natp steps)
                                   (eq :auto steps)))))
   (b* (((when (command-is-redundantp whole-form state))
@@ -722,7 +723,7 @@
           (abstract-state-components 'nil) ;todo: make t the default
           (prune-branches 't)
           (call-stp 'nil)
-          (param-names 'nil)
+          (param-names ':auto)
           (extra-proof-rules 'nil)
           (print-interval '1000)
           (steps ':auto))
@@ -779,7 +780,7 @@
          (call-stp                 "whether to call STP when pruning (t, nil, or a number of conflicts before giving up)")
          (extra-proof-rules "Extra rules to support proving the result with ACL2")
          (print-interval "Number of DAG nodes to create before printing intermediate results (or nil for no limit).")
-         (param-names "Names to use for the parameters (e.g., if no debugging information is available).")
+         (param-names "Names to use for the parameters (e.g., if no debugging information is available), or :auto.")
          (steps "A number of steps to run.  A natural number (for debugging only), or :auto, meaning run until the method returns.")
          )
   :description "<p>This uses lifting theorems for subroutine calls that have already been lifted.  Otherwise, it effectively inlines the subroutine call.</p>
