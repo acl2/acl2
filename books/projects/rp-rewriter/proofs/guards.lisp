@@ -68,7 +68,9 @@
   (verify-guards rp-equal)
   (verify-guards rp-equal-loose))
 
-(verify-guards rp-check-context
+(verify-guards cons-count)
+
+(verify-guards RP-CHECK-CONTEXT-FN
   :hints (("Goal"
            :in-theory (e/d () ()))))
 
@@ -609,6 +611,7 @@
 
 (verify-guards match-lhs-for-dont-rw)
 (verify-guards calculate-dont-rw$inline)
+(verify-guards calculate-dont-rw-lst$inline)
 
 (local
  (defret unsigned-byte-p-of-GET-LIMIT-FOR-HYP-RW
@@ -631,6 +634,26 @@
             (BOOLEANP (RW-LIMIT-THROWS-ERROR RP-STATE)))
    :hints (("Goal"
             :in-theory (e/d (rp-statep) ())))))
+
+(verify-guards rw-only-with-context
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (CONTEXT-SYNTAXP
+                            is-rp
+                            is-if)
+                           (FALIST-CONSISTENT
+                            rp-termp
+                            )))))
+
+(verify-guards RW-ONLY-WITH-CONTEXT-LST$IFF-FLG=T
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (CONTEXT-SYNTAXP
+                            is-rp
+                            is-if)
+                           (FALIST-CONSISTENT
+                            rp-termp
+                            )))))
 
 (verify-guards rp-rw
   :otf-flg nil
@@ -656,7 +679,7 @@
                          VALID-RULES-ALISTP-IMPLIES-RULES-ALISTP)
                         (:DEFINITION VALID-RULES-ALISTP)
                         (:DEFINITION RP-EQUAL)
-                        (:DEFINITION RP-CHECK-CONTEXT)
+                        RP-CHECK-CONTEXT
                         (:REWRITE RP-EQUAL-IS-SYMMETRIC)
                         (:DEFINITION VALID-SC)
                         (:REWRITE RP-EQUAL-CNT-IS-RP-EQUAL)

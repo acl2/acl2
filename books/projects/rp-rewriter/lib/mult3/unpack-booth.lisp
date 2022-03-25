@@ -398,7 +398,8 @@
             (term (ex-from-rp$ s-term)))
          (case-match term
            (('s hash pp-arg c-arg)
-            (b* ((- (cw "c hash ~p0 ~%" hash))
+            (b* ((- hash)
+                 (& (cw "Unpack-booth-meta: s hash ~p0 ~%" hash))
 
                  ;; first lest unpack these pp args
                  ((mv s-arg-lst0 pp-arg-lst c-arg-lst0)
@@ -429,7 +430,7 @@ input:~p0~%output:~p1~%" (list (cons #\0 s-term)
                                   (s-fix-pp-args-aux c-arg-lst)
                                   :clean-args t))
 
-                 (- (cw "after s-of-s-fix-lst len of pp-arg-lst  ~p0, c-arg-lst ~p1. Unique: pp-arg-lst ~p2 c-arg-lst ~p3 ~%"
+                 (& (cw "after s-of-s-fix-lst len of pp-arg-lst  ~p0, c-arg-lst ~p1. Unique: pp-arg-lst ~p2 c-arg-lst ~p3 ~%"
                         (len pp-arg-lst) (len c-arg-lst)
                        "-" #|(unique-e-count pp-arg-lst)|# "-"#|(unique-e-count c-arg-lst)|#))
 
@@ -447,7 +448,7 @@ input:~p0~%output:~p1~%" (list (cons #\0 s-term)
                  (pp-arg-lst (s-fix-pp-args-aux pp-arg-lst))
                  (c-arg-lst (s-fix-pp-args-aux c-arg-lst))
 
-                 (- (cw "after s-fix-pp-args-aux len of pp-arg-lst  ~p0, ~
+                 (& (cw "after s-fix-pp-args-aux len of pp-arg-lst  ~p0, ~
 c-arg-lst  ~p1. Unique: pp-arg-lst ~p2 c-arg-lst ~p3 ~%"
                         (len pp-arg-lst) (len c-arg-lst)
                         "-"#|(unique-e-count pp-arg-lst)|# "-"#|(unique-e-count c-arg-lst)|#
@@ -532,7 +533,8 @@ c-arg-lst  ~p1. Unique: pp-arg-lst ~p2 c-arg-lst ~p3 ~%"
             )
          (case-match term
            (('c hash s-arg pp-arg c-arg)
-            (b* ((- (cw "c hash ~p0 ~%" hash))
+            (b* ((- hash)
+                 (& (cw "Unpack-booth-meta: c hash ~p0 ~%" hash))
 
                  ;; first lest unpack these pp args
                  ;; (pp-arg-lst (list-to-lst pp-arg))
@@ -567,7 +569,7 @@ c-arg-lst  ~p1. Unique: pp-arg-lst ~p2 c-arg-lst ~p3 ~%"
                       coughed-s-lst2 coughed-pp-lst2 coughed-c-lst2)
                   (c-of-s-fix-lst s-arg-lst pp-arg-lst c-arg-lst nil))
 
-                 (- (cw "after c-of-s-fix-lst: len of pp-arg-lst ~p0, c-arg-lst ~p1 ~
+                 (& (cw "after c-of-s-fix-lst: len of pp-arg-lst ~p0, c-arg-lst ~p1 ~
 coughed-s-lst2 ~p2, coughed-pp-lst2 ~p3, coughed-c-lst2 ~p4. Unique pp-arg-lst ~p5 ~%" (len pp-arg-lst)
 (len c-arg-lst)
 (len coughed-s-lst2) (len coughed-pp-lst2) (len coughed-c-lst2) (unique-e-count
@@ -582,7 +584,7 @@ coughed-s-lst2 ~p2, coughed-pp-lst2 ~p3, coughed-c-lst2 ~p4. Unique pp-arg-lst ~
                  ((mv coughed-c-lst c-arg-lst)
                   (c-fix-arg-aux c-arg-lst t))
 
-                 (- (cw "after c-fix-arg-aux len of pp-arg-lst  ~p0, c-arg-lst ~p1~
+                 (& (cw "after c-fix-arg-aux len of pp-arg-lst  ~p0, c-arg-lst ~p1~
 , coughed-pp-lst ~p2, coughed-c-lst ~p3. Unique coughed-pp-lst ~p4~%" (len pp-arg-lst)
   (len c-arg-lst)
   (len coughed-pp-lst) (len coughed-c-lst) "-"#|(unique-e-count coughed-pp-lst)|#))
@@ -601,7 +603,7 @@ coughed-s-lst2 ~p2, coughed-pp-lst2 ~p3, coughed-c-lst2 ~p4. Unique pp-arg-lst ~
                  (pp-res-lst (pp-sum-merge-aux pp-res-lst coughed-pp-lst))
                  (pp-res-lst (pp-sum-merge-aux pp-res-lst coughed-pp-lst2))
 
-                 (- (cw "after final sum-merges in c len of pp-res-lst  ~p0, s-res-lst ~p1~
+                 (& (cw "after final sum-merges in c len of pp-res-lst  ~p0, s-res-lst ~p1~
 c-res-lst ~p2, ~%~%" (len pp-res-lst)
 (len s-res-lst)
 (len c-res-lst)))
@@ -719,9 +721,10 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
 
   (case-match term
     (('unpack-booth subterm)
-     (b* (((unless (unpack-booth-later-enabled))
+     (b* (((unless (or (binary-fnc-p (ex-from-rp subterm))
+                       (unpack-booth-later-enabled)))
            (mv term nil))
-          (- (cw "Unpack-booth-meta starting.. ~%"))
+          
           ;;(- (hard-error 'stop-hre "" nil))
           ((mv subterm signed)
            (case-match subterm
@@ -733,8 +736,8 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
           ((when (or (binary-fnc-p subterm)
                      (bit-of-p subterm)))
            (mv term nil))
-          ;;(subterm-orig (good-hons-copy subterm-orig))
           (subterm-orig (hons-copy subterm-orig))
+          ;;(subterm-orig (good-hons-copy subterm-orig))
           
           #|(- (or (good-s-chain subterm)
           (hard-error 'unpack-booth-meta

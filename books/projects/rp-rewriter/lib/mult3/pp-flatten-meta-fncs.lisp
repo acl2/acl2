@@ -1178,13 +1178,41 @@
                   (implies valid
                            (pp-lists-p pp-lists))))
 
+  (define sort-sum-meta-aux2 (term)
+    :returns (mv valid pp-lists)
+    :verify-guards nil
+    :measure (cons-count term)
+    :hints (("Goal"
+             :in-theory (e/d (measure-lemmas)
+                             ())))
+    (b* ((?term-orig term)
+         (term (ex-from-rp term)))
+      (case-match term
+        (('binary-sum cur rest)
+         (b* (((unless (pp-term-p cur))
+               (mv nil nil))
+              (pp-lists1 (pp-term-to-pp-lists cur nil))
+              ((mv rest-valid pp-lists2)
+               (sort-sum-meta-aux2 rest))
+              ((unless rest-valid)
+               (mv nil nil)))
+           (mv t (merge-sorted-pp-lists pp-lists1 pp-lists2))))
+        (& (if (pp-term-p term-orig)
+               (mv t (pp-term-to-pp-lists term-orig nil))
+             (mv nil nil)))))
+    ///
+    (acl2::defret pp-lists-p-of-<fn>
+                  (implies valid
+                           (pp-lists-p pp-lists)))
+    (verify-guards sort-sum-meta-aux2))
+
   (define sort-sum-meta (term)
     :returns (mv result
                  (dont-rw dont-rw-syntaxp))
     (case-match term
       (('sort-sum x)
-       (b* (((mv valid pp-lists)
-             (sort-sum-meta-aux x))
+       (b* (((mv valid pp-lists) 
+             (sort-sum-meta-aux2 x))
             ((unless valid)
              (progn$ (cw "sort-sum-meta got an unexpected term ~p0 ~%"
                          term)
@@ -1378,6 +1406,26 @@
                                                       term)))))
   :hints (("goal"
            :in-theory (e/d (sort-sum-meta-aux)
+                           ((:definition acl2::apply$-badgep)
+                            (:linear acl2::apply$-badgep-properties . 1)
+                            (:rewrite rp-termp-implies-cdr-listp)
+                            (:definition member-equal)
+                            (:rewrite rp-term-listp-is-true-listp)
+                            (:linear acl2::apply$-badgep-properties . 2)
+                            (:definition true-listp)
+                            (:rewrite is-if-rp-termp)
+                            (:rewrite acl2::o-p-o-infp-car)
+                            (:rewrite is-rp-pseudo-termp)
+                            (:rewrite atom-rp-termp-is-symbolp)
+                            falist-consistent
+                            (:definition subsetp-equal))))))
+
+(defthm rp-term-list-listp-strip-cdrs-sort-sum-meta-aux2
+  (implies (rp-termp term)
+           (rp-term-list-listp (strip-cdrs (mv-nth 1 (sort-sum-meta-aux2
+                                                      term)))))
+  :hints (("goal"
+           :in-theory (e/d (sort-sum-meta-aux2)
                            ((:definition acl2::apply$-badgep)
                             (:linear acl2::apply$-badgep-properties . 1)
                             (:rewrite rp-termp-implies-cdr-listp)

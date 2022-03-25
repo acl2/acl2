@@ -174,7 +174,7 @@
           (valid-sc-subterms subterms a)))
 
 (defun valid-rulep-sk-body (rule a)
-  (implies (rp-evl (rp-hyp rule) a)
+  (implies (eval-and-all-nt (rp-hyp rule) a)
            (and (if (rp-iff-flag rule)
                     (iff (rp-evl (rp-lhs rule) a)
                          (rp-evl (rp-rhs rule) a))

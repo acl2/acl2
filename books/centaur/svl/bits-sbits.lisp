@@ -2281,3 +2281,46 @@
                            (4vec-part-select-of-4vec-bit?!)))))
 
 (add-svex-simplify-rule bits-of-4vec-bit?!)
+
+
+(progn
+  (def-rp-rule 4vec-concat$-same-var-merge
+    (implies (and (natp csize1)
+                  (natp csize2)
+                  (natp start1)
+                  (natp start2)
+                  (equal start2 (+ start1 csize1)))
+             (equal (svl::4vec-concat$ csize1 (svl::bits x start1 csize1)
+                                       (svl::4vec-concat$
+                                        csize2 (svl::bits x start2 csize2)
+                                        other))
+                    (svl::4vec-concat$ (+ csize1 csize2) (svl::bits x start1 (+
+                                                                              csize1 csize2))
+                                     
+                                       other)))
+    :hints (("Goal"
+             :use ((:instance 4vec-concat-same-var-merge))
+             :in-theory (e/d (4VEC-CONCAT$)
+                             (4vec-concat-same-var-merge)))))
+  (add-svex-simplify-rule 4vec-concat$-same-var-merge))
+
+(progn
+  (def-rp-rule 4vec-concat$-same-var-merge-with-4vec-bitnot$
+    (implies (and (natp csize1)
+                  (natp csize2)
+                  (natp start1)
+                  (natp start2)
+                  (integerp x)
+                  (equal start2 (+ start1 csize1)))
+             (equal (svl::4vec-concat$ csize1 (svl::4vec-bitnot$ csize1 (svl::bits x start1 csize1))
+                                       (svl::4vec-concat$
+                                        csize2 (svl::4vec-bitnot$ csize2 (svl::bits x start2 csize2))
+                                        other))
+                    (svl::4vec-concat$ (+ csize1 csize2) (svl::4vec-bitnot$
+                                                          (+ csize1 csize2)
+                                                          (svl::bits x start1 (+ csize1 csize2)))
+                                       other)))
+    :hints (("Goal"
+             :use ((:instance 4vec-concat-same-var-merge-with-bitnot))
+             :in-theory (e/d (4VEC-CONCAT$) (4vec-concat-same-var-merge-with-bitnot)))))
+  (add-svex-simplify-rule 4vec-concat$-same-var-merge-with-4vec-bitnot$))

@@ -508,7 +508,7 @@ untranslate). Default value = nil.
     (b* ((rw-stack (rw-stack rp-state))
          ((unless rw-stack)
           (progn$
-           (cw "Nothing to print. Run (rp::update-rp-brr t rp-state) ~%")
+           (cw "Nothing to print. Run (rp::update-rp-brr t rp::rp-state) ~%")
            state))
          (rw-stack (nthcdr (nfix frames-offset) rw-stack)))
       (pp-rw-stack-aux rw-stack frames omit only evisc-tuple untranslate search-source state))))

@@ -105,6 +105,23 @@
                             RULES-ALIST-inside-out-GET)
                            (valid-rp-statep)))))
 
+(defthm VALID-RP-STATE-SYNTAXP-AUX-of-update-nth
+  (implies (and
+            (natp index)
+            (VALID-RP-STATE-SYNTAXP-AUX rp-state)
+            (not (equal index *RULES-ALIST-OUTSIDE-IN-GET*))
+            (not (equal index *RULES-ALIST-inside-out-GET*)))
+           (VALID-RP-STATE-SYNTAXP-AUX (update-nth index val rp-state)))
+  :hints (("Goal"
+           :expand ((valid-rp-state-syntaxp (UPDATE-NTH INDEX VAL RP-STATE))
+                    (VALID-RP-STATE-SYNTAXP RP-STATE))
+           :do-not-induct t
+           :use ((:instance VALID-RP-STATE-SYNTAXP-aux-necc
+                            (key (VALID-RP-STATE-SYNTAXP-AUX-WITNESS (UPDATE-NTH INDEX VAL RP-STATE)))))
+           :in-theory (e/d (RULES-ALIST-OUTSIDE-IN-GET
+                            RULES-ALIST-inside-out-GET)
+                           (valid-rp-statep)))))
+
 
 (defthm rp-state-push-to-try-to-rw-stack-is-rp-statep
   (implies (rp-statep rp-state)
@@ -846,3 +863,30 @@
 
 
 
+
+
+(progn
+  (defthm rp-statep-of-update-rewriting-context-flg
+    (implies (and (rp-statep rp-state)
+                  (booleanp flg))
+             (rp-statep (UPDATE-REWRITING-CONTEXT-FLG flg rp-state)))
+    :hints (("Goal"
+             :in-theory (e/d () ()))))
+
+  (defthm valid-rp-state-syntaxp-update-rewriting-context-flg
+    (implies (and (valid-rp-state-syntaxp rp-state)
+                  (booleanp flg))
+             (valid-rp-state-syntaxp (UPDATE-REWRITING-CONTEXT-FLG flg
+                                                                   rp-state)))
+    :hints (("Goal"
+             :in-theory (e/d (VALID-RP-STATE-SYNTAXP) ()))))
+
+  (defthm valid-rp-statep-update-rewriting-context-flg
+    (implies (and (valid-rp-statep rp-state)
+                  (booleanp flg))
+             (valid-rp-statep (UPDATE-REWRITING-CONTEXT-FLG flg rp-state)))
+    :hints (("Goal"
+             :in-theory (e/d () ()))))
+
+
+  (in-theory (disable UPDATE-REWRITING-CONTEXT-FLG)))

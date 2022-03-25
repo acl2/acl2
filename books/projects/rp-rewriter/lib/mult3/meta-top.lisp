@@ -53,6 +53,8 @@
 
 (include-book "4vec-branch-drop-redundant-case")
 
+(include-book "spec-meta")
+
 (local
  (include-book "summation-tree-meta-fncs-correct"))
 
@@ -61,6 +63,8 @@
 
 (local
  (include-book "unpack-booth-correct"))
+
+(include-book "equal-of-if-with-constants")
 
 ;;(include-book "verify-guards")
 

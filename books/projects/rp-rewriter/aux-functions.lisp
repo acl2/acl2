@@ -482,6 +482,7 @@
           (rp-term-listp (strip-cdrs ,bindings)))))
 
 (defun cons-count (x)
+  (declare (xargs :guard t))
   (cond ((atom x)
          1)
         (t
@@ -711,6 +712,7 @@
                  (acl2::fargn term 1)
                (acl2::fargn term 2))
              t))
+        ((nonnil-p term) (mv ''nil t))
         (t (mv `(if ,term 'nil 't) `(nil t t t)))))
 
 (encapsulate
@@ -1132,7 +1134,7 @@
    (define rp-equal-cnt (term1 term2 cnt)
      :enabled t
      (declare (xargs :mode :logic
-                     :verify-guards nil
+                     ;;:verify-guards nil
                      :guard (and (natp cnt)
                                  #|(rp-termp term1)||#
                                  #|(rp-termp term2)||#)))
@@ -1154,7 +1156,7 @@
    (define rp-equal-cnt-subterms (subterm1 subterm2 cnt)
      :enabled t
      (declare (xargs :mode :logic
-                     :verify-guards nil
+                     ;;:verify-guards nil
                      :guard (and (natp cnt)
                                  #|(rp-term-listp subterm1)||#
                                  #|(rp-term-listp subterm2)||#)))
@@ -1203,7 +1205,7 @@
                                 #|(rp-termp (rp-lhs rule))||#
                                 #|(rp-termp (rp-rhs rule))||#)))
     (let ((vars (get-vars (rp-lhs rule))))
-      (and (subsetp (get-vars (rp-hyp rule))
+      (and (subsetp (get-vars-subterms (rp-hyp rule) nil)
                     vars
                     :test 'equal)
            (subsetp (get-vars (rp-rhs rule))
@@ -1233,22 +1235,22 @@
             (and warning
                  (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'rp))
     failed! LHS cannot contain an instance of rp. ~%")))
-        (or (not (include-fnc (rp-hyp rule) 'rp))
+        (or (not (include-fnc-subterms (rp-hyp rule) 'rp))
             (and warning
-                 (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'rp))
+                 (cw "ATTENTION! (not (include-fnc-subterms (rp-hyp rule) 'rp))
     failed! HYP cannot contain an instance of rp. ~%")))
         (or (not (include-fnc (rp-rhs rule) 'falist))
             (and warning
                  (cw "ATTENTION! (not (include-fnc (rp-rhs rule) 'falist))
     failed! RHS cannot contain an instance of falist ~%")))
-        (or (not (include-fnc (rp-hyp rule) 'falist))
+        (or (not (include-fnc-subterms (rp-hyp rule) 'falist))
             (and warning
                  (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'falist))
     failed! HYP cannot contain an instance of falist ~%")))
         (or (and
-             (or (rp-termp (rp-hyp rule))
+             (or (rp-term-listp (rp-hyp rule))
                  (and warning
-                      (cw "ATTENTION! (rp-termp (rp-hyp rule)) failed! Hyp of the ~
+                      (cw "ATTENTION! (rp-term-listp (rp-hyp rule)) failed! Hyp of the ~
     rule does not satisfy rp::rp-termp. ~%")))
              (or (rp-termp (rp-lhs rule))
                  (and warning
@@ -1282,7 +1284,7 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
                       (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'synp))
     failed! LHS cannot contain an instance of synp ~%")))
              (not (include-fnc (rp-lhs rule) 'list))
-             (not (include-fnc (rp-hyp rule) 'list))
+             (not (include-fnc-subterms (rp-hyp rule) 'list))
              (not (include-fnc (rp-rhs rule) 'list)))
             (and (equal warning ':err)
                  (hard-error
@@ -1778,6 +1780,7 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
   (rw-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be used
   ;; only internally.
   (backchaining-rule :type t :initially nil)
+  (rewriting-context-flg :type (satisfies booleanp) :initially nil) 
 
   (not-simplified-action :type (satisfies symbolp) :initially :error)
 
@@ -1805,7 +1808,8 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (defund rp-state-new-run (rp-state)
   (declare (xargs :stobjs (rp-state)))
-  (b* ((rp-state (update-rw-limit-throws-error t rp-state))
+  (b* ((rp-state (update-rewriting-context-flg nil rp-state))
+       (rp-state (update-rw-limit-throws-error t rp-state))
        (rp-state (update-backchaining-rule nil rp-state))
        (rp-state (update-casesplitter-cases nil rp-state))
        (rp-state (rules-used-clear rp-state))
@@ -1884,5 +1888,62 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
     :rule-classes :forward-chaining))
 
 
-(define casesplit-from-context-trig (x)
+(defund casesplit-from-context-trig (x)
+  (declare (xargs :guard t))
   x)
+
+(defund dont-rw-context (x)
+  (declare (xargs :guard t))
+  x)
+
+(progn
+  (defund is-dont-rw-context (x)
+    (declare (xargs :guard t))
+    (case-match x
+      (('dont-rw-context &)
+       t)))
+  (defthm is-dont-rw-context-implies
+    (implies (is-dont-rw-context x)
+             (case-match x
+               (('dont-rw-context &)
+                t)))
+    :rule-classes :forward-chaining
+    :hints (("Goal"
+             :in-theory (e/d (is-dont-rw-context) ())))))
+
+(progn
+  (defund binary-and** (x y)
+    (declare (xargs :guard t))
+    (and x y))
+
+  (DEFUN AND**-MACRO (ACL2::LST)
+    (IF (ATOM ACL2::LST)
+        T
+        (IF (ATOM (CDR ACL2::LST))
+            (CAR ACL2::LST)
+            (LIST 'BINARY-AND**
+                  (CAR ACL2::LST)
+                  (AND**-MACRO (CDR ACL2::LST))))))
+
+  (defmacro and** (&rest lst)
+    (and**-macro lst))
+  
+  (defund binary-or** (x y)
+    (declare (xargs :guard t))
+    (or x y))
+
+  (DEFUN OR**-MACRO (ACL2::LST)
+    (IF (ATOM ACL2::LST)
+        T
+        (IF (ATOM (CDR ACL2::LST))
+            (CAR ACL2::LST)
+            (LIST 'BINARY-OR**
+                  (CAR ACL2::LST)
+                  (OR**-MACRO (CDR ACL2::LST))))))
+
+  (defmacro or** (&rest lst)
+    (or**-macro lst))
+
+  (defund not** (x)
+    (declare (xargs :guard t))
+    (not x)))
