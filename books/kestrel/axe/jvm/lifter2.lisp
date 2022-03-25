@@ -93,7 +93,8 @@
                           (booleanp use-prover-for-invars)
                           (or (eq branches :smart)
                               (eq branches :split))
-                          (symbol-listp param-names) ;; todo: what else to check here?
+                          (or (eq :auto param-names)
+                              (symbol-listp param-names)) ;; todo: what else to check here?
                           (booleanp disable-loop-openers)
                           )
                   :mode :program))
@@ -398,7 +399,7 @@
                                  method-designator-string
                                  program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
                                  &key
-                                 (param-names 'nil)
+                                 (param-names ':auto)
 ;                                 (output ':auto) ;an output-indicatorp
                                  (array-length-alist 'nil)
                                  (assumptions 'nil)

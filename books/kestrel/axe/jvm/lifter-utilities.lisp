@@ -423,22 +423,23 @@
            (symbolp (lookup-equal slot alist)))
   :hints (("Goal" :in-theory (enable param-slot-to-name-alistp lookup-equal assoc-equal))))
 
-;; todo: use :auto as the default for param-names, not nil
+;; The alist returned is ordered by slot.
 (defun make-param-slot-to-name-alist-aux (parameter-types slot local-variable-table param-names)
   (declare (xargs :guard (and (true-listp parameter-types)
                               (jvm::all-typep parameter-types)
                               (natp slot)
                               (jvm::local-variable-tablep local-variable-table)
-                              (symbol-listp param-names))
+                              (or (eq :auto param-names)
+                                  (and (symbol-listp param-names)
+                                       (equal (len param-names)
+                                              (len parameter-types)))))
                   :verify-guards nil ;;done below
                   ))
   (if (endp parameter-types)
-      (if (not (endp param-names))
-          (er hard? 'make-param-slot-to-name-alist-aux "Extra param-names given: ~x0." param-names)
-        nil)
+      nil
     (b* ((type (first parameter-types))
          (slot-count (jvm::type-slot-count type))
-         ((mv erp name) (if param-names ;use user-supplied param-names, if given
+         ((mv erp name) (if (not (eq :auto param-names)) ;use user-supplied param-names, if given
                             (mv (erp-nil) (first param-names))
                           (if local-variable-table
                               (let ((name-and-type
@@ -447,16 +448,20 @@
                                 (if (not name-and-type)
                                     (prog2$ (er hard? 'make-param-slot-to-name-alist-aux "No binding found in the local var table for param ~x0." slot)
                                             (mv (erp-t) nil))
-                                  (if (not (STANDARD-CHAR-LISTP (COERCE (car name-and-type) 'LIST)))
+                                  (if (not (standard-char-listp (coerce (car name-and-type) 'list)))
                                       (prog2$ (er hard? 'make-param-slot-to-name-alist-aux "Name contains non-standard characters: ~x0." (car name-and-type))
                                               (mv (erp-t) nil))
                                     (mv (erp-nil)
                                         (pack$ (string-upcase (car name-and-type)))))))
                             ;; There is no local variable table, so just call it PARAM<N>:
                             ;;todo: should param numbering start at 1 here?
+                            ;; TODO: Should param numbering not increase by 2 for doubles/longs (that is, not follow the slots)?
                             (mv (erp-nil) (pack$ 'param slot)))))
          ((when erp) nil) ;could return the error...
-         (res (make-param-slot-to-name-alist-aux (rest parameter-types) (+ slot-count slot) local-variable-table (rest param-names))))
+         (res (make-param-slot-to-name-alist-aux (rest parameter-types) (+ slot-count slot) local-variable-table
+                                                 (if (eq :auto param-names)
+                                                     param-names
+                                                   (rest param-names)))))
       (if (member-eq name (strip-cdrs res))
           ;; Can happen if two param names differe only in case:
           (er hard? 'make-param-slot-to-name-alist-aux "Parameter name clash on ~x0." name)
@@ -472,7 +477,8 @@
                 (jvm::all-typep parameter-types)
                 (natp slot)
                 (jvm::local-variable-tablep local-variable-table)
-                (symbol-listp param-names))
+                (or (eq :auto param-names)
+                    (symbol-listp param-names)))
            (param-slot-to-name-alistp (make-param-slot-to-name-alist-aux parameter-types slot local-variable-table param-names)))
   :hints (("Goal" :induct (make-param-slot-to-name-alist-aux parameter-types slot local-variable-table param-names)
            :in-theory (enable param-slot-to-name-alistp STRIP-CARS))))
@@ -481,14 +487,16 @@
 ;; param-names if given, else use the local-variable-table if present,
 ;; otherwise, call them param0, param1, etc.  If this is an instance method, we
 ;; skip param0 because it would represent "this".
-;todo: this duplicates code in parameter-assumptions
+;; Some similar code is in parameter-assumptions.
+;; The alist returned is ordered by slot.
 (defun make-param-slot-to-name-alist (method-info
                                       param-names ;often nil
                                       )
   (declare (xargs :guard (and (jvm::method-infop method-info)
-                              (symbol-listp param-names))))
+                              (or (eq :auto param-names)
+                                  (symbol-listp param-names)))))
   (b* ((parameter-types (lookup-eq :parameter-types method-info)) ;does not include "this"
-       ((when (and param-names
+       ((when (and (not (eq :auto param-names))
                    (not (eql (len param-names) (len parameter-types)))))
         (er hard? 'parameter-names "Wrong number of parameter names given.  Names: ~x0.  Types: ~x1." param-names parameter-types))
        (local-variable-table (lookup-eq :local-variable-table method-info)) ;may be nil
@@ -499,9 +507,9 @@
 
 (defthm param-slot-to-name-alistp-of-make-param-slot-to-name-alist
   (implies (and (jvm::method-infop method-info)
-                (symbol-listp param-names))
+                (or (eq :auto param-names)
+                    (symbol-listp param-names)))
            (param-slot-to-name-alistp (make-param-slot-to-name-alist method-info param-names))))
-
 
 ;; A triple of name, index, and type, e.g., ("i" 4 :INT).
 (defund local-var-for-pcp (x)

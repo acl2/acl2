@@ -479,8 +479,7 @@
        (- (if (eq variant :assert)
               (cw "(Will try to show that no asserts are triggered.)~%")
             (cw "(Will try to show that it returns true.)~%")))
-       (param-slot-to-name-alist (make-param-slot-to-name-alist method-info nil ;param-names
-                                                                ))
+       (param-slot-to-name-alist (make-param-slot-to-name-alist method-info :auto))
        (param-var-assumptions (parameter-var-assumptions method-info param-slot-to-name-alist))
        ;; Populate the global-class-alist (so that unroll-java-code can find the code):
        ;; TODO: Pull this out
@@ -528,7 +527,7 @@
                                  nil    ;call-stp ;t, nil, or a max-conflicts
                                  :auto  ;steps
                                  :smart ;; (if (eq variant :assert) :split :smart)
-                                 nil    ;param-names
+                                 :auto    ;param-names
                                  t ;chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
                                  error-on-incomplete-runsp
                                  state))

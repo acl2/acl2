@@ -4554,14 +4554,14 @@
                        (jvm::heap replace-me))
          (if (eq (car output-indicator) :array-local) ;;this means "get the final value of the array that was initially pointed to by array local N.  TODO: This could be an abbreviation for a :field of a :local...
              (let ((local-num (cadr output-indicator)))
-               `(GET-FIELD (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
+               `(get-field (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
                            ',(array-contents-pair)
                            (jvm::heap replace-me)))
            (if (eq (car output-indicator) :field)
                (let ((pair (farg1 output-indicator)))
                  (if (not (field-pair-okayp pair class-table-alist))
                      (er hard? 'output-extraction-term-core "Bad field: ~x0." pair)
-                   `(GET-FIELD ,(output-extraction-term-core (farg2 output-indicator) initial-locals-term class-table-alist)
+                   `(get-field ,(output-extraction-term-core (farg2 output-indicator) initial-locals-term class-table-alist)
                                ',pair
                                (jvm::heap replace-me))))
              (if (eq (car output-indicator) :param-field)
@@ -6433,7 +6433,9 @@
                           (booleanp use-prover-for-invars)
                           (or (eq branches :smart)
                               (eq branches :split))
-                          (symbol-listp param-names) ;; todo: what else to check here?
+                          (or (eq :auto param-names)
+                              (symbol-listp param-names) ;; todo: what else to check here?
+                              )
                           (booleanp disable-loop-openers)
                           )
                   :mode :program))
@@ -6643,7 +6645,7 @@
                                  method-designator-string
                                  program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
                                  &key
-                                 (param-names 'nil)
+                                 (param-names ':auto)
                                  (output ':auto) ;an output-indicatorp
                                  (array-length-alist 'nil)
                                  (assumptions 'nil)
