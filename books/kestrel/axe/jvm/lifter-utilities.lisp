@@ -756,7 +756,7 @@
             (eq :param-field (ffn-symb x))
             (class-name-field-id-pairp (farg1 x))
             (natp (farg2 x)))
-       (and (true-listp x) ;;(:tuple ...)
+       (and (true-listp x) ; (:tuple <indicator1> ... <indicatorn>)
             (<= 1 (len (fargs x))) ;disallow the empty tuple
             (eq :tuple (ffn-symb x))
             (output-indicatorp-aux-lst (fargs x)))))
