@@ -102,6 +102,15 @@
                   (true-list-fix lst)))
   :hints (("Goal" :in-theory (enable take))))
 
+;rename?
+;; This variant avoids introducing true-list-fix.
+(defthmd take-does-nothing-simple
+  (implies (and (equal n (len l))
+                (true-listp l))
+           (equal (take n l)
+                  l))
+  :hints (("Goal" :in-theory (enable take))))
+
 (defthm take-iff
   (iff (take n lst)
        (and (natp n)
