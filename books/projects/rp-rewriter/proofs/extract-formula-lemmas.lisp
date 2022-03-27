@@ -1715,7 +1715,7 @@
              :in-theory (e/d (extract-from-force-lst)
                              (rp-termp
                               (:REWRITE EX-FROM-SYNP-LEMMA1)
-                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:DEFINITION IS-SYNP$INLINE)
                               (:TYPE-PRESCRIPTION TRANS-LIST)
                               (:DEFINITION TRANS-LIST)
@@ -1738,7 +1738,7 @@
              :in-theory (e/d (extract-from-force-lst)
                              (rp-termp
                               (:REWRITE EX-FROM-SYNP-LEMMA1)
-                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:DEFINITION IS-SYNP$INLINE)
                               (:TYPE-PRESCRIPTION TRANS-LIST)
                               (:DEFINITION TRANS-LIST)

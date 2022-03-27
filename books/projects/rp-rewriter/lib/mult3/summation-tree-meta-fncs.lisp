@@ -1722,7 +1722,7 @@
 
                                  (:TYPE-PRESCRIPTION PP-TERM-P)
 
-                                 (:REWRITE ACL2::O-INFP->NEQ-0)
+;;                                 (:REWRITE ACL2::O-INFP->NEQ-0)
 
 
                                  (:REWRITE ACL2::FOLD-CONSTS-IN-+)

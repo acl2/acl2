@@ -2897,7 +2897,7 @@
                              (:TYPE-PRESCRIPTION O<)
                              (:REWRITE
                               REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
                              (:REWRITE VALID-SC-SUBTERMS-OF-CDR)
                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                              (:TYPE-PRESCRIPTION BINARY-SUM)
@@ -3397,7 +3397,7 @@
                                (:DEFINITION EVAL-AND-ALL)
                                (:REWRITE DEFAULT-CDR)
                                (:REWRITE DEFAULT-CAR)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                                (:DEFINITION RP-TRANS)
                                (:REWRITE ATOM-RP-TERMP-IS-SYMBOLP)

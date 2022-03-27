@@ -52,7 +52,7 @@
                      (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP)
                      (:DEFINITION ALWAYS$)
                      (:DEFINITION TRUE-LISTP)
-                     (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+;;                     (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
                      (:DEFINITION ACL2::APPLY$-BADGEP)
                      (:DEFINITION RP::RP-TERMP)
                      (:REWRITE

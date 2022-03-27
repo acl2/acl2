@@ -610,16 +610,16 @@
          :hints(("Goal" :in-theory (enable boothpipe-direct-autohyps
                                            boothpipe-step1-autohyps)))))
 
-;; (local
-;;  (make-event
-;;   `(defthm svex-env-boundp-of-step1
-;;      (equal (svex-env-boundp key (svtv-run (boothpipe-step1) env
-;;                                            :skip nil :include nil
-;;                                            :boolvars t :simplify nil :quiet nil :readable t :allvars nil))
-;;             (consp (member-equal (svar-fix key) ',(svex-alist-keys (svtv->outexprs (boothpipe-step1))))))
-;;      :hints(("Goal" :in-theory (enable (boothpipe-step1) svex-env-boundp svtv-run))))))
+(local
+ (make-event
+  `(defthm svex-env-boundp-of-step1
+     (equal (svex-env-boundp key (svtv-run (boothpipe-step1) env
+                                           :skip nil :include nil
+                                           :boolvars t :simplify nil :quiet nil :readable t :allvars nil))
+            (consp (member-equal (svar-fix key) ',(svex-alist-keys (svtv->outexprs (boothpipe-step1))))))
+     :hints(("Goal" :in-theory (enable (boothpipe-step1) svex-env-boundp svtv-run))))))
 
-
+(local (in-theory (disable svex-env-boundp-of-svtv-run)))
 
 (defthm boothpipe-correct
   (implies (and (boothpipe-direct-autohyps)

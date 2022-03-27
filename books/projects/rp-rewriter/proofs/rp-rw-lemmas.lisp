@@ -54,9 +54,9 @@
    rev
    ALWAYS$
    ACL2::ALWAYS$-P-LST-IMPLIES-P-ELEMENT
-   ACL2::PLAIN-UQI-ACL2-NUMBER-LISTP
-   ACL2::PLAIN-UQI-INTEGER-LISTP
-   ACL2::O-P-O-INFP-CAR
+   ;; ACL2::PLAIN-UQI-ACL2-NUMBER-LISTP
+   ;; ACL2::PLAIN-UQI-INTEGER-LISTP
+   ;; ACL2::O-P-O-INFP-CAR
    IS-IF-RP-TERMP
    rp-rw-context-main
    min
@@ -120,16 +120,16 @@
                  :in-theory
                  (e/d ()
                       (QUOTEP
-                       (:FORWARD-CHAINING
-                        ACL2::|a <= b & ~(a = b)  =>  a < b|)
-                       (:FORWARD-CHAINING
-                        ACL2::|a <= b & b <= c  =>  a <= c|)
+                       ;; (:FORWARD-CHAINING
+                       ;;  ACL2::|a <= b & ~(a = b)  =>  a < b|)
+                       ;; (:FORWARD-CHAINING
+                       ;;  ACL2::|a <= b & b <= c  =>  a <= c|)
                        (:DEFINITION UPDATE-RW-LIMIT-THROWS-ERROR)
                        (:TYPE-PRESCRIPTION DONT-RW-IF-FIX)
-                       (:FORWARD-CHAINING
-                        ACL2::|a <= b & b < c  =>  a < c|)
-                       (:FORWARD-CHAINING
-                        ACL2::|a < b & b <= c  =>  a < c|)
+                       ;; (:FORWARD-CHAINING
+                       ;;  ACL2::|a <= b & b < c  =>  a < c|)
+                       ;; (:FORWARD-CHAINING
+                       ;;  ACL2::|a < b & b <= c  =>  a < c|)
                        
                        
                        DUMB-NEGATE-LIT2$INLINE
@@ -2899,13 +2899,13 @@ a)
              (:TYPE-PRESCRIPTION BINARY-OR**)
              (:REWRITE NONNIL-P-IS-CORRECT)
              (:TYPE-PRESCRIPTION MEMBER-EQUAL)
-             (:REWRITE ACL2::PLAIN-UQI-RATIONAL-LISTP)
+             ;; (:REWRITE ACL2::PLAIN-UQI-RATIONAL-LISTP)
              (:TYPE-PRESCRIPTION VALID-RP-STATEP)
              (:REWRITE VALID-SC-CADR)
-             (:REWRITE ACL2::PLAIN-UQI-SYMBOL-LISTP)
+             ;; (:REWRITE ACL2::PLAIN-UQI-SYMBOL-LISTP)
              (:TYPE-PRESCRIPTION ALWAYS$)
              (:REWRITE RP-EVL-OF-ZP-CALL)
-             (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+             ;; (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
              (:TYPE-PRESCRIPTION IS-DONT-RW-CONTEXT)
              (:FORWARD-CHAINING NOT-OF-NOT*-FORWARD)
              (:TYPE-PRESCRIPTION ACL2::BINARY-AND*)
