@@ -420,6 +420,14 @@
   (not (class-infop nil class-name))
   :hints (("Goal" :in-theory (enable class-infop))))
 
+;;todo: awkward name
+(defun class-info0-listp (infos)
+  (declare (xargs :guard t))
+  (if (atom infos)
+      (null infos)
+    (and (class-infop0 (first infos))
+         (class-info0-listp (rest infos)))))
+
 ;move?
 ;; Returns a string or :unnamed-package
 (defun extract-package-name-from-class-name (class-name)
