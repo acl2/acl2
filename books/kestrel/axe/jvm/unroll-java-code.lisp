@@ -24,6 +24,7 @@
 (include-book "unroll-java-code-common")
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/doc" :dir :system)
+(include-book "kestrel/jvm/method-indicators" :dir :system)
 ;(include-book "../dag-size-fast")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
 (include-book "../prune") ;brings in the rewriter
@@ -350,7 +351,7 @@
 
 ;; Returns (mv erp event state).
 (defun unroll-java-code-fn (defconst-name
-                             method-designator-string
+                             method-indicator
                              output-indicator
                              array-length-alist
                              extra-rules ;to add to default set
@@ -410,6 +411,10 @@
        ((when (and produce-theorem (not produce-function)))
         (er hard? 'unroll-java-code-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
+       ;; Adds the descriptor if omitted and unambiguous:
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
+       ;; Printed even if print is nil (seems ok):
+       (- (cw "Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
         (unroll-java-code-fn-aux method-designator-string output-indicator array-length-alist
                                  extra-rules ;to add to default set
@@ -477,7 +482,7 @@
 ;; TODO: Have this also return a theorem.
 (defmacrodoc unroll-java-code (&whole whole-form
                                       defconst-name
-                                      method-designator-string
+                                      method-indicator
                                       &key
                                       (output ':auto)
                                       (array-length-alist 'nil)
@@ -503,7 +508,7 @@
                                       (produce-theorem 'nil)
                                       (produce-function 'nil))
   (let ((form `(unroll-java-code-fn ',defconst-name
-                                    ',method-designator-string
+                                    ',method-indicator
                                     ',output
                                     ,array-length-alist
                                     ,extra-rules
@@ -540,8 +545,8 @@
   :short "Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
   :args ((defconst-name
            "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
-         (method-designator-string
-          "The method designator of the Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").")
+         (method-indicator
+          "The Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").  The descriptor (input and output type) can be omitted if only one method in the given class has the given name.")
          (output                  "An indication of which state component to extract")
          (array-length-alist      "An alist pairing array parameter names (symbols) with their lengths.")
          (assumptions             "Terms to assume true when unrolling")
