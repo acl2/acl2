@@ -1,7 +1,7 @@
 ; Misc string utilities
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -292,6 +292,10 @@
   (let* ((str-rev (reverse str))
          (rev-answer (substring-before-terminator str-rev char)))
     (reverse rev-answer)))
+
+(defthm stringp-of-substring-after-last-occurrence
+  (stringp (substring-after-last-occurrence str char))
+  :hints (("Goal" :in-theory (enable substring-after-last-occurrence))))
 
 ;(local (assert-equal (substring-before-last-occurrence "ab.cd.ef.gh" #\.) "ab.cd.ef"))
 
