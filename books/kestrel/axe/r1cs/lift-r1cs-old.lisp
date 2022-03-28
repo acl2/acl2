@@ -51,6 +51,8 @@
                                                                ,(make-valuation-from-keyword-vars2 vars)
                                                                ;;todo: gen:
                                                                ',prime)
+                                rules ;to override the default
+                                ;; nil ;rule-alists
                                 ;; The extra rules:
                                 (if rules
                                     nil ;rules are given below, so extra-rules are not allowed
@@ -58,8 +60,6 @@
                                           (lift-r1cs-rules)
                                           extra-rules))
                                 remove-rules
-                                rules ;to override the default
-                                ;; nil ;rule-alists
                                 ;; drop? but we need to know that all lookups of vars give integers:
                                 (make-fep-assumptions-from-keyword-vars vars prime)
                                 ;; TODO: Add more functions to this?

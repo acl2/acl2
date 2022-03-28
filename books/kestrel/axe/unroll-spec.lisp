@@ -25,6 +25,7 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
+(include-book "dag-info") ; not strictly necessary but convenient
 
 (defun unroll-spec-rules ()
   (append (amazing-rules-spec-and-dag) ;todo: reduce?
@@ -78,7 +79,7 @@
         (mv (erp-t) nil state))
        ((when (and (not produce-function)
                    disable-function))
-        (er hard? 'unroll-spec-basic-fn ":disable-function should not be true if :produce-function is nil.")
+        (er hard? 'unroll-spec-fn ":disable-function should not be true if :produce-function is nil.")
         (mv (erp-t) nil state))
        (term (translate-term term 'unroll-spec-fn (w state)))
        (assumptions (translate-terms assumptions 'unroll-spec-fn (w state)))

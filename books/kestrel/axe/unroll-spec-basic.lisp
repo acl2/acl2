@@ -19,6 +19,7 @@
 
 (include-book "rewriter-basic")
 (include-book "rule-lists")
+(include-book "choose-rules")
 (include-book "dag-to-term")
 (include-book "dag-size-fast") ; for dag-or-quotep-size-less-thanp
 (include-book "dag-to-term-with-lets")
@@ -28,6 +29,7 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system) ;drop?
+(include-book "dag-info") ; not strictly necessary but convenient
 
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
 
@@ -45,10 +47,10 @@
 ;; Returns (mv erp event state)
 (defun unroll-spec-basic-fn (defconst-name ;should begin and end with *
                               term
-                              extra-rules
-                              remove-rules
                               rules
                               ;;rule-alists
+                              extra-rules
+                              remove-rules
                               assumptions
                               interpreted-function-alist
                               monitor
@@ -67,9 +69,10 @@
                   :mode :program ;; because this calls translate (todo: factor that out)
                   :guard (and (symbolp defconst-name)
                               ;; (pseudo-termp term) ;; really an untranlated term
+                              (or (eq :auto rules)
+                                  (symbol-listp rules))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              (symbol-listp rules)
                               ;; (pseudo-term-listp assumptions) ;; untranslated terms
                               (interpreted-function-alistp interpreted-function-alist) ;todo: extract from the terms and rules?
                               (symbol-listp monitor)
@@ -94,24 +97,15 @@
                    disable-function))
         (er hard? 'unroll-spec-basic-fn ":disable-function should not be true if :produce-function is nil.")
         (mv (erp-t) nil state))
-       ((when (and rules extra-rules))
-        (er hard? 'unroll-spec-basic-fn ":rules and :extra-rules should not both be given.")
-        (mv (erp-t) nil state))
-       ((when (and rules remove-rules))
-        (er hard? 'unroll-spec-basic-fn ":rules and :remove-rules should not both be given.")
-        (mv (erp-t) nil state))
        (term (translate-term term 'unroll-spec-basic-fn (w state)))
        (assumptions (translate-terms assumptions 'unroll-spec-basic-fn (w state)))
+       ;; Choose which set of rules to use:
+       (rule-list (choose-rules rules ;rule-lists
+                                extra-rules remove-rules (unroll-spec-basic-rules)))
        ((mv erp rule-alist)
-        (make-rule-alist
-         ;; Either use the user-supplied rules or the usual rules
-         ;; plus any user-supplied extra rules:
-         (or rules
-             (set-difference-eq (append (unroll-spec-basic-rules)
-                                        extra-rules)
-                                remove-rules))
-         (w state)))
+        (make-rule-alist rule-list (w state)))
        ((when erp) (mv erp nil state))
+       ;; Call the rewriter:
        ((mv erp dag)
         (simplify-term-basic term
                              assumptions
@@ -203,9 +197,9 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                     defconst-name ;; The name of the DAG constant to create
                                     term          ;; The term to simplify
                                     &key
+                                    (rules ':auto) ;to completely replace the usual set of rules
                                     (extra-rules 'nil) ; to add to the usual set of rules
                                     (remove-rules 'nil) ; to remove from to the usual set of rules
-                                    (rules 'nil) ;to completely replace the usual set of rules (TODO: default should be auto?)
                                     ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
                                     (assumptions 'nil)
                                     (interpreted-function-alist 'nil)
@@ -221,10 +215,10 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                     (print 'nil))
   `(make-event-quiet (unroll-spec-basic-fn ',defconst-name
                                            ,term
-                                           ,extra-rules
-                                           ,remove-rules
                                            ,rules
                                            ;; ,rule-alists
+                                           ,extra-rules
+                                           ,remove-rules
                                            ,assumptions
                                            ,interpreted-function-alist
                                            ,monitor
@@ -263,4 +257,8 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
 ;;         [:produce-theorem]           ;; Whether to create a theorem stating that the dag is equal to the orignal term (using skip-proofs).
 ;;         [:print]           ;; How much to print
 ;;         )
-;; })")
+;; })"
+
+;; <p>To decide which rewrite rules to use, the tool starts with either the @(':rules') if supplied, or a basic default set of rules, @('def-simplified-rules').  Then the @(':extra-rules') are added and then @(':remove-rules') are removed.<p>
+
+;;)
