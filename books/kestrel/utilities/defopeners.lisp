@@ -53,11 +53,19 @@
 (local (include-book "state"))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (local (in-theory (disable mv-nth
                            w
                            true-listp
                            PLIST-WORLDP)))
+
+(defthmd symbol-listp-of-strip-cadrs-when-defthm-form-listp
+  (implies (defthm-form-listp forms)
+           (symbol-listp (strip-cadrs forms)))
+  :hints (("Goal" :in-theory (enable defthm-form-listp defthm-formp))))
+
+(local (in-theory (enable symbol-listp-of-strip-cadrs-when-defthm-form-listp)))
 
 ;; end of library stuff
 
@@ -660,6 +668,14 @@
                     (value-triple ',(append base-theorem-names unroll-theorem-names)))
             (append base-theorem-names unroll-theorem-names))))))
 
+(defthm true-listp-of-mv-nth-1-of-make-unroll-and-base-theorems
+  (true-listp (mv-nth 1 (make-unroll-and-base-theorems fn all-fns-in-nest hyps disable suffix verbose wrld)))
+  :hints (("Goal" :in-theory (enable make-unroll-and-base-theorems))))
+
+(defthm symbol-listp-of-mv-nth-1-of-make-unroll-and-base-theorems
+  (symbol-listp (mv-nth 1 (make-unroll-and-base-theorems fn all-fns-in-nest hyps disable suffix verbose wrld)))
+  :hints (("Goal" :in-theory (enable make-unroll-and-base-theorems))))
+
 ;TODO: If fn is non-recursive, just make a single rule...    or should it be an error to call defopeners?
 
 ;for non-mut-rec.  Returns an event.
@@ -734,3 +750,25 @@
                                  (suffix 'nil) ;nil or a symbol to add to the unroll and base rule names)
                                  )
   `(make-event (defopeners-mut-rec-fn ',fn ',hyps ',disable ',suffix ',verbose state)))
+
+;; Returns (mv events rule-names).
+;; TODO: Change this and related fns to take wrld instead of state?
+(defun opener-rules-for-fns (fns events-acc rule-names-acc state)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (true-listp events-acc)
+                              (symbol-listp rule-names-acc)
+                              ;;(plist-worldp wrld)
+                              )
+                  :stobjs state))
+  (if (endp fns)
+      (mv (reverse events-acc) (reverse rule-names-acc))
+    (let ((fn (first fns)))
+      (if (recursivep fn nil (w state))
+          (opener-rules-for-fns (rest fns)
+                                (cons `(defopeners ,fn) events-acc)
+                                (append (defopeners-names fn) rule-names-acc)
+                                state)
+        (opener-rules-for-fns (rest fns)
+                              events-acc ; no event, just include fn's name (representing its definition rule), in rule-names-acc
+                              (cons fn rule-names-acc)
+                              state)))))
