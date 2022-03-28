@@ -20938,16 +20938,25 @@
 
 ;; can combine names like *foo-spec-dag* and *foo-java-dag*
 ;; (choose-miter-name '*foo-spec-dag* '*foo-java-dag*)
-(defun choose-miter-name (quoted-form1 quoted-form2)
-  (declare (xargs :guard t))
-  (if (and (symbolp quoted-form1)
-           (symbolp quoted-form2)
-           (starts-and-ends-with-starsp quoted-form1)
-           (starts-and-ends-with-starsp quoted-form2))
-      ;; todo: remove "-dag" from the names here:
-      ;; todo: handle common parts of the names here, like foo in *foo-spec-dag* and *foo-java-dag*:
-      (pack$ (strip-stars-from-name quoted-form1) '-and-  (strip-stars-from-name quoted-form2))
-    'main-miter))
+(defun choose-miter-name (name quoted-form1 quoted-form2 wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))
+                  :mode :program ; todo, because of fresh-name-in-world-with-$s
+                  ))
+  (let ((desired-name (if (eq :auto name)
+                          (if (and (symbolp quoted-form1)
+                                   (symbolp quoted-form2)
+                                   (starts-and-ends-with-starsp quoted-form1)
+                                   (starts-and-ends-with-starsp quoted-form2))
+                              ;; todo: remove "-dag" from the names here:
+                              ;; todo: handle common parts of the names here, like foo in *foo-spec-dag* and *foo-java-dag*:
+                              (pack$ (strip-stars-from-name quoted-form1) '-and-  (strip-stars-from-name quoted-form2))
+                            ;; Just use a generic default name:
+                            'main-miter)
+                        ;; not :auto, so use the specified name:
+                        name)))
+    ;; avoid name clashes, since we may use the same name for the theorem:
+    (fresh-name-in-world-with-$s desired-name nil wrld)))
 
 ;; Returns (mv erp event state rand result-array-stobj).
 ;; TODO: Auto-generate the name
@@ -20985,10 +20994,11 @@
 ;TODO: error or warning if :tactic is rewrite and :tests is given
   (b* (((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :invisible) state rand result-array-stobj))
-       (assumptions (translate-terms assumptions 'prove-equivalence-fn (w state))) ;throws an error on bad input
-       ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 (w state)))
+       (wrld (w state))
+       (assumptions (translate-terms assumptions 'prove-equivalence-fn wrld)) ;throws an error on bad input
+       ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 wrld))
        ((when erp) (mv erp nil state rand result-array-stobj))
-       ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 (w state)))
+       ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 wrld))
        ((when erp) (mv erp nil state rand result-array-stobj))
        (vars1 (merge-sort-symbol< (dag-vars dag1)))
        (- (cw "Variables in DAG1: ~x0~%" vars1))
@@ -21007,18 +21017,16 @@
        ((mv erp initial-rule-sets) (if (eq :auto initial-rule-sets)
                                        ;;todo: make this a named rule set:
                                        (add-rules-to-rule-sets (list-rules)
-                                                               (phased-bv-axe-rule-sets state) (w state)) ;todo: overkill?
+                                                               (phased-bv-axe-rule-sets state) wrld) ;todo: overkill?
                                      (mv (erp-nil) initial-rule-sets)))
        ((when erp) (mv erp nil state rand result-array-stobj))
        ;; Always add the extra rules:
        ((mv erp initial-rule-sets) (if initial-rule-sets
-                                       (add-rules-to-rule-sets extra-rules initial-rule-sets (w state))
+                                       (add-rules-to-rule-sets extra-rules initial-rule-sets wrld)
                                      ;; special case: no initial-rule-sets, but extra rules are given (TODO: Think about this):
-                                     (add-rules-to-rule-sets extra-rules (list nil) (w state))))
+                                     (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state rand result-array-stobj))
-       (miter-name (if (eq :auto name)
-                       (choose-miter-name quoted-dag-or-term1 quoted-dag-or-term2)
-                     name))
+       (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
        ((mv erp
             & ; the event is usually an empty progn
             state rand result-array-stobj)
@@ -21043,12 +21051,8 @@
            ;; make the theorem:
            (term1 (dag-or-term-to-term dag-or-term1 state))
            (term2 (dag-or-term-to-term dag-or-term2 state))
-           (defthm-name (if (eq :auto name)
-                            ;; todo: coordinate this with the miter-name chosen above?
-                            (fresh-name-in-world-with-$s 'prove-equivalence nil (w state))
-                          name))
            (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
-                     (defthmd ,defthm-name
+                     (defthmd ,miter-name
                        (implies (and ,@assumptions)
                                 (equal ,term1
                                        ,term2)))))
