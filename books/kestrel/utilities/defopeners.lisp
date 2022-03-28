@@ -662,7 +662,7 @@
 
 ;TODO: If fn is non-recursive, just make a single rule...    or should it be an error to call defopeners?
 
-;for non-mut-rec.  Returns an event.
+;; Returns an event.
 ;; KEEP IN SYNC WITH DEFOPENERS-NAMES-FN.
 (defun defopeners-fn (fn hyps disable suffix verbose state)
   (declare (xargs :guard (and (symbolp fn)
@@ -670,10 +670,15 @@
                               (true-listp hyps)
                               (symbolp suffix))
                   :stobjs state))
-  (mv-let (event names)
-    (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose (w state))
-    (declare (ignore names))
-    event))
+  ;; Would like to call get-clique instead of fn-recursive-partners, but it's
+  ;; in :program mode (but see kestrel-acl2/community/verify-termination.lisp):
+  (let ((clique (if (fn-mutually-recursivep fn state)
+                    (fn-recursive-partners fn (w state))
+                  (list fn))))
+    (mv-let (event names)
+      (make-unroll-and-base-theorems fn clique hyps disable suffix verbose (w state))
+      (declare (ignore names))
+      event)))
 
 ;hyps should be a list of terms over the formals of the function (can include syntaxp, etc.)
 ;; KEEP IN SYNC WITH DEFOPENERS-NAMES.
@@ -695,10 +700,13 @@
                               (true-listp hyps)
                               (symbolp suffix))
                   :stobjs state))
-  (mv-let (event names)
-    (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose (w state))
-    (declare (ignore event))
-    names))
+  (let ((clique (if (fn-mutually-recursivep fn state)
+                    (fn-recursive-partners fn (w state))
+                  (list fn))))
+    (mv-let (event names)
+      (make-unroll-and-base-theorems fn clique hyps disable suffix verbose (w state))
+      (declare (ignore event))
+      names)))
 
 ;; Returns the list of theorem names that defopeners would introduce.
 ;; KEEP IN SYNC WITH DEFOPENERS.
@@ -709,28 +717,3 @@
                                (suffix 'nil) ;nil or a symbol to add to the unroll and base rule names
                                )
   `(defopeners-names-fn ',fn ',hyps ',disable ',suffix ',verbose state))
-
-;; Returns an event
-(defun defopeners-mut-rec-fn (fn hyps disable suffix verbose state)
-  (declare (xargs  :guard (and (symbolp fn)
-                               (not (eq 'quote fn))
-                               (true-listp hyps)
-                               (symbolp suffix))
-                   :stobjs state))
-  (mv-let (event names)
-    ;; Would like to call get-clique instead of fn-recursive-partners, but it's
-    ;; in :program mode (but see kestrel-acl2/community/verify-termination.lisp):
-    (make-unroll-and-base-theorems fn (fn-recursive-partners fn (w state)) hyps disable suffix verbose (w state))
-    (declare (ignore names))
-    event))
-
-;; TODO: Add defopeners-mut-rec-name, like defopeners-names.
-;TODO: Call control-screen-output here, as above?
-;TODO: Combine this with the non-mut-rec version (query the world to check whether it's a mut rec and what the other functions are)
-(defmacro defopeners-mut-rec (fn &key
-                                 (hyps 'nil)
-                                 (disable 'nil)
-                                 (verbose 'nil)
-                                 (suffix 'nil) ;nil or a symbol to add to the unroll and base rule names)
-                                 )
-  `(make-event (defopeners-mut-rec-fn ',fn ',hyps ',disable ',suffix ',verbose state)))
