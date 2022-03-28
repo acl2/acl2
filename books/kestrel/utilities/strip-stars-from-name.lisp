@@ -14,6 +14,15 @@
 (include-book "std/util/bstar" :dir :system)
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 
+;todo: use below
+(defund starts-and-ends-with-starsp (sym)
+  (declare (xargs :guard (symbolp sym)))
+  (b* ((str (symbol-name sym))
+       (chars (coerce str 'list)))
+    (and (<= 2 (len chars))
+         (equal #\* (first chars))
+         (equal #\* (car (last chars))))))
+
 ;dup in unroll-java-code
 (defun strip-stars-from-name (name)
   (declare (xargs :guard (symbolp name)))
