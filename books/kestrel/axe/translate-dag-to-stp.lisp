@@ -12,7 +12,9 @@
 
 (in-package "ACL2")
 
-;fixme use an array instead of nodenum-type-alist everywhere?
+;; TODO: Use an array instead of nodenum-type-alist everywhere?
+
+;; TODO: Consider adding support for the shift operators (bvshl, bvshr, bvashr).
 
 ;; I have found that is it much faster to write a bunch of strings to a file
 ;; than to append them all into one big string and write it to a file (at least
