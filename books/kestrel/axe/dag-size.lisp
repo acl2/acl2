@@ -1,7 +1,7 @@
 ; Computing the size of a DAG (if it was a term)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,36 +13,13 @@
 (in-package "ACL2")
 
 ;; This book contains a utility to compute the size of a DAG (if it were
-;; represented as a tree).  See also dag-size2.lisp.
+;; represented as a tree).  See also dag-size2.lisp and dag-size-fast.lisp.
 
 (include-book "dag-arrays")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
-(in-theory (disable bounded-dag-exprp)) ;move?
-
 (local (in-theory (enable not-<-of-car-when-all-<)))
-
-(local
- (defthm <-of-0-and-len
-   (equal (< 0 (len x))
-          (consp x))
-   :hints (("Goal" :in-theory (e/d (len) (len-of-cdr))))))
-
-;; Defines size-arrayp
-(def-typed-acl2-array size-arrayp (natp val) :default-satisfies-predp nil)
-
-;todo: have def-typed-acl2-array generate this
-(defthm type-of-aref1-when-size-arrayp-2
-  (implies (and (size-arrayp array-name array (+ 1 index))
-                (natp index))
-           (let ((val (aref1 array-name array index)))
-             (natp val)))
-  :hints (("Goal"
-           :use (:instance type-of-aref1-when-size-arrayp-aux
-                           (top-index index))
-           :in-theory (e/d (size-arrayp)
-                           (type-of-aref1-when-size-arrayp-aux)))))
 
 (local
  (defthm integer-when-natp
@@ -71,6 +48,21 @@
           (if test (natp tp) (natp ep)))))
 
 (local (in-theory (disable natp)))
+
+;; Defines size-arrayp
+(def-typed-acl2-array size-arrayp (natp val) :default-satisfies-predp nil)
+
+;todo: have def-typed-acl2-array generate this
+(defthm type-of-aref1-when-size-arrayp-2
+  (implies (and (size-arrayp array-name array (+ 1 index))
+                (natp index))
+           (let ((val (aref1 array-name array index)))
+             (natp val)))
+  :hints (("Goal"
+           :use (:instance type-of-aref1-when-size-arrayp-aux
+                           (top-index index))
+           :in-theory (e/d (size-arrayp)
+                           (type-of-aref1-when-size-arrayp-aux)))))
 
 ;;;
 ;;; add-arg-sizes-with-name
@@ -197,8 +189,7 @@
                 (<= dag-len 2147483646)
                 (symbolp size-array-name)
                 (<= bound dag-len)
-                (natp bound)
-                )
+                (natp bound))
            (size-arrayp size-array-name
                         (make-size-array-for-dag-array dag-len dag-array-name dag-array size-array-name)
                         bound))
