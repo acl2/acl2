@@ -21059,10 +21059,10 @@
            (event (if types ;todo: remove this restriction
                       (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
                               `(progn))
-                    defthm)))
-        (mv (erp-nil)
-            (extend-progn event `(table prove-equivalence-table ',whole-form ',event))
-            state rand result-array-stobj)))))
+                    defthm))
+           (event (extend-progn event `(table prove-equivalence-table ',whole-form ',event)))
+           (event (extend-progn event `(value-triple ',miter-name))))
+        (mv (erp-nil) event state rand result-array-stobj)))))
 
 (defxdoc prove-equivalence
   :parents (axe)
