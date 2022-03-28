@@ -19,6 +19,7 @@
 (include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
+(include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "rewriter") ;TODO: brings in JVM stuff...
 (include-book "rewriter-alt") ;TODO: brings in JVM stuff...
 (include-book "misc/random" :dir :system)
@@ -20955,6 +20956,18 @@
 
 ;; Nicer wrappers for the miter proofs (TODO: use these everywhere)
 
+;; can combine names like *foo-spec-dag* and *foo-java-dag*
+;; (choose-miter-name '*foo-spec-dag* '*foo-java-dag*)
+(defun choose-miter-name (quoted-form1 quoted-form2)
+  (declare (xargs :guard t))
+  (if (and (symbolp quoted-form1)
+           (symbolp quoted-form2)
+           (starts-and-ends-with-starsp quoted-form1)
+           (starts-and-ends-with-starsp quoted-form2))
+      ;; todo: remove "-dag" from the names here:
+      ;; todo: handle common parts of the names here, like foo in *foo-spec-dag* and *foo-java-dag*:
+      (pack$ (strip-stars-from-name quoted-form1) '-and-  (strip-stars-from-name quoted-form2))
+    'main-miter))
 
 ;; Returns (mv erp event state rand result-array-stobj).
 ;; TODO: Auto-generate the name
@@ -20962,11 +20975,14 @@
 ;; TODO: Allow the :type option to be :bits, meaning assume every var in the DAG is a bit.
 (defun prove-equivalence-fn (dag-or-term1
                              dag-or-term2
+                             quoted-dag-or-term1
+                             quoted-dag-or-term2
                              tests ;a natp indicating how many tests to run
                              tactic
                              assumptions
                              types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
-                             name print debug max-conflicts extra-rules initial-rule-sets
+                             name ; may be :auto
+                             print debug max-conflicts extra-rules initial-rule-sets
                              monitor
                              use-context-when-miteringp
                              normalize-xors
@@ -20984,6 +21000,7 @@
                               (or (eq :auto initial-rule-sets)
                                   (axe-rule-setsp initial-rule-sets))
                               (symbol-alistp types) ;todo constrain the cdrs
+                              (symbolp name)
                               (booleanp check-varsp))))
 ;TODO: error or warning if :tactic is rewrite and :tests is given
   (b* (((when (command-is-redundantp whole-form state))
@@ -21019,13 +21036,16 @@
                                      ;; special case: no initial-rule-sets, but extra rules are given (TODO: Think about this):
                                      (add-rules-to-rule-sets extra-rules (list nil) (w state))))
        ((when erp) (mv erp nil state rand result-array-stobj))
+       (miter-name (if (eq :auto name)
+                       (choose-miter-name quoted-dag-or-term1 quoted-dag-or-term2)
+                     name))
        ((mv erp
             & ; the event is usually an empty progn
             state rand result-array-stobj)
         (prove-miter-aux equality-dag
                          tests
                          types
-                         :name (or name 'main-miter)
+                         :name miter-name
                          :max-conflicts max-conflicts
                          :initial-rule-sets initial-rule-sets
                          :print print
@@ -21042,7 +21062,10 @@
            ;; make the theorem:
            (term1 (dag-or-term-to-term dag-or-term1 state))
            (term2 (dag-or-term-to-term dag-or-term2 state))
-           (defthm-name (or name (FRESH-NAME-IN-WORLD-WITH-$S 'prove-equivalence nil (w state))))
+           (defthm-name (if (eq :auto name)
+                            ;; todo: coordinate this with the miter-name chosen above?
+                            (fresh-name-in-world-with-$s 'prove-equivalence nil (w state))
+                          name))
            (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
                      (defthmd ,defthm-name
                        (implies (and ,@assumptions)
@@ -21093,7 +21116,7 @@
                                     (assumptions 'nil) ;assumed when rewriting the miter
                                     (print ':brief)
                                     (types 'nil) ;gives types to the vars so we can generate tests for sweeping
-                                    (name 'nil) ;the name of the miter, if we care to give it one.  also used for the name of the theorem
+                                    (name ':auto) ;the name of the miter, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
                                     (debug 'nil)
                                     (max-conflicts '60000) ;1000 here broke proofs
                                     (extra-rules 'nil)
@@ -21105,6 +21128,8 @@
                                     (check-varsp 't))
   `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
                                            ,dag-or-term2
+                                           ',dag-or-term1 ; not evaluated, used to form the miter name
+                                           ',dag-or-term2 ; not evaluated, used to form the miter name
                                            ,tests
                                            ,tactic
                                            ,assumptions
