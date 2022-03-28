@@ -46,10 +46,10 @@
 ;; Returns (mv erp event state)
 (defun unroll-spec-basic-fn (defconst-name ;should begin and end with *
                               term
-                              extra-rules
-                              remove-rules
                               rules
                               ;;rule-alists
+                              extra-rules
+                              remove-rules
                               assumptions
                               interpreted-function-alist
                               monitor
@@ -204,9 +204,9 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                     defconst-name ;; The name of the DAG constant to create
                                     term          ;; The term to simplify
                                     &key
+                                    (rules 'nil) ;to completely replace the usual set of rules (TODO: default should be auto?)
                                     (extra-rules 'nil) ; to add to the usual set of rules
                                     (remove-rules 'nil) ; to remove from to the usual set of rules
-                                    (rules 'nil) ;to completely replace the usual set of rules (TODO: default should be auto?)
                                     ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
                                     (assumptions 'nil)
                                     (interpreted-function-alist 'nil)
@@ -222,10 +222,10 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                     (print 'nil))
   `(make-event-quiet (unroll-spec-basic-fn ',defconst-name
                                            ,term
-                                           ,extra-rules
-                                           ,remove-rules
                                            ,rules
                                            ;; ,rule-alists
+                                           ,extra-rules
+                                           ,remove-rules
                                            ,assumptions
                                            ,interpreted-function-alist
                                            ,monitor
