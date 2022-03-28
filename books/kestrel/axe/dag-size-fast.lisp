@@ -1,7 +1,7 @@
 ; More tools to compute DAG sizes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -206,8 +206,7 @@
 ;; Smashes the array named 'size-array.
 (defund make-size-array-for-dag (dag)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (< (top-nodenum-of-dag dag) 2147483646) ;gen?
-                              )))
+                              (< (top-nodenum-of-dag dag) 2147483646))))
   (make-size-array-for-rev-dag-aux (reverse-list dag)
                                    (make-empty-array 'size-array (+ 1 (top-nodenum-of-dag dag)))))
 
@@ -240,8 +239,7 @@
 ;; Smashes the array named 'size-array.
 (defund dag-size-fast (dag)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (< (len dag) 2147483647) ;weaken?
-                              )
+                              (< (top-nodenum-of-dag dag) 2147483646))
                   :guard-hints (("Goal"
                                  :use (:instance size-arrayp-of-make-size-array-for-dag
                                                  (bound (len dag)))
