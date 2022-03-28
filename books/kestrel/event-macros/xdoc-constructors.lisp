@@ -875,7 +875,9 @@
                         as well as results (in the "
                        (xdoc::seetopic "std::returns-specifiers"
                                        "@(':returns') specifiers")
-                       "), consistently named as follows:")
+                       "), consistently named as follows
+                        (unless otherwise stated, explicitly or implicitly,
+                        in he functions):")
                       (xdoc::ul
                        ,@(xdoc::evmac-topic-implementation-li-wrap items))
                       (xdoc::p
