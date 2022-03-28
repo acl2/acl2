@@ -91,11 +91,11 @@
 ;;           (set-difference-equal-from-all x (rest ys)))))
 
 ;; TODO: Have this return a list of rule-lists and add the rule-lists arg back.
-;; Returns (mv erp rule-list).
+;; Returns a list of rule names.
 ;todo: use this in unroll-spec and unroll-spec-basic
 (defun make-rule-list (rules
-                        ;;rule-lists
-                        extra-rules remove-rules default-rules)
+                       ;;rule-lists
+                       extra-rules remove-rules default-rules)
   (declare (xargs :guard (and (or (eq :auto rules)
                                   (symbol-listp rules))
                               ;; (or (eq :auto rule-lists)
@@ -104,20 +104,20 @@
                               (symbol-listp remove-rules)
                               (symbol-listp default-rules)
                               )))
-  (b* (;; ((when (and (not (eq :auto rules))
+  (b* ( ;; ((when (and (not (eq :auto rules))
        ;;             (not (eq :auto rule-lists))))
        ;;  (er hard? 'def-simplified-fn ":rules and :rule-lists should not both be given.")
        ;;  (mv (erp-t) nil))
        (rule-list ;; (if (not (eq :auto rule-lists))
-                   ;;     rule-lists
-                     (if (eq :auto rules)
-                       ;;(list
-                       default-rules
-                       ;)
-                         ;;(list
-                          rules
-                          ;)
-                     ))
+        ;;     rule-lists
+        (if (eq :auto rules)
+            ;;(list
+            default-rules
+          ;;)
+          ;;(list
+          rules
+          ;;)
+          ))
        (rule-list (union-equal ;-with-all
                    extra-rules rule-list))
        (rule-list (set-difference-equal ;-from-all ; note arg order
@@ -213,7 +213,7 @@
 ;;         )
 ;; })
 
-;; <p>To decide which rewrite rules to use, the tool starts with either the @(':rules') if supplied, or a basic default set of rules, @('def-simplified-rules').  Then the @(':extra-rules') are added and the @(':remove-rules') are removed.<p>
+;; <p>To decide which rewrite rules to use, the tool starts with either the @(':rules') if supplied, or a basic default set of rules, @('def-simplified-rules').  Then the @(':extra-rules') are added and then @(':remove-rules') are removed.<p>
 
 ;; <p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>")
 
@@ -222,11 +222,11 @@
                                  defconst-name ;; The name of the dag to create
                                  term          ;; The term to simplify
                                  &key
+                                 (rules ':auto) ;to completely replace the usual set of rules
                                  (extra-rules 'nil) ; to add to the usual set of rules
                                  (remove-rules 'nil) ; to remove from to the usual set of rules
-                                 (rules ':auto) ;to completely replace the usual set of rules
-                                 ;(rule-lists ':auto) ;to completely replace the usual set of rules
-                                 ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
+                                 ;;(rule-lists ':auto) ;to completely replace the usual set of rules
+                                 ;;(rule-alists 'auto) ;to completely replace the usual set of rules
                                  (assumptions 'nil)
                                  (interpreted-function-alist 'nil)
                                  (monitor 'nil)
