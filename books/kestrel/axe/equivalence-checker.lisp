@@ -21165,6 +21165,7 @@
     (acons (first vars) type
            (assign-type-to-vars type (rest vars)))))
 
+;; Returns an alist mapping each of the VARS to the BV8 type.
 (defun byte-types-for-vars (vars)
   (declare (xargs :guard (symbol-listp vars)))
   (assign-type-to-vars (make-bv-type 8) vars))
