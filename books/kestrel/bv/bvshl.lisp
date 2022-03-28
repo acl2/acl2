@@ -68,3 +68,38 @@
                 (natp size))
            (unsigned-byte-p size (bvshl size x amt)))
   :hints (("Goal" :in-theory (enable bvshl))))
+
+; a version that puts a bvchop around x to help us simplify stuff
+(defthmd bvshl-rewrite-with-bvchop
+  (implies (and (<= shift-amount width)
+                (natp shift-amount)
+                (integerp width))
+           (equal (bvshl width x shift-amount)
+                  (bvcat (- width shift-amount) (bvchop (- width shift-amount) x) shift-amount 0)))
+  :hints (("Goal" :in-theory (enable bvshl))))
+
+(defthmd bvshl-rewrite-for-constant-shift-amount
+  (implies (and (syntaxp (quotep shift-amount))
+                (syntaxp (quotep width))
+                (<= shift-amount width)
+                (natp shift-amount)
+                (integerp width))
+           (equal (bvshl width x shift-amount)
+                  (bvcat (- width shift-amount)
+                         x
+                         shift-amount 0)))
+  :hints (("Goal" :in-theory (enable bvshl-rewrite-with-bvchop))))
+
+;i don't think I like the bvchop here... trim rules should take care of that...
+(defthmd bvshl-rewrite-with-bvchop-for-constant-shift-amount
+  (implies (and (syntaxp (quotep shift-amount))
+                (syntaxp (quotep width)) ; will usually be true
+                (<= shift-amount width)
+                (natp shift-amount)
+                (integerp width))
+           (equal (bvshl width x shift-amount)
+                  (bvcat (- width shift-amount)
+                         (bvchop (- width shift-amount) x)
+                         shift-amount
+                         0)))
+  :hints (("Goal" :by bvshl-rewrite-with-bvchop)))
