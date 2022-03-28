@@ -5376,11 +5376,11 @@
   :hints (("Goal" :in-theory (e/d (bvxor bvchop-of-logtail-becomes-slice)
                                   (LOGXOR-BVCHOP-BVCHOP)))))
 
-;add some of these?
-(defthm leftrotate32-of-logext-32
-  (equal (leftrotate32 amd (logext 32 x))
-         (leftrotate32 amd x))
-  :hints (("Goal" :in-theory (enable leftrotate32 leftrotate))))
+;; ;add some of these?
+;; (defthm leftrotate32-of-logext-32
+;;   (equal (leftrotate32 amd (logext 32 x))
+;;          (leftrotate32 amd x))
+;;   :hints (("Goal" :in-theory (enable leftrotate32 leftrotate))))
 
 
 (defthmd bvnot-blast
@@ -5408,74 +5408,6 @@
                 (not (unsigned-byte-p free k)))
            (not (equal x k))))
 
-(defthm bvchop-of-leftrotate-low
-  (implies (and (<= size amount) ;this case
-                (<= amount width)
-                (natp size)
-                (posp width)
-                (natp amount))
-           (equal (bvchop size (leftrotate width amount val))
-                  (slice (+ -1 (- AMOUNT) SIZE WIDTH)
-                         (+ (- AMOUNT) WIDTH)
-                         val)))
-  :hints (("Goal" :cases ((equal amount width))
-           :in-theory (enable LEFTROTATE))))
-
-;combine the cases?
-(defthm bvchop-of-leftrotate-not-low
-  (implies (and (< amount size)  ;this case
-                (<= size width)
-                (natp size)
-                (posp width)
-                (natp amount))
-           (equal (bvchop size (leftrotate width amount val))
-                  (bvcat (- size amount)
-                         val
-                         amount
-                         (SLICE (+ -1 WIDTH)
-                                (+ (- AMOUNT) WIDTH)
-                                VAL) )))
-  :hints (("Goal" ;:cases ((equal amount width))
-           :in-theory (enable LEFTROTATE))))
-
-;; is there a nicer way to comvine the cases?
-(defthm bvchop-of-leftrotate-both
-  (implies (and (<= size width)
-                (<= amount width)
-                (natp size)
-                (posp width)
-                (natp amount))
-           (equal (bvchop size (leftrotate width amount val))
-                  (if (< amount size)
-                      (bvcat (- size amount)
-                             val
-                             amount
-                             (SLICE (+ -1 WIDTH)
-                                    (+ (- AMOUNT) WIDTH)
-                                    VAL) )
-                    (slice (+ -1 (- AMOUNT) SIZE WIDTH)
-                           (+ (- AMOUNT) WIDTH)
-                           val))))
-  :hints (("Goal" :cases ((< amount size)))))
-
-(defthmd bvchop-of-leftrotate32-both
-  (implies (and (<= size 32)
-                (<= amount 32)
-                (natp size)
-                (natp amount))
-           (equal (bvchop size (leftrotate32 amount val))
-                  (if (< amount size)
-                      (bvcat (- size amount)
-                             val
-                             amount
-                             (SLICE (+ -1 32)
-                                    (+ (- AMOUNT) 32)
-                                    VAL) )
-                    (slice (+ -1 (- AMOUNT) SIZE 32)
-                           (+ (- AMOUNT) 32)
-                           val))))
-  :hints (("Goal" :in-theory (enable leftrotate32))))
-
 (defthm trim-of-leftrotate32
   (implies (and (<= size 32)
                 (<= amount 32)
@@ -5493,53 +5425,6 @@
                            (+ (- AMOUNT) 32)
                            val))))
   :hints (("Goal" :in-theory (enable trim bvchop-of-leftrotate32-both))))
-
-(defthm slice-of-leftrotate
-  (implies (and (< highbit width) ;otherwise we can tighten the slice
-                (<= lowbit highbit) ;otherwise we get 0?
-                (natp lowbit)
-                (natp highbit)
-                (posp width)
-                (natp amt))
-           (equal (slice highbit lowbit (leftrotate width amt val))
-                  (if (< highbit (mod amt width))
-                      (slice (+ highbit width (- (mod amt width)))
-                             (+ lowbit width (- (mod amt width)))
-                             val)
-                    (if (< lowbit (mod amt width))
-                        (bvcat (+ highbit (- (mod amt width)) 1)
-                               (slice (+ -1 width (- (mod amt width))) 0 val)
-                               (- (mod amt width) lowbit)
-                               (slice (+ -1 width)
-                                      (+ lowbit width (- (mod amt width)))
-                                      val))
-                      (slice (+ highbit (- (mod amt width)))
-                             (+ lowbit (- (mod amt width)))
-                             val)))))
-  :hints (("Goal" :in-theory (enable leftrotate natp))))
-
-(defthm slice-of-leftrotate32
-  (implies (and (< highbit 32) ;otherwise we can tighten the slice
-                (<= lowbit highbit) ;otherwise we get 0?
-                (natp lowbit)
-                (natp highbit)
-                (natp amt))
-           (equal (slice highbit lowbit (leftrotate32 amt val))
-                  (if (< highbit (mod amt 32))
-                      (slice (+ highbit 32 (- (mod amt 32)))
-                             (+ lowbit 32 (- (mod amt 32)))
-                             val)
-                    (if (< lowbit (mod amt 32))
-                        (bvcat (+ highbit (- (mod amt 32)) 1)
-                               (slice (+ -1 32 (- (mod amt 32))) 0 val)
-                               (- (mod amt 32) lowbit)
-                               (slice (+ -1 32)
-                                      (+ lowbit 32 (- (mod amt 32)))
-                                      val))
-                      (slice (+ highbit (- (mod amt 32)))
-                             (+ lowbit (- (mod amt 32)))
-                             val)))))
-  :hints (("Goal" :in-theory (enable leftrotate32 natp))))
 
 (defthm bvif-of-logext-arg1
   (implies (and (<= n m)
@@ -6042,9 +5927,6 @@
                 (natp size))
            (sbvlt size k x))
   :hints (("Goal" :in-theory (enable sbvlt-rewrite))))
-
-
-
 
 ;see leftrotate32-of-leftrotate32
 ;; (defthm leftrotate32-of-bvuminus-and-leftrotate32
@@ -7828,62 +7710,6 @@
                                   (;acl2::bvplus-recollapse
                                    )))))
 
-(local
- (defthm getbit-of-leftrotate-high
-   (implies (and (<= amt n) ; this case
-                 (< n width)
-                 (< amt width)
-                 (natp n)
-                 (natp amt)
-                 (natp width))
-            (equal (getbit n (leftrotate width amt x))
-                   (getbit (- n amt) x)))
-   :hints (("Goal" :in-theory (e/d (getbit leftrotate) (bvchop-1-becomes-getbit
-                                                        slice-becomes-getbit))))))
-
-(local
- (defthm getbit-of-leftrotate-low
-   (implies (and (< n amt) ; this case
-                 (< n width)
-                 (< amt width)
-                 (natp n)
-                 (natp amt)
-                 (natp width))
-            (equal (getbit n (leftrotate width amt x))
-                   (getbit (+ width (- amt) n) x)))
-   :hints (("Goal" :in-theory (e/d (getbit leftrotate) (bvchop-1-becomes-getbit
-                                                        slice-becomes-getbit))))))
-
-(defthm getbit-of-leftrotate
-  (implies (and ;(< amt width) ;gen?
-            (natp n)
-            (natp amt)
-            (natp width))
-           (equal (getbit n (leftrotate width amt x))
-                  (if (< n width)
-                      (if (< n (mod amt width)) ; this case
-                          (getbit (+ width (- (mod amt width)) n) x)
-                        (getbit (- n (mod amt width)) x))
-                    0)))
-  :hints (("Goal" :in-theory (e/d (getbit leftrotate) (bvchop-1-becomes-getbit
-                                                       slice-becomes-getbit)))))
-
-;; no mod in rhs
-(defthmd getbit-of-leftrotate-simple
-  (implies (and (< amt width) ; avoids mod in rhs
-                (natp n)
-                (natp amt)
-                (natp width))
-           (equal (getbit n (leftrotate width amt x))
-                  (if (< n width)
-                      (if (< n amt) ; this case
-                          (getbit (+ width (- amt) n) x)
-                        (getbit (- n amt) x))
-                    0)))
-  :hints (("Goal" :in-theory (e/d (getbit leftrotate) (bvchop-1-becomes-getbit
-                                                       slice-becomes-getbit)))))
-
-
 ;todo: add full trim support for rotate ops
 (defthmd trim-of-1-and-leftrotate
   (implies (and (< amt width) ; avoids mod in rhs
@@ -7916,22 +7742,6 @@
   (equal (bitxor x (leftrotate width amt y))
          (bitxor x (trim 1 (leftrotate width amt y))))
   :hints (("Goal" :in-theory (enable trim))))
-
-;gen the 32s!
-(defthm equal-of-leftrotate-and-leftrotate
-  (implies (and (equal 32 size) ;gen!
-                (natp size)
-                ;(<= size 32)
-                )
-           (equal (equal (leftrotate size n x) (leftrotate size n y))
-                  (equal (bvchop size x) (bvchop size y))))
-  :hints (("Goal" :in-theory (enable leftrotate))))
-
-;move
-(defthm equal-of-leftrotate32-and-leftrotate32
-  (equal (equal (leftrotate32 n x) (leftrotate32 n y))
-         (equal (bvchop 32 x) (bvchop 32 y)))
-  :hints (("Goal" :in-theory (enable leftrotate32))))
 
 (defthm bvchop-subst-constant-from-logext
   (implies (and (equal (logext free x) k)
