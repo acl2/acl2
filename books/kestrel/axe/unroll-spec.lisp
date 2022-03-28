@@ -25,6 +25,7 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
+(include-book "dag-info") ; not strictly necessary but convenient
 
 (defun unroll-spec-rules ()
   (append (amazing-rules-spec-and-dag) ;todo: reduce?

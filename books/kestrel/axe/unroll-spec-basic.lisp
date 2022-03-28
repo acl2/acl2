@@ -28,6 +28,7 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system) ;drop?
+(include-book "dag-info") ; not strictly necessary but convenient
 
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
 

@@ -230,5 +230,5 @@
             (heapp (mv-nth 1 (build-multi-dim-arrays counts array-type heap count))))
    :flag build-multi-dim-arrays))
 
-(acl2::defopeners-mut-rec build-multi-dim-array)
-(acl2::defopeners-mut-rec build-multi-dim-arrays)
+(acl2::defopeners build-multi-dim-array)
+(acl2::defopeners build-multi-dim-arrays)
