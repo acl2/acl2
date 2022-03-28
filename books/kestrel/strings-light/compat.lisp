@@ -1,4 +1,4 @@
-; Top file for strings-light library
+; Check compatibility of strings-light with std
 ;
 ; Copyright (C) 2022 Kestrel Institute
 ;
@@ -10,10 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "downcase")
-(include-book "upcase")
-(include-book "split-chars")
-(include-book "split-chars-repeatedly")
-(include-book "split-string")
-(include-book "split-string-repeatedly")
-(include-book "reverse")
+(include-book "top")
+;; If this succeeds, it means there are no name clashes between strings-light and std:
+(include-book "std/top" :dir :system)

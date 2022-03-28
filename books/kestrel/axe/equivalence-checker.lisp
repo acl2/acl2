@@ -19,6 +19,7 @@
 (include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
+(include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "rewriter") ;TODO: brings in JVM stuff...
 (include-book "rewriter-alt") ;TODO: brings in JVM stuff...
 (include-book "misc/random" :dir :system)
@@ -20170,26 +20171,6 @@
 ;;                                old-top-node)
 ;;                         state)))))
 
-
-
-
-;; ;dup
-;; (DEFUN FIRSTN (N L)
-;;   "The sublist of L consisting of its first N elements."
-;;   (DECLARE (XARGS :GUARD (AND (TRUE-LISTP L)
-;;                               (INTEGERP N)
-;;                               (<= 0 N))))
-;;   (COND ((ENDP L) NIL)
-;;         ((ZP N) NIL)
-;;         (T (CONS (CAR L)
-;;                  (FIRSTN (1- N) (CDR L))))))
-
-;; (defun strip-node-string (symbol)
-;;   (let ((string (symbol-name symbol)))
-;;     (if (equal (firstn 4 (coerce string 'list)) '(#\N #\O #\D #\E))
-;;         (mypackn (list (coerce (nthcdr 4 (coerce string 'list)) 'string)))
-;;       (hard-error 'strip-node-string "We expected a symbol that starts with N-O-D-E, bit found: ~x0" (acons #\0 symbol nil)))))
-
 ;elements of vars-lst are symbols or nodenums
 ;think through this again?
 ;; (defun generate-hyps-for-vars (vars-lst dag-array var-type-alist)
@@ -20955,6 +20936,27 @@
 
 ;; Nicer wrappers for the miter proofs (TODO: use these everywhere)
 
+;; can combine names like *foo-spec-dag* and *foo-java-dag*
+;; (choose-miter-name '*foo-spec-dag* '*foo-java-dag*)
+(defun choose-miter-name (name quoted-form1 quoted-form2 wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))
+                  :mode :program ; todo, because of fresh-name-in-world-with-$s
+                  ))
+  (let ((desired-name (if (eq :auto name)
+                          (if (and (symbolp quoted-form1)
+                                   (symbolp quoted-form2)
+                                   (starts-and-ends-with-starsp quoted-form1)
+                                   (starts-and-ends-with-starsp quoted-form2))
+                              ;; todo: remove "-dag" from the names here:
+                              ;; todo: handle common parts of the names here, like foo in *foo-spec-dag* and *foo-java-dag*:
+                              (pack$ (strip-stars-from-name quoted-form1) '-and-  (strip-stars-from-name quoted-form2))
+                            ;; Just use a generic default name:
+                            'main-miter)
+                        ;; not :auto, so use the specified name:
+                        name)))
+    ;; avoid name clashes, since we may use the same name for the theorem:
+    (fresh-name-in-world-with-$s desired-name nil wrld)))
 
 ;; Returns (mv erp event state rand result-array-stobj).
 ;; TODO: Auto-generate the name
@@ -20962,11 +20964,14 @@
 ;; TODO: Allow the :type option to be :bits, meaning assume every var in the DAG is a bit.
 (defun prove-equivalence-fn (dag-or-term1
                              dag-or-term2
+                             quoted-dag-or-term1
+                             quoted-dag-or-term2
                              tests ;a natp indicating how many tests to run
                              tactic
                              assumptions
                              types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
-                             name print debug max-conflicts extra-rules initial-rule-sets
+                             name ; may be :auto
+                             print debug max-conflicts extra-rules initial-rule-sets
                              monitor
                              use-context-when-miteringp
                              normalize-xors
@@ -20984,14 +20989,16 @@
                               (or (eq :auto initial-rule-sets)
                                   (axe-rule-setsp initial-rule-sets))
                               (symbol-alistp types) ;todo constrain the cdrs
+                              (symbolp name)
                               (booleanp check-varsp))))
 ;TODO: error or warning if :tactic is rewrite and :tests is given
   (b* (((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :invisible) state rand result-array-stobj))
-       (assumptions (translate-terms assumptions 'prove-equivalence-fn (w state))) ;throws an error on bad input
-       ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 (w state)))
+       (wrld (w state))
+       (assumptions (translate-terms assumptions 'prove-equivalence-fn wrld)) ;throws an error on bad input
+       ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 wrld))
        ((when erp) (mv erp nil state rand result-array-stobj))
-       ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 (w state)))
+       ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 wrld))
        ((when erp) (mv erp nil state rand result-array-stobj))
        (vars1 (merge-sort-symbol< (dag-vars dag1)))
        (- (cw "Variables in DAG1: ~x0~%" vars1))
@@ -21010,22 +21017,23 @@
        ((mv erp initial-rule-sets) (if (eq :auto initial-rule-sets)
                                        ;;todo: make this a named rule set:
                                        (add-rules-to-rule-sets (list-rules)
-                                                               (phased-bv-axe-rule-sets state) (w state)) ;todo: overkill?
+                                                               (phased-bv-axe-rule-sets state) wrld) ;todo: overkill?
                                      (mv (erp-nil) initial-rule-sets)))
        ((when erp) (mv erp nil state rand result-array-stobj))
        ;; Always add the extra rules:
        ((mv erp initial-rule-sets) (if initial-rule-sets
-                                       (add-rules-to-rule-sets extra-rules initial-rule-sets (w state))
+                                       (add-rules-to-rule-sets extra-rules initial-rule-sets wrld)
                                      ;; special case: no initial-rule-sets, but extra rules are given (TODO: Think about this):
-                                     (add-rules-to-rule-sets extra-rules (list nil) (w state))))
+                                     (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state rand result-array-stobj))
+       (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
        ((mv erp
             & ; the event is usually an empty progn
             state rand result-array-stobj)
         (prove-miter-aux equality-dag
                          tests
                          types
-                         :name (or name 'main-miter)
+                         :name miter-name
                          :max-conflicts max-conflicts
                          :initial-rule-sets initial-rule-sets
                          :print print
@@ -21034,6 +21042,7 @@
                          :monitor monitor
                          :use-context-when-miteringp use-context-when-miteringp
                          :simplify-xorsp normalize-xors
+                         ;; TODO: Can we automate this?:
                          :interpreted-function-alist interpreted-function-alist)))
     (if erp
         (prog2$ (cw "ERROR: Proof of equivalence failed.~%")
@@ -21042,19 +21051,18 @@
            ;; make the theorem:
            (term1 (dag-or-term-to-term dag-or-term1 state))
            (term2 (dag-or-term-to-term dag-or-term2 state))
-           (defthm-name (or name (FRESH-NAME-IN-WORLD-WITH-$S 'prove-equivalence nil (w state))))
            (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
-                     (defthmd ,defthm-name
+                     (defthmd ,miter-name
                        (implies (and ,@assumptions)
                                 (equal ,term1
                                        ,term2)))))
            (event (if types ;todo: remove this restriction
                       (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
                               `(progn))
-                    defthm)))
-        (mv (erp-nil)
-            (extend-progn event `(table prove-equivalence-table ',whole-form ',event))
-            state rand result-array-stobj)))))
+                    defthm))
+           (event (extend-progn event `(table prove-equivalence-table ',whole-form ',event)))
+           (event (extend-progn event `(value-triple ',miter-name))))
+        (mv (erp-nil) event state rand result-array-stobj)))))
 
 (defxdoc prove-equivalence
   :parents (axe)
@@ -21093,7 +21101,7 @@
                                     (assumptions 'nil) ;assumed when rewriting the miter
                                     (print ':brief)
                                     (types 'nil) ;gives types to the vars so we can generate tests for sweeping
-                                    (name 'nil) ;the name of the miter, if we care to give it one.  also used for the name of the theorem
+                                    (name ':auto) ;the name of the miter, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
                                     (debug 'nil)
                                     (max-conflicts '60000) ;1000 here broke proofs
                                     (extra-rules 'nil)
@@ -21105,6 +21113,8 @@
                                     (check-varsp 't))
   `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
                                            ,dag-or-term2
+                                           ',dag-or-term1 ; not evaluated, used to form the miter name
+                                           ',dag-or-term2 ; not evaluated, used to form the miter name
                                            ,tests
                                            ,tactic
                                            ,assumptions
@@ -21146,7 +21156,7 @@
       (pairlis$ lst1 lst2)
     (hard-error 'pairlis$-safe "Lists lengths unequal" nil)))
 
-;; todo: use this more, in place of pairlis$-safe
+;; todo: use this (or byte-types-for-vars) more, in place of pairlis$-safe
 (defun assign-type-to-vars (type vars)
   (declare (xargs :guard (and (axe-typep type)
                               (symbol-listp vars))))
@@ -21154,3 +21164,7 @@
       nil
     (acons (first vars) type
            (assign-type-to-vars type (rest vars)))))
+
+(defun byte-types-for-vars (vars)
+  (declare (xargs :guard (symbol-listp vars)))
+  (assign-type-to-vars (make-bv-type 8) vars))

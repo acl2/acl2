@@ -11,6 +11,10 @@
 
 (in-package "ACL2")
 
+;; A method-designator-string uniquely identifies a method within a set of classes.
+
+;; Example: "foo.bar.baz.ClassName.methodName(II)I"
+
 ;; See tests in method-designator-strings-tests.lisp
 
 ;; TODO: Move this book to the JVM package.  Maybe also include stuff like class-namep?
@@ -21,30 +25,10 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 
-(local (in-theory (disable reverse)))
-
-;move
-(defthm reverse-of-reverse-when-stringp
-  (implies (stringp str)
-           (equal (reverse (reverse str))
-                  str))
-  :hints (("Goal" :in-theory (enable reverse))))
-
-;; example "foo.bar.baz(II)I"
 (defun method-designator-stringp (x)
   (declare (xargs :guard t))
   (stringp x) ;todo: could add more checking
   )
-
-;; ;same as in std/lists/reverse.lisp
-;; (defthm stringp-of-reverse
-;;   (equal (stringp (reverse x))
-;;          (stringp x)))
-
-;; (defthm stringp-of-reverse
-;;   (implies (stringp str)
-;;            (stringp (reverse str)))
-;;   :hints (("Goal" :in-theory (enable reverse))))
 
 ;; TODO: add guards (or variants) of drop-string-before-char and
 ;; split-string-before-char that require the char to be in the string

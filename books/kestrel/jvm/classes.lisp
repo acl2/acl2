@@ -1,7 +1,7 @@
 ; Classes in the JV, including the class-info structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,15 +11,15 @@
 
 (in-package "JVM")
 
-;; This book deals with the class-table of the JVM.  These structures
-;; are usually built up in the books created by the class-file-parser.
+;; This book deals with the class-info structure of the JVM model.  These
+;; structures are usually built up by the class-file-parser.
+
+;; See also class-tables.lisp.
 
 (include-book "methods")
-;(include-book "kestrel/utilities/mydefconst" :dir :system) ;for the translated classes (TODO: have them include less?)
 (include-book "kestrel/utilities/string-contains-charp" :dir :system)
 (include-book "kestrel/utilities/string-utilities" :dir :system) ; for substring-before-last-occurrence
-;(include-book "method-designator-strings") ;drop or reduce?
-(include-book "kestrel/sequences/defforall" :dir :system)
+(include-book "kestrel/sequences/defforall" :dir :system) ; reduce?
 
 ;move
 (defthm keyword-listp-forward-to-true-listp
@@ -411,10 +411,27 @@
            (method-info-alistp (class-decl-methods class-info)))
   :hints (("Goal" :in-theory (enable class-infop class-infop0 class-decl-methods))))
 
+(defthm method-info-alistp-of-class-decl-methods2
+  (implies (class-infop0 class-info)
+           (method-info-alistp (class-decl-methods class-info)))
+  :hints (("Goal" :in-theory (enable class-infop0 class-decl-methods))))
+
 (defthm alistp-of-class-decl-methods
   (implies (class-infop class-info class-name) ;class-name is a free var
            (alistp (class-decl-methods class-info)))
   :hints (("Goal" :in-theory (enable class-infop class-infop0 method-info-alistp class-decl-methods))))
+
+(defthm not-class-infop-of-nil
+  (not (class-infop nil class-name))
+  :hints (("Goal" :in-theory (enable class-infop))))
+
+;;todo: awkward name
+(defun class-info0-listp (infos)
+  (declare (xargs :guard t))
+  (if (atom infos)
+      (null infos)
+    (and (class-infop0 (first infos))
+         (class-info0-listp (rest infos)))))
 
 ;move?
 ;; Returns a string or :unnamed-package
@@ -423,7 +440,3 @@
   (if (acl2::string-contains-charp class-name #\.)
       (acl2::substring-before-last-occurrence class-name #\.)
     :unnamed-package))
-
-(defthm not-class-infop-of-nil
-  (not (class-infop nil class-name))
-  :hints (("Goal" :in-theory (enable class-infop))))

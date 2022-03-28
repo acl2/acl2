@@ -1,7 +1,7 @@
 ; A tool to define a merge sort function, given a comparison function.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,8 +18,6 @@
 
 (include-book "merge-sort-generic")
 (include-book "pack")
-
-(local (in-theory (enable len)))
 
 (defun defmergesort-fn (merge-name merge-sort-name comparison-fn ;fixme allow an expression?
                                    pred
@@ -242,7 +240,7 @@
 ;fixme should list-pred imply true-listp (maybe not?)
 (defmacro defmergesort (merge-name ;the name to use for the "merge" function
                         merge-sort-name ;the name to use for the "merge sort" function
-                        comparison ;the comparison function (fixme allow this to take extra args)
+                        comparison ;the comparison function (todo: allow this to take extra args?)
                         pred ;the name of a predicate recognizing the items to sort
                         ;; list-pred ;a predicate asserting that all elements of a list satisfy pred
                         &key

@@ -1,7 +1,7 @@
 ; A variant of ACONS that can keep the alist smaller
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 ;; Like ACONS but this one won't introduce a duplicate key.  This is slower
 ;; than ACONS but can keep the alist from growing very large.  Preserves the
 ;; order of the keys in the alist when KEY already exists among them.
+;; TODO: Optimize the case where the key is not present -- just call acons.
 (defund acons-unique (key val alist)
   (declare (xargs :guard (alistp alist)))
   (if (endp alist)
@@ -44,4 +45,9 @@
   (implies (symbol-alistp alist)
            (equal (symbol-alistp (acons-unique key val alist))
                   (symbolp key)))
+  :hints (("Goal" :in-theory (enable acons-unique))))
+
+(defthm true-listp-of-acons-unique
+  (implies (true-listp alist)
+           (true-listp (acons-unique key val alist)))
   :hints (("Goal" :in-theory (enable acons-unique))))

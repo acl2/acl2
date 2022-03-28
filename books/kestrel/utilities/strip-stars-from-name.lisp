@@ -1,7 +1,7 @@
 ; A utility to strip the stars from the name of a constant
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,15 @@
 
 (include-book "std/util/bstar" :dir :system)
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+
+;todo: use below
+(defund starts-and-ends-with-starsp (sym)
+  (declare (xargs :guard (symbolp sym)))
+  (b* ((str (symbol-name sym))
+       (chars (coerce str 'list)))
+    (and (<= 2 (len chars))
+         (equal #\* (first chars))
+         (equal #\* (car (last chars))))))
 
 ;dup in unroll-java-code
 (defun strip-stars-from-name (name)
