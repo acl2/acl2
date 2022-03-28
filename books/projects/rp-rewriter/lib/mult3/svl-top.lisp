@@ -1335,20 +1335,11 @@
      :otf-flg t
      :hints (("Goal"
               :do-not-induct t
-              :use ((:instance insert-loghead-to-plusp-lemma-1
-                               (max1 (1- (EXPT 2 SIZE)))
-                               (max2 (1- (EXPT 2 SIZE)))
-                               (max3 1))
-                    (:instance <=-to-<-for-integers
-                               (x (+ x y z))
-                               (y (+ -1 (EXPT 2 SIZE) (EXPT 2 SIZE)))))
-              :in-theory (e/d (insert-loghead-to-plusp-lemma-2
-                               PLUS-WITH-0
-                               insert-loghead-to-plusp-lemma-3
-                               zip
-                               ACL2::|(integerp (expt x n))|)
-                              (+-is-sum
-                               insert-loghead-to-plusp-lemma-1)))))
+              :use ((:instance unsigned-byte-p-of-+
+                               (size1 size)
+                               (size2 size)))
+              :in-theory (e/d (bitp)
+                              (unsigned-byte-p-of-+)))))
 
    (defthmd remove-loghead
      (implies (unsigned-byte-p size x)

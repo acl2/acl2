@@ -156,13 +156,6 @@
   :returns (res 4vec-p)
   (4vec-part-select 0 size (4vec-bitnot val)))
 
-;; no lemma exists for this yet...
-(define 4vec-plus$ ((size 4vec-p)
-                    (val1 4vec-p)
-                    (val2 4vec-p))
-  :returns (res 4vec-p)
-  (4vec-part-select 0 size (4vec-plus val1 val2)))
-
 (defund 4vec-bitor$ (size val1 val2)
   (4vec-part-select 0 size (4vec-bitor val1 val2)))
 
@@ -8000,3 +7993,60 @@
                               ash
                               )
                              ())))))
+
+
+
+
+(defthmd logtail-of-loghead-reverse
+  (implies (and (natp m)
+                (natp n))
+           (equal (loghead m (logtail n x))
+                  (logtail n (loghead (+ n m) x))))
+  :hints (("goal"
+           #|:cases ((natp n)
+                   (natp m))|#
+           :in-theory (e/d (BITOPS::LOGTAIL-OF-LOGHEAD)
+                           (force
+                            (:REWRITE ACL2::LOGTAIL-LOGHEAD))))))
+
+(define 4vec-plus$ ((size natp)
+                    (val1 4vec-p)
+                    (val2 4vec-p))
+  :returns (res 4vec-p)
+  (4vec-part-select 0 size (4vec-plus val1 val2)))
+
+(defthmd 4vec-part-select-of-4vec-plus-propagate
+  (implies (and (natp start)
+                (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (4vec-part-select start size (4vec-plus x y))
+                   (4vec-part-select
+                    start size
+                    (4vec-plus$ (+ start size)
+                                (4vec-part-select 0 (+ start size) x)
+                                (4vec-part-select 0 (+ start size) y)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (4vec-plus
+                            4vec-plus$
+                            logtail-of-loghead-reverse
+                            4vec-part-select
+                            4VEC-CONCAT
+                            4VEC-ZERO-EXT
+                            2VEC
+                            4VEC-RSH
+                            SV::4VEC->LOWER
+                            4VEC-SHIFT-CORE
+                            4vec)
+                           (4VEC-ZERO-EXT-IS-4VEC-CONCAT
+                            4VEC-WHEN-BOTH-ARE-SAME
+                            (:e tau-system)
+                            UNSIGNED-BYTE-P
+                            BITOPS::LOGTAIL-OF-LOGHEAD
+                            (:DEFINITION INTEGER-RANGE-P)
+                            BITOPS::LOGTAIL-OF-LOGHEAD
+                            (:REWRITE ACL2::LOGTAIL-LOGHEAD)
+                            )))))
+
+ 

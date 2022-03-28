@@ -385,11 +385,11 @@
 (local
  (defthm rp-rw-of-quotep-term
    (implies (quotep term)
-            (equal (equal (rp-rw term dont-rw context  iff-flg hyp-flg limit rp-state state)
+            (equal (equal (rp-rw term dont-rw context  iff-flg  limit rp-state state)
                           (list term rp-state))
                    t))
    :hints (("Goal"
-            :expand (rp-rw term dont-rw context iff-flg hyp-flg limit rp-state state)
+            :expand (rp-rw term dont-rw context iff-flg  limit rp-state state)
             :do-not-induct t
             :in-theory (e/d (rp-ex-counterpart
                              quotep
@@ -442,13 +442,13 @@
  (defthm lemma10
    (equal (consp (MV-NTH
                   0
-                  (RP-RW-SUBTERMS SUBTERMS DONT-RW CONTEXT hyp-flg
+                  (RP-RW-SUBTERMS SUBTERMS DONT-RW CONTEXT 
                                   LIMIT   rp-state STATE)))
           (consp subterms))
    :hints (("Goal"
             :induct (induct-1 subterms limit)
             :expand (RP-RW-SUBTERMS SUBTERMS DONT-RW CONTEXT
-                                    hyp-flg LIMIT  rp-state STATE)
+                                     LIMIT  rp-state STATE)
             :in-theory (e/d (RP-RW-SUBTERMS) (RP-RW))))))
 
 (local
@@ -473,10 +473,10 @@
    (implies (is-rp term)
             (equal (MV-NTH
                     0
-                    (rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG hyp-flg LIMIT rp-state STATE))
+                    (rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG  LIMIT rp-state STATE))
                    (cadr term)))
    :hints (("Goal"
-            :expand ((rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG hyp-flg LIMIT rp-state STATE))
+            :expand ((rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG  LIMIT rp-state STATE))
             :in-theory (e/d (is-rp) (rp-rw-subterms
                                      rp-rw))))))
 

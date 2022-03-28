@@ -903,9 +903,10 @@
                                              ;;`(and-list (list ))
                                              ))
                          ((atom (cddr cur)) (create-and-list-instance cur))
-                         (t (create-and-list-instance cur)))))
+                         (t (create-and-list-instance cur))))
+              )
            (if (caar lst)
-               (hons `(-- ,cur)
+               (cons `(-- ,cur)
                      (pp-lists-to-term-pp-lst (cdr lst)))
              (cons cur
                    (pp-lists-to-term-pp-lst (cdr lst))))))))

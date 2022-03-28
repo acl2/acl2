@@ -1781,7 +1781,7 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
   (rw-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be used
   ;; only internally.
   (backchaining-rule :type t :initially nil)
-  (rewriting-context-flg :type (satisfies booleanp) :initially nil) 
+  (rw-context-disabled :type (satisfies booleanp) :initially nil) 
 
   (not-simplified-action :type (satisfies symbolp) :initially :error)
 
@@ -1809,7 +1809,7 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (defund rp-state-new-run (rp-state)
   (declare (xargs :stobjs (rp-state)))
-  (b* ((rp-state (update-rewriting-context-flg nil rp-state))
+  (b* ((rp-state (update-rw-context-disabled nil rp-state))
        (rp-state (update-rw-limit-throws-error t rp-state))
        (rp-state (update-backchaining-rule nil rp-state))
        (rp-state (update-casesplitter-cases nil rp-state))

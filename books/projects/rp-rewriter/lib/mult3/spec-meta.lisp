@@ -468,38 +468,50 @@
                              check-context-for-integerp-correct
                              logcount)))))
 
-(skip-proofs
- (defthm */+-to-mult-spec-meta-correct
-   (implies (and (rp-evl-meta-extract-global-facts)
-                 (eval-and-all context a)
-                 (valid-sc term a)
-                 (*/+-to-mult/adder-spec-meta-fchecks state))
-            (equal (rp-evlt (mv-nth 0 (*/+-to-mult-spec-meta term context)) a)
-                   (rp-evlt term a)))
-   :hints (("Goal"
-            :do-not-induct t
-            :use ((:instance *-of-known-sized-vecs
-                             (x (rp-evlt (cadr term) a))
-                             (y (rp-evlt (caddr term) a))
-                             (size1 (mv-nth 0
-                                            (calculate-vec-size (cadr term)
-                                                                context)))
-                             (size2 (mv-nth 0
-                                            (calculate-vec-size (caddr term)
-                                                                context)))))
-            :in-theory (e/d* (*/+-to-mult-spec-meta
-                              regular-eval-lemmas-with-ex-from-rp
-                              regular-eval-lemmas)
-                             (+-IS-SUM
-                              *-of-known-sized-vecs
-                              SVL-MULT-FINAL-SPEC
-                              RP-TRANS-LST
-                              rp-trans
-                              rw-dir1
-                              natp
-                              UNSIGNED-BYTE-P
-                              RP-TRANS-OPENER
-                              INCLUDE-FNC))))))
+
+
+  
+(defthm */+-to-mult-spec-meta-correct
+  (implies (and (rp-evl-meta-extract-global-facts)
+                (eval-and-all context a)
+                (valid-sc term a)
+                (*/+-to-mult/adder-spec-meta-fchecks state))
+           (equal (rp-evlt (mv-nth 0 (*/+-to-mult-spec-meta term context)) a)
+                  (rp-evlt term a)))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance *-of-known-sized-vecs
+                            (x (rp-evlt (cadr term) a))
+                            (y (rp-evlt (caddr term) a))
+                            (size1 (mv-nth 0
+                                           (calculate-vec-size (cadr term)
+                                                               context)))
+                            (size2 (mv-nth 0
+                                           (calculate-vec-size (caddr term)
+                                                               context))))
+                 (:instance +-of-known-sized-vecs
+                            (x (rp-evlt (cadr term) a))
+                            (y (rp-evlt (caddr term) a))
+                            (size1 (mv-nth 0
+                                           (calculate-vec-size (cadr term)
+                                                               context)))
+                            (size2 (mv-nth 0
+                                           (calculate-vec-size (caddr term)
+                                                               context)))))
+           :in-theory (e/d* (*/+-to-mult-spec-meta
+                             regular-eval-lemmas-with-ex-from-rp
+                             regular-eval-lemmas)
+                            (+-IS-SUM
+                             max
+                             *-of-known-sized-vecs
+                             SVL-MULT-FINAL-SPEC
+                             RP-TRANS-LST
+                             rp-trans
+                             rw-dir1
+                             natp
+                             UNSIGNED-BYTE-P
+                             RP-TRANS-OPENER
+                             INCLUDE-FNC)))))
 
 (defret */+-to-mult-spec-meta-valid-sc
   (implies (valid-sc term a)
