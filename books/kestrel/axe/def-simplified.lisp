@@ -113,7 +113,7 @@
         (mv nil '(value-triple :invisible) state))
        (term (translate-term term 'def-simplified-fn (w state)))
        (assumptions (translate-terms assumptions 'def-simplified-fn (w state)))
-       ;; Choose which sequence of rules to use:
+       ;; Choose which set of rules to use:
        (rule-list (choose-rules rules ;rule-lists
                                 extra-rules remove-rules (def-simplified-rules)))
        ((mv erp rule-alist)
