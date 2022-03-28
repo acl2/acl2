@@ -14,9 +14,7 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
-(local (in-theory (disable all-fnnames1)))
-
-(defun all-supporting-fns-aux (count
+(defun fns-supporting-fns-aux (count
                                worklist
                                donelist ; includes all the fns in the 3 accumulators (it's their union?)
                                stopper-fns
@@ -30,13 +28,13 @@
                               (symbol-listp stopper-fns)
                               (plist-worldp wrld))))
   (if (zp count)
-      (prog2$ (er hard? 'all-supporting-fns "Count reached.")
+      (prog2$ (er hard? 'fns-supporting-fns "Count reached.")
               (mv defined-fns-acc undefined-fns-acc stopper-fns-acc))
     (if (endp worklist)
         (mv defined-fns-acc undefined-fns-acc stopper-fns-acc)
       (let ((fn (first worklist)))
         (if (member-eq fn donelist)
-            (all-supporting-fns-aux (+ -1 count)
+            (fns-supporting-fns-aux (+ -1 count)
                                     (rest worklist)
                                     donelist
                                     stopper-fns
@@ -45,7 +43,7 @@
                                     stopper-fns-acc
                                     wrld)
           (if (member-eq fn stopper-fns)
-              (all-supporting-fns-aux (+ -1 count)
+              (fns-supporting-fns-aux (+ -1 count)
                                       (rest worklist)
                                       (cons fn donelist)
                                       stopper-fns
@@ -54,7 +52,7 @@
                                       (cons fn stopper-fns-acc) ; not already present since not in donelist
                                       wrld)
             (if (not (fn-definedp fn wrld))
-                (all-supporting-fns-aux (+ -1 count)
+                (fns-supporting-fns-aux (+ -1 count)
                                         (rest worklist)
                                         (cons fn donelist)
                                         stopper-fns
@@ -66,9 +64,9 @@
               (let* ((body (fn-body fn t wrld))
                      (called-fns (all-fnnames body)))
                 (if (not (symbol-listp called-fns)) ; for guard proof
-                    (prog2$ (er hard? 'all-supporting-fns "Bad list of call fns: ~x0." called-fns)
+                    (prog2$ (er hard? 'fns-supporting-fns "Bad list of called fns: ~x0." called-fns)
                             (mv defined-fns-acc undefined-fns-acc stopper-fns-acc))
-                  (all-supporting-fns-aux (+ -1 count)
+                  (fns-supporting-fns-aux (+ -1 count)
                                           (append called-fns ;(set-difference-eq called-fns donelist)
                                                   (rest worklist))
                                           (cons fn donelist)
@@ -81,9 +79,21 @@
 ;; Considers the supplied FNS and the functions they call, etc., back to functions
 ;; that are STOPPER-FNS or are undefined.  Classifies the discovered functions.
 ;; Returns (mv defined-fns undefined-fns stopper-fns), where the results include just those functions reachable from the FNS without looking inside any STOPPER-FNS.
-;; Example: (all-supporting-fns '(all-supporting-fns) nil (w state))
-(defun all-supporting-fns (fns stopper-fns wrld)
+;; Example: (fns-supporting-fns '(fns-supporting-fns) nil (w state))
+(defun fns-supporting-fns (fns stopper-fns wrld)
   (declare (xargs :guard (and (symbol-listp fns)
                               (symbol-listp stopper-fns)
                               (plist-worldp wrld))))
-  (all-supporting-fns-aux 1000000000 fns nil stopper-fns nil nil nil wrld))
+  (fns-supporting-fns-aux 1000000000 fns nil stopper-fns nil nil nil wrld))
+
+;; Returns (mv defined-fns undefined-fns stopper-fns), where the results include just those functions reachable from the FNS without looking inside any STOPPER-FNS.
+;; See fns-supporting-fns.
+(defun fns-supporting-term (term stopper-fns wrld)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-listp stopper-fns)
+                              (plist-worldp wrld))))
+  (let ((fns (all-fnnames term)))
+    (if (not (symbol-listp fns))
+        (prog2$ (er hard? 'fns-supporting-term "Bad list of called fns, ~x0, in term ~x1 ." fns term)
+                (mv nil nil nil))
+      (fns-supporting-fns fns stopper-fns wrld))))
