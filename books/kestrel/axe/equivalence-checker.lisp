@@ -20171,26 +20171,6 @@
 ;;                                old-top-node)
 ;;                         state)))))
 
-
-
-
-;; ;dup
-;; (DEFUN FIRSTN (N L)
-;;   "The sublist of L consisting of its first N elements."
-;;   (DECLARE (XARGS :GUARD (AND (TRUE-LISTP L)
-;;                               (INTEGERP N)
-;;                               (<= 0 N))))
-;;   (COND ((ENDP L) NIL)
-;;         ((ZP N) NIL)
-;;         (T (CONS (CAR L)
-;;                  (FIRSTN (1- N) (CDR L))))))
-
-;; (defun strip-node-string (symbol)
-;;   (let ((string (symbol-name symbol)))
-;;     (if (equal (firstn 4 (coerce string 'list)) '(#\N #\O #\D #\E))
-;;         (mypackn (list (coerce (nthcdr 4 (coerce string 'list)) 'string)))
-;;       (hard-error 'strip-node-string "We expected a symbol that starts with N-O-D-E, bit found: ~x0" (acons #\0 symbol nil)))))
-
 ;elements of vars-lst are symbols or nodenums
 ;think through this again?
 ;; (defun generate-hyps-for-vars (vars-lst dag-array var-type-alist)
@@ -21054,6 +21034,7 @@
                          :monitor monitor
                          :use-context-when-miteringp use-context-when-miteringp
                          :simplify-xorsp normalize-xors
+                         ;; TODO: Can we automate this?:
                          :interpreted-function-alist interpreted-function-alist)))
     (if erp
         (prog2$ (cw "ERROR: Proof of equivalence failed.~%")
@@ -21171,7 +21152,7 @@
       (pairlis$ lst1 lst2)
     (hard-error 'pairlis$-safe "Lists lengths unequal" nil)))
 
-;; todo: use this more, in place of pairlis$-safe
+;; todo: use this (or byte-types-for-vars) more, in place of pairlis$-safe
 (defun assign-type-to-vars (type vars)
   (declare (xargs :guard (and (axe-typep type)
                               (symbol-listp vars))))
@@ -21179,3 +21160,7 @@
       nil
     (acons (first vars) type
            (assign-type-to-vars type (rest vars)))))
+
+(defun byte-types-for-vars (vars)
+  (declare (xargs :guard (symbol-listp vars)))
+  (assign-type-to-vars (make-bv-type 8) vars))

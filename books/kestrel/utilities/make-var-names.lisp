@@ -61,12 +61,6 @@
                   (<= startnum endnum)))
   :hints (("Goal" :in-theory (enable make-var-names-aux))))
 
-;; ;was called make-var-names
-;; (defund make-var-names-x (namecount)
-;;   (declare (xargs ;:mode :program
-;;                   :guard t))
-;;   (reverse (make-var-names-aux 'x 1 namecount)))
-
 ;;;
 ;;; make-var-names
 ;;;
