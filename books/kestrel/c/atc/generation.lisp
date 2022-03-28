@@ -116,7 +116,7 @@
      and also assign to a named constant.")
    (xdoc::p
     "Given the restrictions on the target functions,
-     the translation is fairly straightforward -- intentionally so.")
+     the translation is relatively straightforward, by design.")
    (xdoc::p
     "Some events are generated in two slightly different variants:
      one that is local to the generated @(tsee encapsulate),
@@ -513,7 +513,7 @@
 (define atc-symbol-fninfo-alist-to-fun-env-thms
   ((prec-fns atc-symbol-fninfo-alistp) (among symbol-listp))
   :returns (thms symbol-listp)
-  :short "Project the function envirionment theorems
+  :short "Project the function environment theorems
           out of a function information alist,
           for the functions among a given list."
   :long
@@ -889,6 +889,96 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-sint-from-boolean ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (arg pseudo-termp))
+  :short "Check if a term may represent a conversion
+          from an ACL2 boolean to a C @('int') value."
+  (b* (((acl2::fun (no)) (mv nil nil))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless (and okp
+                     (eq fn 'c::sint-from-boolean)
+                     (list-lenp 1 args)))
+        (no)))
+    (mv t (first args)))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-sint-from-boolean
+    (implies yes/no
+             (< (pseudo-term-count arg)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-boolean-from-type ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (arg pseudo-termp)
+               (in-type typep))
+  :short "Check if a term may represent a conversion
+          from a C integer value to an ACL2 boolean."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We also return the input C type of the conversion.
+     The output type is known (boolean), and it is in fact an ACL2 type."))
+  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp boolean from type) (atc-check-symbol-3part fn))
+       ((unless (and okp
+                     (eq boolean 'boolean)
+                     (eq from 'from)))
+        (no))
+       (in-type (fixtype-to-integer-type type))
+       ((when (not in-type)) (no))
+       ((unless (list-lenp 1 args)) (no)))
+    (mv t (first args) in-type))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-boolean-from-type
+    (implies yes/no
+             (< (pseudo-term-count arg)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-condexpr ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (test pseudo-termp)
+               (then pseudo-termp)
+               (else pseudo-termp))
+  :short "Check if a term may represent a C conditional expression."
+  (b* (((acl2::fun (no)) (mv nil nil nil nil))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless (and okp
+                     (eq fn 'c::condexpr)
+                     (list-lenp 1 args)))
+        (no)))
+    (fty-check-if-call (first args)))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-condexpr.test
+    (implies yes/no
+             (< (pseudo-term-count test)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-condexpr.then
+    (implies yes/no
+             (< (pseudo-term-count then)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-condexpr.else
+    (implies yes/no
+             (< (pseudo-term-count else)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-array-read ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (arr pseudo-termp)
@@ -941,92 +1031,65 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-sint-from-boolean ((term pseudo-termp))
+(define atc-check-array-write ((var symbolp) (val pseudo-termp))
   :returns (mv (yes/no booleanp)
-               (arg pseudo-termp))
-  :short "Check if a term may represent a conversion
-          from an ACL2 boolean to a C @('int') value."
-  (b* (((acl2::fun (no)) (mv nil nil))
-       ((mv okp fn args) (fty-check-fn-call term))
-       ((unless (and okp
-                     (eq fn 'c::sint-from-boolean)
-                     (list-lenp 1 args)))
-        (no)))
-    (mv t (first args)))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-sint-from-boolean
-    (implies yes/no
-             (< (pseudo-term-count arg)
-                (pseudo-term-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-condexpr ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (test pseudo-termp)
-               (then pseudo-termp)
-               (else pseudo-termp))
-  :short "Check if a term may represent a C conditional expression."
-  (b* (((acl2::fun (no)) (mv nil nil nil nil))
-       ((mv okp fn args) (fty-check-fn-call term))
-       ((unless (and okp
-                     (eq fn 'c::condexpr)
-                     (list-lenp 1 args)))
-        (no)))
-    (fty-check-if-call (first args)))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-condexpr.test
-    (implies yes/no
-             (< (pseudo-term-count test)
-                (pseudo-term-count term)))
-    :rule-classes :linear)
-
-  (defret pseudo-term-count-of-atc-check-condexpr.then
-    (implies yes/no
-             (< (pseudo-term-count then)
-                (pseudo-term-count term)))
-    :rule-classes :linear)
-
-  (defret pseudo-term-count-of-atc-check-condexpr.else
-    (implies yes/no
-             (< (pseudo-term-count else)
-                (pseudo-term-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-boolean-from-type ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (arg pseudo-termp)
-               (in-type typep))
-  :short "Check if a term may represent a conversion
-          from a C integer value to an ACL2 boolean."
+               (sub pseudo-termp)
+               (elem pseudo-termp)
+               (sub-type typep)
+               (elem-type typep))
+  :short "Check if a @(tsee let) binding may represent an array write."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We also return the input C type of the conversion.
-     The output type is known (boolean), and it is in fact an ACL2 type."))
-  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
-       ((mv okp fn args) (fty-check-fn-call term))
-       ((unless okp) (no))
-       ((mv okp boolean from type) (atc-check-symbol-3part fn))
+    "An array write, i.e. an assignment to an array element,
+     is represented by a @(tsee let) binding of the form")
+   (xdoc::codeblock
+    "(let ((<arr> (<type1>-array-write-<type2> <arr> <sub> <elem>))) ...)")
+   (xdoc::p
+    "where @('<arr>') is a variable of pointer type,
+     which must occur identically as
+     both the @(tsee let) variable
+     and as the first argument of @('<type1>-array-write-<type2>'),
+     @('<sub>') is an expression that yields the index of the element to write,
+     @('<elem>') is an expression that yields the element to write,
+     and @('...') represents the code that follows the array assignment.
+     This function takes as arguments
+     the variable and value of a @(tsee let) binder,
+     and checks if they have the form described above.
+     If they do, the components are returned for further processing.
+     We also return the types of the index and element
+     as gathered from the name of the array write function."))
+  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type)))
+       ((unless (pseudo-term-case val :fncall)) (no))
+       ((pseudo-term-fncall val) val)
+       ((mv okp etype array write itype) (atc-check-symbol-4part val.fn))
        ((unless (and okp
-                     (eq boolean 'boolean)
-                     (eq from 'from)))
+                     (eq array 'array)
+                     (eq write 'write)))
         (no))
-       (in-type (fixtype-to-integer-type type))
-       ((when (not in-type)) (no))
-       ((unless (list-lenp 1 args)) (no)))
-    (mv t (first args) in-type))
+       (sub-type (fixtype-to-integer-type itype))
+       ((unless sub-type) (no))
+       (elem-type (fixtype-to-integer-type etype))
+       ((when (not elem-type)) (no))
+       ((unless (list-lenp 3 val.args)) (no))
+       (arr (first val.args))
+       (sub (second val.args))
+       (elem (third val.args)))
+    (if (eq arr var)
+        (mv t sub elem sub-type elem-type)
+      (no)))
   ///
 
-  (defret pseudo-term-count-of-atc-check-boolean-from-type
+  (defret pseudo-term-count-of-atc-check-array-write-sub
     (implies yes/no
-             (< (pseudo-term-count arg)
-                (pseudo-term-count term)))
+             (< (pseudo-term-count sub)
+                (pseudo-term-count val)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-array-write-elem
+    (implies yes/no
+             (< (pseudo-term-count elem)
+                (pseudo-term-count val)))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1171,69 +1234,6 @@
        (limit (atc-fn-info->limit info))
        (limit (fty-fsublis-var var-term-alist limit)))
     (mv t term.fn term.args in-types affect loop limit)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-array-write ((var symbolp) (val pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (sub pseudo-termp)
-               (elem pseudo-termp)
-               (sub-type typep)
-               (elem-type typep))
-  :short "Check if a @(tsee let) binding may represent an array write."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "An array write, i.e. an assignment to an array element,
-     is represented by a @(tsee let) binding of the form")
-   (xdoc::codeblock
-    "(let ((<arr> (<type1>-array-write-<type2> <arr> <sub> <elem>))) ...)")
-   (xdoc::p
-    "where @('<arr>') is a variable of pointer type,
-     which must occur identically as
-     both the @(tsee let) variable
-     and as the first argument of @('<type1>-array-write-<type2>'),
-     @('<sub>') is an expression that yields the index of the element to write,
-     @('<elem>') is an expression that yields the element to write,
-     and @('...') represents the code that follows the array assignment.
-     This function takes as arguments
-     the variable and value of a @(tsee let) binder,
-     and checks if they have the form described above.
-     If they do, the components are returned for further processing.
-     We also return the types of the index and element
-     as gathered from the name of the array write function."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type)))
-       ((unless (pseudo-term-case val :fncall)) (no))
-       ((pseudo-term-fncall val) val)
-       ((mv okp etype array write itype) (atc-check-symbol-4part val.fn))
-       ((unless (and okp
-                     (eq array 'array)
-                     (eq write 'write)))
-        (no))
-       (sub-type (fixtype-to-integer-type itype))
-       ((unless sub-type) (no))
-       (elem-type (fixtype-to-integer-type etype))
-       ((when (not elem-type)) (no))
-       ((unless (list-lenp 3 val.args)) (no))
-       (arr (first val.args))
-       (sub (second val.args))
-       (elem (third val.args)))
-    (if (eq arr var)
-        (mv t sub elem sub-type elem-type)
-      (no)))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-array-write-sub
-    (implies yes/no
-             (< (pseudo-term-count sub)
-                (pseudo-term-count val)))
-    :rule-classes :linear)
-
-  (defret pseudo-term-count-of-atc-check-array-write-elem
-    (implies yes/no
-             (< (pseudo-term-count elem)
-                (pseudo-term-count val)))
-    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
