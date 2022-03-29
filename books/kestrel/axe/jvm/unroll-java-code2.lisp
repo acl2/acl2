@@ -590,6 +590,9 @@
                       :check-inputs nil)
           (mv (erp-nil) result-dag state)))
        ((when erp) (mv erp nil state))
+       (dag-okp (dag-ok-after-symbolic-execution result-dag assumptions t (w state)))
+       ((when (not dag-okp)) (mv :symbolic-execution-failed nil state))
+
        ;; Result-dag should be over the single variable S0 and should represent
        ;; the change to S0 made by running the subroutine.
        (- (progn$ (cw "~|(Result DAG:~%")
