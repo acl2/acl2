@@ -13628,19 +13628,6 @@
 ;;   (equal (bvcat 29 (slice 31 3 y) 3 (bvcat 1 (getbit 2 y) 2 x))
 ;;          (bvcat 30 (slice 31 2 y) 2 x)))
 
-;move
-(defthm getbit-of-leftrotate32-high
-  (implies (and (<= amt n) ;other case!
-                (<= n 31)
-                (unsigned-byte-p 5 amt)
-                (natp n)
-                (natp amt))
-           (equal (getbit n (leftrotate32 amt x))
-                  (getbit (- n amt) x)))
-  :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit
-                                            leftrotate32
-                                            slice-becomes-getbit)))))
-
 ;used to simplify the exit test for md5
 (defthm boolor-of-sbvlt-combine-gen-better
   (implies (and (syntaxp (and (quotep k)
