@@ -1,7 +1,7 @@
 ; Lists of rule names (JVM-related)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -2133,7 +2133,7 @@
              subrange-when-end-is-negative
 
              consp-of-subrange
-             getbit-of-leftrotate32-high
+
 ;fffixme do these contradict what simplifying bitxors does?
              ;;BITXOR-commutative-axe
              ;; BITXOR-commutative-2-axe
@@ -2141,7 +2141,6 @@
              bvxor-of-bvcat     ;dangerous?
              bvxor-of-bvcat-alt ;dangerous?
 
-             slice-of-leftrotate32-high
              bvxor-cancel-lemma1-bvchop-version
              bvxor-cancel-lemma1-bvchop-version-alt
 

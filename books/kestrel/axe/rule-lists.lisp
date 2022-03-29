@@ -1,7 +1,7 @@
 ; Lists of rule names (general purpose)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -193,10 +193,10 @@
     integerp-of-bvchop natp-of-bvchop
     integerp-of-slice natp-of-slice
     integerp-of-getbit natp-of-getbit
-    integerp-of-leftrotate32 natp-of-leftrotate32
     integerp-of-leftrotate natp-of-leftrotate
-    integerp-of-rightrotate32 natp-of-rightrotate32 ;drop if we are getting rid of right-rotate
+    integerp-of-leftrotate32 natp-of-leftrotate32
     integerp-of-rightrotate natp-of-rightrotate ;drop if we are getting rid of right-rotate
+    integerp-of-rightrotate32 natp-of-rightrotate32 ;drop if we are getting rid of right-rotate
     ;how do we handle these?
     integerp-of-bvshl natp-of-bvshl
     integerp-of-bvshr natp-of-bvshr
@@ -238,14 +238,24 @@
      sbvge ;Thu Jan 19 16:35:59 2017
      sbvgt ;Thu Jan 19 16:35:59 2017
 
-     ;; Handling rotates:
-     leftrotate32-of-0-arg1
-     leftrotate32-of-0-arg2
+     ;; Handling rotates: ; todo: compare to the rules below for leftrotate32
+     rightrotate-becomes-leftrotate ;turn rightrotate into leftrotate
      leftrotate-of-0-arg2
      leftrotate-of-0-arg3
+     equal-of-leftrotate-and-leftrotate
+     getbit-of-leftrotate-simple
+     bitand-of-leftrotate-arg1-trim
+     bitand-of-leftrotate-arg2-trim
+     bitor-of-leftrotate-arg1-trim
+     bitor-of-leftrotate-arg2-trim
+     bitxor-of-leftrotate-arg1-trim
+     bitxor-of-leftrotate-arg2-trim
+
+     ;; Handling rotates (32 bit):
+     rightrotate32-becomes-leftrotate32-gen ;turn rightrotate32 into leftrotate32
+     leftrotate32-of-0-arg1
+     leftrotate32-of-0-arg2
      leftrotate32-of-bvchop-arg2
-     rightrotate-becomes-leftrotate ;turn rightrotate into leftrotate
-     rightrotate32-becomes-leftrotate32-gen
      ;; rightrotate32-trim-amt-dag ;move to trim rules? or drop since we go to leftrotate32
      ;;i don't think we want these any more (trying without them):
      ;;opening rotates (by constant amounts) in sha1 caused problems with trimming the same term to lots of different sizes
@@ -258,13 +268,9 @@
      leftrotate-becomes-leftrotate32 ;go to leftrotate32 when possible (since the STP translation supports it)
      ;;leftrotate-becomes-leftrotate64
      equal-of-leftrotate32-and-leftrotate32
-     equal-of-leftrotate-and-leftrotate
      equal-of-constant-and-leftrotate32
-     getbit-of-leftrotate-simple
-     bitand-of-leftrotate-arg1-trim
-     bitand-of-leftrotate-arg2-trim
-     bitxor-of-leftrotate-arg1-trim
-     bitxor-of-leftrotate-arg2-trim
+     getbit-of-leftrotate32-high
+     slice-of-leftrotate32-high
 
      ;;todo: think about these rules (why so many?):
      ;; TODO: These can't fire if we are expanding the shift ops, which we usually are
@@ -281,7 +287,7 @@
      bvor-of-bvashr-and-bvshl    ;; introduces leftrotate
      bvor-of-bvshl-and-bvashr-alt ;; introduces leftrotate
      bvor-of-bvashr-and-bvshl-alt ;; introduces leftrotate
-     ;; bvcat-of-slice-becomes-leftrotate ;; todo: disable, but what about loops?
+     ;; bvcat-of-slice-becomes-leftrotate ;; todo: add back, but what about loops?
 
      not-sbvlt-when-sbvlt-rev-cheap-2
      equal-of-constant-when-sbvlt ; rename
@@ -301,7 +307,10 @@
      bvif-of-equal-1-0                       ;Mon Apr 25 14:56:14 2016
      bvif-of-equal-0-1                       ;Mon Apr 25 14:56:14 2016
      equal-of-constant-and-bitxor-of-constant ;Sun Apr 24 19:42:42 2016
-     BVMINUS-SAME                             ;Tue Dec 15 12:03:12 2015
+
+     bvminus-same                             ;tue dec 15 12:03:12 2015
+     bvplus-bvminus-same
+     bvplus-bvminus-same-arg2
 
      bvxor-of-0-arg2
      bvxor-of-0-arg3
@@ -387,6 +396,8 @@
      ;;fixme more like this?
      bvcat-when-lowsize-is-0 ;newly moved here
      bvcat-when-highsize-is-0
+     bvcat-of-0 ;trying... for when the highval is 0
+
      bvxor-when-size-is-not-positive
      bvor-when-size-is-not-positive
      bvand-when-size-is-not-positive
@@ -652,7 +663,6 @@
      bvplus-of-bvuminus-same-2
      bvplus-of-bvuminus-same-2-alt)))
 
-
 ;todo combine this with core-rules-bv
 ;some of these are not bv rules?
 (defun more-rules-bv-misc ()
@@ -687,10 +697,6 @@
     myif-becomes-bvif-2
     myif-becomes-bvif-3
 
-
-    bvplus-bvminus-same
-    bvplus-bvminus-same-arg2
-
 ;    bvminus-of-bvplus-tighten ;now done by trim rules
 
     ;;these are the ident rules:
@@ -704,7 +710,7 @@
 
     ;;these must be on if we have rules like bitxor-trim-arg2-dag-all on (those other rules can add a bvchop-0 to trim arithmetic op, and the bvchop-0 turns into a getbit)
     getbit-0-of-bvmult
-    bit-0-of-bvminus   ;better rhs?  rename?
+    getbit-0-of-bvminus   ;better rhs?
     getbit-0-of-bvplus ;think about whether to push the getbits..
 
     bvcat-of-getbit-arg2
@@ -719,7 +725,6 @@
 ;all-signed-byte-p-of-myif-strong ;slow?
 ;    make-frame-of-bvif-around-pc
 ;    myif-nil-becomes-and ;looped
-
 
     bvcat-of-bitxor-trim-high-size ;rename
     bvmult-1-becomes-bitand
@@ -738,8 +743,6 @@
 
     myif-of-bvxor-becomes-bvif-arg1
     myif-of-bvxor-becomes-bvif-arg2
-
-    bvcat-of-0 ;trying...
 
     myif-of-myif-test
 
@@ -890,13 +893,11 @@
     len-of-true-list-fix
     atom ;thu mar  4 22:01:54 2010
     endp ;fri dec 24 16:32:13 2010
-
     consp-of-cons ;also elsewhere
     true-list-fix-when-true-listp
     true-listp-of-repeat
     len-of-repeat  ;since initializing an array calls repeat
     car-cons
-
     len-of-cons
     nth-of-cons-constant-version
     integerp-of-len
@@ -939,13 +940,9 @@
             nth-of-take-2
             append-of-firstn-and-cons-when-nth
             append-of-firstn-of-cons-of-nth
-            len-of-firstn
-            true-listp-of-true-list-fix2
             cons-nth-onto-subrange-alt
-            len-of-true-list-fix
             equal-subrange-nthcdr-rewrite
             true-listp-of-firstn
-            cdr-of-nthcdr
             consp-of-nthcdr
 ;firstn-of-cdr-becomes-subrange ; drop?
             append-of-take-and-cons-when-nth ;could be expensive
@@ -953,16 +950,12 @@
             equal-of-append-arg1
             cons-of-nth-and-nth-plus-1
             len-of-nthcdr
-            nthcdr-of-cdr-combine
             nth-of-nthcdr
             subrange-of-0
             append-of-take-and-subrange-alt
             equal-of-cons
             cdr-iff
-            nth-of-cons-constant-version
             car-becomes-nth-of-0
-            append-of-nil-arg2
-            true-list-fix-when-true-listp ;also in list-rules
             nth-of-cdr
             consp-of-cdr
             len-of-cdr
@@ -1082,10 +1075,10 @@
     unsigned-byte-p-of-sbvdiv
     unsigned-byte-p-of-bvsx
     unsigned-byte-p-of-repeatbit
-    unsigned-byte-p-of-leftrotate32
     unsigned-byte-p-of-leftrotate ;gen
-    unsigned-byte-p-of-rightrotate32 ;gen
+    unsigned-byte-p-of-leftrotate32
     unsigned-byte-p-of-rightrotate ;gen
+    unsigned-byte-p-of-rightrotate32 ;gen
     unsigned-byte-p-of-bv-array-read-gen ;todo name
     ))
 
@@ -1116,10 +1109,10 @@
     unsigned-byte-p-forced-of-sbvdiv
     unsigned-byte-p-forced-of-bvsx
     ;todo: repeatbit
-    ;todo leftrotate32
-    ;todo leftrotate
-    ;todo rightrotate32?
-    ;todo rightrotate?
+    ;;todo leftrotate
+    ;;todo leftrotate32
+    ;;todo rightrotate?
+    ;;todo rightrotate32?
     unsigned-byte-p-forced-of-bv-array-read
     ))
 
@@ -1339,6 +1332,7 @@
     bvif-blast
     bv-array-read-blast ;new! ;i'm not sure i like this?!
     leftrotate ; exposes bvcat
+    ;;leftrotate32 ;todo: try
     ))
 
 ;fixme rename?
@@ -2639,8 +2633,6 @@
 ;; ;;;    bvplus-associative
 ;; ;                                         bvplus-of-bvcat-0-arg2-better
 ;; ;                                        bvplus-of-bvcat-0-arg1-better
-
-;; ;;;    bit-0-of-bvminus
 
 ;;     ;; bvplus-when-low-bits-are-zero ;yuck?! ;this rules caused a big slowdown!
 ;;     bvplus-of-bvcat-0-arg2 ;hmm...
