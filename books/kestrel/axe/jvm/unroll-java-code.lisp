@@ -24,7 +24,6 @@
 (include-book "unroll-java-code-common")
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/doc" :dir :system)
-(include-book "kestrel/jvm/method-indicators" :dir :system)
 ;(include-book "../dag-size-fast")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
 (include-book "../prune") ;brings in the rewriter
@@ -379,7 +378,8 @@
                              state)
   (declare (xargs :stobjs (state)
                   :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
-                  :guard (and (or (eq :all classes-to-assume-initialized)
+                  :guard (and (jvm::method-indicatorp method-indicator)
+                              (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
