@@ -240,6 +240,7 @@
 (include-book "tactic-prover")
 (include-book "query")
 (include-book "defthm-axe")
+(include-book "equivalence-checker-helpers")
 (include-book "equivalence-checker")
 
 ;; The JVM-specific Axe tools:
