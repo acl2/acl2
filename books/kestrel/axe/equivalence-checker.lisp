@@ -17637,15 +17637,24 @@
                     (- (cw ")~%(But we'll simplify first, using assumptions: ~x0~%" assumptions))
                     (miter-dag (array-to-alist miter-array-name miter-array miter-len))
                     ;;since we are sometimes saying we did nothing when that is a lie, simplifying here may help:
-                    ((mv erp
-                         miter-dag ;fffixme what if this is a quote?!
-                         state)
+                    ((mv erp miter-dag-or-quote state)
                      (simp-dag miter-dag
                                :rule-alist rewriter-rule-alist
                                :print :brief
                                :assumptions assumptions
                                :check-inputs nil))
                     ((when erp) (mv erp nil rand state result-array-stobj))
+                    ((when (quotep miter-dag-or-quote)) ; unusual?
+                     (let ((val (unquote miter-dag-or-quote)))
+                       (if (eq t val)
+                           (prog2$ (cw "The miter simplified to the constant t.))~%")
+                                   (mv (erp-nil) t rand state result-array-stobj))
+                         (if (eq nil val)
+                             (prog2$ (cw "The miter simplififed to the constant nil.))~%") ;should this be a hard error? not unless this miter must succeed?
+                                     (mv (erp-nil) nil rand state result-array-stobj))
+                           (prog2$ (er hard? 'miter-and-merge "expected t or nil but got the constant ~x0." val)
+                                   (mv (erp-t) nil rand state result-array-stobj))))))
+                    (miter-dag miter-dag-or-quote)
                     (- (and (or (eq :verbose print) (eq :verbose2 print))
                             (progn$ (cw "(Simplified miter dag (~x0):" miter-name)
                                     (print-list miter-dag) ;fixme print this to a file?
