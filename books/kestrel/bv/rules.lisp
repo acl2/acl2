@@ -5394,7 +5394,8 @@
                 (not (unsigned-byte-p free k)))
            (not (equal x k))))
 
-(defthm trim-of-leftrotate32
+;; only do this if amount and size are constants?
+(defthmd trim-of-leftrotate32
   (implies (and (<= size 32)
                 (<= amount 32)
                 (natp size)
@@ -5411,6 +5412,21 @@
                            (+ (- AMOUNT) 32)
                            val))))
   :hints (("Goal" :in-theory (enable trim bvchop-of-leftrotate32-both))))
+
+
+;todo: add full trim support for rotate ops
+;todo: only do this if the amt is a constant?
+(defthmd trim-of-1-and-leftrotate
+  (implies (and (< amt width) ; avoids mod in rhs
+                (natp amt)
+                (natp width))
+           (equal (trim 1 (leftrotate width amt x))
+                  (if (< 0 width)
+                      (if (< 0 amt) ; this case
+                          (getbit (+ width (- amt)) x)
+                        (getbit amt x))
+                    0)))
+  :hints (("Goal" :in-theory (enable trim leftrotate))))
 
 (defthm bvif-of-logext-arg1
   (implies (and (<= n m)
@@ -7696,38 +7712,48 @@
                                   (;acl2::bvplus-recollapse
                                    )))))
 
-;todo: add full trim support for rotate ops
-(defthmd trim-of-1-and-leftrotate
-  (implies (and (< amt width) ; avoids mod in rhs
-                (natp amt)
-                (natp width))
-           (equal (trim 1 (leftrotate width amt x))
-                  (if (< 0 width)
-                      (if (< 0 amt) ; this case
-                          (getbit (+ width (- amt)) x)
-                        (getbit amt x))
-                    0)))
-  :hints (("Goal" :in-theory (enable trim leftrotate))))
-
 (defthm bitand-of-leftrotate-arg1-trim
-  (equal (bitand (leftrotate width amt x) y)
-         (bitand (trim 1 (leftrotate width amt x)) y))
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         (quotep width)))
+           (equal (bitand (leftrotate width amt x) y)
+                  (bitand (trim 1 (leftrotate width amt x)) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthm bitand-of-leftrotate-arg2-trim
-  (equal (bitand x (leftrotate width amt y))
-         (bitand x (trim 1 (leftrotate width amt y))))
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         (quotep width)))
+           (equal (bitand x (leftrotate width amt y))
+                  (bitand x (trim 1 (leftrotate width amt y)))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bitor-of-leftrotate-arg1-trim
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         (quotep width)))
+           (equal (bitor (leftrotate width amt x) y)
+                  (bitor (trim 1 (leftrotate width amt x)) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bitor-of-leftrotate-arg2-trim
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         (quotep width)))
+           (equal (bitor x (leftrotate width amt y))
+                  (bitor x (trim 1 (leftrotate width amt y)))))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthm bitxor-of-leftrotate-arg1-trim
-  (equal (bitxor (leftrotate width amt x) y)
-         (bitxor (trim 1 (leftrotate width amt x)) y))
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         (quotep width)))
+           (equal (bitxor (leftrotate width amt x) y)
+                  (bitxor (trim 1 (leftrotate width amt x)) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthm bitxor-of-leftrotate-arg2-trim
-  (equal (bitxor x (leftrotate width amt y))
-         (bitxor x (trim 1 (leftrotate width amt y))))
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         (quotep width)))
+           (equal (bitxor x (leftrotate width amt y))
+                  (bitxor x (trim 1 (leftrotate width amt y)))))
   :hints (("Goal" :in-theory (enable trim))))
+
 
 (defthm bvchop-subst-constant-from-logext
   (implies (and (equal (logext free x) k)

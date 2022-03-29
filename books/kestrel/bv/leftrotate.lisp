@@ -194,6 +194,7 @@
    :hints (("Goal" :in-theory (e/d (getbit leftrotate) (bvchop-1-becomes-getbit
                                                         slice-becomes-getbit))))))
 
+;; todo: restrict to the case when we can resolve the (< n width) test?
 (defthm getbit-of-leftrotate
   (implies (and ;(< amt width) ;gen?
             (natp n)
@@ -209,6 +210,7 @@
                                                        slice-becomes-getbit)))))
 
 ;; no mod in rhs
+;; todo: restrict to the case when we can resolve the (< n width) test?
 (defthmd getbit-of-leftrotate-simple
   (implies (and (< amt width) ; avoids mod in rhs
                 (natp n)
