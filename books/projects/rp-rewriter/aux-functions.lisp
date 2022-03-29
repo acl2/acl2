@@ -42,6 +42,7 @@
 (include-book "misc/beta-reduce" :dir :system)
 (include-book "tools/flag" :dir :system)
 (include-book "std/util/defines" :dir :system)
+(include-book "centaur/misc/starlogic" :dir :system)
 ;; Functions and lemmas used by both correctness proofs (rp-correct.lisp) and
 ;; guards (rp-rewriter.lisp)
 
@@ -1926,7 +1927,12 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
                   (AND**-MACRO (CDR ACL2::LST))))))
 
   (defmacro and** (&rest lst)
-    (and**-macro lst))
+    `(mbe :logic ,(and**-macro lst)
+          :exec (hide ,(and-macro lst))))
+
+  (defmacro and*e (&rest lst)
+    `(mbe :logic ,(acl2::and*-macro lst)
+          :exec (hide ,(and-macro lst))))
   
   (defund binary-or** (x y)
     (declare (xargs :guard t))
@@ -1942,8 +1948,21 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
                   (OR**-MACRO (CDR ACL2::LST))))))
 
   (defmacro or** (&rest lst)
-    (or**-macro lst))
+    `(mbe :logic ,(or**-macro lst)
+          :exec (hide ,(or-macro lst))))
+
+  (defmacro or*e (&rest lst)
+    `(mbe :logic ,(acl2::or*-macro lst)
+          :exec (hide ,(or-macro lst))))
 
   (defund not** (x)
     (declare (xargs :guard t))
     (not x)))
+
+(defund if** (x y z)
+  (declare (xargs :guard t))
+  (if x y z))
+
+
+
+

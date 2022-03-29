@@ -3989,8 +3989,8 @@
                     (equal term ''0)
                     (has-bitp-rp term))))))
 
-(define pp-radix8+-fix-aux-for-pp-lst ((pp-lst rp-term-listp)
-                                       (e-lst rp-term-listp))
+(define pp-radix8+-fix-aux-for-pp-lst-aux ((pp-lst rp-term-listp)
+                                           (e-lst rp-term-listp))
   :returns (mv (res-pp-lst rp-term-listp :hyp (and (rp-term-listp pp-lst)
                                                    (rp-term-listp e-lst)))
                (valid booleanp))
@@ -4006,7 +4006,7 @@
         (b* (((mv cur-in-binary-fnc cur-is-bitp) (and-list-to-binary-and cur))
              ((Unless cur-is-bitp) (mv nil nil))
              ((mv rest-pp-lst valid)
-              (pp-radix8+-fix-aux-for-pp-lst (cdr pp-lst) e-lst))
+              (pp-radix8+-fix-aux-for-pp-lst-aux (cdr pp-lst) e-lst))
              (res `(binary-and ,cur-in-binary-fnc ,(car e-lst))))
           (mv (cons (if cur-is-signed `(-- ,res) res)
                     rest-pp-lst)
@@ -4018,11 +4018,11 @@
                 (cur-pp (create-and-list-instance res-e-lst))
                 (cur-pp (if cur-is-signed `(-- ,cur-pp) cur-pp))
                 ((mv rest-pp-lst valid)
-                 (pp-radix8+-fix-aux-for-pp-lst (cdr pp-lst) e-lst)))
+                 (pp-radix8+-fix-aux-for-pp-lst-aux (cdr pp-lst) e-lst)))
              (mv (cons cur-pp rest-pp-lst)
                  valid)))
           (&
-           (mv nil (hard-error 'pp-radix8+-fix-aux-for-pp-lst
+           (mv nil (hard-error 'pp-radix8+-fix-aux-for-pp-lst-aux
                                "Unexpected pp-lst element: ~p0 ~%"
                                (list (cons #\0 cur)))))))
        ((or (bit-of-p cur)
@@ -4031,20 +4031,34 @@
              (cur-pp (create-and-list-instance res-e-lst))
              (cur-pp (if cur-is-signed `(-- ,cur-pp) cur-pp))
              ((mv rest-pp-lst valid)
-              (pp-radix8+-fix-aux-for-pp-lst (cdr pp-lst) e-lst)))
+              (pp-radix8+-fix-aux-for-pp-lst-aux (cdr pp-lst) e-lst)))
           (mv (cons cur-pp rest-pp-lst)
               valid)))
        ((binary-fnc-p cur)
         (b* ((e-lst-in-binary-fnc (and-list-to-binary-and-aux e-lst))
              ((mv rest-pp-lst valid)
-              (pp-radix8+-fix-aux-for-pp-lst (cdr pp-lst) e-lst))
+              (pp-radix8+-fix-aux-for-pp-lst-aux (cdr pp-lst) e-lst))
              (res `(binary-and ,e-lst-in-binary-fnc ,cur)))
           (mv (cons (if cur-is-signed `(-- ,res) res)
                     rest-pp-lst)
               valid)))
-       (t (mv nil (hard-error 'pp-radix8+-fix-aux-for-pp-lst
+       (t (mv nil (hard-error 'pp-radix8+-fix-aux-for-pp-lst-aux
                               "Unexpected pp-lst element: ~p0 ~%"
                               (list (cons #\0 cur)))))))))
+
+(define pp-radix8+-fix-aux-for-pp-lst  ((pp-lst rp-term-listp)
+                                        (e-lst rp-term-listp))
+  :returns (mv (res-pp-lst rp-term-listp :hyp (and (rp-term-listp pp-lst)
+                                                   (rp-term-listp e-lst)))
+               (valid booleanp))
+  (b* (((mv res-pp-lst valid)
+        (pp-radix8+-fix-aux-for-pp-lst-aux pp-lst e-lst))
+       ((unless valid)
+        (mv res-pp-lst valid))
+       ((when (pp-lst-orderedp res-pp-lst))
+        (mv res-pp-lst valid))
+       (res-pp-lst (pp-sum-sort-lst res-pp-lst)))
+    (mv res-pp-lst valid)))
 
 (define pp-radix8+-fix-aux-for-s/c ((single-s/c rp-termp)
                                     (e-lst rp-term-listp))

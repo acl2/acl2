@@ -5034,8 +5034,17 @@
     :hints (("Goal"
              :in-theory (e/d (4vec-part-select
                               4vec-concat) ()))))
+  (defthmd loghead-to-4vec-part-select-side-cond2
+    (implies (and (natp size)
+                  (integerp x))
+             (natp (4vec-part-select 0 size x)))
+    :hints (("Goal"
+             :in-theory (e/d (4vec-part-select
+                              4vec-concat) ()))))
   (rp-attach-sc loghead-to-4vec-part-select
-                loghead-to-4vec-part-select-side-cond))
+                loghead-to-4vec-part-select-side-cond)
+  (rp-attach-sc loghead-to-4vec-part-select
+                loghead-to-4vec-part-select-side-cond2))
 
 (progn
   (def-rp-rule$ t nil
@@ -7970,3 +7979,24 @@
                              
                              sv::4vec))
            )))
+
+
+(encapsulate nil
+  
+  (local
+   (use-arithmetic-5 t))
+
+  (def-rp-rule 4vec-lsh-to-4vec-concat$
+    (implies (natp size)
+             (equal (sv::4vec-lsh size x)
+                    (svl::4vec-concat$ size 0 x)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-lsh
+                              4VEC-SHIFT-CORE
+                              4VEC-CONCAT$
+                              4VEC-CONCAT
+                              SV::4VEC->LOWER
+                              SV::4VEC->upper
+                              ash
+                              )
+                             ())))))

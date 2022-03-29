@@ -61,7 +61,6 @@
                         )))))
 
 
-                  
 
 (encapsulate
   nil
@@ -222,9 +221,8 @@
                               bits)
                              (sv::4vec-bitnot
                               sv::4vec)))))
-  
+
   (add-svex-simplify-rule bits-of-4vec-bitnot)
-  
 
   (defthmd bits-of-4vec-bitand-old
     (implies (and (natp size)
@@ -722,18 +720,19 @@
                   (posp size))
              (and (equal (equal x
                                 (4vec-concat$ size k l))
-                         (and (equal (bits x 0 1)
-                                     (bits k 0 1))
-                              (equal (svl::4vec-rsh 1 x)
-                                     (sv::4vec-rsh 1 (4vec-concat$ size k l)))))
+                         (acl2::and* (equal (bits x 0 1)
+                                            (bits k 0 1))
+                                     (equal (svl::4vec-rsh 1 x)
+                                            (sv::4vec-rsh 1 (4vec-concat$ size k l)))))
                   (equal (equal (4vec-concat$ size k l) x)
-                         (and (equal (bits x 0 1)
-                                     (bits k 0 1))
-                              (equal (svl::4vec-rsh 1 x)
-                                     (sv::4vec-rsh 1 (4vec-concat$ size k l)))))))
+                         (acl2::and* (equal (bits x 0 1)
+                                            (bits k 0 1))
+                                     (equal (svl::4vec-rsh 1 x)
+                                            (sv::4vec-rsh 1 (4vec-concat$ size k l)))))))
     :hints (("Goal"
              :use (:instance equal-of-4vec-concat-with-posp-size)
-             :in-theory (e/d* (4vec-concat$)
+             :in-theory (e/d* (4vec-concat$
+                               acl2::and*)
                               (equal-of-4vec-concat-with-posp-size
                                4VEC-PART-SELECT-OF-CONCAT-1
                                4VEC-RSH-OF-4VEC-CONCAT-2
@@ -1779,7 +1778,7 @@
                               SV::4VEC->UPPER)
                              (bitp
                               convert-4vec-concat-to-4vec-concat$)))))
-  
+
   (add-svex-simplify-rule bitp-bits-size=1)
 
   (def-rp-rule bit$-of-negated-bit
@@ -1880,7 +1879,7 @@
                               SV::3VEC-BITNOT) ()))))
 
   (add-svex-simplify-rule integerp-4vec-bitnot)
-  
+
   (def-rp-rule integerp-4vec-bitnot$
     (implies (and (integerp x)
                   (natp size))
@@ -2282,7 +2281,6 @@
 
 (add-svex-simplify-rule bits-of-4vec-bit?!)
 
-
 (progn
   (def-rp-rule 4vec-concat$-same-var-merge
     (implies (and (natp csize1)
@@ -2296,7 +2294,7 @@
                                         other))
                     (svl::4vec-concat$ (+ csize1 csize2) (svl::bits x start1 (+
                                                                               csize1 csize2))
-                                     
+
                                        other)))
     :hints (("Goal"
              :use ((:instance 4vec-concat-same-var-merge))

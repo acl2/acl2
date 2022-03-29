@@ -1032,7 +1032,7 @@
            (equal (svl::bits (m2 x) start size)
                   0)))
 
-(def-rp-rule equal-of-concat$-with-hyp
+(defthmd equal-of-concat$-with-hyp
   (implies (equal x1 x2)
            (equal (equal (svl::4vec-concat$ 1 x1 rest1)
                          (svl::4vec-concat$ 1 x2 rest2))

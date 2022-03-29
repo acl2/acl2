@@ -1590,3 +1590,29 @@
                              is-rp is-if)
                             (rp-trans
                              INCLUDE-FNC)))))
+
+
+(defthm sum-list-eval-of-odds-and-evens
+  (equal (sum (sum-list-eval (odds lst) a)
+              (sum-list-eval (evens lst) a))
+         (sum-list-eval lst a)))
+
+(defthm pp-sum-sort-lst-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state))
+           (equal (sum-list-eval (pp-sum-sort-lst pp-lst) a)
+                  (sum-list-eval pp-lst a)))
+  :hints (("Goal"
+           :in-theory (e/d (pp-sum-sort-lst)
+                           (evens odds)))))
+
+(defthm valid-sc-subterms-of-odds-and-evens
+  (implies (valid-sc-subterms lst a)
+           (and (valid-sc-subterms (odds lst) a)
+                (valid-sc-subterms (evens lst) a))))
+
+(defthm pp-sum-sort-lst-valid-sc
+  (implies (valid-sc-subterms pp-lst a)
+           (valid-sc-subterms (pp-sum-sort-lst pp-lst) a))
+  :hints (("Goal"
+           :in-theory (e/d (pp-sum-sort-lst) ()))))

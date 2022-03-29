@@ -905,7 +905,7 @@
                          ((atom (cddr cur)) (create-and-list-instance cur))
                          (t (create-and-list-instance cur)))))
            (if (caar lst)
-               (cons `(-- ,cur)
+               (hons `(-- ,cur)
                      (pp-lists-to-term-pp-lst (cdr lst)))
              (cons cur
                    (pp-lists-to-term-pp-lst (cdr lst))))))))
@@ -1050,6 +1050,89 @@
                   #|(result (If pp-lists (cons 'list result) ''nil))||#
                   )
                pp-lst)))))
+
+;; (define pp-flatten ((term pp-term-p)
+;;                     (sign booleanp)
+;;                     &key
+;;                     (disabled 'nil))
+;;   :returns pp-lst
+;;   (pp-flatten-aux term sign disabled))
+
+;; :i-am-here
+
+
+;; (define nat-valued-alistp (x)
+;;   :enabled t
+;;   (COND ((ATOM x) (EQ x NIL))
+;;         (T (AND (CONSP (CAR x))
+;;                 (NATP (CdR (CAR x)))
+;;                 (nat-valued-alistp (CDR x)))))
+;;   ///
+;;   (defthm natp-of-assoc-equal-of-nat-valued-alistp
+;;     (implies (and (assoc-equal key x)
+;;                   (nat-valued-alistp x))
+;;              (and (natp (cdr (assoc-equal key x)))
+;;                   (integerp (cdr (assoc-equal key x))))))
+;;   (defthm nat-valued-alistp-of-assoc-equal-of-nat-valued-alistp
+;;     (implies (nat-valued-alistp x)
+;;              (nat-valued-alistp (remove-assoc-equal ket x))))
+;;   (defthm nat-valued-alistp-implies-alistp
+;;     (implies (nat-valued-alistp x)
+;;              (alistp x)))) 
+
+;; (define find-min-indices-for-pp-flatten-merge ((lst1 nat-valued-alistp)
+;;                                                (lst2 nat-valued-alistp))
+;;   :returns (res nat-valued-alistp :hyp (and (nat-valued-alistp lst1)
+;;                                             (nat-valued-alistp lst2)))
+;;   :verify-guards :after-returns
+;;   (if (atom lst1)
+;;       lst2
+;;     (b* ((cur (car lst1))
+;;          (other (assoc-equal (car cur) lst2))
+;;          ((unless other)
+;;           (cons cur (find-min-indices-for-pp-flatten-merge (cdr lst1) lst2)))
+;;          (other-val (cdr other)))
+;;       (acons (car cur)
+;;              (if (< other-val (cdr cur)) other-val (cdr cur))
+;;              (find-min-indices-for-pp-flatten-merge (cdr lst1)
+;;                                                     (remove-assoc-equal (car cur) lst2))))))
+
+;; (define find-min-indices-for-pp-flatten ((term pp-term-p))
+;;   :measure (cons-count term)
+;;   :hints (("Goal"
+;;            :in-theory (e/d (measure-lemmas) ())))
+;;   :returns (res nat-valued-alistp)
+;;   :verify-guards :after-returns
+;;   (b* ((term (ex-from-rp term)))
+;;     (cond ((binary-not-p term)
+;;            (find-min-indices-for-pp-flatten (cadr term)))
+;;           ((or (binary-and-p term)
+;;                (binary-xor-p term)
+;;                (binary-or-p term))
+;;            (b* ((lst1 (find-min-indices-for-pp-flatten (cadr term)))
+;;                 (lst2 (find-min-indices-for-pp-flatten (caddr term)))
+;;                 (merged (find-min-indices-for-pp-flatten-merge lst1 lst2)))
+;;              merged))
+;;           ((binary-?-p term)
+;;            (b* ((lst1 (find-min-indices-for-pp-flatten (cadr term)))
+;;                 (lst2 (find-min-indices-for-pp-flatten (caddr term)))
+;;                 (lst3 (find-min-indices-for-pp-flatten (cadddr term)))
+;;                 (merged (find-min-indices-for-pp-flatten-merge lst1 lst2))
+;;                 (merged (find-min-indices-for-pp-flatten-merge merged lst3)))
+;;              merged))
+;;           ((bit-of-p term)
+;;            (if (and (quotep (caddr term))
+;;                     (consp (cdr (caddr term)))
+;;                     (natp (unquote (caddr term))))
+;;                `((,(ex-from-rp (cadr term)) . ,(unquote (caddr term))))
+;;              nil))
+;;           (t nil))))
+
+;; (define adjust-indices-for-pp-flatten 
+
+;; (find-min-indices-for-pp-flatten `(binary-not (binary-or (bit-of a '1) (bit-of a '2))))
+
+
 
 (define pp-flatten-memoized ((term pp-term-p)
                              (sign booleanp))
@@ -1234,6 +1317,7 @@
                    term)
                (hard-error 'sort-sum-meta "" nil)
                (mv term t))))))
+
 
 (value-triple (hons-clear t))
 

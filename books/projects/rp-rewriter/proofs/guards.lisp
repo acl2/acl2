@@ -665,8 +665,7 @@
                         dont-rw-syntaxp
                         TRUE-LISTP
                         QUOTEP
-                        is-rp-implies-fc
-                        )
+                        is-rp-implies-fc)
                        (
                         UPDATE-RW-LIMIT-THROWS-ERROR
                         RW-LIMIT-THROWS-ERROR
