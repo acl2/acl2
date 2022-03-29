@@ -1701,9 +1701,8 @@
                             BITXOR-OF-UNARY-MINUS-ARG1
                             BVPLUS-OF-PLUS2 BVPLUS-OF-PLUS)))))
 ;bbozo
-(defthm bit-0-of-bvminus
-  (implies (and (< 0 n)
-                (integerp n))
+(defthm getbit-0-of-bvminus
+  (implies (posp n)
            (equal (getbit 0 (bvminus n x y))
                   (bvminus 1 x y)))
   :hints (("Goal" :in-theory (e/d (bvminus) (BVPLUS-RECOLLAPSE)))))
