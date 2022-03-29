@@ -19621,33 +19621,33 @@
 ; Returns (mv erp provedp state rand result-array-stobj)
 ;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true type currently come in in ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
-(defun prove-miter-fn-helper (dag-lst         ;rename dag-lst-or-quotep
-                              test-case-count ;the total number of tests to generate?  some may not be used
-                              var-type-alist  ;compute this from the hyps?
-                              print
-                              traced-nodes ;do we use this?
-                              user-interpreted-function-alist  ;fixme just pass in the fn names and look them up in the state?
+(defun prove-miter-core (dag-lst ;rename dag-lst-or-quotep
+                         test-case-count ;the total number of tests to generate?  some may not be used
+                         var-type-alist  ;compute this from the hyps?
+                         print
+                         traced-nodes ;do we use this?
+                         user-interpreted-function-alist ;fixme just pass in the fn names and look them up in the state?
 ;ffixme allow the use of rule phases?!
-                              runes  ;used for both the rewriter and prover
-                              rules  ;used for both the rewriter and prover
-                              rewriter-runes ;used for the rewriter only (not the prover)
-                              prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
-                              initial-rule-set
-                              initial-rule-sets
-                              assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
-                              pre-simplifyp ;fffixme get rid of this (always use t) -- no, we sometimes want to suppress this (when irrelevant nodes have rec fns)
-                              extra-stuff
-                              specialize-fnsp
-                              monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
-                              use-context-when-miteringp
-                              random-seed
-                              unroll
-                              tests-per-case
-                              max-conflicts
-                              simplify-xorsp ;fixme use the more, deeper in?
-                              name              ;the name of this proof
-                              options
-                              state rand result-array-stobj)
+                         runes      ;used for both the rewriter and prover
+                         rules      ;used for both the rewriter and prover
+                         rewriter-runes ;used for the rewriter only (not the prover)
+                         prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
+                         initial-rule-set
+                         initial-rule-sets
+                         assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
+                         pre-simplifyp ;fffixme get rid of this (always use t) -- no, we sometimes want to suppress this (when irrelevant nodes have rec fns)
+                         extra-stuff
+                         specialize-fnsp
+                         monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
+                         use-context-when-miteringp
+                         random-seed
+                         unroll
+                         tests-per-case
+                         max-conflicts
+                         simplify-xorsp ;fixme use the more, deeper in?
+                         name           ;the name of this proof
+                         options
+                         state rand result-array-stobj)
   (declare (xargs :guard (and (or (quotep dag-lst)
                                   (weak-dagp dag-lst))
                               (natp test-case-count)
@@ -19675,7 +19675,7 @@
          (interpreted-function-alist (make-interpreted-function-alist (get-non-built-in-supporting-fns-list (dag-fns dag-lst) (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
          ;;doesn't actually check that the user supplied alist is consistent with the state (fixme just pass in the names and look them up in the current state)?
          (interpreted-function-alist (if (not (consistent-alists interpreted-function-alist user-interpreted-function-alist))
-                                         (prog2$ (hard-error 'prove-miter-fn-helper "inconsistent interpreted function alists." nil) ;print more?
+                                         (prog2$ (hard-error 'prove-miter-core "inconsistent interpreted function alists." nil) ;print more?
                                                  nil)
                                        (append interpreted-function-alist user-interpreted-function-alist)))
          (no-test-casesp (not (posp test-case-count)))
@@ -19756,7 +19756,7 @@
                          (if (< (dag-size dag-lst) 10000)
                              (cw "~%(Term: ~X01)~%" (dag-to-term dag-lst) nil)
                            nil)
-                         (er hard 'prove-miter-fn "If the test-case-count is not a positive integer, the DAG must be a constant, but it is the above. Functions in the DAG: ~X01" (dag-fns dag-lst) nil)
+                         (er hard 'prove-miter-core "If the test-case-count is not a positive integer, the DAG must be a constant, but it is the above. Functions in the DAG: ~X01" (dag-fns dag-lst) nil)
                          (mv t nil state rand result-array-stobj))
                ;; Compare the vars in the DAG to the vars given types in VAR-TYPE-ALIST: ;move this check up?
                (b* ((dag-vars (dag-vars dag-lst))
@@ -19764,7 +19764,7 @@
                     (vars-given-types (strip-cars var-type-alist))
                     (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
                     (- (if (not (subsetp-eq sorted-dag-vars sorted-vars-given-types)) ;stricter check? or warning if extra vars given?
-                           ;; (hard-error 'prove-miter-fn
+                           ;; (hard-error 'prove-miter-core
                            ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
                            ;;               (acons #\0 sorted-dag-vars
                            ;;                      (acons #\1 sorted-vars-given-types
@@ -19867,7 +19867,9 @@
                        max-conflicts
                        simplify-xorsp ;fixme use the more, deeper in?
                        miter-name        ;the name of this proof
-                       options ;could move a lot of stuff into these options
+                       prove-constants
+                       treat-as-purep
+                       debug
                        whole-form
                        state rand result-array-stobj)
   (declare (xargs :guard (and (or (quotep dag-lst)
@@ -19894,62 +19896,62 @@
                               )
                   :mode :program
                   :stobjs (state rand result-array-stobj)))
-  (b* (((when (command-is-redundantp whole-form state))
+  (b* (((when (command-is-redundantp whole-form state)) ; may not always be appropriate, depending on the caller
         (mv nil '(value-triple :invisible) state rand result-array-stobj))
-       (fns (dag-fns dag-lst)))
-    ;;todo: remove or generalize this:
-    (if (member-eq 'JVM::ERROR-STATE fns) ;fixme pass in a set of functions to look for.
-        (prog2$ (hard-error 'prove-miter-fn "The DAG contains a calls to JVM::ERROR-STATE.  Symbolic execution may have failed." nil)
-                (mv (erp-t) '(progn) state rand result-array-stobj))
-      (let ((max-conflicts (if (eq 'default max-conflicts) *default-stp-max-conflicts* max-conflicts)))
-        (prog2$
-         (cw "~%(Proving top-level miter ~x0:~%" miter-name)
-         (let ( ;(state (make-temp-dir state))
-               )
-           (mv-let
-             (erp provedp state rand result-array-stobj)
-             (prove-miter-fn-helper dag-lst test-case-count
-                                    var-type-alist ;compute this from the hyps?
-                                    print
-                                    traced-nodes ;do we use this?
-                                    interpreted-function-alist
+       )
+    (let ((max-conflicts (if (eq 'default max-conflicts) *default-stp-max-conflicts* max-conflicts))
+          ;; could move a lot of stuff into these options:
+          (options (s :prove-constants prove-constants
+                      (s :treat-as-purep treat-as-purep
+                         (s :debugp debug nil)))))
+      (prog2$
+       (cw "~%(Proving top-level miter ~x0:~%" miter-name)
+       (let ( ;(state (make-temp-dir state))
+             )
+         (mv-let
+           (erp provedp state rand result-array-stobj)
+           (prove-miter-core dag-lst test-case-count
+                                  var-type-alist ;compute this from the hyps?
+                                  print
+                                  traced-nodes ;do we use this?
+                                  interpreted-function-alist
 ;ffixme allow the use of rule phases?!
-                                    runes ;used for both the rewriter and prover
-                                    rules ;used for both the rewriter and prover
-                                    rewriter-runes ;used for the rewriter only (not the prover)
-                                    prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
-                                    initial-rule-set
-                                    initial-rule-sets
-                                    assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
-                                    pre-simplifyp
-                                    extra-stuff
-                                    specialize-fnsp
-                                    monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
-                                    use-context-when-miteringp
-                                    random-seed
-                                    unroll
-                                    tests-per-case
-                                    max-conflicts
-                                    simplify-xorsp ;fixme use the more, deeper in?
-                                    miter-name
-                                    options
-                                    state rand result-array-stobj)
-             (if erp
-                 (mv erp nil state rand result-array-stobj)
-               (if provedp
-                   (prog2$ (cw "Proved top level miter ~x0.)~%" miter-name)
-                           (let ((state (if (g :debugp options)
-                                            state
-                                          (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
-                             (let ((event '(progn))) ;fixme should return a theorem about the dag!
-                               (mv (erp-nil)
-                                   (extend-progn event `(table prove-miter-table ',whole-form ',event))
-                                   state rand result-array-stobj))))
-                 (progn$ (cw "Failed to prove top level miter.)~%")
-                         (hard-error 'prove-miter "Failed to prove miter." nil)
-                         (mv (erp-t)
-                             nil
-                             state rand result-array-stobj)))))))))))
+                                  runes ;used for both the rewriter and prover
+                                  rules ;used for both the rewriter and prover
+                                  rewriter-runes ;used for the rewriter only (not the prover)
+                                  prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
+                                  initial-rule-set
+                                  initial-rule-sets
+                                  assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
+                                  pre-simplifyp
+                                  extra-stuff
+                                  specialize-fnsp
+                                  monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
+                                  use-context-when-miteringp
+                                  random-seed
+                                  unroll
+                                  tests-per-case
+                                  max-conflicts
+                                  simplify-xorsp ;fixme use the more, deeper in?
+                                  miter-name
+                                  options
+                                  state rand result-array-stobj)
+           (if erp
+               (mv erp nil state rand result-array-stobj)
+             (if provedp
+                 (prog2$ (cw "Proved top level miter ~x0.)~%" miter-name)
+                         (let ((state (if (g :debugp options)
+                                          state
+                                        (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
+                           (let ((event '(progn))) ;fixme should return a theorem about the dag!
+                             (mv (erp-nil)
+                                 (extend-progn event `(table prove-miter-table ',whole-form ',event))
+                                 state rand result-array-stobj))))
+               (progn$ (cw "Failed to prove top level miter.)~%")
+                       (hard-error 'prove-miter "Failed to prove miter." nil)
+                       (mv (erp-t)
+                           nil
+                           state rand result-array-stobj))))))))))
 
 ;; Returns (mv erp event state rand result-array-stobj).
 ;fixme - eventually, try to always use the same rules for the dag prover as the dag rewriter..
@@ -19992,9 +19994,9 @@
   `(prove-miter-fn ,dag-lst ,test-case-count ,var-type-alist ,print ,traced-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                    ,initial-rule-set ,initial-rule-sets ,assumptions ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                    ,random-seed ,unroll ,tests-per-case ,max-conflicts ,simplify-xorsp ,name
-                   (s :prove-constants ,prove-constants
-                      (s :treat-as-purep ,treat-as-purep
-                         (s :debugp ,debug nil)))
+                   ,prove-constants
+                   ,treat-as-purep
+                    ,debug
                    ',whole-form
                    state rand result-array-stobj))
 
@@ -20938,6 +20940,7 @@
 
 ;; can combine names like *foo-spec-dag* and *foo-java-dag*
 ;; (choose-miter-name '*foo-spec-dag* '*foo-java-dag*)
+;todo: move up
 (defun choose-miter-name (name quoted-form1 quoted-form2 wrld)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))
@@ -21030,6 +21033,7 @@
        ((mv erp
             & ; the event is usually an empty progn
             state rand result-array-stobj)
+        ;; todo: :trans this and put in the result?:
         (prove-miter-aux equality-dag
                          tests
                          types
