@@ -21092,6 +21092,7 @@
 
 <p>If the call to @('prove-equivalence') completes without error, the DAG/terms are equal, given the :assumptions (including the :types).</p>")
 
+;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
 (defmacro prove-equivalence (&whole whole-form
                                     dag-or-term1
                                     dag-or-term2
