@@ -761,8 +761,10 @@
 
 ;; Returns (mv events rule-names).
 ;; TODO: Change this and related fns to take wrld instead of state?
-(defun opener-rules-for-fns (fns events-acc rule-names-acc state)
+(defun opener-rules-for-fns (fns disable suffix events-acc rule-names-acc state)
   (declare (xargs :guard (and (symbol-listp fns)
+                              (booleanp disable)
+                              (symbolp suffix)
                               (true-listp events-acc)
                               (symbol-listp rule-names-acc)
                               ;;(plist-worldp wrld)
@@ -771,12 +773,17 @@
   (if (endp fns)
       (mv (reverse events-acc) (reverse rule-names-acc))
     (let ((fn (first fns)))
-      (if (recursivep fn nil (w state))
+      (if (eq 'quote fn)
+          (prog2$ (er hard? 'opener-rules-for-fns "One of the fns give is QUOTE.")
+                  (mv nil nil))
+        (if (recursivep fn nil (w state))
+            (opener-rules-for-fns (rest fns)
+                                  disable suffix
+                                  (cons `(defopeners ,fn :disable ,disable :suffix ,suffix) events-acc)
+                                  (append (defopeners-names-fn fn nil disable suffix nil state) rule-names-acc)
+                                  state)
           (opener-rules-for-fns (rest fns)
-                                (cons `(defopeners ,fn) events-acc)
-                                (append (defopeners-names fn) rule-names-acc)
-                                state)
-        (opener-rules-for-fns (rest fns)
-                              events-acc ; no event, just include fn's name (representing its definition rule), in rule-names-acc
-                              (cons fn rule-names-acc)
-                              state)))))
+                                disable suffix
+                                events-acc ; no event, just include fn's name (representing its definition rule), in rule-names-acc
+                                (cons fn rule-names-acc)
+                                state))))))
