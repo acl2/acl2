@@ -45,6 +45,7 @@
 (include-book "rule-lists-jvm")
 (include-book "rules-in-rule-lists-jvm") ;include less?  but some of these rules are now used during decompilation?
 (include-book "lifter-utilities")
+(include-book "kestrel/jvm/method-indicators" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
 (include-book "lifter-utilities3")
@@ -6383,7 +6384,7 @@
 
 ;; The core function of the lifter
 ;Returns (mv erp event state)
-(defun lift-java-code-fn (method-designator-string
+(defun lift-java-code-fn (method-indicator
                           program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
                           param-names ; usually not used
                           array-length-alist
@@ -6420,6 +6421,7 @@
                           state)
   (declare (xargs :stobjs (state)
                   :guard (and ;;(pseudo-term-listp user-assumptions) ;now these can be untranslated terms, so we translate them below
+                          (jvm::method-indicatorp method-indicator)
                           (booleanp ignore-exceptions)
                           (booleanp ignore-errors)
                           (booleanp inline)
@@ -6459,6 +6461,8 @@
         (mv t (er hard 'lift-java-code "ERROR: Ill-formed guards!") state))
        ((when (not (postludesp postludes)))
         (mv t (er hard 'lift-java-code "ERROR: Ill-formed postludes!") state))
+       ;; Adds the descriptor if omitted and unambiguous:
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
        ;; Gather info about the main method to be lifted:
        (method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
@@ -6642,7 +6646,7 @@
 ;; TODO: Consider re-playing with :print t if the lift attempt fails.
 ;; TODO: Suppress more printing if :print is nil.
 (defmacro lift-java-code (&whole whole-form
-                                 method-designator-string
+                                 method-indicator
                                  program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
                                  &key
                                  (param-names ':auto)
@@ -6678,7 +6682,7 @@
                                  (branches ':split) ;; either :smart (try to merge at join points) or :split (split the execution and don't re-merge) -- TODO: Switch the default to :smart
                                  (disable-loop-openers 'nil) ;todo: consider T
                                  )
-  (let ((form `(lift-java-code-fn ,method-designator-string
+  (let ((form `(lift-java-code-fn ,method-indicator
                                   ,program-name
                                   ',param-names
                                   ,array-length-alist
@@ -6743,7 +6747,7 @@
 ;; Lift a segment of code (not an entire method) into logic.
 ;Returns (mv erp event state)
 (defun lift-java-code-segment-fn (program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
-                                  method-designator-string
+                                  method-indicator
                                   start-pc
                                   segment-pcs ;is there a nicer way to specify the segment? ;this should contain start-pc
                                   input-source-alist ;todo: can we do away with this now (lift-java-code-fn doesn't have it)?
@@ -6770,7 +6774,8 @@
                                   whole-form
                                   state)
   (declare (xargs :stobjs (state)
-                  :guard (and (invariantsp invariants)
+                  :guard (and (jvm::method-indicatorp method-indicator)
+                              (invariantsp invariants)
                               (measuresp measures state)
                               (measure-hintsp measure-hints)
                               (loop-guardsp loop-guards)
@@ -6791,6 +6796,8 @@
         (prog2$ (hard-error 'lift-java-code-segment-fn "No input-source-alist supplied." nil) ;TODO: Remove this check and instead auto-generate it.
                 (mv t nil state)))
        (assumptions (translate-terms assumptions 'lift-java-code-segment-fn (w state))) ;throws an error on bad input
+       ;; Adds the descriptor if omitted and unambiguous:
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
        (method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string))
@@ -6889,7 +6896,7 @@
 ;; Keep this in sync with show-lift-java-code-segment below.
 (defmacro lift-java-code-segment (&whole whole-form
                                          program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
-                                         method-designator-string
+                                         method-indicator
                                          start-pc
                                          segment-pcs ;is there a nicer way to specify the segment (line numbers in the source)?
                                          output-indicator ;an output-indicatorp (TODO: make this a keyword arg defaulting to :auto)
@@ -6918,7 +6925,7 @@
                                          ;TODO: Add postludes, extra-invars
                                          )
   `(make-event (lift-java-code-segment-fn ',program-name
-                                          ,method-designator-string
+                                          ,method-indicator
                                           ,start-pc
                                           ,segment-pcs ;is there a nicer way to specify the segment?
                                           ,input-source-alist
@@ -6948,7 +6955,7 @@
 ;; Keep this in sync with lift-java-code-segment above.
 (defmacro show-lift-java-code-segment (&whole whole-form
                                               program-name
-                                              method-designator-string
+                                              method-indicator
                                               start-pc
                                               segment-pcs
                                               output-indicator ;an output-indicatorp
@@ -6975,7 +6982,7 @@
                                               (use-lets-in-terms 'nil)
                                               )
   `(lift-java-code-segment-fn ',program-name
-                              ,method-designator-string
+                              ,method-indicator
                               ,start-pc
                               ,segment-pcs ;is there a nicer way to specify the segment?
                               ,input-source-alist

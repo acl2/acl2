@@ -21169,3 +21169,8 @@
 (defun byte-types-for-vars (vars)
   (declare (xargs :guard (symbol-listp vars)))
   (assign-type-to-vars (make-bv-type 8) vars))
+
+;; Returns an alist mapping each of the VARS to the BV1 (= bit) type.
+(defun bit-types-for-vars (vars)
+  (declare (xargs :guard (symbol-listp vars)))
+  (assign-type-to-vars (make-bv-type 1) vars))
