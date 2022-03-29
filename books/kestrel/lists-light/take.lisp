@@ -228,7 +228,7 @@
          (equal (nfix n1) (nfix n2)))
   :hints (("Goal" :in-theory (enable take))))
 
-(defthmd take-opener
+(defthmd take-opener-when-not-zp
   (implies (not (zp n))
            (equal (take n lst)
                   (cons (nth 0 lst)

@@ -360,7 +360,7 @@
 
 ;; Returns (mv erp event state).
 (defun unroll-java-code2-fn (fn
-                             method-designator-string
+                             method-indicator
                              array-length-alist ;TODO: perhaps we should also support an alist whose keys are local slots, in case the slots don't have names (no debugging info in the class file)
                              user-assumptions
                              classes-to-assume-initialized
@@ -386,7 +386,7 @@
   (declare (xargs :stobjs (state)
                   :mode :program
                   :guard (and (symbolp fn)
-                              (stringp method-designator-string)
+                              (jvm::method-indicatorp method-indicator)
                               ;;todo: check array-length-alist
                               (or (eq classes-to-assume-initialized :all)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
@@ -410,6 +410,8 @@
                                   (eq :auto steps)))))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
+       ;; Adds the descriptor if omitted and unambiguous:
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
        (- (cw "(Unrolling ~x0:~%" method-designator-string))
        (state-var 's0)
        (method-class (extract-method-class method-designator-string))
@@ -706,7 +708,7 @@
 (defmacrodoc unroll-java-code2
   (&whole whole-form
           fn ;name of function to create  ;todo: reorder the first 2 args to match the main lifter (same for unroll-java-code)
-          method-designator-string
+          method-indicator
           &key
           (array-length-alist 'nil)
           (assumptions 'nil) ;; These are over the state var S ;TODO: Allow these to mention vars that correspond to the inputs?
@@ -728,7 +730,7 @@
           (print-interval '1000)
           (steps ':auto))
   (let ((form `(unroll-java-code2-fn ',fn
-                                     ',method-designator-string
+                                     ',method-indicator
                                      ,array-length-alist
                                      ,assumptions
                                      ,classes-to-assume-initialized
@@ -762,7 +764,7 @@
   the (unrolled) effect of the given method on the JVM state (under the given
   assumptions).  This uses symbolic execution including unrolling all loops."
   :args ((fn "The name of the function to create")
-         (method-designator-string "The method designator of the method (a string like \"java.lang.Object.foo(IB)V\")")
+         (method-indicator "The Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").  The descriptor (input and output type) can be omitted if only one method in the given class has the given name.")
          (array-length-alist "An alist pairing array parameters with their sizes")
          (classes-to-assume-initialized "Classes to assume the JVM has already initialized, or :all")
          (classes-to-assume-uninitialized "Classes to assume the JVM has not already initialized, or :all")

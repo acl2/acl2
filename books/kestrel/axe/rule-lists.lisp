@@ -267,7 +267,8 @@
      bitxor-of-leftrotate-arg2-trim
 
      ;;todo: think about these rules (why so many?):
-;ffixme handle other idioms..
+     ;; TODO: These can't fire if we are expanding the shift ops, which we usually are
+     ;; TTODO: handle other idioms (bvxor, bvplus, and a version with shift ops expanded)
      bvor-of-bvshl-and-bvshr-becomes-leftrotate
      bvor-of-bvshr-and-bvshl-becomes-leftrotate
      bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen
