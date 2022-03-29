@@ -1266,17 +1266,17 @@
   (declare (xargs :guard t))
   '(not-equal-of-nil-and-s))
 
-;deprecate
-(defun jvm-rules ()
-  (declare (xargs :guard t))
-  (append (map-rules)
-          (jvm-semantics-rules)
-          (jvm-simplification-rules)
-          (jvm-rules-list)
-          (jvm-rules-alist)
-          (list-rules) ;drop?
-          (bv-array-rules)
-          (jvm-rules-unfiled-misc)))
+;; ;deprecate
+;; (defun jvm-rules ()
+;;   (declare (xargs :guard t))
+;;   (append (map-rules)
+;;           (jvm-semantics-rules)
+;;           (jvm-simplification-rules)
+;;           (jvm-rules-list)
+;;           (jvm-rules-alist)
+;;           (list-rules) ;drop?
+;;           (bv-array-rules)
+;;           (jvm-rules-unfiled-misc)))
 
 ;; ;drop
 ;; (defun yet-more-rules-jvm ()
@@ -1297,6 +1297,7 @@
 ;;     ))
 
 ;; todo: rename
+;used by many axe examples
 (defun amazing-rules-spec-and-dag ()
   (declare (xargs :guard t))
   (append (amazing-rules-bv)
@@ -1351,6 +1352,7 @@
            (list-to-bv-array-rules)
            (map-rules)
            (yet-more-rules-non-jvm)
+           (array-reduction-rules)
            (more-rules-bv-misc)
            ;;(amazing-rules) ;this seemed slow - BBOZO why?? lots of bvchop 7 of larger values?
            '(nth-of-myif ;Sun Feb 27 01:58:14 2011
@@ -1410,6 +1412,7 @@
            (list-to-bv-array-rules) ;needed?
            (map-rules)
            (yet-more-rules-non-jvm)
+           (array-reduction-rules)
            (more-rules-bv-misc)
            ;;(amazing-rules) ;this seemed slow - BBOZO why?? lots of bvchop 7 of larger values?
            '(;fixme what other of the amazing rules do we need?
@@ -1504,7 +1507,7 @@
 ;;             IDENTITY
 ;;             )))
 
-;fixme get rid of this?
+;fixme get rid of this? used in lifter.
 ;todo: this contains some duplicates (other rule lists in this file may too)
 (defun rule-list-1001 ()
   (declare (xargs :guard t))
