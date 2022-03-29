@@ -1,6 +1,6 @@
 ; XDOC Documentation System for ACL2
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -28,12 +28,14 @@
      "@(':order-subtopics'), which must be @('t') or @('nil').
       If it is @('t'),
       a call of @(tsee xdoc::order-subtopics) is generated
-      to order all the subtopics of this topic.")
+      to order all the subtopics of this topic.
+      The default is @('nil').")
     (xdoc::li
      "@(':default-parent'), which must be @('t') or @('nil').
       If it is @('t'),
       a book-@(see local) call of @(tsee set-default-parents) is generated
-      to use the singleton list of this topic as default parents."))
+      to use the singleton list of this topic as default parents.
+      The default is @('nil')."))
    (xdoc::@def "defxdoc+"))
 
   (defmacro defxdoc+ (&rest args)
