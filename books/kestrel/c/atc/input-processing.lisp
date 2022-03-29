@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "pretty-printing-options")
+(include-book "defstruct")
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
@@ -25,6 +26,7 @@
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "oslib/dirname" :dir :system :ttags ((:quicklisp) :oslib))
 (include-book "oslib/file-types" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) :oslib))
+(include-book "kestrel/std/util/tuple" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,16 +51,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-function (fn
+(define atc-process-function ((fn symbolp)
+                              (previous-fns symbol-listp)
                               (uncalled-fns symbol-listp)
                               (ctx ctxp)
                               state)
+  :guard (function-symbolp fn (w state))
   :returns (mv erp
-               (new-uncalled-fns symbol-listp
-                                 :hyp (and (symbolp fn)
-                                           (symbol-listp uncalled-fns)))
+               (val (tuple (new-previous-fns symbol-listp)
+                           (new-uncalled-fns symbol-listp)
+                           val)
+                    :hyp (and (symbolp fn)
+                              (symbol-listp previous-fns)
+                              (symbol-listp uncalled-fns)))
                state)
-  :short "Process a target function @('fni') among @('fn1'), ..., @('fnp')."
+  :short "Process a target function @('fn') among @('t1'), ..., @('tp')."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -66,40 +73,54 @@
      namely the ones that are easy to perform
      without analyzing the body of the function in detail.
      The remaining checks are performed during code generation,
-     where it is more natural to make them,
-     as the functions' bodies are analyzed to translate them to C.")
+     where it is more natural to perform them,
+     as the functions' bodies are analyzed and translated to C.")
+   (xdoc::p
+    "The @('previous-fns') parameter lists the symbols of
+     all the target functions
+     that precede @('fn') in @('(t1 ... tp)').
+     This list is used to ensure that
+     there are no duplicate target functions.")
    (xdoc::p
     "The @('uncalled-fns') parameter lists the symbols of
      all the recursive target functions
-     that precede @('fn') in @('(fn1 ... fnp)')
+     that precede @('fn') in @('(t1 ... tp)')
      and that are not called by any of the functions
-     that precede @('fn') in @('(fn1 ... fnp)').
+     that precede @('fn') in @('(t1 ... tp)').
      This list is used to ensure that all the recursive target functions,
      which represent C loops,
      are called by some other target functions (that follow them).
-     The reason for checking this is that C loops
-     may only occur in C functions;
+     The reason for checking this is that C loops may only occur in C functions;
      if this check were not satisfied,
      there would be some C loop, represented by a recursive target function,
      that does not appear in the generated C code.
      As we process @('fn'),
      we remove from @('uncalled-fns') all the functions called by @('fn').
      If @('fn') is recursive, we add it to @('uncalled-fns').
-     We return the updated list of uncalled functions."))
-  (b* ((desc (msg "The target function input ~x0" fn))
-       ((er &) (ensure-value-is-function-name$ fn desc t nil))
+     We return the updated list of uncalled functions.")
+   (xdoc::p
+    "When this input processing function is called,
+     @('fn') is already known to be a function name.
+     See @(tsee atc-process-target)."))
+  (b* ((irrelevant (list nil nil))
+       ((when (member-eq fn previous-fns))
+        (er-soft+ ctx t irrelevant
+                  "The target function ~x0 appears more than once ~
+                   in the list of targets."
+                  fn))
+       (previous-fns (cons fn previous-fns))
        (desc (msg "The target function ~x0" fn))
-       ((er &) (ensure-function-is-logic-mode$ fn desc t nil))
-       ((er &) (ensure-function-is-guard-verified$ fn desc t nil))
-       ((er &) (ensure-function-is-defined$ fn desc t nil))
+       ((er &) (ensure-function-is-logic-mode$ fn desc t irrelevant))
+       ((er &) (ensure-function-is-guard-verified$ fn desc t irrelevant))
+       ((er &) (ensure-function-is-defined$ fn desc t irrelevant))
        ((when (ffnnamep fn (uguard+ fn (w state))))
-        (er-soft+ ctx t nil
+        (er-soft+ ctx t irrelevant
                   "The target function ~x0 is used in its own guard. ~
                    This is currently not supported in ATC."
                   fn))
        (rec (irecursivep+ fn (w state)))
        ((when (and rec (> (len rec) 1)))
-        (er-soft+ ctx t nil
+        (er-soft+ ctx t irrelevant
                   "The recursive target function ~x0 ~
                    must be singly recursive, ~
                    but it is mutually recursive with ~x1 instead."
@@ -107,7 +128,7 @@
        ((when (and rec
                    (not (equal (well-founded-relation+ fn (w state))
                                'o<))))
-        (er-soft+ ctx t nil
+        (er-soft+ ctx t irrelevant
                   "The well-founded relation ~
                    of the recursive target function ~x0 ~
                    must be O<, but it ~x1 instead. ~
@@ -118,84 +139,211 @@
        (uncalled-fns (if rec
                          (cons fn uncalled-fns)
                        uncalled-fns)))
-    (acl2::value uncalled-fns))
+    (acl2::value (list previous-fns
+                       uncalled-fns)))
   :guard-hints (("Goal" :in-theory (enable
-                                    acl2::ensure-value-is-function-name
                                     acl2::ensure-function-is-guard-verified
                                     acl2::ensure-function-is-logic-mode
                                     acl2::ensure-function-is-defined)))
   ///
 
-  (defret null-of-atc-process-function-when-erp
-    (implies erp
-             (null new-uncalled-fns)))
+  (more-returns
+   (val true-listp
+        :rule-classes :type-prescription
+        :name true-listp-of-atc-process-function.val))
 
-  (defruled symbolp-of-fn-when-atc-process-function-not-erp
-    (implies (not (mv-nth 0 (atc-process-function fn uncalled-fns ctx state)))
-             (symbolp fn))
-    :enable acl2::ensure-value-is-function-name))
+  (defret true-listp-of-atc-process-function.new-previous-fns
+    (b* (((list new-previous-fns &) val))
+      (true-listp new-previous-fns))
+    :hyp (true-listp previous-fns)
+    :rule-classes :type-prescription)
+
+  (defret true-listp-of-atc-process-function.new-uncalled-fns
+    (b* (((list & new-uncalled-fns) val))
+      (true-listp new-uncalled-fns))
+    :hyp (true-listp uncalled-fns)
+    :rule-classes :type-prescription))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-function-list ((fns true-listp)
-                                   (uncalled-fns symbol-listp)
-                                   (ctx ctxp)
-                                   state)
+(define atc-process-target (target
+                            (previous-structs symbol-listp)
+                            (previous-fns symbol-listp)
+                            (uncalled-fns symbol-listp)
+                            (ctx ctxp)
+                            state)
   :returns (mv erp
-               (new-uncalled-fns symbol-listp
-                                 :hyp (and (symbol-listp fns)
-                                           (symbol-listp uncalled-fns)))
+               (val (tuple (new-previous-structs symbol-listp)
+                           (new-previous-fns symbol-listp)
+                           (new-uncalled-fns symbol-listp)
+                           val)
+                    :hyp (and (symbol-listp previous-structs)
+                              (symbol-listp previous-fns)
+                              (symbol-listp uncalled-fns)))
+               state)
+  :short "Process a target among @('t1'), ..., @('tp')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The parameters @('previous-fns') and @('uncalled-fns')
+     are explained in @(tsee atc-process-function).
+     The parameter @('previous-structs') is analogous to @('previous-fns'),
+     but for the @(tsee defstruct) targets instead of the function targets:
+     it lists all the @(tsee defstruct) targets that precede @('target')
+     in the list of targets @('(t1 ... tp)').
+     This is used to detect duplicate @(tsee defstruct) targets.")
+   (xdoc::p
+    "If the target is a function name,
+     its processing is delegated to @(tsee atc-process-function).
+     Otherwise, it must be a @(tsee defstruct) name,
+     and it is processed here.
+     We just check that the it is in the @(tsee defstruct) table."))
+  (b* ((irrelevant (list nil nil nil))
+       ((when (acl2::function-namep target (w state)))
+        (b* (((mv erp (list previous-fns uncalled-fns) state)
+              (atc-process-function target previous-fns uncalled-fns ctx state))
+             ((when erp) (mv erp irrelevant state)))
+          (acl2::value (list previous-structs
+                             previous-fns
+                             uncalled-fns))))
+       ((when (member-eq target previous-structs))
+        (er-soft+ ctx t irrelevant
+                  "The target DEFSTRUCT name ~x0 appears more than once ~
+                   in the list of targets."
+                  target))
+       ((unless (symbolp target))
+        (er-soft+ ctx t irrelevant
+                  "The target ~x0 is not a symbol."
+                  target))
+       ((unless (defstruct-table-lookup target (w state)))
+        (er-soft+ ctx t irrelevant
+                  "The target ~x0 is neither a function name ~
+                   nor a DEFSTRUCT name."
+                  target))
+       (previous-structs (cons target previous-structs)))
+    (acl2::value (list previous-structs
+                       previous-fns
+                       uncalled-fns)))
+  ///
+
+  (more-returns
+   (val true-listp
+        :rule-classes :type-prescription))
+
+  (defret len-of-atc-process-target.val
+    (equal (len val) 3))
+
+  (defret true-listp-of-atc-process-target.new-previous-structs
+    (b* (((list new-previous-structs & &) val))
+      (true-listp new-previous-structs))
+    :hyp (true-listp previous-structs)
+    :rule-classes :type-prescription)
+
+  (defret true-listp-of-atc-process-target.new-previous-fns
+    (b* (((list & new-previous-fns &) val))
+      (true-listp new-previous-fns))
+    :hyp (true-listp previous-fns)
+    :rule-classes :type-prescription)
+
+  (defret true-listp-of-atc-process-target.new-uncalled-fns
+    (b* (((list & & new-uncalled-fns) val))
+      (true-listp new-uncalled-fns))
+    :hyp (true-listp uncalled-fns)
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-process-target-list ((targets true-listp)
+                                 (previous-structs symbol-listp)
+                                 (previous-fns symbol-listp)
+                                 (uncalled-fns symbol-listp)
+                                 (ctx ctxp)
+                                 state)
+  :returns (mv erp
+               (val (tuple (new-previous-structs symbol-listp)
+                           (new-previous-fns symbol-listp)
+                           (new-uncalled-fns symbol-listp)
+                           val)
+                    :hyp (and (symbol-listp previous-structs)
+                              (symbol-listp previous-fns)
+                              (symbol-listp uncalled-fns)))
                state)
   :short "Lift @(tsee atc-process-function) to lists."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We thread through the list of uncalled recursive functions."))
-  (b* (((when (endp fns)) (acl2::value uncalled-fns))
-       ((er uncalled-fns) (atc-process-function (car fns)
-                                                uncalled-fns
-                                                ctx
-                                                state))
-       ((er uncalled-fns) (atc-process-function-list (cdr fns)
-                                                     uncalled-fns
-                                                     ctx
-                                                     state)))
-    (acl2::value uncalled-fns))
-  :prepwork ((local (in-theory (disable null))))
-  :guard-hints
-  (("Goal" :in-theory (enable symbolp-of-fn-when-atc-process-function-not-erp)))
+    "We thread the lists through."))
+  (b* (((when (endp targets)) (acl2::value (list previous-structs
+                                                 previous-fns
+                                                 uncalled-fns)))
+       ((er (list previous-structs previous-fns uncalled-fns))
+        (atc-process-target (car targets)
+                            previous-structs
+                            previous-fns
+                            uncalled-fns
+                            ctx
+                            state)))
+    (atc-process-target-list (cdr targets)
+                             previous-structs
+                             previous-fns
+                             uncalled-fns
+                             ctx
+                             state))
   ///
-  (defret null-of-atc-process-function-list-when-erp
-    (implies erp
-             (null new-uncalled-fns))))
+
+  (more-returns
+   (val true-listp
+        :rule-classes :type-prescription
+        :name true-listp-of-atc-process-target-list.val))
+
+  (defret true-listp-of-atc-process-target-list.new-previous-structs
+    (b* (((list new-previous-structs & &) val))
+      (true-listp new-previous-structs))
+    :hyp (true-listp previous-structs)
+    :rule-classes :type-prescription)
+
+  (defret true-listp-of-atc-process-target-list.new-previous-fns
+    (b* (((list & new-previous-fns &) val))
+      (true-listp new-previous-fns))
+    :hyp (true-listp previous-fns)
+    :rule-classes :type-prescription)
+
+  (defret true-listp-of-atc-process-target-list.new-uncalled-fns
+    (b* (((list & & new-uncalled-fns) val))
+      (true-listp new-uncalled-fns))
+    :hyp (true-listp uncalled-fns)
+    :rule-classes :type-prescription))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-fn1...fnp ((fn1...fnp true-listp) (ctx ctxp) state)
-  :returns (mv erp (nothing null) state)
-  :verify-guards nil
-  :short "Process the target functions @('fn1'), ..., @('fnp')."
+(define atc-process-targets ((targets true-listp) (ctx ctxp) state)
+  :returns (mv erp
+               (target-fns symbol-listp)
+               state)
+  :short "Process the targets @('t1'), ..., @('tp')."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We initialize the list of uncalled recursive functions to be empty,
-     and we ensure that the list is empty after processing all functions."))
-  (b* (((er uncalled-fns) (atc-process-function-list fn1...fnp nil ctx state))
-       ((unless (consp fn1...fnp))
+    "We initialize the lists of
+     previous @(tsee defstruct) names,
+     previous functions,
+     and uncalled recursive functions to be empty,
+     and we ensure that the latter list is empty
+     after processing all the targets.")
+   (xdoc::p
+    "We return all the target functions."))
+  (b* (((unless (consp targets))
         (er-soft+ ctx t nil
-                  "At least one target function must be supplied."))
-       ((er &) (ensure-list-has-no-duplicates$
-                fn1...fnp
-                (msg "The list of target functions ~x0" fn1...fnp)
-                t
-                nil))
+                  "At least one target must be supplied."))
+       ((mv erp (list & previous-fns uncalled-fns) state)
+        (atc-process-target-list targets nil nil nil ctx state))
+       ((when erp) (mv erp nil state))
        ((unless (endp uncalled-fns))
         (er-soft+ ctx t nil
-                  "The recursive target functions ~x0 ~
+                  "The recursive target functions ~&0 ~
                    are not called by any other target function."
                   uncalled-fns)))
-    (acl2::value nil))
-  :prepwork ((local (in-theory (disable null)))))
+    (acl2::value previous-fns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -321,7 +469,7 @@
 
 (define atc-process-const-name (const-name
                                 (const-name? booleanp)
-                                (fn1...fnp symbol-listp)
+                                (target-fns symbol-listp)
                                 (proofs booleanp)
                                 (ctx ctxp)
                                 state)
@@ -344,7 +492,7 @@
      and return them for use in event generation.
      More precisely, we return the name of the program well-formedness theorem
      and the names of the function correctness theorems;
-     the latter are returned as an alist from @('fn1'), ..., @('fnp')
+     the latter are returned as an alist from the target functions
      to the respective theorem names.")
    (xdoc::p
     "The name of each theorem is obtained by
@@ -356,9 +504,10 @@
      the @(':const-name') input must be absent
      and we return @('nil') for this as well as for the theorem names.
      No constant and theorems are generated when @(':proofs') is @('nil')."))
-  (b* (((when (not proofs))
+  (b* ((irrelevant (list nil nil nil))
+       ((when (not proofs))
         (if const-name?
-            (er-soft+ ctx t nil
+            (er-soft+ ctx t irrelevant
                       "Since the :PROOFS input is NIL, ~
                        the :CONST-NAME input must be absent, ~
                        but it is ~x0 instead."
@@ -367,7 +516,7 @@
        ((er &) (ensure-value-is-symbol$ const-name
                                         "The :CONST-NAME input"
                                         t
-                                        nil))
+                                        irrelevant))
        (prog-const (if (eq const-name :auto)
                        'c::*program*
                      const-name))
@@ -391,13 +540,13 @@
                 t
                 nil))
        ((er fn-thms)
-        (atc-process-const-name-aux fn1...fnp prog-const ctx state)))
+        (atc-process-const-name-aux target-fns prog-const ctx state)))
     (acl2::value (list prog-const
                        wf-thm
                        fn-thms)))
 
   :prepwork
-  ((define atc-process-const-name-aux ((fni...fnp symbol-listp)
+  ((define atc-process-const-name-aux ((target-fns symbol-listp)
                                        (prog-const symbolp)
                                        (ctx ctxp)
                                        state)
@@ -405,8 +554,8 @@
                   (val "A @(tsee symbol-symbol-alistp).")
                   state)
      :mode :program
-     (b* (((when (endp fni...fnp)) (acl2::value nil))
-          (fn (car fni...fnp))
+     (b* (((when (endp target-fns)) (acl2::value nil))
+          (fn (car target-fns))
           (fn-thm (packn (list prog-const "-" (symbol-name fn) "-CORRECT")))
           ((er &) (ensure-symbol-is-fresh-event-name$
                    fn-thm
@@ -418,7 +567,7 @@
                    t
                    nil))
           ((er fn-thms) (atc-process-const-name-aux
-                         (cdr fni...fnp) prog-const ctx state)))
+                         (cdr target-fns) prog-const ctx state)))
        (acl2::value (acons fn fn-thm fn-thms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -438,7 +587,7 @@
 
 (define atc-process-inputs ((args true-listp) (ctx ctxp) state)
   :returns (mv erp
-               (val "A @('(tuple (fn1...fnp symbol-listp)
+               (val "A @('(tuple (targets symbol-listp)
                                  (output-file stringp)
                                  (pretty-printing pprint-options-p)
                                  (proofs booleanp)
@@ -450,14 +599,13 @@
                state)
   :mode :program
   :short "Process all the inputs."
-  (b* (((mv erp fn1...fnp options)
+  (b* (((mv erp targets options)
         (partition-rest-and-keyword-args args *atc-allowed-options*))
        ((when erp) (er-soft+ ctx t nil
-                             "The inputs must be the names of ~
-                              one or more target functions ~
+                             "The inputs must be the targets ~
                               followed by the options ~&0."
                              *atc-allowed-options*))
-       ((er &) (atc-process-fn1...fnp fn1...fnp ctx state))
+       ((er target-fns) (atc-process-targets targets ctx state))
        (output-file-option (assoc-eq :output-file options))
        ((mv output-file output-file?)
         (if output-file-option
@@ -490,7 +638,7 @@
        ((er (list prog-const wf-thm fn-thms))
         (atc-process-const-name const-name
                                 const-name?
-                                fn1...fnp
+                                target-fns
                                 proofs
                                 ctx
                                 state))
@@ -499,7 +647,7 @@
                   (cdr print-option)
                 :result))
        ((er &) (evmac-process-input-print print ctx state)))
-    (acl2::value (list fn1...fnp
+    (acl2::value (list targets
                        output-file
                        pretty-printing
                        proofs
