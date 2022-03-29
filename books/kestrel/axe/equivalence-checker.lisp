@@ -17552,276 +17552,267 @@
        (let ((val (unquote dag-lst-or-quotep)))
          (if (eq t val)
              (prog2$ (cw "(The miter is the constant t.)~%")
-                     (mv nil t rand state result-array-stobj))
+                     (mv (erp-nil) t rand state result-array-stobj))
            (if (eq nil val)
                (prog2$ (cw "(The miter is the constant nil.)~%") ;should this be a hard error?
-                       (mv nil nil rand state result-array-stobj))
+                       (mv (erp-nil) nil rand state result-array-stobj))
              (prog2$ (hard-error 'miter-and-merge "expected t or nil but got the constant ~x0." (acons #\0 val nil))
-                     (mv t nil rand state result-array-stobj)))))
+                     (mv (erp-t) nil rand state result-array-stobj)))))
      ;;Pre-simplify:
-     (mv-let
-       (erp dag-lst-or-quotep interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj)
-       (if pre-simplifyp
-           (pre-simplify-recursive-functions dag-lst-or-quotep
-                                             interpreted-function-alist
-                                             rewriter-rule-alist
-                                             prover-rule-alist
-                                             assumptions
-                                             extra-stuff
-                                             (firstn tests-per-case test-cases) ;fixme think about the firstn ;fixme chose the most interesting ones
-                                             analyzed-function-table unroll monitored-symbols max-conflicts print
-                                             simplify-xorsp
-                                             miter-name
-                                             miter-depth options
-                                             rand state result-array-stobj)
-         (mv nil dag-lst-or-quotep interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj))
-       (if erp
-           (mv erp nil rand state result-array-stobj)
-         (if (quotep dag-lst-or-quotep)
-             (let ((val (unquote dag-lst-or-quotep)))
-               (if (eq t val)
-                   (prog2$ (cw "(The miter is the constant t.)~%")
-                           (mv nil t rand state result-array-stobj))
-                 (if (eq nil val)
-                     (prog2$ (cw "(The miter is the constant nil.)~%") ;should this be a hard error? not unless this miter must succeed?
-                             (mv nil nil rand state result-array-stobj))
-                   (prog2$ (hard-error 'miter-and-merge "expected t or nil but got the constant ~x0." (acons #\0 val nil))
-                           (mv t nil rand state result-array-stobj)))))
-           (let* ((miter-array-name (pack$ 'miter-array- miter-depth))
-                  (miter-array (make-into-array miter-array-name dag-lst-or-quotep)) ;call a -with-len version?
-                  (miter-len (len dag-lst-or-quotep)))
-             (progn$ (cw "(Proving miter ~x0 (depth ~x1, len ~x2):~%" miter-name miter-depth miter-len) ;name the miters according to their cases...
-                     (cw "(Using ~x0 test cases)~%" (len test-cases))
-                     (cw "(Number of rewriter-rules: ~x0.)~%" (sum-of-cdr-lens rewriter-rule-alist))
-                     (if (not test-cases) ;where should this check be done?
-                         (prog2$ (cw "ERROR no test cases! - no point in sweeping!") ; fffixme, well we could rewrite, i guess... that should be done outside this function?
-                                 (mv nil ;todo: use t?
-                                     (hard-error 'miter-and-merge "no test cases!" nil)
+     (b* (((mv erp dag-lst-or-quotep interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj)
+           (if pre-simplifyp
+               (pre-simplify-recursive-functions dag-lst-or-quotep
+                                                 interpreted-function-alist
+                                                 rewriter-rule-alist
+                                                 prover-rule-alist
+                                                 assumptions
+                                                 extra-stuff
+                                                 (firstn tests-per-case test-cases) ;fixme think about the firstn ;fixme chose the most interesting ones
+                                                 analyzed-function-table unroll monitored-symbols max-conflicts print
+                                                 simplify-xorsp
+                                                 miter-name
+                                                 miter-depth options
+                                                 rand state result-array-stobj)
+             (mv nil dag-lst-or-quotep interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj)))
+          ((when erp) (mv erp nil rand state result-array-stobj)))
+       (if (quotep dag-lst-or-quotep)
+           (let ((val (unquote dag-lst-or-quotep)))
+             (if (eq t val)
+                 (prog2$ (cw "(The miter is the constant t.)~%")
+                         (mv (erp-nil) t rand state result-array-stobj))
+               (if (eq nil val)
+                   (prog2$ (cw "(The miter is the constant nil.)~%") ;should this be a hard error? not unless this miter must succeed?
+                           (mv (erp-nil) nil rand state result-array-stobj))
+                 (prog2$ (hard-error 'miter-and-merge "expected t or nil but got the constant ~x0." (acons #\0 val nil))
+                         (mv (erp-t) nil rand state result-array-stobj)))))
+         ;; Not a constant;
+         (b* ((miter-array-name (pack$ 'miter-array- miter-depth))
+              (miter-array (make-into-array miter-array-name dag-lst-or-quotep)) ;call a -with-len version?
+              (miter-len (len dag-lst-or-quotep))
+              (- (progn$ (cw "(Proving miter ~x0 (depth ~x1, len ~x2):~%" miter-name miter-depth miter-len) ;name the miters according to their cases...
+                         (cw "(Using ~x0 test cases)~%" (len test-cases))
+                         (cw "(Number of rewriter-rules: ~x0.)~%" (sum-of-cdr-lens rewriter-rule-alist))))
+              ((when (not test-cases)) ;where should this check be done?
+               (cw "ERROR no test cases! - no point in sweeping!") ; fffixme, well we could rewrite, i guess... that should be done outside this function?
+               (mv nil ;todo: use t?
+                   (hard-error 'miter-and-merge "no test cases!" nil)
+                   rand state result-array-stobj))
+              ((mv erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist
+                   & ; new-analyzed-function-table
+                   monitored-symbols rand state result-array-stobj)
+               (perform-miter-sweeps miter-name miter-array-name miter-array miter-len
+                                     miter-depth
+                                     var-type-alist
+                                     test-cases
+                                     interpreted-function-alist print
+                                     traced-nodes
+                                     rewriter-rule-alist
+                                     prover-rule-alist
+                                     nil
+                                     assumptions
+                                     extra-stuff
+                                     monitored-symbols
+                                     use-context-when-miteringp
+                                     0
+                                     analyzed-function-table
+                                     unroll max-conflicts options
                                      rand state result-array-stobj))
-                       (mv-let (erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist new-analyzed-function-table monitored-symbols rand state result-array-stobj)
-                         (perform-miter-sweeps miter-name miter-array-name miter-array miter-len
-                                               miter-depth
-                                               var-type-alist
-                                               test-cases
-                                               interpreted-function-alist print
-                                               traced-nodes
-                                               rewriter-rule-alist
-                                               prover-rule-alist
-                                               nil
-                                               assumptions
-                                               extra-stuff
-                                               monitored-symbols
-                                               use-context-when-miteringp
-                                               0
-                                               analyzed-function-table
-                                               unroll max-conflicts options
-                                               rand state result-array-stobj)
-                         (declare (ignore new-analyzed-function-table))
-                         (if erp
-                             (mv erp nil ;provedp
-                                 rand state result-array-stobj)
-                           (if (eq :proved-miter result)
-                               (prog2$
-                                (cw "Proved the miter.)~%")
-                                (mv nil
-                                    t ;provedp
-                                    rand state result-array-stobj))
-                             (if (eq :error result)
-                                 (prog2$ (cw "ERROR)")
-                                         (mv t
-                                             nil ;provedp
-                                             rand state result-array-stobj))
-                               (b* ((- (cw "(May need to split the miter dag (depth ~x0, ~x1, ~x2):~%" miter-depth miter-name miter-array-name))
-                                    (state (if print (print-dag-array-to-temp-file
-                                                      miter-array-name miter-array miter-len
-                                                      (concatenate 'string (symbol-name miter-name) "-PRE-SPLIT")
-                                                      state)
-                                             state))
-                                    (- (cw ")~%(But we'll simplify first, using assumptions: ~x0~%" assumptions))
-                                    (miter-dag-lst (array-to-alist miter-array-name miter-array miter-len))
-                                    ;;since we are sometimes saying we did nothing when that is a lie, simplifying here may help:
-                                    ((mv erp
-                                         miter-dag-lst ;fffixme what if this is a quote?!
-                                         state)
-                                     (simp-dag miter-dag-lst
-                                               :rule-alist rewriter-rule-alist
-                                               :print :brief
-                                               :assumptions assumptions
-                                               :check-inputs nil))
-                                    ((when erp) (mv erp nil rand state result-array-stobj))
-                                    (- (and (or (eq :verbose print) (eq :verbose2 print))
-                                            (progn$ (cw "(Simplified miter dag (~x0):" miter-name)
-                                                    (print-list miter-dag-lst) ;fixme print this to a file?
-                                                    (cw ")~%"))))
-                                    ;;(- (cw "(Assumptions:~%~x0)~%" assumptions))
-                                    (- (cw ")~%"))
-                                    (miter-len (len miter-dag-lst))
-                                    (miter-array (make-into-array miter-array-name miter-dag-lst)) ;gross to convert here?
-                                    (nodenum-to-split-on (find-a-node-to-split-miter-on
-                                                          miter-array-name miter-len miter-array
-                                                          test-cases interpreted-function-alist)) ; ffixme think about heuristics!
-                                    )
-                                 (if (not nodenum-to-split-on)
-                                     (prog2$
-                                      (cw "(Couldn't find any node to split on.)~%")
-                                      ;; TODO: should we consider bit-blasting here?
-                                      (if (not must-succeedp)
-                                          (prog2$ (cw "(Failing because we don't have to succeed on this miter.))")
-                                                  (mv nil nil rand state result-array-stobj))
-                                        (if (not max-conflicts)
-                                            (prog2$ (cw "(Failing because we would normally increase the max-conflicts but timing out is turned off.))")
-                                                    (mv nil nil rand state result-array-stobj))
-                                          (if (< 10000000000 max-conflicts) ;; not sure what the limit should be but 2^64 causes an STP error
-                                              (prog2$ (cw "(Failing because the max-conflicts is too high.))")
-                                                      (mv nil nil rand state result-array-stobj))
-                                            (let ((max-conflicts (* 2 max-conflicts))) ;; TODO: Don't do this if no queries timed out
-                                              (prog2$ (cw "(Increasing the max-conflicts to ~x0 and trying again.)~%" max-conflicts)
-                                                      (mv-let (erp provedp rand state result-array-stobj)
-                                                        (miter-and-merge miter-dag-lst
-                                                                         miter-name ;fixme change this to indicate the increased max-conflicts?
-                                                                         miter-depth
-                                                                         var-type-alist
-                                                                         interpreted-function-alist
-                                                                         print
-                                                                         traced-nodes
-                                                                         rewriter-rule-alist
-                                                                         prover-rule-alist
-                                                                         assumptions
-                                                                         extra-stuff
-                                                                         test-cases
-                                                                         monitored-symbols
-                                                                         use-context-when-miteringp
-                                                                         analyzed-function-table
-                                                                         unroll
-                                                                         tests-per-case
-                                                                         max-conflicts must-succeedp
-                                                                         pre-simplifyp
-                                                                         simplify-xorsp
-                                                                         options
-                                                                         rand state result-array-stobj)
-                                                        (prog2$ (cw "End of proof attempt for ~x0)~%"  miter-name)
-                                                                (mv erp provedp rand state result-array-stobj)))))))))
-                                   (b* ((- (cw "(Splitting miter on node ~x0.)~%" nodenum-to-split-on))
-                                        (split-assumption (dag-to-term-aux-array miter-array-name miter-array nodenum-to-split-on)) ;fffixme this can blow up if there's nothing small to split on!
-                                        ;;(split-assumption (orient-equality2 split-assumption)) ;too aggressive? ;handle nots and known preds? ;Fri Feb 26 01:48:01 2010
-                                        ;;fixme what if the assumption contradicts the known assumptions
-                                        ;; (maybe it should have been merged with false, but what if it only arose during the simplification after the merge?)
-                                        (- (cw "(Split assumption:~%~x0)~%" split-assumption))
-                                        (assumptions-for-true-case (cons split-assumption assumptions))
-                                        (- (cw "(Simplifying other assumptions using the split assumption:~%"))
-                                        (strengthen-rules
-                                         ;;ffixme more rules? fixme pull out?
-                                         ;;did not want turn-equal-around..
-                                         ;; TODO: Use plain make-axe-rules here
-                                         (append (make-axe-rules! (exit-test-simplification-rules) (w state))
-                                                 (make-axe-rules! (strengthening-rules) (w state))))
-                                        ((mv erp assumptions-for-true-case state result-array-stobj)
-                                         (strengthen-facts assumptions-for-true-case print strengthen-rules state result-array-stobj))
-                                        ((when erp) (mv erp nil rand state result-array-stobj))
-                                        (- (cw "Done.)~%"))
-                                        ((mv erp miter-dag-lst-for-true-case state)
-                                         ;;fixme why not apply rule here too?!
-                                         (simp-dag miter-dag-lst
-                                                   :rules nil ;fffixme?
-                                                   :assumptions assumptions-for-true-case ;ffixme what about the equiv? call something like concretize?
-                                                   :check-inputs nil))
-                                        ((when erp) (mv erp nil rand state result-array-stobj))
-                                        ;; ffixme what about the equiv? the new assumption may not fire? call something like concretize?
-                                        (- (cw "(Unsimplified miter dag for true case:~%"))
-                                        (- (if (or (eq :verbose print) (eq :verbose2 print))
-                                               (print-list miter-dag-lst-for-true-case)
-                                             (cw ":elided"))) ;fixme what is this?
-                                        (- (cw ")~%(Simplifying:"))
-                                        ((mv erp miter-dag-lst-for-true-case state)
-                                         (simp-dag miter-dag-lst-for-true-case
-                                                   :rule-alist rewriter-rule-alist ;pass other rules?
-                                                   :assumptions assumptions-for-true-case
-                                                   :print print
-                                                   :check-inputs nil))
-                                        ((when erp) (mv erp nil rand state result-array-stobj))
-                                        (- (cw "done)~%") ;nil ;(cw "Simplified miter dag for true case:~%")
-                                           )
-                                        ;; (- (print-list miter-dag-lst-for-true-case)) ;don't print, since it will be printed by miter-and-merge?
-
-                                        ;;compute contexts? concretize?
-                                        ;;ffixme have we already checked that the test cases satisfy the assumptions (if they were random)?  only makes sense for outmost miter?
-                                        ((mv test-cases-for-true-case test-cases-for-false-case)
-                                         (partition-test-cases test-cases split-assumption interpreted-function-alist nil nil))
-                                        ;; fffixme add more test cases if needed and if depth=0
-                                        (- (cw "(True case:~%"))
-                                        ((mv erp provedp rand state result-array-stobj)
-                                         (miter-and-merge miter-dag-lst-for-true-case
-                                                          (pack$ miter-name "1")
-                                                          miter-depth
-                                                          var-type-alist ;ffixme think about this?
-                                                          interpreted-function-alist ;make sure these alists are always consistent?
-                                                          print
-                                                          traced-nodes
-                                                          rewriter-rule-alist
-                                                          prover-rule-alist
-                                                          assumptions-for-true-case
-                                                          extra-stuff
-                                                          test-cases-for-true-case
-                                                          monitored-symbols ;clear these out? use only what was passed in?
-                                                          use-context-when-miteringp
-                                                          (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
-                                                          unroll tests-per-case max-conflicts must-succeedp
-                                                          pre-simplifyp
-                                                          simplify-xorsp
-                                                          options
-                                                          rand state result-array-stobj))
-                                        ((when erp) (mv erp nil rand state result-array-stobj))
-                                        (- (cw "end true case)~%")))
-                                     (if (not provedp)
-                                         (prog2$ (cw "failed to prove true case.)")
-                                                 (mv nil nil rand state result-array-stobj))
-                                       ;;now attempt the false case:
-                                       (b* ((negated-split-assumption `(equal ,split-assumption 'nil)) ;orient before negating? maybe it's already oriented.. ;fixme use not?
-                                            (assumptions-for-false-case (cons negated-split-assumption assumptions))
-                                            ((mv erp assumptions-for-false-case state result-array-stobj)
-                                             (strengthen-facts assumptions-for-false-case print strengthen-rules state result-array-stobj))
-                                            ((when erp) (mv erp nil rand state result-array-stobj))
-                                            ((mv erp miter-dag-lst-for-false-case state)
-                                             (simp-dag miter-dag-lst
-                                                       :rule-alist rewriter-rule-alist
-                                                       ;;ffixme use contexts? pass in ifns? what else?
-                                                       :assumptions assumptions-for-false-case ;ffixme what about the equiv? call something like concretize?
-                                                       :check-inputs nil))
-                                            ((when erp) (mv erp nil rand state result-array-stobj))
-                                            ;;compute contexts? concretize?
-                                            ;; fffixme add more test cases if needed and if depth=0
-                                            (- (cw "(False case:~%"))
-                                            ;; (let* ( ;(dummy1 (cw "Miter dag for false case:~%"))
-                                            ;;(dummy2 (print-list miter-dag-lst-for-false-case))
-                                            ;; (dummy ))
-                                            ;; (declare (ignore dummy))
-                                            ((mv erp provedp rand state result-array-stobj)
-                                             (miter-and-merge miter-dag-lst-for-false-case
-                                                              (pack$ miter-name "2")
-                                                              miter-depth
-                                                              var-type-alist ;ffixme think about this?
-                                                              interpreted-function-alist
-                                                              print
-                                                              traced-nodes
-                                                              rewriter-rule-alist
-                                                              prover-rule-alist
-                                                              assumptions-for-false-case
-                                                              extra-stuff
-                                                              test-cases-for-false-case
-                                                              monitored-symbols ;clear these out? use only what was passed in?
-                                                              use-context-when-miteringp
-                                                              (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
-                                                              unroll tests-per-case max-conflicts must-succeedp
-                                                              pre-simplifyp simplify-xorsp options
-                                                              rand state result-array-stobj))
-                                            ((when erp) (mv erp nil rand state result-array-stobj))
-                                            (- (cw "End false case)~%")))
-
-                                         (if (not provedp)
-                                             (prog2$ (cw "failed to prove false case.)")
-                                                     (mv nil nil rand state result-array-stobj))
-                                           (prog2$ (cw "proved both cases.)")
-                                                   (mv nil t rand state result-array-stobj))))))))))))))))))))
+              ((when erp) (mv erp nil rand state result-array-stobj)))
+           (if (eq :proved-miter result)
+               (prog2$ (cw "Proved the miter.)~%")
+                       (mv (erp-nil) t rand state result-array-stobj))
+             (if (eq :error result)
+                 (prog2$ (cw "ERROR)")
+                         (mv (erp-t) nil rand state result-array-stobj))
+               (b* ((- (cw "(May need to split the miter dag (depth ~x0, ~x1, ~x2):~%" miter-depth miter-name miter-array-name))
+                    (state (if print (print-dag-array-to-temp-file
+                                      miter-array-name miter-array miter-len
+                                      (concatenate 'string (symbol-name miter-name) "-PRE-SPLIT")
+                                      state)
+                             state))
+                    (- (cw ")~%(But we'll simplify first, using assumptions: ~x0~%" assumptions))
+                    (miter-dag-lst (array-to-alist miter-array-name miter-array miter-len))
+                    ;;since we are sometimes saying we did nothing when that is a lie, simplifying here may help:
+                    ((mv erp
+                         miter-dag-lst ;fffixme what if this is a quote?!
+                         state)
+                     (simp-dag miter-dag-lst
+                               :rule-alist rewriter-rule-alist
+                               :print :brief
+                               :assumptions assumptions
+                               :check-inputs nil))
+                    ((when erp) (mv erp nil rand state result-array-stobj))
+                    (- (and (or (eq :verbose print) (eq :verbose2 print))
+                            (progn$ (cw "(Simplified miter dag (~x0):" miter-name)
+                                    (print-list miter-dag-lst) ;fixme print this to a file?
+                                    (cw ")~%"))))
+                    ;;(- (cw "(Assumptions:~%~x0)~%" assumptions))
+                    (- (cw ")~%"))
+                    (miter-len (len miter-dag-lst))
+                    (miter-array (make-into-array miter-array-name miter-dag-lst)) ;gross to convert here?
+                    (nodenum-to-split-on (find-a-node-to-split-miter-on
+                                          miter-array-name miter-len miter-array
+                                          test-cases interpreted-function-alist)) ; ffixme think about heuristics!
+                    )
+                 (if (not nodenum-to-split-on)
+                     (prog2$
+                      (cw "(Couldn't find any node to split on.)~%")
+                      ;; TODO: should we consider bit-blasting here?
+                      (if (not must-succeedp)
+                          (prog2$ (cw "(Failing because we don't have to succeed on this miter.))")
+                                  (mv nil nil rand state result-array-stobj))
+                        (if (not max-conflicts)
+                            (prog2$ (cw "(Failing because we would normally increase the max-conflicts but timing out is turned off.))")
+                                    (mv nil nil rand state result-array-stobj))
+                          (if (< 10000000000 max-conflicts) ;; not sure what the limit should be but 2^64 causes an STP error
+                              (prog2$ (cw "(Failing because the max-conflicts is too high.))")
+                                      (mv nil nil rand state result-array-stobj))
+                            (let ((max-conflicts (* 2 max-conflicts))) ;; TODO: Don't do this if no queries timed out
+                              (prog2$ (cw "(Increasing the max-conflicts to ~x0 and trying again.)~%" max-conflicts)
+                                      (mv-let (erp provedp rand state result-array-stobj)
+                                        (miter-and-merge miter-dag-lst
+                                                         miter-name ;fixme change this to indicate the increased max-conflicts?
+                                                         miter-depth
+                                                         var-type-alist
+                                                         interpreted-function-alist
+                                                         print
+                                                         traced-nodes
+                                                         rewriter-rule-alist
+                                                         prover-rule-alist
+                                                         assumptions
+                                                         extra-stuff
+                                                         test-cases
+                                                         monitored-symbols
+                                                         use-context-when-miteringp
+                                                         analyzed-function-table
+                                                         unroll
+                                                         tests-per-case
+                                                         max-conflicts must-succeedp
+                                                         pre-simplifyp
+                                                         simplify-xorsp
+                                                         options
+                                                         rand state result-array-stobj)
+                                        (prog2$ (cw "End of proof attempt for ~x0)~%"  miter-name)
+                                                (mv erp provedp rand state result-array-stobj)))))))))
+                   (b* ((- (cw "(Splitting miter on node ~x0.)~%" nodenum-to-split-on))
+                        (split-assumption (dag-to-term-aux-array miter-array-name miter-array nodenum-to-split-on)) ;fffixme this can blow up if there's nothing small to split on!
+                        ;;(split-assumption (orient-equality2 split-assumption)) ;too aggressive? ;handle nots and known preds? ;Fri Feb 26 01:48:01 2010
+                        ;;fixme what if the assumption contradicts the known assumptions
+                        ;; (maybe it should have been merged with false, but what if it only arose during the simplification after the merge?)
+                        (- (cw "(Split assumption:~%~x0)~%" split-assumption))
+                        (assumptions-for-true-case (cons split-assumption assumptions))
+                        (- (cw "(Simplifying other assumptions using the split assumption:~%"))
+                        (strengthen-rules
+                         ;;ffixme more rules? fixme pull out?
+                         ;;did not want turn-equal-around..
+                         ;; TODO: Use plain make-axe-rules here
+                         (append (make-axe-rules! (exit-test-simplification-rules) (w state))
+                                 (make-axe-rules! (strengthening-rules) (w state))))
+                        ((mv erp assumptions-for-true-case state result-array-stobj)
+                         (strengthen-facts assumptions-for-true-case print strengthen-rules state result-array-stobj))
+                        ((when erp) (mv erp nil rand state result-array-stobj))
+                        (- (cw "Done.)~%"))
+                        ((mv erp miter-dag-lst-for-true-case state)
+                         ;;fixme why not apply rule here too?!
+                         (simp-dag miter-dag-lst
+                                   :rules nil ;fffixme?
+                                   :assumptions assumptions-for-true-case ;ffixme what about the equiv? call something like concretize?
+                                   :check-inputs nil))
+                        ((when erp) (mv erp nil rand state result-array-stobj))
+                        ;; ffixme what about the equiv? the new assumption may not fire? call something like concretize?
+                        (- (cw "(Unsimplified miter dag for true case:~%"))
+                        (- (if (or (eq :verbose print) (eq :verbose2 print))
+                               (print-list miter-dag-lst-for-true-case)
+                             (cw ":elided"))) ;fixme what is this?
+                        (- (cw ")~%(Simplifying:"))
+                        ((mv erp miter-dag-lst-for-true-case state)
+                         (simp-dag miter-dag-lst-for-true-case
+                                   :rule-alist rewriter-rule-alist ;pass other rules?
+                                   :assumptions assumptions-for-true-case
+                                   :print print
+                                   :check-inputs nil))
+                        ((when erp) (mv erp nil rand state result-array-stobj))
+                        (- (cw "done)~%") ;nil ;(cw "Simplified miter dag for true case:~%")
+                           )
+                        ;; (- (print-list miter-dag-lst-for-true-case)) ;don't print, since it will be printed by miter-and-merge?
+                        ;;compute contexts? concretize?
+                        ;;ffixme have we already checked that the test cases satisfy the assumptions (if they were random)?  only makes sense for outmost miter?
+                        ((mv test-cases-for-true-case test-cases-for-false-case)
+                         (partition-test-cases test-cases split-assumption interpreted-function-alist nil nil))
+                        ;; fffixme add more test cases if needed and if depth=0
+                        (- (cw "(True case:~%"))
+                        ((mv erp provedp rand state result-array-stobj)
+                         (miter-and-merge miter-dag-lst-for-true-case
+                                          (pack$ miter-name "1")
+                                          miter-depth
+                                          var-type-alist ;ffixme think about this?
+                                          interpreted-function-alist ;make sure these alists are always consistent?
+                                          print
+                                          traced-nodes
+                                          rewriter-rule-alist
+                                          prover-rule-alist
+                                          assumptions-for-true-case
+                                          extra-stuff
+                                          test-cases-for-true-case
+                                          monitored-symbols ;clear these out? use only what was passed in?
+                                          use-context-when-miteringp
+                                          (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
+                                          unroll tests-per-case max-conflicts must-succeedp
+                                          pre-simplifyp
+                                          simplify-xorsp
+                                          options
+                                          rand state result-array-stobj))
+                        ((when erp) (mv erp nil rand state result-array-stobj))
+                        (- (cw "end true case)~%")))
+                     (if (not provedp)
+                         (prog2$ (cw "failed to prove true case.)")
+                                 (mv nil nil rand state result-array-stobj))
+                       ;;now attempt the false case:
+                       (b* ((negated-split-assumption `(equal ,split-assumption 'nil)) ;orient before negating? maybe it's already oriented.. ;fixme use not?
+                            (assumptions-for-false-case (cons negated-split-assumption assumptions))
+                            ((mv erp assumptions-for-false-case state result-array-stobj)
+                             (strengthen-facts assumptions-for-false-case print strengthen-rules state result-array-stobj))
+                            ((when erp) (mv erp nil rand state result-array-stobj))
+                            ((mv erp miter-dag-lst-for-false-case state)
+                             (simp-dag miter-dag-lst
+                                       :rule-alist rewriter-rule-alist
+                                       ;;ffixme use contexts? pass in ifns? what else?
+                                       :assumptions assumptions-for-false-case ;ffixme what about the equiv? call something like concretize?
+                                       :check-inputs nil))
+                            ((when erp) (mv erp nil rand state result-array-stobj))
+                            ;;compute contexts? concretize?
+                            ;; fffixme add more test cases if needed and if depth=0
+                            (- (cw "(False case:~%"))
+                            ;; (let* ( ;(dummy1 (cw "Miter dag for false case:~%"))
+                            ;;(dummy2 (print-list miter-dag-lst-for-false-case))
+                            ;; (dummy ))
+                            ;; (declare (ignore dummy))
+                            ((mv erp provedp rand state result-array-stobj)
+                             (miter-and-merge miter-dag-lst-for-false-case
+                                              (pack$ miter-name "2")
+                                              miter-depth
+                                              var-type-alist ;ffixme think about this?
+                                              interpreted-function-alist
+                                              print
+                                              traced-nodes
+                                              rewriter-rule-alist
+                                              prover-rule-alist
+                                              assumptions-for-false-case
+                                              extra-stuff
+                                              test-cases-for-false-case
+                                              monitored-symbols ;clear these out? use only what was passed in?
+                                              use-context-when-miteringp
+                                              (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
+                                              unroll tests-per-case max-conflicts must-succeedp
+                                              pre-simplifyp simplify-xorsp options
+                                              rand state result-array-stobj))
+                            ((when erp) (mv erp nil rand state result-array-stobj))
+                            (- (cw "End false case)~%")))
+                         (if (not provedp)
+                             (prog2$ (cw "failed to prove false case.)")
+                                     (mv nil nil rand state result-array-stobj))
+                           (prog2$ (cw "proved both cases.)")
+                                   (mv nil t rand state result-array-stobj)))))))))))))))
  ) ;end mutual-recursion
 
 
@@ -19669,7 +19660,7 @@
                          tests-per-case
                          max-conflicts
                          simplify-xorsp ;fixme use the more, deeper in?
-                         miter-name           ;the name of this proof
+                         miter-name     ;the name of this proof
                          prove-constants
                          treat-as-purep
                          debug
@@ -19720,10 +19711,9 @@
        ;; could move a lot of stuff into these options:
        (options (s :prove-constants prove-constants
                    (s :treat-as-purep treat-as-purep
-                      (s :debugp debug nil)))))
-      ;; Begin by simplifying the DAG using the supplied axe-rules (if any).  We also simplify if the test case count is 0, because then simplifying is the only thing we can do. ffixme even if there are no rules supplied, we might we want to simplify to evaluate constants, etc.??  but if could be slow to do so if the dag is already simplified with some rule set (will almost always be the case) -- ffixme make simplifying or not an option (default nil?)
-      (mv-let
-        (erp dag-lst state)
+                      (s :debugp debug nil))))
+       ;; Begin by simplifying the DAG using the supplied axe-rules (if any).  We also simplify if the test case count is 0, because then simplifying is the only thing we can do. ffixme even if there are no rules supplied, we might we want to simplify to evaluate constants, etc.??  but if could be slow to do so if the dag is already simplified with some rule set (will almost always be the case) -- ffixme make simplifying or not an option (default nil?)
+       ((mv erp dag-lst state)
         (if simplifyp
             (progn$ (cw "(We begin by simplifying the miter:~%") ;(give the reason)?
                     ;; initial-rule-set(s) take precedence here, if supplied (fixme what if both are supplied?)
@@ -19765,113 +19755,106 @@
                                   :work-hard-when-instructedp nil
                                   :check-inputs nil))))
           (prog2$ (cw "(We don't simplify the miter to start, because no rules are given.)")
-                  (mv (erp-nil) dag-lst state)))
-        (if erp
-            (mv erp nil state rand result-array-stobj)
-          (let* ( ;should we print the simplified dag?  we print it at the start of the sweep?
-                 (dummy (and simplifyp (cw "Done simplifying.)~%"))))
-            (declare (ignore dummy))
-            (if (quotep dag-lst)
-                ;; the simplified DAG is a quotep:
-                (if (equal *t* dag-lst)
-                    (prog2$ (cw "The DAG has been rewritten to true!)~%") ;move this message?
-                            (mv (erp-nil) t state rand result-array-stobj))
-                  (prog2$ (hard-error 'prove-miter "Tried to prove the dag is t, but it's the non-t constant ~x0" (acons #\0 dag-lst nil))
-                          (mv :non-t-constant nil state rand result-array-stobj)))
-              (let ((state (if (and simplifyp print)
-                               (print-dag-lst-to-temp-file dag-lst (symbol-name (pack$ miter-name '-after-initial-simplification)) state)
-                             state)))
-                ;; Otherwise, it's a real DAG-LST:
-                ;; A test case count of 0 now declares that the DAG must rewrite to 't (fixme or should it be any non-nil constant)?
+                  (mv (erp-nil) dag-lst state))))
+       ((when erp) (mv erp nil state rand result-array-stobj))
+       ;;should we print the simplified dag?  we print it at the start of the sweep?
+       (- (and simplifyp (cw "Done simplifying.)~%"))))
+    (if (quotep dag-lst)
+        ;; the simplified DAG is a quotep:
+        (if (equal *t* dag-lst)
+            (prog2$ (cw "The DAG has been rewritten to true!)~%") ;move this message?
+                    (mv (erp-nil) t state rand result-array-stobj))
+          (prog2$ (hard-error 'prove-miter "Tried to prove the dag is t, but it's the non-t constant ~x0" (acons #\0 dag-lst nil))
+                  (mv :non-t-constant nil state rand result-array-stobj)))
+      ;; Did not simplify to a constant:
+      (let ((state (if (and simplifyp print)
+                       (print-dag-lst-to-temp-file dag-lst (symbol-name (pack$ miter-name '-after-initial-simplification)) state)
+                     state)))
+        ;; A test case count of 0 now declares that the DAG must rewrite to 't (fixme or should it be any non-nil constant)?
 ;move this check down?
-                (if no-test-casesp
-                    (progn$ (cw "DAG for error message:~%")
-                            (print-list dag-lst)
-                            (if (< (dag-size dag-lst) 10000)
-                                (cw "~%(Term: ~X01)~%" (dag-to-term dag-lst) nil)
-                              nil)
-                            (er hard 'prove-miter-core "If the test-case-count is not a positive integer, the DAG must be a constant, but it is the above. Functions in the DAG: ~X01" (dag-fns dag-lst) nil)
-                            (mv :no-test-cases nil state rand result-array-stobj))
-                  ;; Compare the vars in the DAG to the vars given types in VAR-TYPE-ALIST: ;move this check up?
-                  (b* ((dag-vars (dag-vars dag-lst))
-                       (sorted-dag-vars (merge-sort-symbol< dag-vars))
-                       (vars-given-types (strip-cars var-type-alist))
-                       (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
-                       (- (if (not (subsetp-eq sorted-dag-vars sorted-vars-given-types)) ;stricter check? or warning if extra vars given?
-                              ;; (hard-error 'prove-miter-core
-                              ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
-                              ;;               (acons #\0 sorted-dag-vars
-                              ;;                      (acons #\1 sorted-vars-given-types
-                              ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
-                              ;;                                    nil))))
-                              (cw "WARNING: The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%" sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))
-
-                            nil))
-                       ;;(prog2$ (mv nil state rand result-array-stobj))
-                       )
-                    ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
-                    ;;(how well does this work?): redo it to preserve lambdas (just substitute in them?)
-                    (mv-let
-                      (erp dag-lst interpreted-function-alist state result-array-stobj)
-                      (if (not specialize-fnsp)
-                          (mv (erp-nil) dag-lst interpreted-function-alist state result-array-stobj)
-                        (prog2$
-                         (cw "(Specializing fns:~%")
-                         (mv-let (erp new-function-names new-rule-names state result-array-stobj)
-                           (specialize-fns dag-lst state result-array-stobj)
-                           (if erp
-                               (mv erp nil nil state result-array-stobj)
-                             (prog2$ (cw "(Rewriting to introduce specialized functions.~%")
-                                     (mv-let (erp dag-lst state)
-                                       (quick-simp-dag dag-lst ;fixme - use some more rules?!
-                                                       :rules new-rule-names ;ffffixme return new-rule-names ?
-                                                       :print :brief)
-                                       (if erp
-                                           (mv erp nil nil state result-array-stobj)
-                                         (let ((interpreted-function-alist
-                                                (add-fns-to-interpreted-function-alist new-function-names interpreted-function-alist (w state))))
-                                           (prog2$ (cw "Done rewriting to introduce specialized functions.)~%Done specializing.)~%")
-                                                   (mv (erp-nil) dag-lst interpreted-function-alist state result-array-stobj))))))))))
-                      (if erp
-                          (mv erp nil state rand result-array-stobj)
-                        ;;fixme rename test-cases test-inputs?
-                        (mv-let (test-cases rand)
-                          ;; Make the random test cases (each assigns values to the input vars):
-                          ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
-                          ;;fixme what about test cases that don't satisfy the assumptions??
-                          (make-test-cases test-case-count var-type-alist assumptions rand)
-                          (let* ((analyzed-function-table (empty-analyzed-function-table)))
-                            ;;fixme move any stuff above here into miter-and-merge?
-                            (mv-let (erp provedp rand state result-array-stobj) ;fixme could just pass the constant to miter-and-merge
-                              ;;fixme should miter-and-merge do the specialize and/or the pre-simplify?
-                              (miter-and-merge dag-lst
-                                               miter-name
-                                               0
-                                               var-type-alist
-                                               interpreted-function-alist print traced-nodes
-                                               rewriter-rule-alist
-                                               prover-rule-alist
-                                               assumptions
-                                               extra-stuff
-                                               test-cases
-                                               monitored-symbols
-                                               use-context-when-miteringp
-                                               analyzed-function-table
-                                               unroll
-                                               tests-per-case
-                                               max-conflicts
-                                               t ;must-succeedp=t
-                                               pre-simplifyp
-                                               simplify-xorsp
-                                               options
-                                               rand state result-array-stobj)
-                              (if erp
-                                  (mv erp nil state rand result-array-stobj)
-                                (if provedp
-                                    (prog2$ (cw "Finished proving top-level miter!)~%")
-                                            (mv (erp-nil) t state rand result-array-stobj))
-                                  (prog2$ (cw "failed to prove by mitering and merging.)") ;todo: error or not?
-                                          (mv (erp-nil) nil state rand result-array-stobj))))))))))))))))))
+        (if no-test-casesp
+            (progn$ (cw "DAG for error message:~%")
+                    (print-list dag-lst)
+                    (if (< (dag-size dag-lst) 10000)
+                        (cw "~%(Term: ~X01)~%" (dag-to-term dag-lst) nil)
+                      nil)
+                    (er hard 'prove-miter-core "If the test-case-count is not a positive integer, the DAG must be a constant, but it is the above. Functions in the DAG: ~X01" (dag-fns dag-lst) nil)
+                    (mv :no-test-cases nil state rand result-array-stobj))
+          ;; Compare the vars in the DAG to the vars given types in VAR-TYPE-ALIST: ;move this check up?
+          (b* ((dag-vars (dag-vars dag-lst))
+               (sorted-dag-vars (merge-sort-symbol< dag-vars))
+               (vars-given-types (strip-cars var-type-alist))
+               (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
+               (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types)) ;stricter check? or warning if extra vars given?
+                       ;; (hard-error 'prove-miter-core
+                       ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
+                       ;;               (acons #\0 sorted-dag-vars
+                       ;;                      (acons #\1 sorted-vars-given-types
+                       ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
+                       ;;                                    nil))))
+                       (cw "WARNING: The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
+                           sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))))
+               ;;(prog2$ (mv nil state rand result-array-stobj))
+               ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
+               ;;(how well does this work?): redo it to preserve lambdas (just substitute in them?)
+               ((mv erp dag-lst interpreted-function-alist state result-array-stobj)
+                (if (not specialize-fnsp)
+                    (mv (erp-nil) dag-lst interpreted-function-alist state result-array-stobj)
+                  (prog2$
+                   (cw "(Specializing fns:~%")
+                   (mv-let (erp new-function-names new-rule-names state result-array-stobj)
+                     (specialize-fns dag-lst state result-array-stobj)
+                     (if erp
+                         (mv erp nil nil state result-array-stobj)
+                       (prog2$ (cw "(Rewriting to introduce specialized functions.~%")
+                               (mv-let (erp dag-lst state)
+                                 (quick-simp-dag dag-lst ;fixme - use some more rules?!
+                                                 :rules new-rule-names ;ffffixme return new-rule-names ?
+                                                 :print :brief)
+                                 (if erp
+                                     (mv erp nil nil state result-array-stobj)
+                                   (let ((interpreted-function-alist
+                                          (add-fns-to-interpreted-function-alist new-function-names interpreted-function-alist (w state))))
+                                     (prog2$ (cw "Done rewriting to introduce specialized functions.)~%Done specializing.)~%")
+                                             (mv (erp-nil) dag-lst interpreted-function-alist state result-array-stobj)))))))))))
+               ((when erp) (mv erp nil state rand result-array-stobj))
+               ;;fixme rename test-cases test-inputs?
+               ((mv test-cases rand)
+                ;; Make the random test cases (each assigns values to the input vars):
+                ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
+                ;;fixme what about test cases that don't satisfy the assumptions??
+                (make-test-cases test-case-count var-type-alist assumptions rand))
+               (analyzed-function-table (empty-analyzed-function-table))
+               ;;fixme move any stuff above here into miter-and-merge?
+               ((mv erp provedp rand state result-array-stobj) ;fixme could just pass the constant to miter-and-merge
+                ;;fixme should miter-and-merge do the specialize and/or the pre-simplify?
+                (miter-and-merge dag-lst
+                                 miter-name
+                                 0
+                                 var-type-alist
+                                 interpreted-function-alist print traced-nodes
+                                 rewriter-rule-alist
+                                 prover-rule-alist
+                                 assumptions
+                                 extra-stuff
+                                 test-cases
+                                 monitored-symbols
+                                 use-context-when-miteringp
+                                 analyzed-function-table
+                                 unroll
+                                 tests-per-case
+                                 max-conflicts
+                                 t ;must-succeedp=t
+                                 pre-simplifyp
+                                 simplify-xorsp
+                                 options
+                                 rand state result-array-stobj))
+               ((when erp) (mv erp nil state rand result-array-stobj)))
+            (if provedp
+                (prog2$ (cw "Finished proving top-level miter!)~%")
+                        (mv (erp-nil) t state rand result-array-stobj))
+              (prog2$ (cw "failed to prove by mitering and merging.)") ;todo: error or not?
+                      (mv (erp-nil) nil state rand result-array-stobj)))))))))
 
 ;; Returns (mv erp event state rand result-array-stobj) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
