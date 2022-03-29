@@ -79,7 +79,7 @@
         (mv (erp-t) nil state))
        ((when (and (not produce-function)
                    disable-function))
-        (er hard? 'unroll-spec-basic-fn ":disable-function should not be true if :produce-function is nil.")
+        (er hard? 'unroll-spec-fn ":disable-function should not be true if :produce-function is nil.")
         (mv (erp-t) nil state))
        (term (translate-term term 'unroll-spec-fn (w state)))
        (assumptions (translate-terms assumptions 'unroll-spec-fn (w state)))

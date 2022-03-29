@@ -605,29 +605,6 @@
            (equal (bvor 32 x (bvcat n2 y n 0))
                   (bvcat n2 y n x))))
 
-; a version that puts a bvchop around x to help us simplify stuff
-(defthm bvshl-rewrite-with-bvchop
-  (implies (and (<= shift-amount width)
-                (natp shift-amount)
-                (integerp width))
-           (equal (bvshl width x shift-amount)
-                  (bvcat (- width shift-amount) (bvchop (- width shift-amount) x) shift-amount 0)))
-  :hints (("Goal" :in-theory (enable bvshl))))
-
-;i don't think I like the bvchop here... trim rules should take care of that...
-(defthm bvshl-rewrite-with-bvchop-for-constant-shift-amount
-  (implies (and (syntaxp (quotep shift-amount))
-                (syntaxp (quotep width)) ; will usually be true
-                (<= shift-amount width)
-                (natp shift-amount)
-                (integerp width))
-           (equal (bvshl width x shift-amount)
-                  (bvcat (- width shift-amount)
-                         (bvchop (- width shift-amount) x)
-                         shift-amount
-                         0)))
-  :hints (("Goal" :by bvshl-rewrite-with-bvchop)))
-
 ;kill
 ;bozo gen
 ;think about which way we prefer this...
@@ -1313,6 +1290,10 @@
                          (+ -1 size) (bvif (+ -1 size) test x y))))
   :hints (("Goal" :in-theory (e/d (bvif myif) (MYIF-OF-GETBIT-BECOMES-BVIF-ARG2 MYIF-OF-GETBIT-BECOMES-BVIF-ARG1)))))
 
+;;;
+;;; Leftrotate introduction rules
+;;;
+
 (defthm bvor-of-bvshl-and-bvshr-becomes-leftrotate
   (implies (and (equal size (+ amt amt2)) ;could use bvplus but what size?
                 (natp amt)
@@ -1320,7 +1301,8 @@
            (equal (bvor size (bvshl size x amt) (bvshr size x amt2))
                   (leftrotate size amt x)))
   :hints (("Goal" :cases ((equal 0 amt2))
-           :in-theory (e/d (bvif myif bvplus bvshr leftrotate bvchop-of-sum-cases)
+           :in-theory (e/d (bvif myif bvplus bvshr leftrotate bvchop-of-sum-cases
+                                 bvshl-rewrite-with-bvchop)
                            (;anti-bvplus
                             )))))
 
@@ -1332,6 +1314,7 @@
                   (leftrotate size amt x)))
   :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvshr-becomes-leftrotate)
           :in-theory (disable bvor-of-bvshl-and-bvshr-becomes-leftrotate))))
+
 ;; ;; what about non-powers of 2?
 ;; ;fixme what if the bvshl has already been turned into a bvcat?
 ;; ;this one won't match constant sizes
@@ -1356,12 +1339,12 @@
            :in-theory (e/d (bvplus bvchop-of-sum-cases leftrotate
                                    LEFTROTATE32 ;why?
                                    )
-                           (;anti-bvplus
+                           ( ;anti-bvplus
                             BVSHL-REWRITE-WITH-BVCHOP
-                                        bvor-of-bvshl-and-bvshr-becomes-leftrotate
-                                        BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT
-                                        BVCAT-EQUAL-REWRITE-ALT
-                                        BVCAT-EQUAL-REWRITE)))))
+                            bvor-of-bvshl-and-bvshr-becomes-leftrotate
+                            BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT
+                            BVCAT-EQUAL-REWRITE-ALT
+                            BVCAT-EQUAL-REWRITE)))))
 
 ;allows the size of the bvor to be tighter than 32
 (defthm bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen
@@ -1379,11 +1362,93 @@
                        bvcat-of-if slice-of-if bvcat-equal-rewrite bvcat-equal-rewrite-alt bvshl-rewrite-with-bvchop
                        bvor-of-bvshl-and-bvshr-becomes-leftrotate32))))
 
+(defthm bvor-of-bvshr-and-bvshl-becomes-leftrotate32
+  (implies (and (equal 0 (bvplus 5 amt amt2))
+                (unsigned-byte-p 5 amt)
+                (unsigned-byte-p 5 amt2)
+                (natp amt2))
+           (equal (bvor 32 (bvshr 32 x amt2) (bvshl 32 x amt))
+                  (leftrotate32 amt x)))
+  :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvshr-becomes-leftrotate32)
+           :in-theory (disable bvor-of-bvshl-and-bvshr-becomes-leftrotate32))))
+
+(defthm bvor-of-bvshr-and-bvshl-becomes-leftrotate32-gen
+  (implies (and (equal 0 (bvplus 5 amt amt2))
+                (unsigned-byte-p 5 amt)
+                (unsigned-byte-p 5 amt2)
+                (<= size 32)
+                (natp size)
+                (natp amt2))
+           (equal (bvor size (bvshr 32 x amt2) (bvshl 32 x amt))
+                  (bvchop size (leftrotate32 amt x))))
+  :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen)
+           :In-theory (disable bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen))))
+
 ;an idiom for rotating by 16 bits in a 32-bit field:
 ;gen!
 ;should we not just trim the bvshl and bvshr?
 (defthm bvor-of-bvshl-and-bvshr
-  (implies (and (equal size (+ amt1 amt2)) ;gen?
+  (implies (and (< size 32) ; unusual
+                (equal size (+ amt1 amt2)) ;gen?
+                (unsigned-byte-p size x)
+                (< amt1 size)
+                (< amt2 size)
+                (natp amt1)
+                (natp amt2)
+                (natp size))
+           (equal (bvor size (bvshl 32 x amt1) (bvshr 32 x amt2))
+                  (leftrotate size amt1 x)))
+  :hints (("Goal" :in-theory (enable bvsx bvshr bvshl-rewrite-with-bvchop leftrotate))))
+
+(defthm bvor-of-bvshl-and-bvshr-alt
+  (implies (and (unsigned-byte-p (+ amt1 amt2) x)
+                (<= size (+ amt1 amt2))
+                (< (+ amt1 amt2) 32)
+                (posp amt1)
+                (posp amt2)
+                (natp size))
+           (equal (bvor size (bvshl 32 x amt1) (bvshr 32 x amt2))
+                  (bvchop size (leftrotate (+ amt1 amt2) amt1 x))))
+  :hints (("Goal" :in-theory (enable bvshr bvsx bvshl-rewrite-with-bvchop leftrotate))))
+
+;gen!
+(defthm bvor-of-bvshr-and-bvshl
+  (implies (and (< size 32) ; unusual
+                (equal size (+ amt1 amt2))
+                (unsigned-byte-p size x)
+                (< amt1 size)
+                (< amt2 size)
+                (natp amt1)
+                (natp amt2)
+                (natp size))
+           (equal (bvor size (bvshr 32 x amt2) (bvshl 32 x amt1))
+                  (leftrotate size amt1 x)))
+  :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvshr)
+           :in-theory (disable bvor-of-bvshl-and-bvshr))))
+
+
+;fixme: reorder lhs to match name
+(defthm bvor-of-bvshr-and-bvshl-alt
+  (implies (and (unsigned-byte-p (+ amt1 amt2) x)
+                (<= size (+ amt1 amt2))
+                (< (+ amt1 amt2) 32)
+                (posp amt1)
+                (posp amt2)
+                (natp size))
+           (equal (bvor size (bvshl 32 x amt1) (bvshr 32 x amt2))
+                  (bvchop size (leftrotate (+ amt1 amt2) amt1 x))))
+  :hints (("Goal" :in-theory (disable bvor-of-bvshl-and-bvshr-alt)
+           :use (:instance bvor-of-bvshl-and-bvshr-alt))))
+
+
+;;;
+;;; rotate rules involving bvashr
+;;;
+
+;an idiom for rotating by 16 bits in a 32-bit field:
+;gen!
+(defthm bvor-of-bvshl-and-bvashr
+  (implies (and (equal size (+ amt1 amt2))
                 (unsigned-byte-p size x)
                 (< amt1 size)
                 (< amt2 size)
@@ -1392,20 +1457,50 @@
                 (natp size)
                 (< size 32)
                 )
-           (equal (bvor size (bvshl 32 x amt1) (bvshr 32 x amt2))
+           (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
                   (leftrotate size amt1 x)))
-  :hints (("Goal" :in-theory (enable bvsx bvshr leftrotate))))
+  :hints (("Goal" :in-theory (e/d (bvsx bvshr bvshl-rewrite-with-bvchop leftrotate)
+                                  (;+-becomes-bvplus-hack
+                                   )))))
 
-(defthm bvor-of-bvshr-and-bvshl-becomes-leftrotate32
-  (implies (and (equal 0 (bvplus 5 amt amt2))
-                (unsigned-byte-p 5 amt)
-                (unsigned-byte-p 5 amt2)
+(defthm bvor-of-bvashr-and-bvshl
+  (implies (and (equal size (+ amt1 amt2))
+                (unsigned-byte-p size x)
+                (< amt1 size)
+                (< amt2 size)
+                (natp amt1)
                 (natp amt2)
+                (natp size)
+                (< size 32)
                 )
-           (equal (bvor 32 (bvshr 32 x amt2) (bvshl 32 x amt))
-                  (leftrotate32 amt x)))
-  :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvshr-becomes-leftrotate32)
-           :in-theory (disable bvor-of-bvshl-and-bvshr-becomes-leftrotate32))))
+           (equal (bvor size (bvashr 32 x amt2) (bvshl 32 x amt1))
+                  (leftrotate size amt1 x)))
+  :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvashr)
+           :in-theory (disable bvor-of-bvshl-and-bvashr))))
+
+(defthm bvor-of-bvshl-and-bvashr-alt
+  (implies (and (unsigned-byte-p (+ amt1 amt2) x)
+                (<= size (+ amt1 amt2))
+                (< (+ amt1 amt2) 32)
+                (posp amt1)
+                (posp amt2)
+                (natp size))
+           (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
+                  (bvchop size (leftrotate (+ amt1 amt2) amt1 x))))
+  :hints (("Goal" :in-theory (enable bvshr bvsx bvshl-rewrite-with-bvchop leftrotate))))
+
+(defthm bvor-of-bvashr-and-bvshl-alt
+  (implies (and (unsigned-byte-p (+ amt1 amt2) x)
+                (<= size (+ amt1 amt2))
+                (< (+ amt1 amt2) 32)
+                (posp amt1)
+                (posp amt2)
+                (natp size))
+           (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
+                  (bvchop size (leftrotate (+ amt1 amt2) amt1 x))))
+  :hints (("Goal" :in-theory (disable bvor-of-bvshl-and-bvashr-alt)
+           :use (:instance bvor-of-bvshl-and-bvashr-alt))))
+
 
 ;add to more-runes?
 (defthmd bvif-of-constant-tighten
@@ -1654,16 +1749,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus bvminus BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) (;anti-bvplus
                                                                                      )))))
 
-(defthmd leftrotate32-open-when-constant-shift-amount
-  (implies (syntaxp (quotep amt))
-           (equal (leftrotate32 amt val)
-                  (let* ((amt (mod (nfix amt) 32) ;(bvchop 5 amt)
-                              ))
-                    (bvcat (- 32 amt)
-                           (slice (- 31 amt) 0 val)
-                           amt (slice 31 (+ 32 (- amt)) val)))))
-  :hints (("Goal" :expand (leftrotate32 amt val)
-           :in-theory (enable leftrotate))))
+
 ;more like this
 (defthmd slice-of-bvplus-low
   (implies (and (< high (+ -1 size)) ;bozo more cases
@@ -1958,53 +2044,7 @@
                   (bitor x y)))
   :hints (("Goal" :in-theory (enable bvif))))
 
-
-
-;move
-(defthmd leftrotate-open-when-constant-shift-amount
-  (implies (syntaxp (and (quotep amt)
-                         (quotep width)))
-           (equal (leftrotate width amt val)
-                  (if (equal width 0)
-                      0
-                    (let* ((amt (mod (nfix amt) width) ;(bvchop (integer-length (+ -1 width)) amt)
-                                ))
-                      (bvcat (- width amt)
-                             (slice (+ -1 width (- amt)) 0 val)
-                             amt
-                             (slice (+ -1 width)
-                                    (+ width (- amt))
-                                    val))))))
-  :hints (("Goal" :in-theory (e/d (leftrotate)
-;for speed:
-                                  (;INTP-BECOMES-SBP32 JVM::INT-LEMMA0
-                                   )))))
-
-
-
-
-
 ;slice trim rule?
-
-
-
-(defthm bvor-of-bvshr-and-bvshl-becomes-leftrotate32-gen
-  (implies (and (equal 0 (bvplus 5 amt amt2))
-                (unsigned-byte-p 5 amt)
-                (unsigned-byte-p 5 amt2)
-                (<= size 32)
-                (natp size)
-                (natp amt2))
-           (equal (bvor size (bvshr 32 x amt2) (bvshl 32 x amt))
-                  (bvchop size (leftrotate32 amt x))))
-  :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen)
-           :In-theory (disable bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen))))
-
-;Wed Aug 18 05:40:07 2010
-;; (defthm leftrotate32-of-logext-32-one
-;;   (equal (leftrotate32 (logext 32 amt) x)
-;;          (leftrotate32 amt x))
-;;   :hints (("Goal" :in-theory (enable leftrotate32 leftrotate))))
 
 (in-theory (disable BITNOT-BECOMES-BITXOR-WITH-1))
 
@@ -2641,102 +2681,13 @@
 
 (local (in-theory (disable +-becomes-bvplus-hack)))
 
-;an idiom for rotating by 16 bits in a 32-bit field:
-;gen!
-(defthm bvor-of-bvshl-and-bvashr
-  (implies (and (equal size (+ amt1 amt2))
-                (unsigned-byte-p size x)
-                (< amt1 size)
-                (< amt2 size)
-                (natp amt1)
-                (natp amt2)
-                (natp size)
-                (< size 32)
-                )
-           (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
-                  (leftrotate size amt1 x)))
-  :hints (("Goal" :in-theory (e/d (bvsx bvshr leftrotate) (+-becomes-bvplus-hack)))))
 
-(defthm bvor-of-bvashr-and-bvshl
-  (implies (and (equal size (+ amt1 amt2))
-                (unsigned-byte-p size x)
-                (< amt1 size)
-                (< amt2 size)
-                (natp amt1)
-                (natp amt2)
-                (natp size)
-                (< size 32)
-                )
-           (equal (bvor size (bvashr 32 x amt2) (bvshl 32 x amt1))
-                  (leftrotate size amt1 x)))
-  :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvashr)
-           :in-theory (disable bvor-of-bvshl-and-bvashr))))
-
-(defthm bvor-of-bvshl-and-bvashr-alt
-  (implies (and (unsigned-byte-p (+ amt1 amt2) x)
-                (<= k (+ amt1 amt2))
-                (< (+ amt1 amt2) 32)
-                (posp amt1)
-                (posp amt2)
-                (natp k))
-           (equal (bvor k (bvshl 32 x amt1) (bvashr 32 x amt2))
-                  (bvchop k (leftrotate (+ amt1 amt2) amt1 x))))
-  :hints (("Goal" :in-theory (enable bvshr bvsx leftrotate))))
-
-(defthm bvor-of-bvashr-and-bvshl-alt
-  (implies (and (unsigned-byte-p (+ amt1 amt2) x)
-                (<= k (+ amt1 amt2))
-                (< (+ amt1 amt2) 32)
-                (posp amt1)
-                (posp amt2)
-                (natp k))
-           (equal (bvor k (bvshl 32 x amt1) (bvashr 32 x amt2))
-                  (bvchop k (leftrotate (+ amt1 amt2) amt1 x))))
-  :hints (("Goal" :in-theory (disable bvor-of-bvshl-and-bvashr-alt)
-           :use (:instance bvor-of-bvshl-and-bvashr-alt))))
-
-(defthm bvor-of-bvshr-and-bvshl
-  (implies (and (equal size (+ amt1 amt2))
-                (unsigned-byte-p size x)
-                (< amt1 size)
-                (< amt2 size)
-                (natp amt1)
-                (natp amt2)
-                (natp size)
-                (< size 32)
-                )
-           (equal (bvor size (bvshr 32 x amt2) (bvshl 32 x amt1))
-                  (leftrotate size amt1 x)))
-  :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvshr)
-           :in-theory (disable bvor-of-bvshl-and-bvshr))))
-
-(defthm bvor-of-bvshl-and-bvshr-alt
-  (implies (and (unsigned-byte-p (+ amt1 amt2) x)
-                (<= k (+ amt1 amt2))
-                (< (+ amt1 amt2) 32)
-                (posp amt1)
-                (posp amt2)
-                (natp k))
-           (equal (bvor k (bvshl 32 x amt1) (bvshr 32 x amt2))
-                  (bvchop k (leftrotate (+ amt1 amt2) amt1 x))))
-  :hints (("Goal" :in-theory (enable bvshr bvsx leftrotate))))
-
-(defthm bvor-of-bvshr-and-bvshl-alt
-  (implies (and (unsigned-byte-p (+ amt1 amt2) x)
-                (<= k (+ amt1 amt2))
-                (< (+ amt1 amt2) 32)
-                (posp amt1)
-                (posp amt2)
-                (natp k))
-           (equal (bvor k (bvshl 32 x amt1) (bvshr 32 x amt2))
-                  (bvchop k (leftrotate (+ amt1 amt2) amt1 x))))
-  :hints (("Goal" :in-theory (disable bvor-of-bvshl-and-bvshr-alt)
-           :use (:instance bvor-of-bvshl-and-bvshr-alt))))
 ;gen!
 ;gen the bvchop to any usb8
 (defthm bvplus-of-bvchop-and-bvshl
   (equal (bvplus 32 (bvchop 8 x) (bvshl 32 y 8))
-         (bvcat 24 y 8 x)))
+         (bvcat 24 y 8 x))
+  :hints (("Goal" :in-theory (enable bvshl-rewrite-with-bvchop))))
 
 ;suddenly becomes needed for rc2 decryption proof
 ;maybe we should turn pluses into cats before pushing the minuses???
@@ -2759,13 +2710,15 @@
   (implies (and (unsigned-byte-p 8 x)
                 (unsigned-byte-p 8 y))
            (equal (bvplus 16 x (bvshl 32 y 8)) ;trim the bvshl?
-                  (bvcat 8 y 8 x))))
+                  (bvcat 8 y 8 x)))
+  :hints (("Goal" :in-theory (enable bvshl-rewrite-with-bvchop))))
 
 ;fixme just add support for bvshl to trim? and then rewrite (bvshl 6 x 8) to 0..
 ;gen
 (defthm bvplus-of-bvshl
   (equal (bvplus '6 (bvshl 32 x '8) y)
-         (bvchop 6 y)))
+         (bvchop 6 y))
+  :hints (("Goal" :in-theory (enable bvshl-rewrite-with-bvchop))))
 
 (defthm +-of-minus
   (implies (and (equal (bvlt freesize x free) 'nil) ;or should we match (not (bvlt '7 x free)) ? (special case for that in the matching code?)
@@ -2805,18 +2758,6 @@
                 (<= k 0)
                 (unsigned-byte-p free x))
            (not (< x k))))
-
-(defthm slice-of-leftrotate32-high
-  (implies (and (<= amt low)
-                (<= low high)
-                (<= high 31)
-                (unsigned-byte-p 5 amt) ;drop
-                (natp high)
-                (natp low)
-                (natp amt))
-           (equal (SLICE high low (LEFTROTATE32 amt x))
-                  (SLICE (- high amt) (- low amt) x)))
-  :hints (("Goal" :in-theory (e/d (leftrotate leftrotate32) (+-BECOMES-BVPLUS-HACK)))))
 
 (defthm <-cancel-lemma-100
   (implies (and (< 0 x)
@@ -3007,20 +2948,6 @@
            :in-theory (e/d (BVMULT UNSIGNED-BYTE-P unsigned-byte-p-forced)
                            (<-of-*-and-*
                             bvchop-of-*)))))
-
-(DEFTHM
-  BVSHL-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT
-  (IMPLIES (AND (SYNTAXP (QUOTEP SHIFT-AMOUNT))
-                (SYNTAXP (QUOTEP WIDTH))
-                (<= SHIFT-AMOUNT WIDTH)
-                (NATP SHIFT-AMOUNT)
-                (INTEGERP WIDTH))
-           (EQUAL (BVSHL WIDTH X SHIFT-AMOUNT)
-                  (BVCAT (- WIDTH SHIFT-AMOUNT)
-                         x
-                         SHIFT-AMOUNT 0)))
-  :HINTS (("Goal" :in-theory (enable BVSHL-REWRITE-WITH-BVCHOP))))
-
 
 ;todo move to bv library
 (defthm sbvlt-of-bvplus-of-1-when-sbvlt-rev

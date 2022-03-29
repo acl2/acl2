@@ -1,7 +1,7 @@
 ; Right shift
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,23 +11,8 @@
 
 (in-package "ACL2")
 
-(include-book "slice-def")
+(include-book "bvshr-def")
 (local (include-book "slice"))
-
-;shift-amount must be non-negative
-;width must be positive (allow zero?). it's the width of x (to start out)
-;fills with 0's at the top
-;so if shift-amount is positive this will be a shorter bit-vector
-;in no case will the result be longer than width bits
-;hmmm. do we plan to enable or disable this?
-;perhaps this should be called zshr (zero-extending shift)
-(defund bvshr (width x shift-amount)
-  (declare (type (integer 0 *) shift-amount)
-           (type integer x)
-           (type integer width)
-           (xargs :guard (<= shift-amount width)) ;what happens if they're equal? i guess we get 0
-           )
-  (slice (+ -1 width) shift-amount x))
 
 (defthm integerp-of-bvshr
   (integerp (bvshr width x shift-amount)))
@@ -53,7 +38,7 @@
                   (bvchop width x)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
-;FIXME gen
+;; TODO: gen
 (defthm unsigned-byte-p-of-bvshr
   (implies (and (natp amt)
                 (<= amt size)
@@ -73,9 +58,15 @@
   :hints (("Goal" :in-theory (enable bvshr))))
 
 (defthmd bvshr-rewrite-for-constant-shift-amount
-  (implies (and (syntaxp (quotep shift-amount))
-                (syntaxp (quotep width)) ; will usually be true
-                )
+  (implies (syntaxp (and (quotep shift-amount)
+                         (quotep width)) ; will usually be true
+                    )
            (equal (bvshr width x shift-amount)
                   (slice (+ -1 width) shift-amount x)))
+  :hints (("Goal" :in-theory (enable bvshr))))
+
+(defthm bvshr-same
+  (implies (natp width)
+           (equal (bvshr width x width)
+                  0))
   :hints (("Goal" :in-theory (enable bvshr))))

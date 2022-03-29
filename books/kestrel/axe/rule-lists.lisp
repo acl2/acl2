@@ -266,7 +266,8 @@
      bitxor-of-leftrotate-arg2-trim
 
      ;;todo: think about these rules (why so many?):
-;ffixme handle other idioms..
+     ;; TODO: These can't fire if we are expanding the shift ops, which we usually are
+     ;; TTODO: handle other idioms (bvxor, bvplus, and a version with shift ops expanded)
      bvor-of-bvshl-and-bvshr-becomes-leftrotate
      bvor-of-bvshr-and-bvshl-becomes-leftrotate
      bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen
@@ -634,7 +635,13 @@
 
      myif-of-sbvlt-of-0-and-not-sbvlt-of-0 ;; useful for the JVM's LCMP instruction
      myif-of-sbvlt-of-0-and-equal-of-0
-     booland-of-not-sbvlt-and-not-equal)))
+     booland-of-not-sbvlt-and-not-equal
+
+     ;; Rules to get rid of shift ops:
+     bvshl-rewrite-with-bvchop-for-constant-shift-amount ;introduces bvcat ; todo: replace with the definition of bvshl?
+     bvshr-rewrite-for-constant-shift-amount ; introduces slice
+     bvashr-rewrite-for-constant-shift-amount ;new, introduces bvsx
+     )))
 
 (defun update-nth2-rules ()
   (declare (xargs :guard t))
@@ -834,13 +841,8 @@
 (defun core-rules-non-bv ()
   (declare (xargs :guard t))
   '(all-unsigned-byte-p-of-update-nth
-
     bvchop-8-bvnth-8 ;gen
-
     bvchop-of-logtail-becomes-slice
-    bvshl-rewrite-with-bvchop-for-constant-shift-amount ;replace with the definition of bvshl?
-    bvshr-rewrite-for-constant-shift-amount
-    bvashr-rewrite-for-constant-shift-amount ;new
 
 ;            bvminus-of-bvcat-irrel-arg1
 ;           bvminus-of-bvcat-irrel-arg2
