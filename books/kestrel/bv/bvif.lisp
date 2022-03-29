@@ -279,21 +279,25 @@
   :hints (("Goal" :in-theory (enable bvif myif))))
 
 ;bozo copy all myif rules for bvif...
+;drop?
 (defthm bvif-same-tests-and-vals
   (equal (bvif size test y (bvif size test x y))
          (bvchop size y))
   :hints (("Goal" :in-theory (enable myif bvif))))
 
+;drop?
 (defthm bvif-same-tests-and-vals2
   (equal (bvif size test (bvif size test x y) y)
          (bvif size test x y))
   :hints (("Goal" :in-theory (enable myif bvif))))
 
+;rename
 (defthm bvif-same-tests
   (equal (bvif size test y (bvif size test x z))
          (bvif size test y z))
   :hints (("Goal" :in-theory (enable myif bvif))))
 
+;rename
 (defthm bvif-same-tests2
   (equal (bvif size test (bvif size test x z) y)
          (bvif size test x y))

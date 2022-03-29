@@ -1148,6 +1148,7 @@
                nil)))
     (getbit (and (= 2 (len args))
                  (quoted-natp (first args))))
+    ;; we can translate (leftrotate32 amt val) but only if AMT is a constant:
     (leftrotate32 (and (= 2 (len args))
                        (quoted-natp (first args)) ;now allows 0 (todo: test it)
                        ;;(< (unquote (first args)) 32)

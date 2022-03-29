@@ -194,6 +194,7 @@
    :hints (("Goal" :in-theory (e/d (getbit leftrotate) (bvchop-1-becomes-getbit
                                                         slice-becomes-getbit))))))
 
+;; todo: restrict to the case when we can resolve the (< n width) test?
 (defthm getbit-of-leftrotate
   (implies (and ;(< amt width) ;gen?
             (natp n)
@@ -209,6 +210,7 @@
                                                        slice-becomes-getbit)))))
 
 ;; no mod in rhs
+;; todo: restrict to the case when we can resolve the (< n width) test?
 (defthmd getbit-of-leftrotate-simple
   (implies (and (< amt width) ; avoids mod in rhs
                 (natp n)
@@ -223,7 +225,7 @@
   :hints (("Goal" :in-theory (e/d (getbit leftrotate) (bvchop-1-becomes-getbit
                                                        slice-becomes-getbit)))))
 
-;gen the 32s!
+;gen the 32!
 (defthm equal-of-leftrotate-and-leftrotate
   (implies (and (equal 32 size) ;gen!
                 (natp size)
@@ -232,3 +234,15 @@
            (equal (equal (leftrotate size n x) (leftrotate size n y))
                   (equal (bvchop size x) (bvchop size y))))
   :hints (("Goal" :in-theory (enable leftrotate))))
+
+;; This may fail to match if the first mention of X has been chopped down.
+(defthmd bvcat-of-slice-becomes-leftrotate
+  (implies (and (equal high (+ -1 highsize lowsize))
+                (natp lowsize)
+                (posp highsize))
+           (equal (bvcat highsize x lowsize (slice high highsize x))
+                  (leftrotate (+ highsize lowsize) lowsize x)))
+  :hints (("Goal" :in-theory (enable leftrotate))))
+
+(theory-invariant (incompatible (:definition leftrotate)
+                                (:rewrite bvcat-of-slice-becomes-leftrotate)))
