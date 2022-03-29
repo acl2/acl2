@@ -14,6 +14,7 @@
 (include-book "bvminus")
 (include-book "bvplus")
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;; TODO: Consider defining bvminus in terms of bvuminus
@@ -164,3 +165,17 @@
                       (< (+ (expt 2 n) (- (expt 2 m)))
                          (bvchop n x)))))
   :hints (("Goal" :in-theory (enable bvuminus bvminus unsigned-byte-p))))
+
+(defthm bvplus-of-bvuminus-same-2
+  (implies (natp size)
+           (equal (bvplus size x (bvplus size (bvuminus size x) y))
+                  (bvchop size y)))
+  :hints (("Goal" :in-theory (e/d (bvplus bvminus bvuminus bvchop-when-i-is-not-an-integer)
+                                  (bvchop-of-minus)))))
+
+(defthm bvplus-of-bvuminus-same-2-alt
+  (implies (natp size)
+           (equal (bvplus size (bvuminus size x) (bvplus size x y))
+                  (bvchop size y)))
+  :hints (("Goal" :use (:instance bvplus-of-bvuminus-same-2)
+           :in-theory (disable bvplus-of-bvuminus-same-2))))

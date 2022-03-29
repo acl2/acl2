@@ -2940,20 +2940,6 @@
                 (natp n))
            (< x k)))
 
-(defthm bvplus-of-bvuminus-same-2
-  (implies (natp size)
-           (equal (bvplus size x (bvplus size (bvuminus size x) y))
-                  (bvchop size y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvminus bvuminus bvchop-when-i-is-not-an-integer)
-                                  (bvminus-becomes-bvplus-of-bvuminus bvchop-of-minus)))))
-
-(defthm bvplus-of-bvuminus-same-2-alt
-  (implies (natp size)
-           (equal (bvplus size (bvuminus size x) (bvplus size x y))
-                  (bvchop size y)))
-  :hints (("Goal" :use (:instance bvplus-of-bvuminus-same-2)
-           :in-theory (disable bvplus-of-bvuminus-same-2))))
-
 ;stuff for rc6 recursive equivalence proof
 
 ;bozo or just use SLICE-TOO-HIGH-IS-0 - which is cheaper?
