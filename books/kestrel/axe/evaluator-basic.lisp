@@ -95,6 +95,7 @@
     (trim trim-unguarded)
     (bvchop bvchop-unguarded)
     (getbit getbit-unguarded)
+    (slice slice-unguarded)
     (bvplus bvplus-unguarded)
     (bvmult bvmult-unguarded)
     (bvuminus bvuminus-unguarded)
