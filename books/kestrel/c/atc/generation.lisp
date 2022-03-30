@@ -1112,6 +1112,16 @@
      depend on the existing @(tsee defstruct)s,
      we need to consult the @(tsee defstruct) table.")
    (xdoc::p
+    "The function may be in any package,
+     which is the same package as the tag
+     because of the way @(tsee defstruct) works.
+     Note that @(tsee atc-check-symbol-4part) returns symbols
+     in the same package as the original symbol,
+     so everything should be in the same package.
+     (This may not actually be the case when specific symbols are imported.
+     These cases should be rare in practice,
+     but eventually we should robustify the code to handle them.)")
+   (xdoc::p
     "We also return the input and output types of the structure read.")
    (xdoc::p
     "If the term does not have the form explained above,
@@ -1122,8 +1132,8 @@
        ((pseudo-term-fncall term) term)
        ((mv okp struct tag read member) (atc-check-symbol-4part term.fn))
        ((unless (and okp
-                     (eq struct 'struct)
-                     (eq read 'read)))
+                     (eq struct (intern-in-package-of-symbol "STRUCT" term.fn))
+                     (eq read (intern-in-package-of-symbol "READ" term.fn))))
         (no))
        (info (defstruct-table-lookup tag wrld))
        ((unless info) (no))
@@ -1180,6 +1190,8 @@
      If they do, the member argument is returned for further processing.
      We also return the tag, the member name, and the member type.")
    (xdoc::p
+    "See @(tsee atc-check-struct-read) for a note about packages of symbols.")
+   (xdoc::p
     "Since the available structure readers
      depend on the existing @(tsee defstruct)s,
      we need to consult the @(tsee defstruct) table."))
@@ -1188,8 +1200,8 @@
        ((pseudo-term-fncall val) val)
        ((mv okp struct tag write member) (atc-check-symbol-4part val.fn))
        ((unless (and okp
-                     (eq struct 'struct)
-                     (eq write 'write)))
+                     (eq struct (intern-in-package-of-symbol "STRUCT" val.fn))
+                     (eq write (intern-in-package-of-symbol "WRITE" val.fn))))
         (no))
        (info (defstruct-table-lookup tag wrld))
        ((unless info) (no))
@@ -1204,8 +1216,8 @@
        ((unless meminfo) (no))
        (mem-type meminfo)
        ((unless (list-lenp 2 val.args)) (no))
-       (struct (first val.args))
-       (mem (second val.args)))
+       (mem (first val.args))
+       (struct (second val.args)))
     (if (equal struct var)
         (mv t mem tag member mem-type)
       (no)))
@@ -3507,8 +3519,10 @@
     (ullong-arrayp (type-pointer (type-ullong)))
     (t (b* (((mv okp struct tag p) (atc-check-symbol-3part recognizer))
             ((unless (and okp
-                          (eq struct 'struct)
-                          (eq p 'p)))
+                          (eq struct
+                              (intern-in-package-of-symbol "STRUCT" recognizer))
+                          (eq p
+                              (intern-in-package-of-symbol "P" recognizer))))
              nil)
             (info (defstruct-table-lookup tag wrld))
             ((unless info) nil)
