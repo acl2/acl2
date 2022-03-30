@@ -246,3 +246,14 @@
 
 (theory-invariant (incompatible (:definition leftrotate)
                                 (:rewrite bvcat-of-slice-becomes-leftrotate)))
+
+;; special case when the slice is a single bit so we have getbit instead
+(defthmd bvcat-of-getbit-becomes-leftrotate
+  (implies (and (natp lowsize)
+                (posp highsize))
+           (equal (bvcat highsize x 1 (getbit highsize x))
+                  (leftrotate (+ highsize 1) 1 x)))
+  :hints (("Goal" :in-theory (enable leftrotate))))
+
+(theory-invariant (incompatible (:definition leftrotate)
+                                (:rewrite bvcat-of-getbit-becomes-leftrotate)))
