@@ -248,4 +248,4 @@
                 acl2::bvxor-1-becomes-bitxor
                 acl2::bitxor-of-bvcat-irrel-arg1
                 acl2::bitxor-of-bvcat-irrel-arg2
-                acl2::bitxor-commutative-increasing-dag)))
+                acl2::bitxor-commutative-increasing-axe)))

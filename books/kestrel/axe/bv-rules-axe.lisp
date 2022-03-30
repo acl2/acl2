@@ -440,7 +440,7 @@
            (equal (bitxor x y)
                   (bitxor y x))))
 
-(defthmd bitxor-commutative-increasing-dag
+(defthmd bitxor-commutative-increasing-axe
   (implies (axe-syntaxp (should-commute-args-increasing-dag 'bitxor x y dag-array))
            (equal (bitxor x y)
                   (bitxor y x))))
@@ -450,14 +450,14 @@
            (equal (bitxor x (bitxor y z))
                   (bitxor y (bitxor x z)))))
 
-(defthmd bitxor-commutative-2-increasing-dag
+(defthmd bitxor-commutative-2-increasing-axe
   (implies (axe-syntaxp (should-commute-args-increasing-dag 'bitxor x y dag-array))
            (equal (bitxor x (bitxor y z))
                   (bitxor y (bitxor x z)))))
 
 ;;; bvxor
 
-;rename to bvxor-commutative-increasing-dag?
+;rename to bvxor-commutative-increasing-axe?
 (defthmd bvxor-commutative-axe
   (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvxor x y dag-array))
            (equal (bvxor size x y)
@@ -473,7 +473,7 @@
   :hints (("Goal" :use (:instance bvxor-commutative)
            :in-theory (disable bvxor-commutative))))
 
-;rename to bvxor-commutative-2-increasing-dag
+;rename to bvxor-commutative-2-increasing-axe
 (defthmd bvxor-commutative-2-axe
   (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvxor x y dag-array))
            (equal (bvxor size x (bvxor size y z))
@@ -526,7 +526,7 @@
            (equal (bvplus size x y)
                   (bvplus size y x))))
 
-(defthmd bvplus-commutative-increasing-dag
+(defthmd bvplus-commutative-increasing-axe
   (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvplus x y dag-array))
            (equal (bvplus size x y)
                   (bvplus size y x))))
@@ -536,7 +536,7 @@
            (equal (bvplus size x (bvplus size y z))
                   (bvplus size y (bvplus size x z)))))
 
-(defthmd bvplus-commutative-2-increasing-dag
+(defthmd bvplus-commutative-2-increasing-axe
   (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvplus x y dag-array))
            (equal (bvplus size x (bvplus size y z))
                   (bvplus size y (bvplus size x z)))))
@@ -548,7 +548,7 @@
            (equal (bvmult size x y)
                   (bvmult size y x))))
 
-(defthmd bvmult-commutative-increasing-dag
+(defthmd bvmult-commutative-increasing-axe
   (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvmult x y dag-array))
            (equal (bvmult size x y)
                   (bvmult size y x))))
@@ -559,7 +559,7 @@
                   (bvmult size y (bvmult size x z))))
   :hints (("Goal" :in-theory (enable))))
 
-(defthmd bvmult-commutative-2-increasing-dag
+(defthmd bvmult-commutative-2-increasing-axe
   (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvmult x y dag-array))
            (equal (bvmult size x (bvmult size y z))
                   (bvmult size y (bvmult size x z))))
