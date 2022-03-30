@@ -130,7 +130,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-appconds ((fns symbol-listp) (wrld plist-worldp))
+(define atc-gen-appconds ((targets symbol-listp) (wrld plist-worldp))
   :returns (mv (appconds "A @(tsee evmac-appcond-listp).")
                (fn-appconds "A @(tsee symbol-symbol-alistp)."))
   :mode :program
@@ -139,18 +139,22 @@
   (xdoc::topstring
    (xdoc::p
     "Also return an alist from the recursive target functions
-     to the corresponding applicability condition names."))
-  (b* (((when (endp fns)) (mv nil nil))
-       (fn (car fns))
-       ((when (not (irecursivep+ fn wrld)))
-        (atc-gen-appconds (cdr fns) wrld))
-       (meas (measure+ fn wrld))
-       (name (packn-pos (list 'natp-of-measure-of- fn) :keyword))
+     to the corresponding applicability condition names.")
+   (xdoc::p
+    "We skip over @(tsee defstruct) names and non-recursive function names."))
+  (b* (((when (endp targets)) (mv nil nil))
+       (target (car targets))
+       ((when (not (function-symbolp target wrld)))
+        (atc-gen-appconds (cdr targets) wrld))
+       ((when (not (irecursivep+ target wrld)))
+        (atc-gen-appconds (cdr targets) wrld))
+       (meas (measure+ target wrld))
+       (name (packn-pos (list 'natp-of-measure-of- target) :keyword))
        (formula (untranslate `(natp ,meas) nil wrld))
        (appcond (make-evmac-appcond :name name :formula formula))
-       ((mv appconds fn-appconds) (atc-gen-appconds (cdr fns) wrld)))
+       ((mv appconds fn-appconds) (atc-gen-appconds (cdr targets) wrld)))
     (mv (cons appcond appconds)
-        (acons fn name fn-appconds))))
+        (acons target name fn-appconds))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
