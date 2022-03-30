@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -32,7 +32,7 @@
    (xdoc::p
     "Here we formalize a notion of function environment as a finite map
      from function names (i.e. identifiers)
-     to information about the function.
+     to information about the functions.
      These function environments are used in the dynamic semantics."))
   :order-subtopics t
   :default-parent t)
@@ -139,9 +139,7 @@
    (xdoc::p
     "We go though the external declarations that form the translation unit
      and we build the function environment for the function definitions,
-     starting from the empty environment.
-     If an external declaration that is not a function definition is found,
-     we defensively return an error."))
+     starting from the empty environment."))
   (init-fun-env-aux (transunit->declons tunit) nil)
   :hooks (:fix)
 
@@ -153,8 +151,8 @@
           (declon (car declons)))
        (ext-declon-case
         declon
-        :obj-declon (error :external-declaration-is-not-a-function)
-        :tag-declon (error :external-declaration-is-not-a-function)
+        :obj-declon (init-fun-env-aux (cdr declons) fenv)
+        :tag-declon (init-fun-env-aux (cdr declons) fenv)
         :fundef (b* ((fenv (fun-env-extend declon.get fenv))
                      ((when (errorp fenv)) fenv))
                   (init-fun-env-aux (cdr declons) fenv))))
