@@ -286,7 +286,7 @@
             & ;interpreted-function-alist-alist
             interpreted-function-alist
             state)
-        (decompile-code-segment-aux
+        (decompile-code-segment-aux ; this uses lifter-rules, among others
          state-var-dag
          (remove-duplicates-equal ;drop?
           assumptions)
