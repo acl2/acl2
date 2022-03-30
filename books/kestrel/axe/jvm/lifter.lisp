@@ -623,6 +623,7 @@
 (defun lifter-rules ()
   (append
    (first-loop-top-rules)
+   (leftrotate-intro-rules) ;; try to recognize rotation idioms when lifting (todo: or include in first-loop-top-rules?)
    (sbvlt-rules)
    (type-rules2)
    '(acl2-numberp-of-logext

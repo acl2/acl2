@@ -56,6 +56,7 @@
             jvm::top-long-of-myif
             jvm::pop-long-of-myif
             )
+          (leftrotate-intro-rules) ;; try to recognize rotation idioms when lifting
           (map-rules)
           (amazing-rules-bv)
           (bvchop-list-rules) ;drop?
