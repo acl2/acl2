@@ -16779,37 +16779,33 @@
    (if (equal *t* (aref1 miter-array-name miter-array top-node)) ; stop when the top node has been replaced with 't
        ;;bozo put in some checks here?  maybe not, since we already made sure the top node is all t's
        (prog2$ (cw "Done replacing nodes.  The miter has been reduced to TRUE!~%")
-               (mv nil :proved-miter miter-array analyzed-function-table rand state result-array-stobj))
-     (prog2$
-      (cw "(Depth ~x0 / sweep ~x1 / step ~x2:~%" miter-depth sweep-num step-num)
-;       (let ((nodenum-with-bad-parents (find-nodenum-with-bad-parents (+ -1 miter-len) parent-array-name parent-array))) ;fixme remove this stuff - it's for debugging
-      ;; (if nodenum-with-bad-parents
-      ;;     (prog2$
-      ;;      (hard-error 'perform-miter-sweep- aux "bad parent lists for ~x0: ~x1."
-      ;;                  (acons #\0 nodenum-with-bad-parents (acons #\1 (aref1 'parent-array-name parent-array nodenum-with-bad-parents) nil)))
-      ;;      (mv :error miter-array analyzed-function-table rand state result-array-stobj))
-      ;;Find a node to replace:
-      (mv-let (nodenum-to-replace probably-constantp other-val ;the quoted constant or smaller nodenum it's probably-equal to
-                                  )
-        (find-a-node-to-replace next-nodenum-to-consider tag-array2 miter-len)
-        (if (not (integerp nodenum-to-replace))
-            (if changep ;print the dag?
-                (prog2$ (cw "!! couldn't find any node to replace but something changed on this sweep.)")
-                        (mv nil :did-something miter-array analyzed-function-table rand state result-array-stobj))
-              (prog2$ (cw "!! couldn't find any node to replace and nothing changed on this sweep !!)")
-                      (mv nil :did-nothing miter-array analyzed-function-table rand state result-array-stobj)))
-          ;;We found a node to replace:
-          (prog2$
-           (and (member nodenum-to-replace traced-nodes) ;do we ever use this?
-                (prog2$ (cw "DAG:~%")
-                        (print-dag-only-supporters miter-array-name miter-array (+ -1 miter-len))))
-           (let ((use-proverp-flag (not (member nodenum-to-replace nodes-to-not-use-prover-for))))
-             (if probably-constantp
-                 ;; The node is a probable constant:
-                 (let ((constant-value (unquote other-val)))
-                   (mv-let
-                     (erp result miter-array ;parent-array
-                          analyzed-function-table rand state result-array-stobj)
+               (mv (erp-nil) :proved-miter miter-array analyzed-function-table rand state result-array-stobj))
+     (b* ((- (cw "(Depth ~x0 / sweep ~x1 / step ~x2:~%" miter-depth sweep-num step-num))
+          ;;(nodenum-with-bad-parents (find-nodenum-with-bad-parents (+ -1 miter-len) parent-array-name parent-array)) ;fixme remove this stuff - it's for debugging
+          ;; (if nodenum-with-bad-parents
+          ;;     (prog2$
+          ;;      (hard-error 'perform-miter-sweep- aux "bad parent lists for ~x0: ~x1."
+          ;;                  (acons #\0 nodenum-with-bad-parents (acons #\1 (aref1 'parent-array-name parent-array nodenum-with-bad-parents) nil)))
+          ;;      (mv :error miter-array analyzed-function-table rand state result-array-stobj))
+          ;;Find a node to replace:
+          ((mv nodenum-to-replace probably-constantp other-val ;the quoted constant or smaller nodenum it's probably-equal to
+               )
+           (find-a-node-to-replace next-nodenum-to-consider tag-array2 miter-len)))
+       (if (not (integerp nodenum-to-replace))
+           (if changep ;print the dag?
+               (prog2$ (cw "!! couldn't find any node to replace but something changed on this sweep.)")
+                       (mv nil :did-something miter-array analyzed-function-table rand state result-array-stobj))
+             (prog2$ (cw "!! couldn't find any node to replace and nothing changed on this sweep !!)")
+                     (mv nil :did-nothing miter-array analyzed-function-table rand state result-array-stobj)))
+         ;;We found a node to replace:
+         (b* ((- (and (member nodenum-to-replace traced-nodes) ;do we ever use this?
+                      (prog2$ (cw "DAG:~%")
+                              (print-dag-only-supporters miter-array-name miter-array (+ -1 miter-len)))))
+              (use-proverp-flag (not (member nodenum-to-replace nodes-to-not-use-prover-for))))
+           (if probably-constantp
+               ;; The node is a probable constant:
+               (b* ((constant-value (unquote other-val))
+                    ((mv erp result miter-array analyzed-function-table rand state result-array-stobj)
                      (if (and (not (g :prove-constants options))
                               (not (eql top-node nodenum-to-replace)) ;always try to prove the top node is T.
                               )
@@ -16823,50 +16819,48 @@
                                                                   assumptions monitored-symbols
                                                                   step-num analyzed-function-table unroll miter-is-purep
                                                                   ;;tag-array2
-                                                                  use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj))
-                     (prog2$ (cw ")~%")
-                             (if erp
-                                 (mv erp :error miter-array analyzed-function-table rand state result-array-stobj)
-                               (if (eq :error result)
-                                   (mv t :error miter-array analyzed-function-table rand state result-array-stobj)
-                                 ;; If we proved that the node is equal to the constant (fixme huh??): ffixme could some lemmas be generated?
-                                 (if (or (eq :proved result)
-                                         (eq :failed result)
-                                         (eq :timed-out result))
-                                     (let* ((tag-array2 (if (eq :proved result) ;ffffixme think about what happens with :unused nodes here..
-                                                            (update-tags-for-proved-constant-node nodenum-to-replace tag-array2)
-                                                          (update-tags-for-failed-constant-node nodenum-to-replace tag-array2)))
-                                            ;; could abort the sweep and simplify the dag right here, but that would change the node numbering...
-                                            )
-                                       ;;continue sweeping:
-                                       (perform-miter-sweep-aux (or changep (eq :proved result))
-                                                                miter-array-name
-                                                                miter-array miter-len miter-depth
-                                                                tag-array2
+                                                                  use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)))
+                    ((when erp) (mv erp :error miter-array analyzed-function-table rand state result-array-stobj))
+                    ;; todo: why do we have both :error and erp?
+                    ((when (eq :error result)) (mv t :error miter-array analyzed-function-table rand state result-array-stobj)) ;todo: do we want the paren printed in this case?
+                    (- (cw ")~%")))
+                 ;; If we proved that the node is equal to the constant (fixme huh??): ffixme could some lemmas be generated?
+                 (if (or (eq :proved result)
+                         (eq :failed result)
+                         (eq :timed-out result))
+                     (let* ((tag-array2 (if (eq :proved result) ;ffffixme think about what happens with :unused nodes here..
+                                            (update-tags-for-proved-constant-node nodenum-to-replace tag-array2)
+                                          (update-tags-for-failed-constant-node nodenum-to-replace tag-array2)))
+                            ;; could abort the sweep and simplify the dag right here, but that would change the node numbering...
+                            )
+                       ;;continue sweeping:
+                       (perform-miter-sweep-aux (or changep (eq :proved result))
+                                                miter-array-name
+                                                miter-array miter-len miter-depth
+                                                tag-array2
 ;parent-array-name parent-array
-                                                                var-type-alist top-node print
-                                                                traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist
-                                                                extra-stuff monitored-symbols assumptions test-cases
-                                                                test-case-array-alist sweep-num (+ 1 step-num)
-                                                                nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
-                                                                analyzed-function-table
-                                                                unroll miter-is-purep nodes-to-not-use-prover-for
-                                                                (or some-goal-timed-outp
-                                                                    (eq :timed-out result))
-                                                                max-conflicts miter-name nodenums-not-to-unroll options
-                                                                rand state result-array-stobj))
-                                   ;; Otherwise, result is (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
-                                   ;; Abort the sweep:
-                                   (mv nil result miter-array analyzed-function-table rand state result-array-stobj)))))))
-               ;; This node is the larger nodenum of a probably-equal node pair (and other-val is the smaller nodenum):
-               ;;fixme i hope smaller-nodenum and larger-nodenum are guaranteed to be different (what if one has already been merged with another node?)
-               (b* ((- (cw " Trying to merge nodes ~x0 and ~x1.~%" nodenum-to-replace other-val)))
-                 ;;fixme do some analysis here
-                 ;;does smaller-nodenum support larger-nodenum?
-                 ;;are they both return values of the same recursive function node?
-                 ;;we do this analysis elsewhere?
-                 (mv-let
-                   (erp result miter-array analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
+                                                var-type-alist top-node print
+                                                traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist
+                                                extra-stuff monitored-symbols assumptions test-cases
+                                                test-case-array-alist sweep-num (+ 1 step-num)
+                                                nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
+                                                analyzed-function-table
+                                                unroll miter-is-purep nodes-to-not-use-prover-for
+                                                (or some-goal-timed-outp
+                                                    (eq :timed-out result))
+                                                max-conflicts miter-name nodenums-not-to-unroll options
+                                                rand state result-array-stobj))
+                   ;; Otherwise, result is (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
+                   ;; Abort the sweep:
+                   (mv nil result miter-array analyzed-function-table rand state result-array-stobj)))
+             ;; This node is the larger nodenum of a probably-equal node pair (and other-val is the smaller nodenum):
+             ;;fixme i hope smaller-nodenum and larger-nodenum are guaranteed to be different (what if one has already been merged with another node?)
+             (b* ((- (cw " Trying to merge nodes ~x0 and ~x1.~%" nodenum-to-replace other-val))
+                  ;;fixme do some analysis here
+                  ;;does smaller-nodenum support larger-nodenum?
+                  ;;are they both return values of the same recursive function node?
+                  ;;we do this analysis elsewhere?
+                  ((mv erp result miter-array analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
                    (try-to-prove-nodes-equal-and-merge
                     other-val          ;;the smaller nodenum
                     nodenum-to-replace ;;the larger nodenum
@@ -16876,42 +16870,41 @@
                     extra-stuff monitored-symbols assumptions
                     test-cases test-case-array-alist step-num analyzed-function-table unroll
                     miter-is-purep ;tag-array2
-                    some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj)
-                   (if erp
-                       (mv erp :error miter-array analyzed-function-table rand state result-array-stobj)
-                     (prog2$
-                      (cw ")~%")
-                      (if (eq :error result)
-                          (mv t :error miter-array analyzed-function-table rand state result-array-stobj)
-                        ;;(we proved and merged, or failed or timed-out and didn't merge)
-                        ;;I'd like to simplify the dag here, but I think it would be too slow (would change the numbering and we'd have to redo the test cases, etc.)
-                        (if (or (eq :proved result)
-                                (eq :timed-out result)
-                                (eq :failed result))
-                            ;;                                     (and (not new-runes)
-                            ;;                                      (not new-fn-names))
-                            ;; no rules or fns were generated, so continue the sweep:
-                            (let* ((tag-array2 (if (eq :proved result)
-                                                   (update-tags-for-proved-equal-node nodenum-to-replace tag-array2)
-                                                 (update-tags-for-failed-equal-node nodenum-to-replace other-val tag-array2))))
-                              (perform-miter-sweep-aux (or changep (eq :proved result))
-                                                       miter-array-name
-                                                       miter-array miter-len miter-depth ;depth-array
-                                                       tag-array2 ;parent-array-name parent-array
-                                                       var-type-alist
-                                                       top-node print traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols
-                                                       assumptions test-cases test-case-array-alist sweep-num (+ 1 step-num) nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
-                                                       analyzed-function-table unroll miter-is-purep nodes-to-not-use-prover-for
-                                                       (or some-goal-timed-outp
-                                                           (eq :timed-out result))
-                                                       max-conflicts miter-name nodenums-not-to-unroll
-                                                       options
-                                                       rand state result-array-stobj))
-                          ;; Otherwise, we analyzed a loop fn (and returned some lemmas and/or fns)
-                          ;; abort the sweep
-                          ;; fixme - can we do better than starting all over here?
-                          ;; e.g., reuse the probable-sets (after fixing them up?), etc.?
-                          (mv nil result miter-array analyzed-function-table rand state result-array-stobj)))))))))))))))
+                    some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj))
+                  ((when erp) (mv erp :error miter-array analyzed-function-table rand state result-array-stobj))
+                  (- (cw ")~%"))
+                  ((when (eq :error result)) ;todo: do we want the paren printed in this case?
+                   (mv t :error miter-array analyzed-function-table rand state result-array-stobj))
+                  )
+               ;;(we proved and merged, or failed or timed-out and didn't merge)
+               ;;I'd like to simplify the dag here, but I think it would be too slow (would change the numbering and we'd have to redo the test cases, etc.)
+               (if (or (eq :proved result)
+                       (eq :timed-out result)
+                       (eq :failed result))
+                   ;;                                     (and (not new-runes)
+                   ;;                                      (not new-fn-names))
+                   ;; no rules or fns were generated, so continue the sweep:
+                   (let* ((tag-array2 (if (eq :proved result)
+                                          (update-tags-for-proved-equal-node nodenum-to-replace tag-array2)
+                                        (update-tags-for-failed-equal-node nodenum-to-replace other-val tag-array2))))
+                     (perform-miter-sweep-aux (or changep (eq :proved result))
+                                              miter-array-name
+                                              miter-array miter-len miter-depth ;depth-array
+                                              tag-array2 ;parent-array-name parent-array
+                                              var-type-alist
+                                              top-node print traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols
+                                              assumptions test-cases test-case-array-alist sweep-num (+ 1 step-num) nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
+                                              analyzed-function-table unroll miter-is-purep nodes-to-not-use-prover-for
+                                              (or some-goal-timed-outp
+                                                  (eq :timed-out result))
+                                              max-conflicts miter-name nodenums-not-to-unroll
+                                              options
+                                              rand state result-array-stobj))
+                 ;; Otherwise, we analyzed a loop fn (and returned some lemmas and/or fns)
+                 ;; abort the sweep
+                 ;; fixme - can we do better than starting all over here?
+                 ;; e.g., reuse the probable-sets (after fixing them up?), etc.?
+                 (mv nil result miter-array analyzed-function-table rand state result-array-stobj)))))))))
 
  ;;rename prove-or-simplify-miter?
  ;;ffixme think this through
@@ -19643,7 +19636,7 @@
          (and (symbol-listp keys)
               (extra-stuff-okayp-aux keys extra-stuff)))))
 
-;should we prove it's t or just non-nil? - doing 't' right now (fixme add an option?)
+;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not mereley non-nil).
 ; Returns (mv erp provedp state rand result-array-stobj)
 ;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true type currently come in in ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
@@ -20973,11 +20966,9 @@
 ;; TODO: Allow the :type option to be :bits, meaning assume every var in the DAG is a bit.
 (defun prove-equivalence-fn (dag-or-term1
                              dag-or-term2
-                             quoted-dag-or-term1 ; todo: just get from the whole-form
-                             quoted-dag-or-term2 ; todo: just get from the whole-form
                              tests ;a natp indicating how many tests to run
                              tactic
-                             assumptions
+                             assumptions ; untranslated
                              types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                              name  ; may be :auto
                              print debug max-conflicts extra-rules initial-rule-sets
@@ -20988,23 +20979,31 @@
                              check-varsp
                              whole-form
                              state rand result-array-stobj)
-  (declare (xargs :stobjs (state rand result-array-stobj)
-                  :mode :program
-                  :guard (and (natp tests) ;TODO: add to guard
+  (declare (xargs :guard (and (natp tests)
+                              (or (eq tactic :rewrite)
+                                  (eq tactic :rewrite-and-sweep))
+                              (symbol-alistp types) ;todo constrain the cdrs
+                              (symbolp name)
+                              ;; print
+                              (booleanp debug)
                               (or (eq :auto max-conflicts)
                                   (null max-conflicts)
                                   (natp max-conflicts))
                               (symbol-listp extra-rules)
-                              (or (eq tactic :rewrite)
-                                  (eq tactic :rewrite-and-sweep))
                               (or (eq :auto initial-rule-sets)
                                   (axe-rule-setsp initial-rule-sets))
-                              (symbol-alistp types) ;todo constrain the cdrs
-                              (symbolp name)
-                              (booleanp check-varsp))))
-;TODO: error or warning if :tactic is rewrite and :tests is given
+                              (symbol-listp monitor)
+                              (booleanp use-context-when-miteringp)
+                              (booleanp normalize-xors)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (booleanp check-varsp))
+                  :mode :program
+                  :stobjs (state rand result-array-stobj)))
+  ;;TODO: error or warning if :tactic is rewrite and :tests is given?
   (b* (((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :redundant) state rand result-array-stobj))
+       (quoted-dag-or-term1 (farg1 whole-form))
+       (quoted-dag-or-term2 (farg2 whole-form))
        (wrld (w state))
        (assumptions (translate-terms assumptions 'prove-equivalence-fn wrld)) ;throws an error on bad input
        ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 wrld))
@@ -21137,8 +21136,6 @@
                                     (check-varsp 't))
   `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
                                            ,dag-or-term2
-                                           ',dag-or-term1 ; not evaluated, used to form the miter name
-                                           ',dag-or-term2 ; not evaluated, used to form the miter name
                                            ,tests
                                            ,tactic
                                            ,assumptions
