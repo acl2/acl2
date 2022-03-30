@@ -1475,7 +1475,9 @@
   (declare (xargs :guard t))
   '(list-to-bv-array
     list-to-bv-array-aux-base
-    list-to-bv-array-aux-unroll))
+    list-to-bv-array-aux-unroll
+    list-to-byte-array ; wrapper for list-to-bv-array
+    ))
 
 (defun byte-array-to-bit-array-rules ()
   (declare (xargs :guard t))
@@ -2164,7 +2166,7 @@
 ;     bvlt-when-unsigned-byte-p-better-non-constant ;wed sep  1 00:22:15 2010 problem?
      bvlt-of-bvplus-and-bvplus-cancel-1-1
      getbit-of-bvplus-of-bvuminus-when-bvle
-     bvplus-commutative-2-sizes-differ2-dag
+     bvplus-commutative-2-sizes-differ2-axe
      bvlt-of-max-when-both-narrow
      ;;           bvlt-of-bvuminus ;trying without this 01/10
      bvplus-of-bvuminus-same-3-2

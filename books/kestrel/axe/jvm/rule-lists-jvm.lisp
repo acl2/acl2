@@ -2014,8 +2014,8 @@
              ;;                                      bvand-of-bvxor-of-ones-same-alt
              ;;                                      bvand-of-bvand-of-bvxor-of-ones-same
              ;;                                      bvand-of-bvand-of-bvxor-of-ones-same-alt
-             ;;                                      BITXOR-COMMUTATIVE-2-INCREASING-DAG
-             ;;                                      BITXOR-COMMUTATIVE-INCREASING-DAG
+             ;;                                      BITXOR-COMMUTATIVE-2-INCREASING-AXE
+             ;;                                      BITXOR-COMMUTATIVE-INCREASING-AXE
 
              ;;                                      EQUAL-OF-CONSTANT-AND-BVXOR-OF-CONSTANT
              ;;                                      bvnot-becomes-bvxor

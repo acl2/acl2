@@ -1438,7 +1438,7 @@
                 acl2::bvxor-1-becomes-bitxor
                 acl2::bitxor-of-bvcat-irrel-arg1
                 acl2::bitxor-of-bvcat-irrel-arg2
-                acl2::bitxor-commutative-increasing-dag
+                acl2::bitxor-commutative-increasing-axe
                 acl2::bvplus-of-plus-arg2
                 acl2::bvplus-of-plus-arg3
                 acl2::getbit-of-bvplus-tighten-to-32
@@ -1450,8 +1450,8 @@
                 acl2::bvcat-blast-high
                 acl2::bvcat-blast-low
                 acl2::bvplus-associative
-                acl2::bvplus-commutative-increasing-dag
-                acl2::bvplus-commutative-2-increasing-dag
+                acl2::bvplus-commutative-increasing-axe
+                acl2::bvplus-commutative-2-increasing-axe
 
                 ;; now that we have substituted for the bits, recreate the bvcats:
                 acl2::bvcat-of-slice-and-slice-adjacent
@@ -1472,8 +1472,8 @@
                 ;;  acl2::bvcat-trim-arg2-dag-all
                 ;;  acl2::getbit-trim-dag-all-gen
                 acl2::bvcat-equal-bvcat
-                acl2::bitxor-commutative-2-increasing-dag
-                acl2::bitxor-commutative-increasing-dag
+                acl2::bitxor-commutative-2-increasing-axe
+                acl2::bitxor-commutative-increasing-axe
                 acl2::bitxor-associative ;needed?
                 acl2::bitxor-of-slice-arg1
                 acl2::bitxor-of-slice-arg2
@@ -1489,8 +1489,8 @@
                 acl2::bitxor-of-bvcat-irrel-arg2
                 acl2::bitxor-of-getbit-arg1
                 acl2::bitxor-of-getbit-arg2
-                acl2::bvplus-commutative-2-increasing-dag
-                acl2::bvplus-commutative-increasing-dag
+                acl2::bvplus-commutative-2-increasing-axe
+                acl2::bvplus-commutative-increasing-axe
                 acl2::booland-of-t
                 acl2::bool-fix-when-booleanp ;todo add bool-fix (and booland) to the evaluator
                 )

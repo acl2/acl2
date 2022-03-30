@@ -29,8 +29,7 @@
 
 (defun unroll-spec-rules ()
   (append (amazing-rules-spec-and-dag) ;todo: reduce?
-          (introduce-bv-array-rules)
-          '(list-to-byte-array))) ;todo: add to a rule set (whatever mentions list-to-bv-array)
+          (introduce-bv-array-rules)))
 
 (ensure-rules-known (unroll-spec-rules))
 
