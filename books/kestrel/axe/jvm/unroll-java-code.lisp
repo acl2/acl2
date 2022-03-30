@@ -27,6 +27,7 @@
 ;(include-book "../dag-size-fast")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
 (include-book "../prune") ;brings in the rewriter
+(include-book "../dag-info")
 
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))
 
@@ -424,7 +425,7 @@
        ;; Adds the descriptor if omitted and unambiguous:
        (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
        ;; Printed even if print is nil (seems ok):
-       (- (cw "Unrolling ~x0.~%"  method-designator-string))
+       (- (cw "(Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
         (unroll-java-code-fn-aux method-designator-string output-indicator array-length-alist
                                  extra-rules ;to add to default set
@@ -474,7 +475,11 @@
                                                   (,function-name ,@dag-vars)))))))))
        (items-created (append (list defconst-name)
                               (if produce-function (list function-name) nil)
-                              (if produce-theorem (list theorem-name) nil))))
+                              (if produce-theorem (list theorem-name) nil)))
+       (- (cw "Unrolling finished.~%"))
+       ;; (- (cw "Info on unrolled DAG:~%"))
+       ((mv & & state) (dag-info-fn-aux dag (symbol-name defconst-name) state)) ; maybe suppress with print arg?
+       (- (cw ")~%")))
     (mv (erp-nil)
         (extend-progn (extend-progn event `(table unroll-java-code-table ',whole-form ',event))
                       `(value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
@@ -547,10 +552,11 @@
                                     state)))
     (if print
         `(make-event ,form)
-      `(with-output
+      `(with-output ; todo: suppress the output from processing the events even if :print is t?
          :off :all
-         :on error
-         :gag-mode nil (make-event ,form))))
+         :on (comment error)
+         :gag-mode nil
+         (make-event ,form))))
   :parents (lifter)
   :short "Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
   :args ((defconst-name
