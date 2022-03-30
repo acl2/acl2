@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function integer-length
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,6 +24,14 @@
 (local (include-book "times"))
 (local (include-book "numerator"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+
+;; todo: disable integer-length here
+
+(defthm integer-length-when-not-integerp-cheap
+  (implies (not (integerp i))
+           (equal (integer-length i)
+                  0))
+  :hints (("Goal" :in-theory (enable integer-length))))
 
 ;move?
 (defthm integer-length-bound
