@@ -22,6 +22,7 @@
 ;; information and others not have it?).
 
 (include-book "unroll-java-code-common")
+(include-book "nice-output-indicators")
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/doc" :dir :system)
 ;(include-book "../dag-size-fast")
@@ -149,7 +150,7 @@
 ;; This uses all classes currently in the global-class-table.
 ;; Why does this return the dag-fns?
 (defun unroll-java-code-fn-aux (method-designator-string
-                                output-indicator
+                                maybe-nice-output-indicator
                                 array-length-alist
                                 extra-rules  ;to add to default set
                                 remove-rules ;to remove from default set
@@ -174,7 +175,9 @@
                                 state)
   (declare (xargs :stobjs (state)
                   :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
-                  :guard (and (or (eq :all classes-to-assume-initialized)
+                  :guard (and (or (eq :auto maybe-nice-output-indicator)
+                                  (nice-output-indicatorp maybe-nice-output-indicator))
+                              (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
@@ -284,10 +287,11 @@
                        (enquote classes-to-assume-initialized)
                        'initial-intern-table)))
        (return-type (lookup-eq :return-type method-info))
+       (parameter-types (lookup-eq :parameter-types method-info))
        ;; Handle an output-indicator of :auto:
-       (output-indicator (if (eq :auto output-indicator)
+       (output-indicator (if (eq :auto maybe-nice-output-indicator)
                              (resolve-auto-output-indicator return-type)
-                           output-indicator))
+                           (desugar-nice-output-indicatorp maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
        (term-to-run-with-output-extractor (wrap-term-with-output-extractor output-indicator ;return-type
                                                                            locals-term term-to-run class-alist))
        (symbolic-execution-rules (if (eq :auto steps)
@@ -362,7 +366,7 @@
 ;; Returns (mv erp event state).
 (defun unroll-java-code-fn (defconst-name
                              method-indicator
-                             output-indicator
+                             maybe-nice-output-indicator
                              array-length-alist
                              extra-rules ;to add to default set
                              remove-rules ;to remove from default set
@@ -389,7 +393,9 @@
                              state)
   (declare (xargs :stobjs (state)
                   :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
-                  :guard (and (jvm::method-indicatorp method-indicator)
+                  :guard (and (or (eq :auto maybe-nice-output-indicator)
+                                  (nice-output-indicatorp maybe-nice-output-indicator))
+                              (jvm::method-indicatorp method-indicator)
                               (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
@@ -427,7 +433,7 @@
        ;; Printed even if print is nil (seems ok):
        (- (cw "(Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
-        (unroll-java-code-fn-aux method-designator-string output-indicator array-length-alist
+        (unroll-java-code-fn-aux method-designator-string maybe-nice-output-indicator array-length-alist
                                  extra-rules ;to add to default set
                                  remove-rules ;to remove from default set
                                  rule-alists
