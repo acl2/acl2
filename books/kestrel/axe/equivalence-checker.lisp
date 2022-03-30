@@ -12206,7 +12206,7 @@
                :simplify-xorsp nil
                :check-inputs nil)
     (if erp
-        (mv t nil nil state result-array-stobj)
+        (mv erp nil nil state result-array-stobj)
       (let ((simplified-fact (dag-to-term simplified-fact))) ; i hope this never blows up
         (if (equal fact simplified-fact)
             ;;no change:
@@ -16614,7 +16614,7 @@
                   (hard-error 'try-to-prove-node-is-constant
                               "!! ERROR The equality rewrote to a constant other than t or nil, namely ~x0.  This should never happen.  Contact the implementor.~%"
                               (acons #\0 miter-nodenum-or-quotep nil))
-                  (mv t nil analyzed-function-table rand state result-array-stobj))))
+                  (mv (erp-t) nil analyzed-function-table rand state result-array-stobj))))
            ;;The equality didn't rewrite to a constant:
            (b* ((- (and (eq :verbose2 print)
                         (prog2$ (cw "Equality rewrote to:~%")
