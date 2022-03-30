@@ -131,3 +131,9 @@
         |write_y_to_point2D|
         :output-file "structs.c"
         :proofs nil)
+
+
+
+;; (c::atc |point2D|
+;;         |read_x_from_point2D|
+;;         :output-file "structs.c")

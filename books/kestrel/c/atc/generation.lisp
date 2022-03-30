@@ -6118,7 +6118,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-transunit ((fn1...fnp symbol-listp)
+(define atc-gen-transunit ((targets symbol-listp)
                            (proofs booleanp)
                            (prog-const symbolp)
                            (wf-thm symbolp)
@@ -6160,7 +6160,7 @@
   (b* (((mv appcond-local-events fn-appconds appcond-thms names-to-avoid)
         (if proofs
             (b* (((mv appconds fn-appconds)
-                  (atc-gen-appconds fn1...fnp (w state)))
+                  (atc-gen-appconds targets (w state)))
                  ((mv appcond-events appcond-thms & names-to-avoid)
                   (evmac-appcond-theorem-list appconds nil names-to-avoid
                                               print ctx state)))
@@ -6176,7 +6176,7 @@
                                            (w state)))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
-        (atc-gen-ext-declon-list fn1...fnp nil proofs
+        (atc-gen-ext-declon-list targets nil proofs
                                  prog-const init-fun-env-thm
                                  fn-thms fn-appconds appcond-thms
                                  print names-to-avoid ctx state))
@@ -6295,7 +6295,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-everything ((fn1...fnp symbol-listp)
+(define atc-gen-everything ((targets symbol-listp)
                             (output-file stringp)
                             (pretty-printing pprint-options-p)
                             (proofs booleanp)
@@ -6329,7 +6329,7 @@
      the formals that are not affected then become ignored."))
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((er (list tunit local-events exported-events &))
-        (atc-gen-transunit fn1...fnp proofs prog-const wf-thm fn-thms
+        (atc-gen-transunit targets proofs prog-const wf-thm fn-thms
                            print names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit
                                                 output-file
