@@ -4,7 +4,7 @@
 
 # C Library
 #
-# Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+# Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 #
 # License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 #
@@ -46,3 +46,4 @@ gcc -Wno-implicit-function-declaration -o nonstrict nonstrict.c nonstrict-test.c
 gcc -Wno-implicit-function-declaration -o not not.c not-test.c
 gcc -Wno-implicit-function-declaration -o operators operators.c operators-test.c
 gcc -Wno-implicit-function-declaration -o ops-diff-types ops-diff-types.c ops-diff-types-test.c
+gcc -Wno-implicit-function-declaration -o structs structs.c structs-test.c
