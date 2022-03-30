@@ -116,7 +116,7 @@
     (b* ((entry (first alist))
          (fn (car entry))
          (count (cdr entry))
-         (- (cw "~x0: ~t2~c1~%" fn (cons count 10) 20)))
+         (- (cw "  ~x0: ~t2~c1~%" fn (cons count 10) 20)))
       (print-function-counts (rest alist)))))
 
 ;res is an alist mapping functions in the dag to their occurrence counts
@@ -157,32 +157,42 @@
   (declare (xargs :guard (weak-dagp dag)))
   (tabulate-dag-fns-aux dag nil))
 
-;; Print some statistics about a DAG:
-;; TODO: print something about constant nodes?
-;; This calls dag-size, which uses arrays.
-(defun dag-info-fn (dag state)
+;; Returns the error triple (mv nil :invisible state).
+(defun dag-info-fn-aux (dag name state)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (< (len dag) 2147483647))
+                              (< (len dag) 2147483647)
+                              (stringp name))
                   :stobjs state))
   (if (quotep dag) ; not possible, given the guard
-      (b* ((- (cw "The entire DAG is: ~x0.~%" dag)))
+      (b* ((- (cw "The entire DAG ~s0 is: ~x1.~%" name dag)))
         (value :invisible))
-    (b* ((- (cw "Showing info for DAG:~%"))
-         (- (cw "~x0 unique nodes~%" (len dag)))
-         (- (cw "~x0 total nodes~%" (dag-size dag)))
+    (b* ((- (cw "(DAG info for ~s0:~%" name))
+         (- (cw " Unique nodes: ~x0~%" (len dag)))
+         (- (cw " Total nodes: ~x0~%" (dag-size dag)))
          ;; These usually get inlined (we could count those):
          ;; (constants (dag-constants dag))
          ;; (- (cw "~x0 constants~%" (len constants)))
          (vars (dag-vars dag))
-         (- (cw "~x0 Variables:~%" (len vars)))
+         (- (cw " ~x0 Variables:~%" (len vars)))
          (- (print-symbols-4-per-line vars))
          (fns (dag-fns dag))
-         (- (cw "~x0 Functions:~%" (len fns)))
+         (- (cw " ~x0 Functions:~%" (len fns)))
          (- (print-symbols-4-per-line fns))
-         (- (cw "Function counts:~%"))
+         (- (cw " Function counts:~%"))
          (fn-counts (merge-sort-cdr-< (tabulate-dag-fns dag)))
-         (- (print-function-counts fn-counts)))
+         (- (print-function-counts fn-counts))
+         (- (cw ")~%")))
       (value :invisible))))
+
+;; Print some statistics about a DAG:
+;; TODO: print something about constant nodes?
+;; This calls dag-size, which uses arrays.
+;; Returns the error triple (mv nil :invisible state).
+(defun dag-info-fn (dag state)
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (< (len dag) 2147483647))
+                  :stobjs state))
+  (dag-info-fn-aux dag "DAG" state))
 
 ;; Prine info about the given DAG.  The DAG argument is evaluated.
 (defmacro dag-info (dag)
