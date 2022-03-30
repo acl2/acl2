@@ -31,7 +31,7 @@
   (append (amazing-rules-spec-and-dag) ;todo: reduce?
           (introduce-bv-array-rules)
           (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
-          '(list-to-byte-array))) ;todo: add to a rule set (whatever mentions list-to-bv-array)
+          (introduce-bv-array-rules)))
 
 (ensure-rules-known (unroll-spec-rules))
 
