@@ -1227,101 +1227,107 @@
 ;;           (misc-rules2 state) ;fixme yuck
 ;;           ))
 
+(defun bv-array-rules-simple ()
+  (declare (xargs :guard t))
+  '(bv-array-read-of-bv-array-write-same ;bv-array-read-of-bv-array-write-same-work-hard
+    bv-array-read-of-bv-array-write-diff-safe-gen ;added the -gen ;thu mar 25 04:05:19 2010
+    ))
+
 (defun bv-array-rules ()
   (declare (xargs :guard t))
-  '(bv-array-write-of-bvxor              ;use a trim rule?
-    bv-array-read-of-bv-array-write-same ;bv-array-read-of-bv-array-write-same-work-hard
-    bv-array-read-of-bv-array-write-diff-safe-gen ;added the -gen ;thu mar 25 04:05:19 2010
-    len-of-bv-array-write                         ;a bv-list rule
-    all-unsigned-byte-p-of-bv-array-write
-    true-listp-of-bv-array-write
+  (append
+   (bv-array-rules-simple)
+   '(bv-array-write-of-bvxor             ;use a trim rule?
+     len-of-bv-array-write                         ;a bv-list rule
+     all-unsigned-byte-p-of-bv-array-write
+     true-listp-of-bv-array-write
 ;bitxor-of-bv-array-read-and-bv-array-read-constant-arrays-alt
 ;bitxor-of-bv-array-read-and-bv-array-read-constant-arrays
-    bvxor-list-base   ;move
-    bvxor-list-unroll ;move
-    bv-array-read-when-element-size-is-0
-    bv-array-read-of-bv-array-write-too-narrow-cheap ;new
-    bv-array-read-of-append-arrays
-    bv-array-clear-1-0
-    bv-array-clear-of-bv-array-clear-same
-    consp-of-bv-array-write ;moved here
-    equal-of-bv-array-write-of-1-constant-version
+     bvxor-list-base  ;move
+     bvxor-list-unroll ;move
+     bv-array-read-when-element-size-is-0
+     bv-array-read-of-bv-array-write-too-narrow-cheap ;new
+     bv-array-read-of-append-arrays
+     bv-array-clear-1-0
+     bv-array-clear-of-bv-array-clear-same
+     consp-of-bv-array-write ;moved here
+     equal-of-bv-array-write-of-1-constant-version
 
-    bv-array-read-of-bvchop
-    bv-array-read-of-logext-64-32 ;bozo
-    bv-array-read-of-cons-base
-    bv-array-read-of-cons
-    ;; bv-array-read-of-myif ;bozo seems expensive!  restrict to cases when it will help? seemed necessary for proving that array accesses are in bounds
-    bv-array-read-of-subrange-better ;added -better fri dec 24 17:14:55 2010
-    bv-array-read-of-upddate-subrange-128
-    bv-array-write-of-bv-array-write-tighten
+     bv-array-read-of-bvchop
+     bv-array-read-of-logext-64-32 ;bozo
+     bv-array-read-of-cons-base
+     bv-array-read-of-cons
+     ;; bv-array-read-of-myif ;bozo seems expensive!  restrict to cases when it will help? seemed necessary for proving that array accesses are in bounds
+     bv-array-read-of-subrange-better ;added -better fri dec 24 17:14:55 2010
+     bv-array-read-of-upddate-subrange-128
+     bv-array-write-of-bv-array-write-tighten
 
-    bv-array-read-shorten-data ;expensive?  needed for triple-des? add a cheaper version?
-    bv-array-read-of-bv-array-write-shorten ;this is need since bv-array-read-shorten-data has been restricted to constant data (why does the lsh of this rule arise?)
-    bv-array-read-of-bv-array-write-tighten-better
-    bv-array-read-of-getbit-list
-    bv-array-read-numeric-bound
-    bv-array-read-non-negative
-    bv-array-read-when-data-isnt-an-all-unsigned-byte-p
-    bv-array-write-when-data-isnt-an-all-unsigned-byte-p
-    getbit-of-bv-array-read-too-high
-    ;;getbit-of-bv-array-read-gen ; just blast the array read?
-    equal-of-bvchop-of-nth-and-bv-array-read
-    equal-of-bvchop-of-nth-and-bv-array-read-alt
-    equal-of-nth-and-bv-array-read
-    equal-of-nth-and-bv-array-read-alt
-    bv-array-read-trim-element-size ;might this be expensive?
-    bv-array-read-of-getbit-when-len-is-2
+     bv-array-read-shorten-data ;expensive?  needed for triple-des? add a cheaper version?
+     bv-array-read-of-bv-array-write-shorten ;this is need since bv-array-read-shorten-data has been restricted to constant data (why does the lsh of this rule arise?)
+     bv-array-read-of-bv-array-write-tighten-better
+     bv-array-read-of-getbit-list
+     bv-array-read-numeric-bound
+     bv-array-read-non-negative
+     bv-array-read-when-data-isnt-an-all-unsigned-byte-p
+     bv-array-write-when-data-isnt-an-all-unsigned-byte-p
+     getbit-of-bv-array-read-too-high
+     ;;getbit-of-bv-array-read-gen ; just blast the array read?
+     equal-of-bvchop-of-nth-and-bv-array-read
+     equal-of-bvchop-of-nth-and-bv-array-read-alt
+     equal-of-nth-and-bv-array-read
+     equal-of-nth-and-bv-array-read-alt
+     bv-array-read-trim-element-size ;might this be expensive?
+     bv-array-read-of-getbit-when-len-is-2
 ;    nth-of-bv-array-write-becomes-bv-array-read ;for some reason an nth appears in aeslight? why? ;trying without this
-    bv-array-write-of-bvchop-list-tighten
-    bv-array-read-of-bvchop-list-tighten
+     bv-array-write-of-bvchop-list-tighten
+     bv-array-read-of-bvchop-list-tighten
 
-    firstn-of-bv-array-write
-    bv-array-read-of-bvchop-list
-    cons-of-bv-array-write
+     firstn-of-bv-array-write
+     bv-array-read-of-bvchop-list
+     cons-of-bv-array-write
 ;    cons-becomes-bv-array-write-gen ;bozo, don't do this right away... ;removed, since now the jvm model has bv-array-write already
-    cons-of-bv-array-write-gen
+     cons-of-bv-array-write-gen
 
-    ;; myif-of-bv-array-write-arg1-safe
-    ;; myif-of-bv-array-write-arg2-safe
-    bv-array-read-of-bv-array-write-tighten2
-    myif-of-bv-array-read-becomes-bvif-arg1
-    myif-of-bv-array-read-becomes-bvif-arg2
-    bv-array-read-of-myif ;slows things down a lot... go to bvif..
-    equal-of-bvchop-of-car-and-bv-array-read
-    equal-of-bvchop-of-nth-and-bv-array-read-strong
-    equal-of-bvchop-of-nth-and-bv-array-read-alt-strong
-    nthcdr-of-bv-array-write
-    take-of-bv-array-write-better ;fri jan 15 21:26:25 2010
-    all-unsigned-byte-p-of-bv-array-write-gen-2
+     ;; myif-of-bv-array-write-arg1-safe
+     ;; myif-of-bv-array-write-arg2-safe
+     bv-array-read-of-bv-array-write-tighten2
+     myif-of-bv-array-read-becomes-bvif-arg1
+     myif-of-bv-array-read-becomes-bvif-arg2
+     bv-array-read-of-myif ;slows things down a lot... go to bvif..
+     equal-of-bvchop-of-car-and-bv-array-read
+     equal-of-bvchop-of-nth-and-bv-array-read-strong
+     equal-of-bvchop-of-nth-and-bv-array-read-alt-strong
+     nthcdr-of-bv-array-write
+     take-of-bv-array-write-better ;fri jan 15 21:26:25 2010
+     all-unsigned-byte-p-of-bv-array-write-gen-2
 ;    all-signed-byte-p-of-bv-array-write ;yuck?
-    myif-of-bv-array-write-arg1-safe
-    myif-of-bv-array-write-arg2-safe
-    bv-array-write-trim-value-all ;not a bv rule?
+     myif-of-bv-array-write-arg1-safe
+     myif-of-bv-array-write-arg2-safe
+     bv-array-write-trim-value-all ;not a bv rule?
 
 ;only do this when we can tell syntactically that the write does nothing?
 ;    bv-array-write-does-nothing ;caused problems for des-encrypt-sun - why? actually it seemed to help for that! ;bbozo think about how to make this cheap enough...
-    bv-array-write-does-nothing-cheap
-    bv-array-write-of-bvcat-reduce
-    bv-array-write-of-bv-array-write-diff-constant-indices ;faster when the sizes are the same
-    bv-array-write-of-bv-array-write-diff-constant-indices-gen ;added the gen sun jan  9 19:19:17 2011
-    bv-array-write-of-bv-array-write-same-index
-    getbit-list-of-bv-array-write
-    ;; bv-array-write-tighten-when-quotep-data ;trying without this, since it led to a size mismatch between nested bv-array-writes
-    nth2-of-bv-array-write
-    ;; ;is this stuff only used to get rid of logext-list?
-    ;; push-bvchop-list-of-bv-array-write
-    ;; push-bvchop-list-of-push-bvchop-list
-    ;; push-bvchop-list-of-myif ;could this be really expensive? maybe memoization helps?
-    ;; push-bvchop-list-of-logext-list
+     bv-array-write-does-nothing-cheap
+     bv-array-write-of-bvcat-reduce
+     bv-array-write-of-bv-array-write-diff-constant-indices ;faster when the sizes are the same
+     bv-array-write-of-bv-array-write-diff-constant-indices-gen ;added the gen sun jan  9 19:19:17 2011
+     bv-array-write-of-bv-array-write-same-index
+     getbit-list-of-bv-array-write
+     ;; bv-array-write-tighten-when-quotep-data ;trying without this, since it led to a size mismatch between nested bv-array-writes
+     nth2-of-bv-array-write
+     ;; ;is this stuff only used to get rid of logext-list?
+     ;; push-bvchop-list-of-bv-array-write
+     ;; push-bvchop-list-of-push-bvchop-list
+     ;; push-bvchop-list-of-myif ;could this be really expensive? maybe memoization helps?
+     ;; push-bvchop-list-of-logext-list
 
-    all-integerp-of-bv-array-write
+     all-integerp-of-bv-array-write
 
-    bv-array-write-of-bv-array-write-tighten2
-    bv-array-write-of-bvif-tighten
+     bv-array-write-of-bv-array-write-tighten2
+     bv-array-write-of-bvif-tighten
 
-    equal-of-nil-and-bv-array-write
-    equal-of-bv-array-write-and-nil))
+     equal-of-nil-and-bv-array-write
+     equal-of-bv-array-write-and-nil)))
 
 (defun bit-blast-rules-basic ()
   (declare (xargs :guard t))
@@ -2405,7 +2411,7 @@
     nth-of-cons-constant-version
     mv-nth-of-cons-alt))
 
-(defun anti-blast-rules ()
+(defun reassemble-bvcat-rules ()
   (declare (xargs :guard t))
   '(bvcat-of-slice-and-slice-adjacent
     bvcat-of-slice-and-getbit-adjacent
@@ -2421,6 +2427,12 @@
 
     bvcat-of-getbit-and-x-adjacent-2
     bvcat-of-slice-and-x-adjacent-2))
+
+;reprecate?
+(defun anti-blast-rules ()
+  (declare (xargs :guard t))
+  (reassemble-bvcat-rules))
+
 
 (defun strengthening-rules ()
   (declare (xargs :guard t))

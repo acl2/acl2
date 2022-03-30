@@ -29,7 +29,9 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system) ;drop?
-(include-book "dag-info") ; not strictly necessary but convenient
+(include-book "kestrel/utilities/supporting-functions" :dir :system)
+(include-book "kestrel/utilities/submit-events" :dir :system)
+(include-book "dag-info")
 
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
 
@@ -43,6 +45,22 @@
           ))
 
 (ensure-rules-known (unroll-spec-basic-rules))
+
+;dup
+(defconst *bv-and-array-fns-we-can-translate*
+  '(equal getbit bvchop ;$inline
+          slice
+          bvcat
+          bvplus bvuminus bvminus bvmult
+          bitor bitand bitxor bitnot
+          bvor bvand bvxor bvnot
+          bvsx bv-array-read bv-array-write bvif
+          leftrotate32
+          boolor booland ;boolxor
+          not
+          bvlt                       ;new
+          sbvlt                      ;new
+          ))
 
 ;; TODO: Add more options, such as :print and :print-interval, to pass through to simp-term
 ;; Returns (mv erp event state)
@@ -70,7 +88,8 @@
                   :mode :program ;; because this calls translate (todo: factor that out)
                   :guard (and (symbolp defconst-name)
                               ;; (pseudo-termp term) ;; really an untranlated term
-                              (or (eq :auto rules)
+                              (or (eq :standard rules)
+                                  (eq :auto rules)
                                   (symbol-listp rules))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
@@ -98,13 +117,64 @@
                    disable-function))
         (er hard? 'unroll-spec-basic-fn ":disable-function should not be true if :produce-function is nil.")
         (mv (erp-t) nil state))
+       (- (cw "~%(Unrolling spec:~%"))
        (term (translate-term term 'unroll-spec-basic-fn (w state)))
        (assumptions (translate-terms assumptions 'unroll-spec-basic-fn (w state)))
-       ;; Choose which set of rules to use:
-       (rule-list (choose-rules rules ;rule-lists
-                                extra-rules remove-rules (unroll-spec-basic-rules)))
+       ;; Compute the base set of rules (from which to add and remove) and also
+       ;; any opener events:
+       ((mv pre-events base-rules)
+        (if (eq rules :standard)
+            (mv nil (unroll-spec-basic-rules))
+          (if (eq rules :auto)
+              (b* (((mv defined-supporting-fns
+                        & ;undefined-fns
+                        & ;stopper-fns-encountered
+                        )
+                    (fns-supporting-term term
+                                         ;; Don't open these functions:
+                                         (append '(leftrotate ; don't open leftrotate
+                                                   nth update-nth len true-listp nthcdr firstn take
+                                                   list-to-bv-array
+                                                   ifix nfix
+                                                   floor mod
+                                                   )
+                                                 *bv-and-array-fns-we-can-translate*)
+                                         (w state)))
+                   ((mv events rule-names)
+                    (opener-rules-for-fns defined-supporting-fns t '-for-unroll-spec-basic nil nil state))
+                   (- (cw "Will use the following ~x0 additional rules: ~X12~%" (len rule-names) rule-names nil))
+                   ;; todo: name this rule set?:  what else should go in it
+                   (rule-names (append '(;consp-of-cons  ; about primitives ; todo: when else might be needed?
+                                         ;car-cons
+                                         ;cdr-cons
+                                         list-to-bv-array
+                                         BVCAT-OF-IFIX-ARG2 ; add to core-rules-bv
+                                         BVCAT-OF-IFIX-ARG4 ; add to core-rules-bv
+                                         BV-ARRAY-WRITE-OF-BVCHOP-ARG3
+                                         BV-ARRAY-WRITE-OF-BVCHOP-ARG4
+                                         )
+                                       (bv-array-rules-simple)
+                                       (type-rules) ; give us type facts about bv ops
+                                       (set-difference-eq (core-rules-bv)
+                                                          ;; these are kind of like trim rules, and can make the result worse:
+                                                          '(;BVCHOP-OF-BVPLUS
+                                                            BVCHOP-OF-bvuminus
+                                                            ))
+                                       (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
+                                       '(LIST-TO-BV-ARRAY-AUX-BASE LIST-TO-BV-ARRAY-AUX-unroll) ; todo: make an "of cons" rule
+                                       (unsigned-byte-p-forced-rules)
+                                       rule-names)))
+                ;; todo: this doesn't include any standard rules -- should it?  they could loop with the openers (e.g., nth-of-cdr)
+                (mv events rule-names))
+            ;; rules is an explicit list of rules:
+            (mv nil rules))))
+       ;; Add the :extra-rules and remove the :remove-rules:
+       (rules (union-equal extra-rules base-rules))
+       (rules (set-difference-equal rules remove-rules))
+       ;; Submit any needed defopener rules:
+       (state (submit-events-quiet pre-events state))
        ((mv erp rule-alist)
-        (make-rule-alist rule-list (w state)))
+        (make-rule-alist rules (w state)))
        ((when erp) (mv erp nil state))
        ;; Call the rewriter:
        ((mv erp dag)
@@ -180,7 +250,11 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
        (items-created (append (list defconst-name)
                               (if produce-function (list function-name) nil)
                               (if produce-theorem (list theorem-name) nil)))
-       (defun-variant (if disable-function 'defund 'defun)))
+       (defun-variant (if disable-function 'defund 'defun))
+       (- (cw "Unrolling finished.~%"))
+       ;; (- (cw "Info on unrolled spec DAG:~%"))
+       ((mv & & state) (dag-info-fn-aux dag (symbol-name defconst-name) state))
+       (- (cw ")~%")))
     (mv (erp-nil)
         ;; If dag is a quoted constant, then it gets doubly quoted here.  This
         ;; makes sense: You unquote this thing and either get a DAG or a quoted
@@ -198,7 +272,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                     defconst-name ;; The name of the DAG constant to create
                                     term          ;; The term to simplify
                                     &key
-                                    (rules ':auto) ;to completely replace the usual set of rules
+                                    (rules ':standard) ;to completely replace the usual set of rules
                                     (extra-rules 'nil) ; to add to the usual set of rules
                                     (remove-rules 'nil) ; to remove from to the usual set of rules
                                     ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
