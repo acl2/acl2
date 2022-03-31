@@ -471,7 +471,7 @@
                                                  (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
                                                (if (eq :proved result)
                                                    ;;the hyp counts as relieved:
-                                                   (progn$ ;(print-hit-counts t info (rules-from-rule-alist rule-alist)) ;ffffixme these are cumulative counts
+                                                   (progn$ ;(maybe-print-hit-counts t info) ;ffffixme these are cumulative counts
                                                     (cw "Proved the work-hard hyp)~%")
                                                     (relieve-rewrite-rule-hyps (rest hyps) (+ 1 hyp-num) rewrite-objective alist
                                                                                rule-symbol dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -863,9 +863,10 @@
                         (and print (not (eq :brief print)) (empty-info-world)) ;fixme if print is brief, keep a simple total number of hits and just print the total below??:
                         (and print (zero-tries))
                         simplify-xorsp state result-array-stobj)
-      (progn$ (and print (not (eq :brief print)) (print-hit-counts print info (append (rules-from-rule-alist rule-alist)
-                                                                                      ;; do these get counted?
-                                                                                      (rules-from-rule-alist oi-rule-alist))))
+      (progn$ (and print (not (eq :brief print)) (maybe-print-hit-counts print info ;; (append (rules-from-rule-alist rule-alist)
+                                                                                    ;;   ;; do these get counted?
+                                                                                    ;;   (rules-from-rule-alist oi-rule-alist))
+                                                                         ))
               (and print (cw "Total tries: ~x0.~%" tries))
               (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist state result-array-stobj)))))
 

@@ -396,7 +396,7 @@
                                                                      state))
                                  ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)))
                               (if (eq :proved result)
-                                  (progn$ ;(print-hit-counts t info (rules-from-rule-alist rewriter-rule-alist)) ;ffffixme these are cumulative counts
+                                  (progn$ ;(maybe-print-hit-counts t info) ;ffffixme these are cumulative counts
                                    (cw "Proved the work-hard hyp)~%")
                                    ;;the hyp counts as relieved:
                                    (relieve-rule-hyps (rest hyps)
@@ -1269,7 +1269,7 @@
                                          limits
                                          state))
        ((when erp) (mv erp nil limits state))
-       (- (and print (print-hit-counts print info (rules-from-rule-alist rewriter-rule-alist))))
+       (- (and print (maybe-print-hit-counts print info)))
        (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
        (- (and print (cw ")"))) ; balances "(Simplifying with no internal contexts"
        (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))
@@ -1336,7 +1336,7 @@
                                                external-context known-booleans work-hard-when-instructedp tag limits state))
              ((when erp) (mv erp nil nil state))
              (- (and print (cw "(~x0 tries.)~%" tries)))
-             (- (and print (print-hit-counts print info (rules-from-rule-alist rewriter-rule-alist))))
+             (- (and print (maybe-print-hit-counts print info)))
              (- (and print (cw ")")))
              (top-nodenum (top-nodenum dag))
              (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum))

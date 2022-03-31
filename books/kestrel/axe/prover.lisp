@@ -1,7 +1,7 @@
 ; The Axe Prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1978,7 +1978,7 @@
              ((when erp) (mv erp :failed state))
              ;;just print the message in the subroutine and don't case split here?
              (- (and print (cw "(~x0 tries.)~%" tries)))
-             (- (and print (print-hit-counts print info (rules-from-rule-alists rule-alists)))))
+             (- (and print (maybe-print-hit-counts print info))))
           (if (eq :proved result)
               (prog2$ (cw "proved ~s0 with dag prover~%" case-name)
                       (mv (erp-nil) :proved state))
@@ -2027,7 +2027,7 @@
                                       (+ -1 (expt 2 59)) ;max fixnum?
                                       state))
        ((when erp) (mv erp nil state))
-       (- (and print (print-hit-counts print info (rules-from-rule-alists rule-alists))))
+       (- (and print (maybe-print-hit-counts print info)))
        (- (and print (cw "Total tries: ~x0.~%" tries))))
     (if (eq :proved result)
         (prog2$ (cw "Proved the theorem.)~%")
@@ -2143,7 +2143,7 @@
                                           (+ -1 (expt 2 59)) ;max fixnum?
                                           state))
        ((when erp) (mv erp nil state))
-       (- (and print (print-hit-counts print info (rules-from-rule-alists rule-alists))))
+       (- (and print (maybe-print-hit-counts print info)))
        (- (and print (cw "Total tries: ~x0.~%" tries))))
     (if (eq :proved result)
         (prog2$ (cw "Proved the theorem.)~%")

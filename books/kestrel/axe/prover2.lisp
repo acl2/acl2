@@ -123,7 +123,7 @@
                                         state))
          ((when erp) (mv erp (list clause) state))
          (- (and print (cw "(~x0 tries.)~%" tries)))
-         (- (and print (print-hit-counts print info (rules-from-rule-alist rule-alist)))))
+         (- (and print (maybe-print-hit-counts print info))))
       (if (eq :proved result)
           (prog2$ (cw "!! The DAG prover proved the clause)~%")
                   ;;fixme very cryptic error message when we only returned the one value

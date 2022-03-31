@@ -11150,7 +11150,7 @@
                                       nil ;limits todo:support this?
                                       state))
        ((when erp) (mv erp nil dag-array dag-len state result-array-stobj))
-       (- (and print (print-hit-counts print info (rules-from-rule-alist rewriter-rule-alist))))
+       (- (and print (maybe-print-hit-counts print info)))
        (- (and tries (cw "(~x0 tries.)" tries)))
        )
     (mv (erp-nil) miter-nodenum-or-quotep dag-array dag-len state result-array-stobj)))

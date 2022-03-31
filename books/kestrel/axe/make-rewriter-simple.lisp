@@ -4138,7 +4138,7 @@
                                                    ))
               ((when erp) (mv erp nil))
               (- (and count-hits
-                      (print-hit-counts t info (rules-from-rule-alist rule-alist))))
+                      (maybe-print-hit-counts t info)))
               (- (and nil ;; change to t to print info on the memoization
                       memoization
                       (print-memo-stats memoization))))

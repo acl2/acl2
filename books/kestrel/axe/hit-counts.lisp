@@ -84,7 +84,8 @@
 ;; A true-list of triples of the form (sym prop . val).  See :doc world.  A
 ;; specialization of plist-worldp that requires the values to be rationals.
 ;; Note that nil satisfies info-worldp but means that we are not counting hits
-;; at all (see empty-info-world).  So we could call this maybe-info-worldp.
+;; at all (see empty-info-world).  Every valid info-world will have an entry
+;; for the special key :fake.  So we could perhaps call this maybe-info-worldp.
 (defund info-worldp (alist)
   (declare (xargs :guard t))
   (cond ((atom alist) (eq alist nil))
@@ -266,30 +267,26 @@
   :hints (("Goal" :in-theory (enable summarize-info-world
                                      info-worldp))))
 
-;better message if no hits?
-;use this more?
-(defund print-hit-counts (print info all-rule-names)
-  (declare (xargs :guard (and (info-worldp info)
-                              (symbol-listp all-rule-names)))
-           (ignore all-rule-names ;todo)
-                   ))
-  (let ((len (len info)))
-    ;; TODO: We are transitioning to not counting hits for :brief printing
-    (if (eq :brief print)
-        ;; Just print the number of hits (TODO: In this case, we could keep a simple count of hits, rather than counting the hits of each rule):
-        (if (= 0 len)
-            (cw "(No hits.)")
-          (if (eql 1 len)
-              (cw "(1 hit.)")
-            (cw "(~x0 hits.)" len)))
-      ;; Print the rules and their hit counts, and print the useless rules:
-      (let ((rule-count-alist (summarize-info-world info)))
-        (prog2$ (if (= 0 len)
+(defund maybe-print-hit-counts (print info)
+  (declare (xargs :guard (and ;; something about print
+                          (info-worldp info))))
+  (if (not info)
+      nil ;; We are not counting hits, so do nothing
+    (let ((num-hits (+ -1 (len info)))) ; each item in the INFO represents one hit, but remove the entry for :fake
+      ;; TODO: We are transitioning to not counting hits for :brief printing
+      (if (eq :brief print)
+          ;; Just print the number of hits (TODO: In this case, we could keep a simple count of hits, rather than counting the hits of each rule):
+          (if (= 0 num-hits)
+              (cw "(No hits.)")
+            (if (eql 1 num-hits)
+                (cw "(1 hit.)")
+              (cw "(~x0 hits.)" num-hits)))
+        ;; Print the rules and their hit counts:
+        (progn$ (if (= 0 num-hits)
                     (cw "(No hits.)")
-                  (if (eql 1 len)
-                      (cw "(1 hit:~%~y0)" rule-count-alist)
-                    (cw "(~x0 hits:~%~y1)" len rule-count-alist)))
-                nil
+                  (if (eql 1 num-hits)
+                      (cw "(1 hit:~%~y0)" (summarize-info-world info))
+                    (cw "(~x0 hits:~%~y1)" num-hits (summarize-info-world info))))
                 ;;todo: put this back but make it a separate option, off by default:
                 ;; (let* ((useful-rules (strip-cars rule-count-alist))
                 ;;        (useless-rules (set-difference-eq all-rule-names useful-rules)))
