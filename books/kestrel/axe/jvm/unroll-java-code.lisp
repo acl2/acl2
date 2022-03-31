@@ -563,7 +563,7 @@
          :on (comment error)
          :gag-mode nil
          (make-event ,form))))
-  :parents (lifter)
+  :parents (lifters)
   :short "Lift a Java method to create a DAG, unrolling loops as needed."
   :args ((defconst-name
            "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
