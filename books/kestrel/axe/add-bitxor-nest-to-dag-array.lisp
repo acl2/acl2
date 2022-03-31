@@ -21,7 +21,16 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-;returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+(defthm all-dargp-less-than-when-singleton-cheap
+  (implies (equal 1  (len dargs))
+           (equal (all-dargp-less-than dargs bound)
+                  (dargp-less-than (first dargs) bound)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable all-dargp-less-than))))
+
+
+;; KEEP IN SYNC WITH ADD-BVXOR-NEST-TO-DAG-ARRAY-AUX
+;; Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 (defund add-bitxor-nest-to-dag-array-aux (rev-leaves ;reversed from the order we want them in (since we must build the nest from the bottom up)
                                           core-nodenum
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
@@ -41,8 +50,8 @@
   (if (endp rev-leaves)
       (mv (erp-nil) core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (mv-let (erp core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-      (add-function-call-expr-to-dag-array-with-name 'bitxor `(,(first rev-leaves) ,core-nodenum) ;note the order
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
+      (add-function-call-expr-to-dag-array-with-name 'bitxor (list (first rev-leaves) core-nodenum) ; note the order
+                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
       (if erp
           (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
         (add-bitxor-nest-to-dag-array-aux (rest rev-leaves)
@@ -81,7 +90,8 @@
                                        (mv-nth 3 (add-bitxor-nest-to-dag-array-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
   :hints (("Goal" :in-theory (enable add-bitxor-nest-to-dag-array-aux))))
 
-;returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;; KEEP IN SYNC WITH ADD-BITXOR-NEST-TO-DAG-ARRAY
+;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 (defund add-bitxor-nest-to-dag-array (rev-leaves ;reversed from the order we want them in (since we must build the nest from the bottom up); may have 0 or just 1 element
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
   (declare (type (integer 0 2147483646) dag-len)
@@ -108,12 +118,12 @@
                   (enquote (getbit 0 (ifix (unquote leaf)))) ;consider dropping the ifix
                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             ;; a single leaf that is a nodenum:
-            (add-function-call-expr-to-dag-array-with-name 'getbit `('0 ,leaf)
-                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))
-      ;;at least two leaves:
+            (add-function-call-expr-to-dag-array-with-name 'getbit (list ''0 leaf)
+                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))
+      ;;at least two leaves (usual case):
       (mv-let (erp core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-        (add-function-call-expr-to-dag-array-with-name 'bitxor `(,(second rev-leaves) ,(first rev-leaves)) ;note the order
-                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
+        (add-function-call-expr-to-dag-array-with-name 'bitxor (list (second rev-leaves) (first rev-leaves)) ;note the order
+                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
         (if erp
             (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
           (add-bitxor-nest-to-dag-array-aux (rest (rest rev-leaves))

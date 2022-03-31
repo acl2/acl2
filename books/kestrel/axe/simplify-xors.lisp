@@ -234,7 +234,7 @@
 ;; requires the array to be named 'translation-array and allows null entries in
 ;; the array.  Note that nodes that are merely internal nodes of xor nests
 ;; are dropped and so not mapped to anything.
-(defund translate-nodenums-rev (nodenums translation-array dag-len xor-size nodenum-acc combined-constant)
+(defund translate-nodenums-for-xor-rev (nodenums translation-array dag-len xor-size nodenum-acc combined-constant)
   (declare (type integer combined-constant)
            (type (integer 0 *) xor-size)
            (xargs :guard (and (natp dag-len)
@@ -252,43 +252,43 @@
     (let* ((nodenum (first nodenums))
            (renamed-nodenum (aref1 'translation-array translation-array nodenum)))
       (if (null renamed-nodenum)
-          (prog2$ (er hard? 'translate-nodenums-rev "Node did not translate to anything.")
+          (prog2$ (er hard? 'translate-nodenums-for-xor-rev "Node did not translate to anything.")
                   (mv nodenum-acc combined-constant))
         (if (consp renamed-nodenum) ;check for quotep
-            (translate-nodenums-rev (rest nodenums)
+            (translate-nodenums-for-xor-rev (rest nodenums)
                                     translation-array
                                     dag-len
                                     xor-size
                                     nodenum-acc
                                     (bvxor xor-size (ifix (unquote renamed-nodenum)) combined-constant))
-          (translate-nodenums-rev (rest nodenums)
+          (translate-nodenums-for-xor-rev (rest nodenums)
                                   translation-array
                                   dag-len
                                   xor-size
                                   (cons renamed-nodenum nodenum-acc)
                                   combined-constant))))))
 
-(defthm true-listp-of-mv-nth-0-of-translate-nodenums-rev
+(defthm true-listp-of-mv-nth-0-of-translate-nodenums-for-xor-rev
   (implies (true-listp nodenum-acc)
-           (true-listp (mv-nth 0 (translate-nodenums-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))))
-  :hints (("Goal" :in-theory (enable translate-nodenums-rev))))
+           (true-listp (mv-nth 0 (translate-nodenums-for-xor-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))))
+  :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev))))
 
 ;; need to know that the translation array is bounded - use def-typed-acl2-array?
-(defthm all-natp-of-mv-nth-0-of-translate-nodenums-rev
+(defthm all-natp-of-mv-nth-0-of-translate-nodenums-for-xor-rev
   (implies (and (all-natp nodenum-acc)
                 (all-natp nodenums)
                 (all-< nodenums dag-len)
                 (array1p 'translation-array translation-array)
                 (equal dag-len (alen1 'translation-array translation-array))
                 (translation-arrayp-aux (+ -1 dag-len) translation-array))
-           (all-natp (mv-nth 0 (translate-nodenums-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))))
-  :hints (("Goal" :in-theory (enable translate-nodenums-rev))))
+           (all-natp (mv-nth 0 (translate-nodenums-for-xor-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))))
+  :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev))))
 
 (defthmd integerp-when-natp
   (implies (natp x)
            (integerp x)))
 
-;; (defthm all-integerp-of-mv-nth-0-of-translate-nodenums-rev
+;; (defthm all-integerp-of-mv-nth-0-of-translate-nodenums-for-xor-rev
 ;;   (implies (and (all-natp nodenum-acc)
 ;;                 (all-natp nodenums)
 ;;                 (all-< nodenums dag-len)
@@ -297,20 +297,20 @@
 ;;                 (if (consp nodenums)
 ;;                     (renaming-arrayp-aux 'translation-array translation-array (maxelem nodenums))
 ;;                   t))
-;;            (all-integerp (mv-nth 0 (translate-nodenums-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))))
-;;   :hints (("Goal" :in-theory (enable translate-nodenums-rev))))
+;;            (all-integerp (mv-nth 0 (translate-nodenums-for-xor-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))))
+;;   :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev))))
 
 ;; they actually can't be quoteps?
-(defthm all-dargp-less-than-of-mv-nth-0-of-translate-nodenums-rev
+(defthm all-dargp-less-than-of-mv-nth-0-of-translate-nodenums-for-xor-rev
   (implies (and (all-natp nodenums)
                 (all-< nodenums dag-len)
                 (all-dargp-less-than nodenum-acc bound)
                 (array1p 'translation-array translation-array)
                 (equal dag-len (alen1 'translation-array translation-array))
                 (bounded-translation-arrayp-aux (+ -1 dag-len) translation-array bound))
-           (all-dargp-less-than (mv-nth 0 (translate-nodenums-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))
+           (all-dargp-less-than (mv-nth 0 (translate-nodenums-for-xor-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))
                                            bound))
-  :hints (("Goal" :in-theory (enable translate-nodenums-rev))))
+  :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev))))
 
 
 ;items are sorted, so any duplicates must be adjacent
@@ -451,7 +451,7 @@
                   :hints (("Goal" :in-theory (enable car-becomes-nth-of-0
                                                      nth-of-cdr
                                                      <-of-nth-when-all-<)))
-                  :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0 nth-of-cdr consp-of-cdr)))))
+                  :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0 nth-of-cdr)))))
   (if (or (endp pending-list)
           (not (mbt (all-natp pending-list)))
           (not (mbt (decreasingp pending-list))) ;for termination
@@ -612,6 +612,7 @@
               (true-listp x)))
   :hints (("Goal" :in-theory (enable integer-listp all-integerp))))
 
+;; KEEP IN SYNC WITH BVXOR-NEST-LEAVES
 ;nodenum is the root of a bitxor nest
 ;this returns a list of nodenums and constants (possibly one constant, followed by nodenums) term equivalent to nodenum but with the leaves fixed up according to translation-array
 ;fixme can this blowup?! maybe not
@@ -623,18 +624,20 @@
                               (equal dag-len (alen1 'translation-array translation-array))
                               (translation-arrayp-aux (+ -1 dag-len) translation-array))
                   :guard-hints (("Goal" :in-theory (enable integer-listp-rewrite ALL-RATIONALP-WHEN-ALL-NATP ALL-INTEGERP-WHEN-ALL-NATP)))))
-  (b* (((mv nodenum-leaves combined-constant)
+  (b* (;; Extract the xor leaves of this node from the old dag:
+       ((mv nodenum-leaves combined-constant)
         (bitxor-nest-leaves-aux (list nodenum) dag-array-name dag-array dag-len nil 0) ;;TODO: consider this: (bitxor-nest-leaves-for-node nodenum dag-array-name dag-array)
         )
+       ;; Translate to get their nodenums in the dag we are constructing:
        ((mv nodenum-leaves combined-constant)
-        (translate-nodenums-rev nodenum-leaves translation-array dag-len 1 nil combined-constant)) ;i suppose the fixing up could introduce duplicates (two leaves that map to the same nodenum after the xors they themselves are supported by get normalized?)
-       (sorted-nodenum-leaves (merge-sort-< nodenum-leaves))
-       ;;xoring something with itself amounts to xoring with 0
-       (rev-sorted-nodenum-leaves (remove-duplicate-pairs-and-reverse sorted-nodenum-leaves nil)) ;this could make the xor nest directly?
+        (translate-nodenums-for-xor-rev nodenum-leaves translation-array dag-len 1 nil combined-constant)) ;i suppose the fixing up could introduce duplicates (two leaves that map to the same nodenum after the xors they themselves are supported by get normalized?)
+       (nodenum-leaves-low-to-high (merge-sort-< nodenum-leaves))
+       ;;xoring something with itself amounts to xoring awith 0, so we can remove pairs of dups here:
+       (nodenum-leaves-high-to-low (remove-duplicate-pairs-and-reverse nodenum-leaves-low-to-high nil)) ;this could make the xor nest directly?
        (all-leaves (if (eql 0 combined-constant)
-                       rev-sorted-nodenum-leaves
+                       nodenum-leaves-high-to-low
                      (cons (enquote combined-constant) ;will always be 1 if it's not 0? ;save this cons?
-                           rev-sorted-nodenum-leaves))))
+                           nodenum-leaves-high-to-low))))
     all-leaves))
 ;;                  (rev-sorted-nodenum-leaves-with-constant
 ;;                   (if (eql 0 combined-constant)
@@ -887,15 +890,15 @@
 ;throughout the run, a node actually gets added to the pending-list only once (because the list never contains duplicates and after a node is removed it can't be added again later because some larger parent would have to be present in the list, but we only process a node when it is the largest node in the list - whew!)
 ; fixme could the acc ever contain duplicates? (if not, don't take time to remove dups)
 ;returns (mv nodenum-leaves accumulated-constant) where the bvxor of nodenum-leaves and accumulated-constant is equal to nodenum
-;keep in sync with bitxor version
+;; KEEP IN SYNC WITH BITXOR-NEST-LEAVES-AUX.
 ;the acc returned will be sorted in increasing order
 (defund bvxor-nest-leaves-aux (pending-list
                                size ;the unquoted size
                                dag-array-name dag-array dag-len acc accumulated-constant)
-  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (true-listp pending-list)
+  (declare (xargs :guard (and (true-listp pending-list)
                               (all-natp pending-list)
                               (decreasingp pending-list)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-< pending-list dag-len)
                               (integerp accumulated-constant)
                               (natp size))
@@ -1002,10 +1005,11 @@
            :in-theory (e/d (BvXOR-NEST-LEAVES-AUX ALL-INTEGERP-WHEN-ALL-NATP)
                            (all-<=-of-mv-nth-0-of-bvxor-nest-leaves-aux-new)))))
 
-;keep in sync with bitxor version
-;nodenum is the root of a bvxor nest whose size parameter is SIZE (quoted or not?)
-;this returns a list of nodenums and constants (possibly one constant, followed by nodenums) whose bvxor is equivalent to nodenum but with the leaves fixed up according to translation-array
-;fixme can this blowup?! maybe not
+;; KEEP IN SYNC WITH BITXOR-NEST-LEAVES
+;; NODENUM is the root of a bvxor nest whose size parameter is SIZE
+;; The result a list of nodenums ordered from high to low, possibly preceded by a constant.
+;; The bvxor of the items in the returned list is equivalent to NODENUM, but with the leaves fixed up according to translation-array.
+;; TODO: can this ever blow up?! maybe not..
 (defund bvxor-nest-leaves (nodenum size dag-array-name dag-array dag-len translation-array)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -1015,21 +1019,23 @@
                               (translation-arrayp-aux (+ -1 dag-len) translation-array)
                               (natp size))
                   :guard-hints (("Goal" :in-theory (enable integer-listp-rewrite ALL-RATIONALP-WHEN-ALL-NATP ALL-INTEGERP-WHEN-ALL-NATP)))))
-  (mv-let (nodenum-leaves combined-constant)
-    (bvxor-nest-leaves-aux (list nodenum) size dag-array-name dag-array dag-len nil 0)
-    (b* (((mv nodenum-leaves combined-constant)
-          (translate-nodenums-rev nodenum-leaves translation-array dag-len size nil combined-constant)) ;i suppose the fixing up could introduce duplicates (two leaves that map to the same nodenum after the xors they themselves are supported by get normalized?)
-         (sorted-nodenum-leaves (merge-sort-< nodenum-leaves))
-         ;;xoring something with itself amounts to xoring with 0
-         (rev-sorted-nodenum-leaves (remove-duplicate-pairs-and-reverse sorted-nodenum-leaves nil)) ;this could make the xor nest directly? ;fixme do we still need to remove dups here?
-         (all-leaves (if (eql 0 combined-constant)
-                         rev-sorted-nodenum-leaves
-                       (cons (enquote combined-constant) ;save this cons? ;fixme when the result is reversed, does that mean the constant goes last?
-                             rev-sorted-nodenum-leaves)))
+  (b* (;; Extract the xor leaves of this node from the old dag:
+       ((mv nodenum-leaves combined-constant)
+        (bvxor-nest-leaves-aux (list nodenum) size dag-array-name dag-array dag-len nil 0))
+       ;; Translate to get their nodenums in the dag we are constructing:
+       ((mv nodenum-leaves combined-constant)
+        (translate-nodenums-for-xor-rev nodenum-leaves translation-array dag-len size nil combined-constant)) ;i suppose the fixing up could introduce duplicates (two leaves that map to the same nodenum after the xors they themselves are supported by get normalized?)
+       (nodenum-leaves-low-to-high (merge-sort-< nodenum-leaves)) ;todo: remove duplicate pairs here?
+       ;;xoring something with itself amounts to xoring with 0, so we can remove pairs of dups here:
+       (nodenum-leaves-high-to-low (remove-duplicate-pairs-and-reverse nodenum-leaves-low-to-high nil)) ;this could make the xor nest directly?
+       (all-leaves (if (eql 0 combined-constant)
+                       nodenum-leaves-high-to-low
+                     (cons (enquote combined-constant) ;save this cons? ;fixme when the result is reversed, does that mean the constant goes last?
+                           nodenum-leaves-high-to-low)))
 ;(dummy (cw "~x0 leaves.~%" (len all-leaves)))
-         )
+       )
 ;            (declare (ignore dummy))
-      all-leaves)))
+    all-leaves))
 
 (defthm true-listp-of-bvxor-nest-leaves
   (true-listp (bvxor-nest-leaves nodenum size dag-array-name dag-array dag-len translation-array))
@@ -1124,27 +1130,27 @@
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                          translation-array print)
                     ;; this is the top node of an xor nest (some parent is not an xor or we are handling the top node), so we have to handle the nest rooted at this node...
-                    (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                      (add-bvxor-nest-to-dag-array
-                       ;;may have 0 or just 1 leaf:
-                       ;;avoid the reverse by doing the merge-sort in bvxor-nest-leaves by the opposite order..
-                       (reverse-list (bvxor-nest-leaves n ;avoid making this list? ;fixme can this be exponentially large?! maybe not..
-                                                        (unquote (darg1 expr))
-                                                        old-dag-array-name
-                                                        old-dag-array
-                                                        old-dag-len
-                                                        translation-array))
-                       (unquote (darg1 expr))           ;size
-                       (darg1 expr)                     ;quoted size
-                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
-                      (if erp
-                          (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)
-                        (simplify-xors-aux (+ 1 n)
-                                           old-dag-array old-dag-len old-dag-parent-array
-                                           old-dag-array-name old-dag-parent-array-name
-                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                           (aset1 'translation-array translation-array n nodenum-or-quotep)
-                                           print))))
+                    (b* ((rev-leaves
+                          ;;may have 0 or just 1 leaf:
+                          ;;avoid the reverse by doing the merge-sort in bvxor-nest-leaves by the opposite order..
+                          (reverse-list (bvxor-nest-leaves n ;avoid making this list? ;fixme can this be exponentially large?! maybe not, because we remove dups
+                                                           (unquote (darg1 expr))
+                                                           old-dag-array-name
+                                                           old-dag-array
+                                                           old-dag-len
+                                                           translation-array)))
+                         ((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                          (add-bvxor-nest-to-dag-array rev-leaves
+                                                       (unquote (darg1 expr)) ;size
+                                                       (darg1 expr) ;quoted size
+                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
+                         ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)))
+                      (simplify-xors-aux (+ 1 n)
+                                         old-dag-array old-dag-len old-dag-parent-array
+                                         old-dag-array-name old-dag-parent-array-name
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                         (aset1 'translation-array translation-array n nodenum-or-quotep)
+                                         print)))
                 (if (and (eq 'bitxor fn)
                          (= 2 (len (dargs expr))))
                     ;; it's a bitxor:
