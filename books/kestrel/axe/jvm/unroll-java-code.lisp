@@ -565,7 +565,7 @@
          :gag-mode nil
          (make-event ,form))))
   :parents (lifters)
-  :short "Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
+  :short "Lift a Java method to create a DAG, unrolling loops as needed."
   :args ((defconst-name
            "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
          (method-indicator
@@ -594,8 +594,9 @@
          (produce-function "Whether to produce a defun in addition to a DAG, a boolean.")
          (chunkedp "whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code)")
          )
-  :description "<p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>"
-  )
+  :description ("Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
+                "This event creates a @(see defconst) whose name is @('defconst-name')."
+                "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))
 
 ;; Ensure all the rules needed by the unroller are included:
 (assert-event (ensure-all-theoremsp (unroll-java-code-rules) (w state)))

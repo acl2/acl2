@@ -18,32 +18,32 @@
 (defttag print-to-file) ;this lets us call open-output-channel!
 
 ;returns state
-(defun print-dag-lst-to-file-aux (dag-lst channel state)
-  (declare (xargs :mode :program ;drop?
+(defun print-dag-to-file-aux (dag-lst channel state)
+  (declare (xargs :mode :program ; because of PPRINT-OBJECT-OR-STRING
                   :stobjs state))
   (if (endp dag-lst)
       state
     (let ((entry (car dag-lst)))
       (pprogn (princ$ " " channel state)
-              (pprint-object-or-string entry channel state) ;fixme call something faster? ;fixme save this cons?
+              (pprint-object-or-string entry channel state) ; todo: call something faster or nicer here?
               (princ$ (newline-string) channel state)
-              (print-dag-lst-to-file-aux (rest dag-lst) channel state)))))
+              (print-dag-to-file-aux (rest dag-lst) channel state)))))
 
 ;returns state
-(defun print-dag-lst-to-file (dag-lst fname state)
+(defun print-dag-to-file (dag-lst fname state)
   (declare (xargs :mode :program ;drop?
                   :guard (stringp fname)
                   :stobjs state))
   (mv-let (channel state)
 	  (open-output-channel! fname :character state)
           (if (not channel)
-              (prog2$ (hard-error 'print-dag-lst-to-file "Unable to open file ~s0 for :character output." (acons #\0 fname nil))
+              (prog2$ (hard-error 'print-dag-to-file "Unable to open file ~s0 for :character output." (acons #\0 fname nil))
                       state)
             (prog2$ (cw "Writing DAG to file:~%~s0~%.~%" fname)
                     (if (quotep dag-lst)
                         (pprogn (pprint-object-or-string dag-lst channel state)
                                 (close-output-channel channel state))
                       (pprogn (princ$ "(" channel state)
-                              (print-dag-lst-to-file-aux dag-lst channel state)
+                              (print-dag-to-file-aux dag-lst channel state)
                               (princ$ ")" channel state)
                               (close-output-channel channel state)))))))
