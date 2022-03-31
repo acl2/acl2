@@ -243,6 +243,7 @@
     bvor-of-bvshl-and-bvashr-alt  ;; introduces leftrotate
     bvor-of-bvashr-and-bvshl-alt  ;; introduces leftrotate
     bvcat-of-slice-becomes-leftrotate ;; todo: loops with defn?
+    bvcat-of-getbit-becomes-leftrotate ;; todo: loops with defn?
     ))
 
 ;;includes rules from bv-rules-axe.lisp (bad?) and axerulescore.lisp and dagrulesmore.lisp and dagrules.lisp
