@@ -34,7 +34,7 @@
                     nil     ; interpreted-function-alist
                     nil     ; monitored-symbols
                     t       ; memoizep
-                    t       ; count-hitsp
+                    t       ; count-hits
                     (w state))
    (and (not erp) ;no error
         ;; resulting term is (FOO X):
@@ -49,7 +49,7 @@
                     nil     ; interpreted-function-alist
                     nil     ; monitored-symbols
                     t       ; memoizep
-                    t       ; count-hitsp
+                    t       ; count-hits
                     (w state))
    (and (not erp)
         (equal term ''7))))
@@ -63,7 +63,7 @@
                     nil     ; interpreted-function-alist
                     nil     ; monitored-symbols
                     t       ; memoizep
-                    t       ; count-hitsp
+                    t       ; count-hits
                     (w state))
    (and (not erp)
         (equal term ''t))))
@@ -94,7 +94,7 @@
                         nil ; interpreted-function-alist
                         nil ; monitored-symbols
                         t   ; memoizep
-                        t   ; count-hitsp
+                        t   ; count-hits
                         (w state))
    (and (not erp)
         (equal result ''0))))
