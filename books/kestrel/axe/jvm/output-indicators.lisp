@@ -119,111 +119,83 @@
       ;; for any other kind of object, it's not clear what field to return (we probably don't want just the address)
       (if (jvm::is-one-dim-array-typep return-type)
           :array-return-value
-        (er hard? 'output-extraction-term "Can't figure out which output to return: method returns a reference that is not a 1-D array.")))))
+        (er hard? 'resolve-auto-output-indicator "Can't figure out which output to return: method returns a reference that is not a 1-D array.")))))
 
-;todo: compare to output-extraction-term
 (mutual-recursion
- ;;TTTODO: Add support for :param-field (or just replace this with output-extraction-term!)
- ;; TODO: Add support for :all
- ;; TODO: Merge with output-extraction-term or just use that?
- ;; TODO: The lambdas here may be problematic.
- (defun wrap-term-with-output-extractor (output-indicator
-                                         original-locals
-                                         term
-                                         class-alist)
+ ;; TODO: The lambdas here may be problematic??
+ (defund wrap-term-with-output-extractor (output-indicator  ;:auto is handled in a wrapper
+                                          initial-locals-term
+                                          dag-term
+                                          class-table-alist)
    (declare (xargs :guard (and (output-indicatorp-aux output-indicator)
-                               (class-table-alistp class-alist))))
+                               (class-table-alistp class-table-alist))))
    (if (eq :all output-indicator)
-       term
+       dag-term
      (if (eq :return-value output-indicator)
-         `(jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) ,term)))
+         `(jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) ,dag-term)))
        (if (eq :return-value-long output-indicator)
-           `(jvm::top-long (jvm::stack (jvm::thread-top-frame (th) ,term)))
+           ;; Recall that a long takes 2 stack slots and is stored entirely in the lower slot
+           `(jvm::top-long (jvm::stack (jvm::thread-top-frame (th) ,dag-term)))
          (if (eq :array-return-value output-indicator) ;TODO: add support for this wherever output-indicators are used
              `((lambda (XXX) ; since XXX appears twice
                  (get-field (jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) xxx)))
                             ',(array-contents-pair)
                             (jvm::heap xxx)))
-               ,term)
+               ,dag-term)
            (if (eq (car output-indicator) :array-local) ;;this means "get the final value of the array that was initially pointed to by array local N.  TODO: This could be an abbreviation for a :field of a :local...
                (let ((local-num (cadr output-indicator)))
-                 `(get-field (jvm::nth-local ',local-num ,original-locals) ;;note: these are the locals in the original state
+                 `(get-field (jvm::nth-local ',local-num ,initial-locals-term) ;;note: these are the locals in the original state
                              ',(array-contents-pair)
-                             (jvm::heap ,term)))
+                             (jvm::heap ,dag-term)))
              (if (eq (car output-indicator) :field)
                  (b* ((pair (farg1 output-indicator))
-                      ((when (not (field-pair-okayp pair class-alist)))
+                      ((when (not (field-pair-okayp pair class-table-alist)))
                        (er hard? 'wrap-term-with-output-extractor "Bad field: ~x0." pair))
                       (obj-indicator (farg2 output-indicator))
                       (obj (wrap-term-with-output-extractor obj-indicator ;return-type
-                                                            original-locals term class-alist)))
-                   `(get-field ,obj ',pair (jvm::heap ,term)))
-               (if (eq (car output-indicator) :tuple)
-                   ;; TODO: Introduce a let?
-                   (wrap-term-with-output-extractors (fargs output-indicator) ;return-type
-                                                     original-locals term class-alist)
-                 ;; FIXME: Handle :param-field
-                 (er hard? 'wrap-term-with-output-extractor "Unsupported case: ~x0" output-indicator)))))))))
+                                                            initial-locals-term dag-term class-table-alist)))
+                   `(get-field ,obj ',pair (jvm::heap ,dag-term)))
+               (if (eq (car output-indicator) :param-field) ;todo, redo so that :param is an output-indicator but can't appear naked.  also contents..
+                   (let ((pair (farg1 output-indicator))
+                         (local-num (farg2 output-indicator)))
+                     (if (not (field-pair-okayp pair class-table-alist))
+                         (er hard? 'wrap-term-with-output-extractor "Bad field: ~x0." pair)
+                       `(get-field (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
+                                   ',pair
+                                   (jvm::heap ,dag-term))))
+                 (if (eq (car output-indicator) :tuple)
+                     ;; TODO: Introduce a let?
+                     (wrap-term-with-output-extractors (fargs output-indicator) ;return-type
+                                                       initial-locals-term dag-term class-table-alist)
+                   (er hard 'wrap-term-with-output-extractor "Unsupported case: ~x0" output-indicator))))))))))
 
- (defun wrap-term-with-output-extractors (output-indicators original-locals term class-alist)
+ (defund wrap-term-with-output-extractors (output-indicators initial-locals-term dag-term class-table-alist)
    (declare (xargs :guard (and (output-indicatorp-aux-lst output-indicators)
-                               (class-table-alistp class-alist))))
+                               (class-table-alistp class-table-alist))))
    (if (endp output-indicators)
        *nil*
      ;; not a lambda (hope that is okay):
      `(cons ,(wrap-term-with-output-extractor (first output-indicators) ;return-type
-                                              original-locals term class-alist)
+                                              initial-locals-term dag-term class-table-alist)
             ,(wrap-term-with-output-extractors (rest output-indicators) ;return-type
-                                               original-locals term class-alist)))))
+                                               initial-locals-term dag-term class-table-alist)))))
 
-(mutual-recursion
- ;;Return a term to wrap around a dag to extract the output.  The special symbol 'replace-me will be replaced with the DAG.
+
+;;Return a term to wrap around a dag to extract the output.  The special symbol 'replace-me will be replaced with the DAG.
 ;todo: compare to wrap-term-with-output-extractor in unroll-java-code
- (defund output-extraction-term-core (output-indicator initial-locals-term class-table-alist)
-   (declare (xargs :guard (and (output-indicatorp-aux output-indicator) ;:auto is handled in the wrapper
-                               (pseudo-termp initial-locals-term)
-                               (class-table-alistp class-table-alist))))
-   (if (eq :all output-indicator)
-       'replace-me
-   (if (eq :return-value output-indicator)
-       '(jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) replace-me)))
-     (if (eq :return-value-long output-indicator)
-         ;; Recall that a long takes 2 stack slots and is stored entirely in the lower slot
-         '(jvm::top-long (jvm::stack (jvm::thread-top-frame (th) replace-me)))
-       (if (eq :array-return-value output-indicator)
-           `(get-field (jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) replace-me)))
-                       ',(array-contents-pair)
-                       (jvm::heap replace-me))
-         (if (eq (car output-indicator) :array-local) ;;this means "get the final value of the array that was initially pointed to by array local N.  TODO: This could be an abbreviation for a :field of a :local...
-             (let ((local-num (cadr output-indicator)))
-               `(get-field (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
-                           ',(array-contents-pair)
-                           (jvm::heap replace-me)))
-           (if (eq (car output-indicator) :field)
-               (let ((pair (farg1 output-indicator)))
-                 (if (not (field-pair-okayp pair class-table-alist))
-                     (er hard? 'output-extraction-term-core "Bad field: ~x0." pair)
-                   `(get-field ,(output-extraction-term-core (farg2 output-indicator) initial-locals-term class-table-alist)
-                               ',pair
-                               (jvm::heap replace-me))))
-             (if (eq (car output-indicator) :param-field)
-                 (let ((pair (farg1 output-indicator))
-                       (local-num (farg2 output-indicator)))
-                   (if (not (field-pair-okayp pair class-table-alist))
-                       (er hard? 'output-extraction-term-core "Bad field: ~x0." pair)
-                     `(GET-FIELD (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
-                                 ',pair
-                                 (jvm::heap replace-me))))
-               (if (eq (car output-indicator) :tuple)
-                   (output-extraction-terms-core (fargs output-indicator)
-                                                 initial-locals-term class-table-alist)
-                 (er hard 'output-extraction-term-core "Unrecognized output-indicator"))))))))))
-
- (defund output-extraction-terms-core (output-indicators initial-locals-term class-table-alist)
-   (declare (xargs :guard (and (output-indicatorp-aux-lst output-indicators) ;:auto is handled in the wrapper
-                               (pseudo-termp initial-locals-term)
-                               (class-table-alistp class-table-alist))))
-   (if (endp output-indicators)
-       *nil*
-     `(cons ,(output-extraction-term-core (first output-indicators) initial-locals-term class-table-alist)
-            ,(output-extraction-terms-core (rest output-indicators) initial-locals-term class-table-alist)))))
+(defun output-extraction-term (output-indicator
+                               initial-locals-term
+                               return-type ;used for :auto
+                               class-table-alist
+                               )
+  (declare (xargs :guard (and (output-indicatorp output-indicator)
+                              (pseudo-termp initial-locals-term)
+                              (or (eq :void return-type)
+                                  (jvm::typep return-type))
+                              (class-table-alistp class-table-alist))))
+  (let ((output-indicator (if (eq :auto output-indicator)
+                              (resolve-auto-output-indicator return-type)
+                            output-indicator)))
+    (if (not output-indicator)
+        (er hard? 'output-extraction-term "Failed to resove output indicator.")
+      (wrap-term-with-output-extractor output-indicator initial-locals-term 'replace-me class-table-alist))))

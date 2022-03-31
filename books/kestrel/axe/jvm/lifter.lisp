@@ -4536,26 +4536,6 @@
                             (hard-error 'make-input-assumptions "Bad input-source-alist" nil)))))
       (append assumptions (make-input-assumptions (rest input-source-alist) state-term)))))
 
-;;Return a term to wrap around a dag to extract the output.  The special symbol 'replace-me will be replaced with the DAG.
-;todo: compare to wrap-term-with-output-extractor in unroll-java-code
-(defun output-extraction-term (output-indicator
-                               initial-locals-term
-                               return-type ;used for :auto
-                               class-table-alist
-                               )
-  (declare (xargs ;:mode :program
-            :guard (and (output-indicatorp output-indicator)
-                        (pseudo-termp initial-locals-term)
-                        (or (eq :void return-type)
-                            (jvm::typep return-type))
-                        (class-table-alistp class-table-alist))))
-  (let ((output-indicator (if (eq :auto output-indicator)
-                              (resolve-auto-output-indicator return-type)
-                            output-indicator)))
-    (if (not output-indicator)
-        (er hard? 'output-extraction-term "Failed to resove output indicator.")
-      (output-extraction-term-core output-indicator initial-locals-term class-table-alist))))
-
 ; returns (mv erp result state)
 (defun extract-output-dag (output-indicator
                            dag ;; a DAG giving the final state, in terms of s0
