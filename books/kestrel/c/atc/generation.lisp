@@ -1605,7 +1605,7 @@
                              (type typep)
                              val))
                  state)
-    :parents (atc-event-and-code-generation atc-gen-expr-pure)
+    :parents (atc-event-and-code-generation atc-gen-expr-pure/bool)
     :short "Generate a C expression from an ACL2 term
             that must be a pure expression term."
     :long
@@ -1861,7 +1861,7 @@
                              (ctx ctxp)
                              state)
     :returns (mv erp (expr exprp) state)
-    :parents (atc-event-and-code-generation atc-gen-expr-pure)
+    :parents (atc-event-and-code-generation atc-gen-expr-pure/bool)
     :short "Generate a C expression from an ACL2 term
             that must be an expression term returning a boolean."
     :long
