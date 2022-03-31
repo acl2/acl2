@@ -130,7 +130,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-appconds ((fns symbol-listp) (wrld plist-worldp))
+(define atc-gen-appconds ((targets symbol-listp) (wrld plist-worldp))
   :returns (mv (appconds "A @(tsee evmac-appcond-listp).")
                (fn-appconds "A @(tsee symbol-symbol-alistp)."))
   :mode :program
@@ -139,18 +139,22 @@
   (xdoc::topstring
    (xdoc::p
     "Also return an alist from the recursive target functions
-     to the corresponding applicability condition names."))
-  (b* (((when (endp fns)) (mv nil nil))
-       (fn (car fns))
-       ((when (not (irecursivep+ fn wrld)))
-        (atc-gen-appconds (cdr fns) wrld))
-       (meas (measure+ fn wrld))
-       (name (packn-pos (list 'natp-of-measure-of- fn) :keyword))
+     to the corresponding applicability condition names.")
+   (xdoc::p
+    "We skip over @(tsee defstruct) names and non-recursive function names."))
+  (b* (((when (endp targets)) (mv nil nil))
+       (target (car targets))
+       ((when (not (function-symbolp target wrld)))
+        (atc-gen-appconds (cdr targets) wrld))
+       ((when (not (irecursivep+ target wrld)))
+        (atc-gen-appconds (cdr targets) wrld))
+       (meas (measure+ target wrld))
+       (name (packn-pos (list 'natp-of-measure-of- target) :keyword))
        (formula (untranslate `(natp ,meas) nil wrld))
        (appcond (make-evmac-appcond :name name :formula formula))
-       ((mv appconds fn-appconds) (atc-gen-appconds (cdr fns) wrld)))
+       ((mv appconds fn-appconds) (atc-gen-appconds (cdr targets) wrld)))
     (mv (cons appcond appconds)
-        (acons fn name fn-appconds))))
+        (acons target name fn-appconds))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -409,10 +413,6 @@
 
 (fty::defalist atc-symbol-fninfo-alist
   :short "Fixtype of alists from symbols to function information."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These represent symbol tables for functions."))
   :key-type symbolp
   :val-type atc-fn-info
   :true-listp t
@@ -535,6 +535,32 @@
                                                       among))))
         (t (atc-symbol-fninfo-alist-to-fun-env-thms (cdr prec-fns)
                                                     among))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod atc-tag-info
+  :short "Fixtype of information associated to
+          an ACL2 @(tsee defstruct) symbols translated to a C structure type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently a wrapper of @(tsee defstruct-info),
+     but we make it more general, also in the name,
+     so that it can potentially refer to other C types identified by tags,
+     namely union types and enumeration types."))
+  ((struct defstruct-info))
+  :pred atc-tag-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defalist atc-symbol-taginfo-alist
+  :short "Fixtype of alists from symbols to tag information."
+  :key-type symbol
+  :val-type atc-tag-info
+  :true-listp t
+  :keyp-of-nil t
+  :valp-of-nil nil
+  :pred atc-symbol-taginfo-alistp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -685,32 +711,32 @@
           (sint (mv (make-iconst :value val
                                  :base base
                                  :unsignedp nil
-                                 :type (iconst-tysuffix-none))
+                                 :type (iconst-length-none))
                     (type-sint)))
           (uint (mv (make-iconst :value val
                                  :base base
                                  :unsignedp t
-                                 :type (iconst-tysuffix-none))
+                                 :type (iconst-length-none))
                     (type-uint)))
           (slong (mv (make-iconst :value val
                                   :base base
                                   :unsignedp nil
-                                  :type (iconst-tysuffix-long))
+                                  :type (iconst-length-long))
                      (type-slong)))
           (ulong (mv (make-iconst :value val
                                   :base base
                                   :unsignedp t
-                                  :type (iconst-tysuffix-long))
+                                  :type (iconst-length-long))
                      (type-ulong)))
           (sllong (mv (make-iconst :value val
                                    :base base
                                    :unsignedp nil
-                                   :type (iconst-tysuffix-llong))
+                                   :type (iconst-length-llong))
                       (type-sllong)))
           (ullong (mv (make-iconst :value val
                                    :base base
                                    :unsignedp t
-                                   :type (iconst-tysuffix-llong))
+                                   :type (iconst-length-llong))
                       (type-ullong)))
           (t (mv (impossible) (impossible))))))
     (acl2::value (list t const type)))
@@ -1094,7 +1120,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-struct-read ((term pseudo-termp) (wrld plist-worldp))
+(define atc-check-struct-read ((term pseudo-termp)
+                               (prec-tags atc-symbol-taginfo-alistp))
   :returns (mv (yes/no booleanp)
                (arg pseudo-termp)
                (tag identp)
@@ -1108,9 +1135,8 @@
     "If the term is a call of one of the ACL2 functions
      that represent C structure read operations,
      we return the argument term, the tag name, and the name of the member.
-     Since the available structure readers
-     depend on the existing @(tsee defstruct)s,
-     we need to consult the @(tsee defstruct) table.")
+     The C structure type of the reader must be in the preceding tags;
+     we consult the alist to retrieve the relevant information.")
    (xdoc::p
     "The function may be in any package,
      which is the same package as the tag
@@ -1135,8 +1161,9 @@
                      (eq struct (intern-in-package-of-symbol "STRUCT" term.fn))
                      (eq read (intern-in-package-of-symbol "READ" term.fn))))
         (no))
-       (info (defstruct-table-lookup tag wrld))
+       (info (cdr (assoc-eq tag prec-tags)))
        ((unless info) (no))
+       (info (atc-tag-info->struct info))
        (members (defstruct-info->members info))
        (tag (symbol-name tag))
        ((unless (atc-ident-stringp tag)) (no))
@@ -1163,7 +1190,7 @@
 
 (define atc-check-struct-write ((var symbolp)
                                 (val pseudo-termp)
-                                (wrld plist-worldp))
+                                (prec-tags atc-symbol-taginfo-alistp))
   :returns (mv (yes/no booleanp)
                (mem pseudo-termp)
                (tag identp)
@@ -1192,9 +1219,9 @@
    (xdoc::p
     "See @(tsee atc-check-struct-read) for a note about packages of symbols.")
    (xdoc::p
-    "Since the available structure readers
-     depend on the existing @(tsee defstruct)s,
-     we need to consult the @(tsee defstruct) table."))
+    "Similarly to @(tsee atc-check-struct-read),
+     we consult the @('prec-tags') alist,
+     which must contain the C structure type associated to the writer."))
   (b* (((acl2::fun (no)) (mv nil nil (irr-ident) (irr-ident) (irr-type)))
        ((unless (pseudo-term-case val :fncall)) (no))
        ((pseudo-term-fncall val) val)
@@ -1203,8 +1230,9 @@
                      (eq struct (intern-in-package-of-symbol "STRUCT" val.fn))
                      (eq write (intern-in-package-of-symbol "WRITE" val.fn))))
         (no))
-       (info (defstruct-table-lookup tag wrld))
+       (info (cdr (assoc-eq tag prec-tags)))
        ((unless info) (no))
+       (info (atc-tag-info->struct info))
        (members (defstruct-info->members info))
        (tag (symbol-name tag))
        ((unless (atc-ident-stringp tag)) (no))
@@ -1568,6 +1596,7 @@
 
   (define atc-gen-expr-pure ((term pseudo-termp)
                              (inscope atc-symbol-type-alist-listp)
+                             (prec-tags atc-symbol-taginfo-alistp)
                              (fn symbolp)
                              (ctx ctxp)
                              state)
@@ -1644,7 +1673,6 @@
        The additional type checking we do here should ensure that
        all the code satisfies the C static semantics."))
     (b* (((acl2::fun (irr)) (list (irr-expr) (irr-type)))
-         (wrld (w state))
          ((when (pseudo-term-case term :var))
           (b* ((var (pseudo-term-var->name term))
                (type (atc-get-var var inscope))
@@ -1666,6 +1694,7 @@
          ((when okp)
           (b* (((er (list arg-expr type)) (atc-gen-expr-pure arg
                                                              inscope
+                                                             prec-tags
                                                              fn
                                                              ctx
                                                              state))
@@ -1685,11 +1714,13 @@
          ((when okp)
           (b* (((er (list arg1-expr type1)) (atc-gen-expr-pure arg1
                                                                inscope
+                                                               prec-tags
                                                                fn
                                                                ctx
                                                                state))
                ((er (list arg2-expr type2)) (atc-gen-expr-pure arg2
                                                                inscope
+                                                               prec-tags
                                                                fn
                                                                ctx
                                                                state))
@@ -1711,6 +1742,7 @@
          ((when okp)
           (b* (((er (list arg-expr type)) (atc-gen-expr-pure arg
                                                              inscope
+                                                             prec-tags
                                                              fn
                                                              ctx
                                                              state))
@@ -1730,11 +1762,13 @@
          ((when okp)
           (b* (((er (list arr-expr type1)) (atc-gen-expr-pure arr
                                                               inscope
+                                                              prec-tags
                                                               fn
                                                               ctx
                                                               state))
                ((er (list sub-expr type2)) (atc-gen-expr-pure sub
                                                               inscope
+                                                              prec-tags
                                                               fn
                                                               ctx
                                                               state))
@@ -1752,10 +1786,11 @@
                                                  :sub sub-expr)
                                out-type))))
          ((mv okp arg tag member in-type out-type)
-          (atc-check-struct-read term wrld))
+          (atc-check-struct-read term prec-tags))
          ((when okp)
           (b* (((er (list arg-expr type)) (atc-gen-expr-pure arg
                                                              inscope
+                                                             prec-tags
                                                              fn
                                                              ctx
                                                              state))
@@ -1773,13 +1808,14 @@
          ((mv okp arg) (atc-check-sint-from-boolean term))
          ((when okp)
           (b* (((mv erp expr state)
-                (atc-gen-expr-bool arg inscope fn ctx state))
+                (atc-gen-expr-bool arg inscope prec-tags fn ctx state))
                ((when erp) (mv erp (irr) state)))
             (mv nil (list expr (type-sint)) state)))
          ((mv okp test then else) (atc-check-condexpr term))
          ((when okp)
           (b* (((mv erp test-expr state) (atc-gen-expr-bool test
                                                             inscope
+                                                            prec-tags
                                                             fn
                                                             ctx
                                                             state))
@@ -1787,12 +1823,14 @@
                ((er (list then-expr then-type)) (atc-gen-expr-pure
                                                  then
                                                  inscope
+                                                 prec-tags
                                                  fn
                                                  ctx
                                                  state))
                ((er (list else-expr else-type)) (atc-gen-expr-pure
                                                  else
                                                  inscope
+                                                 prec-tags
                                                  fn
                                                  ctx
                                                  state))
@@ -1818,6 +1856,7 @@
 
   (define atc-gen-expr-bool ((term pseudo-termp)
                              (inscope atc-symbol-type-alist-listp)
+                             (prec-tags atc-symbol-taginfo-alistp)
                              (fn symbolp)
                              (ctx ctxp)
                              state)
@@ -1856,6 +1895,7 @@
          ((when okp)
           (b* (((er arg-expr) (atc-gen-expr-bool arg
                                                  inscope
+                                                 prec-tags
                                                  fn
                                                  ctx
                                                  state)))
@@ -1865,11 +1905,13 @@
          ((when okp)
           (b* (((er arg1-expr) (atc-gen-expr-bool arg1
                                                   inscope
+                                                  prec-tags
                                                   fn
                                                   ctx
                                                   state))
                ((er arg2-expr) (atc-gen-expr-bool arg2
                                                   inscope
+                                                  prec-tags
                                                   fn
                                                   ctx
                                                   state)))
@@ -1880,11 +1922,13 @@
          ((when okp)
           (b* (((er arg1-expr) (atc-gen-expr-bool arg1
                                                   inscope
+                                                  prec-tags
                                                   fn
                                                   ctx
                                                   state))
                ((er arg2-expr) (atc-gen-expr-bool arg2
                                                   inscope
+                                                  prec-tags
                                                   fn
                                                   ctx
                                                   state)))
@@ -1894,7 +1938,7 @@
          ((mv okp arg in-type) (atc-check-boolean-from-type term))
          ((when okp)
           (b* (((mv erp (list expr type) state)
-                (atc-gen-expr-pure arg inscope fn ctx state))
+                (atc-gen-expr-pure arg inscope prec-tags fn ctx state))
                ((when erp) (mv erp expr state))
                ((unless (equal type in-type))
                 (er-soft+ ctx t (irr-expr)
@@ -1945,6 +1989,7 @@
 
 (define atc-gen-expr-pure-list ((terms pseudo-term-listp)
                                 (inscope atc-symbol-type-alist-listp)
+                                (prec-tags atc-symbol-taginfo-alistp)
                                 (fn symbolp)
                                 (ctx ctxp)
                                 state)
@@ -1963,12 +2008,14 @@
   (b* (((when (endp terms)) (acl2::value (list nil nil)))
        ((mv erp (list expr type) state) (atc-gen-expr-pure (car terms)
                                                            inscope
+                                                           prec-tags
                                                            fn
                                                            ctx
                                                            state))
        ((when erp) (mv erp (list nil nil) state))
        ((er (list exprs types)) (atc-gen-expr-pure-list (cdr terms)
                                                         inscope
+                                                        prec-tags
                                                         fn
                                                         ctx
                                                         state)))
@@ -1990,6 +2037,7 @@
                       (inscope atc-symbol-type-alist-listp)
                       (fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
+                      (prec-tags atc-symbol-taginfo-alistp)
                       (ctx ctxp)
                       state)
   :returns (mv erp
@@ -2048,6 +2096,7 @@
              ((mv erp (list arg-exprs types) state)
               (atc-gen-expr-pure-list args
                                       inscope
+                                      prec-tags
                                       fn
                                       ctx
                                       state))
@@ -2067,7 +2116,7 @@
                         affect
                         `(binary-+ '2 ,limit))))))
     (b* (((mv erp (list expr type) state)
-          (atc-gen-expr-pure term inscope fn ctx state))
+          (atc-gen-expr-pure term inscope prec-tags fn ctx state))
          ((when erp) (mv erp (list (irr-expr) (irr-type) nil nil) state)))
       (acl2::value (list expr type affect '(quote 1)))))
   ///
@@ -2176,6 +2225,7 @@
                       (affect symbol-listp)
                       (fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
+                      (prec-tags atc-symbol-taginfo-alistp)
                       (proofs booleanp)
                       (ctx ctxp)
                       state)
@@ -2392,7 +2442,6 @@
      and @(tsee exec-expr-call-or-pure),
      for which we use the recursively calculated limit."))
   (b* ((irr (list nil (irr-type) nil))
-       (wrld (w state))
        ((mv okp test then else) (fty-check-if-call term))
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test))
@@ -2404,6 +2453,7 @@
                             affect
                             fn
                             prec-fns
+                            prec-tags
                             proofs
                             ctx
                             state))
@@ -2416,11 +2466,13 @@
                             affect
                             fn
                             prec-fns
+                            prec-tags
                             proofs
                             ctx
                             state))
              ((mv erp test-expr state) (atc-gen-expr-bool test
                                                           inscope
+                                                          prec-tags
                                                           fn
                                                           ctx
                                                           state))
@@ -2433,6 +2485,7 @@
                             affect
                             fn
                             prec-fns
+                            prec-tags
                             proofs
                             ctx
                             state))
@@ -2444,6 +2497,7 @@
                             affect
                             fn
                             prec-fns
+                            prec-tags
                             proofs
                             ctx
                             state))
@@ -2525,6 +2579,7 @@
                                   inscope
                                   fn
                                   prec-fns
+                                  prec-tags
                                   ctx
                                   state))
                    ((when erp) (mv erp irr state))
@@ -2550,6 +2605,7 @@
                                   affect
                                   fn
                                   prec-fns
+                                  prec-tags
                                   proofs
                                   ctx
                                   state))
@@ -2581,6 +2637,7 @@
                                   inscope
                                   fn
                                   prec-fns
+                                  prec-tags
                                   ctx
                                   state))
                    ((when erp) (mv erp irr state))
@@ -2621,6 +2678,7 @@
                                   affect
                                   fn
                                   prec-fns
+                                  prec-tags
                                   proofs
                                   ctx
                                   state))
@@ -2666,6 +2724,7 @@
                             vars
                             fn
                             prec-fns
+                            prec-tags
                             proofs
                             ctx
                             state))
@@ -2685,6 +2744,7 @@
                             affect
                             fn
                             prec-fns
+                            prec-tags
                             proofs
                             ctx
                             state))
@@ -2715,13 +2775,13 @@
                                currently affected."
                               var affect))
                    ((mv erp (list arr-expr type1) state)
-                    (atc-gen-expr-pure var inscope fn ctx state))
+                    (atc-gen-expr-pure var inscope prec-tags fn ctx state))
                    ((when erp) (mv erp irr state))
                    ((mv erp (list sub-expr type2) state)
-                    (atc-gen-expr-pure sub inscope fn ctx state))
+                    (atc-gen-expr-pure sub inscope prec-tags fn ctx state))
                    ((when erp) (mv erp irr state))
                    ((mv erp (list elem-expr type3) state)
-                    (atc-gen-expr-pure elem inscope fn ctx state))
+                    (atc-gen-expr-pure elem inscope prec-tags fn ctx state))
                    ((when erp) (mv erp irr state))
                    ((unless (equal type1 (type-pointer elem-type)))
                     (er-soft+ ctx t irr
@@ -2766,6 +2826,7 @@
                                   affect
                                   fn
                                   prec-fns
+                                  prec-tags
                                   proofs
                                   ctx
                                   state))
@@ -2776,7 +2837,7 @@
                                    body-type
                                    limit))))
              ((mv okp member-value tag member-name member-type)
-              (atc-check-struct-write var val wrld))
+              (atc-check-struct-write var val prec-tags))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
                     (er-soft+ ctx t irr
@@ -2791,10 +2852,11 @@
                                currently affected."
                               var affect))
                    ((mv erp (list struct-expr type1) state)
-                    (atc-gen-expr-pure var inscope fn ctx state))
+                    (atc-gen-expr-pure var inscope prec-tags fn ctx state))
                    ((when erp) (mv erp irr state))
                    ((mv erp (list member-expr type2) state)
-                    (atc-gen-expr-pure member-value inscope fn ctx state))
+                    (atc-gen-expr-pure member-value
+                                       inscope prec-tags fn ctx state))
                    ((when erp) (mv erp irr state))
                    ((unless (equal type1 (type-pointer (type-struct tag))))
                     (er-soft+ ctx t irr
@@ -2829,6 +2891,7 @@
                                   affect
                                   fn
                                   prec-fns
+                                  prec-tags
                                   proofs
                                   ctx
                                   state))
@@ -2869,6 +2932,7 @@
                                   inscope
                                   fn
                                   prec-fns
+                                  prec-tags
                                   ctx
                                   state))
                    ((when erp) (mv erp irr state))
@@ -2894,6 +2958,7 @@
                                   affect
                                   fn
                                   prec-fns
+                                  prec-tags
                                   proofs
                                   ctx
                                   state))
@@ -2923,6 +2988,7 @@
                                   inscope
                                   fn
                                   prec-fns
+                                  prec-tags
                                   ctx
                                   state))
                    ((when erp) (mv erp irr state))
@@ -2963,6 +3029,7 @@
                                   affect
                                   fn
                                   prec-fns
+                                  prec-tags
                                   proofs
                                   ctx
                                   state))
@@ -2996,6 +3063,7 @@
                             (list var)
                             fn
                             prec-fns
+                            prec-tags
                             proofs
                             ctx
                             state))
@@ -3016,6 +3084,7 @@
                             affect
                             fn
                             prec-fns
+                            prec-tags
                             proofs
                             ctx
                             state))
@@ -3051,8 +3120,14 @@
             (acl2::value (list nil (type-void) (pseudo-term-quote 1))))
            ((equal (cdr terms) affect)
             (b* (((mv erp (list expr type eaffect limit) state)
-                  (atc-gen-expr
-                   (car terms) var-term-alist inscope fn prec-fns ctx state))
+                  (atc-gen-expr (car terms)
+                                var-term-alist
+                                inscope
+                                fn
+                                prec-fns
+                                prec-tags
+                                ctx
+                                state))
                  ((when erp) (mv erp irr state))
                  ((when (consp eaffect))
                   (er-soft+ ctx t irr
@@ -3157,6 +3232,7 @@
              ((mv erp (list arg-exprs types) state)
               (atc-gen-expr-pure-list args
                                       inscope
+                                      prec-tags
                                       fn
                                       ctx
                                       state))
@@ -3175,7 +3251,14 @@
                              (type-void)
                              `(binary-+ '5 ,limit)))))
        ((mv erp (list expr type eaffect limit) state)
-        (atc-gen-expr term var-term-alist inscope fn prec-fns ctx state))
+        (atc-gen-expr term
+                      var-term-alist
+                      inscope
+                      fn
+                      prec-fns
+                      prec-tags
+                      ctx
+                      state))
        ((when erp) (mv erp irr state))
        ((when loop-flag)
         (er-soft+ ctx t irr
@@ -3311,6 +3394,7 @@
                            (measure-for-fn symbolp)
                            (measure-formals symbol-listp)
                            (prec-fns atc-symbol-fninfo-alistp)
+                           (prec-tags atc-symbol-taginfo-alistp)
                            (proofs booleanp)
                            (ctx ctxp)
                            state)
@@ -3329,6 +3413,7 @@
                                                                measure-for-fn
                                                                measure-formals
                                                                prec-fns
+                                                               prec-tags
                                                                proofs
                                                                ctx
                                                                state))))
@@ -3405,6 +3490,7 @@
                            measure-for-fn
                            measure-formals
                            prec-fns
+                           prec-tags
                            proofs
                            ctx
                            state))
@@ -3416,11 +3502,13 @@
                            measure-for-fn
                            measure-formals
                            prec-fns
+                           prec-tags
                            proofs
                            ctx
                            state))
        ((mv erp test-expr state) (atc-gen-expr-bool test
                                                     inscope
+                                                    prec-tags
                                                     fn
                                                     ctx
                                                     state))
@@ -3447,6 +3535,7 @@
                       affect
                       fn
                       prec-fns
+                      prec-tags
                       proofs
                       ctx
                       state))
@@ -3482,6 +3571,7 @@
                                                    measure-for-fn
                                                    measure-formals
                                                    prec-fns
+                                                   prec-tags
                                                    proofs
                                                    ctx
                                                    state))))))
@@ -4700,6 +4790,7 @@
 
 (define atc-gen-fundef ((fn symbolp)
                         (prec-fns atc-symbol-fninfo-alistp)
+                        (prec-tags atc-symbol-taginfo-alistp)
                         (proofs booleanp)
                         (prog-const symbolp)
                         (init-fun-env-thm symbolp)
@@ -4765,6 +4856,7 @@
                                                    affect
                                                    fn
                                                    prec-fns
+                                                   prec-tags
                                                    proofs
                                                    ctx
                                                    state))
@@ -5703,6 +5795,7 @@
 
 (define atc-gen-loop ((fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
+                      (prec-tags atc-symbol-taginfo-alistp)
                       (proofs booleanp)
                       (prog-const symbolp)
                       (fn-thms symbol-symbol-alistp)
@@ -5757,6 +5850,7 @@
                            measure-of-fn
                            measure-formals
                            prec-fns
+                           prec-tags
                            proofs
                            ctx
                            state))
@@ -5911,34 +6005,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-tag-declon ((tag symbolp) (ctx ctxp) state)
+(define atc-gen-tag-declon ((tag symbolp)
+                            (prec-tags atc-symbol-taginfo-alistp)
+                            (ctx ctxp)
+                            state)
   :returns (mv erp
-               (val tag-declonp)
+               (val (tuple (declon tag-declonp)
+                           (updated-prec-tags atc-symbol-taginfo-alistp)
+                           val)
+                    :hyp (and (symbolp tag)
+                              (atc-symbol-taginfo-alistp prec-tags)))
                state)
   :short "Generate a C structure type declaration."
   :long
   (xdoc::topstring
    (xdoc::p
+    "We ensure that the tag is not already in the table of preceding tags.
+     We extend the table with the information for this tag,
+     retrieved from the @(tsee defstruct) table in the ACL2 world")
+   (xdoc::p
     "This has no accompanying generated theorems."))
-  (b* ((info (defstruct-table-lookup tag (w state)))
+  (b* ((irr (list (irr-tag-declon) nil))
+       ((when (consp (assoc-eq tag prec-tags)))
+        (raise "Internal error: tag ~x0 already encountered." tag)
+        (acl2::value irr))
+       (info (defstruct-table-lookup tag (w state)))
        ((unless info)
-        (er-soft+ ctx t (irr-tag-declon)
+        (er-soft+ ctx t irr
                   "There is no DEFSTRUCT associated to the tag ~x0."
                   tag))
        (meminfos (defstruct-info->members info))
        (struct-declons (atc-gen-struct-declon-list meminfos))
+       (info (atc-tag-info info))
+       (prec-tags (acons tag info prec-tags))
        (tag (symbol-name tag))
        ((unless (atc-ident-stringp tag))
         (raise "Internal error: structure tag ~x0 invalid identifier." tag)
-        (acl2::value (irr-tag-declon))))
+        (acl2::value irr)))
     (acl2::value
-     (make-tag-declon-struct :tag (ident tag)
-                             :members struct-declons))))
+     (list (make-tag-declon-struct :tag (ident tag)
+                                   :members struct-declons)
+           prec-tags))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-ext-declon-list ((targets symbol-listp)
                                  (prec-fns atc-symbol-fninfo-alistp)
+                                 (prec-tags atc-symbol-taginfo-alistp)
                                  (proofs booleanp)
                                  (prog-const symbolp)
                                  (init-fun-env-thm symbolp)
@@ -5970,11 +6083,12 @@
   (b* (((when (endp targets)) (acl2::value (list nil nil nil names-to-avoid)))
        (target (car targets))
        ((unless (function-symbolp target (w state)))
-        (b* (((mv erp tag-declon state) (atc-gen-tag-declon target ctx state))
+        (b* (((mv erp (list tag-declon prec-tags) state)
+              (atc-gen-tag-declon target prec-tags ctx state))
              ((when erp) (mv erp (list nil nil nil names-to-avoid) state))
              (ext (ext-declon-tag-declon tag-declon))
              ((er (list exts local-events exported-events names-to-avoid))
-              (atc-gen-ext-declon-list (cdr targets) prec-fns proofs
+              (atc-gen-ext-declon-list (cdr targets) prec-fns prec-tags proofs
                                        prog-const init-fun-env-thm fn-thms
                                        fn-appconds appcond-thms
                                        print names-to-avoid ctx state)))
@@ -5991,7 +6105,7 @@
                             prec-fns
                             names-to-avoid)
                       state)
-                  (atc-gen-loop fn prec-fns proofs prog-const
+                  (atc-gen-loop fn prec-fns prec-tags proofs prog-const
                                 fn-thms fn-appconds appcond-thms
                                 print names-to-avoid ctx state))
                  ((when erp) (mv erp (list nil nil nil nil) state)))
@@ -6004,7 +6118,7 @@
                     (list
                      fundef local-events exported-events prec-fns names-to-avoid)
                     state)
-                (atc-gen-fundef fn prec-fns proofs
+                (atc-gen-fundef fn prec-fns prec-tags proofs
                                 prog-const init-fun-env-thm fn-thms
                                 print names-to-avoid ctx state))
                ((when erp) (mv erp (list nil nil nil nil) state))
@@ -6016,7 +6130,7 @@
                                names-to-avoid)))))
        ((er
          (list more-exts more-local-events more-exported-events names-to-avoid))
-        (atc-gen-ext-declon-list (cdr targets) prec-fns proofs
+        (atc-gen-ext-declon-list (cdr targets) prec-fns prec-tags proofs
                                  prog-const init-fun-env-thm fn-thms
                                  fn-appconds appcond-thms
                                  print names-to-avoid ctx state)))
@@ -6118,7 +6232,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-transunit ((fn1...fnp symbol-listp)
+(define atc-gen-transunit ((targets symbol-listp)
                            (proofs booleanp)
                            (prog-const symbolp)
                            (wf-thm symbolp)
@@ -6160,7 +6274,7 @@
   (b* (((mv appcond-local-events fn-appconds appcond-thms names-to-avoid)
         (if proofs
             (b* (((mv appconds fn-appconds)
-                  (atc-gen-appconds fn1...fnp (w state)))
+                  (atc-gen-appconds targets (w state)))
                  ((mv appcond-events appcond-thms & names-to-avoid)
                   (evmac-appcond-theorem-list appconds nil names-to-avoid
                                               print ctx state)))
@@ -6176,7 +6290,7 @@
                                            (w state)))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
-        (atc-gen-ext-declon-list fn1...fnp nil proofs
+        (atc-gen-ext-declon-list targets nil nil proofs
                                  prog-const init-fun-env-thm
                                  fn-thms fn-appconds appcond-thms
                                  print names-to-avoid ctx state))
@@ -6295,7 +6409,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-everything ((fn1...fnp symbol-listp)
+(define atc-gen-everything ((targets symbol-listp)
                             (output-file stringp)
                             (pretty-printing pprint-options-p)
                             (proofs booleanp)
@@ -6329,7 +6443,7 @@
      the formals that are not affected then become ignored."))
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((er (list tunit local-events exported-events &))
-        (atc-gen-transunit fn1...fnp proofs prog-const wf-thm fn-thms
+        (atc-gen-transunit targets proofs prog-const wf-thm fn-thms
                            print names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit
                                                 output-file

@@ -115,7 +115,7 @@
    (xdoc::ahref "https://hol-theorem-prover.org" "HOL")
    " theorem provers include facilities to generate code
     in various programming languages, such as "
-   (xdoc::ahref "http://sml-family.org" "Standard ML") ", "
+   (xdoc::ahref "http://sml-family.org" "SML") ", "
    (xdoc::ahref "https://ocaml.org" "Ocaml") ", "
    (xdoc::ahref "https://www.haskell.org" "Haskell") ", "
    (xdoc::ahref "https://scala-lang.org" "Scala") ", "
