@@ -177,10 +177,10 @@
            :in-theory (e/d (zip bvchop)
                            (unsigned-byte-p-of-bvchop)))))
 
-;is this too hackish?
+;; Do not remove: helps justify the correctness of some operations done by Axe.
 (defthm bvchop-of-ifix
-  (equal (bvchop n (ifix x))
-         (bvchop n x))
+  (equal (bvchop size (ifix x))
+         (bvchop size x))
   :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer))))
 
 (defthm bvchop-0-i-eric
