@@ -29,6 +29,8 @@
 (include-book "kestrel/bv/bvuminus" :dir :system)
 (include-book "kestrel/bv/bvmod" :dir :system)
 (include-book "kestrel/bv/bvdiv" :dir :system)
+(include-book "kestrel/bv/bvif" :dir :system)
+(include-book "kestrel/bv/bvsx" :dir :system)
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
@@ -37,7 +39,9 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/bv-lists/bvchop-list2" :dir :system))
+(local (include-book "kestrel/bv/bvcat" :dir :system))
 
 ;; For each of these, the defun should be disabled and the defthm enabled:
 
@@ -63,6 +67,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund bvle-unguarded (size x y)
+  (declare (xargs :guard t))
+  (bvle (nfix size) (ifix x) (ifix y)))
+
+(defthm bvle-unguarded-correct
+  (equal (bvle-unguarded size x y)
+         (bvle size x y))
+  :hints (("Goal" :in-theory (enable bvle bvle-unguarded bvlt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund sbvlt-unguarded (size x y)
   (declare (xargs :guard t))
   (if (not (posp size))
@@ -73,6 +88,19 @@
   (equal (sbvlt-unguarded size x y)
          (sbvlt size x y))
   :hints (("Goal" :in-theory (enable sbvlt sbvlt-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund sbvle-unguarded (size x y)
+  (declare (xargs :guard t))
+  (if (not (posp size))
+      (sbvle 1 (ifix x) (ifix y))
+    (sbvle size (ifix x) (ifix y))))
+
+(defthm sbvle-unguarded-correct
+  (equal (sbvle-unguarded size x y)
+         (sbvle size x y))
+  :hints (("Goal" :in-theory (enable sbvle sbvle-unguarded sbvlt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -117,6 +145,18 @@
   (equal (bvxor-unguarded size x y)
          (bvxor size x y))
   :hints (("Goal" :in-theory (enable bvxor bvxor-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund bvif-unguarded (size test thenpart elsepart)
+  (declare (xargs :guard t))
+  (if test (bvchop-unguarded size thenpart)
+      (bvchop-unguarded size elsepart)))
+
+(defthm bvif-unguarded-correct
+  (equal (bvif-unguarded highsize highval lowsize lowval)
+         (bvif           highsize highval lowsize lowval))
+  :hints (("Goal" :in-theory (enable bvif bvif-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -239,16 +279,24 @@
 ;; width-of-widest-int-unguarded
 ;;
 
-(defun map-ifix (x)
+(defund map-ifix (x)
   (declare (xargs :guard t))
   (if (atom x)
       x
     (cons (ifix (first x))
           (map-ifix (rest x)))))
 
+;; todo: optimize
+(defthm width-of-widest-int-of-map-ifix
+  (equal (width-of-widest-int (map-ifix ints))
+         (width-of-widest-int ints))
+  :hints (("Goal" :in-theory (enable map-ifix
+                                     width-of-widest-int))))
+
 ;; TODO: Make this more efficient?
 (defund width-of-widest-int-unguarded (ints)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :guard-hints (("Goal" :in-theory (enable map-ifix)))))
   (width-of-widest-int (map-ifix ints)))
 
 (defthm width-of-widest-int-unguarded-correct
@@ -486,7 +534,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun member-equal-unguarded (x lst)
+(defund member-equal-unguarded (x lst)
   (declare (xargs :guard t))
   (cond ((atom lst) nil)
         ((equal x (car lst)) lst)
@@ -496,35 +544,6 @@
   (equal (member-equal-unguarded x y)
          (member-equal x y))
   :hints (("Goal" :in-theory (enable member-equal-unguarded member-equal))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund char-code-unguarded (x)
-  (declare (xargs :guard t))
-  (if (characterp x)
-      (char-code x)
-    0))
-
-(defthm char-code-unguarded-correct
-  (equal (char-code-unguarded x)
-         (char-code x))
-  :hints (("Goal" :in-theory (enable char-code-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund code-char-unguarded (x)
-  (declare (xargs :guard t))
-  (if (and (integerp x)
-           (<= 0 x)
-           (< x 256))
-      (code-char x)
-    (code-char 0)))
-
-(defthm code-char-unguarded-correct
-  (equal (code-char-unguarded x)
-         (code-char x))
-  :hints (("Goal" :in-theory (enable code-char-unguarded)
-           :use ((:instance completion-of-code-char)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -540,3 +559,64 @@
          (lookup-equal key alist))
   :hints (("Goal" :in-theory (enable lookup-equal
                                      lookup-equal-unguarded))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun repeatbit-unguarded (n bit)
+  (declare (xargs :guard t))
+  (if (natp n)
+      (if (natp bit)
+          (repeatbit n bit)
+        (repeatbit n 1))
+    0))
+
+(defthm repeatbit-unguarded-correct
+  (equal (repeatbit-unguarded n bit)
+         (repeatbit n bit))
+  :hints (("Goal" :in-theory (enable repeatbit-unguarded
+                                     repeatbit))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund bvsx-unguarded (new-size old-size val)
+  (declare (xargs :guard t))
+  (if (not (posp old-size))
+      0
+      (if (<-unguarded new-size old-size)
+          (bvchop-unguarded new-size val)
+          (bvcat-unguarded (+ 1 (- new-size old-size))
+                           (repeatbit-unguarded (+ 1 (- new-size old-size))
+                                                (getbit-unguarded (+ -1 old-size) val))
+                           (+ -1 old-size)
+                           val))))
+
+(defthm bvsx-unguarded-correct
+  (equal (bvsx-unguarded new-size old-size val)
+         (bvsx new-size old-size val))
+  :hints (("Goal" :in-theory (enable bvsx bvsx-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; ;todo:
+;; (defund leftrotate-unguarded (width amt val)
+;;   (declare (xargs :guard t))
+;;   ;;(leftrotate (nfix width) (ifix amt) (ifix val))
+;;   (IF (equal 0 WIDTH)
+;;       0
+;;       (LET* ((AMT (MOD-unguarded (NFIX AMT) WIDTH)))
+;;             (BVCAT-unguarded (- WIDTH AMT)
+;;                              (SLICE-unguarded (+ -1 WIDTH (- AMT)) 0 VAL)
+;;                              AMT
+;;                              (SLICE-unguarded (+ -1 WIDTH)
+;;                                               (+ WIDTH (- AMT))
+;;                                               VAL))))
+;;   )
+
+;; (defthm leftrotate-unguarded-correct
+;;   (equal (leftrotate-unguarded width amt val)
+;;          (leftrotate width amt val))
+;;   :hints (("Goal" :in-theory (enable leftrotate-unguarded
+;;                                      leftrotate))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

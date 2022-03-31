@@ -165,32 +165,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum iconst-tysuffix
-  :short "Fixtype of type suffixes of integer constants [C:6.4.4.1]."
+(fty::deftagsum iconst-length
+  :short "Fixtype of lengths of integer constants [C:6.4.4.1]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "An integer constant may have no type suffix,
-     an @('l') or @('L') type suffix,
-     or an @('ll') or @('LL') type suffix.
+    "An integer constant may have
+     (i) an @('l') or @('L') suffix,
+     or (ii) an @('ll') or @('LL') suffix,
+     or (iii) no such suffix.
      This fixtype captures these three possibilities,
      without distinguishing between the lowercase and uppercase variants
      (given the similarity between `l' and `1' and `I' in many fonts,
      it could be argued that one should always use the uppercase variants,
-     as recommended in the Java language specification for Java)."))
+     as recommended in the Java language specification for Java).")
+   (xdoc::p
+    "Since the grammar in [C] refers to these as <i>long-suffix</i>,
+     it seems appropriate to call these the `length' of an integer constant,
+     which justifies the name of this fixtype."))
   (:none ())
   (:long ())
   (:llong ())
-  :pred iconst-tysuffixp)
+  :pred iconst-lengthp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-iconst-tysuffix ()
-  :returns (tysuff iconst-tysuffixp)
-  :short "An irrelevant type suffix, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (iconst-tysuffix-fix :irrelevant)))
+(define irr-iconst-length ()
+  :returns (tysuff iconst-lengthp)
+  :short "An irrelevant length suffix, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (iconst-length-fix :irrelevant)))
   ///
-  (in-theory (disable (:e irr-iconst-tysuffix))))
+  (in-theory (disable (:e irr-iconst-length))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -200,7 +205,7 @@
   (xdoc::topstring
    (xdoc::p
     "For now we define a C integer constants as consisting of
-     a natural number, a base, an unsigned flag, and a type suffix.
+     a natural number, a base, an unsigned flag, and a length suffix.
      While this does not cover every syntactic aspect of an integer constant,
      it covers the important ones.")
    (xdoc::p
@@ -233,7 +238,7 @@
   ((value nat)
    (base iconst-base)
    (unsignedp bool)
-   (type iconst-tysuffix))
+   (type iconst-length))
   :tag :iconst
   :pred iconstp)
 

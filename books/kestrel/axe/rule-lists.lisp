@@ -288,6 +288,7 @@
      bvor-of-bvshl-and-bvashr-alt ;; introduces leftrotate
      bvor-of-bvashr-and-bvshl-alt ;; introduces leftrotate
      ;; bvcat-of-slice-becomes-leftrotate ;; todo: add back, but what about loops?
+     ;; bvcat-of-getbit-becomes-leftrotate ;; todo: add back, but what about loops?
 
      not-sbvlt-when-sbvlt-rev-cheap-2
      equal-of-constant-when-sbvlt ; rename
