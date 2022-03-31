@@ -564,6 +564,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-symbol-taginfo-alist-to-return-thms
+  ((prec-tags atc-symbol-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the return type theorems
+          for structure readers and writers
+          out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thms (defstruct-info->return-thms (atc-tag-info->struct info)))
+       (more-thms (atc-symbol-taginfo-alist-to-return-thms (cdr prec-tags))))
+    (append thms more-thms))
+  :prepwork
+  ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-symbol-2part ((sym symbolp))
   :returns (mv (yes/no booleanp)
                (part1 symbolp)
@@ -3863,6 +3879,7 @@
                                (affect symbol-listp)
                                (typed-formals atc-symbol-type-alistp)
                                (prec-fns atc-symbol-fninfo-alistp)
+                               (prec-tags atc-symbol-taginfo-alistp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
@@ -3885,6 +3902,9 @@
     (xdoc::li
      "Calls of @(tsee sint-dec-const), @(tsee add-sint-sint), etc.
       are known to return values.")
+    (xdoc::li
+     "Calls of arrays and structure readers and writers
+      are known to return C values.")
     (xdoc::li
      "A @(tsee let) or @(tsee mv-let) variable is equal to a term that,
       recursively, always returns a value.")
@@ -3910,8 +3930,11 @@
      We use the theory consisting of
      the definition of @('fn'),
      the return type theorems of @(tsee sint-dec-const) and related functions,
+     the return type theorems for array and structure readers and writers,
      and the theorems about the preceding functions;
-     we also add a @(':use') hint for the guard theorem of @('fn').")
+     we also add a @(':use') hint for the guard theorem of @('fn').
+     The theorems about structure readers and writers
+     are taken from the alist of the preceding structure tags.")
    (xdoc::p
     "In the absence of @(tsee mbt) or @(tsee mbt$),
      we would not need all of the guard as hypothesis,
@@ -4026,6 +4049,7 @@
                   *atc-array-read-return-rewrite-rules*
                   *atc-array-write-return-rewrite-rules*
                   *atc-array-length-write-rules*
+                  ',(atc-symbol-taginfo-alist-to-return-thms prec-tags)
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-result-thms
                        prec-fns (all-fnnames (ubody+ fn wrld)))
@@ -4904,6 +4928,7 @@
                                          affect
                                          typed-formals
                                          prec-fns
+                                         prec-tags
                                          names-to-avoid
                                          wrld))
                  ((mv fn-correct-local-events
@@ -5869,6 +5894,7 @@
                                          loop-affect
                                          typed-formals
                                          prec-fns
+                                         prec-tags
                                          names-to-avoid
                                          wrld))
                  (loop-test (stmt-while->test loop-stmt))
