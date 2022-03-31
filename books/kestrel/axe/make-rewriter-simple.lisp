@@ -45,6 +45,7 @@
 (include-book "refined-assumption-alists")
 (include-book "rewriter-support") ;make local? but may be needed by the generated rewriters
 (include-book "tries")
+(include-book "print-levels")
 (include-book "rule-limits")
 (include-book "rule-alists") ; for get-rules-for-fn
 (include-book "make-substitution-code-simple")
@@ -421,36 +422,42 @@
                                                            other-hyps
                                                            alist
                                                            rule-symbol
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
+                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                           node-replacement-array
                                                            rewriter-rule-alist
                                                            refined-assumption-alist ;we need to keep the whole alist in addition to walking down the entry for the current fn
-                                                           node-replacement-array-num-valid-nodes
+                                                           node-replacement-array-num-valid-nodes ;todo: move up
                                                            print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (type (integer 1 *) hyp-num) ;; restrict to a fixnum?
-                   (type symbol rule-symbol)
-                   (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                      (all-axe-treep hyp-args)
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (dargp-less-than-list-listp assumption-arg-lists dag-len)
+                                      (all-axe-treep hyp-args) ; todo replace this and the next one with axe-tree-listp?
                                       (true-listp hyp-args)
-                                      (interpreted-function-alistp interpreted-function-alist)
-                                      (symbol-listp known-booleans)
-                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                      (info-worldp info)
+                                      (posp hyp-num)
+                                      (axe-rule-hyp-listp other-hyps)
                                       (symbol-alistp alist)
                                       (all-dargp-less-than (strip-cdrs alist) dag-len)
-                                      (axe-rule-hyp-listp other-hyps)
-                                      (dargp-less-than-list-listp assumption-arg-lists dag-len)
-                                      (rule-alistp rewriter-rule-alist)
+                                      (symbolp rule-symbol)
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (info-worldp info)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
                                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-array-num-valid-nodes)
                                       (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                      (maybe-bounded-memoizationp memoization dag-len)
-                                      (triesp tries)
-                                      (rule-limitsp limits)
-                                      (symbol-listp monitored-symbols))
+                                      (rule-alistp rewriter-rule-alist)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
                           :measure (nfix count)
+                          :split-types t
                           :verify-guards nil ; done below
-                          ))
+                          )
+                   (type (unsigned-byte 60) count)
+                   (type (integer 1 *) hyp-num) ;; restrict to a fixnum?
+                   (type symbol rule-symbol))
           (if (or (not (mbt (natp count)))
                   (= 0 count))
               (mv :count-exceeded nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
@@ -504,27 +511,31 @@
                                               refined-assumption-alist
                                               node-replacement-array-num-valid-nodes
                                               print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (axe-rule-hyp-listp hyps)
+                                      (posp hyp-num)
+                                      (symbol-alistp alist)
+                                      (all-dargp-less-than (strip-cdrs alist) dag-len)
+                                      (symbolp rule-symbol)
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (info-worldp info)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-array-num-valid-nodes)
+                                      (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                                      (rule-alistp rewriter-rule-alist)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :measure (nfix count)
+                          :split-types t)
+                   (type (unsigned-byte 60) count)
                    (type (integer 1 *) hyp-num) ;; restrict to a fixnum?
-                   (xargs
-                    :measure (nfix count)
-                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                (axe-rule-hyp-listp hyps)
-                                (symbol-alistp alist)
-                                (all-dargp-less-than (strip-cdrs alist) dag-len)
-                                (symbolp rule-symbol)
-                                (rule-alistp rewriter-rule-alist)
-                                (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                (natp node-replacement-array-num-valid-nodes)
-                                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                (maybe-bounded-memoizationp memoization dag-len)
-                                (info-worldp info)
-                                (triesp tries)
-                                (interpreted-function-alistp interpreted-function-alist)
-                                (symbol-listp known-booleans)
-                                (rule-limitsp limits)
-                                (symbol-listp monitored-symbols))))
+                   )
           (if (or (not (mbt (natp count)))
                   (= 0 count))
               (mv :count-exceeded t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
@@ -638,7 +649,7 @@
                                 (if (unquote new-nodenum-or-quotep) ;the unquoted value is non-nil:
                                     (prog2$ (and old-try-count
                                                  print
-                                                 (or (eq :verbose print) (eq :verbose! print))
+                                                 (print-level-at-least-verbosep print)
                                                  (< 100 (sub-tries tries old-try-count))
                                                  (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                             ;;hyp rewrote to a non-nil constant and so counts as relieved:
@@ -652,7 +663,7 @@
                                   ;;hyp rewrote to 'nil
                                   (progn$ (and old-try-count
                                                print
-                                               (or (eq :verbose print) (eq :verbose! print))
+                                               (print-level-at-least-verbosep print)
                                                (< 100 (sub-tries tries old-try-count))
                                                (cw "(~x1 tries wasted ~x0:~x2 (rewrote to NIL))~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                           (and (member-eq rule-symbol monitored-symbols)
@@ -664,7 +675,7 @@
                               (if (nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist dag-array) ;todo: only do this if the hyp is not a known-boolean?
                                   (prog2$ (and old-try-count
                                                print
-                                               (or (eq :verbose print) (eq :verbose! print))
+                                               (print-level-at-least-verbosep print)
                                                (< 100 (sub-tries tries old-try-count))
                                                (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                           ;;hyp rewrote to a known assumption and so counts as relieved:
@@ -678,7 +689,7 @@
                                 ;; Failed to relieve the hyp:
                                 (progn$ (and old-try-count
                                              print
-                                             (or (eq :verbose print) (eq :verbose! print))
+                                             (print-level-at-least-verbosep print)
                                              (< 100 (sub-tries tries old-try-count))
                                              (cw "(~x1 tries wasted: ~x0:~x2 (non-constant result))~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                         (and (member-eq rule-symbol monitored-symbols)
@@ -701,25 +712,28 @@
                                           refined-assumption-alist
                                           node-replacement-array-num-valid-nodes
                                           print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                      (true-listp args-to-match)
-                                      (all-dargp-less-than args-to-match dag-len)
-                                      (true-listp stored-rules)
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (true-listp stored-rules) ; todo: combine this and the next one
                                       (all-stored-axe-rulep stored-rules)
-                                      (interpreted-function-alistp interpreted-function-alist)
-                                      (symbol-listp known-booleans)
-                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                      (info-worldp info)
                                       (rule-alistp rewriter-rule-alist)
+                                      (all-dargp-less-than args-to-match dag-len) ;todo: combine with the next one
+                                      (true-listp args-to-match)
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (info-worldp info)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
                                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-array-num-valid-nodes)
                                       (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                      (maybe-bounded-memoizationp memoization dag-len)
-                                      (triesp tries)
-                                      (rule-limitsp limits)
-                                      (symbol-listp monitored-symbols))
-                          :measure (nfix count)))
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :split-types t
+                          :measure (nfix count))
+                   (type (unsigned-byte 60) count))
           (if (or (not (mbt (natp count)))
                   (= 0 count))
               (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
@@ -796,24 +810,27 @@
                                                      refined-assumption-alist
                                                      node-replacement-array-num-valid-nodes
                                                      print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs :measure (nfix count)
-                          :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (true-listp trees)
                                       (all-axe-treep trees)
-                                      (all-bounded-axe-treep trees dag-len)
-                                      (interpreted-function-alistp interpreted-function-alist)
-                                      (symbol-listp known-booleans)
-                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (all-bounded-axe-treep trees dag-len) ; combine with the 2 above?
+                                      (maybe-bounded-memoizationp memoization dag-len)
                                       (info-worldp info)
-                                      (rule-alistp rewriter-rule-alist)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
                                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-array-num-valid-nodes)
                                       (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                      (maybe-bounded-memoizationp memoization dag-len)
-                                      (triesp tries)
-                                      (rule-limitsp limits)
-                                      (symbol-listp monitored-symbols))))
+                                      (rule-alistp rewriter-rule-alist)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :measure (nfix count)
+                          :split-types t)
+                   (type (unsigned-byte 60) count))
           (if (or (not (mbt (natp count)))
                   (= 0 count))
               (mv :count-exceeded trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
@@ -866,6 +883,7 @@
                                       (bounded-axe-treep elsepart dag-len)
                                       (tree-to-memoizep tree)
                                       (trees-to-memoizep trees-equal-to-tree)
+                                      (axe-print-levelp print)
                                       (interpreted-function-alistp interpreted-function-alist)
                                       (symbol-listp known-booleans)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
@@ -936,6 +954,7 @@
                                       (bounded-axe-treep elsepart dag-len)
                                       (tree-to-memoizep tree)
                                       (trees-to-memoizep trees-equal-to-tree)
+                                      (axe-print-levelp print)
                                       (interpreted-function-alistp interpreted-function-alist)
                                       (symbol-listp known-booleans)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
@@ -1005,6 +1024,7 @@
                                 (member-eq (ffn-symb tree) '(if myif))
                                 (= 3 (len (fargs tree)))
                                 (trees-to-memoizep trees-equal-to-tree)
+                                (axe-print-levelp print)
                                 (interpreted-function-alistp interpreted-function-alist)
                                 (symbol-listp known-booleans)
                                 (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
@@ -1092,6 +1112,7 @@
                                 (= 3 (len args))
                                 (tree-to-memoizep tree)
                                 (trees-to-memoizep trees-equal-to-tree)
+                                (axe-print-levelp print)
                                 (interpreted-function-alistp interpreted-function-alist)
                                 (symbol-listp known-booleans)
                                 (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
@@ -1152,6 +1173,7 @@
                                 (= 3 (len args))
                                 (tree-to-memoizep tree)
                                 (trees-to-memoizep trees-equal-to-tree)
+                                (axe-print-levelp print)
                                 (interpreted-function-alistp interpreted-function-alist)
                                 (symbol-listp known-booleans)
                                 (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
@@ -1228,6 +1250,7 @@
                                 (bounded-axe-treep elsepart dag-len)
                                 (tree-to-memoizep tree)
                                 (trees-to-memoizep trees-equal-to-tree)
+                                (axe-print-levelp print)
                                 (interpreted-function-alistp interpreted-function-alist)
                                 (symbol-listp known-booleans)
                                 (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
@@ -1283,6 +1306,7 @@
                                 (= 4 (len args))
                                 (tree-to-memoizep tree)
                                 (trees-to-memoizep trees-equal-to-tree)
+                                (axe-print-levelp print)
                                 (interpreted-function-alistp interpreted-function-alist)
                                 (symbol-listp known-booleans)
                                 (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
@@ -1350,6 +1374,7 @@
                                 (consp tree)
                                 (axe-treep tree)
                                 (trees-to-memoizep trees-equal-to-tree)
+                                (axe-print-levelp print)
                                 (interpreted-function-alistp interpreted-function-alist)
                                 (symbol-listp known-booleans)
                                 (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
@@ -1437,6 +1462,7 @@
                                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                 (bounded-axe-treep tree dag-len)
                                 (trees-to-memoizep trees-equal-to-tree)
+                                (axe-print-levelp print)
                                 (interpreted-function-alistp interpreted-function-alist)
                                 (symbol-listp known-booleans)
                                 (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
@@ -1634,27 +1660,29 @@
                                                         refined-assumption-alist
                                                         node-replacement-array-num-valid-nodes
                                                         print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs
-                    :measure (nfix count)
-                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                (symbolp fn)
-                                (not (equal 'quote fn))
-                                (true-listp args)
-                                (all-dargp-less-than args dag-len)
-                                (trees-to-memoizep trees-equal-to-tree)
-                                (interpreted-function-alistp interpreted-function-alist)
-                                (symbol-listp known-booleans)
-                                (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                (info-worldp info)
-                                (rule-alistp rewriter-rule-alist)
-                                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                (natp node-replacement-array-num-valid-nodes)
-                                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                (maybe-bounded-memoizationp memoization dag-len)
-                                (triesp tries)
-                                (rule-limitsp limits)
-                                (symbol-listp monitored-symbols))))
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (symbolp fn)
+                                      (not (equal 'quote fn))
+                                      (true-listp args)
+                                      (all-dargp-less-than args dag-len)
+                                      (trees-to-memoizep trees-equal-to-tree)
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (info-worldp info)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-array-num-valid-nodes)
+                                      (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                                      (rule-alistp rewriter-rule-alist)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :measure (nfix count)
+                          :split-types t)
+                   (type (unsigned-byte 60) count))
           (if (or (not (mbt (natp count)))
                   (= 0 count))
               (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
@@ -4130,7 +4158,7 @@
                                                    rule-alist
                                                    refined-assumption-alist
                                                    node-replacement-array-num-valid-nodes
-                                                   nil ;print
+                                                   nil ;print ;todo: pass a print arg
                                                    interpreted-function-alist
                                                    (known-booleans wrld) ;skip if memoizing since we can't use contexts?
                                                    monitored-symbols
