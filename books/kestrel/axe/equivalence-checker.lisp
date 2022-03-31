@@ -252,8 +252,9 @@
     (fresh-name-in-world-with-$s desired-name nil wrld)))
 
 ;returns state
+;;elements after the first are preceded by a newline and a space:
 (defun print-dag-array-to-file-aux (dag-array-name dag-array nodenum channel state)
-  (declare (xargs :mode :program ;because this calls pprint-object-or-string.
+  (declare (xargs :mode :program ; because this calls pprint-object-or-string
                   :stobjs state))
   (if (not (natp nodenum))
       state
@@ -267,7 +268,7 @@
 ;move to acl2-arrays book? maybe not, because of the trust-tag..
 ;remove dag from name?
 (defun print-dag-array-to-file (dag-array-name dag-array dag-len fname state)
-  (declare (xargs :mode :program ;drop?
+  (declare (xargs :mode :program ; because this calls pprint-object-or-string
                   :guard (stringp fname)
                   :stobjs state))
   (mv-let (channel state)
@@ -282,11 +283,11 @@
                                 (close-output-channel channel state))
                       ;;non-empty-array
                     (pprogn (princ$ "(" channel state)
-                            ;the first element is printed with no whitespace before it:
+                            ;the first node is printed with no whitespace before it:
                             (let ((top-nodenum (+ -1 dag-len)))
                               (pprint-object-or-string
-                               (cons top-nodenum (aref1 dag-array-name dag-array top-nodenum)) channel state))
-                            ;;elements after the first are preceded by a newline and a space:
+                               (cons top-nodenum (aref1 dag-array-name dag-array top-nodenum)) channel state)) ; TODO: save this cons?
+                            ;; Print the rest of the nodes:
                             (print-dag-array-to-file-aux dag-array-name dag-array (+ -2 dag-len) channel state)
                             (princ$ ")" channel state)
                             (close-output-channel channel state)))))))
@@ -301,13 +302,13 @@
     (print-dag-array-to-file array-name array array-len (concatenate 'string temp-dir-name "/" base-filename) state)))
 
 ;; Returns state
-(defun print-dag-lst-to-temp-file (dag-lst base-filename state)
+(defun print-dag-to-temp-file (dag-lst base-filename state)
   (declare (xargs :stobjs state
                   :mode :program
                   :guard (stringp base-filename)))
   (mv-let (temp-dir-name state)
     (maybe-make-temp-dir state)
-    (print-dag-lst-to-file dag-lst (concatenate 'string temp-dir-name "/" base-filename) state)))
+    (print-dag-to-file dag-lst (concatenate 'string temp-dir-name "/" base-filename) state)))
 
 ;; (mutual-recursion
 ;;  (defun first-nodenum-aux-lst (objects)
@@ -8316,7 +8317,7 @@
                                           nil
                                           changep)
              (prog2$ (if (and (or (eq print :verbose)
-                                  (eq print :verbose2))
+                                  (eq print :verbose!))
                               changep) ;ffffixme use this value to decide whether to keep the test case? maybe keep the first few boring ones so we have enough..
                          (cw "~%interesting test case ~x0.)~%" test-case)
                        (cw ")~%"))
@@ -9650,7 +9651,7 @@
       (reverse test-case-alist-acc)
     (b* ((test-case (first test-cases))
          (test-case-array-name (pack$ base-name '- test-case-count))
-         (- (and print (member-eq print '(t :verbose :verbose2)) (cw "~%Evaluating test case ~x0.~%" test-case-count)))
+         (- (and print (member-eq print '(t :verbose :verbose!)) (cw "~%Evaluating test case ~x0.~%" test-case-count)))
          (test-case-array
           (evaluate-and-check-test-case test-case
                                         miter-array-name
@@ -11150,7 +11151,7 @@
                                       nil ;limits todo:support this?
                                       state))
        ((when erp) (mv erp nil dag-array dag-len state result-array-stobj))
-       (- (and print (print-hit-counts print info (rules-from-rule-alist rewriter-rule-alist))))
+       (- (and print (maybe-print-hit-counts print info)))
        (- (and tries (cw "(~x0 tries.)" tries)))
        )
     (mv (erp-nil) miter-nodenum-or-quotep dag-array dag-len state result-array-stobj)))
@@ -15475,7 +15476,7 @@
         ;;add the equality:
         (dag-lst (acons-fast (+ 1 (top-nodenum dag-lst)) `(equal ,renamed-smaller-nodenum ,renamed-larger-nodenum) dag-lst))
         (- (prog2$ (cw " (Rewriting equality: (~x0 nodes)~%" (+ 1 (top-nodenum dag-lst)))
-                   (and print (or (eq t print) (eq :verbose print) (eq :verbose2 print)) (print-list dag-lst))))
+                   (and print (or (eq t print) (eq :verbose print) (eq :verbose! print)) (print-list dag-lst))))
         ((mv erp simplified-dag-lst state)
          (simp-dag dag-lst ;no longer contains irrelevant nodes
                    :rule-alists
@@ -15511,7 +15512,7 @@
                          simplified-dag-lst)
                      (mv (erp-t) nil analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))))
        (prog2$
-        (and (and print (or (eq t print) (eq :verbose print) (eq :verbose2 print)) (print-list dag-lst))
+        (and (and print (or (eq t print) (eq :verbose print) (eq :verbose! print)) (print-list dag-lst))
              (prog2$ (cw "Equality rewrote to:~%")
                      (print-list simplified-dag-lst)))
         ;; The equality didn't rewrite to a constant.  Now analyze which recursive functions are involved and where they are.
@@ -16359,7 +16360,7 @@
                                                             ;;tag-array2
                                                             some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
-   (b* ((- (and (member-eq print '(t :verbose :verbose2)) ;used to print this even for :brief:
+   (b* ((- (and (member-eq print '(t :verbose :verbose!)) ;used to print this even for :brief:
                 (prog2$ (cw "  Equating nodes ~x0 and ~x1.~%" smaller-nodenum larger-nodenum)
                         ;;ffixme make a 2 node version of print-dag-only-supporters - we show the simplified miter - that should contain everything interesting from the dag
                         nil ;(print-array2 miter-array-name miter-array (+ 1 larger-nodenum))
@@ -16616,7 +16617,7 @@
                               (acons #\0 miter-nodenum-or-quotep nil))
                   (mv (erp-t) nil analyzed-function-table rand state result-array-stobj))))
            ;;The equality didn't rewrite to a constant:
-           (b* ((- (and (eq :verbose2 print)
+           (b* ((- (and (eq :verbose! print)
                         (prog2$ (cw "Equality rewrote to:~%")
                                 (print-dag-only-supporters 'dag-array dag-array miter-nodenum-or-quotep)))))
              ;;fixme use miter-nodenum-or-quotep below here?
@@ -16694,7 +16695,7 @@
 ;get rid of this check if it never fires
        (prog2$ (er hard 'try-to-prove-node-is-constant-and-replace "unused node.") ;(cw "  (Skipping node ~x0 because it is unused on any test case.)" nodenum) ;fixme now this should never happen?
                (mv (erp-t) nil miter-array analyzed-function-table rand state result-array-stobj)) ;fffffixme think about this
-     (prog2$ (and (or (eq print 't) (eq print ':verbose) (eq print ':verbose2))
+     (prog2$ (and (or (eq print 't) (eq print :verbose) (eq print :verbose!))
                   (cw "  Trying to replace node ~x0 with the constant ~x1.~%" nodenum constant-value))
              (let ((expr (aref1 miter-array-name miter-array nodenum)))
                (if (quotep expr)
@@ -17454,7 +17455,7 @@
                   (progn$ (cw "Done pre-simplifying (result is a constant).)~%")
                           (mv nil dag-lst interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj))
                 (let* ((tag (pack$ (symbol-name proof-name) '-DAG-AFTER-PS)) ;fixme bad name, since we simplify below!
-                       (state (print-dag-lst-to-temp-file
+                       (state (print-dag-to-temp-file
                                dag-lst
                                (symbol-name tag)
                                state)))
@@ -17613,7 +17614,7 @@
                          (prog2$ (er hard? 'miter-and-merge "expected t or nil but got the constant ~x0." val)
                                  (mv (erp-t) nil rand state result-array-stobj))))))
                   (miter-dag miter-dag-or-quote)
-                  (- (and (or (eq :verbose print) (eq :verbose2 print))
+                  (- (and (or (eq :verbose print) (eq :verbose! print))
                           (progn$ (cw "(Simplified miter dag (~x0):" miter-name)
                                   (print-list miter-dag) ;fixme print this to a file?
                                   (cw ")~%"))))
@@ -17692,7 +17693,7 @@
                       ((when erp) (mv erp nil rand state result-array-stobj))
                       ;; ffixme what about the equiv? the new assumption may not fire? call something like concretize?
                       (- (cw "(Unsimplified miter dag for true case:~%"))
-                      (- (if (or (eq :verbose print) (eq :verbose2 print))
+                      (- (if (or (eq :verbose print) (eq :verbose! print))
                              (print-list miter-dag-for-true-case)
                            (cw ":elided"))) ;fixme what is this?
                       (- (cw ")~%(Simplifying:"))
@@ -19746,7 +19747,7 @@
       ;; Did not simplify to a constant:
       (let* ((dag dag-or-quotep)
              (state (if (and simplifyp print)
-                        (print-dag-lst-to-temp-file dag (symbol-name (pack$ miter-name '-after-initial-simplification)) state)
+                        (print-dag-to-temp-file dag (symbol-name (pack$ miter-name '-after-initial-simplification)) state)
                       state)))
         ;; A test case count of 0 now declares that the DAG must rewrite to 't (fixme or should it be any non-nil constant)?
 ;move this check down?

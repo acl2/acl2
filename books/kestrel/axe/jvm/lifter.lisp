@@ -2634,7 +2634,7 @@
            :assumptions assumptions ;hope this is okay
            :monitor monitored-symbols
            :simplify-xorsp nil
-           :print nil ;print ;:verbose2 ;todo reduce printing
+           :print nil ;print ;:verbose! ;todo reduce printing
            :remove-duplicate-rulesp nil
            :check-inputs nil))
          ((when erp) (mv erp nil state)))
@@ -2713,7 +2713,7 @@
                     :assumptions assumptions ;hope this is okay
                     :monitor monitored-symbols
                     :simplify-xorsp nil
-                    :print print ;:verbose2 ;todo reduce printing
+                    :print print ;:verbose! ;todo reduce printing
                     :remove-duplicate-rulesp nil
                     :check-inputs nil))
          ((when erp) (mv erp nil state)))

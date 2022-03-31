@@ -74,7 +74,7 @@
                               interpreted-function-alist
                               monitor
                               memoizep
-                              count-hitsp
+                              count-hits
                               ;; simplify-xorsp ;todo
                               produce-function
                               disable-function
@@ -97,7 +97,7 @@
                               (interpreted-function-alistp interpreted-function-alist) ;todo: extract from the terms and rules?
                               (symbol-listp monitor)
                               (booleanp memoizep)
-                              (booleanp count-hitsp)
+                              (booleanp count-hits)
                               ;; (booleanp simplify-xorsp) ;todo: strengthen
                               (booleanp produce-function)
                               (booleanp disable-function)
@@ -184,7 +184,7 @@
                              interpreted-function-alist
                              monitor
                              memoizep
-                             count-hitsp
+                             count-hits
                              (w state)
                              ;; :assumptions assumptions
                              ;; :simplify-xorsp simplify-xorsp
@@ -280,7 +280,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                     (interpreted-function-alist 'nil)
                                     (monitor 'nil)
                                     (memoizep 't)
-                                    (count-hitsp 'nil)
+                                    (count-hits 'nil)
                                     ;; (simplify-xorsp 't)
                                     (produce-function 'nil)
                                     (disable-function 'nil) ;todo: consider making 't the default
@@ -298,7 +298,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                            ,interpreted-function-alist
                                            ,monitor
                                            ,memoizep
-                                           ,count-hitsp
+                                           ,count-hits
                                            ;; ,simplify-xorsp
                                            ,produce-function
                                            ,disable-function
@@ -324,7 +324,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
 ;;         [:monitor]           ;; List of symbols to monitor, Default: nil
 ;;         [:interpreted-function-alist]           ;; Definitions of non-built-in functions to evaluate; Default: nil
 ;;         [:memoizep]           ;; Whether to memoize during rewriting, Default: nil
-;;         [:count-hitsp]           ;; Whether to count rule hits rewriting, Default: nil
+;;         [:count-hits]           ;; Whether to count rule hits rewriting, Default: nil
 ;;         [:produce-function]           ;; Whether to produce a function (in addition to a defconst), Default: nil
 ;;         [:disable-function]           ;; Whether to disable the produced function, Default: nil
 ;;         [:function-type]           ;; How to create a function for the DAG (:term, :embedded-dag, :lets, or :auto), Default:: auto
