@@ -37,11 +37,33 @@
   ;; xdoc args:
   :parents (top)
   :short "Short text goes here."
-  ;; TODO: Make an version of :description that puts in the P tags for you:
   ;; This test makes sure that the :description can be computed:
   :description (concatenate 'string
-                            "<p>The description of the macro goes here.  This text comes after the General Form and Inputs sections.</p>"
-                            "<p>Second paragraph of the description.</p>")
+                            "The description of the macro goes here.  This text comes after the General Form and Inputs sections."
+                            "Second sentence of the description, showing that the description can be computed.")
+  ;; now an alternating list of param names and strings (or lists of strings):
+  :args ((req1 "This is the first required param.")
+         (req2 "Second required param.")
+         (key1 "First paragraph of text about key1."
+                "Second paragraph of text about key1.")
+         (key2 "Blah Blah.")))
+
+;; Test where the description has multiple forms, each of which is made into a paragraph.
+(defmacrodoc foo2 (&whole
+                  whole
+                  req1
+                  req2
+                  &key
+                  key1 ;todo: is the default nil?
+                  (key2 'nil)
+                  )
+  ;; the body (can be preceded by declares):
+  `(foo-fn ,req1 ,req2 ,key1 ,key2 ,whole)
+  ;; xdoc args:
+  :parents (top)
+  :short "Short text goes here."
+  :description ("The description of the macro goes here.  This text comes after the General Form and Inputs sections."
+                "Second paragraph of the description.")
   ;; now an alternating list of param names and strings (or lists of strings):
   :args ((req1 "This is the first required param.")
          (req2 "Second required param.")

@@ -49,7 +49,7 @@
 ;;                      (xdoc-make-paragraphs (rest strings)))))
 
 ;; FORMS should be a true-list of string-valued forms.
-;; Returns a list of string-values forms.
+;; Returns a list of string-valued forms.
 (defund xdoc-make-paragraphs (forms)
   (declare (xargs :guard (true-listp forms)))
   (if (endp forms)
@@ -445,7 +445,7 @@
               ;; Include the description section, if supplied:
               ,@(and description-forms
                      (cons *xdoc-description-header-with-spacing*
-                           (xdoc-make-paragraphs description-forms)))))))
+                           (xdoc-make-paragraphs description-forms))))))) ; todo: what if we don't want to put all the forms in paragraphs?
 
 (defmacro defxdoc-for-macro (name ; the name of the macro being documented
                              macro-args ; the formals of the macro, todo: allow extracting these from the world?
