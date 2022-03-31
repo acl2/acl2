@@ -171,3 +171,15 @@
   (equal (equal (leftrotate32 n x) (leftrotate32 n y))
          (equal (bvchop 32 x) (bvchop 32 y)))
   :hints (("Goal" :in-theory (enable leftrotate32))))
+
+(defthm getbit-of-leftrotate32-high
+  (implies (and (<= amt n) ;todo: other case! see rules for leftrotate
+                (<= n 31)
+                (unsigned-byte-p 5 amt)
+                (natp n)
+                (natp amt))
+           (equal (getbit n (leftrotate32 amt x))
+                  (getbit (- n amt) x)))
+  :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit
+                                            leftrotate32
+                                            slice-becomes-getbit)))))

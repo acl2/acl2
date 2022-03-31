@@ -15,6 +15,7 @@
 (include-book "jvm/rule-lists-jvm") ;drop?
 (include-book "rules-in-rule-lists")
 (include-book "make-axe-rules2")
+(include-book "equivalence-checker-helpers") ; not strictly necessary; helpful functions and justifications of correctness
 (include-book "kestrel/alists-light/assoc-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
@@ -226,6 +227,29 @@
 (defmap-simple drop-last)
 
 (local (in-theory (disable NAT-LISTP))) ;prevent inductions
+
+;; can combine names like *foo-spec-dag* and *foo-java-dag*
+;; (choose-miter-name '*foo-spec-dag* '*foo-java-dag*)
+;todo: move up
+(defun choose-miter-name (name quoted-form1 quoted-form2 wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))
+                  :mode :program ; todo, because of fresh-name-in-world-with-$s
+                  ))
+  (let ((desired-name (if (eq :auto name)
+                          (if (and (symbolp quoted-form1)
+                                   (symbolp quoted-form2)
+                                   (starts-and-ends-with-starsp quoted-form1)
+                                   (starts-and-ends-with-starsp quoted-form2))
+                              ;; todo: remove "-dag" from the names here:
+                              ;; todo: handle common parts of the names here, like foo in *foo-spec-dag* and *foo-java-dag*:
+                              (pack$ (strip-stars-from-name quoted-form1) '-and-  (strip-stars-from-name quoted-form2))
+                            ;; Just use a generic default name:
+                            'main-miter)
+                        ;; not :auto, so use the specified name:
+                        name)))
+    ;; avoid name clashes, since we may use the same name for the theorem:
+    (fresh-name-in-world-with-$s desired-name nil wrld)))
 
 ;returns state
 (defun print-dag-array-to-file-aux (dag-array-name dag-array nodenum channel state)
@@ -12182,7 +12206,7 @@
                :simplify-xorsp nil
                :check-inputs nil)
     (if erp
-        (mv t nil nil state result-array-stobj)
+        (mv erp nil nil state result-array-stobj)
       (let ((simplified-fact (dag-to-term simplified-fact))) ; i hope this never blows up
         (if (equal fact simplified-fact)
             ;;no change:
@@ -12985,6 +13009,8 @@
 ;todo: thread through a parent array for the miter and use it to fixup parents when merging constant nodes (could also evaluate ground terms?).  would need to maintain the parent array as we merge...
 (mutual-recursion
 
+ ;; TODO: Continue changing dag-lst to either dag or dag-or-quotep within this
+
  ;; Attempt to prove the theorem by rewriting and then calling the equivalence checker (miter-and-merge)
  ;;fixme should this simplify the assumptions at all (could help prevent loops)?  should this expand the assumptions (e.g., when they are calls to an invariant or connection relation, negated calls to an exit test, etc.)?
  ;;returns (mv erp provedp rand state result-array-stobj) where if PROVEDP is non-nil, then the indicated theorem has been proved in STATE
@@ -13468,7 +13494,7 @@
 
 
  ;; this can transform the function (uncdr, peel off base case, unroll handle elsewhere!), drop params, or prove a lemma (anything else?)
- ;; Returns (mv erp result analyzed-function-table rand state result-array-stobj) where result is :error, :failed, or (list new-runes new-fns)
+ ;; Returns (mv erp result analyzed-function-table rand state result-array-stobj) where result is :error, :failed, or (list new-runes new-fns).
  ;; The invariant produced here is also used when comparing two rec. fns. (unless the function is transformed here)
  ;;fixme all non-recursive functions should be blown away - check that?
  ;;fixme should some of the :error cases below just be :failed?
@@ -14045,9 +14071,8 @@
  ;;                                                            state result-array-stobj)))))))
  ;;                                 )
 
-
  ;;get rid of this wrapper? have analyze-rec-fn throw an error?
- ;;returns (mv erp result analyzed-function-table rand state result-array-stobj) where result is :failed or (list new-runes new-fns)... - check for :error in the caller!
+ ;;returns (mv erp result analyzed-function-table rand state result-array-stobj) where, if ERP is nil, then RESULT is :failed or (list new-runes new-fns).
  ;;speed things up by reusing traces between calls to this function! and then don't pass in the test-cases
  ;;TEST-CASE-ARRAY-ALIST can be nil?
  ;;i believe result will be (list nil nil) if we've already analyzed the function
@@ -14066,14 +14091,13 @@
                      unroll miter-depth-to-use monitored-symbols max-conflicts print options
                      rand state result-array-stobj)
      (if erp
-         (mv erp result analyzed-function-table rand state result-array-stobj)
+         (mv erp nil analyzed-function-table rand state result-array-stobj)
        (if (eq :error result)
-           (mv t
+           (mv (erp-t)
                (hard-error 'analyze-rec-fn-wrapper "unexpected failure" nil)
-               analyzed-function-table
-               rand state result-array-stobj)
+               analyzed-function-table rand state result-array-stobj)
          ;;result is (list .. ..) or :failed :
-         (mv nil result analyzed-function-table rand state result-array-stobj)))))
+         (mv (erp-nil) result analyzed-function-table rand state result-array-stobj)))))
 
  ;; Returns (mv erp result analyzed-function-table rand state result-array-stobj), where result is (list new-runes new-fns)
  ;;allow this to return :failed or :error?
@@ -15390,7 +15414,7 @@
  ;;                             nil ;no new fn names are introduced?  (unrolling is done in another case)
  ;;                             dag-array state result-array-stobj))))))))))))))))
 
- ;; Returns (mv erp result analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj) where result is :proved, :timed-out, :error, :failed, or (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
+ ;; Returns (mv erp result analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj) where, if ERP is nil, then RESULT is :proved, :timed-out, :failed, or (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
  ;; at least one node (but not necessarily both) is supported by a recursive function - what if one has several rec fns and the other has one that needs to be split? - what if we can cut out the rec fns, leaving only bv and array fns?
  ;; the rec fns here may be things other than loop functions...
  ;;ffffixme really the "rec" fns include any built-ins other than bv/array/bool operators
@@ -15434,7 +15458,7 @@
         (context (and context (fixup-context context 'translation-array translation-array)))
         ((when (false-contextp context)) ;check higher up?
          (cw "! Nodes are equal because context is false !")
-         (mv nil :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+         (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
         ((mv renamed-smaller-nodenum renamed-larger-nodenum dag-lst)
 ;fixme: do we really need to rewrite the two nodes themselves, rather than just their equality?  i guess rewriting might commute things consistently.  call something like rewrite-nodenum?
          (drop-non-supporters-array-two-nodes miter-array-name miter-array original-nodenum1 original-nodenum2) ;fixme or use a worklist?
@@ -15474,18 +15498,18 @@
                    :context context
                    :context-array-len context-array-len
                    :check-inputs nil))
-        ((when erp) (mv erp *error* nil nil rand state result-array-stobj)))
+        ((when erp) (mv erp nil nil nil rand state result-array-stobj)))
      (if (quotep simplified-dag-lst)
          (if (equal *t* simplified-dag-lst)
              (prog2$ (cw "Equality rewrote to true!)~%") ;fixme would like to see what rules were used..
-                     (mv nil :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+                     (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
            (if (equal *nil* simplified-dag-lst)
                (prog2$ (cw "Equality rewrote to false!)~%") ;can this happen? would it mean the nodes are never equal?  what about the test cases?
-                       (mv nil :failed analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
-             (prog2$ (hard-error 'try-to-prove-non-pure-nodes-equivalent
-                                 "!! ERROR The miter rewrote to a constant other than t or nil, namely ~x0.  This should never happen (unless the hypotheses contradict).)~%"
-                                 (acons #\0 simplified-dag-lst nil))
-                     (mv t :error analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))))
+                       (mv (erp-nil) :failed analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+             (prog2$ (er hard 'try-to-prove-non-pure-nodes-equivalent
+                         "!! ERROR The miter rewrote to a constant other than t or nil, namely ~x0.  This should never happen (unless the hypotheses contradict).)~%"
+                         simplified-dag-lst)
+                     (mv (erp-t) nil analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))))
        (prog2$
         (and (and print (or (eq t print) (eq :verbose print) (eq :verbose2 print)) (print-list dag-lst))
              (prog2$ (cw "Equality rewrote to:~%")
@@ -15510,681 +15534,674 @@
                 (prog2$
                  (cw "(Proof involves only built-in functions.)~%") ;move the printing of calling prover..
                  ;;ffffixme could cut the proof (to remove rec. fns) and call stp here?
-                 (mv nil :call-prover analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+                 (mv (erp-nil) :call-prover analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
               ;;There is at least "user recursive" function.  Make sure they have all been handled individually: ;fixme will any rec fns ever be unhandled after presimp?
               ;;ffixme should we check for unrolling first?
-              (mv-let
-                (erp analyze-rec-fns-result analyzed-function-table rand state result-array-stobj)
-                ;;Generate lemmas about the supporting rec. fns:
-                (analyze-rec-fns rec-fn-nodes-to-handle miter-array-name miter-array interpreted-function-alist extra-stuff
-                                 rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist analyzed-function-table unroll
-                                 (+ 1 miter-depth)
-                                 monitored-symbols max-conflicts print options rand state result-array-stobj)
-                (if erp
-                    (mv erp :error analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
-                  (let ((new-runes (first analyze-rec-fns-result))
-                        (new-fn-names (second analyze-rec-fns-result)))
-                    (if new-runes
-                        ;;if some lemmas were generated about the individual functions,
-                        ;;fail this call and try to use them to rewrite the dag
-                        ;;ffixme rewrite the miter right here, using the new rules?? - just rewrite the equality??
-                        ;;ffixme only fail here if there is a rule that drops params from a function?
-                        ;; i.e., if it's just type facts, continue here?
-                        ;;what about rules that rewrite an rv?
-                        (prog2$ (cw "We proved some lemmas, so this call will fail but the next may succeed.")
-                                (mv nil (list :new-rules new-runes new-fn-names) analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+              (b* (((mv erp analyze-rec-fns-result analyzed-function-table rand state result-array-stobj)
+                    ;;Generate lemmas about the supporting rec. fns:
+                    (analyze-rec-fns rec-fn-nodes-to-handle miter-array-name miter-array interpreted-function-alist extra-stuff
+                                     rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist analyzed-function-table unroll
+                                     (+ 1 miter-depth)
+                                     monitored-symbols max-conflicts print options rand state result-array-stobj))
+                   ((when erp) (mv erp nil analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+                   (new-runes (first analyze-rec-fns-result))
+                   (new-fn-names (second analyze-rec-fns-result)))
+                (if new-runes
+                    ;;if some lemmas were generated about the individual functions,
+                    ;;fail this call and try to use them to rewrite the dag
+                    ;;ffixme rewrite the miter right here, using the new rules?? - just rewrite the equality??
+                    ;;ffixme only fail here if there is a rule that drops params from a function?
+                    ;; i.e., if it's just type facts, continue here?
+                    ;;what about rules that rewrite an rv?
+                    (prog2$ (cw "We proved some lemmas, so this call will fail but the next may succeed.")
+                            (mv (erp-nil) (list :new-rules new-runes new-fn-names) analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
 
-                      ;;All rec. fns. have been handled individually.
-                      ;;ffixme should we use the simplified miter dag more below this point? might lose the context?  should we simplify the main dag?
-                      ;;do clause mitering? huh?
-                      ;;possible strategies left at this point: split a function, unroll a function completely, unroll by a constant factor, convert from head rec to tail rec, prove a lemma to connect two functions, combine a producer and a consumer on the same side into one function, use one function as the spec for the function on the other side (for sequences, assuming we have a rule for a call to nth of the first function), prove two head rec functions equivalent (deprecate), reverse the order in which a sequence is filled (what if there are several seq being filled?), take a function that cdrs down a list and transform it to use nth?
+                  ;;All rec. fns. have been handled individually.
+                  ;;ffixme should we use the simplified miter dag more below this point? might lose the context?  should we simplify the main dag?
+                  ;;do clause mitering? huh?
+                  ;;possible strategies left at this point: split a function, unroll a function completely, unroll by a constant factor, convert from head rec to tail rec, prove a lemma to connect two functions, combine a producer and a consumer on the same side into one function, use one function as the spec for the function on the other side (for sequences, assuming we have a rule for a call to nth of the first function), prove two head rec functions equivalent (deprecate), reverse the order in which a sequence is filled (what if there are several seq being filled?), take a function that cdrs down a list and transform it to use nth?
 
-                      ;; Find all the rec fns above the common supporters:
-                      (let* ((dummy1 (cw "(Didn't prove any lemmas about supporting rec. fns.)~%"))
-                             (supporters-array-length (+ 1 original-nodenum2))
-                             (node1-supporters-array (tag-supporters-of-node original-nodenum1 miter-array-name miter-array 'node1-supporters-array supporters-array-length))
-                             (node2-supporters-array (tag-supporters-of-node original-nodenum2 miter-array-name miter-array 'node2-supporters-array supporters-array-length))
-                             ;;supporters of node1 that don't support node2:
-                             (rec-fn-nodes1 (non-tagged-supporters-with-rec-fns-to-handle original-nodenum1 miter-array-name miter-array 'node2-supporters-array node2-supporters-array state))
-                             (rec-fns1 (fns-at-nodes rec-fn-nodes1 miter-array-name miter-array))
-                             ;;supporters of node2 that don't support node1:
-                             (rec-fn-nodes2 (non-tagged-supporters-with-rec-fns-to-handle original-nodenum2 miter-array-name miter-array 'node1-supporters-array node1-supporters-array state))
-                             (rec-fns2 (fns-at-nodes rec-fn-nodes2 miter-array-name miter-array))
-                             ;;(all-relevant-fns (union-eq rec-fns1 rec-fns2))
-                             (dummy2 (prog2$ (cw "(Recursive functions supporting only node 1:~x0)~%" rec-fns1)
-                                             (cw "(Recursive functions supporting only node 2:~x0)~%" rec-fns2))))
-                        (declare (ignore dummy1 dummy2))
-                        (if (and (not rec-fns1)
-                                 (not rec-fns2))
-                            ;; All the rec fns are in the common supporters (so the loops of the two implementations have been merged below that point)
-                            (prog2$ (cw "Neither node has user rec. fns above the merge point.~%")
-                                    ;;could this ever be very expensive?  maybe if there are lots of ifs to split on?  don't split on ifs in the common supporters?
-                                    (mv nil :call-prover analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
-                          (if (not rec-fns1)
-                              ;;ffixme sometimes one node depends on a rec fn but not really
-                              ;;ex: (nth 0 (if test (cons x rec-fn-call) (cons w z))) -- i guess splitting the miter would eventually handle this
+                  ;; Find all the rec fns above the common supporters:
+                  (b* ((- (cw "(Didn't prove any lemmas about supporting rec. fns.)~%"))
+                       (supporters-array-length (+ 1 original-nodenum2))
+                       (node1-supporters-array (tag-supporters-of-node original-nodenum1 miter-array-name miter-array 'node1-supporters-array supporters-array-length))
+                       (node2-supporters-array (tag-supporters-of-node original-nodenum2 miter-array-name miter-array 'node2-supporters-array supporters-array-length))
+                       ;;supporters of node1 that don't support node2:
+                       (rec-fn-nodes1 (non-tagged-supporters-with-rec-fns-to-handle original-nodenum1 miter-array-name miter-array 'node2-supporters-array node2-supporters-array state))
+                       (rec-fns1 (fns-at-nodes rec-fn-nodes1 miter-array-name miter-array))
+                       ;;supporters of node2 that don't support node1:
+                       (rec-fn-nodes2 (non-tagged-supporters-with-rec-fns-to-handle original-nodenum2 miter-array-name miter-array 'node1-supporters-array node1-supporters-array state))
+                       (rec-fns2 (fns-at-nodes rec-fn-nodes2 miter-array-name miter-array))
+                       ;;(all-relevant-fns (union-eq rec-fns1 rec-fns2))
+                       (- (prog2$ (cw "(Recursive functions supporting only node 1:~x0)~%" rec-fns1)
+                                  (cw "(Recursive functions supporting only node 2:~x0)~%" rec-fns2))))
+                    (if (and (not rec-fns1)
+                             (not rec-fns2))
+                        ;; All the rec fns are in the common supporters (so the loops of the two implementations have been merged below that point)
+                        (prog2$ (cw "Neither node has user rec. fns above the merge point.~%")
+                                ;;could this ever be very expensive?  maybe if there are lots of ifs to split on?  don't split on ifs in the common supporters?
+                                (mv (erp-nil) :call-prover analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+                      (if (not rec-fns1)
+                          ;;ffixme sometimes one node depends on a rec fn but not really
+                          ;;ex: (nth 0 (if test (cons x rec-fn-call) (cons w z))) -- i guess splitting the miter would eventually handle this
 ;ffixme consider the cases where one node depends on the other node (which is a rec fn)?  they manifest themselves here?
-                              (prog2$ (cw "(Only node 2 has user rec. fns above the merge point.  Will attempt to completely unroll fns ~x0:~%" rec-fns2)
-                                      ;;fixme don't bother if we've already tried and failed to unroll (i guess this will be the case if unroll is :all)
-                                      (mv-let (complete-unrolling-result analyzed-function-table nodenums-not-to-unroll state)
-                                        (try-to-completely-unroll-rec-fns rec-fn-nodes2 rec-fns2
-                                                                          miter-array-name miter-array interpreted-function-alist extra-stuff
-                                                                          test-cases test-case-array-alist analyzed-function-table
-                                                                          nil nil nodenums-not-to-unroll state)
-                                        (prog2$ (cw ")")
-                                                (mv nil
-                                                    (if (eq :failed complete-unrolling-result)
-                                                        :failed
-                                                      (cons :new-rules complete-unrolling-result))
-                                                    analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))))
-                            (if (not rec-fns2)
-                                ;;fixme don't bother if we've already tried and failed to unroll (i guess this will be the case if unroll is :all)
-                                (prog2$ (cw "(Only node 1 has user rec. fns above the merge point.  Will attempt to completely unroll fns ~x0:~%" rec-fns1)
+                          (prog2$ (cw "(Only node 2 has user rec. fns above the merge point.  Will attempt to completely unroll fns ~x0:~%" rec-fns2)
+                                  ;;fixme don't bother if we've already tried and failed to unroll (i guess this will be the case if unroll is :all)
+                                  (mv-let (complete-unrolling-result analyzed-function-table nodenums-not-to-unroll state)
+                                    (try-to-completely-unroll-rec-fns rec-fn-nodes2 rec-fns2
+                                                                      miter-array-name miter-array interpreted-function-alist extra-stuff
+                                                                      test-cases test-case-array-alist analyzed-function-table
+                                                                      nil nil nodenums-not-to-unroll state)
+                                    (prog2$ (cw ")")
+                                            (mv (erp-nil)
+                                                (if (eq :failed complete-unrolling-result)
+                                                    :failed
+                                                  (cons :new-rules complete-unrolling-result))
+                                                analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))))
+                        (if (not rec-fns2)
+                            ;;fixme don't bother if we've already tried and failed to unroll (i guess this will be the case if unroll is :all)
+                            (prog2$ (cw "(Only node 1 has user rec. fns above the merge point.  Will attempt to completely unroll fns ~x0:~%" rec-fns1)
 ;could this ever be very expensive?  maybe if there are lots of ifs to split on?  don't split on ifs in the common supporters?
 ;(mv :call-prover nil nil extra-stuff analyzed-function-table state result-array-stobj)
-                                        (mv-let (complete-unrolling-result analyzed-function-table nodenums-not-to-unroll state)
-                                          (try-to-completely-unroll-rec-fns rec-fn-nodes1 rec-fns1
-                                                                            miter-array-name miter-array interpreted-function-alist extra-stuff
-                                                                            test-cases test-case-array-alist analyzed-function-table
-                                                                            nil nil nodenums-not-to-unroll state)
-                                          (prog2$ (cw ")")
-                                                  (mv nil
-                                                      (if (eq :failed complete-unrolling-result)
-                                                          :failed
-                                                        (cons :new-rules complete-unrolling-result))
-                                                      analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))))
+                                    (mv-let (complete-unrolling-result analyzed-function-table nodenums-not-to-unroll state)
+                                      (try-to-completely-unroll-rec-fns rec-fn-nodes1 rec-fns1
+                                                                        miter-array-name miter-array interpreted-function-alist extra-stuff
+                                                                        test-cases test-case-array-alist analyzed-function-table
+                                                                        nil nil nodenums-not-to-unroll state)
+                                      (prog2$ (cw ")")
+                                              (mv (erp-nil)
+                                                  (if (eq :failed complete-unrolling-result)
+                                                      :failed
+                                                    (cons :new-rules complete-unrolling-result))
+                                                  analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))))
 
-                              ;;Both nodes have loop functions above the common supporters (could be several on each side; may be hard to synchronize):
-                              ;;fffixme think more about what to do here...
-                              (prog2$
-                               (cw "(Checking for producer/consumer pattern:~%")
-                               (mv-let
-                                 (erp producer-consumer-result state result-array-stobj) ; producer-consumer-result is nil or (list new-runes new-fns)
-                                 (handle-producer-consumer-pattern rec-fn-nodes1 rec-fn-nodes2 miter-array-name miter-array interpreted-function-alist state result-array-stobj)
-                                 (if erp
-                                     (mv erp *error* analyzed-function-table nil rand state result-array-stobj)
-                                   (if producer-consumer-result
-                                       (prog2$ (cw "handled producer/consumer pattern.)")
-                                               (mv nil
-                                                   (cons :new-rules producer-consumer-result)
-                                                   analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
-                                     (prog2$
-                                      (cw "No producer/consumer pattern.)~%")
-                                      ;; Try to split a loop fn:
-                                      (let ((rec-fn-node-to-split (find-rec-fn-node-to-split (append rec-fn-nodes1 rec-fn-nodes2) miter-array-name miter-array extra-stuff)))
-                                        ;;fffixme automatically figure out the splits!
-                                        ;; (relevant-split-infos (get-split-infos all-relevant-fns extra-stuff))
-                                        ;;handle splitting more than one node at a time?
-                                        (if rec-fn-node-to-split ;will be nil or (list nodenum fn split-amount)
-                                            (prog2$
-                                             (cw "Splitting rec fn. ~x0 at node ~x1 using split-amount ~x2.~%"
-                                                 (second rec-fn-node-to-split)
-                                                 (first rec-fn-node-to-split)
-                                                 (third rec-fn-node-to-split))
-                                             (mv-let (split-rule-symbol new-fns other-runes state)
-                                               (split-tail-function (second rec-fn-node-to-split) state)
-                                               (mv nil
-                                                   (list :apply-rule
-                                                         split-rule-symbol
-                                                         (first rec-fn-node-to-split) ;the nodenum at which to apply the rule
-                                                         ;;the alist to use:
-                                                         (acons 'split-amount (third rec-fn-node-to-split) nil) ; split-amount should be a term over vars, nodenums, and quoteps
-                                                         other-runes new-fns)
-                                                   analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))
+                          ;;Both nodes have loop functions above the common supporters (could be several on each side; may be hard to synchronize):
+                          ;;fffixme think more about what to do here...
+                          (prog2$
+                           (cw "(Checking for producer/consumer pattern:~%")
+                           (mv-let
+                             (erp producer-consumer-result state result-array-stobj) ; producer-consumer-result is nil or (list new-runes new-fns)
+                             (handle-producer-consumer-pattern rec-fn-nodes1 rec-fn-nodes2 miter-array-name miter-array interpreted-function-alist state result-array-stobj)
+                             (if erp
+                                 (mv erp nil analyzed-function-table nil rand state result-array-stobj)
+                               (if producer-consumer-result
+                                   (prog2$ (cw "handled producer/consumer pattern.)")
+                                           (mv (erp-nil)
+                                               (cons :new-rules producer-consumer-result)
+                                               analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+                                 (prog2$
+                                  (cw "No producer/consumer pattern.)~%")
+                                  ;; Try to split a loop fn:
+                                  (let ((rec-fn-node-to-split (find-rec-fn-node-to-split (append rec-fn-nodes1 rec-fn-nodes2) miter-array-name miter-array extra-stuff)))
+                                    ;;fffixme automatically figure out the splits!
+                                    ;; (relevant-split-infos (get-split-infos all-relevant-fns extra-stuff))
+                                    ;;handle splitting more than one node at a time?
+                                    (if rec-fn-node-to-split ;will be nil or (list nodenum fn split-amount)
+                                        (prog2$
+                                         (cw "Splitting rec fn. ~x0 at node ~x1 using split-amount ~x2.~%"
+                                             (second rec-fn-node-to-split)
+                                             (first rec-fn-node-to-split)
+                                             (third rec-fn-node-to-split))
+                                         (mv-let (split-rule-symbol new-fns other-runes state)
+                                           (split-tail-function (second rec-fn-node-to-split) state)
+                                           (mv (erp-nil)
+                                               (list :apply-rule
+                                                     split-rule-symbol
+                                                     (first rec-fn-node-to-split) ;the nodenum at which to apply the rule
+                                                     ;;the alist to use:
+                                                     (acons 'split-amount (third rec-fn-node-to-split) nil) ; split-amount should be a term over vars, nodenums, and quoteps
+                                                     other-runes new-fns)
+                                               analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))
 
-                                          ;;fffixme automatically figure out the unrolling factors?!
+                                      ;;fffixme automatically figure out the unrolling factors?!
 ;call something like find-a-fn-to-unroll here (pass it what?)
-                                          (let* ((fn1 (first rec-fns1)) ;ffixme what if there is more than one fn?
-                                                 (fn2 (first rec-fns2)) ;ffixme what if there is more than one fn?
-                                                 (unrolling-factor1 (g :unrolling-factor (g fn1 extra-stuff)))
-                                                 (unrolling-factor2 (g :unrolling-factor (g fn2 extra-stuff)))
-                                                 )
-                                            (if unrolling-factor1
-                                                (prog2$ (cw ",,(We should unroll ~x0 by a factor of ~x1.~%" fn1 unrolling-factor1)
-                                                        (mv-let (unrolled-fn rune state)
-                                                          (unroll-function fn1 unrolling-factor1 nil state)
-                                                          ;;fixme do peeling and lemma proving of the unrolled function right here?
-                                                          (prog2$ (cw ")~%")
-                                                                  (mv nil
-                                                                      (list :new-rules (list rune) (list unrolled-fn)) analyzed-function-table nodenums-not-to-unroll
-                                                                      rand state result-array-stobj))))
-                                              (if unrolling-factor2
-                                                  (prog2$ (cw ",,(We should unroll ~x0 by a factor of ~x1.~%" fn2 unrolling-factor2)
-                                                          (mv-let (unrolled-fn rune state)
-                                                            (unroll-function fn2 unrolling-factor2 nil state)
-                                                            ;;fixme do peeling and lemma proving of the unrolled function right here?
-                                                            (prog2$ (cw ")~%")
-                                                                    (mv nil
-                                                                        (list :new-rules (list rune) (list unrolled-fn)) analyzed-function-table nodenums-not-to-unroll
-                                                                        rand state result-array-stobj))))
-                                                ;; think more about where the rec fns might be. examine how the rec fns on one side depend on each other?
-                                                ;;what if there are several recursive functions between the common supporters and the nodes in question?  might have to split or unroll some
-                                                ;;ignore packing functions?
-                                                ;;ffixme handle complete unrolling here (even if the number of reps is not constant but is still bounded) ??
-                                                (let* ((dummy (cw "(No splitting or unrolling to do.)~%"))
-                                                       ;;strip off any calls to nth, etc., to get the real recursive functions:
-                                                       ;;fffixme this stuff is gross: we know from above where the rec fns are?
-                                                       ;;fffixme what if there is more than one rec fn on one or both sides?
-                                                       (nodenum1 (find-rec-fn original-nodenum1 miter-array-name miter-array))
-                                                       (nodenum2 (find-rec-fn original-nodenum2 miter-array-name miter-array))
-                                                       (expr1 (aref1 miter-array-name miter-array nodenum1))
-                                                       (expr2 (aref1 miter-array-name miter-array nodenum2))
-                                                       (fn1 (ffn-symb expr1))
-                                                       (fn2 (ffn-symb expr2))
-                                                       (dummy2 (cw "Analyzing functions ~x0 and ~x1 together.~%" fn1 fn2))) ;print the nodes?
-                                                  (declare (ignore dummy dummy2))
-                                                  (if (not (and (recursive-functionp fn1 state) ;move one or both checks up? ;check that they are not built-ins?
-                                                                (recursive-functionp fn2 state)))
-                                                      ;;ffffixme unroll one of them?!
+                                      (let* ((fn1 (first rec-fns1)) ;ffixme what if there is more than one fn?
+                                             (fn2 (first rec-fns2)) ;ffixme what if there is more than one fn?
+                                             (unrolling-factor1 (g :unrolling-factor (g fn1 extra-stuff)))
+                                             (unrolling-factor2 (g :unrolling-factor (g fn2 extra-stuff)))
+                                             )
+                                        (if unrolling-factor1
+                                            (prog2$ (cw ",,(We should unroll ~x0 by a factor of ~x1.~%" fn1 unrolling-factor1)
+                                                    (mv-let (unrolled-fn rune state)
+                                                      (unroll-function fn1 unrolling-factor1 nil state)
+                                                      ;;fixme do peeling and lemma proving of the unrolled function right here?
+                                                      (prog2$ (cw ")~%")
+                                                              (mv (erp-nil)
+                                                                  (list :new-rules (list rune) (list unrolled-fn)) analyzed-function-table nodenums-not-to-unroll
+                                                                  rand state result-array-stobj))))
+                                          (if unrolling-factor2
+                                              (prog2$ (cw ",,(We should unroll ~x0 by a factor of ~x1.~%" fn2 unrolling-factor2)
+                                                      (mv-let (unrolled-fn rune state)
+                                                        (unroll-function fn2 unrolling-factor2 nil state)
+                                                        ;;fixme do peeling and lemma proving of the unrolled function right here?
+                                                        (prog2$ (cw ")~%")
+                                                                (mv (erp-nil)
+                                                                    (list :new-rules (list rune) (list unrolled-fn)) analyzed-function-table nodenums-not-to-unroll
+                                                                    rand state result-array-stobj))))
+                                            ;; think more about where the rec fns might be. examine how the rec fns on one side depend on each other?
+                                            ;;what if there are several recursive functions between the common supporters and the nodes in question?  might have to split or unroll some
+                                            ;;ignore packing functions?
+                                            ;;ffixme handle complete unrolling here (even if the number of reps is not constant but is still bounded) ??
+                                            (b* ((- (cw "(No splitting or unrolling to do.)~%"))
+                                                 ;;strip off any calls to nth, etc., to get the real recursive functions:
+                                                 ;;fffixme this stuff is gross: we know from above where the rec fns are?
+                                                 ;;fffixme what if there is more than one rec fn on one or both sides?
+                                                 (nodenum1 (find-rec-fn original-nodenum1 miter-array-name miter-array))
+                                                 (nodenum2 (find-rec-fn original-nodenum2 miter-array-name miter-array))
+                                                 (expr1 (aref1 miter-array-name miter-array nodenum1))
+                                                 (expr2 (aref1 miter-array-name miter-array nodenum2))
+                                                 (fn1 (ffn-symb expr1))
+                                                 (fn2 (ffn-symb expr2))
+                                                 (- (cw "Analyzing functions ~x0 and ~x1 together.~%" fn1 fn2))) ;print the nodes?
+                                              (if (not (and (recursive-functionp fn1 state) ;move one or both checks up? ;check that they are not built-ins?
+                                                            (recursive-functionp fn2 state)))
+                                                  ;;ffffixme unroll one of them?!
 ;fffixme is this branch possible? maybe it is
-                                                      (prog2$ (cw "both nodes must be rec fns. (FIXME we should unroll one).!~%") ;better msg
-                                                              (mv nil :failed analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj) ;fixme call prover?
-                                                              )
-                                                    (if (member-equal (make-sorted-pair fn1 fn2) (g :analyzed-function-pairs analyzed-function-table)) ;save the nodenums?  does this survive between sweeps?  should it?
-                                                        (prog2$ (cw "Already proved a lemma (or tried to) about these two functions together.~%") ;better msg
+                                                  (prog2$ (cw "both nodes must be rec fns. (FIXME we should unroll one).!~%") ;better msg
+                                                          (mv (erp-nil) :failed analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj) ;fixme call prover?
+                                                          )
+                                                (if (member-equal (make-sorted-pair fn1 fn2) (g :analyzed-function-pairs analyzed-function-table)) ;save the nodenums?  does this survive between sweeps?  should it?
+                                                    (prog2$ (cw "Already proved a lemma (or tried to) about these two functions together.~%") ;better msg
 ;fixme try to reverse one of the functions (but not if we've already done it)?
 ;we could pay attention here to what return values of the functions we are interested in?
-                                                                (mv nil :call-prover analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+                                                            (mv (erp-nil) :call-prover analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
 
-                                                      (let* ((fn1-tail-recp (tail-recursivep fn1 state)) ;fixme same as fn1-nice-tail-recp? unless it's a fn we can't make simple?
-                                                             (fn2-tail-recp (tail-recursivep fn2 state)) ;ditto
+                                                  (let* ((fn1-tail-recp (tail-recursivep fn1 state)) ;fixme same as fn1-nice-tail-recp? unless it's a fn we can't make simple?
+                                                         (fn2-tail-recp (tail-recursivep fn2 state)) ;ditto
 
-                                                             (is-a-nice-tail-function-result1 (is-a-nice-tail-function fn1 state))
-                                                             (fn1-nice-tail-recp (first is-a-nice-tail-function-result1))
-                                                             (exit-test-expr1 (second is-a-nice-tail-function-result1))
-                                                             (base-case-expr1 (third is-a-nice-tail-function-result1))
-                                                             (update-expr-list1 (fourth is-a-nice-tail-function-result1))
+                                                         (is-a-nice-tail-function-result1 (is-a-nice-tail-function fn1 state))
+                                                         (fn1-nice-tail-recp (first is-a-nice-tail-function-result1))
+                                                         (exit-test-expr1 (second is-a-nice-tail-function-result1))
+                                                         (base-case-expr1 (third is-a-nice-tail-function-result1))
+                                                         (update-expr-list1 (fourth is-a-nice-tail-function-result1))
 
-                                                             (is-a-nice-tail-function-result2 (is-a-nice-tail-function fn2 state))
-                                                             (fn2-nice-tail-recp (first is-a-nice-tail-function-result2))
-                                                             (exit-test-expr2 (second is-a-nice-tail-function-result2))
-                                                             (base-case-expr2 (third is-a-nice-tail-function-result2))
-                                                             (update-expr-list2 (fourth is-a-nice-tail-function-result2))
+                                                         (is-a-nice-tail-function-result2 (is-a-nice-tail-function fn2 state))
+                                                         (fn2-nice-tail-recp (first is-a-nice-tail-function-result2))
+                                                         (exit-test-expr2 (second is-a-nice-tail-function-result2))
+                                                         (base-case-expr2 (third is-a-nice-tail-function-result2))
+                                                         (update-expr-list2 (fourth is-a-nice-tail-function-result2))
 
-                                                             (args1 (fargs expr1)) ;constants and nodenums
-                                                             (args2 (fargs expr2)) ;constants and nodenums
-                                                             ;;(arity1 (len args1))
-                                                             ;;(arity2 (len args2))
-                                                             ) ;;fixme: use the initial values of the args somehow  for type info?
+                                                         (args1 (fargs expr1)) ;constants and nodenums
+                                                         (args2 (fargs expr2)) ;constants and nodenums
+                                                         ;;(arity1 (len args1))
+                                                         ;;(arity2 (len args2))
+                                                         ) ;;fixme: use the initial values of the args somehow  for type info?
+                                                    (cond
+                                                     ;;two different RVs of the same recursive function (and we've already analyzed that function)
+                                                     ((equal nodenum1 nodenum2)
+                                                      (prog2$ (cw "rec fn nodes involved should be different. FAILing.~%")
+                                                              (mv (erp-nil) :call-prover analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))
+                                                     ;;only fn1 is tail recursive: ;fixme delete this case
+                                                     ((and nil ;!!!!!!! fixme
+                                                           fn1-tail-recp
+                                                           (not fn2-tail-recp))
+                                                      ;;ffixme do we still want to do this? ffixme call the prover here?
+                                                      (prog2$ (cw ",,Making head-recursive version of ~x0.~%" fn1)
+                                                              (let ((state (submit-events (CONVERT-TO-HEAD-RECURSIVE-EVENTS-wrapper fn1 state) state))) ;fffffixme handle name clashes!
+                                                                (mv (erp-nil)
+                                                                    (list :new-rules
+                                                                          `(,(pack$ fn1 '-becomes- fn1 '-head)
+                                                                            ,(pack$ fn1 '-head)
+                                                                            ;;,(pack$ fn1 '-base) ;newly removed
+                                                                            ,(pack$ fn1 '-reps-when-not-exit))
+                                                                          ;;anything else?
+                                                                          (list (pack$ fn1 '-head-aux)
+                                                                                (pack$ fn1 '-head)
+                                                                                (pack$ fn1 '-reps)))
+                                                                    analyzed-function-table nodenums-not-to-unroll
+                                                                    rand state result-array-stobj))))
+                                                     ;; ffixme call the prover here?
+                                                     ;;only fn2 is tail recursive: ;fixme delete this case
+                                                     ((and nil ;!!!!!!! fixme
+                                                           fn2-tail-recp
+                                                           (not fn1-tail-recp))
+                                                      ;;ffixme do we still want to do this?
+                                                      (prog2$ (cw ",,Making head-recursive version of ~x0.~%" fn2)
+                                                              (let ((state (submit-events (CONVERT-TO-HEAD-RECURSIVE-EVENTS-wrapper fn2 state) state)))
+                                                                (mv (erp-nil)
+                                                                    (list :new-rules
+                                                                          `(,(pack$ fn2 '-BECOMES- fn2 '-HEAD)
+                                                                            ,(pack$ fn2 '-head)
+                                                                            ;;,(pack$ fn2 '-base) newly-removed
+                                                                            ,(pack$ fn2 '-reps-when-not-exit))
+                                                                          ;;anything else?
+                                                                          (list (pack$ fn2 '-head-aux)
+                                                                                (pack$ fn2 '-head)
+                                                                                (pack$ fn2 '-reps)))
+                                                                    analyzed-function-table nodenums-not-to-unroll
+                                                                    rand state result-array-stobj))))
+                                                     ((not (and fn1-tail-recp
+                                                                fn2-tail-recp))
+                                                      ;;one is head rec.  fixme print something?!
+                                                      (mv (erp-nil) :call-prover analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+                                                     (t
+                                                      (b* ((- (cw ",,Trying to connect the functions ~x0 and ~x1 (either both head-rec or both tail-rec).~%" fn1 fn2))
+                                                           ;;reuse the traces we found when analyzing the functions individually (may have been in a previous miter)?
+                                                           ;;fixme do we somewhere make sure there are at least 2 test cases?
+                                                           (traces-pair
+                                                            (get-traces-for-two-nodes nodenum1 nodenum2 miter-array-name miter-array interpreted-function-alist
+                                                                                      test-cases test-case-array-alist))
+                                                           (traces1 (first traces-pair))
+                                                           (traces2 (second traces-pair))
+                                                           (traces1 (flatten-traces traces1))
+                                                           (traces2 (flatten-traces traces2))
+                                                           (trace-lens1 (len-list traces1))
+                                                           (trace-lens2 (len-list traces2))
+                                                           (call-counts1 (sub1-list trace-lens1)) ;don't count the base cases
+                                                           (call-counts2 (sub1-list trace-lens2)) ;don't count the base cases
+                                                           (- (progn$ (cw "(Call counts for ~x0:~%~y1.)~%(Call counts for ~x2:~%~y3.)~%" fn1 call-counts1 fn2 call-counts2)
+                                                                      (cw "first few traces for ~x0:~%" fn1)
+                                                                      (if (and print (not (eq :brief print))) (print-list (firstn 3 traces1)) (cw ":elided~%"))
+                                                                      (cw "first few traces for ~x0:~%" fn2)
+                                                                      (if (and print (not (eq :brief print))) (print-list (firstn 3 traces2)) (cw ":elided~%"))))
+
+                                                           ;;what if the traces have different lengths?!
+                                                           (fn1-real-calls (car call-counts1))
+                                                           (fn2-real-calls (car call-counts2))
+
+                                                           ;;fixme if all traces aren't the same length, check that the unrolling factor works on the other traces?
+                                                           ;;fixme use our pattern finding stuff to figure out the unrolling or peeling off factors?
+                                                           ;;fixme what if they both have to be unrolled?
+                                                           ;;ffffixme unrolling is also done above
+                                                           ;;fixme unrolling may be needed to expose the nodes that match (e.g., if there are a remainder of iterations that dont match anything)
+                                                           ;;this is gross?
+                                                           (unrolling-factor1 (if (zp fn2-real-calls) :none (/ fn1-real-calls fn2-real-calls)))
+                                                           (unrolling-factor1 (or (g :unrolling-factor (g fn1 extra-stuff)) unrolling-factor1))
+                                                           (unrolling-factor2 (if (zp fn1-real-calls) :none (/ fn2-real-calls fn1-real-calls)))
+                                                           (unrolling-factor2 (or (g :unrolling-factor (g fn2 extra-stuff)) unrolling-factor2)))
                                                         (cond
-                                                         ;;two different RVs of the same recursive function (and we've already analyzed that function)
-                                                         ((equal nodenum1 nodenum2)
-                                                          (prog2$ (cw "rec fn nodes involved should be different. FAILing.~%")
-                                                                  (mv nil :call-prover analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))
-                                                         ;;only fn1 is tail recursive: ;fixme delete this case
-                                                         ((and nil ;!!!!!!! fixme
-                                                               fn1-tail-recp
-                                                               (not fn2-tail-recp))
-                                                          ;;ffixme do we still want to do this? ffixme call the prover here?
-                                                          (prog2$ (cw ",,Making head-recursive version of ~x0.~%" fn1)
-                                                                  (let ((state (submit-events (CONVERT-TO-HEAD-RECURSIVE-EVENTS-wrapper fn1 state) state))) ;fffffixme handle name clashes!
-                                                                    (mv nil
-                                                                        (list :new-rules
-                                                                              `(,(pack$ fn1 '-becomes- fn1 '-head)
-                                                                                ,(pack$ fn1 '-head)
-                                                                                ;;,(pack$ fn1 '-base) ;newly removed
-                                                                                ,(pack$ fn1 '-reps-when-not-exit))
-                                                                              ;;anything else?
-                                                                              (list (pack$ fn1 '-head-aux)
-                                                                                    (pack$ fn1 '-head)
-                                                                                    (pack$ fn1 '-reps)))
-                                                                        analyzed-function-table nodenums-not-to-unroll
-                                                                        rand state result-array-stobj))))
-                                                         ;; ffixme call the prover here?
-                                                         ;;only fn2 is tail recursive: ;fixme delete this case
-                                                         ((and nil ;!!!!!!! fixme
-                                                               fn2-tail-recp
-                                                               (not fn1-tail-recp))
-                                                          ;;ffixme do we still want to do this?
-                                                          (prog2$ (cw ",,Making head-recursive version of ~x0.~%" fn2)
-                                                                  (let ((state (submit-events (CONVERT-TO-HEAD-RECURSIVE-EVENTS-wrapper fn2 state) state)))
-                                                                    (mv nil
-                                                                        (list :new-rules
-                                                                              `(,(pack$ fn2 '-BECOMES- fn2 '-HEAD)
-                                                                                ,(pack$ fn2 '-head)
-                                                                                ;;,(pack$ fn2 '-base) newly-removed
-                                                                                ,(pack$ fn2 '-reps-when-not-exit))
-                                                                              ;;anything else?
-                                                                              (list (pack$ fn2 '-head-aux)
-                                                                                    (pack$ fn2 '-head)
-                                                                                    (pack$ fn2 '-reps)))
-                                                                        analyzed-function-table nodenums-not-to-unroll
-                                                                        rand state result-array-stobj))))
-                                                         ((not (and fn1-tail-recp
-                                                                    fn2-tail-recp))
-                                                          ;;one is head rec.  fixme print something?!
-                                                          (mv nil :call-prover analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+                                                         ;;Unroll function 1: (fixme mark the pair as handled after this?)
+                                                         ((and (integerp unrolling-factor1)
+                                                               (< 1 unrolling-factor1))
+                                                          (prog2$ (cw ",,(We should unroll ~x0 by a factor of ~x1.~%" fn1 unrolling-factor1)
+                                                                  (mv-let (unrolled-fn rune state)
+                                                                    (unroll-function fn1 unrolling-factor1 nil state)
+                                                                    ;;fixme do peeling and lemma proving of the unrolled function right here?
+                                                                    (prog2$ (cw ")~%")
+                                                                            (mv (erp-nil)
+                                                                                (list :new-rules (list rune) (list unrolled-fn)) analyzed-function-table nodenums-not-to-unroll
+                                                                                rand state result-array-stobj)))))
+                                                         ;;Unroll function 2: (fixme mark the pair as handled after this?)
+                                                         ((and (integerp unrolling-factor2)
+                                                               (< 1 unrolling-factor2))
+                                                          (prog2$ (cw ",,(We should unroll ~x0 by a factor of ~x1.~%" fn2 unrolling-factor2)
+                                                                  (mv-let (unrolled-fn rune state)
+                                                                    (unroll-function fn2 unrolling-factor2 nil state)
+                                                                    ;;fixme do peeling and lemma proving of the unrolled function right here?
+                                                                    (prog2$ (cw ")~%")
+                                                                            (mv (erp-nil)
+                                                                                (list :new-rules (list rune) (list unrolled-fn)) analyzed-function-table nodenums-not-to-unroll
+                                                                                rand state result-array-stobj)))))
+                                                         ;;fixme what if they both should be unrolled?
                                                          (t
                                                           (prog2$
-                                                           (cw ",,Trying to connect the functions ~x0 and ~x1 (either both head-rec or both tail-rec).~%" fn1 fn2)
-                                                           (let*
-                                                               ;;reuse the traces we found when analyzing the functions individually (may have been in a previous miter)?
-                                                               ;;fixme do we somewhere make sure there are at least 2 test cases?
-                                                               ((traces-pair
-                                                                 (get-traces-for-two-nodes nodenum1 nodenum2 miter-array-name miter-array interpreted-function-alist
-                                                                                           test-cases test-case-array-alist))
-                                                                (traces1 (first traces-pair))
-                                                                (traces2 (second traces-pair))
-                                                                (traces1 (flatten-traces traces1))
-                                                                (traces2 (flatten-traces traces2))
-                                                                (trace-lens1 (len-list traces1))
-                                                                (trace-lens2 (len-list traces2))
-                                                                (call-counts1 (sub1-list trace-lens1)) ;don't count the base cases
-                                                                (call-counts2 (sub1-list trace-lens2)) ;don't count the base cases
-                                                                (dummy (progn$ (cw "(Call counts for ~x0:~%~y1.)~%(Call counts for ~x2:~%~y3.)~%" fn1 call-counts1 fn2 call-counts2)
-                                                                               (cw "first few traces for ~x0:~%" fn1)
-                                                                               (if (and print (not (eq :brief print))) (print-list (firstn 3 traces1)) (cw ":elided~%"))
-                                                                               (cw "first few traces for ~x0:~%" fn2)
-                                                                               (if (and print (not (eq :brief print))) (print-list (firstn 3 traces2)) (cw ":elided~%"))))
-
-                                                                ;;what if the traces have different lengths?!
-                                                                (fn1-real-calls (car call-counts1))
-                                                                (fn2-real-calls (car call-counts2))
-
-                                                                ;;fixme if all traces aren't the same length, check that the unrolling factor works on the other traces?
-                                                                ;;fixme use our pattern finding stuff to figure out the unrolling or peeling off factors?
-                                                                ;;fixme what if they both have to be unrolled?
-                                                                ;;ffffixme unrolling is also done above
-                                                                ;;fixme unrolling may be needed to expose the nodes that match (e.g., if there are a remainder of iterations that dont match anything)
-                                                                ;;this is gross?
-                                                                (unrolling-factor1 (if (zp fn2-real-calls) :none (/ fn1-real-calls fn2-real-calls)))
-                                                                (unrolling-factor1 (or (g :unrolling-factor (g fn1 extra-stuff)) unrolling-factor1))
-                                                                (unrolling-factor2 (if (zp fn1-real-calls) :none (/ fn2-real-calls fn1-real-calls)))
-                                                                (unrolling-factor2 (or (g :unrolling-factor (g fn2 extra-stuff)) unrolling-factor2)))
-                                                             (declare (ignore dummy))
-                                                             (cond
-                                                              ;;Unroll function 1: (fixme mark the pair as handled after this?)
-                                                              ((and (integerp unrolling-factor1)
-                                                                    (< 1 unrolling-factor1))
-                                                               (prog2$ (cw ",,(We should unroll ~x0 by a factor of ~x1.~%" fn1 unrolling-factor1)
-                                                                       (mv-let (unrolled-fn rune state)
-                                                                         (unroll-function fn1 unrolling-factor1 nil state)
-                                                                         ;;fixme do peeling and lemma proving of the unrolled function right here?
-                                                                         (prog2$ (cw ")~%")
-                                                                                 (mv nil
-                                                                                     (list :new-rules (list rune) (list unrolled-fn)) analyzed-function-table nodenums-not-to-unroll
-                                                                                     rand state result-array-stobj)))))
-                                                              ;;Unroll function 2: (fixme mark the pair as handled after this?)
-                                                              ((and (integerp unrolling-factor2)
-                                                                    (< 1 unrolling-factor2))
-                                                               (prog2$ (cw ",,(We should unroll ~x0 by a factor of ~x1.~%" fn2 unrolling-factor2)
-                                                                       (mv-let (unrolled-fn rune state)
-                                                                         (unroll-function fn2 unrolling-factor2 nil state)
-                                                                         ;;fixme do peeling and lemma proving of the unrolled function right here?
-                                                                         (prog2$ (cw ")~%")
-                                                                                 (mv nil
-                                                                                     (list :new-rules (list rune) (list unrolled-fn)) analyzed-function-table nodenums-not-to-unroll
-                                                                                     rand state result-array-stobj)))))
-                                                              ;;fixme what if they both should be unrolled?
-                                                              (t
-                                                               (prog2$
-                                                                (cw "No unrolling to do.~%")
-                                                                (if (and fn1-nice-tail-recp fn2-nice-tail-recp)
-                                                                    (mv-let
-                                                                      (erp new-runes new-fn-names rand state result-array-stobj)
-                                                                      (generate-connection-lemma-for-nice-tail-rec-fns
-                                                                       fn1 exit-test-expr1 base-case-expr1 update-expr-list1 traces1 args1
-                                                                       fn2 exit-test-expr2 base-case-expr2 update-expr-list2 traces2 args2
-                                                                       max-conflicts
-                                                                       rewriter-rule-alist
-                                                                       prover-rule-alist extra-stuff interpreted-function-alist
-                                                                       (+ 1 miter-depth)
-                                                                       print monitored-symbols
-                                                                       analyzed-function-table
-                                                                       unroll options
-                                                                       rand state result-array-stobj)
-                                                                      (if erp
-                                                                          (mv erp nil nil nil rand state result-array-stobj)
+                                                           (cw "No unrolling to do.~%")
+                                                           (if (and fn1-nice-tail-recp fn2-nice-tail-recp)
+                                                               (mv-let
+                                                                 (erp new-runes new-fn-names rand state result-array-stobj)
+                                                                 (generate-connection-lemma-for-nice-tail-rec-fns
+                                                                  fn1 exit-test-expr1 base-case-expr1 update-expr-list1 traces1 args1
+                                                                  fn2 exit-test-expr2 base-case-expr2 update-expr-list2 traces2 args2
+                                                                  max-conflicts
+                                                                  rewriter-rule-alist
+                                                                  prover-rule-alist extra-stuff interpreted-function-alist
+                                                                  (+ 1 miter-depth)
+                                                                  print monitored-symbols
+                                                                  analyzed-function-table
+                                                                  unroll options
+                                                                  rand state result-array-stobj)
+                                                                 (if erp
+                                                                     (mv erp nil nil nil rand state result-array-stobj)
 ;ffixme what if no connections were found? still good to mark the pair as analyzed, i guess..
-                                                                        (mv nil (list :new-rules new-runes new-fn-names)
+                                                                   (mv (erp-nil)
+                                                                       (list :new-rules new-runes new-fn-names)
 ;fixme should this go in analyzed-function-table?
-                                                                            (s :analyzed-function-pairs
-                                                                               (cons (make-sorted-pair fn1 fn2)
-                                                                                     (g :analyzed-function-pairs analyzed-function-table))
-                                                                               analyzed-function-table)
-                                                                            nodenums-not-to-unroll rand state result-array-stobj)))
-                                                                  ;;both head rec?  is this stuff out of date? pull out this stuff into a subroutine..
-                                                                  (prog2$
-                                                                   (hard-error 'try-to-prove-non-pure-nodes-equivalent "don't yet support this case." nil)
-                                                                   (mv t nil analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+                                                                       (s :analyzed-function-pairs
+                                                                          (cons (make-sorted-pair fn1 fn2)
+                                                                                (g :analyzed-function-pairs analyzed-function-table))
+                                                                          analyzed-function-table)
+                                                                       nodenums-not-to-unroll rand state result-array-stobj)))
+                                                             ;;both head rec?  is this stuff out of date? pull out this stuff into a subroutine..
+                                                             (prog2$
+                                                              (hard-error 'try-to-prove-non-pure-nodes-equivalent "don't yet support this case." nil)
+                                                              (mv (erp-t) nil analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
 
-                                                                  ;;                                                                  (let*
-                                                                  ;;                                                                      ((dummy0 (prog2$ (hard-error 'try-to-prove-non-pure-nodes-equivalent "don't yet support this case." nil)
-                                                                  ;;                                                                                       (cw "Generating lemma for non-nice-tail-rec functions ~x0 and ~x1.~%" fn1 fn2)))
-                                                                  ;;                                                                       ;;fffixme:
-                                                                  ;;                                                                       ;; (dummy2a (if (eq 'REDUCE-PROCESS-BLOCK fn1) (cw "The first 3 traces for ~x0: ~x1" fn1 (firstn 3 traces1)) nil))
-                                                                  ;;                                                                       ;; (dummy2b (if (eq 'REDUCE-PROCESS-BLOCK fn1) (cw "The first 3 traces for ~x0: ~x1" fn2 (firstn 3 traces2)) nil))
-                                                                  ;;                                                                       (original-formals1 (fn-formals fn1 (w state)))
-                                                                  ;;                                                                       (original-formals2 (fn-formals fn2 (w state)))
-                                                                  ;; ;we prepend 'f' and 'g' to the formals of the functions to prevent any name clashes:
-                                                                  ;;                                                                       (prefix-for-fn1 (if (symbol< fn1 fn2) 'f 'g)) ;new
-                                                                  ;;                                                                       (prefix-for-fn2 (if (symbol< fn1 fn2) 'g 'f)) ;new
-                                                                  ;;                                                                       (formals1 (mypackn-list (cons-onto-all prefix-for-fn1 (enlist-all original-formals1))))
-                                                                  ;;                                                                       (formals2 (mypackn-list (cons-onto-all prefix-for-fn2 (enlist-all original-formals2))))
-                                                                  ;;                                                                       (function-call-term1 `(,fn1 ,@formals1))
-                                                                  ;;                                                                       (function-call-term2 `(,fn2 ,@formals2))
-                                                                  ;;                                                                       ;;ffixme we may have already done a lot of the analysis below when trying to simplify the rv of the fn...
-                                                                  ;;                                                                       (dummy1 (cw "Function call 1: ~x0~%" function-call-term1))
-                                                                  ;;                                                                       (dummy2 (cw "Function call 2: ~x0~%" function-call-term2))
-                                                                  ;; ;each element is the trace-list for a given argument?
-                                                                  ;; ;use these more below!
-                                                                  ;;                                                                       (args-traces1 (g-list-list :args traces1))
-                                                                  ;;                                                                       (args-traces2 (g-list-list :args traces2))
-                                                                  ;;                                                                       (return-value-traces1 (g-list-list :return-value traces1))
-                                                                  ;;                                                                       (return-value-traces2 (g-list-list :return-value traces2))
+                                                             ;;                                                                  (let*
+                                                             ;;                                                                      ((dummy0 (prog2$ (hard-error 'try-to-prove-non-pure-nodes-equivalent "don't yet support this case." nil)
+                                                             ;;                                                                                       (cw "Generating lemma for non-nice-tail-rec functions ~x0 and ~x1.~%" fn1 fn2)))
+                                                             ;;                                                                       ;;fffixme:
+                                                             ;;                                                                       ;; (dummy2a (if (eq 'REDUCE-PROCESS-BLOCK fn1) (cw "The first 3 traces for ~x0: ~x1" fn1 (firstn 3 traces1)) nil))
+                                                             ;;                                                                       ;; (dummy2b (if (eq 'REDUCE-PROCESS-BLOCK fn1) (cw "The first 3 traces for ~x0: ~x1" fn2 (firstn 3 traces2)) nil))
+                                                             ;;                                                                       (original-formals1 (fn-formals fn1 (w state)))
+                                                             ;;                                                                       (original-formals2 (fn-formals fn2 (w state)))
+                                                             ;; ;we prepend 'f' and 'g' to the formals of the functions to prevent any name clashes:
+                                                             ;;                                                                       (prefix-for-fn1 (if (symbol< fn1 fn2) 'f 'g)) ;new
+                                                             ;;                                                                       (prefix-for-fn2 (if (symbol< fn1 fn2) 'g 'f)) ;new
+                                                             ;;                                                                       (formals1 (mypackn-list (cons-onto-all prefix-for-fn1 (enlist-all original-formals1))))
+                                                             ;;                                                                       (formals2 (mypackn-list (cons-onto-all prefix-for-fn2 (enlist-all original-formals2))))
+                                                             ;;                                                                       (function-call-term1 `(,fn1 ,@formals1))
+                                                             ;;                                                                       (function-call-term2 `(,fn2 ,@formals2))
+                                                             ;;                                                                       ;;ffixme we may have already done a lot of the analysis below when trying to simplify the rv of the fn...
+                                                             ;;                                                                       (dummy1 (cw "Function call 1: ~x0~%" function-call-term1))
+                                                             ;;                                                                       (dummy2 (cw "Function call 2: ~x0~%" function-call-term2))
+                                                             ;; ;each element is the trace-list for a given argument?
+                                                             ;; ;use these more below!
+                                                             ;;                                                                       (args-traces1 (g-list-list :args traces1))
+                                                             ;;                                                                       (args-traces2 (g-list-list :args traces2))
+                                                             ;;                                                                       (return-value-traces1 (g-list-list :return-value traces1))
+                                                             ;;                                                                       (return-value-traces2 (g-list-list :return-value traces2))
 
-                                                                  ;;                                                                       ;; Generate hyps about fn1:
-                                                                  ;;                                                                       (hyps1 (try-to-find-hyps args-traces1 arity1 formals1 fn1))
-                                                                  ;;                                                                       ;; (dummy10 (cw "Hyps1: ~x0" hyps1))
-                                                                  ;;                                                                       (rv-type-facts1 (make-type-facts-for-rv return-value-traces1 function-call-term1 ;;-with-hide
-                                                                  ;;                                                                                                               ))
-                                                                  ;;                                                                       (rv-equalities1 (try-to-express-rv-with-params return-value-traces1 args-traces1
-                                                                  ;;                                                                                                                      function-call-term1 ;;-with-hide
-                                                                  ;;                                                                                                                      arity1 formals1))
-                                                                  ;;                                                                       ;; Generate hyps about fn2:
-                                                                  ;;                                                                       (hyps2 (try-to-find-hyps args-traces2 arity2 formals2 fn2))
-                                                                  ;;                                                                       ;;(dummy11 (cw "Hyps2: ~x0" hyps2))
-                                                                  ;;                                                                       (rv-type-facts2 (make-type-facts-for-rv return-value-traces2 function-call-term2 ;;-with-hide
-                                                                  ;;                                                                                                               ))
-                                                                  ;;                                                                       (rv-equalities2 (try-to-express-rv-with-params return-value-traces2 args-traces2
-                                                                  ;;                                                                                                                      function-call-term2 ;;-with-hide
-                                                                  ;;                                                                                                                      arity2 formals2))
-                                                                  ;;                                                                       ;;these are about both functions (should we allow params of the other function too?)
-                                                                  ;;                                                                       ;;do we not want this for tail-rec functions?
-                                                                  ;; ;fffixme go both ways here?:
-                                                                  ;;                                                                       (dummy3 (cw ",,Finding cross rv equalities:~%"))
-                                                                  ;;                                                                       (main-theorem-concs
-                                                                  ;;                                                                        (assert-non-nil
-                                                                  ;;                                                                         'main-theorem-concs (try-to-express-rv-with-rvs-and-params
-                                                                  ;;                                                                                              function-call-term1 ;;-with-hide
-                                                                  ;;                                                                                              traces1
-                                                                  ;;                                                                                              function-call-term2 ;;-with-hide
-                                                                  ;;                                                                                              traces2 arity2 formals2)))
+                                                             ;;                                                                       ;; Generate hyps about fn1:
+                                                             ;;                                                                       (hyps1 (try-to-find-hyps args-traces1 arity1 formals1 fn1))
+                                                             ;;                                                                       ;; (dummy10 (cw "Hyps1: ~x0" hyps1))
+                                                             ;;                                                                       (rv-type-facts1 (make-type-facts-for-rv return-value-traces1 function-call-term1 ;;-with-hide
+                                                             ;;                                                                                                               ))
+                                                             ;;                                                                       (rv-equalities1 (try-to-express-rv-with-params return-value-traces1 args-traces1
+                                                             ;;                                                                                                                      function-call-term1 ;;-with-hide
+                                                             ;;                                                                                                                      arity1 formals1))
+                                                             ;;                                                                       ;; Generate hyps about fn2:
+                                                             ;;                                                                       (hyps2 (try-to-find-hyps args-traces2 arity2 formals2 fn2))
+                                                             ;;                                                                       ;;(dummy11 (cw "Hyps2: ~x0" hyps2))
+                                                             ;;                                                                       (rv-type-facts2 (make-type-facts-for-rv return-value-traces2 function-call-term2 ;;-with-hide
+                                                             ;;                                                                                                               ))
+                                                             ;;                                                                       (rv-equalities2 (try-to-express-rv-with-params return-value-traces2 args-traces2
+                                                             ;;                                                                                                                      function-call-term2 ;;-with-hide
+                                                             ;;                                                                                                                      arity2 formals2))
+                                                             ;;                                                                       ;;these are about both functions (should we allow params of the other function too?)
+                                                             ;;                                                                       ;;do we not want this for tail-rec functions?
+                                                             ;; ;fffixme go both ways here?:
+                                                             ;;                                                                       (dummy3 (cw ",,Finding cross rv equalities:~%"))
+                                                             ;;                                                                       (main-theorem-concs
+                                                             ;;                                                                        (assert-non-nil
+                                                             ;;                                                                         'main-theorem-concs (try-to-express-rv-with-rvs-and-params
+                                                             ;;                                                                                              function-call-term1 ;;-with-hide
+                                                             ;;                                                                                              traces1
+                                                             ;;                                                                                              function-call-term2 ;;-with-hide
+                                                             ;;                                                                                              traces2 arity2 formals2)))
 
 
-                                                                  ;; ;fixme - if we equated a g param with an f param there's no need to generate type hyps for both of them...
-                                                                  ;; ;fixme, which function should we rewrite to the other?
-                                                                  ;; ;fixme - should we try to express g's params in terms of f's?  since we can then substitute into the expression of f in terms of g?
+                                                             ;; ;fixme - if we equated a g param with an f param there's no need to generate type hyps for both of them...
+                                                             ;; ;fixme, which function should we rewrite to the other?
+                                                             ;; ;fixme - should we try to express g's params in terms of f's?  since we can then substitute into the expression of f in terms of g?
 
-                                                                  ;;                                                                       (connections1
-                                                                  ;;                                                                        (try-to-express-params-with-params args-traces1 arity1 formals1
-                                                                  ;;                                                                                                           args-traces2 arity2 formals2))
-                                                                  ;;                                                                       ;;for tail rec. fns we can't capture this information with lemmas about the RVs of each
-                                                                  ;;                                                                       ;;function separately:
-                                                                  ;;                                                                       (connections2
-                                                                  ;;                                                                        (if fn1-tail-recp
-                                                                  ;;                                                                            (try-to-express-params-with-params args-traces2 arity2 formals2
-                                                                  ;;                                                                                                               args-traces1 arity1 formals1)
-                                                                  ;;                                                                          nil))
-                                                                  ;; ;fffixme we may have some equalities both ways!
+                                                             ;;                                                                       (connections1
+                                                             ;;                                                                        (try-to-express-params-with-params args-traces1 arity1 formals1
+                                                             ;;                                                                                                           args-traces2 arity2 formals2))
+                                                             ;;                                                                       ;;for tail rec. fns we can't capture this information with lemmas about the RVs of each
+                                                             ;;                                                                       ;;function separately:
+                                                             ;;                                                                       (connections2
+                                                             ;;                                                                        (if fn1-tail-recp
+                                                             ;;                                                                            (try-to-express-params-with-params args-traces2 arity2 formals2
+                                                             ;;                                                                                                               args-traces1 arity1 formals1)
+                                                             ;;                                                                          nil))
+                                                             ;; ;fffixme we may have some equalities both ways!
 
-                                                                  ;;                                                                       (fn-with-connections (if (symbol< fn1 fn2) fn1 fn2))
-                                                                  ;;                                                                       (extra-connections (g :connections (g fn-with-connections extra-stuff))) ;can these mention old vars?
-                                                                  ;;                                                                       (connections (append extra-connections connections1 connections2))
+                                                             ;;                                                                       (fn-with-connections (if (symbol< fn1 fn2) fn1 fn2))
+                                                             ;;                                                                       (extra-connections (g :connections (g fn-with-connections extra-stuff))) ;can these mention old vars?
+                                                             ;;                                                                       (connections (append extra-connections connections1 connections2))
 
-                                                                  ;;                                                                       (dummy4 (progn$ (cw "connections1: ~x0~%" connections1)
-                                                                  ;;                                                                                       (cw "connections2: ~x0~%" connections2)
-                                                                  ;;                                                                                       (cw "user-supplied connections: ~x0~%" extra-connections)))
+                                                             ;;                                                                       (dummy4 (progn$ (cw "connections1: ~x0~%" connections1)
+                                                             ;;                                                                                       (cw "connections2: ~x0~%" connections2)
+                                                             ;;                                                                                       (cw "user-supplied connections: ~x0~%" extra-connections)))
 
-                                                                  ;; ;we should consider dropping assertions about hyps that we know are constants?
-                                                                  ;; ;eg is x is always 4 and y is always a list of length 3 - we'd get that x=1+len(y)
-                                                                  ;;                                                                       (hyps (remove-duplicates-equal (append connections hyps1 hyps2)))
-                                                                  ;;                                                                       (dummy5 (cw ",,Hyps are: ~x0" hyps))
-                                                                  ;; ;fixme, try proving each conjunct separately?
-                                                                  ;; ;now we prove facts about f and g's return values separately when possible.
+                                                             ;; ;we should consider dropping assertions about hyps that we know are constants?
+                                                             ;; ;eg is x is always 4 and y is always a list of length 3 - we'd get that x=1+len(y)
+                                                             ;;                                                                       (hyps (remove-duplicates-equal (append connections hyps1 hyps2)))
+                                                             ;;                                                                       (dummy5 (cw ",,Hyps are: ~x0" hyps))
+                                                             ;; ;fixme, try proving each conjunct separately?
+                                                             ;; ;now we prove facts about f and g's return values separately when possible.
 
-                                                                  ;; ;fixme, make sure the calls to equal in the conclusion have args in the right order
-                                                                  ;; ;fixme, only include info about return values we care about?
-                                                                  ;; ;fixme, skip this if we are pre-simplifying?
-                                                                  ;;                                                                       (fn1-theorem-name (pack$ 'generated-theorem-for-function- fn1))
-                                                                  ;;                                                                       (fn2-theorem-name (pack$ 'generated-theorem-for-function- fn2))
-                                                                  ;;                                                                       (main-theorem-name (pack$ 'equivalence-of- fn1 '-and- fn2))
-                                                                  ;; ;we don't check for errors here - okay?
-                                                                  ;;                                                                       (hide-opener-name1 (pack$ fn1 '-hide-opener '-for-comparison))
-                                                                  ;;                                                                       (hide-dropper-name1 (pack$ fn1 '-hide-dropper '-for-comparison))
-                                                                  ;;                                                                       (hide-opener-name2 (pack$ fn2 '-hide-opener '-for-comparison))
-                                                                  ;;                                                                       (hide-dropper-name2 (pack$ fn2 '-hide-dropper '-for-comparison))
-                                                                  ;;                                                                       ;;do we still need the hide stuff if we are disabling the definitions of the functions?
-                                                                  ;;                                                                       (state (make-hide-opener-and-dropper fn1 formals1 use-axe-proverp
-                                                                  ;;                                                                                                            hide-opener-name1 hide-dropper-name1 state))
-                                                                  ;;                                                                       (state (make-hide-opener-and-dropper fn2 formals2 use-axe-proverp
-                                                                  ;;                                                                                                            hide-opener-name2 hide-dropper-name2 state))
-                                                                  ;;                                                                       (induction-fn-name (pack$ 'joint-induct- fn1 '-and- fn2))
-                                                                  ;; ;what does this do?
+                                                             ;; ;fixme, make sure the calls to equal in the conclusion have args in the right order
+                                                             ;; ;fixme, only include info about return values we care about?
+                                                             ;; ;fixme, skip this if we are pre-simplifying?
+                                                             ;;                                                                       (fn1-theorem-name (pack$ 'generated-theorem-for-function- fn1))
+                                                             ;;                                                                       (fn2-theorem-name (pack$ 'generated-theorem-for-function- fn2))
+                                                             ;;                                                                       (main-theorem-name (pack$ 'equivalence-of- fn1 '-and- fn2))
+                                                             ;; ;we don't check for errors here - okay?
+                                                             ;;                                                                       (hide-opener-name1 (pack$ fn1 '-hide-opener '-for-comparison))
+                                                             ;;                                                                       (hide-dropper-name1 (pack$ fn1 '-hide-dropper '-for-comparison))
+                                                             ;;                                                                       (hide-opener-name2 (pack$ fn2 '-hide-opener '-for-comparison))
+                                                             ;;                                                                       (hide-dropper-name2 (pack$ fn2 '-hide-dropper '-for-comparison))
+                                                             ;;                                                                       ;;do we still need the hide stuff if we are disabling the definitions of the functions?
+                                                             ;;                                                                       (state (make-hide-opener-and-dropper fn1 formals1 use-axe-proverp
+                                                             ;;                                                                                                            hide-opener-name1 hide-dropper-name1 state))
+                                                             ;;                                                                       (state (make-hide-opener-and-dropper fn2 formals2 use-axe-proverp
+                                                             ;;                                                                                                            hide-opener-name2 hide-dropper-name2 state))
+                                                             ;;                                                                       (induction-fn-name (pack$ 'joint-induct- fn1 '-and- fn2))
+                                                             ;; ;what does this do?
 
-                                                                  ;;                                                                       ;;(hyps (refine-hyps main-theorem-name hyps extra-stuff (append formals1 formals2))) ;drop?
-                                                                  ;;                                                                       (main-theorem-concs (append (get-extra-concs main-theorem-name extra-stuff) main-theorem-concs))
-                                                                  ;; ;avoid doing this unless we need to?
-                                                                  ;; ;ffixme what about values for the old vars??
-                                                                  ;;                                                                       (test-cases-for-formals1 (make-test-cases-for-formals formals1 args-traces1))
-                                                                  ;;                                                                       (test-cases-for-formals2 (make-test-cases-for-formals formals2 args-traces2))
-                                                                  ;;                                                                       (test-cases-for-formals (append-list
-                                                                  ;;                                                                                                test-cases-for-formals1
-                                                                  ;;                                                                                                test-cases-for-formals2)))
-                                                                  ;;                                                                    (declare (ignore dummy0 dummy1 dummy2 dummy3 dummy4 dummy5))
-                                                                  ;;                                                                    (mv-let
-                                                                  ;;                                                                     (err result state)
-                                                                  ;;                                                                     ;;abuse of progn for only 1 event?
-                                                                  ;;                                                                     (progn-fn (list (make-induction-function fn1 fn2 induction-fn-name state)) state)
-                                                                  ;;                                                                     (declare (ignore err result))
-                                                                  ;;                                                                     (mv-let
-                                                                  ;;                                                                      (err state)
-                                                                  ;;                                                                      (if fn1-tail-recp
-                                                                  ;;                                                                          (mv nil state) ;don't do it for tail-rec functions
-                                                                  ;;                                                                        ;;ffixme don't spend time generating rv-equalities1 and rv-type-facts1 !
-                                                                  ;; ;fixme, what if it can't be made into a good rule (e.g., no conjuncts?)
-                                                                  ;;                                                                        (my-defthm-fn-rewrite-with-and-without-hides
-                                                                  ;;                                                                         (list function-call-term1)
-                                                                  ;;                                                                         fn1-theorem-name
-                                                                  ;;                                                                         (refine-hyps fn1 hyps1 extra-stuff formals1)
-                                                                  ;;                                                                         (append (get-extra-concs fn1 extra-stuff)
-                                                                  ;;                                                                                 (conclusion-conjuncts
-                                                                  ;;                                                                                  rv-type-facts1
-                                                                  ;;                                                                                  rv-equalities1))
-                                                                  ;; ;fixme use minimal theory?
-                                                                  ;;                                                                         `(("Goal" :do-not '(generalize eliminate-destructors)
-                                                                  ;;                                                                            :in-theory (e/d ((:induction ,fn1))
-                                                                  ;;                                                                                            ((:definition ,fn1)))
-                                                                  ;;                                                                            :induct ,function-call-term1)
-                                                                  ;;                                                                           ,@(if use-axe-proverp
-                                                                  ;;                                                                                 `((if STABLE-UNDER-SIMPLIFICATIONP
-                                                                  ;;                                                                                       '(:clause-processor
-                                                                  ;;                                                                                         (axe-prover
-                                                                  ;;                                                                                          clause
-                                                                  ;;                                                                                          ',(s :goal-name fn1-theorem-name
-                                                                  ;;                                                                                               (axe-prover-hints
-                                                                  ;;                                                                                                `((:nil ,hide-opener-name1)
-                                                                  ;;                                                                                                  (:nil ,hide-dropper-name1))
-                                                                  ;;                                                                                                (empty-rule-alist) ;fffixme which rules to use?
-                                                                  ;;                                                                                                interpreted-function-alist
-                                                                  ;;                                                                                                (firstn 200 test-cases-for-formals1) ;ffixme
-                                                                  ;;                                                                                                analyzed-function-table
-                                                                  ;;                                                                                                ))
-                                                                  ;;                                                                                          state))
-                                                                  ;;                                                                                     nil))
-                                                                  ;;                                                                               nil))
-                                                                  ;;                                                                         state))
-                                                                  ;;                                                                      (if err
-                                                                  ;;                                                                          (mv :error extra-stuff analyzed-function-table state result-array-stobj)
-                                                                  ;;                                                                        (mv-let
-                                                                  ;;                                                                         (err state)
-                                                                  ;;                                                                         (if fn2-tail-recp
-                                                                  ;;                                                                             (mv nil state) ;don't do it for tail-rec functions
-                                                                  ;;                                                                           ;;fixme use the -rewrite version above - any only when appropriate
-                                                                  ;;                                                                           (my-defthm-fn-rewrite-with-and-without-hides
-                                                                  ;;                                                                            (list function-call-term2)
-                                                                  ;;                                                                            fn2-theorem-name
-                                                                  ;;                                                                            (refine-hyps fn2 hyps2 extra-stuff formals2)
-                                                                  ;;                                                                            (append
-                                                                  ;;                                                                             (get-extra-concs fn2 extra-stuff)
-                                                                  ;;                                                                             (conclusion-conjuncts
-                                                                  ;;                                                                              rv-type-facts2
-                                                                  ;;                                                                              rv-equalities2))
-                                                                  ;;                                                                            `(("Goal" :do-not '(generalize eliminate-destructors)
-                                                                  ;;                                                                               :in-theory (e/d ((:induction ,fn2))
-                                                                  ;;                                                                                               ((:definition ,fn2)))
-                                                                  ;;                                                                               :induct ,function-call-term2)
-                                                                  ;;                                                                              ,@(if use-axe-proverp
-                                                                  ;;                                                                                    `((if STABLE-UNDER-SIMPLIFICATIONP
-                                                                  ;;                                                                                          '(:clause-processor
-                                                                  ;;                                                                                            (axe-prover
-                                                                  ;;                                                                                             clause
-                                                                  ;;                                                                                             ',(s :goal-name fn2-theorem-name
-                                                                  ;;                                                                                                  (axe-prover-hints
-                                                                  ;;                                                                                                   `((:nil ,hide-opener-name2)
-                                                                  ;;                                                                                                     (:nil ,hide-dropper-name2))
-                                                                  ;;                                                                                                   nil ;;ffixme which rules to use?
-                                                                  ;;                                                                                                   interpreted-function-alist
-                                                                  ;;                                                                                                   (firstn 200 test-cases-for-formals2) ;ffixme
-                                                                  ;;                                                                                                   analyzed-function-table
-                                                                  ;;                                                                                                   ))
-                                                                  ;;                                                                                             state))
-                                                                  ;;                                                                                        nil))
-                                                                  ;;                                                                                  nil))
-                                                                  ;;                                                                            state))
-                                                                  ;;                                                                         (if err
-                                                                  ;;                                                                             (mv :error extra-stuff analyzed-function-table state result-array-stobj)
-                                                                  ;;                                                                           (mv-let
-                                                                  ;;                                                                            (err state)
-                                                                  ;;                                                                            (if (endp main-theorem-concs)
-                                                                  ;;                                                                                (mv (prog2$ (hard-error 'try-to-prove-non-pure-nodes-equivalent
-                                                                  ;;                                                                                                        "No conclusions found"
-                                                                  ;;                                                                                                        nil)
-                                                                  ;;                                                                                            t)
-                                                                  ;;                                                                                    state)
-                                                                  ;;                                                                              ;; Main theorem:
-                                                                  ;;                                                                              (my-defthm-fn-rewrite-with-and-without-hides ;don't need rewrite here?
-                                                                  ;;                                                                               (list function-call-term1 function-call-term2)
-                                                                  ;;                                                                               main-theorem-name
-                                                                  ;;                                                                               hyps
-                                                                  ;;                                                                               main-theorem-concs
-                                                                  ;;                                                                               `(("Goal" :do-not '(generalize eliminate-destructors)
-                                                                  ;;                                                                                  :in-theory ;; (e/d ((:induction ,fn1)
-                                                                  ;;                                                                                  ;;                                                                    (:induction ,fn2)
-                                                                  ;;                                                                                  ;;                                                                    ;;ffixme if they disagree on being tail-rec
-                                                                  ;;                                                                                  ;;                                                                    ;;we have big problems
-                                                                  ;;                                                                                  ;;                                                                    ,@(if fn1-tail-recp nil (list fn1-theorem-name))
-                                                                  ;;                                                                                  ;;                                                                    ,@(if fn2-tail-recp nil (list fn2-theorem-name)))
-                                                                  ;;                                                                                  ;;                                                                   ((:definition ,fn1)
-                                                                  ;;                                                                                  ;;                                                                    (:definition ,fn2)))
-                                                                  ;;                                                                                  (union-theories (theory 'minimal-theory)
-                                                                  ;;                                                                                                  '((:induction ,induction-fn-name)
-                                                                  ;;                                                                                                    ;;ffixme if they disagree on being tail-rec
-                                                                  ;;                                                                                                    ;;we have big problems
-                                                                  ;;                                                                                                    ,@(if fn1-tail-recp nil (list fn1-theorem-name))
-                                                                  ;;                                                                                                    ,@(if fn2-tail-recp nil (list fn2-theorem-name))))
-                                                                  ;;                                                                                  :induct (,induction-fn-name
-                                                                  ;;                                                                                           ,@formals1
-                                                                  ;;                                                                                           ,@formals2))
-                                                                  ;;                                                                                 ,@(if use-axe-proverp
-                                                                  ;;                                                                                       `((if STABLE-UNDER-SIMPLIFICATIONP
-                                                                  ;;                                                                                             '(:clause-processor
-                                                                  ;;                                                                                               (axe-prover
-                                                                  ;;                                                                                                clause
-                                                                  ;;                                                                                                ',(s :goal-name main-theorem-name
-                                                                  ;;                                                                                                     (s :print t
-                                                                  ;;                                                                                                        (axe-prover-hints
-                                                                  ;;                                                                                                         (append (if fn1-tail-recp nil (list `(:rewrite ,fn1-theorem-name)))
-                                                                  ;;                                                                                                                 (if fn2-tail-recp nil (list `(:rewrite ,fn2-theorem-name)))
-                                                                  ;;                                                                                                                 `((:nil ,hide-opener-name1)
-                                                                  ;;                                                                                                                   (:nil ,hide-dropper-name1)
-                                                                  ;;                                                                                                                   (:nil ,hide-opener-name2)
-                                                                  ;;                                                                                                                   (:nil ,hide-dropper-name2)))
-                                                                  ;;                                                                                                         prover-rule-alist ;;was nil
-                                                                  ;;                                                                                                         interpreted-function-alist
-                                                                  ;;                                                                                                         (firstn 200 test-cases-for-formals) ;ffixme
-                                                                  ;;                                                                                                         analyzed-function-table
-                                                                  ;;                                                                                                         )))
-                                                                  ;;                                                                                                state))
-                                                                  ;;                                                                                           nil))
-                                                                  ;;                                                                                     nil))
-                                                                  ;;                                                                               state))
-                                                                  ;;                                                                            (if err
-                                                                  ;;                                                                                (mv :error extra-stuff analyzed-function-table state result-array-stobj)
-                                                                  ;;                                                                              ;;we proved the theorem but might need to specialize it (e.g., if contains (nthcdr n x) where n evaluates to 0 on the initial function arguments
-                                                                  ;;                                                                              (let*
-                                                                  ;;                                                                                  ((f1-param-constant-alist (make-param-constant-alist formals1 args1))
-                                                                  ;;                                                                                   (f2-param-constant-alist (make-param-constant-alist formals2 args2))
-                                                                  ;;                                                                                   (param-constant-alist (append f1-param-constant-alist
-                                                                  ;;                                                                                                                 f2-param-constant-alist))
-                                                                  ;;                                                                                   (instantiated-main-theorem-hyps
-                                                                  ;;                                                                                    (sublis-var-and-eval-lst2 param-constant-alist hyps nil))
-                                                                  ;;                                                                                   ;;fixme consider passing in some functions?
-                                                                  ;;                                                                                   (instantiated-main-theorem-conclusions
-                                                                  ;;                                                                                    (sublis-var-and-eval-lst2 param-constant-alist
-                                                                  ;;                                                                                                                main-theorem-concs nil))
-                                                                  ;;                                                                                   (instantiated-main-theorem-conclusions
-                                                                  ;;                                                                                    (remove-hides-lst instantiated-main-theorem-conclusions))
-                                                                  ;;                                                                                   (instantiated-main-theorem-hyps
-                                                                  ;;                                                                                    (remove-hides-lst instantiated-main-theorem-hyps))
-                                                                  ;;                                                                                   (instantiated-main-theorem-name
-                                                                  ;;                                                                                    (mypackn (list 'instantiated- main-theorem-name))))
-                                                                  ;;                                                                                (mv-let
-                                                                  ;;                                                                                 (err state)
-                                                                  ;;                                                                                 (my-defthm-fn2 instantiated-main-theorem-name
-                                                                  ;;                                                                                                instantiated-main-theorem-hyps
-                                                                  ;;                                                                                                instantiated-main-theorem-conclusions
-                                                                  ;;                                                                                                `(("Goal"
-                                                                  ;;                                                                                                   :use (:instance
-                                                                  ;;                                                                                                         ,main-theorem-name
-                                                                  ;;                                                                                                         ,@(alist-to-doublets param-constant-alist))
-                                                                  ;;                                                                                                   :in-theory (union-theories
-                                                                  ;;                                                                                                               (executable-counterparts)
-                                                                  ;;                                                                                                               (theory 'minimal-theory))))
-                                                                  ;;                                                                                                t
-                                                                  ;;                                                                                                nil
-                                                                  ;;                                                                                                t
-                                                                  ;;                                                                                                state)
-                                                                  ;;                                                                                 (if err
-                                                                  ;;                                                                                     (mv :error extra-stuff analyzed-function-table state result-array-stobj)
-                                                                  ;;                                                                                   ;;now simplify the conclusion(s) of the instantiated theorem:
-                                                                  ;;                                                                                   ;;fixme do something more general than just dropping nthcdr of 0
-                                                                  ;;                                                                                   ;;fixme what about firstn of 0?
-                                                                  ;;                                                                                   (let* ((simplified-instantiated-main-theorem-conclusions
-                                                                  ;;                                                                                           (replace-nthcdr-0-in-if-nest-list instantiated-main-theorem-conclusions))
-                                                                  ;;                                                                                          (simplified-instantiated-main-theorem-conclusions
-                                                                  ;;                                                                                           (equate-items-to-t-both-ways
-                                                                  ;;                                                                                            simplified-instantiated-main-theorem-conclusions))
-                                                                  ;;                                                                                          (simplified-instantiated-main-theorem-name
-                                                                  ;;                                                                                           (mypackn (list 'simplified-instantiated- main-theorem-name))))
-                                                                  ;;                                                                                     (mv-let
-                                                                  ;;                                                                                      (err state)
-                                                                  ;;                                                                                      ;;fixme - we had (equal (equal ..f.. ..g..) t) but needed the reverse
-                                                                  ;;                                                                                      (my-defthm-fn-rewrite
-                                                                  ;;                                                                                       simplified-instantiated-main-theorem-name
-                                                                  ;;                                                                                       (wrap-all 'work-hard instantiated-main-theorem-hyps)
-                                                                  ;;                                                                                       simplified-instantiated-main-theorem-conclusions
-                                                                  ;;                                                                                       ;;fffffixme what theory should we use here?
-                                                                  ;;                                                                                       `(("Goal"
-                                                                  ;;                                                                                          :use (:instance ,instantiated-main-theorem-name)
-                                                                  ;;                                                                                          :in-theory (e/d (work-hard) (,fn1 ,fn2))))
-                                                                  ;;                                                                                       nil
-                                                                  ;;                                                                                       state)
-                                                                  ;;                                                                                      (if err
-                                                                  ;;                                                                                          (mv :error extra-stuff analyzed-function-table state result-array-stobj)
-                                                                  ;;                                                                                        ;;ffixme change this to apply the new rule(s) to the miter here but also return them...
+                                                             ;;                                                                       ;;(hyps (refine-hyps main-theorem-name hyps extra-stuff (append formals1 formals2))) ;drop?
+                                                             ;;                                                                       (main-theorem-concs (append (get-extra-concs main-theorem-name extra-stuff) main-theorem-concs))
+                                                             ;; ;avoid doing this unless we need to?
+                                                             ;; ;ffixme what about values for the old vars??
+                                                             ;;                                                                       (test-cases-for-formals1 (make-test-cases-for-formals formals1 args-traces1))
+                                                             ;;                                                                       (test-cases-for-formals2 (make-test-cases-for-formals formals2 args-traces2))
+                                                             ;;                                                                       (test-cases-for-formals (append-list
+                                                             ;;                                                                                                test-cases-for-formals1
+                                                             ;;                                                                                                test-cases-for-formals2)))
+                                                             ;;                                                                    (declare (ignore dummy0 dummy1 dummy2 dummy3 dummy4 dummy5))
+                                                             ;;                                                                    (mv-let
+                                                             ;;                                                                     (err result state)
+                                                             ;;                                                                     ;;abuse of progn for only 1 event?
+                                                             ;;                                                                     (progn-fn (list (make-induction-function fn1 fn2 induction-fn-name state)) state)
+                                                             ;;                                                                     (declare (ignore err result))
+                                                             ;;                                                                     (mv-let
+                                                             ;;                                                                      (err state)
+                                                             ;;                                                                      (if fn1-tail-recp
+                                                             ;;                                                                          (mv nil state) ;don't do it for tail-rec functions
+                                                             ;;                                                                        ;;ffixme don't spend time generating rv-equalities1 and rv-type-facts1 !
+                                                             ;; ;fixme, what if it can't be made into a good rule (e.g., no conjuncts?)
+                                                             ;;                                                                        (my-defthm-fn-rewrite-with-and-without-hides
+                                                             ;;                                                                         (list function-call-term1)
+                                                             ;;                                                                         fn1-theorem-name
+                                                             ;;                                                                         (refine-hyps fn1 hyps1 extra-stuff formals1)
+                                                             ;;                                                                         (append (get-extra-concs fn1 extra-stuff)
+                                                             ;;                                                                                 (conclusion-conjuncts
+                                                             ;;                                                                                  rv-type-facts1
+                                                             ;;                                                                                  rv-equalities1))
+                                                             ;; ;fixme use minimal theory?
+                                                             ;;                                                                         `(("Goal" :do-not '(generalize eliminate-destructors)
+                                                             ;;                                                                            :in-theory (e/d ((:induction ,fn1))
+                                                             ;;                                                                                            ((:definition ,fn1)))
+                                                             ;;                                                                            :induct ,function-call-term1)
+                                                             ;;                                                                           ,@(if use-axe-proverp
+                                                             ;;                                                                                 `((if STABLE-UNDER-SIMPLIFICATIONP
+                                                             ;;                                                                                       '(:clause-processor
+                                                             ;;                                                                                         (axe-prover
+                                                             ;;                                                                                          clause
+                                                             ;;                                                                                          ',(s :goal-name fn1-theorem-name
+                                                             ;;                                                                                               (axe-prover-hints
+                                                             ;;                                                                                                `((:nil ,hide-opener-name1)
+                                                             ;;                                                                                                  (:nil ,hide-dropper-name1))
+                                                             ;;                                                                                                (empty-rule-alist) ;fffixme which rules to use?
+                                                             ;;                                                                                                interpreted-function-alist
+                                                             ;;                                                                                                (firstn 200 test-cases-for-formals1) ;ffixme
+                                                             ;;                                                                                                analyzed-function-table
+                                                             ;;                                                                                                ))
+                                                             ;;                                                                                          state))
+                                                             ;;                                                                                     nil))
+                                                             ;;                                                                               nil))
+                                                             ;;                                                                         state))
+                                                             ;;                                                                      (if err
+                                                             ;;                                                                          (mv :error extra-stuff analyzed-function-table state result-array-stobj)
+                                                             ;;                                                                        (mv-let
+                                                             ;;                                                                         (err state)
+                                                             ;;                                                                         (if fn2-tail-recp
+                                                             ;;                                                                             (mv nil state) ;don't do it for tail-rec functions
+                                                             ;;                                                                           ;;fixme use the -rewrite version above - any only when appropriate
+                                                             ;;                                                                           (my-defthm-fn-rewrite-with-and-without-hides
+                                                             ;;                                                                            (list function-call-term2)
+                                                             ;;                                                                            fn2-theorem-name
+                                                             ;;                                                                            (refine-hyps fn2 hyps2 extra-stuff formals2)
+                                                             ;;                                                                            (append
+                                                             ;;                                                                             (get-extra-concs fn2 extra-stuff)
+                                                             ;;                                                                             (conclusion-conjuncts
+                                                             ;;                                                                              rv-type-facts2
+                                                             ;;                                                                              rv-equalities2))
+                                                             ;;                                                                            `(("Goal" :do-not '(generalize eliminate-destructors)
+                                                             ;;                                                                               :in-theory (e/d ((:induction ,fn2))
+                                                             ;;                                                                                               ((:definition ,fn2)))
+                                                             ;;                                                                               :induct ,function-call-term2)
+                                                             ;;                                                                              ,@(if use-axe-proverp
+                                                             ;;                                                                                    `((if STABLE-UNDER-SIMPLIFICATIONP
+                                                             ;;                                                                                          '(:clause-processor
+                                                             ;;                                                                                            (axe-prover
+                                                             ;;                                                                                             clause
+                                                             ;;                                                                                             ',(s :goal-name fn2-theorem-name
+                                                             ;;                                                                                                  (axe-prover-hints
+                                                             ;;                                                                                                   `((:nil ,hide-opener-name2)
+                                                             ;;                                                                                                     (:nil ,hide-dropper-name2))
+                                                             ;;                                                                                                   nil ;;ffixme which rules to use?
+                                                             ;;                                                                                                   interpreted-function-alist
+                                                             ;;                                                                                                   (firstn 200 test-cases-for-formals2) ;ffixme
+                                                             ;;                                                                                                   analyzed-function-table
+                                                             ;;                                                                                                   ))
+                                                             ;;                                                                                             state))
+                                                             ;;                                                                                        nil))
+                                                             ;;                                                                                  nil))
+                                                             ;;                                                                            state))
+                                                             ;;                                                                         (if err
+                                                             ;;                                                                             (mv :error extra-stuff analyzed-function-table state result-array-stobj)
+                                                             ;;                                                                           (mv-let
+                                                             ;;                                                                            (err state)
+                                                             ;;                                                                            (if (endp main-theorem-concs)
+                                                             ;;                                                                                (mv (prog2$ (hard-error 'try-to-prove-non-pure-nodes-equivalent
+                                                             ;;                                                                                                        "No conclusions found"
+                                                             ;;                                                                                                        nil)
+                                                             ;;                                                                                            t)
+                                                             ;;                                                                                    state)
+                                                             ;;                                                                              ;; Main theorem:
+                                                             ;;                                                                              (my-defthm-fn-rewrite-with-and-without-hides ;don't need rewrite here?
+                                                             ;;                                                                               (list function-call-term1 function-call-term2)
+                                                             ;;                                                                               main-theorem-name
+                                                             ;;                                                                               hyps
+                                                             ;;                                                                               main-theorem-concs
+                                                             ;;                                                                               `(("Goal" :do-not '(generalize eliminate-destructors)
+                                                             ;;                                                                                  :in-theory ;; (e/d ((:induction ,fn1)
+                                                             ;;                                                                                  ;;                                                                    (:induction ,fn2)
+                                                             ;;                                                                                  ;;                                                                    ;;ffixme if they disagree on being tail-rec
+                                                             ;;                                                                                  ;;                                                                    ;;we have big problems
+                                                             ;;                                                                                  ;;                                                                    ,@(if fn1-tail-recp nil (list fn1-theorem-name))
+                                                             ;;                                                                                  ;;                                                                    ,@(if fn2-tail-recp nil (list fn2-theorem-name)))
+                                                             ;;                                                                                  ;;                                                                   ((:definition ,fn1)
+                                                             ;;                                                                                  ;;                                                                    (:definition ,fn2)))
+                                                             ;;                                                                                  (union-theories (theory 'minimal-theory)
+                                                             ;;                                                                                                  '((:induction ,induction-fn-name)
+                                                             ;;                                                                                                    ;;ffixme if they disagree on being tail-rec
+                                                             ;;                                                                                                    ;;we have big problems
+                                                             ;;                                                                                                    ,@(if fn1-tail-recp nil (list fn1-theorem-name))
+                                                             ;;                                                                                                    ,@(if fn2-tail-recp nil (list fn2-theorem-name))))
+                                                             ;;                                                                                  :induct (,induction-fn-name
+                                                             ;;                                                                                           ,@formals1
+                                                             ;;                                                                                           ,@formals2))
+                                                             ;;                                                                                 ,@(if use-axe-proverp
+                                                             ;;                                                                                       `((if STABLE-UNDER-SIMPLIFICATIONP
+                                                             ;;                                                                                             '(:clause-processor
+                                                             ;;                                                                                               (axe-prover
+                                                             ;;                                                                                                clause
+                                                             ;;                                                                                                ',(s :goal-name main-theorem-name
+                                                             ;;                                                                                                     (s :print t
+                                                             ;;                                                                                                        (axe-prover-hints
+                                                             ;;                                                                                                         (append (if fn1-tail-recp nil (list `(:rewrite ,fn1-theorem-name)))
+                                                             ;;                                                                                                                 (if fn2-tail-recp nil (list `(:rewrite ,fn2-theorem-name)))
+                                                             ;;                                                                                                                 `((:nil ,hide-opener-name1)
+                                                             ;;                                                                                                                   (:nil ,hide-dropper-name1)
+                                                             ;;                                                                                                                   (:nil ,hide-opener-name2)
+                                                             ;;                                                                                                                   (:nil ,hide-dropper-name2)))
+                                                             ;;                                                                                                         prover-rule-alist ;;was nil
+                                                             ;;                                                                                                         interpreted-function-alist
+                                                             ;;                                                                                                         (firstn 200 test-cases-for-formals) ;ffixme
+                                                             ;;                                                                                                         analyzed-function-table
+                                                             ;;                                                                                                         )))
+                                                             ;;                                                                                                state))
+                                                             ;;                                                                                           nil))
+                                                             ;;                                                                                     nil))
+                                                             ;;                                                                               state))
+                                                             ;;                                                                            (if err
+                                                             ;;                                                                                (mv :error extra-stuff analyzed-function-table state result-array-stobj)
+                                                             ;;                                                                              ;;we proved the theorem but might need to specialize it (e.g., if contains (nthcdr n x) where n evaluates to 0 on the initial function arguments
+                                                             ;;                                                                              (let*
+                                                             ;;                                                                                  ((f1-param-constant-alist (make-param-constant-alist formals1 args1))
+                                                             ;;                                                                                   (f2-param-constant-alist (make-param-constant-alist formals2 args2))
+                                                             ;;                                                                                   (param-constant-alist (append f1-param-constant-alist
+                                                             ;;                                                                                                                 f2-param-constant-alist))
+                                                             ;;                                                                                   (instantiated-main-theorem-hyps
+                                                             ;;                                                                                    (sublis-var-and-eval-lst2 param-constant-alist hyps nil))
+                                                             ;;                                                                                   ;;fixme consider passing in some functions?
+                                                             ;;                                                                                   (instantiated-main-theorem-conclusions
+                                                             ;;                                                                                    (sublis-var-and-eval-lst2 param-constant-alist
+                                                             ;;                                                                                                                main-theorem-concs nil))
+                                                             ;;                                                                                   (instantiated-main-theorem-conclusions
+                                                             ;;                                                                                    (remove-hides-lst instantiated-main-theorem-conclusions))
+                                                             ;;                                                                                   (instantiated-main-theorem-hyps
+                                                             ;;                                                                                    (remove-hides-lst instantiated-main-theorem-hyps))
+                                                             ;;                                                                                   (instantiated-main-theorem-name
+                                                             ;;                                                                                    (mypackn (list 'instantiated- main-theorem-name))))
+                                                             ;;                                                                                (mv-let
+                                                             ;;                                                                                 (err state)
+                                                             ;;                                                                                 (my-defthm-fn2 instantiated-main-theorem-name
+                                                             ;;                                                                                                instantiated-main-theorem-hyps
+                                                             ;;                                                                                                instantiated-main-theorem-conclusions
+                                                             ;;                                                                                                `(("Goal"
+                                                             ;;                                                                                                   :use (:instance
+                                                             ;;                                                                                                         ,main-theorem-name
+                                                             ;;                                                                                                         ,@(alist-to-doublets param-constant-alist))
+                                                             ;;                                                                                                   :in-theory (union-theories
+                                                             ;;                                                                                                               (executable-counterparts)
+                                                             ;;                                                                                                               (theory 'minimal-theory))))
+                                                             ;;                                                                                                t
+                                                             ;;                                                                                                nil
+                                                             ;;                                                                                                t
+                                                             ;;                                                                                                state)
+                                                             ;;                                                                                 (if err
+                                                             ;;                                                                                     (mv :error extra-stuff analyzed-function-table state result-array-stobj)
+                                                             ;;                                                                                   ;;now simplify the conclusion(s) of the instantiated theorem:
+                                                             ;;                                                                                   ;;fixme do something more general than just dropping nthcdr of 0
+                                                             ;;                                                                                   ;;fixme what about firstn of 0?
+                                                             ;;                                                                                   (let* ((simplified-instantiated-main-theorem-conclusions
+                                                             ;;                                                                                           (replace-nthcdr-0-in-if-nest-list instantiated-main-theorem-conclusions))
+                                                             ;;                                                                                          (simplified-instantiated-main-theorem-conclusions
+                                                             ;;                                                                                           (equate-items-to-t-both-ways
+                                                             ;;                                                                                            simplified-instantiated-main-theorem-conclusions))
+                                                             ;;                                                                                          (simplified-instantiated-main-theorem-name
+                                                             ;;                                                                                           (mypackn (list 'simplified-instantiated- main-theorem-name))))
+                                                             ;;                                                                                     (mv-let
+                                                             ;;                                                                                      (err state)
+                                                             ;;                                                                                      ;;fixme - we had (equal (equal ..f.. ..g..) t) but needed the reverse
+                                                             ;;                                                                                      (my-defthm-fn-rewrite
+                                                             ;;                                                                                       simplified-instantiated-main-theorem-name
+                                                             ;;                                                                                       (wrap-all 'work-hard instantiated-main-theorem-hyps)
+                                                             ;;                                                                                       simplified-instantiated-main-theorem-conclusions
+                                                             ;;                                                                                       ;;fffffixme what theory should we use here?
+                                                             ;;                                                                                       `(("Goal"
+                                                             ;;                                                                                          :use (:instance ,instantiated-main-theorem-name)
+                                                             ;;                                                                                          :in-theory (e/d (work-hard) (,fn1 ,fn2))))
+                                                             ;;                                                                                       nil
+                                                             ;;                                                                                       state)
+                                                             ;;                                                                                      (if err
+                                                             ;;                                                                                          (mv :error extra-stuff analyzed-function-table state result-array-stobj)
+                                                             ;;                                                                                        ;;ffixme change this to apply the new rule(s) to the miter here but also return them...
 
-                                                                  ;;                                                                                        ;;we've proved some rules and could try to use them right here, but we prefer to do it at the start of the next call to this function
-                                                                  ;;                                                                                        ;;since the same rule may apply to the two nodes currently under consideration as well as other pairs representing
-                                                                  ;;                                                                                        ;;the other return values of the function
-                                                                  ;;                                                                                        (mv (list :new-rules
-                                                                  ;;                                                                                                  `(,@(if fn1-tail-recp nil `((:rewrite ,fn1-theorem-name)))
-                                                                  ;;                                                                                                    ,@(if fn2-tail-recp nil `((:rewrite ,fn2-theorem-name)))
-                                                                  ;;                                                                                                    (:rewrite ,simplified-instantiated-main-theorem-name)
-                                                                  ;;                                                                                                    )
-                                                                  ;; ;do we need the fn1 and fn2 theorems?
-                                                                  ;;                                                                                                  nil) ;no new fn names are introduced?  (unrolling is done in another case)
-                                                                  ;;                                                                                            extra-stuff analyzed-function-table state result-array-stobj)))))))))))))))
-                                                                  )))))))))))))))))))))))))))))))
+                                                             ;;                                                                                        ;;we've proved some rules and could try to use them right here, but we prefer to do it at the start of the next call to this function
+                                                             ;;                                                                                        ;;since the same rule may apply to the two nodes currently under consideration as well as other pairs representing
+                                                             ;;                                                                                        ;;the other return values of the function
+                                                             ;;                                                                                        (mv (list :new-rules
+                                                             ;;                                                                                                  `(,@(if fn1-tail-recp nil `((:rewrite ,fn1-theorem-name)))
+                                                             ;;                                                                                                    ,@(if fn2-tail-recp nil `((:rewrite ,fn2-theorem-name)))
+                                                             ;;                                                                                                    (:rewrite ,simplified-instantiated-main-theorem-name)
+                                                             ;;                                                                                                    )
+                                                             ;; ;do we need the fn1 and fn2 theorems?
+                                                             ;;                                                                                                  nil) ;no new fn names are introduced?  (unrolling is done in another case)
+                                                             ;;                                                                                            extra-stuff analyzed-function-table state result-array-stobj)))))))))))))))
+                                                             ))))))))))))))))))))))))))))
             (if erp
-                (mv erp :error analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
+                (mv erp nil analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
               (if (eq :call-prover result)
-                  (let* ((case-name (concatenate 'string "depth" (nat-to-string miter-depth) "step" (nat-to-string step-num) "-"))
-                         ;;ffixme could cut out the common stuff when calling the prover?  or the rewriter (above)?
-                         (dummy (cw "(Calling DAG prover for ~s0 (dag len ~x1, print ~x2):~%" case-name (len simplified-dag-lst) print))
-                         ;;(cw "(~x0 monitored rules)" (len monitored-symbols))
-                         )
-                    (declare (ignore dummy))
+                  (b* ((case-name (concatenate 'string "depth" (nat-to-string miter-depth) "step" (nat-to-string step-num) "-"))
+                       ;;ffixme could cut out the common stuff when calling the prover?  or the rewriter (above)?
+                       (- (cw "(Calling DAG prover for ~s0 (dag len ~x1, print ~x2):~%" case-name (len simplified-dag-lst) print))
+                       ;;(cw "(~x0 monitored rules)" (len monitored-symbols))
+                       )
                     (mv-let (erp result state)
                       ;;might be nice to get an array above and pass it straight to the prover here:
                       (prove-dag-with-axe-prover simplified-dag-lst
@@ -16201,20 +16218,23 @@
                                                  nil ;options
                                                  state)
                       (if erp
-                          (mv erp :error analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
+                          (mv erp nil analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
                         (if (eq :proved result)
                             (prog2$ (cw "Prover rewrote the clause to true!)~%")
-                                    (mv nil :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+                                    (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
                           (if (eq :timed-out result)
                               (prog2$ (cw "Prover failed (by reaching the max conflict limit) to prove the clause.)~%")
-                                      (mv nil :timed-out analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+                                      (mv (erp-nil) :timed-out analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
                             (prog2$ (cw "Prover failed to prove the clause.)~%")
-                                    (mv nil :failed analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))))))
-                (mv nil result analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))))))))
+                                    (mv (erp-nil) :failed analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))))))
+                (if (eq :error result)
+                    (prog2$ (er hard 'try-to-prove-non-pure-nodes-equivalent "Unexpected error.") ; impossible?
+                            (mv (erp-t) nil analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+                  (mv (erp-nil) result analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))))))))))
 
  ;; Tries to prove the equivalence of SMALLER-NODENUM and LARGER-NODENUM in MITER-ARRAY.
  ;; fixme could the two nodenums ever be the same? maybe not...
- ;; Returns (mv erp result analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj) where result is :proved, :timed-out, :error, :failed, or (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
+ ;; Returns (mv erp result analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj) where, if ERP is nil, then RESULT is :proved, :timed-out, :error, :failed, or (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
  (defun try-to-prove-nodes-equivalent (smaller-nodenum larger-nodenum miter-array-name miter-array miter-len
                                                        miter-depth ;fixme track the actual names of the theorems we are trying to prove?
                                                        var-type-alist
@@ -16236,7 +16256,7 @@
      ;;fixme is identical-exprs-up-to-constant-inlining overkill (shouldn't things below the node already have been merged?)
      (if (identical-exprs-up-to-constant-inlining expr1 expr2 miter-array-name miter-array)
          (prog2$ (and print (cw "  Structural equivalence between ~x0 and ~x1.~%" smaller-nodenum larger-nodenum))
-                 (mv nil :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+                 (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
        ;;ffffixme also check here that all supporting vars have bv or array types in the alist? - could cut if they don't?
        ;;ffixme also check that all necessary indices and sizes are constants (miter-is-purep could reflect that? maybe it does now?)
        (if (and ;could omit non pure assumptions (but then the proof may fail)? ;do we actually translate the assumptions?
@@ -16261,9 +16281,9 @@
 ;fffixme use (pure) contexts!
              (try-to-prove-pure-nodes-equivalent smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)
              (if success-flg
-                 (mv nil :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
+                 (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
                ;; fixme would like to get a counterexample back and use it try to invalidate more "probable facts":
-               (mv nil :failed analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))
+               (mv (erp-nil) :failed analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))
          ;; fixme instead of this, we could always cut out the non pure stuff and attempt that proof?
          ;; fixme should we check for and expand any remining user non-recursive functions?
          (try-to-prove-non-pure-nodes-equivalent smaller-nodenum larger-nodenum miter-array-name miter-array miter-len
@@ -16325,7 +16345,7 @@
  ;;                    miter-array
  ;;                    state result-array-stobj))))
 
- ;; Returns (mv erp result miter-array analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj), where result is :proved (we proved it and merged), :timed-out, :error, :failed, or (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
+ ;; Returns (mv erp result miter-array analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj), where if ERP is nil, then RESULT is :proved (we proved it and merged), :timed-out, :failed, (list :new-rules new-runes new-fn-names), or (list :apply-rule ...)
  ;;remember failures and failures due to max-conflicts so we don't try them again?
 ;first generate a proof obligation that smaller-nodenum and larger-nodenum in the graph are equal.
 ;then change references to the nodes to point instead to the minimum node from the set that contains smaller-nodenum and larger-nodenum
@@ -16339,62 +16359,61 @@
                                                             ;;tag-array2
                                                             some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
-   (prog2$
-    (and (member-eq print '(t :verbose :verbose2)) ;used to print this even for :brief:
-         (prog2$ (cw "  Equating nodes ~x0 and ~x1.~%" smaller-nodenum larger-nodenum)
-                 ;;ffixme make a 2 node version of print-dag-only-supporters - we show the simplified miter - that should contain everything interesting from the dag
-                 nil ;(print-array2 miter-array-name miter-array (+ 1 larger-nodenum))
-                 ))
+   (b* ((- (and (member-eq print '(t :verbose :verbose2)) ;used to print this even for :brief:
+                (prog2$ (cw "  Equating nodes ~x0 and ~x1.~%" smaller-nodenum larger-nodenum)
+                        ;;ffixme make a 2 node version of print-dag-only-supporters - we show the simplified miter - that should contain everything interesting from the dag
+                        nil ;(print-array2 miter-array-name miter-array (+ 1 larger-nodenum))
+                        )))
 ;fixme finish this.  the point was not to merge two nodes of different array types - but get-type-of-nodenum may sometimes give unfortunate errors here.
 ;could look at how the two nodes are used.  if they are not used as arrays (or equated to arrays?) then it's okay to merge them?
-    ;; (let* ((smaller-node-type (get-type-of-nodenum smaller-nodenum miter-array-name miter-array
-    ;;                         nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
-    ;;                         )
-    (mv-let (erp result analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
-      (try-to-prove-nodes-equivalent smaller-nodenum larger-nodenum miter-array-name miter-array miter-len miter-depth var-type-alist
-                                     print interpreted-function-alist rewriter-rule-alist prover-rule-alist
-                                     extra-stuff monitored-symbols
-                                     assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
+        ;; (let* ((smaller-node-type (get-type-of-nodenum smaller-nodenum miter-array-name miter-array
+        ;;                         nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
+        ;;                         )
+        ((mv erp result analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
+         (try-to-prove-nodes-equivalent smaller-nodenum larger-nodenum miter-array-name miter-array miter-len miter-depth var-type-alist
+                                        print interpreted-function-alist rewriter-rule-alist prover-rule-alist
+                                        extra-stuff monitored-symbols
+                                        assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
 ;tag-array2
-                                     some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj)
-      (if erp
-          (mv erp nil nil nil nil rand state result-array-stobj)
-        (if (eq result :proved)
-            ;;replace larger-nodenum with smaller-nodenum in place:
-            ;;fixme encapsulate this pattern into a function call?
-            (let ((miter-array ;parent-array
-                   (replace-node larger-nodenum smaller-nodenum miter-array-name miter-array ;parent-array-name parent-array
-                                 miter-len)))
-              (prog2$ (cw "  Merging node ~x0 and node ~x1." smaller-nodenum larger-nodenum)
-                      (mv nil
-                          :proved
+                                        some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj))
+        ((when erp) (mv erp nil nil nil nil rand state result-array-stobj))
+        ((when (eq result :error)) (mv (erp-t) nil nil nil nil rand state result-array-stobj)) ; todo: drop once impossible
+        )
+     (if (eq result :proved)
+         ;;replace larger-nodenum with smaller-nodenum in place:
+         ;;fixme encapsulate this pattern into a function call?
+         (let ((miter-array ;parent-array
+                (replace-node larger-nodenum smaller-nodenum miter-array-name miter-array ;parent-array-name parent-array
+                              miter-len)))
+           (prog2$ (cw "  Merging node ~x0 and node ~x1." smaller-nodenum larger-nodenum)
+                   (mv (erp-nil)
+                       :proved
 ;ffixme should we rewrite the dag here?
 ;replace mentions of larger-nodenum with mentions of smaller-nodenum (ffixme which should we choose as the representative? choosing the larger node could cause a violation of the array numbering property)  what if one is nth and the other is bv-array-read?  obviously if one is a supporter of the other, choose the supporter..
-                          ;;                                     (change-mentions-of-nodenum (+ 1 larger-nodenum) ;only look at nodes that might mention larger-nodenum
-                          ;;                                                                 ;;special case when min-node is one of the nodenums in question (will often be the case)
-                          ;;                                                                 miter-len
-                          ;;                                                                 larger-nodenum
-                          ;;                                                                 smaller-nodenum
-                          ;;                                                                 miter-array-name
-                          ;;                                                                 miter-array)
-                          miter-array analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))
-          (if (or (eq result :failed)
-                  (eq result :timed-out)
-                  (eq result :error)) ;fixme?
-              ;;if the equivalence proof fails, report that fact, don't merge the nodes, and continue
-              (prog2$ (cw "!! We failed to prove the equality of nodes ~x0 and ~x1.!!~% Not merging.~%" smaller-nodenum larger-nodenum)
-                      (mv nil
-                          result miter-array ;parent-array
-                          analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
-            ;; result is (list :new-rules ...) or (list :apply-rule ...)
-            (prog2$ (cw "!! We failed to prove the equality of nodes ~x0 and ~x1.!!~% Not merging, but we did generate some rules.~%" smaller-nodenum larger-nodenum)
-                    (mv nil
-                        result miter-array ;parent-array
-                        analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))))))))
+                       ;;                                     (change-mentions-of-nodenum (+ 1 larger-nodenum) ;only look at nodes that might mention larger-nodenum
+                       ;;                                                                 ;;special case when min-node is one of the nodenums in question (will often be the case)
+                       ;;                                                                 miter-len
+                       ;;                                                                 larger-nodenum
+                       ;;                                                                 smaller-nodenum
+                       ;;                                                                 miter-array-name
+                       ;;                                                                 miter-array)
+                       miter-array analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))
+       (if (or (eq result :failed)
+               (eq result :timed-out))
+           ;;if the equivalence proof fails, report that fact, don't merge the nodes, and continue
+           (prog2$ (cw "!! We failed to prove the equality of nodes ~x0 and ~x1.!!~% Not merging.~%" smaller-nodenum larger-nodenum)
+                   (mv (erp-nil)
+                       result miter-array ;parent-array
+                       analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+         ;; result is (list :new-rules ...) or (list :apply-rule ...)
+         (prog2$ (cw "!! We failed to prove the equality of nodes ~x0 and ~x1.!!~% Not merging, but we did generate some rules.~%" smaller-nodenum larger-nodenum)
+                 (mv (erp-nil)
+                     result miter-array ;parent-array
+                     analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))))))
 
  ;; Tries to prove that NODENUM in MITER-ARRAY is always equal to the constant CONSTANT-VALUE, given the ASSUMPTIONS and the context provided by the IFs in MITER-ARRAY above NODENUM.
  ;; May generate lemmas about recursive functions that support NODENUM.
- ;; Returns (mv erp result analyzed-function-table rand state result-array-stobj) where result is either :proved, :failed, :timed-out, :error, or (list :new-rules new-runes new-fn-names)
+ ;; Returns (mv erp result analyzed-function-table rand state result-array-stobj) where if ERP is nil, then RESULT is either :proved, :failed, :timed-out, or (list :new-rules new-runes new-fn-names)
  (defun try-to-prove-node-is-constant (constant-value ;not quoted
                                        nodenum
                                        expr ;the expr at nodenum, which is known not to be a quotep
@@ -16417,7 +16436,7 @@
                     (equal (farg1 expr)
                            (farg2 expr))))
          (cw "Trivial equality.~%")
-         (mv nil :proved analyzed-function-table rand state result-array-stobj)))
+         (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj)))
      ;; Not a trivial equality:
      (if (and (not (if (g :treat-as-purep options) (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil))
               (or (not miter-is-purep)
@@ -16445,8 +16464,7 @@
               (context (and context (fixup-context context 'translation-array translation-array)))
               ((when (false-contextp context))
                (cw "! Proof succeeded due to contradictory context !") ;fixme close paren?
-               (mv nil :proved analyzed-function-table rand state result-array-stobj))
-
+               (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj))
               ;;ffixme eventually drop the conversion and pass the miter-array to the rewriter (but don't overwrite any existing nodes)??
               ;;  for now the rewriter can only work on an array named 'dag-array
               (dag-lst (drop-non-supporters-array miter-array-name miter-array nodenum nil))
@@ -16474,21 +16492,21 @@
                          :context-array assumptions-array
                          :context-array-len assumptions-array-len
                          :check-inputs nil))
-              ((when erp) (mv erp :error nil rand state result-array-stobj)))
+              ((when erp) (mv erp nil nil rand state result-array-stobj)))
            (if (quotep simplified-dag-lst)
                (if (equal *t* simplified-dag-lst)
                    (prog2$ (cw "  The equality rewrote to true, which proves that node ~x0 is the constant ~x1).~%"
                                nodenum constant-value)
-                           (mv nil :proved analyzed-function-table rand state result-array-stobj))
+                           (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj))
                  (if (equal *nil* simplified-dag-lst)
                      (prog2$ (cw "  !! The equality rewrote to false. We have failed to prove that node ~x0 is the constant ~x1).~%"
                                  nodenum constant-value)
-                             (mv nil :failed analyzed-function-table rand state result-array-stobj))
+                             (mv (erp-nil) :failed analyzed-function-table rand state result-array-stobj))
                    (prog2$
                     (hard-error 'try-to-prove-node-is-constant
                                 "!! ERROR The equality rewrote to a constant other than t or nil, namely ~x0.  This should never happen (unless your assumptions contradict))."
                                 (acons #\0 simplified-dag-lst nil))
-                    (mv t :error analyzed-function-table rand state result-array-stobj))))
+                    (mv (erp-t) nil analyzed-function-table rand state result-array-stobj))))
              ;;The equality didn't rewrite to a constant, so call the dag prover:
              (b* ((- (and (eq t print)
                           (prog2$ (cw "Equality rewrote to:~%")
@@ -16516,23 +16534,22 @@
                                                    state))
                      (prog2$ (cw "(Not calling prover because use-proverp-flag is nil.~%")
                              (mv (erp-nil) :failed state))))
-                  ((when erp) (mv erp :error analyzed-function-table rand state result-array-stobj)))
+                  ((when erp) (mv erp nil analyzed-function-table rand state result-array-stobj)))
                (if (eq :proved prover-result)
                    (prog2$ (cw "Proved it!)")
-                           (mv nil :proved analyzed-function-table rand state result-array-stobj)) ;could we ever want to return some rules or fns?
+                           (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj)) ;could we ever want to return some rules or fns?
                  ;;Prove lemmas about supporting rec fns (if any): should we analyze the simplified dag for this (nodenum would not be the right node to use then)?
                  ;;ffffffixme move this up????
-                 (let* ((dummy2 (cw "Axe Prover failed)~%")) ;fixme don't say the prover failed if we didnt call it
-                        ;;precompute the result for the whole dag? ;only cons up the nodes that have rec fn supporters?
-                        (supporters-of-node (supporters-of-node nodenum miter-array-name miter-array 'tag-array-for-supporters))
-                        (nodes-with-rec-fns (filter-rec-fn-nodes-to-handle supporters-of-node miter-array-name miter-array state))
-                        ;;move these next 2 down?
-                        (nodes-with-rec-fns (merge-sort-< nodes-with-rec-fns))
+                 (b* ((- (cw "Axe Prover failed)~%")) ;fixme don't say the prover failed if we didnt call it
+                      ;;precompute the result for the whole dag? ;only cons up the nodes that have rec fn supporters?
+                      (supporters-of-node (supporters-of-node nodenum miter-array-name miter-array 'tag-array-for-supporters))
+                      (nodes-with-rec-fns (filter-rec-fn-nodes-to-handle supporters-of-node miter-array-name miter-array state))
+                      ;;move these next 2 down?
+                      (nodes-with-rec-fns (merge-sort-< nodes-with-rec-fns))
 ;could use a faster remove-duplicates that takes advantage of sortedness:
-                        (nodes-with-rec-fns (remove-duplicates ;-eql
-                                             nodes-with-rec-fns))
-                        (dummy (cw "Supporting rec. fn. nodes: ~x0.~%" nodes-with-rec-fns)))
-                   (declare (ignore dummy dummy2))
+                      (nodes-with-rec-fns (remove-duplicates ;-eql
+                                           nodes-with-rec-fns))
+                      (- (cw "Supporting rec. fn. nodes: ~x0.~%" nodes-with-rec-fns)))
                    (if (and (not (if (g :treat-as-purep options) (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil))
                             nodes-with-rec-fns)
                        ;;ffixme what if we have already handled all the nodes?  this can loop??
@@ -16543,15 +16560,15 @@
                                           (+ 1 miter-depth)
                                           monitored-symbols max-conflicts print options rand state result-array-stobj)
                          (if erp
-                             (mv erp :error analyzed-function-table rand state result-array-stobj)
+                             (mv erp nil analyzed-function-table rand state result-array-stobj)
                            (if (first result)
-                               (mv nil (list :new-rules (first result) (second result)) analyzed-function-table rand state result-array-stobj)
+                               (mv (erp-nil) (list :new-rules (first result) (second result)) analyzed-function-table rand state result-array-stobj)
                              ;;check that we generated something?  or might analyze-rec-fns return non-new runes and fns?
                              ;;ffixme should we try to use the generated fns right here?
-                             (mv nil
+                             (mv (erp-nil)
                                  prover-result ;;will be :failed or :timed-out
                                  analyzed-function-table rand state result-array-stobj))))
-                     (mv nil prover-result ;will be :failed or :timed-out
+                     (mv (erp-nil) prover-result ;will be :failed or :timed-out
                          analyzed-function-table rand state result-array-stobj)))))))
        ;;The miter is pure:
        ;; fixme clean this up!   see what we do for 2 nodes...
@@ -16583,27 +16600,25 @@
                                                    print
                                                    'ffixme
                                                    state result-array-stobj))
-            ((when erp) (mv erp :error nil rand state result-array-stobj)))
+            ((when erp) (mv erp nil nil rand state result-array-stobj)))
          (if (quotep miter-nodenum-or-quotep)
              (if (equal *t* miter-nodenum-or-quotep)
                  (prog2$ (cw "The equality rewrote to true, which proves that node ~x0 is the constant ~x1.~%"
                              nodenum constant-value)
-                         (mv nil :proved analyzed-function-table rand state result-array-stobj))
+                         (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj))
                (if (equal *nil* miter-nodenum-or-quotep)
                    (prog2$ (cw "!! The equality rewrote to false. We have failed to prove that node ~x0 is the constant ~x1.~%" ;should this be an error?
                                nodenum constant-value)
-                           (mv nil :failed analyzed-function-table rand state result-array-stobj))
+                           (mv (erp-nil) :failed analyzed-function-table rand state result-array-stobj))
                  (prog2$
                   (hard-error 'try-to-prove-node-is-constant
                               "!! ERROR The equality rewrote to a constant other than t or nil, namely ~x0.  This should never happen.  Contact the implementor.~%"
                               (acons #\0 miter-nodenum-or-quotep nil))
-                  (mv t :error analyzed-function-table rand state result-array-stobj))))
-
+                  (mv (erp-t) nil analyzed-function-table rand state result-array-stobj))))
            ;;The equality didn't rewrite to a constant:
-           (let* ((dummy (and (eq :verbose2 print)
-                              (prog2$ (cw "Equality rewrote to:~%")
-                                      (print-dag-only-supporters 'dag-array dag-array miter-nodenum-or-quotep)))))
-             (declare (ignore dummy))
+           (b* ((- (and (eq :verbose2 print)
+                        (prog2$ (cw "Equality rewrote to:~%")
+                                (print-dag-only-supporters 'dag-array dag-array miter-nodenum-or-quotep)))))
              ;;fixme use miter-nodenum-or-quotep below here?
 ;fixme use the fact that the miter is pure!
 ;There are no recursive fns, but there might still be non-bv/array fns: fixme expand any non-rec fns?
@@ -16615,7 +16630,7 @@
                  (prog2$ (hard-error 'try-to-prove-node-is-constant
                                      "Found a constant we don't yet handle: ~x0 for nodenum: ~x1.~%"
                                      (acons #\1 nodenum (acons #\0 constant-value nil)))
-                         (mv t :error analyzed-function-table rand state result-array-stobj))
+                         (mv (erp-t) nil analyzed-function-table rand state result-array-stobj))
                ;; The constant is okay, so call STP:
                ;;FIXME put in some sort of cutting heuristic (put in vars for uninteresting subterms)? binary search to find the cut depth?
                ;; TTODO: Need to handle vars not given types in the alist (look how they are used and infer a type?)
@@ -16649,22 +16664,19 @@
                                                   nil ;no counterexample (for now)
                                                   state)
                    (if (eq *error* result)
-                       (prog2$ (hard-error 'try-to-prove-node-is-constant "Error calling STP." nil)
-                               (mv t
-                                   :error ;fixme does the caller catch this?
-                                   analyzed-function-table rand state result-array-stobj))
+                       (prog2$ (er hard 'try-to-prove-node-is-constant "Error calling STP.")
+                               (mv (erp-t) nil analyzed-function-table rand state result-array-stobj))
                      (if (eq *valid* result)
                          (prog2$ (cw "STP proved that node ~x0 is the constant ~x1.~%" nodenum constant-value)
-                                 (mv nil :proved analyzed-function-table rand state result-array-stobj))
+                                 (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj))
                        ;; TODO: Use the counterexample if there is one.
                        (prog2$
                         (cw "STP FAILED to prove that node ~x0 is the constant ~x1.~%" nodenum constant-value)
                         ;;fffixme return "timed out" if it did
-                        (mv nil :failed analyzed-function-table rand state result-array-stobj)))))))))))))
+                        (mv (erp-nil) :failed analyzed-function-table rand state result-array-stobj)))))))))))))
 
-
- ;; Returns (mv erp result miter-array analyzed-function-table rand state result-array-stobj)
- ;; where result is either :proved (we proved it and replaced the node), :failed or :timed-out (we didn't replace the node), :error, or (list :new-rules new-runes new-fn-names)
+ ;; Returns (mv erp result miter-array analyzed-function-table rand state result-array-stobj),
+ ;; where if ERP is nil, then RESULT is either :proved (we proved it and replaced the node), :failed or :timed-out (we didn't replace the node), or (list :new-rules new-runes new-fn-names)
  ;;ffixme in the :ok cases should we be able to return stuff too? huh?
  (defun try-to-prove-node-is-constant-and-replace (nodenum
                                                    constant-value ;(not quoted)
@@ -16680,11 +16692,8 @@
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (if (eq :unused constant-value)
 ;get rid of this check if it never fires
-       (prog2$ (hard-error 'try-to-prove-node-is-constant-and-replace "unused node." nil) ;(cw "  (Skipping node ~x0 because it is unused on any test case.)" nodenum) ;fixme now this should never happen?
-               (mv (erp-t)
-                   :error ;:proved
-                   miter-array ;parent-array
-                   analyzed-function-table rand state result-array-stobj)) ;fffffixme think about this
+       (prog2$ (er hard 'try-to-prove-node-is-constant-and-replace "unused node.") ;(cw "  (Skipping node ~x0 because it is unused on any test case.)" nodenum) ;fixme now this should never happen?
+               (mv (erp-t) nil miter-array analyzed-function-table rand state result-array-stobj)) ;fffffixme think about this
      (prog2$ (and (or (eq print 't) (eq print ':verbose) (eq print ':verbose2))
                   (cw "  Trying to replace node ~x0 with the constant ~x1.~%" nodenum constant-value))
              (let ((expr (aref1 miter-array-name miter-array nodenum)))
@@ -16695,7 +16704,7 @@
                                (mv (erp-nil) :proved miter-array analyzed-function-table rand state result-array-stobj))
                      ;;this should never happen:
                      (prog2$ (hard-error 'try-to-prove-node-is-constant-and-replace "Expected one constant but got another!" nil)
-                             (mv (erp-t) :error miter-array analyzed-function-table rand state result-array-stobj)))
+                             (mv (erp-t) nil miter-array analyzed-function-table rand state result-array-stobj)))
                  (mv-let (erp result analyzed-function-table rand state result-array-stobj)
                    (try-to-prove-node-is-constant constant-value nodenum expr miter-array-name miter-array miter-len var-type-alist
                                                   print interpreted-function-alist extra-stuff
@@ -16703,35 +16712,33 @@
                                                   analyzed-function-table miter-depth unroll miter-is-purep ;tag-array2
                                                   use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)
                    (if erp
-                       (mv erp :error miter-array analyzed-function-table rand state result-array-stobj)
-                     (if (eq :error result) ;todo: do we need both the erp case and the error case?
-                         (mv (erp-t) :error miter-array analyzed-function-table rand state result-array-stobj)
-                       (if (eq :proved result) ;may also return runes and fns?
-                           ;;proof succeeded, so replace the node:
-                           (prog2$ (cw "  Proof succeeded.  Merging node ~x0 with the constant ~x1." nodenum constant-value)
-                                   (mv (erp-nil)
-                                       :proved
-                                       ;; should we replace each mention of the node with the constant? could do it quickly using the parent-array - could propagate constants up the dag...
-                                       ;; probably not needed.  hell, we could resimplify the whole dag each time...
-                                       ;;could call replace-node here but i'd rather add support for propagating the constants up...
-                                       (aset1-safe miter-array-name miter-array nodenum (enquote constant-value)) ;fixme could it be that if we don't fixup the parents here we'll do it over and over when rewriting to merge nodes?
-                                       ;;the newly-constant node no longer has children:
-                                       ;; (if (consp expr) ;checks that it's not a variable (we know from above that it's not a quotep)
-                                       ;;     (drop-parent-relationships nodenum (fargs expr) parent-array-name parent-array)
-                                       ;;   parent-array)
-                                       analyzed-function-table rand state result-array-stobj))
-                         ;;result must be :failed, :timed-out, or (list :new-rules new-runes new-fns)
-                         (prog2$ (cw "!! Proof failed !!  Not merging node ~x0 with constant ~x1." nodenum constant-value)
-                                 (if (consp result)
-                                     (prog2$ (cw "Did generate rules and/or fns though.")
-                                             (mv (erp-nil) result miter-array analyzed-function-table rand state result-array-stobj))
-                                   (mv (erp-nil) result miter-array analyzed-function-table rand state result-array-stobj))))))))))))
+                       (mv erp nil miter-array analyzed-function-table rand state result-array-stobj)
+                     (if (eq :proved result) ;may also return runes and fns?
+                         ;;proof succeeded, so replace the node:
+                         (prog2$ (cw "  Proof succeeded.  Merging node ~x0 with the constant ~x1." nodenum constant-value)
+                                 (mv (erp-nil)
+                                     :proved
+                                     ;; should we replace each mention of the node with the constant? could do it quickly using the parent-array - could propagate constants up the dag...
+                                     ;; probably not needed.  hell, we could resimplify the whole dag each time...
+                                     ;;could call replace-node here but i'd rather add support for propagating the constants up...
+                                     (aset1-safe miter-array-name miter-array nodenum (enquote constant-value)) ;fixme could it be that if we don't fixup the parents here we'll do it over and over when rewriting to merge nodes?
+                                     ;;the newly-constant node no longer has children:
+                                     ;; (if (consp expr) ;checks that it's not a variable (we know from above that it's not a quotep)
+                                     ;;     (drop-parent-relationships nodenum (fargs expr) parent-array-name parent-array)
+                                     ;;   parent-array)
+                                     analyzed-function-table rand state result-array-stobj))
+                       ;;result must be :failed, :timed-out, or (list :new-rules new-runes new-fns)
+                       (prog2$ (cw "!! Proof failed !!  Not merging node ~x0 with constant ~x1." nodenum constant-value)
+                               (if (consp result)
+                                   (prog2$ (cw "Did generate rules and/or fns though.")
+                                           (mv (erp-nil) result miter-array analyzed-function-table rand state result-array-stobj))
+                                 (mv (erp-nil) result miter-array analyzed-function-table rand state result-array-stobj)))))))))))
 
  ;; Sweeps up the miter, proving and merging nodes (with other nodes or constants) until it reaches the top node or handles a loop fn (generating some lemmas and/or functions). -- fixme, if they are just type lemmas, no need to abort the sweep and use them to simplify the miter? maybe they'd fire...
  ;;FFFIXME if the lemma rewrites the equality of 2 functions, no need abort the sweep and simplify the dag with it?  but keep it around to handle other rvs of the functions?
  ;;what should this do if there are no test cases? that is checked upstream?
  ;;do we need both top-node and miter-len?
- ;; Returns (mv erp result miter-array analyzed-function-table rand state result-array-stobj), where result is :proved-miter, :error, :did-nothing, :did-something, or (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
+ ;; Returns (mv erp result miter-array analyzed-function-table rand state result-array-stobj), where if ERP is nil, then RESULT is :proved-miter, :did-nothing, :did-something, or (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
  ;; if the top node is reached and nothing was merged, result is :did-nothing
  ;; if the top node is reached and something was merged, but the top node wasn't proved true, result is :did-something, meaning simplify (to use the merged stuff and sweep again)
  ;; Result can also be a cons whose car is :new-rules or :apply-rule.
@@ -16753,42 +16760,38 @@
    (if (equal *t* (aref1 miter-array-name miter-array top-node)) ; stop when the top node has been replaced with 't
        ;;bozo put in some checks here?  maybe not, since we already made sure the top node is all t's
        (prog2$ (cw "Done replacing nodes.  The miter has been reduced to TRUE!~%")
-               (mv nil :proved-miter miter-array analyzed-function-table rand state result-array-stobj))
-     (prog2$
-      (cw "(Depth ~x0 / sweep ~x1 / step ~x2:~%" miter-depth sweep-num step-num)
-;       (let ((nodenum-with-bad-parents (find-nodenum-with-bad-parents (+ -1 miter-len) parent-array-name parent-array))) ;fixme remove this stuff - it's for debugging
-      ;; (if nodenum-with-bad-parents
-      ;;     (prog2$
-      ;;      (hard-error 'perform-miter-sweep- aux "bad parent lists for ~x0: ~x1."
-      ;;                  (acons #\0 nodenum-with-bad-parents (acons #\1 (aref1 'parent-array-name parent-array nodenum-with-bad-parents) nil)))
-      ;;      (mv :error miter-array analyzed-function-table rand state result-array-stobj))
-      ;;Find a node to replace:
-      (mv-let (nodenum-to-replace probably-constantp other-val ;the quoted constant or smaller nodenum it's probably-equal to
-                                  )
-        (find-a-node-to-replace next-nodenum-to-consider tag-array2 miter-len)
-        (if (not (integerp nodenum-to-replace))
-            (if changep ;print the dag?
-                (prog2$ (cw "!! couldn't find any node to replace but something changed on this sweep.)")
-                        (mv nil :did-something miter-array analyzed-function-table rand state result-array-stobj))
-              (prog2$ (cw "!! couldn't find any node to replace and nothing changed on this sweep !!)")
-                      (mv nil :did-nothing miter-array analyzed-function-table rand state result-array-stobj)))
-          ;;We found a node to replace:
-          (prog2$
-           (and (member nodenum-to-replace traced-nodes) ;do we ever use this?
-                (prog2$ (cw "DAG:~%")
-                        (print-dag-only-supporters miter-array-name miter-array (+ -1 miter-len))))
-           (let ((use-proverp-flag (not (member nodenum-to-replace nodes-to-not-use-prover-for))))
-             (if probably-constantp
-                 ;; The node is a probable constant:
-                 (let ((constant-value (unquote other-val)))
-                   (mv-let
-                     (erp result miter-array ;parent-array
-                          analyzed-function-table rand state result-array-stobj)
+               (mv (erp-nil) :proved-miter miter-array analyzed-function-table rand state result-array-stobj))
+     (b* ((- (cw "(Depth ~x0 / sweep ~x1 / step ~x2:~%" miter-depth sweep-num step-num))
+          ;;(nodenum-with-bad-parents (find-nodenum-with-bad-parents (+ -1 miter-len) parent-array-name parent-array)) ;fixme remove this stuff - it's for debugging
+          ;; (if nodenum-with-bad-parents
+          ;;     (prog2$
+          ;;      (hard-error 'perform-miter-sweep- aux "bad parent lists for ~x0: ~x1."
+          ;;                  (acons #\0 nodenum-with-bad-parents (acons #\1 (aref1 'parent-array-name parent-array nodenum-with-bad-parents) nil)))
+          ;;      (mv :error miter-array analyzed-function-table rand state result-array-stobj))
+          ;;Find a node to replace:
+          ((mv nodenum-to-replace probably-constantp other-val ;the quoted constant or smaller nodenum it's probably-equal to
+               )
+           (find-a-node-to-replace next-nodenum-to-consider tag-array2 miter-len)))
+       (if (not (integerp nodenum-to-replace))
+           (if changep ;print the dag?
+               (prog2$ (cw "!! couldn't find any node to replace but something changed on this sweep.)")
+                       (mv (erp-nil) :did-something miter-array analyzed-function-table rand state result-array-stobj))
+             (prog2$ (cw "!! couldn't find any node to replace and nothing changed on this sweep !!)")
+                     (mv (erp-nil) :did-nothing miter-array analyzed-function-table rand state result-array-stobj)))
+         ;;We found a node to replace:
+         (b* ((- (and (member nodenum-to-replace traced-nodes) ;do we ever use this?
+                      (prog2$ (cw "DAG:~%")
+                              (print-dag-only-supporters miter-array-name miter-array (+ -1 miter-len)))))
+              (use-proverp-flag (not (member nodenum-to-replace nodes-to-not-use-prover-for))))
+           (if probably-constantp
+               ;; The node is a probable constant:
+               (b* ((constant-value (unquote other-val))
+                    ((mv erp result miter-array analyzed-function-table rand state result-array-stobj)
                      (if (and (not (g :prove-constants options))
                               (not (eql top-node nodenum-to-replace)) ;always try to prove the top node is T.
                               )
                          (prog2$ (cw "Skipping probable constant node ~x0 since :prove-constants is nil.~%" nodenum-to-replace)
-                                 (mv nil :failed miter-array analyzed-function-table rand state result-array-stobj))
+                                 (mv (erp-nil) :failed miter-array analyzed-function-table rand state result-array-stobj))
                        (try-to-prove-node-is-constant-and-replace nodenum-to-replace constant-value
                                                                   miter-array-name miter-array miter-len miter-depth
                                                                   var-type-alist print interpreted-function-alist
@@ -16797,50 +16800,46 @@
                                                                   assumptions monitored-symbols
                                                                   step-num analyzed-function-table unroll miter-is-purep
                                                                   ;;tag-array2
-                                                                  use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj))
-                     (prog2$ (cw ")~%")
-                             (if erp
-                                 (mv erp :error miter-array analyzed-function-table rand state result-array-stobj)
-                               (if (eq :error result)
-                                   (mv t :error miter-array analyzed-function-table rand state result-array-stobj)
-                                 ;; If we proved that the node is equal to the constant (fixme huh??): ffixme could some lemmas be generated?
-                                 (if (or (eq :proved result)
-                                         (eq :failed result)
-                                         (eq :timed-out result))
-                                     (let* ((tag-array2 (if (eq :proved result) ;ffffixme think about what happens with :unused nodes here..
-                                                            (update-tags-for-proved-constant-node nodenum-to-replace tag-array2)
-                                                          (update-tags-for-failed-constant-node nodenum-to-replace tag-array2)))
-                                            ;; could abort the sweep and simplify the dag right here, but that would change the node numbering...
-                                            )
-                                       ;;continue sweeping:
-                                       (perform-miter-sweep-aux (or changep (eq :proved result))
-                                                                miter-array-name
-                                                                miter-array miter-len miter-depth
-                                                                tag-array2
+                                                                  use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)))
+                    ((when erp) (mv erp nil miter-array analyzed-function-table rand state result-array-stobj))
+                    (- (cw ")~%")))
+                 ;; If we proved that the node is equal to the constant (fixme huh??): ffixme could some lemmas be generated?
+                 (if (or (eq :proved result)
+                         (eq :failed result)
+                         (eq :timed-out result))
+                     (let* ((tag-array2 (if (eq :proved result) ;ffffixme think about what happens with :unused nodes here..
+                                            (update-tags-for-proved-constant-node nodenum-to-replace tag-array2)
+                                          (update-tags-for-failed-constant-node nodenum-to-replace tag-array2)))
+                            ;; could abort the sweep and simplify the dag right here, but that would change the node numbering...
+                            )
+                       ;;continue sweeping:
+                       (perform-miter-sweep-aux (or changep (eq :proved result))
+                                                miter-array-name
+                                                miter-array miter-len miter-depth
+                                                tag-array2
 ;parent-array-name parent-array
-                                                                var-type-alist top-node print
-                                                                traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist
-                                                                extra-stuff monitored-symbols assumptions test-cases
-                                                                test-case-array-alist sweep-num (+ 1 step-num)
-                                                                nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
-                                                                analyzed-function-table
-                                                                unroll miter-is-purep nodes-to-not-use-prover-for
-                                                                (or some-goal-timed-outp
-                                                                    (eq :timed-out result))
-                                                                max-conflicts miter-name nodenums-not-to-unroll options
-                                                                rand state result-array-stobj))
-                                   ;; Otherwise, result is (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
-                                   ;; Abort the sweep:
-                                   (mv nil result miter-array analyzed-function-table rand state result-array-stobj)))))))
-               ;; This node is the larger nodenum of a probably-equal node pair (and other-val is the smaller nodenum):
-               ;;fixme i hope smaller-nodenum and larger-nodenum are guaranteed to be different (what if one has already been merged with another node?)
-               (b* ((- (cw " Trying to merge nodes ~x0 and ~x1.~%" nodenum-to-replace other-val)))
-                 ;;fixme do some analysis here
-                 ;;does smaller-nodenum support larger-nodenum?
-                 ;;are they both return values of the same recursive function node?
-                 ;;we do this analysis elsewhere?
-                 (mv-let
-                   (erp result miter-array analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
+                                                var-type-alist top-node print
+                                                traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist
+                                                extra-stuff monitored-symbols assumptions test-cases
+                                                test-case-array-alist sweep-num (+ 1 step-num)
+                                                nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
+                                                analyzed-function-table
+                                                unroll miter-is-purep nodes-to-not-use-prover-for
+                                                (or some-goal-timed-outp
+                                                    (eq :timed-out result))
+                                                max-conflicts miter-name nodenums-not-to-unroll options
+                                                rand state result-array-stobj))
+                   ;; Otherwise, result is (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
+                   ;; Abort the sweep:
+                   (mv (erp-nil) result miter-array analyzed-function-table rand state result-array-stobj)))
+             ;; This node is the larger nodenum of a probably-equal node pair (and other-val is the smaller nodenum):
+             ;;fixme i hope smaller-nodenum and larger-nodenum are guaranteed to be different (what if one has already been merged with another node?)
+             (b* ((- (cw " Trying to merge nodes ~x0 and ~x1.~%" nodenum-to-replace other-val))
+                  ;;fixme do some analysis here
+                  ;;does smaller-nodenum support larger-nodenum?
+                  ;;are they both return values of the same recursive function node?
+                  ;;we do this analysis elsewhere?
+                  ((mv erp result miter-array analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
                    (try-to-prove-nodes-equal-and-merge
                     other-val          ;;the smaller nodenum
                     nodenum-to-replace ;;the larger nodenum
@@ -16850,47 +16849,46 @@
                     extra-stuff monitored-symbols assumptions
                     test-cases test-case-array-alist step-num analyzed-function-table unroll
                     miter-is-purep ;tag-array2
-                    some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj)
-                   (if erp
-                       (mv erp :error miter-array analyzed-function-table rand state result-array-stobj)
-                     (prog2$
-                      (cw ")~%")
-                      (if (eq :error result)
-                          (mv t :error miter-array analyzed-function-table rand state result-array-stobj)
-                        ;;(we proved and merged, or failed or timed-out and didn't merge)
-                        ;;I'd like to simplify the dag here, but I think it would be too slow (would change the numbering and we'd have to redo the test cases, etc.)
-                        (if (or (eq :proved result)
-                                (eq :timed-out result)
-                                (eq :failed result))
-                            ;;                                     (and (not new-runes)
-                            ;;                                      (not new-fn-names))
-                            ;; no rules or fns were generated, so continue the sweep:
-                            (let* ((tag-array2 (if (eq :proved result)
-                                                   (update-tags-for-proved-equal-node nodenum-to-replace tag-array2)
-                                                 (update-tags-for-failed-equal-node nodenum-to-replace other-val tag-array2))))
-                              (perform-miter-sweep-aux (or changep (eq :proved result))
-                                                       miter-array-name
-                                                       miter-array miter-len miter-depth ;depth-array
-                                                       tag-array2 ;parent-array-name parent-array
-                                                       var-type-alist
-                                                       top-node print traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols
-                                                       assumptions test-cases test-case-array-alist sweep-num (+ 1 step-num) nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
-                                                       analyzed-function-table unroll miter-is-purep nodes-to-not-use-prover-for
-                                                       (or some-goal-timed-outp
-                                                           (eq :timed-out result))
-                                                       max-conflicts miter-name nodenums-not-to-unroll
-                                                       options
-                                                       rand state result-array-stobj))
-                          ;; Otherwise, we analyzed a loop fn (and returned some lemmas and/or fns)
-                          ;; abort the sweep
-                          ;; fixme - can we do better than starting all over here?
-                          ;; e.g., reuse the probable-sets (after fixing them up?), etc.?
-                          (mv nil result miter-array analyzed-function-table rand state result-array-stobj)))))))))))))))
+                    some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj))
+                  ((when erp) (mv erp nil miter-array analyzed-function-table rand state result-array-stobj))
+                  (- (cw ")~%"))
+                  ((when (eq :error result)) ;todo: do we want the paren printed in this case?
+                   (mv (erp-t) nil miter-array analyzed-function-table rand state result-array-stobj))
+                  )
+               ;;(we proved and merged, or failed or timed-out and didn't merge)
+               ;;I'd like to simplify the dag here, but I think it would be too slow (would change the numbering and we'd have to redo the test cases, etc.)
+               (if (or (eq :proved result)
+                       (eq :timed-out result)
+                       (eq :failed result))
+                   ;;                                     (and (not new-runes)
+                   ;;                                      (not new-fn-names))
+                   ;; no rules or fns were generated, so continue the sweep:
+                   (let* ((tag-array2 (if (eq :proved result)
+                                          (update-tags-for-proved-equal-node nodenum-to-replace tag-array2)
+                                        (update-tags-for-failed-equal-node nodenum-to-replace other-val tag-array2))))
+                     (perform-miter-sweep-aux (or changep (eq :proved result))
+                                              miter-array-name
+                                              miter-array miter-len miter-depth ;depth-array
+                                              tag-array2 ;parent-array-name parent-array
+                                              var-type-alist
+                                              top-node print traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols
+                                              assumptions test-cases test-case-array-alist sweep-num (+ 1 step-num) nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
+                                              analyzed-function-table unroll miter-is-purep nodes-to-not-use-prover-for
+                                              (or some-goal-timed-outp
+                                                  (eq :timed-out result))
+                                              max-conflicts miter-name nodenums-not-to-unroll
+                                              options
+                                              rand state result-array-stobj))
+                 ;; Otherwise, we analyzed a loop fn (and returned some lemmas and/or fns)
+                 ;; abort the sweep
+                 ;; fixme - can we do better than starting all over here?
+                 ;; e.g., reuse the probable-sets (after fixing them up?), etc.?
+                 (mv (erp-nil) result miter-array analyzed-function-table rand state result-array-stobj)))))))))
 
  ;;rename prove-or-simplify-miter?
  ;;ffixme think this through
  ;;returns (mv erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj)
- ;;where result is :error, :proved-miter, :did-nothing (wasn't able to do any merging), or :did-something
+ ;;where if ERP is nil, then result is :proved-miter, :did-nothing (wasn't able to do any merging), or :did-something
  (defun perform-miter-sweep (miter-name miter-array-name miter-array miter-len miter-depth var-type-alist
                                         test-cases ;give values to the input vars (may be more here than we want to use)
                                         interpreted-function-alist print
@@ -16898,281 +16896,270 @@
                                         sweep-num analyzed-function-table unroll max-conflicts options rand state result-array-stobj)
    (declare (xargs :guard (not (eq 'dag-array miter-array-name)) :mode :program :stobjs (rand state result-array-stobj)))
    ;;ffixme what if the miter is a constant?? maybe not possible..
-   (progn$
-    (cw "(Sweep ~x0 (depth ~x1, max-conflicts ~x2) for ~x3 (~x4 nodes).~%" sweep-num miter-depth max-conflicts miter-name miter-len)
-    (cw "(Assumptions:~%~x0)~%" assumptions) ;also, maybe pass around and print the refined assumptions??
-    (let* ((state (if print
-                      (progn$ (cw "(Writing DAG to file:~%")
-                              (let ((state (print-dag-array-to-temp-file miter-array-name miter-array miter-len (concatenate 'string (symbol-name miter-name) "-DAG-BEFORE-SWEEP-" (nat-to-string sweep-num)) state)))
-                                (prog2$ (cw ")~%")
-                                        state)))
-                    (prog2$ (cw "(DAG: :elided (~x0 nodes))~%" miter-len)
-                            state)))
-;fixme this should also check that every var has a good type for stp; otherwise there may be errors in translating?  or not, since the type can be inferred?
-           (miter-is-purep (miter-is-purep miter-array-name miter-array miter-len)) ;optimization for the ciphers (it was slow to check whether each pair was pure
-           )
-      (mv-let
-        (shuffled-test-cases rand) ;fixme can we do this less often?  we want the test cases in their original order when analyzing traces of rec fns..
-        (shuffle-list test-cases rand)
-        (mv-let
-          (probably-equal-node-sets ;includes probably-constant nodes
-           never-used-nodes
-           probably-constant-node-alist
-           test-case-array-alist ;invalid (nil?) if we are not keeping test cases
-           )
-          ;;perhaps this should indicate whether any test case made the top node false, and we should handle that failure here (if we're not in the top level miter, throwing a hard error seems like a mistake ffixme).
-          (probable-facts miter-array-name miter-array miter-len miter-depth
-                          shuffled-test-cases
-                          interpreted-function-alist print
-                          (not miter-is-purep) ;keep test cases if the miter is not pure (fixme what if there are no real rec fns but the miter is somehow not pure?)
-                          traced-nodes
-                          ;;(equal 0 miter-depth) ;abandon-testing-when-boringp (only do it on top-level miters since nested miters test are not in random order (may start with many tests from the same trace)
-                          )
-          (let* ((probably-equal-node-sets (remove-set-of-unused-nodes probably-equal-node-sets never-used-nodes nil)) ;TODO: could try to prove that these are really unused (could give interesting counterexamples)
-                 (tag-array2-name 'tag-array2) ;ffixme use a different name, according to the miter depth?
-                 ;; Set up the tags that are used to choose which node or node pair to handle next:
-                 (tag-array2 (make-empty-array tag-array2-name miter-len))
-                 ;;mark all nodes that are probably constants:
-                 ;;the tags are the constant values themselves (quoted)
-                 ;;ffixme don't bother doing tagging for nodes that are :unused (might be a large set?!)
-                 (tag-array2 (prog2$ (and print (eq :verbose print) (cw "Identifying and tagging probably-constant nodes...~%"))
-                                     (tag-probably-constant-nodes2 probably-constant-node-alist tag-array2)))
-                 ;; mark nodes that are probably equal to other nodes (including constants, in case we can't prove x=const and y=const but can prove x=y):
-                 (tag-array2 (prog2$ (and print (eq :verbose print) (cw "Tagging probably-equal nodes for replacement...~%"))
-                                     (tag-probably-equal-node-sets probably-equal-node-sets tag-array2 probably-constant-node-alist)))
-                 (dummy1 (progn$ (cw "(~x0 total probably-equal-node-sets.~%" (len probably-equal-node-sets)) ;fixme this total should exclude the probably constant nodes..
-                                 (and print (progn$ (cw "Here they are, after excluding probably-constant nodes:~%") ;count the nodes involved (or track that number)
-                                                    (print-non-constant-probably-equal-sets probably-equal-node-sets tag-array2) ;sort these?
-                                                    ))
-                                 (cw ")~%")
-                                 (cw "~%(Probably-constant nodes (~x0 total)" (len probably-constant-node-alist))
-                                 (and print (progn$ (cw ":~%")
-                                                    (print-list (merge-sort-car-<-2 probably-constant-node-alist))
-                                                    ))
-                                 (cw ")~%")))
+   (b* ((- (cw "(Sweep ~x0 (depth ~x1, max-conflicts ~x2) for ~x3 (~x4 nodes).~%" sweep-num miter-depth max-conflicts miter-name miter-len))
+        (- (cw "(Assumptions:~%~x0)~%" assumptions))
+        ;;also, maybe pass around and print the refined assumptions??
+        (state (if print
+                   (progn$ (cw "(Writing DAG to file:~%")
+                           (let ((state (print-dag-array-to-temp-file miter-array-name miter-array miter-len (concatenate 'string (symbol-name miter-name) "-DAG-BEFORE-SWEEP-" (nat-to-string sweep-num)) state)))
+                             (prog2$ (cw ")~%")
+                                     state)))
+                 (prog2$ (cw "(DAG: :elided (~x0 nodes))~%" miter-len)
+                         state)))
+        ;;fixme this should also check that every var has a good type for stp; otherwise there may be errors in translating?  or not, since the type can be inferred?
+        (miter-is-purep (miter-is-purep miter-array-name miter-array miter-len)) ;optimization for the ciphers (it was slow to check whether each pair was pure
+        ((mv shuffled-test-cases rand) ;fixme can we do this less often?  we want the test cases in their original order when analyzing traces of rec fns..
+         (shuffle-list test-cases rand))
+        ((mv probably-equal-node-sets ;includes probably-constant nodes
+             never-used-nodes
+             probably-constant-node-alist
+             test-case-array-alist ;invalid (nil?) if we are not keeping test cases
+             )
+         ;;perhaps this should indicate whether any test case made the top node false, and we should handle that failure here (if we're not in the top level miter, throwing a hard error seems like a mistake ffixme).
+         (probable-facts miter-array-name miter-array miter-len miter-depth
+                         shuffled-test-cases
+                         interpreted-function-alist print
+                         (not miter-is-purep) ;keep test cases if the miter is not pure (fixme what if there are no real rec fns but the miter is somehow not pure?)
+                         traced-nodes
+                         ;;(equal 0 miter-depth) ;abandon-testing-when-boringp (only do it on top-level miters since nested miters test are not in random order (may start with many tests from the same trace)
+                         ))
+        (probably-equal-node-sets (remove-set-of-unused-nodes probably-equal-node-sets never-used-nodes nil)) ;TODO: could try to prove that these are really unused (could give interesting counterexamples)
+        (tag-array2-name 'tag-array2) ;ffixme use a different name, according to the miter depth?
+        ;; Set up the tags that are used to choose which node or node pair to handle next:
+        (tag-array2 (make-empty-array tag-array2-name miter-len))
+        ;;mark all nodes that are probably constants:
+        ;;the tags are the constant values themselves (quoted)
+        ;;ffixme don't bother doing tagging for nodes that are :unused (might be a large set?!)
+        (tag-array2 (prog2$ (and print (eq :verbose print) (cw "Identifying and tagging probably-constant nodes...~%"))
+                            (tag-probably-constant-nodes2 probably-constant-node-alist tag-array2)))
+        ;; mark nodes that are probably equal to other nodes (including constants, in case we can't prove x=const and y=const but can prove x=y):
+        (tag-array2 (prog2$ (and print (eq :verbose print) (cw "Tagging probably-equal nodes for replacement...~%"))
+                            (tag-probably-equal-node-sets probably-equal-node-sets tag-array2 probably-constant-node-alist)))
+        (- (progn$ (cw "(~x0 total probably-equal-node-sets.~%" (len probably-equal-node-sets)) ;fixme this total should exclude the probably constant nodes..
+                   (and print (progn$ (cw "Here they are, after excluding probably-constant nodes:~%") ;count the nodes involved (or track that number)
+                                      (print-non-constant-probably-equal-sets probably-equal-node-sets tag-array2) ;sort these?
+                                      ))
+                   (cw ")~%")
+                   (cw "~%(Probably-constant nodes (~x0 total)" (len probably-constant-node-alist))
+                   (and print (progn$ (cw ":~%")
+                                      (print-list (merge-sort-car-<-2 probably-constant-node-alist))
+                                      ))
+                   (cw ")~%")))
 ;                    (parent-array-name (pack$ miter-array-name '-parent-array))
 ;                    (parent-array (prog2$ (and print (eq :verbose print) (cw "Making parent array...~%" nil)) (make-dag-parent-array-with-name (+ -1 miter-len) miter-array-name miter-array parent-array-name)))
-                 )
-            (declare (ignore dummy1))
-            (mv-let
-              (erp result miter-array analyzed-function-table rand state result-array-stobj) ;i guess this doesn't change miter-len
-              ;; Merge nodes until done or a theorem is generated:
-              (perform-miter-sweep-aux nil ;initial changep
-                                       miter-array-name
-                                       miter-array miter-len miter-depth ;depth-array
-                                       tag-array2
-                                       ;;parent-array-name parent-array
-                                       var-type-alist (+ -1 miter-len) ;nodenum of top node
-                                       print traced-nodes interpreted-function-alist
-                                       rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols assumptions
-                                       (firstn 512 test-cases) ;fixme
-                                       test-case-array-alist
-                                       sweep-num 0 0 analyzed-function-table unroll
-                                       miter-is-purep
-                                       (nodes-to-not-use-prover-for (+ -1 miter-len) miter-array-name miter-array)
-                                       nil ;some-goal-timed-outp ;no nodes have timed out yet
-                                       max-conflicts miter-name
-                                       nil ;initial nodenums-not-to-unroll
-                                       options
-                                       rand state result-array-stobj)
-              (if erp
-                  (mv erp :error miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj)
-                ;;tag-array2 may encode information about failed merges.  We could return it and fix it up after simplifying the dag instead of recalculating it.  A better plan might be to return test cases when possible that disambiguate nodes that failed to merge (not always possible if some nodes were cut out).
-                (if (eq :proved-miter result)
-                    (prog2$ (cw "Sweep ~x0 proved the miter (~x1)!)~%" sweep-num miter-name)
-                            (mv nil :proved-miter miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
-                  (if (eq :did-nothing result)
-                      (prog2$ (cw "Sweep ~x0 did nothing!)~%" sweep-num)
-                              (mv nil :did-nothing miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
-                    (if (eq :did-something result)
-                        ;;fffixme There can be a loop between mitering and simplifying.  consider: node x is replaced by y during mitering, but some (not all) instances of y simplify back to x during rewriting.
-                        ;;fffixme think more about this.  maybe if we merged any node with a constant that should count as doing something (could that happen as part of a loop?)
-                        ;;fffixme what should happen here? lightweight simplification and concretization, then keep sweeping?
-                        (prog2$ (cw "Sweep ~x0 did something but we are treating it as nothing to avoid loops!!)~%" sweep-num)
-                                (mv nil :did-nothing miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
-                      (if (eq :error result) ;should we return the error, or throw a hard error?
-                          (prog2$ (cw "!! ERROR Sweep ~x0 threw an error !!)" sweep-num)
-                                  (mv t :error miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
-                        ;; the sweep did some merging and/or generated some rules (and maybe some functions).
-                        ;; use the rules (if any) to simplify the dag and keep sweeping:
-                        (if (not (or (eq (car result) :new-rules)
-                                     (eq (car result) :apply-rule)))
-                            (prog2$ (hard-error 'perform-miter-sweep "don't yet support this result: ~x0" (acons #\0 result nil))
-                                    (mv t :error miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
-                          ;; Result is (list :apply-rule rule-symbol nodenum alist other-runes other-fns) or (list :new-rules new-runes new-fns):
-                          ;; We'll apply the rule first (but only in the :apply-rule case), then simplify
-                          (b* ((apply-rulep (eq :apply-rule (car result)))
-                               (new-runes (if apply-rulep (fifth result) (second result)))
-                               (new-fns (if apply-rulep (sixth result) (third result)))
-                               ((mv erp miter-array miter-len)
-                                (if apply-rulep
-                                    (let ((rule-symbol (second result))
-                                          (nodenum (third result))
-                                          (alist (fourth result)))
-                                      (prog2$ (cw "Applying rule ~x0 to node ~x1 using alist ~x2.~%" rule-symbol nodenum alist)
-                                              (apply-rule-at-nodenum rule-symbol nodenum alist miter-array-name miter-array miter-len state)))
-                                  (mv (erp-nil) miter-array miter-len)))
-                               ((when erp) (mv erp :error miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
-                               (- (cw "((Sweep ~x0 did some merging and/or generated rules (and maybe functions).  We'll simplify the dag using the rules (if any).)~%" sweep-num))
-                               (- (and new-fns (cw "(Adding interpreted functions:~x0.)~%" new-fns)) ;make sure they are actually new?
-                                  )
-                               (interpreted-function-alist (add-fns-to-interpreted-function-alist new-fns ;fffixme make sure the entires are consistent?
-                                                                                                  interpreted-function-alist (w state)))
-                               ((mv erp new-rules) (make-axe-rules new-runes (w state)))
-                               ((when erp) (mv erp :error miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
-                               ;;each rune may result in several rewriter-rules (one for each conjunct):
-                               (- (cw "(new runes: ~x0.)~%" (map-rule-symbol new-rules))) ;just prints the new ones - error if none are new?
-                               ;;                                    (rewriter-rules (union-equal new-rules rewriter-rules)) ;slow?
+        ((mv erp result miter-array analyzed-function-table rand state result-array-stobj) ;i guess this doesn't change miter-len
+         ;; Merge nodes until done or a theorem is generated:
+         (perform-miter-sweep-aux nil ;initial changep
+                                  miter-array-name
+                                  miter-array miter-len miter-depth ;depth-array
+                                  tag-array2
+                                  ;;parent-array-name parent-array
+                                  var-type-alist (+ -1 miter-len) ;nodenum of top node
+                                  print traced-nodes interpreted-function-alist
+                                  rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols assumptions
+                                  (firstn 512 test-cases) ;fixme
+                                  test-case-array-alist
+                                  sweep-num 0 0 analyzed-function-table unroll
+                                  miter-is-purep
+                                  (nodes-to-not-use-prover-for (+ -1 miter-len) miter-array-name miter-array)
+                                  nil ;some-goal-timed-outp ;no nodes have timed out yet
+                                  max-conflicts miter-name
+                                  nil ;initial nodenums-not-to-unroll
+                                  options
+                                  rand state result-array-stobj))
+        ((when erp)
+         (mv erp nil miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj)))
+     ;;tag-array2 may encode information about failed merges.  We could return it and fix it up after simplifying the dag instead of recalculating it.  A better plan might be to return test cases when possible that disambiguate nodes that failed to merge (not always possible if some nodes were cut out).
+     (if (eq :proved-miter result)
+         (prog2$ (cw "Sweep ~x0 proved the miter (~x1)!)~%" sweep-num miter-name)
+                 (mv (erp-nil) :proved-miter miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
+       (if (eq :did-nothing result)
+           (prog2$ (cw "Sweep ~x0 did nothing!)~%" sweep-num)
+                   (mv (erp-nil) :did-nothing miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
+         (if (eq :did-something result)
+             ;;fffixme There can be a loop between mitering and simplifying.  consider: node x is replaced by y during mitering, but some (not all) instances of y simplify back to x during rewriting.
+             ;;fffixme think more about this.  maybe if we merged any node with a constant that should count as doing something (could that happen as part of a loop?)
+             ;;fffixme what should happen here? lightweight simplification and concretization, then keep sweeping?
+             (prog2$ (cw "Sweep ~x0 did something but we are treating it as nothing to avoid loops!!)~%" sweep-num)
+                     (mv (erp-nil) :did-nothing miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
+           ;; the sweep did some merging and/or generated some rules (and maybe some functions).
+             ;; use the rules (if any) to simplify the dag and keep sweeping:
+             (if (not (or (eq (car result) :new-rules)
+                          (eq (car result) :apply-rule)))
+                 (prog2$ (hard-error 'perform-miter-sweep "don't yet support this result: ~x0" (acons #\0 result nil))
+                         (mv (erp-t) nil miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
+               ;; Result is (list :apply-rule rule-symbol nodenum alist other-runes other-fns) or (list :new-rules new-runes new-fns):
+               ;; We'll apply the rule first (but only in the :apply-rule case), then simplify
+               (b* ((apply-rulep (eq :apply-rule (car result)))
+                    (new-runes (if apply-rulep (fifth result) (second result)))
+                    (new-fns (if apply-rulep (sixth result) (third result)))
+                    ((mv erp miter-array miter-len)
+                     (if apply-rulep
+                         (let ((rule-symbol (second result))
+                               (nodenum (third result))
+                               (alist (fourth result)))
+                           (prog2$ (cw "Applying rule ~x0 to node ~x1 using alist ~x2.~%" rule-symbol nodenum alist)
+                                   (apply-rule-at-nodenum rule-symbol nodenum alist miter-array-name miter-array miter-len state)))
+                       (mv (erp-nil) miter-array miter-len)))
+                    ((when erp) (mv erp nil miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
+                    (- (cw "((Sweep ~x0 did some merging and/or generated rules (and maybe functions).  We'll simplify the dag using the rules (if any).)~%" sweep-num))
+                    (- (and new-fns (cw "(Adding interpreted functions:~x0.)~%" new-fns)) ;make sure they are actually new?
+                       )
+                    (interpreted-function-alist (add-fns-to-interpreted-function-alist new-fns ;fffixme make sure the entires are consistent?
+                                                                                       interpreted-function-alist (w state)))
+                    ((mv erp new-rules) (make-axe-rules new-runes (w state)))
+                    ((when erp) (mv erp nil miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
+                    ;;each rune may result in several rewriter-rules (one for each conjunct):
+                    (- (cw "(new runes: ~x0.)~%" (map-rule-symbol new-rules))) ;just prints the new ones - error if none are new?
+                    ;;                                    (rewriter-rules (union-equal new-rules rewriter-rules)) ;slow?
 ;slow?
-                               ;; Rules that transform (dropping, peeling, splitting, unrolling, etc.) should only be used in the rewriter (not the prover, since they might be expensive).
-                               ;; Other rules (the lemmas about recursive functions' return values and equivalences between two functions should be used in both.
+                    ;; Rules that transform (dropping, peeling, splitting, unrolling, etc.) should only be used in the rewriter (not the prover, since they might be expensive).
+                    ;; Other rules (the lemmas about recursive functions' return values and equivalences between two functions should be used in both.
 
-                               ;;previously we added all of new-rules ;;we need the type info, so doing this was a mistake: (filter-rules-to-use-in-prover new-rules) the rationale was that the theorem about a function should fire in rewriting
-                               (non-transformation-rules-to-add (filter-rules-to-use-in-prover new-rules state))
-                               (new-transformation-rules (set-difference-equal new-rules non-transformation-rules-to-add))
-                               (transformation-rules (append new-transformation-rules transformation-rules))
-                               (- (cw "(Adding non-transformation rules: ~x0.)~%" (map-rule-symbol non-transformation-rules-to-add)))
-                               ;;                                     (prover-rules (union-equal rules-to-add-to-prover
-                               ;;                                                                prover-rules)) ;slow?
-                               (priorities (table-alist 'axe-rule-priorities-table (w state))) ;could pass this around
-                               (rewriter-rule-alist (extend-rule-alist non-transformation-rules-to-add t priorities rewriter-rule-alist))
-                               (prover-rule-alist (extend-rule-alist non-transformation-rules-to-add t priorities prover-rule-alist))
+                    ;;previously we added all of new-rules ;;we need the type info, so doing this was a mistake: (filter-rules-to-use-in-prover new-rules) the rationale was that the theorem about a function should fire in rewriting
+                    (non-transformation-rules-to-add (filter-rules-to-use-in-prover new-rules state))
+                    (new-transformation-rules (set-difference-equal new-rules non-transformation-rules-to-add))
+                    (transformation-rules (append new-transformation-rules transformation-rules))
+                    (- (cw "(Adding non-transformation rules: ~x0.)~%" (map-rule-symbol non-transformation-rules-to-add)))
+                    ;;                                     (prover-rules (union-equal rules-to-add-to-prover
+                    ;;                                                                prover-rules)) ;slow?
+                    (priorities (table-alist 'axe-rule-priorities-table (w state))) ;could pass this around
+                    (rewriter-rule-alist (extend-rule-alist non-transformation-rules-to-add t priorities rewriter-rule-alist))
+                    (prover-rule-alist (extend-rule-alist non-transformation-rules-to-add t priorities prover-rule-alist))
 
-                               (monitored-symbols (union-eq nil ;;Sun Mar 14 01:05:07 2010
-                                                            ;;(keep-rewrite-rule-names new-rule-names)
-                                                            monitored-symbols))
-                               ;;if this doesn't change anything, can reuse test cases from last time? (not if we applied a rule above?!)
-                               ;;or should we just fail?
-                               ;;bozo drop this conversion by passing the rewriter an array directly?
+                    (monitored-symbols (union-eq nil ;;Sun Mar 14 01:05:07 2010
+                                                 ;;(keep-rewrite-rule-names new-rule-names)
+                                                 monitored-symbols))
+                    ;;if this doesn't change anything, can reuse test cases from last time? (not if we applied a rule above?!)
+                    ;;or should we just fail?
+                    ;;bozo drop this conversion by passing the rewriter an array directly?
 ;fixme drop-non-supporters?
-                               (dag-lst (dag-array-to-dag-lst2 miter-array-name miter-array (+ -1 miter-len))) ;rename dag-array-to-dag-lst2 if the last param is a nodenum, not a len
-                               (- (and print (prog2$ (cw "(Miter DAG to simplify after sweep ~x0 (depth ~x1):~%" sweep-num miter-depth)
-                                                     nil ;(print-list dag-lst)
-                                                     )))
-                               (state (if print
-                                          (print-dag-array-to-temp-file miter-array-name miter-array miter-len
-                                                                        (concatenate 'string (symbol-name miter-name) "-DAG-TO-SIMP-AT-END-OF-SWEEP-" (nat-to-string sweep-num)) state)
+                    (dag-lst (dag-array-to-dag-lst2 miter-array-name miter-array (+ -1 miter-len))) ;rename dag-array-to-dag-lst2 if the last param is a nodenum, not a len
+                    (- (and print (prog2$ (cw "(Miter DAG to simplify after sweep ~x0 (depth ~x1):~%" sweep-num miter-depth)
+                                          nil ;(print-list dag-lst)
+                                          )))
+                    (state (if print
+                               (print-dag-array-to-temp-file miter-array-name miter-array miter-len
+                                                             (concatenate 'string (symbol-name miter-name) "-DAG-TO-SIMP-AT-END-OF-SWEEP-" (nat-to-string sweep-num)) state)
 ;fixme at least print the number of nodes
-                                        state))
-                               (- (and print (cw ")")))
-                               (print-for-rewriting t) ;fixme use the passed in print?
-                               ;;first do a quick simplification pass to make use of any merging that was done on the sweep (e.g., if-tests that were turned into constants)
-                               ((mv erp dag-lst state)
-                                (simp-dag dag-lst
-                                          :rules (append (boolean-rules) (booleanp-rules) (base-rules)) ;ffffixme what else?  equal of self, etc? nth of cons?
-                                          :interpreted-function-alist interpreted-function-alist
-                                          :assumptions assumptions
-                                          :print print-for-rewriting
-                                          :simplify-xorsp nil
-                                          :memoizep nil ;does this make it faster?
-                                          :use-internal-contextsp use-context-when-miteringp
-                                          :check-inputs nil))
-                               ((when erp) (mv erp :error
-                                               miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
-                                               analyzed-function-table monitored-symbols rand state result-array-stobj))
-                               (dag-lst (concretize-using-contexts dag-lst)) ;; eventually build this into the rewriter?? ;new - return and check changep?
-                               ;;fixme should we not work-hard on some of these simplifications?
-                               ;;another quick pass to use the concretization (could the result have more concretization to do?):
-                               ((mv erp dag-lst state)
-                                (simp-dag dag-lst
-                                          :rules (append (boolean-rules) (booleanp-rules) (base-rules)) ;ffffixme what else?  equal of self, etc? nth of cons?
-                                          :interpreted-function-alist interpreted-function-alist
-                                          :assumptions assumptions
-                                          :print print-for-rewriting
-                                          :simplify-xorsp nil
-                                          :memoizep nil ;does this make it faster?
-                                          :use-internal-contextsp use-context-when-miteringp
-                                          :check-inputs nil))
-                               ((when erp) (mv erp :error
-                                               miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
-                                               analyzed-function-table monitored-symbols rand state result-array-stobj))
-                               ;;fffffixme simplifying :unused nodes can lead to loops (consider a function that doesn't terminate in this case but is guarded above by ifs that we can't yet resolve):  call a deeper rewriter function here? - could also make use of the renaming alist returned by such a function..
+                             state))
+                    (- (and print (cw ")")))
+                    (print-for-rewriting t) ;fixme use the passed in print?
+                    ;;first do a quick simplification pass to make use of any merging that was done on the sweep (e.g., if-tests that were turned into constants)
+                    ((mv erp dag-lst state)
+                     (simp-dag dag-lst
+                               :rules (append (boolean-rules) (booleanp-rules) (base-rules)) ;ffffixme what else?  equal of self, etc? nth of cons?
+                               :interpreted-function-alist interpreted-function-alist
+                               :assumptions assumptions
+                               :print print-for-rewriting
+                               :simplify-xorsp nil
+                               :memoizep nil ;does this make it faster?
+                               :use-internal-contextsp use-context-when-miteringp
+                               :check-inputs nil))
+                    ((when erp) (mv erp nil
+                                    miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
+                                    analyzed-function-table monitored-symbols rand state result-array-stobj))
+                    (dag-lst (concretize-using-contexts dag-lst)) ;; eventually build this into the rewriter?? ;new - return and check changep?
+                    ;;fixme should we not work-hard on some of these simplifications?
+                    ;;another quick pass to use the concretization (could the result have more concretization to do?):
+                    ((mv erp dag-lst state)
+                     (simp-dag dag-lst
+                               :rules (append (boolean-rules) (booleanp-rules) (base-rules)) ;ffffixme what else?  equal of self, etc? nth of cons?
+                               :interpreted-function-alist interpreted-function-alist
+                               :assumptions assumptions
+                               :print print-for-rewriting
+                               :simplify-xorsp nil
+                               :memoizep nil ;does this make it faster?
+                               :use-internal-contextsp use-context-when-miteringp
+                               :check-inputs nil))
+                    ((when erp) (mv erp nil
+                                    miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
+                                    analyzed-function-table monitored-symbols rand state result-array-stobj))
+                    ;;fffffixme simplifying :unused nodes can lead to loops (consider a function that doesn't terminate in this case but is guarded above by ifs that we can't yet resolve):  call a deeper rewriter function here? - could also make use of the renaming alist returned by such a function..
 ;ffixme could leave alone the nodes below the current point (but what if a generated theorem leads to a better context for one of them?)
 ;;;ffixme come to think of it, if we're not simplifying after each merge, the contexts may not be as good as they can be.. (are we even using contexts now?)
-                               ((mv erp dag-lst state)
-                                (simp-dag dag-lst
-                                          :rule-alist (extend-rule-alist transformation-rules t priorities rewriter-rule-alist)
-                                          :interpreted-function-alist interpreted-function-alist
-                                          :assumptions assumptions
-                                          :print print-for-rewriting
-                                          ;;ffixme the new runes might not fire here (since they may rewrite equalities)
-                                          ;;may have to wait until we actually make the miter equalities... for that kind of generated rule, just use it in place?
-                                          :monitor monitored-symbols
-                                          :simplify-xorsp nil
-                                          :memoizep t ;(not use-context-when-miteringp) ;nil ;Fri May 14 10:08:50 2010
-                                          :use-internal-contextsp use-context-when-miteringp
-                                          :check-inputs nil))
-                               ((when erp) (mv erp :error
-                                               miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
-                                               analyzed-function-table monitored-symbols rand state result-array-stobj))
-                               (dag-lst (concretize-using-contexts dag-lst)) ;new, check for quotep here?
-                               ;;another quick pass to use the concretization (could the result have more concretization to do?):
-                               ((mv erp dag-lst state)
-                                (simp-dag dag-lst
-                                          :rules (append (boolean-rules) (booleanp-rules) (base-rules)) ;ffffixme what else?  equal of self, etc? nth of cons?
-                                          :interpreted-function-alist interpreted-function-alist
-                                          :assumptions assumptions
-                                          :print print-for-rewriting
-                                          :simplify-xorsp nil
-                                          :memoizep nil ;for speed?
-                                          :use-internal-contextsp use-context-when-miteringp
-                                          :check-inputs nil))
-                               ((when erp) (mv erp :error
-                                               miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
-                                               analyzed-function-table monitored-symbols rand state result-array-stobj))
-                               )
-                            (if (quotep dag-lst)
-                                (if (equal *t* dag-lst)
-                                    (prog2$ (cw "Simplified to true! end simp) end sweep ~x0)~%" sweep-num) ;parens may be wrong (or maybe not!)
-                                            (mv nil :proved-miter miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
-                                                analyzed-function-table monitored-symbols rand state result-array-stobj))
-                                  (prog2$ (cw "!! ERROR DAG simplified to the non-t constant ~x0 !!)" dag-lst)
-                                          (prog2$ (hard-error 'perform-miter-sweep "Dag should not simplify to a non-nil-constant (maybe the assumptions contradict))" nil)
-                                                  (mv t :error
-                                                      miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
-                                                      analyzed-function-table monitored-symbols rand state result-array-stobj))))
-                              ;;here we analyze dag-lst for tuples whose individual components are not exposed to mitering
-                              ;;to do so, we examine the inputs to rec fns
-                              (mv-let
-                                (erp dag-lst-or-quotep state result-array-stobj)
-                                (rewrite-to-expose-tuple-elements dag-lst assumptions rewriter-rule-alist analyzed-function-table state result-array-stobj)
-                                (if erp
-                                    (mv erp :error miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
-                                        analyzed-function-table monitored-symbols rand state result-array-stobj)
-                                  (if (quotep dag-lst-or-quotep)
-                                      (if (equal *t* dag-lst-or-quotep)
-                                          (prog2$ (cw "Simplified to true! end sweep ~x0)~%" sweep-num) ;parens may be wrong?? or maybe okay
-                                                  (mv nil :proved-miter miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
-                                                      analyzed-function-table monitored-symbols rand state result-array-stobj))
-                                        (prog2$ (cw "!! ERROR DAG simplified to the non-t constant ~x0 !!)" dag-lst)
-                                                (prog2$ (hard-error 'perform-miter-sweep "Dag should not simplify to a non-nil-constant (maybe the assumptions contradict))" nil)
-                                                        (mv t :error
-                                                            miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
-                                                            analyzed-function-table monitored-symbols rand state result-array-stobj))))
-                                    (let* ( ;;fixme - make sure something changed, or this can loop! huh?
-                                           (miter-len (len dag-lst-or-quotep))
-                                           (miter-array (make-into-array miter-array-name dag-lst-or-quotep))
-                                           (dummy5 (and print (cw "Miter DAG after sweep ~x0 (depth ~x1):~%" sweep-num miter-depth)))
-                                           ;;fixme do we now print the dag before and after each sweep?  is that a waste?
-                                           (state (if print (print-dag-array-to-temp-file
-                                                             miter-array-name miter-array miter-len
-                                                             (concatenate 'string (symbol-name miter-name) "-DAG-AFTER-SWEEP-"
-                                                                          (nat-to-string sweep-num)) state)
-                                                    ;;fixme at least print the number of nodes
-                                                    state))
-                                           (dummy (progn$ (cw "Done simplifying the miter.)~%")
-                                                          (cw "(Functions created on sweep ~x0: ~x1)~%" sweep-num new-fns)
-                                                          (cw "(Rules created on sweep ~x0: ~x1)~%" sweep-num new-runes)
-                                                          (cw "End Sweep ~x0.)~%" sweep-num))))
-                                      (declare (ignore dummy dummy5))
-                                      (mv nil :did-something miter-array miter-len interpreted-function-alist rewriter-rule-alist
-                                          prover-rule-alist transformation-rules
-                                          analyzed-function-table monitored-symbols rand state result-array-stobj))))))))))))))))))))
+                    ((mv erp dag-lst state)
+                     (simp-dag dag-lst
+                               :rule-alist (extend-rule-alist transformation-rules t priorities rewriter-rule-alist)
+                               :interpreted-function-alist interpreted-function-alist
+                               :assumptions assumptions
+                               :print print-for-rewriting
+                               ;;ffixme the new runes might not fire here (since they may rewrite equalities)
+                               ;;may have to wait until we actually make the miter equalities... for that kind of generated rule, just use it in place?
+                               :monitor monitored-symbols
+                               :simplify-xorsp nil
+                               :memoizep t ;(not use-context-when-miteringp) ;nil ;Fri May 14 10:08:50 2010
+                               :use-internal-contextsp use-context-when-miteringp
+                               :check-inputs nil))
+                    ((when erp) (mv erp nil
+                                    miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
+                                    analyzed-function-table monitored-symbols rand state result-array-stobj))
+                    (dag-lst (concretize-using-contexts dag-lst)) ;new, check for quotep here?
+                    ;;another quick pass to use the concretization (could the result have more concretization to do?):
+                    ((mv erp dag-lst state)
+                     (simp-dag dag-lst
+                               :rules (append (boolean-rules) (booleanp-rules) (base-rules)) ;ffffixme what else?  equal of self, etc? nth of cons?
+                               :interpreted-function-alist interpreted-function-alist
+                               :assumptions assumptions
+                               :print print-for-rewriting
+                               :simplify-xorsp nil
+                               :memoizep nil ;for speed?
+                               :use-internal-contextsp use-context-when-miteringp
+                               :check-inputs nil))
+                    ((when erp) (mv erp nil
+                                    miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
+                                    analyzed-function-table monitored-symbols rand state result-array-stobj)))
+                 (if (quotep dag-lst)
+                     (if (equal *t* dag-lst)
+                         (prog2$ (cw "Simplified to true! end simp) end sweep ~x0)~%" sweep-num) ;parens may be wrong (or maybe not!)
+                                 (mv (erp-nil) :proved-miter miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
+                                     analyzed-function-table monitored-symbols rand state result-array-stobj))
+                       (prog2$ (cw "!! ERROR DAG simplified to the non-t constant ~x0 !!)" dag-lst)
+                               (prog2$ (hard-error 'perform-miter-sweep "Dag should not simplify to a non-nil-constant (maybe the assumptions contradict))" nil)
+                                       (mv (erp-t) nil
+                                           miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
+                                           analyzed-function-table monitored-symbols rand state result-array-stobj))))
+                   ;;here we analyze dag-lst for tuples whose individual components are not exposed to mitering
+                   ;;to do so, we examine the inputs to rec fns
+                   (mv-let
+                     (erp dag-lst-or-quotep state result-array-stobj)
+                     (rewrite-to-expose-tuple-elements dag-lst assumptions rewriter-rule-alist analyzed-function-table state result-array-stobj)
+                     (if erp
+                         (mv erp nil miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
+                             analyzed-function-table monitored-symbols rand state result-array-stobj)
+                       (if (quotep dag-lst-or-quotep)
+                           (if (equal *t* dag-lst-or-quotep)
+                               (prog2$ (cw "Simplified to true! end sweep ~x0)~%" sweep-num) ;parens may be wrong?? or maybe okay
+                                       (mv (erp-nil) :proved-miter miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
+                                           analyzed-function-table monitored-symbols rand state result-array-stobj))
+                             (prog2$ (cw "!! ERROR DAG simplified to the non-t constant ~x0 !!)" dag-lst)
+                                     (prog2$ (hard-error 'perform-miter-sweep "Dag should not simplify to a non-nil-constant (maybe the assumptions contradict))" nil)
+                                             (mv (erp-t) nil
+                                                 miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
+                                                 analyzed-function-table monitored-symbols rand state result-array-stobj))))
+                         (b* ( ;;fixme - make sure something changed, or this can loop! huh?
+                              (miter-len (len dag-lst-or-quotep))
+                              (miter-array (make-into-array miter-array-name dag-lst-or-quotep))
+                              (- (and print (cw "Miter DAG after sweep ~x0 (depth ~x1):~%" sweep-num miter-depth)))
+                              ;;fixme do we now print the dag before and after each sweep?  is that a waste?
+                              (state (if print (print-dag-array-to-temp-file
+                                                miter-array-name miter-array miter-len
+                                                (concatenate 'string (symbol-name miter-name) "-DAG-AFTER-SWEEP-"
+                                                             (nat-to-string sweep-num)) state)
+                                       ;;fixme at least print the number of nodes
+                                       state))
+                              (- (progn$ (cw "Done simplifying the miter.)~%")
+                                         (cw "(Functions created on sweep ~x0: ~x1)~%" sweep-num new-fns)
+                                         (cw "(Rules created on sweep ~x0: ~x1)~%" sweep-num new-runes)
+                                         (cw "End Sweep ~x0.)~%" sweep-num))))
+                           (mv (erp-nil) :did-something miter-array miter-len interpreted-function-alist rewriter-rule-alist
+                               prover-rule-alist transformation-rules
+                               analyzed-function-table monitored-symbols rand state result-array-stobj)))))))))))))
 
  ;;repeatedly sweep up the miter
  ;;each sweep either reduces the miter to true or possibly does some merging and then generates some lemmas (and fns), which are used to simplify the dag before the next sweep
- ;;Returns (mv erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj)
- ;;where result is :error, :proved-miter, or :done (did all the merging we could [except for max-conflictss etc] and didn't prove the miter)
+ ;;Returns (mv erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj),
+ ;;where if ERP is NIL, then result is :proved-miter, or :done (did all the merging we could [except for max-conflictss etc] and didn't prove the miter)
  ;;fixme - check that, if we generated some lemmas, at least one of them fires - is it possible that all we need is to simplify with other lemmas to make progress?
  ;;FIXME - moved the use of the generated lemmas down?
  ;;The reason we may need more than one sweep is that synchronizing transformations may occur.
@@ -17194,11 +17181,11 @@
                           monitored-symbols assumptions use-context-when-miteringp sweep-num analyzed-function-table unroll
                           max-conflicts options rand state result-array-stobj)
      (if erp
-         (mv erp :error  miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj)
+         (mv erp nil  miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj)
        (if (eq :proved-miter result)
-           (mv nil :proved-miter miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj)
+           (mv (erp-nil) :proved-miter miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj)
          (if (eq :did-nothing result)
-             (mv nil :done miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj)
+             (mv (erp-nil) :done miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj)
            (if (eq :did-something result)
                (perform-miter-sweeps miter-name miter-array-name miter-array miter-len miter-depth var-type-alist test-cases interpreted-function-alist
                                      print traced-nodes
@@ -17211,8 +17198,8 @@
                                      analyzed-function-table
                                      unroll max-conflicts options
                                      rand state result-array-stobj)
-             (prog2$ (hard-error 'perform-miter-sweeps "ERROR" nil)
-                     (mv t :error miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj))))))))
+             (prog2$ (er hard 'perform-miter-sweeps "ERROR: This should not happen.")
+                     (mv (erp-t) nil miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state result-array-stobj))))))))
 
  ;;this could be made more efficient if we reused the test cases (but will have to keep track of what happens to the nodes during simplification..)
  ;;this requires that each function appear only once -- we keep track of already-handled functions by their names (now only on the global level, not within this function?)
@@ -17500,7 +17487,7 @@
  ;;what should this do if there are no test cases?
  ;; should this actually make the theorem?
 ;fixme perhaps up the depth just before calling this, instead of in 3 places..
- (defun miter-and-merge (dag-lst-or-quotep
+ (defun miter-and-merge (dag-or-quotep
                          miter-name ;a symbol
                          miter-depth ;we may be proving this miter on behalf of an overarching miter, and so on
                          var-type-alist ;used if we need to call STP (callers can compute from the assumptions using make-var-type-alist-from-hyps)
@@ -17524,280 +17511,279 @@
                          options
                          rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
-   (if (quotep dag-lst-or-quotep) ;get rid of this and improve pre simp to take a constant?
-       (let ((val (unquote dag-lst-or-quotep)))
+   (if (quotep dag-or-quotep) ;get rid of this and improve pre simp to take a constant?
+       (let ((val (unquote dag-or-quotep)))
          (if (eq t val)
              (prog2$ (cw "(The miter is the constant t.)~%")
-                     (mv nil t rand state result-array-stobj))
+                     (mv (erp-nil) t rand state result-array-stobj))
            (if (eq nil val)
                (prog2$ (cw "(The miter is the constant nil.)~%") ;should this be a hard error?
-                       (mv nil nil rand state result-array-stobj))
-             (prog2$ (hard-error 'miter-and-merge "expected t or nil but got the constant ~x0." (acons #\0 val nil))
-                     (mv t nil rand state result-array-stobj)))))
+                       (mv (erp-nil) nil rand state result-array-stobj))
+             (prog2$ (er hard? 'miter-and-merge "expected t or nil but got the constant ~x0." val)
+                     (mv (erp-t) nil rand state result-array-stobj)))))
      ;;Pre-simplify:
-     (mv-let
-       (erp dag-lst-or-quotep interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj)
-       (if pre-simplifyp
-           (pre-simplify-recursive-functions dag-lst-or-quotep
-                                             interpreted-function-alist
-                                             rewriter-rule-alist
-                                             prover-rule-alist
-                                             assumptions
-                                             extra-stuff
-                                             (firstn tests-per-case test-cases) ;fixme think about the firstn ;fixme chose the most interesting ones
-                                             analyzed-function-table unroll monitored-symbols max-conflicts print
-                                             simplify-xorsp
-                                             miter-name
-                                             miter-depth options
-                                             rand state result-array-stobj)
-         (mv nil dag-lst-or-quotep interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj))
-       (if erp
-           (mv erp nil rand state result-array-stobj)
-         (if (quotep dag-lst-or-quotep)
-             (let ((val (unquote dag-lst-or-quotep)))
-               (if (eq t val)
-                   (prog2$ (cw "(The miter is the constant t.)~%")
-                           (mv nil t rand state result-array-stobj))
-                 (if (eq nil val)
-                     (prog2$ (cw "(The miter is the constant nil.)~%") ;should this be a hard error? not unless this miter must succeed?
-                             (mv nil nil rand state result-array-stobj))
-                   (prog2$ (hard-error 'miter-and-merge "expected t or nil but got the constant ~x0." (acons #\0 val nil))
-                           (mv t nil rand state result-array-stobj)))))
-           (let* ((miter-array-name (pack$ 'miter-array- miter-depth))
-                  (miter-array (make-into-array miter-array-name dag-lst-or-quotep)) ;call a -with-len version?
-                  (miter-len (len dag-lst-or-quotep)))
-             (progn$ (cw "(Proving miter ~x0 (depth ~x1, len ~x2):~%" miter-name miter-depth miter-len) ;name the miters according to their cases...
-                     (cw "(Using ~x0 test cases)~%" (len test-cases))
-                     (cw "(Number of rewriter-rules: ~x0.)~%" (sum-of-cdr-lens rewriter-rule-alist))
-                     (if (not test-cases) ;where should this check be done?
-                         (prog2$ (cw "ERROR no test cases! - no point in sweeping!") ; fffixme, well we could rewrite, i guess... that should be done outside this function?
-                                 (mv nil ;todo: use t?
-                                     (hard-error 'miter-and-merge "no test cases!" nil)
+     (b* ((dag dag-or-quotep)
+          ((mv erp dag-or-quotep interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj)
+           (if pre-simplifyp
+               (pre-simplify-recursive-functions dag
+                                                 interpreted-function-alist
+                                                 rewriter-rule-alist
+                                                 prover-rule-alist
+                                                 assumptions
+                                                 extra-stuff
+                                                 (firstn tests-per-case test-cases) ;fixme think about the firstn ;fixme chose the most interesting ones
+                                                 analyzed-function-table unroll monitored-symbols max-conflicts print
+                                                 simplify-xorsp
+                                                 miter-name
+                                                 miter-depth options
+                                                 rand state result-array-stobj)
+             (mv nil dag interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj)))
+          ((when erp) (mv erp nil rand state result-array-stobj)))
+       (if (quotep dag-or-quotep)
+           (let ((val (unquote dag-or-quotep)))
+             (if (eq t val)
+                 (prog2$ (cw "(The miter is the constant t.)~%")
+                         (mv (erp-nil) t rand state result-array-stobj))
+               (if (eq nil val)
+                   (prog2$ (cw "(The miter is the constant nil.)~%") ;should this be a hard error? not unless this miter must succeed?
+                           (mv (erp-nil) nil rand state result-array-stobj))
+                 (prog2$ (er hard? 'miter-and-merge "expected t or nil but got the constant ~x0." val)
+                         (mv (erp-t) nil rand state result-array-stobj)))))
+         ;; Not a constant;
+         (b* ((dag dag-or-quotep)
+              (miter-array-name (pack$ 'miter-array- miter-depth))
+              (miter-array (make-into-array miter-array-name dag)) ;call a -with-len version?
+              (miter-len (len dag))
+              (- (progn$ (cw "(Proving miter ~x0 (depth ~x1, len ~x2):~%" miter-name miter-depth miter-len) ;name the miters according to their cases...
+                         (cw "(Using ~x0 test cases)~%" (len test-cases))
+                         (cw "(Number of rewriter-rules: ~x0.)~%" (sum-of-cdr-lens rewriter-rule-alist))))
+              ((when (not test-cases)) ;where should this check be done?
+               (cw "ERROR no test cases! - no point in sweeping!") ; fffixme, well we could rewrite, i guess... that should be done outside this function?
+               (mv nil ;todo: use t?
+                   (hard-error 'miter-and-merge "no test cases!" nil)
+                   rand state result-array-stobj))
+              ((mv erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist
+                   & ; new-analyzed-function-table
+                   monitored-symbols rand state result-array-stobj)
+               (perform-miter-sweeps miter-name miter-array-name miter-array miter-len
+                                     miter-depth
+                                     var-type-alist
+                                     test-cases
+                                     interpreted-function-alist print
+                                     traced-nodes
+                                     rewriter-rule-alist
+                                     prover-rule-alist
+                                     nil
+                                     assumptions
+                                     extra-stuff
+                                     monitored-symbols
+                                     use-context-when-miteringp
+                                     0
+                                     analyzed-function-table
+                                     unroll max-conflicts options
                                      rand state result-array-stobj))
-                       (mv-let (erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist new-analyzed-function-table monitored-symbols rand state result-array-stobj)
-                         (perform-miter-sweeps miter-name miter-array-name miter-array miter-len
-                                               miter-depth
-                                               var-type-alist
-                                               test-cases
-                                               interpreted-function-alist print
-                                               traced-nodes
-                                               rewriter-rule-alist
-                                               prover-rule-alist
-                                               nil
-                                               assumptions
-                                               extra-stuff
-                                               monitored-symbols
-                                               use-context-when-miteringp
-                                               0
-                                               analyzed-function-table
-                                               unroll max-conflicts options
-                                               rand state result-array-stobj)
-                         (declare (ignore new-analyzed-function-table))
-                         (if erp
-                             (mv erp nil ;provedp
-                                 rand state result-array-stobj)
-                           (if (eq :proved-miter result)
-                               (prog2$
-                                (cw "Proved the miter.)~%")
-                                (mv nil
-                                    t ;provedp
-                                    rand state result-array-stobj))
-                             (if (eq :error result)
-                                 (prog2$ (cw "ERROR)")
-                                         (mv t
-                                             nil ;provedp
-                                             rand state result-array-stobj))
-                               (b* ((- (cw "(May need to split the miter dag (depth ~x0, ~x1, ~x2):~%" miter-depth miter-name miter-array-name))
-                                    (state (if print (print-dag-array-to-temp-file
-                                                      miter-array-name miter-array miter-len
-                                                      (concatenate 'string (symbol-name miter-name) "-PRE-SPLIT")
-                                                      state)
-                                             state))
-                                    (- (cw ")~%(But we'll simplify first, using assumptions: ~x0~%" assumptions))
-                                    (miter-dag-lst (array-to-alist miter-array-name miter-array miter-len))
-                                    ;;since we are sometimes saying we did nothing when that is a lie, simplifying here may help:
-                                    ((mv erp
-                                         miter-dag-lst ;fffixme what if this is a quote?!
-                                         state)
-                                     (simp-dag miter-dag-lst
-                                               :rule-alist rewriter-rule-alist
-                                               :print :brief
-                                               :assumptions assumptions
-                                               :check-inputs nil))
-                                    ((when erp) (mv erp nil rand state result-array-stobj))
-                                    (- (and (or (eq :verbose print) (eq :verbose2 print))
-                                            (progn$ (cw "(Simplified miter dag (~x0):" miter-name)
-                                                    (print-list miter-dag-lst) ;fixme print this to a file?
-                                                    (cw ")~%"))))
-                                    ;;(- (cw "(Assumptions:~%~x0)~%" assumptions))
-                                    (- (cw ")~%"))
-                                    (miter-len (len miter-dag-lst))
-                                    (miter-array (make-into-array miter-array-name miter-dag-lst)) ;gross to convert here?
-                                    (nodenum-to-split-on (find-a-node-to-split-miter-on
-                                                          miter-array-name miter-len miter-array
-                                                          test-cases interpreted-function-alist)) ; ffixme think about heuristics!
-                                    )
-                                 (if (not nodenum-to-split-on)
-                                     (prog2$
-                                      (cw "(Couldn't find any node to split on.)~%")
-                                      ;; TODO: should we consider bit-blasting here?
-                                      (if (not must-succeedp)
-                                          (prog2$ (cw "(Failing because we don't have to succeed on this miter.))")
-                                                  (mv nil nil rand state result-array-stobj))
-                                        (if (not max-conflicts)
-                                            (prog2$ (cw "(Failing because we would normally increase the max-conflicts but timing out is turned off.))")
-                                                    (mv nil nil rand state result-array-stobj))
-                                          (if (< 10000000000 max-conflicts) ;; not sure what the limit should be but 2^64 causes an STP error
-                                              (prog2$ (cw "(Failing because the max-conflicts is too high.))")
-                                                      (mv nil nil rand state result-array-stobj))
-                                            (let ((max-conflicts (* 2 max-conflicts))) ;; TODO: Don't do this if no queries timed out
-                                              (prog2$ (cw "(Increasing the max-conflicts to ~x0 and trying again.)~%" max-conflicts)
-                                                      (mv-let (erp provedp rand state result-array-stobj)
-                                                        (miter-and-merge miter-dag-lst
-                                                                         miter-name ;fixme change this to indicate the increased max-conflicts?
-                                                                         miter-depth
-                                                                         var-type-alist
-                                                                         interpreted-function-alist
-                                                                         print
-                                                                         traced-nodes
-                                                                         rewriter-rule-alist
-                                                                         prover-rule-alist
-                                                                         assumptions
-                                                                         extra-stuff
-                                                                         test-cases
-                                                                         monitored-symbols
-                                                                         use-context-when-miteringp
-                                                                         analyzed-function-table
-                                                                         unroll
-                                                                         tests-per-case
-                                                                         max-conflicts must-succeedp
-                                                                         pre-simplifyp
-                                                                         simplify-xorsp
-                                                                         options
-                                                                         rand state result-array-stobj)
-                                                        (prog2$ (cw "End of proof attempt for ~x0)~%"  miter-name)
-                                                                (mv erp provedp rand state result-array-stobj)))))))))
-                                   (b* ((- (cw "(Splitting miter on node ~x0.)~%" nodenum-to-split-on))
-                                        (split-assumption (dag-to-term-aux-array miter-array-name miter-array nodenum-to-split-on)) ;fffixme this can blow up if there's nothing small to split on!
-                                        ;;(split-assumption (orient-equality2 split-assumption)) ;too aggressive? ;handle nots and known preds? ;Fri Feb 26 01:48:01 2010
-                                        ;;fixme what if the assumption contradicts the known assumptions
-                                        ;; (maybe it should have been merged with false, but what if it only arose during the simplification after the merge?)
-                                        (- (cw "(Split assumption:~%~x0)~%" split-assumption))
-                                        (assumptions-for-true-case (cons split-assumption assumptions))
-                                        (- (cw "(Simplifying other assumptions using the split assumption:~%"))
-                                        (strengthen-rules
-                                         ;;ffixme more rules? fixme pull out?
-                                         ;;did not want turn-equal-around..
-                                         ;; TODO: Use plain make-axe-rules here
-                                         (append (make-axe-rules! (exit-test-simplification-rules) (w state))
-                                                 (make-axe-rules! (strengthening-rules) (w state))))
-                                        ((mv erp assumptions-for-true-case state result-array-stobj)
-                                         (strengthen-facts assumptions-for-true-case print strengthen-rules state result-array-stobj))
-                                        ((when erp) (mv erp nil rand state result-array-stobj))
-                                        (- (cw "Done.)~%"))
-                                        ((mv erp miter-dag-lst-for-true-case state)
-                                         ;;fixme why not apply rule here too?!
-                                         (simp-dag miter-dag-lst
-                                                   :rules nil ;fffixme?
-                                                   :assumptions assumptions-for-true-case ;ffixme what about the equiv? call something like concretize?
-                                                   :check-inputs nil))
-                                        ((when erp) (mv erp nil rand state result-array-stobj))
-                                        ;; ffixme what about the equiv? the new assumption may not fire? call something like concretize?
-                                        (- (cw "(Unsimplified miter dag for true case:~%"))
-                                        (- (if (or (eq :verbose print) (eq :verbose2 print))
-                                               (print-list miter-dag-lst-for-true-case)
-                                             (cw ":elided"))) ;fixme what is this?
-                                        (- (cw ")~%(Simplifying:"))
-                                        ((mv erp miter-dag-lst-for-true-case state)
-                                         (simp-dag miter-dag-lst-for-true-case
-                                                   :rule-alist rewriter-rule-alist ;pass other rules?
-                                                   :assumptions assumptions-for-true-case
-                                                   :print print
-                                                   :check-inputs nil))
-                                        ((when erp) (mv erp nil rand state result-array-stobj))
-                                        (- (cw "done)~%") ;nil ;(cw "Simplified miter dag for true case:~%")
-                                           )
-                                        ;; (- (print-list miter-dag-lst-for-true-case)) ;don't print, since it will be printed by miter-and-merge?
-
-                                        ;;compute contexts? concretize?
-                                        ;;ffixme have we already checked that the test cases satisfy the assumptions (if they were random)?  only makes sense for outmost miter?
-                                        ((mv test-cases-for-true-case test-cases-for-false-case)
-                                         (partition-test-cases test-cases split-assumption interpreted-function-alist nil nil))
-                                        ;; fffixme add more test cases if needed and if depth=0
-                                        (- (cw "(True case:~%"))
-                                        ((mv erp provedp rand state result-array-stobj)
-                                         (miter-and-merge miter-dag-lst-for-true-case
-                                                          (pack$ miter-name "1")
-                                                          miter-depth
-                                                          var-type-alist ;ffixme think about this?
-                                                          interpreted-function-alist ;make sure these alists are always consistent?
-                                                          print
-                                                          traced-nodes
-                                                          rewriter-rule-alist
-                                                          prover-rule-alist
-                                                          assumptions-for-true-case
-                                                          extra-stuff
-                                                          test-cases-for-true-case
-                                                          monitored-symbols ;clear these out? use only what was passed in?
-                                                          use-context-when-miteringp
-                                                          (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
-                                                          unroll tests-per-case max-conflicts must-succeedp
-                                                          pre-simplifyp
-                                                          simplify-xorsp
-                                                          options
-                                                          rand state result-array-stobj))
-                                        ((when erp) (mv erp nil rand state result-array-stobj))
-                                        (- (cw "end true case)~%")))
-                                     (if (not provedp)
-                                         (prog2$ (cw "failed to prove true case.)")
-                                                 (mv nil nil rand state result-array-stobj))
-                                       ;;now attempt the false case:
-                                       (b* ((negated-split-assumption `(equal ,split-assumption 'nil)) ;orient before negating? maybe it's already oriented.. ;fixme use not?
-                                            (assumptions-for-false-case (cons negated-split-assumption assumptions))
-                                            ((mv erp assumptions-for-false-case state result-array-stobj)
-                                             (strengthen-facts assumptions-for-false-case print strengthen-rules state result-array-stobj))
-                                            ((when erp) (mv erp nil rand state result-array-stobj))
-                                            ((mv erp miter-dag-lst-for-false-case state)
-                                             (simp-dag miter-dag-lst
-                                                       :rule-alist rewriter-rule-alist
-                                                       ;;ffixme use contexts? pass in ifns? what else?
-                                                       :assumptions assumptions-for-false-case ;ffixme what about the equiv? call something like concretize?
-                                                       :check-inputs nil))
-                                            ((when erp) (mv erp nil rand state result-array-stobj))
-                                            ;;compute contexts? concretize?
-                                            ;; fffixme add more test cases if needed and if depth=0
-                                            (- (cw "(False case:~%"))
-                                            ;; (let* ( ;(dummy1 (cw "Miter dag for false case:~%"))
-                                            ;;(dummy2 (print-list miter-dag-lst-for-false-case))
-                                            ;; (dummy ))
-                                            ;; (declare (ignore dummy))
-                                            ((mv erp provedp rand state result-array-stobj)
-                                             (miter-and-merge miter-dag-lst-for-false-case
-                                                              (pack$ miter-name "2")
-                                                              miter-depth
-                                                              var-type-alist ;ffixme think about this?
-                                                              interpreted-function-alist
-                                                              print
-                                                              traced-nodes
-                                                              rewriter-rule-alist
-                                                              prover-rule-alist
-                                                              assumptions-for-false-case
-                                                              extra-stuff
-                                                              test-cases-for-false-case
-                                                              monitored-symbols ;clear these out? use only what was passed in?
-                                                              use-context-when-miteringp
-                                                              (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
-                                                              unroll tests-per-case max-conflicts must-succeedp
-                                                              pre-simplifyp simplify-xorsp options
-                                                              rand state result-array-stobj))
-                                            ((when erp) (mv erp nil rand state result-array-stobj))
-                                            (- (cw "End false case)~%")))
-
-                                         (if (not provedp)
-                                             (prog2$ (cw "failed to prove false case.)")
-                                                     (mv nil nil rand state result-array-stobj))
-                                           (prog2$ (cw "proved both cases.)")
-                                                   (mv nil t rand state result-array-stobj))))))))))))))))))))
+              ((when erp) (mv erp nil rand state result-array-stobj)))
+           (if (eq :proved-miter result)
+               (prog2$ (cw "Proved the miter.)~%")
+                       (mv (erp-nil) t rand state result-array-stobj))
+             (b* ((- (cw "(May need to split the miter dag (depth ~x0, ~x1, ~x2):~%" miter-depth miter-name miter-array-name))
+                  (state (if print (print-dag-array-to-temp-file
+                                    miter-array-name miter-array miter-len
+                                    (concatenate 'string (symbol-name miter-name) "-PRE-SPLIT")
+                                    state)
+                           state))
+                  (- (cw ")~%(But we'll simplify first, using assumptions: ~x0~%" assumptions))
+                  (miter-dag (array-to-alist miter-array-name miter-array miter-len))
+                  ;;since we are sometimes saying we did nothing when that is a lie, simplifying here may help:
+                  ((mv erp miter-dag-or-quote state)
+                   (simp-dag miter-dag
+                             :rule-alist rewriter-rule-alist
+                             :print :brief
+                             :assumptions assumptions
+                             :check-inputs nil))
+                  ((when erp) (mv erp nil rand state result-array-stobj))
+                  ((when (quotep miter-dag-or-quote)) ; unusual?
+                   (let ((val (unquote miter-dag-or-quote)))
+                     (if (eq t val)
+                         (prog2$ (cw "The miter simplified to the constant t.))~%")
+                                 (mv (erp-nil) t rand state result-array-stobj))
+                       (if (eq nil val)
+                           (prog2$ (cw "The miter simplififed to the constant nil.))~%") ;should this be a hard error? not unless this miter must succeed?
+                                   (mv (erp-nil) nil rand state result-array-stobj))
+                         (prog2$ (er hard? 'miter-and-merge "expected t or nil but got the constant ~x0." val)
+                                 (mv (erp-t) nil rand state result-array-stobj))))))
+                  (miter-dag miter-dag-or-quote)
+                  (- (and (or (eq :verbose print) (eq :verbose2 print))
+                          (progn$ (cw "(Simplified miter dag (~x0):" miter-name)
+                                  (print-list miter-dag) ;fixme print this to a file?
+                                  (cw ")~%"))))
+                  ;;(- (cw "(Assumptions:~%~x0)~%" assumptions))
+                  (- (cw ")~%"))
+                  (miter-len (len miter-dag))
+                  (miter-array (make-into-array miter-array-name miter-dag)) ;gross to convert here?
+                  (nodenum-to-split-on (find-a-node-to-split-miter-on
+                                        miter-array-name miter-len miter-array
+                                        test-cases interpreted-function-alist)) ; ffixme think about heuristics!
+                  )
+               (if (not nodenum-to-split-on)
+                   (prog2$
+                    (cw "(Couldn't find any node to split on.)~%")
+                    ;; TODO: should we consider bit-blasting here?
+                    (if (not must-succeedp)
+                        (prog2$ (cw "(Failing because we don't have to succeed on this miter.))")
+                                (mv nil nil rand state result-array-stobj))
+                      (if (not max-conflicts)
+                          (prog2$ (cw "(Failing because we would normally increase the max-conflicts but timing out is turned off.))")
+                                  (mv nil nil rand state result-array-stobj))
+                        (if (< 10000000000 max-conflicts) ;; not sure what the limit should be but 2^64 causes an STP error
+                            (prog2$ (cw "(Failing because the max-conflicts is too high.))")
+                                    (mv nil nil rand state result-array-stobj))
+                          (let ((max-conflicts (* 2 max-conflicts))) ;; TODO: Don't do this if no queries timed out
+                            (prog2$ (cw "(Increasing the max-conflicts to ~x0 and trying again.)~%" max-conflicts)
+                                    (mv-let (erp provedp rand state result-array-stobj)
+                                      (miter-and-merge miter-dag
+                                                       miter-name ;fixme change this to indicate the increased max-conflicts?
+                                                       miter-depth
+                                                       var-type-alist
+                                                       interpreted-function-alist
+                                                       print
+                                                       traced-nodes
+                                                       rewriter-rule-alist
+                                                       prover-rule-alist
+                                                       assumptions
+                                                       extra-stuff
+                                                       test-cases
+                                                       monitored-symbols
+                                                       use-context-when-miteringp
+                                                       analyzed-function-table
+                                                       unroll
+                                                       tests-per-case
+                                                       max-conflicts must-succeedp
+                                                       pre-simplifyp
+                                                       simplify-xorsp
+                                                       options
+                                                       rand state result-array-stobj)
+                                      (prog2$ (cw "End of proof attempt for ~x0)~%"  miter-name)
+                                              (mv erp provedp rand state result-array-stobj)))))))))
+                 (b* ((- (cw "(Splitting miter on node ~x0.)~%" nodenum-to-split-on))
+                      (split-assumption (dag-to-term-aux-array miter-array-name miter-array nodenum-to-split-on)) ;fffixme this can blow up if there's nothing small to split on!
+                      ;;(split-assumption (orient-equality2 split-assumption)) ;too aggressive? ;handle nots and known preds? ;Fri Feb 26 01:48:01 2010
+                      ;;fixme what if the assumption contradicts the known assumptions
+                      ;; (maybe it should have been merged with false, but what if it only arose during the simplification after the merge?)
+                      (- (cw "(Split assumption:~%~x0)~%" split-assumption))
+                      (assumptions-for-true-case (cons split-assumption assumptions))
+                      (- (cw "(Simplifying other assumptions using the split assumption:~%"))
+                      (strengthen-rules
+                       ;;ffixme more rules? fixme pull out?
+                       ;;did not want turn-equal-around..
+                       ;; TODO: Use plain make-axe-rules here
+                       (append (make-axe-rules! (exit-test-simplification-rules) (w state))
+                               (make-axe-rules! (strengthening-rules) (w state))))
+                      ((mv erp assumptions-for-true-case state result-array-stobj)
+                       (strengthen-facts assumptions-for-true-case print strengthen-rules state result-array-stobj))
+                      ((when erp) (mv erp nil rand state result-array-stobj))
+                      (- (cw "Done.)~%"))
+                      ((mv erp miter-dag-for-true-case state)
+                       ;;fixme why not apply rule here too?!
+                       (simp-dag miter-dag
+                                 :rules nil ;fffixme?
+                                 :assumptions assumptions-for-true-case ;ffixme what about the equiv? call something like concretize?
+                                 :check-inputs nil))
+                      ((when erp) (mv erp nil rand state result-array-stobj))
+                      ;; ffixme what about the equiv? the new assumption may not fire? call something like concretize?
+                      (- (cw "(Unsimplified miter dag for true case:~%"))
+                      (- (if (or (eq :verbose print) (eq :verbose2 print))
+                             (print-list miter-dag-for-true-case)
+                           (cw ":elided"))) ;fixme what is this?
+                      (- (cw ")~%(Simplifying:"))
+                      ((mv erp miter-dag-for-true-case state)
+                       (simp-dag miter-dag-for-true-case
+                                 :rule-alist rewriter-rule-alist ;pass other rules?
+                                 :assumptions assumptions-for-true-case
+                                 :print print
+                                 :check-inputs nil))
+                      ((when erp) (mv erp nil rand state result-array-stobj))
+                      (- (cw "done)~%") ;nil ;(cw "Simplified miter dag for true case:~%")
+                         )
+                      ;; (- (print-list miter-dag-for-true-case)) ;don't print, since it will be printed by miter-and-merge?
+                      ;;compute contexts? concretize?
+                      ;;ffixme have we already checked that the test cases satisfy the assumptions (if they were random)?  only makes sense for outmost miter?
+                      ((mv test-cases-for-true-case test-cases-for-false-case)
+                       (partition-test-cases test-cases split-assumption interpreted-function-alist nil nil))
+                      ;; fffixme add more test cases if needed and if depth=0
+                      (- (cw "(True case:~%"))
+                      ((mv erp provedp rand state result-array-stobj)
+                       (miter-and-merge miter-dag-for-true-case
+                                        (pack$ miter-name "1")
+                                        miter-depth
+                                        var-type-alist ;ffixme think about this?
+                                        interpreted-function-alist ;make sure these alists are always consistent?
+                                        print
+                                        traced-nodes
+                                        rewriter-rule-alist
+                                        prover-rule-alist
+                                        assumptions-for-true-case
+                                        extra-stuff
+                                        test-cases-for-true-case
+                                        monitored-symbols ;clear these out? use only what was passed in?
+                                        use-context-when-miteringp
+                                        (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
+                                        unroll tests-per-case max-conflicts must-succeedp
+                                        pre-simplifyp
+                                        simplify-xorsp
+                                        options
+                                        rand state result-array-stobj))
+                      ((when erp) (mv erp nil rand state result-array-stobj))
+                      (- (cw "end true case)~%")))
+                   (if (not provedp)
+                       (prog2$ (cw "failed to prove true case.)")
+                               (mv nil nil rand state result-array-stobj))
+                     ;;now attempt the false case:
+                     (b* ((negated-split-assumption `(equal ,split-assumption 'nil)) ;orient before negating? maybe it's already oriented.. ;fixme use not?
+                          (assumptions-for-false-case (cons negated-split-assumption assumptions))
+                          ((mv erp assumptions-for-false-case state result-array-stobj)
+                           (strengthen-facts assumptions-for-false-case print strengthen-rules state result-array-stobj))
+                          ((when erp) (mv erp nil rand state result-array-stobj))
+                          ((mv erp miter-dag-for-false-case state)
+                           (simp-dag miter-dag
+                                     :rule-alist rewriter-rule-alist
+                                     ;;ffixme use contexts? pass in ifns? what else?
+                                     :assumptions assumptions-for-false-case ;ffixme what about the equiv? call something like concretize?
+                                     :check-inputs nil))
+                          ((when erp) (mv erp nil rand state result-array-stobj))
+                          ;;compute contexts? concretize?
+                          ;; fffixme add more test cases if needed and if depth=0
+                          (- (cw "(False case:~%"))
+                          ;; (let* ( ;(dummy1 (cw "Miter dag for false case:~%"))
+                          ;;(dummy2 (print-list miter-dag-for-false-case))
+                          ;; (dummy ))
+                          ;; (declare (ignore dummy))
+                          ((mv erp provedp rand state result-array-stobj)
+                           (miter-and-merge miter-dag-for-false-case
+                                            (pack$ miter-name "2")
+                                            miter-depth
+                                            var-type-alist ;ffixme think about this?
+                                            interpreted-function-alist
+                                            print
+                                            traced-nodes
+                                            rewriter-rule-alist
+                                            prover-rule-alist
+                                            assumptions-for-false-case
+                                            extra-stuff
+                                            test-cases-for-false-case
+                                            monitored-symbols ;clear these out? use only what was passed in?
+                                            use-context-when-miteringp
+                                            (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
+                                            unroll tests-per-case max-conflicts must-succeedp
+                                            pre-simplifyp simplify-xorsp options
+                                            rand state result-array-stobj))
+                          ((when erp) (mv erp nil rand state result-array-stobj))
+                          (- (cw "End false case)~%")))
+                       (if (not provedp)
+                           (prog2$ (cw "failed to prove false case.)")
+                                   (mv nil nil rand state result-array-stobj))
+                         (prog2$ (cw "proved both cases.)")
+                                 (mv nil t rand state result-array-stobj))))))))))))))
  ) ;end mutual-recursion
 
 
@@ -19534,19 +19520,18 @@
 ;;(specialize-fn 'binary-append '(x '(foo bar)) state)
 
 ;;(specialize-fn 'comb2 (acons 'size '8 nil) state)
-
-;;specialize all fns in DAG-LST
+;;specialize all fns in DAG
 ;; Returns (mv erp new-function-names new-rule-names state result-array-stobj).
 ;;caller should use the rules to simplify the dag
-(defun specialize-fns (dag-lst state result-array-stobj)
+(defun specialize-fns (dag state result-array-stobj)
   (declare (xargs :mode :program :stobjs (state result-array-stobj)))
-  (if (endp dag-lst)
+  (if (endp dag)
       (mv (erp-nil) nil nil state result-array-stobj)
-    (let* ((entry (car dag-lst))
+    (let* ((entry (car dag))
 ;           (nodenum (car entry))
            (expr (cdr entry)))
       (if (not (consp expr)) ;it's a variable, so can't specialize
-          (specialize-fns (cdr dag-lst) state result-array-stobj)
+          (specialize-fns (cdr dag) state result-array-stobj)
         (let ((fn (ffn-symb expr)))
           (if (and (not (consp (ffn-symb expr))) ;not a lambda
                    (recursive-functionp (ffn-symb expr) state)
@@ -19559,7 +19544,7 @@
                   (if erp
                       (mv erp nil nil state result-array-stobj)
                     (mv-let (erp new-function-names2 new-theorem-names2 state result-array-stobj)
-                      (specialize-fns (cdr dag-lst) state result-array-stobj)
+                      (specialize-fns (cdr dag) state result-array-stobj)
                       (if erp
                           (mv erp nil nil state result-array-stobj)
                         (mv (erp-nil)
@@ -19567,7 +19552,7 @@
                             (append new-theorem-names new-theorem-names2)
                             state result-array-stobj))))))
             ;can't specialize:
-            (specialize-fns (cdr dag-lst) state result-array-stobj)))))))
+            (specialize-fns (cdr dag) state result-array-stobj)))))))
 
 ;fixme check the arity of functions mentioned here? also check that the functions mentioned are not macros (like "+")
 ;fixme check that all keys in the entry are allowed
@@ -19616,40 +19601,41 @@
          (and (symbol-listp keys)
               (extra-stuff-okayp-aux keys extra-stuff)))))
 
-;DAG-LST is either a dagp or a quoted constant - BOZO define dagp (well, i have weak-dagp now, right?)
-;should we prove it's t or just non-nil? - doing 't' right now (fixme add an option?)
+;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not mereley non-nil).
 ; Returns (mv erp provedp state rand result-array-stobj)
 ;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true type currently come in in ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
-(defun prove-miter-fn-helper (dag-lst         ;rename dag-lst-or-quotep
-                              test-case-count ;the total number of tests to generate?  some may not be used
-                              var-type-alist  ;compute this from the hyps?
-                              print
-                              traced-nodes ;do we use this?
-                              user-interpreted-function-alist  ;fixme just pass in the fn names and look them up in the state?
+(defun prove-miter-core (dag-or-quotep
+                         test-case-count ;the total number of tests to generate?  some may not be used
+                         var-type-alist  ;compute this from the hyps?
+                         print
+                         traced-nodes ;do we use this?
+                         user-interpreted-function-alist ;fixme just pass in the fn names and look them up in the state?
 ;ffixme allow the use of rule phases?!
-                              runes  ;used for both the rewriter and prover
-                              rules  ;used for both the rewriter and prover
-                              rewriter-runes ;used for the rewriter only (not the prover)
-                              prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
-                              initial-rule-set
-                              initial-rule-sets
-                              assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
-                              pre-simplifyp ;fffixme get rid of this (always use t) -- no, we sometimes want to suppress this (when irrelevant nodes have rec fns)
-                              extra-stuff
-                              specialize-fnsp
-                              monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
-                              use-context-when-miteringp
-                              random-seed
-                              unroll
-                              tests-per-case
-                              max-conflicts
-                              simplify-xorsp ;fixme use the more, deeper in?
-                              name              ;the name of this proof
-                              options
-                              state rand result-array-stobj)
-  (declare (xargs :guard (and (or (quotep dag-lst)
-                                  (weak-dagp dag-lst))
+                         runes          ;used for both the rewriter and prover
+                         rules          ;used for both the rewriter and prover
+                         rewriter-runes ;used for the rewriter only (not the prover)
+                         prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
+                         initial-rule-set
+                         initial-rule-sets
+                         assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
+                         pre-simplifyp ;fffixme get rid of this (always use t) -- no, we sometimes want to suppress this (when irrelevant nodes have rec fns)
+                         extra-stuff
+                         specialize-fnsp
+                         monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
+                         use-context-when-miteringp
+                         random-seed
+                         unroll
+                         tests-per-case
+                         max-conflicts
+                         simplify-xorsp ;fixme use the more, deeper in?
+                         miter-name     ;the name of this proof
+                         prove-constants
+                         treat-as-purep
+                         debug
+                         state rand result-array-stobj)
+  (declare (xargs :guard (and (or (quotep dag-or-quotep)
+                                  (weak-dagp dag-or-quotep))
                               (natp test-case-count)
                               (no-duplicatesp (strip-cars var-type-alist)) ;could check that the cdrs are valid types..
                               (not (assoc-eq nil var-type-alist)) ;consider relaxing this?
@@ -19664,185 +19650,194 @@
                               (all-axe-rule-listp initial-rule-sets)
                               (or (eq :all unroll)
                                   (symbol-listp unroll))
+                              (or (eq :auto max-conflicts)
+                                  (null max-conflicts) ; :auto has been desugared
+                                  (natp max-conflicts))
                               (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
                               )
                   :mode :program
                   :stobjs (state rand result-array-stobj)))
-  (let* (;(state (f-put-global 'fmt-hard-right-margin 197 state)) fixme illegal in ACL2 4.3. work around?
-         ;(state (f-put-global 'fmt-soft-right-margin 187 state))
-         (state (submit-event '(set-inhibit-warnings "double-rewrite" "subsume") state))
-         (rand (if random-seed (update-seed random-seed rand) rand)) ;this happens even if the dag is a quotep - dumb?
-         (interpreted-function-alist (make-interpreted-function-alist (get-non-built-in-supporting-fns-list (dag-fns dag-lst) (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
-         ;;doesn't actually check that the user supplied alist is consistent with the state (fixme just pass in the names and look them up in the current state)?
-         (interpreted-function-alist (if (not (consistent-alists interpreted-function-alist user-interpreted-function-alist))
-                                         (prog2$ (hard-error 'prove-miter-fn-helper "inconsistent interpreted function alists." nil) ;print more?
-                                                 nil)
-                                       (append interpreted-function-alist user-interpreted-function-alist)))
-         (no-test-casesp (not (posp test-case-count)))
-         ;; TODO: Use plain make-axe-rules here
-         (rewriter-rule-alist (make-rule-alist-simple (append (make-axe-rules! (append rewriter-runes runes) (w state)) rules) t (table-alist 'axe-rule-priorities-table (w state))))
-         (prover-rule-alist (make-rule-alist-simple (append (make-axe-rules! (append prover-runes runes) (w state)) rules) t (table-alist 'axe-rule-priorities-table (w state))))
-         (simplifyp (or rewriter-rule-alist
-                        no-test-casesp
-                        initial-rule-set
-                        initial-rule-sets)))
-
-    ;; Begin by simplifying the DAG using the supplied axe-rules (if any).  We also simplify if the test case count is 0, because then simplifying is the only thing we can do. ffixme even if there are no rules supplied, we might we want to simplify to evaluate constants, etc.??  but if could be slow to do so if the dag is already simplified with some rule set (will almost always be the case) -- ffixme make simplifying or not an option (default nil?)
-    (mv-let
-     (erp dag-lst state)
-     (if simplifyp
-         (progn$ (cw "(We begin by simplifying the miter:~%") ;(give the reason)?
-                 ;; initial-rule-set(s) take precedence here, if supplied (fixme what if both are supplied?)
+  (b* ((- (cw "~%(Proving top-level miter ~x0:~%" miter-name))
+       ((when (quotep dag-or-quotep))
+        (if (equal *t* dag-or-quotep)
+            (prog2$ (cw "The DAG is already the constant t!)~%")
+                    (mv (erp-nil) t state rand result-array-stobj))
+          (prog2$ (er hard? 'prove-miter "Tried to prove the dag is t, but it's the non-t constant ~x0" dag-or-quotep)
+                  (mv :non-t-constant nil state rand result-array-stobj))))
+       (dag dag-or-quotep)
+       ;;(state (f-put-global 'fmt-hard-right-margin 197 state)) fixme illegal in ACL2 4.3. work around?
+       ;;(state (f-put-global 'fmt-soft-right-margin 187 state))
+       (state (submit-event '(set-inhibit-warnings "double-rewrite" "subsume") state))
+       (rand (if random-seed (update-seed random-seed rand) rand)) ;this happens even if the dag is a quotep - dumb?
+       (interpreted-function-alist (make-interpreted-function-alist
+                                    (get-non-built-in-supporting-fns-list (dag-fns dag) (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
+       ;;doesn't actually check that the user supplied alist is consistent with the state (fixme just pass in the names and look them up in the current state)?
+       (interpreted-function-alist (if (not (consistent-alists interpreted-function-alist user-interpreted-function-alist))
+                                       (prog2$ (hard-error 'prove-miter-core "inconsistent interpreted function alists." nil) ;print more?
+                                               nil)
+                                     (append interpreted-function-alist user-interpreted-function-alist)))
+       (no-test-casesp (not (posp test-case-count)))
+       ;; TODO: Use plain make-axe-rules here
+       (rewriter-rule-alist (make-rule-alist-simple (append (make-axe-rules! (append rewriter-runes runes) (w state)) rules) t (table-alist 'axe-rule-priorities-table (w state))))
+       (prover-rule-alist (make-rule-alist-simple (append (make-axe-rules! (append prover-runes runes) (w state)) rules) t (table-alist 'axe-rule-priorities-table (w state))))
+       (simplifyp (or rewriter-rule-alist
+                      no-test-casesp
+                      initial-rule-set
+                      initial-rule-sets))
+       (max-conflicts (if (eq :auto max-conflicts) *default-stp-max-conflicts* max-conflicts))
+       ;; could move a lot of stuff into these options:
+       (options (s :prove-constants prove-constants
+                   (s :treat-as-purep treat-as-purep
+                      (s :debugp debug nil))))
+       ;; Begin by simplifying the DAG using the supplied axe-rules (if any).  We also simplify if the test case count is 0, because then simplifying is the only thing we can do. ffixme even if there are no rules supplied, we might we want to simplify to evaluate constants, etc.??  but if could be slow to do so if the dag is already simplified with some rule set (will almost always be the case) -- ffixme make simplifying or not an option (default nil?)
+       ((mv erp dag-or-quotep state)
+        (if simplifyp
+            (progn$ (cw "(We begin by simplifying the miter:~%") ;(give the reason)?
+                    ;; initial-rule-set(s) take precedence here, if supplied (fixme what if both are supplied?)
 ; (and monitored-symbols (cw "Monitored symbols: ~x0." monitored-symbols)) ;printed by simp-dag?
-                 (if initial-rule-set
-                     (simp-dag dag-lst
-                               :rule-alist (make-rule-alist-simple initial-rule-set t (table-alist 'axe-rule-priorities-table (w state)))
-                               :interpreted-function-alist interpreted-function-alist
-                               :assumptions assumptions
-                               :print print ;;(and print :brief)
-                               :monitor monitored-symbols
-                               :simplify-xorsp simplify-xorsp
-                               :memoizep (not use-context-when-miteringp)
-                               :use-internal-contextsp use-context-when-miteringp ;think about this..
-                               :work-hard-when-instructedp nil
-                               :check-inputs nil)
-                   (if initial-rule-sets
-                       (simp-dag dag-lst
-                                 :rule-alists (make-rule-alists-simple initial-rule-sets t (table-alist 'axe-rule-priorities-table (w state)))
-                                 :interpreted-function-alist interpreted-function-alist
-                                 :assumptions assumptions
-                                 :print print ;;(and print :brief)
-                                 :monitor monitored-symbols
-                                 :simplify-xorsp simplify-xorsp
-                                 :memoizep (not use-context-when-miteringp)
-                                 :use-internal-contextsp use-context-when-miteringp ;think about this..
-                                 :work-hard-when-instructedp nil
-                                 :check-inputs nil)
-                     ;; no special initial rule-set(s) given:
-                     (simp-dag dag-lst
-                               :rule-alist rewriter-rule-alist
-                               :interpreted-function-alist interpreted-function-alist
-                               :assumptions assumptions
-                               :print print ;;(and print :brief)
-                               :monitor monitored-symbols
-                               :simplify-xorsp simplify-xorsp
-                               :memoizep (not use-context-when-miteringp)
-                               :use-internal-contextsp use-context-when-miteringp ;think about this..
-                               :work-hard-when-instructedp nil
-                               :check-inputs nil))))
-       (prog2$ (cw "(We don't simplify the miter to start, because no rules are given.)")
-               (mv (erp-nil) dag-lst state)))
-     (if erp
-         (mv erp nil state rand result-array-stobj)
-       (let* ( ;should we print the simplified dag?  we print it at the start of the sweep?
-              (dummy (and simplifyp (cw "Done simplifying.)~%"))))
-         (declare (ignore dummy))
-         (if (quotep dag-lst)
-             ;; the simplified DAG is a quotep:
-             (if (equal *t* dag-lst)
-                 (prog2$ (cw "The DAG has been rewritten to true!~%") ;move this message
-                         (mv nil t state rand result-array-stobj))
-               (prog2$ (hard-error 'prove-miter "Tried to prove the dag is t, but it's the non-t constant ~x0" (acons #\0 dag-lst nil))
-                       (mv t nil state rand result-array-stobj)))
-           (let ((state (if (and simplifyp print)
-                            (print-dag-lst-to-temp-file dag-lst (symbol-name (pack$ name '-after-initial-simplification)) state)
-                          state)))
-             ;; Otherwise, it's a real DAG-LST:
-             ;; A test case count of 0 now declares that the DAG must rewrite to 't (fixme or should it be any non-nil constant)?
+                    (if initial-rule-set
+                        (simp-dag dag
+                                  :rule-alist (make-rule-alist-simple initial-rule-set t (table-alist 'axe-rule-priorities-table (w state)))
+                                  :interpreted-function-alist interpreted-function-alist
+                                  :assumptions assumptions
+                                  :print print ;;(and print :brief)
+                                  :monitor monitored-symbols
+                                  :simplify-xorsp simplify-xorsp
+                                  :memoizep (not use-context-when-miteringp)
+                                  :use-internal-contextsp use-context-when-miteringp ;think about this..
+                                  :work-hard-when-instructedp nil
+                                  :check-inputs nil)
+                      (if initial-rule-sets
+                          (simp-dag dag
+                                    :rule-alists (make-rule-alists-simple initial-rule-sets t (table-alist 'axe-rule-priorities-table (w state)))
+                                    :interpreted-function-alist interpreted-function-alist
+                                    :assumptions assumptions
+                                    :print print ;;(and print :brief)
+                                    :monitor monitored-symbols
+                                    :simplify-xorsp simplify-xorsp
+                                    :memoizep (not use-context-when-miteringp)
+                                    :use-internal-contextsp use-context-when-miteringp ;think about this..
+                                    :work-hard-when-instructedp nil
+                                    :check-inputs nil)
+                        ;; no special initial rule-set(s) given:
+                        (simp-dag dag
+                                  :rule-alist rewriter-rule-alist
+                                  :interpreted-function-alist interpreted-function-alist
+                                  :assumptions assumptions
+                                  :print print ;;(and print :brief)
+                                  :monitor monitored-symbols
+                                  :simplify-xorsp simplify-xorsp
+                                  :memoizep (not use-context-when-miteringp)
+                                  :use-internal-contextsp use-context-when-miteringp ;think about this..
+                                  :work-hard-when-instructedp nil
+                                  :check-inputs nil))))
+          (prog2$ (cw "(We don't simplify the miter to start, because no rules are given.)")
+                  (mv (erp-nil) dag state))))
+       ((when erp) (mv erp nil state rand result-array-stobj))
+       ;;should we print the simplified dag?  we print it at the start of the sweep?
+       (- (and simplifyp (cw "Done simplifying.)~%"))))
+    (if (quotep dag-or-quotep)
+        ;; the simplified DAG is a quotep:
+        (if (equal *t* dag-or-quotep)
+            (prog2$ (cw "The DAG has been rewritten to true!)~%") ;move this message?
+                    (mv (erp-nil) t state rand result-array-stobj))
+          (prog2$ (er hard? 'prove-miter "Tried to prove the dag is t, but it's the non-t constant ~x0" dag-or-quotep)
+                  (mv :non-t-constant nil state rand result-array-stobj)))
+      ;; Did not simplify to a constant:
+      (let* ((dag dag-or-quotep)
+             (state (if (and simplifyp print)
+                        (print-dag-lst-to-temp-file dag (symbol-name (pack$ miter-name '-after-initial-simplification)) state)
+                      state)))
+        ;; A test case count of 0 now declares that the DAG must rewrite to 't (fixme or should it be any non-nil constant)?
 ;move this check down?
-             (if no-test-casesp
-                 (progn$ (cw "DAG for error message:~%")
-                         (print-list dag-lst)
-                         (if (< (dag-size dag-lst) 10000)
-                             (cw "~%(Term: ~X01)~%" (dag-to-term dag-lst) nil)
-                           nil)
-                         (er hard 'prove-miter-fn "If the test-case-count is not a positive integer, the DAG must be a constant, but it is the above. Functions in the DAG: ~X01" (dag-fns dag-lst) nil)
-                         (mv t nil state rand result-array-stobj))
-               ;; Compare the vars in the DAG to the vars given types in VAR-TYPE-ALIST: ;move this check up?
-               (b* ((dag-vars (dag-vars dag-lst))
-                    (sorted-dag-vars (merge-sort-symbol< dag-vars))
-                    (vars-given-types (strip-cars var-type-alist))
-                    (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
-                    (- (if (not (subsetp-eq sorted-dag-vars sorted-vars-given-types)) ;stricter check? or warning if extra vars given?
-                           ;; (hard-error 'prove-miter-fn
-                           ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
-                           ;;               (acons #\0 sorted-dag-vars
-                           ;;                      (acons #\1 sorted-vars-given-types
-                           ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
-                           ;;                                    nil))))
-                           (cw "WARNING: The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%" sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))
-
-                         nil))
-                    ;;(prog2$ (mv nil state rand result-array-stobj))
-                    )
-
-                 ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
-                 ;;(how well does this work?): redo it to preserve lambdas (just substitute in them?)
-                 (mv-let
-                   (erp dag-lst interpreted-function-alist state result-array-stobj)
-                   (if (not specialize-fnsp)
-                       (mv (erp-nil) dag-lst interpreted-function-alist state result-array-stobj)
-                     (prog2$
-                      (cw "(Specializing fns:~%")
-                      (mv-let (erp new-function-names new-rule-names state result-array-stobj)
-                        (specialize-fns dag-lst state result-array-stobj)
-                        (if erp
-                            (mv erp nil nil state result-array-stobj)
-                          (prog2$ (cw "(Rewriting to introduce specialized functions.~%")
-                                  (mv-let (erp dag-lst state)
-                                    (quick-simp-dag dag-lst ;fixme - use some more rules?!
-                                                    :rules new-rule-names ;ffffixme return new-rule-names ?
-                                                    :print :brief)
-                                    (if erp
-                                        (mv erp nil nil state result-array-stobj)
-                                      (let ((interpreted-function-alist
-                                             (add-fns-to-interpreted-function-alist new-function-names interpreted-function-alist (w state))))
-                                        (prog2$ (cw "Done rewriting to introduce specialized functions.)~%Done specializing.)~%")
-                                                (mv (erp-nil) dag-lst interpreted-function-alist state result-array-stobj))))))))))
-                   (if erp
-                       (mv erp nil state rand result-array-stobj)
-                     ;;fixme rename test-cases test-inputs?
-                     (mv-let (test-cases rand)
-                       ;; Make the random test cases (each assigns values to the input vars):
-                       ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
-                       ;;fixme what about test cases that don't satisfy the assumptions??
-                       (make-test-cases test-case-count var-type-alist assumptions rand)
-                       (let* ((analyzed-function-table (empty-analyzed-function-table)))
-                         ;;fixme move any stuff above here into miter-and-merge?
-                         (mv-let (erp provedp rand state result-array-stobj) ;fixme could just pass the constant to miter-and-merge
-                           ;;fixme should miter-and-merge do the specialize and/or the pre-simplify?
-                           (miter-and-merge dag-lst
-                                            name
-                                            0
-                                            var-type-alist
-                                            interpreted-function-alist print traced-nodes
-                                            rewriter-rule-alist
-                                            prover-rule-alist
-                                            assumptions
-                                            extra-stuff
-                                            test-cases
-                                            monitored-symbols
-                                            use-context-when-miteringp
-                                            analyzed-function-table
-                                            unroll
-                                            tests-per-case
-                                            max-conflicts
-                                            t ;must-succeedp=t
-                                            pre-simplifyp
-                                            simplify-xorsp
-                                            options
-                                            rand state result-array-stobj)
-                           (if erp
-                               (mv erp nil state rand result-array-stobj)
-                             (if (not provedp)
-                                 (prog2$ (cw "failed to prove by mitering and merging.") ;error or not?
-                                         (mv nil nil state rand result-array-stobj))
-                               (prog2$ (cw "Finished proving top-level miter!~%")
-                                       (mv nil t state rand result-array-stobj))))))))))))))))))
+        (if no-test-casesp
+            (progn$ (cw "DAG for error message:~%")
+                    (print-list dag)
+                    (if (< (dag-size dag) 10000)
+                        (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
+                      nil)
+                    (er hard? 'prove-miter-core "If the test-case-count is not a positive integer, the DAG must be a constant, but it is the above. Functions in the DAG: ~X01" (dag-fns dag) nil)
+                    (mv :no-test-cases nil state rand result-array-stobj))
+          ;; Compare the vars in the DAG to the vars given types in VAR-TYPE-ALIST: ;move this check up?
+          (b* ((dag-vars (dag-vars dag))
+               (sorted-dag-vars (merge-sort-symbol< dag-vars))
+               (vars-given-types (strip-cars var-type-alist))
+               (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
+               (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types)) ;stricter check? or warning if extra vars given?
+                       ;; (hard-error 'prove-miter-core
+                       ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
+                       ;;               (acons #\0 sorted-dag-vars
+                       ;;                      (acons #\1 sorted-vars-given-types
+                       ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
+                       ;;                                    nil))))
+                       (cw "WARNING: The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
+                           sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))))
+               ;;(prog2$ (mv nil state rand result-array-stobj))
+               ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
+               ;;(how well does this work?): redo it to preserve lambdas (just substitute in them?)
+               ((mv erp dag ; todo: can this ever be a quotep?
+                    interpreted-function-alist state result-array-stobj)
+                (if (not specialize-fnsp)
+                    (mv (erp-nil) dag interpreted-function-alist state result-array-stobj)
+                  (prog2$
+                   (cw "(Specializing fns:~%")
+                   (mv-let (erp new-function-names new-rule-names state result-array-stobj)
+                     (specialize-fns dag state result-array-stobj)
+                     (if erp
+                         (mv erp nil nil state result-array-stobj)
+                       (prog2$ (cw "(Rewriting to introduce specialized functions.~%")
+                               (mv-let (erp dag state)
+                                 (quick-simp-dag dag ;fixme - use some more rules?!
+                                                 :rules new-rule-names ;ffffixme return new-rule-names ?
+                                                 :print :brief)
+                                 (if erp
+                                     (mv erp nil nil state result-array-stobj)
+                                   (let ((interpreted-function-alist
+                                          (add-fns-to-interpreted-function-alist new-function-names interpreted-function-alist (w state))))
+                                     (prog2$ (cw "Done rewriting to introduce specialized functions.)~%Done specializing.)~%")
+                                             (mv (erp-nil) dag interpreted-function-alist state result-array-stobj)))))))))))
+               ((when erp) (mv erp nil state rand result-array-stobj))
+               ;;fixme rename test-cases test-inputs?
+               ((mv test-cases rand)
+                ;; Make the random test cases (each assigns values to the input vars):
+                ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
+                ;;fixme what about test cases that don't satisfy the assumptions??
+                (make-test-cases test-case-count var-type-alist assumptions rand))
+               (analyzed-function-table (empty-analyzed-function-table))
+               ;;fixme move any stuff above here into miter-and-merge?
+               ((mv erp provedp rand state result-array-stobj) ;fixme could just pass the constant to miter-and-merge
+                ;;fixme should miter-and-merge do the specialize and/or the pre-simplify?
+                (miter-and-merge dag
+                                 miter-name
+                                 0
+                                 var-type-alist
+                                 interpreted-function-alist print traced-nodes
+                                 rewriter-rule-alist
+                                 prover-rule-alist
+                                 assumptions
+                                 extra-stuff
+                                 test-cases
+                                 monitored-symbols
+                                 use-context-when-miteringp
+                                 analyzed-function-table
+                                 unroll
+                                 tests-per-case
+                                 max-conflicts
+                                 t ;must-succeedp=t
+                                 pre-simplifyp
+                                 simplify-xorsp
+                                 options
+                                 rand state result-array-stobj))
+               ((when erp) (mv erp nil state rand result-array-stobj)))
+            (if provedp
+                (prog2$ (cw "Finished proving top-level miter!)~%")
+                        (mv (erp-nil) t state rand result-array-stobj))
+              (prog2$ (cw "failed to prove by mitering and merging.)") ;todo: error or not?
+                      (mv (erp-nil) nil state rand result-array-stobj)))))))))
 
 ;; Returns (mv erp event state rand result-array-stobj) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
-(defun prove-miter-fn (dag-lst
+(defun prove-miter-fn (dag-or-quotep
                        test-case-count ;the total number of tests to generate?  some may not be used
                        var-type-alist  ;compute this from the hyps?
                        print
@@ -19866,12 +19861,14 @@
                        tests-per-case
                        max-conflicts
                        simplify-xorsp ;fixme use the more, deeper in?
-                       miter-name        ;the name of this proof
-                       options ;could move a lot of stuff into these options
+                       miter-name     ;the name of this proof
+                       prove-constants
+                       treat-as-purep
+                       debug
                        whole-form
                        state rand result-array-stobj)
-  (declare (xargs :guard (and (or (quotep dag-lst)
-                                  (weak-dagp dag-lst))
+  (declare (xargs :guard (and (or (quotep dag-or-quotep)
+                                  (weak-dagp dag-or-quotep))
                               (natp test-case-count)
                               (no-duplicatesp (strip-cars var-type-alist)) ;could check that the cdrs are valid types..
                               (not (assoc-eq nil var-type-alist)) ;consider relaxing this?
@@ -19891,65 +19888,57 @@
                               (or (eq :all unroll)
                                   (symbol-listp unroll))
                               (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
-                              )
+                              (or (eq :auto max-conflicts)
+                                  (null max-conflicts)
+                                  (natp max-conflicts)))
                   :mode :program
                   :stobjs (state rand result-array-stobj)))
-  (b* (((when (command-is-redundantp whole-form state))
+  (b* (((when (command-is-redundantp whole-form state)) ; may not always be appropriate, depending on the caller
         (mv nil '(value-triple :invisible) state rand result-array-stobj))
-       (fns (dag-fns dag-lst)))
-    ;;todo: remove or generalize this:
-    (if (member-eq 'JVM::ERROR-STATE fns) ;fixme pass in a set of functions to look for.
-        (prog2$ (hard-error 'prove-miter-fn "The DAG contains a calls to JVM::ERROR-STATE.  Symbolic execution may have failed." nil)
-                (mv (erp-t) '(progn) state rand result-array-stobj))
-      (let ((max-conflicts (if (eq 'default max-conflicts) *default-stp-max-conflicts* max-conflicts)))
-        (prog2$
-         (cw "~%(Proving top-level miter ~x0:~%" miter-name)
-         (let ( ;(state (make-temp-dir state))
-               )
-           (mv-let
-             (erp provedp state rand result-array-stobj)
-             (prove-miter-fn-helper dag-lst test-case-count
-                                    var-type-alist ;compute this from the hyps?
-                                    print
-                                    traced-nodes ;do we use this?
-                                    interpreted-function-alist
-;ffixme allow the use of rule phases?!
-                                    runes ;used for both the rewriter and prover
-                                    rules ;used for both the rewriter and prover
-                                    rewriter-runes ;used for the rewriter only (not the prover)
-                                    prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
-                                    initial-rule-set
-                                    initial-rule-sets
-                                    assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
-                                    pre-simplifyp
-                                    extra-stuff
-                                    specialize-fnsp
-                                    monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
-                                    use-context-when-miteringp
-                                    random-seed
-                                    unroll
-                                    tests-per-case
-                                    max-conflicts
-                                    simplify-xorsp ;fixme use the more, deeper in?
-                                    miter-name
-                                    options
-                                    state rand result-array-stobj)
-             (if erp
-                 (mv erp nil state rand result-array-stobj)
-               (if provedp
-                   (prog2$ (cw "Proved top level miter ~x0.)~%" miter-name)
-                           (let ((state (if (g :debugp options)
-                                            state
-                                          (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
-                             (let ((event '(progn))) ;fixme should return a theorem about the dag!
-                               (mv (erp-nil)
-                                   (extend-progn event `(table prove-miter-table ',whole-form ',event))
-                                   state rand result-array-stobj))))
-                 (progn$ (cw "Failed to prove top level miter.)~%")
-                         (hard-error 'prove-miter "Failed to prove miter." nil)
-                         (mv (erp-t)
-                             nil
-                             state rand result-array-stobj)))))))))))
+       ((mv erp provedp state rand result-array-stobj)
+        (prove-miter-core dag-or-quotep test-case-count
+                          var-type-alist ;compute this from the hyps?
+                          print
+                          traced-nodes ;do we use this?
+                          interpreted-function-alist
+                          ;;ffixme allow the use of rule phases?!
+                          runes      ;used for both the rewriter and prover
+                          rules      ;used for both the rewriter and prover
+                          rewriter-runes ;used for the rewriter only (not the prover)
+                          prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
+                          initial-rule-set
+                          initial-rule-sets
+                          assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
+                          pre-simplifyp
+                          extra-stuff
+                          specialize-fnsp
+                          monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
+                          use-context-when-miteringp
+                          random-seed
+                          unroll
+                          tests-per-case
+                          max-conflicts
+                          simplify-xorsp ;fixme use the more, deeper in?
+                          miter-name
+                          prove-constants
+                          treat-as-purep
+                          debug
+                          state rand result-array-stobj)))
+    ;; Depending on how it went, maybe introduce a theorem:
+    (if erp
+        (mv erp nil state rand result-array-stobj)
+      (if provedp
+          (let ((state (if debug
+                           state
+                         (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
+            (let ((event '(progn))) ;fixme should return a theorem about the dag!
+              (mv (erp-nil)
+                  (extend-progn event `(table prove-miter-table ',whole-form ',event))
+                  state rand result-array-stobj)))
+        (progn$ (hard-error 'prove-miter "Failed to prove miter." nil)
+                (mv (erp-t)
+                    nil
+                    state rand result-array-stobj))))))
 
 ;; Returns (mv erp event state rand result-array-stobj).
 ;fixme - eventually, try to always use the same rules for the dag prover as the dag rewriter..
@@ -19960,7 +19949,7 @@
 ;the variables in dag list should be the final ones (i.e., we shouldn't expect assumptions to introduce new vars)
 ;; This does not do the make-event, so we can call it programmatically.
 (defmacro prove-miter-aux (&whole whole-form
-                                  dag-lst ;can be a quotep?
+                                  dag-or-quotep
                                   test-case-count
                                   var-type-alist ; derive from the assumptions?  this is only used for generated test cases? no! also used when calling stp.. ffffixme sometimes restricts the range of test cases - don't use those restricted ranges as assumptions?!
                                   &KEY
@@ -19983,18 +19972,18 @@
                                   (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
                                   (random-seed 'nil)
                                   (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
-                                  (max-conflicts ''default) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
+                                  (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
                                   (simplify-xorsp 't)
                                   (treat-as-purep 'nil)
                                   (debug 'nil) ;if t, the temp dir with STP files is not deleted
                                   (prove-constants 't) ;whether to attempt to prove probably-constant nodes
                                   )
-  `(prove-miter-fn ,dag-lst ,test-case-count ,var-type-alist ,print ,traced-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+  `(prove-miter-fn ,dag-or-quotep ,test-case-count ,var-type-alist ,print ,traced-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                    ,initial-rule-set ,initial-rule-sets ,assumptions ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                    ,random-seed ,unroll ,tests-per-case ,max-conflicts ,simplify-xorsp ,name
-                   (s :prove-constants ,prove-constants
-                      (s :treat-as-purep ,treat-as-purep
-                         (s :debugp ,debug nil)))
+                   ,prove-constants
+                   ,treat-as-purep
+                    ,debug
                    ',whole-form
                    state rand result-array-stobj))
 
@@ -20923,7 +20912,7 @@
 ;;                                   ,(lookup-keyword :simplify-xorsp rest)
 ;;                                   state rand RESULT-ARRAY-STOBJ)))
 
-;todo: deprecate?
+;todo: deprecate?  unlike prove-miter, this takes 2 terms.  unlike prove-equivalence, this supports all the exotic options to prove-miter.
 (defmacro prove-equality (term1 term2 &rest rest)
   `(make-event
     (b* (((mv erp dag) (dagify-term2 '(equal ,term1 ,term2)))
@@ -20936,41 +20925,17 @@
 
 ;; Nicer wrappers for the miter proofs (TODO: use these everywhere)
 
-;; can combine names like *foo-spec-dag* and *foo-java-dag*
-;; (choose-miter-name '*foo-spec-dag* '*foo-java-dag*)
-(defun choose-miter-name (name quoted-form1 quoted-form2 wrld)
-  (declare (xargs :guard (and (symbolp name)
-                              (plist-worldp wrld))
-                  :mode :program ; todo, because of fresh-name-in-world-with-$s
-                  ))
-  (let ((desired-name (if (eq :auto name)
-                          (if (and (symbolp quoted-form1)
-                                   (symbolp quoted-form2)
-                                   (starts-and-ends-with-starsp quoted-form1)
-                                   (starts-and-ends-with-starsp quoted-form2))
-                              ;; todo: remove "-dag" from the names here:
-                              ;; todo: handle common parts of the names here, like foo in *foo-spec-dag* and *foo-java-dag*:
-                              (pack$ (strip-stars-from-name quoted-form1) '-and-  (strip-stars-from-name quoted-form2))
-                            ;; Just use a generic default name:
-                            'main-miter)
-                        ;; not :auto, so use the specified name:
-                        name)))
-    ;; avoid name clashes, since we may use the same name for the theorem:
-    (fresh-name-in-world-with-$s desired-name nil wrld)))
-
 ;; Returns (mv erp event state rand result-array-stobj).
 ;; TODO: Auto-generate the name
 ;; TODO: Build the types from the assumptions or vice versa (types for testing may have additional restrictions to avoid huge inputs)
 ;; TODO: Allow the :type option to be :bits, meaning assume every var in the DAG is a bit.
 (defun prove-equivalence-fn (dag-or-term1
                              dag-or-term2
-                             quoted-dag-or-term1
-                             quoted-dag-or-term2
                              tests ;a natp indicating how many tests to run
                              tactic
-                             assumptions
+                             assumptions ; untranslated
                              types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
-                             name ; may be :auto
+                             name  ; may be :auto
                              print debug max-conflicts extra-rules initial-rule-sets
                              monitor
                              use-context-when-miteringp
@@ -20979,21 +20944,31 @@
                              check-varsp
                              whole-form
                              state rand result-array-stobj)
-  (declare (xargs :stobjs (state rand result-array-stobj)
-                  :mode :program
-                  :guard (and (natp tests) ;TODO: add to guard
-                              (natp max-conflicts)
-                              (symbol-listp extra-rules)
+  (declare (xargs :guard (and (natp tests)
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
-                              (or (eq :auto initial-rule-sets)
-                                  (axe-rule-setsp initial-rule-sets))
                               (symbol-alistp types) ;todo constrain the cdrs
                               (symbolp name)
-                              (booleanp check-varsp))))
-;TODO: error or warning if :tactic is rewrite and :tests is given
+                              ;; print
+                              (booleanp debug)
+                              (or (eq :auto max-conflicts)
+                                  (null max-conflicts)
+                                  (natp max-conflicts))
+                              (symbol-listp extra-rules)
+                              (or (eq :auto initial-rule-sets)
+                                  (axe-rule-setsp initial-rule-sets))
+                              (symbol-listp monitor)
+                              (booleanp use-context-when-miteringp)
+                              (booleanp normalize-xors)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (booleanp check-varsp))
+                  :mode :program
+                  :stobjs (state rand result-array-stobj)))
+  ;;TODO: error or warning if :tactic is rewrite and :tests is given?
   (b* (((when (command-is-redundantp whole-form state))
-        (mv (erp-nil) '(value-triple :invisible) state rand result-array-stobj))
+        (mv (erp-nil) '(value-triple :redundant) state rand result-array-stobj))
+       (quoted-dag-or-term1 (farg1 whole-form))
+       (quoted-dag-or-term2 (farg2 whole-form))
        (wrld (w state))
        (assumptions (translate-terms assumptions 'prove-equivalence-fn wrld)) ;throws an error on bad input
        ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 wrld))
@@ -21027,42 +21002,54 @@
                                      (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state rand result-array-stobj))
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
-       ((mv erp
-            & ; the event is usually an empty progn
-            state rand result-array-stobj)
-        (prove-miter-aux equality-dag
-                         tests
-                         types
-                         :name miter-name
-                         :max-conflicts max-conflicts
-                         :initial-rule-sets initial-rule-sets
-                         :print print
-                         :debug debug
-                         :assumptions assumptions
-                         :monitor monitor
-                         :use-context-when-miteringp use-context-when-miteringp
-                         :simplify-xorsp normalize-xors
-                         ;; TODO: Can we automate this?:
-                         :interpreted-function-alist interpreted-function-alist)))
-    (if erp
-        (prog2$ (cw "ERROR: Proof of equivalence failed.~%")
-                (mv (erp-t) nil state rand result-array-stobj))
-      (b* ((- (cw "Proof of equivalence succeeded.~%"))
-           ;; make the theorem:
-           (term1 (dag-or-term-to-term dag-or-term1 state))
-           (term2 (dag-or-term-to-term dag-or-term2 state))
-           (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
-                     (defthmd ,miter-name
-                       (implies (and ,@assumptions)
-                                (equal ,term1
-                                       ,term2)))))
-           (event (if types ;todo: remove this restriction
-                      (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
-                              `(progn))
-                    defthm))
-           (event (extend-progn event `(table prove-equivalence-table ',whole-form ',event)))
-           (event (extend-progn event `(value-triple ',miter-name))))
-        (mv (erp-nil) event state rand result-array-stobj)))))
+       ;; Call the core function:
+       ((mv erp provedp state rand result-array-stobj)
+        (prove-miter-core equality-dag tests types print
+                          nil ; traced-nodes
+                          interpreted-function-alist
+                          nil ;runes
+                          nil ;rules
+                          nil ;rewriter-runes
+                          nil ;prover-runes
+                          nil ;initial-rule-set
+                          initial-rule-sets
+                          assumptions
+                          t   ;pre-simplifyp
+                          nil ;extra-stuff
+                          nil ;specialize-fnsp
+                          monitor
+                          use-context-when-miteringp
+                          nil ;random seed
+                          nil ;unroll
+                          512 ; tests-per-case
+                          max-conflicts
+                          normalize-xors
+                          miter-name
+                          t   ;prove-constants
+                          nil ; treat-as-purep
+                          debug
+                          state rand result-array-stobj))
+       ((when erp) (prog2$ (cw "ERROR: Proof of equivalence encountered an error.~%")
+                           (mv erp nil state rand result-array-stobj)))
+       ((when (not provedp)) (prog2$ (cw "ERROR: Proof of equivalence failed.~%")
+                                     ;; Convert this to an error
+                                     (mv :proof-failed nil state rand result-array-stobj)))
+       (- (cw "Proof of equivalence succeeded.~%"))
+       ;; make the theorem:
+       (term1 (dag-or-term-to-term dag-or-term1 state))
+       (term2 (dag-or-term-to-term dag-or-term2 state))
+       (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
+                 (defthmd ,miter-name
+                   (implies (and ,@assumptions)
+                            (equal ,term1
+                                   ,term2)))))
+       (event (if types ;todo: remove this restriction
+                  (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
+                          `(progn))
+                defthm))
+       (event (extend-progn event `(table prove-equivalence-table ',whole-form ',event)))
+       (event (extend-progn event `(value-triple ',miter-name))))
+    (mv (erp-nil) event state rand result-array-stobj)))
 
 (defxdoc prove-equivalence
   :parents (axe)
@@ -21080,7 +21067,7 @@
         [:print]               ;; Print verbosity (allows nil, :brief, t, and :verbose), Default: :brief
         [:name]                ;; A name to assign to the equivalence term, if desired
         [:debug]               ;; Leave temp files around for debugging, Default: nil
-        [:max-conflicts]       ;; Initial value of STP max-conflicts (number of conflicts), Default: 60000
+        [:max-conflicts]       ;; Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).
         [:extra-rules]         ;; The names of extra rules to use when simplifying, Default: nil
         [:initial-rule-sets]   ;; Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets), Default: :auto
         [:monitor]             ;; Rule names (symbols) to monitor when rewriting
@@ -21092,6 +21079,7 @@
 
 <p>If the call to @('prove-equivalence') completes without error, the DAG/terms are equal, given the :assumptions (including the :types).</p>")
 
+;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
 (defmacro prove-equivalence (&whole whole-form
                                     dag-or-term1
                                     dag-or-term2
@@ -21103,7 +21091,7 @@
                                     (types 'nil) ;gives types to the vars so we can generate tests for sweeping
                                     (name ':auto) ;the name of the miter, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
                                     (debug 'nil)
-                                    (max-conflicts '60000) ;1000 here broke proofs
+                                    (max-conflicts ':auto) ;1000 here broke proofs
                                     (extra-rules 'nil)
                                     (initial-rule-sets ':auto)
                                     (monitor 'nil)
@@ -21113,8 +21101,6 @@
                                     (check-varsp 't))
   `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
                                            ,dag-or-term2
-                                           ',dag-or-term1 ; not evaluated, used to form the miter name
-                                           ',dag-or-term2 ; not evaluated, used to form the miter name
                                            ,tests
                                            ,tactic
                                            ,assumptions
@@ -21132,45 +21118,3 @@
                                            ,check-varsp
                                            ',whole-form
                                            state rand result-array-stobj)))
-
-;; Helps justify the correctness of using IFF when dealing with contexts
-(defthm if-of-bool-fix
-  (equal (if (bool-fix test) x y)
-         (if test x y)))
-
-;; Helps justify the correctness of using IFF when dealing with contexts
-(defthm myif-of-bool-fix
-  (equal (myif (bool-fix test) x y)
-         (myif test x y))
-  :hints (("Goal" :in-theory (enable bool-fix))))
-
-;; Helps justify the correctness of using IFF when dealing with contexts
-(defthm boolif-of-bool-fix
-  (equal (boolif (bool-fix test) x y)
-         (boolif test x y))
-  :hints (("Goal" :in-theory (enable boolif))))
-
-;dup
-(defun pairlis$-safe (lst1 lst2)
-  (if (equal (len lst1) (len lst2))
-      (pairlis$ lst1 lst2)
-    (hard-error 'pairlis$-safe "Lists lengths unequal" nil)))
-
-;; todo: use this (or byte-types-for-vars) more, in place of pairlis$-safe
-(defun assign-type-to-vars (type vars)
-  (declare (xargs :guard (and (axe-typep type)
-                              (symbol-listp vars))))
-  (if (endp vars)
-      nil
-    (acons (first vars) type
-           (assign-type-to-vars type (rest vars)))))
-
-;; Returns an alist mapping each of the VARS to the BV8 type.
-(defun byte-types-for-vars (vars)
-  (declare (xargs :guard (symbol-listp vars)))
-  (assign-type-to-vars (make-bv-type 8) vars))
-
-;; Returns an alist mapping each of the VARS to the BV1 (= bit) type.
-(defun bit-types-for-vars (vars)
-  (declare (xargs :guard (symbol-listp vars)))
-  (assign-type-to-vars (make-bv-type 1) vars))

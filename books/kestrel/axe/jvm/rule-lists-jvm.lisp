@@ -1,7 +1,7 @@
 ; Lists of rule names (JVM-related)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1266,17 +1266,17 @@
   (declare (xargs :guard t))
   '(not-equal-of-nil-and-s))
 
-;deprecate
-(defun jvm-rules ()
-  (declare (xargs :guard t))
-  (append (map-rules)
-          (jvm-semantics-rules)
-          (jvm-simplification-rules)
-          (jvm-rules-list)
-          (jvm-rules-alist)
-          (list-rules) ;drop?
-          (bv-array-rules)
-          (jvm-rules-unfiled-misc)))
+;; ;deprecate
+;; (defun jvm-rules ()
+;;   (declare (xargs :guard t))
+;;   (append (map-rules)
+;;           (jvm-semantics-rules)
+;;           (jvm-simplification-rules)
+;;           (jvm-rules-list)
+;;           (jvm-rules-alist)
+;;           (list-rules) ;drop?
+;;           (bv-array-rules)
+;;           (jvm-rules-unfiled-misc)))
 
 ;; ;drop
 ;; (defun yet-more-rules-jvm ()
@@ -1297,6 +1297,7 @@
 ;;     ))
 
 ;; todo: rename
+;used by many axe examples
 (defun amazing-rules-spec-and-dag ()
   (declare (xargs :guard t))
   (append (amazing-rules-bv)
@@ -1351,6 +1352,7 @@
            (list-to-bv-array-rules)
            (map-rules)
            (yet-more-rules-non-jvm)
+           (array-reduction-rules)
            (more-rules-bv-misc)
            ;;(amazing-rules) ;this seemed slow - BBOZO why?? lots of bvchop 7 of larger values?
            '(nth-of-myif ;Sun Feb 27 01:58:14 2011
@@ -1410,6 +1412,7 @@
            (list-to-bv-array-rules) ;needed?
            (map-rules)
            (yet-more-rules-non-jvm)
+           (array-reduction-rules)
            (more-rules-bv-misc)
            ;;(amazing-rules) ;this seemed slow - BBOZO why?? lots of bvchop 7 of larger values?
            '(;fixme what other of the amazing rules do we need?
@@ -1504,7 +1507,7 @@
 ;;             IDENTITY
 ;;             )))
 
-;fixme get rid of this?
+;fixme get rid of this? used in lifter.
 ;todo: this contains some duplicates (other rule lists in this file may too)
 (defun rule-list-1001 ()
   (declare (xargs :guard t))
@@ -2011,8 +2014,8 @@
              ;;                                      bvand-of-bvxor-of-ones-same-alt
              ;;                                      bvand-of-bvand-of-bvxor-of-ones-same
              ;;                                      bvand-of-bvand-of-bvxor-of-ones-same-alt
-             ;;                                      BITXOR-COMMUTATIVE-2-INCREASING-DAG
-             ;;                                      BITXOR-COMMUTATIVE-INCREASING-DAG
+             ;;                                      BITXOR-COMMUTATIVE-2-INCREASING-AXE
+             ;;                                      BITXOR-COMMUTATIVE-INCREASING-AXE
 
              ;;                                      EQUAL-OF-CONSTANT-AND-BVXOR-OF-CONSTANT
              ;;                                      bvnot-becomes-bvxor
@@ -2130,7 +2133,7 @@
              subrange-when-end-is-negative
 
              consp-of-subrange
-             getbit-of-leftrotate32-high
+
 ;fffixme do these contradict what simplifying bitxors does?
              ;;BITXOR-commutative-axe
              ;; BITXOR-commutative-2-axe
@@ -2138,7 +2141,6 @@
              bvxor-of-bvcat     ;dangerous?
              bvxor-of-bvcat-alt ;dangerous?
 
-             slice-of-leftrotate32-high
              bvxor-cancel-lemma1-bvchop-version
              bvxor-cancel-lemma1-bvchop-version-alt
 

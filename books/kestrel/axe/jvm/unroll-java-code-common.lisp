@@ -42,7 +42,7 @@
             getbit-of-myif
             not-equal-of-nil-and-s ;drop
             not-equal-nil-when-array-refp
-            sbvlt-of-bvsx
+            sbvlt-of-bvsx ; todo; consider sbvlt-of-bvsx-new
             sbvlt-of-bvcat-and-0
             jvm::not-equal-nil-when-java-boolean-as-int-p
             jvm::not-equal-nil-when-java-byte-as-int-p
@@ -57,7 +57,18 @@
             jvm::pop-long-of-myif
             )
           (map-rules)
-          (amazing-rules-spec-and-dag)
+          (amazing-rules-bv)
+          (bvchop-list-rules) ;drop?
+          (lookup-rules)
+          (list-rules)
+          (logext-rules) ;drop?
+          (jvm-rules-list)
+          (jvm-rules-alist)
+          (jvm-rules-unfiled-misc)
+          (more-rules-yuck) ;drop?
+          '(getbit-list-of-bv-array-write-too-high
+            ;map-packbv-constant-opener ; drop?
+            )
           (jvm-semantics-rules)
           (jvm-simplification-rules)))
 

@@ -124,6 +124,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define irr-ident ()
+  :returns (id identp)
+  :short "An irrelevant identifier, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (ident-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-ident))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist ident-list
   :short "Fixtype of lists of identifiers."
   :elt-type ident
@@ -805,6 +814,16 @@
   (:enum ((tag ident)
           (enumerators ident-list)))
   :pred tag-declonp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-tag-declon ()
+  :returns (declon tag-declonp)
+  :short "An irrelevant structure/union/enumeration declaration,
+          usable as a dummy return value."
+  (with-guard-checking :none (ec-call (tag-declon-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-tag-declon))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

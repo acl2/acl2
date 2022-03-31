@@ -22,11 +22,13 @@
 ;; information and others not have it?).
 
 (include-book "unroll-java-code-common")
+(include-book "nice-output-indicators")
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/doc" :dir :system)
 ;(include-book "../dag-size-fast")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
 (include-book "../prune") ;brings in the rewriter
+(include-book "../dag-info")
 
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))
 
@@ -35,6 +37,25 @@
 
 (defttag invariant-risk)
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
+
+
+;; Returns a boolean
+(defun dag-ok-after-symbolic-execution (dag assumptions error-on-incomplete-runsp wrld)
+  (declare (xargs :mode :program))
+  (let ((dag-fns (dag-fns dag)))
+    (if (or (member-eq 'run-until-return-from-stack-height dag-fns) ;todo: pass in a set of functions to look for?
+            (member-eq 'jvm::run-n-steps dag-fns)
+            (member-eq 'jvm::do-inst dag-fns)
+            (member-eq 'jvm::error-state dag-fns))
+        (progn$ (if (dag-or-quotep-size-less-thanp dag 10000)
+                    (progn$ (cw "(Result Term:~%")
+                            (cw "~X01" (untranslate (dag-to-term dag) nil wrld) nil)
+                            (cw ")~%"))
+                  (cw "(Result DAG: ~x0)~%" dag))
+                (cw "(Assumptions were: ~x0)~%" assumptions)
+                (and error-on-incomplete-runsp
+                     (hard-error 'unroll-java-code-fn "ERROR: Symbolic simulation did not seem to finish (see DAG and assumptions above)." nil)))
+      t)))
 
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
@@ -127,8 +148,9 @@
 
 ;; Returns (mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state).
 ;; This uses all classes currently in the global-class-table.
+;; Why does this return the dag-fns?
 (defun unroll-java-code-fn-aux (method-designator-string
-                                output-indicator
+                                maybe-nice-output-indicator
                                 array-length-alist
                                 extra-rules  ;to add to default set
                                 remove-rules ;to remove from default set
@@ -149,11 +171,13 @@
                                 branches
                                 param-names ; may be :auto
                                 chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
-                                error-on-incomplete-runsp ;whether to throw a hard error
+                                error-on-incomplete-runsp ;whether to throw a hard error (may be nil if further pruning can be done in the caller)
                                 state)
   (declare (xargs :stobjs (state)
                   :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
-                  :guard (and (or (eq :all classes-to-assume-initialized)
+                  :guard (and (or (eq :auto maybe-nice-output-indicator)
+                                  (nice-output-indicatorp maybe-nice-output-indicator))
+                              (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
@@ -263,10 +287,11 @@
                        (enquote classes-to-assume-initialized)
                        'initial-intern-table)))
        (return-type (lookup-eq :return-type method-info))
+       (parameter-types (lookup-eq :parameter-types method-info))
        ;; Handle an output-indicator of :auto:
-       (output-indicator (if (eq :auto output-indicator)
+       (output-indicator (if (eq :auto maybe-nice-output-indicator)
                              (resolve-auto-output-indicator return-type)
-                           output-indicator))
+                           (desugar-nice-output-indicatorp maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
        (term-to-run-with-output-extractor (wrap-term-with-output-extractor output-indicator ;return-type
                                                                            locals-term term-to-run class-alist))
        (symbolic-execution-rules (if (eq :auto steps)
@@ -330,28 +355,18 @@
                                            state)
           (mv nil dag state)))
        ((when erp) (mv erp nil nil nil nil nil state))
-       (dag-fns (dag-fns dag)))
-    (if (or (member-eq 'run-until-return-from-stack-height dag-fns)
-            (member-eq 'jvm::run-n-steps dag-fns)
-            (member-eq 'jvm::do-inst dag-fns))
-        (progn$ (if (dag-or-quotep-size-less-thanp dag 10000)
-                    (progn$ (cw "(Result Term:~%")
-                            (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil)
-                            (cw ")~%"))
-                  (cw "(Result DAG: ~x0)~%" dag))
-                (cw "(Assumptions were: ~x0)~%" all-assumptions)
-                (and error-on-incomplete-runsp
-                     (hard-error 'unroll-java-code-fn "ERROR: Symbolic simulation did not seem to finish (see DAG and assumptions above)." nil))
-                (mv (if error-on-incomplete-runsp
-                        (erp-t)
-                      (erp-nil))
-                    dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state))
-      (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state))))
+       ;; Check whether symbolic execution failed:
+       (dag-okp (dag-ok-after-symbolic-execution dag all-assumptions error-on-incomplete-runsp (w state))))
+    (mv (if (and (not dag-okp)
+                 error-on-incomplete-runsp)
+            (erp-t)
+          (erp-nil))
+        dag all-assumptions term-to-run-with-output-extractor (dag-fns dag) parameter-names state)))
 
 ;; Returns (mv erp event state).
 (defun unroll-java-code-fn (defconst-name
                              method-indicator
-                             output-indicator
+                             maybe-nice-output-indicator
                              array-length-alist
                              extra-rules ;to add to default set
                              remove-rules ;to remove from default set
@@ -378,7 +393,9 @@
                              state)
   (declare (xargs :stobjs (state)
                   :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
-                  :guard (and (jvm::method-indicatorp method-indicator)
+                  :guard (and (or (eq :auto maybe-nice-output-indicator)
+                                  (nice-output-indicatorp maybe-nice-output-indicator))
+                              (jvm::method-indicatorp method-indicator)
                               (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
@@ -414,9 +431,9 @@
        ;; Adds the descriptor if omitted and unambiguous:
        (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
        ;; Printed even if print is nil (seems ok):
-       (- (cw "Unrolling ~x0.~%"  method-designator-string))
+       (- (cw "(Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
-        (unroll-java-code-fn-aux method-designator-string output-indicator array-length-alist
+        (unroll-java-code-fn-aux method-designator-string maybe-nice-output-indicator array-length-alist
                                  extra-rules ;to add to default set
                                  remove-rules ;to remove from default set
                                  rule-alists
@@ -464,7 +481,11 @@
                                                   (,function-name ,@dag-vars)))))))))
        (items-created (append (list defconst-name)
                               (if produce-function (list function-name) nil)
-                              (if produce-theorem (list theorem-name) nil))))
+                              (if produce-theorem (list theorem-name) nil)))
+       (- (cw "Unrolling finished.~%"))
+       ;; (- (cw "Info on unrolled DAG:~%"))
+       ((mv & & state) (dag-info-fn-aux dag (symbol-name defconst-name) state)) ; maybe suppress with print arg?
+       (- (cw ")~%")))
     (mv (erp-nil)
         (extend-progn (extend-progn event `(table unroll-java-code-table ',whole-form ',event))
                       `(value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
@@ -537,10 +558,11 @@
                                     state)))
     (if print
         `(make-event ,form)
-      `(with-output
+      `(with-output ; todo: suppress the output from processing the events even if :print is t?
          :off :all
-         :on error
-         :gag-mode nil (make-event ,form))))
+         :on (comment error)
+         :gag-mode nil
+         (make-event ,form))))
   :parents (lifter)
   :short "Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
   :args ((defconst-name

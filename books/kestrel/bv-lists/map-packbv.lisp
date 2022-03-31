@@ -34,6 +34,7 @@
                                 (all-all-integerp items-lst)
                                 ))))
 
+;; TODO: Split into separate file?
 (defmap map-unpackbv (itemcount itemsize bv-lst) (unpackbv itemcount itemsize bv-lst) :fixed (itemcount itemsize)
   :declares ((xargs :guard (and (integer-listp bv-lst)
                                          (natp itemcount)
