@@ -126,7 +126,7 @@
     of the correctness of the generated C code.")
 
   (xdoc::p
-   "The fact that ATC is much simpler than ATJ
+   "The fact that ATC is simpler than ATJ
     facilitates the generation of proofs.
     Generating proofs for ATJ is a larger task,
     due to the greater complexity.")
