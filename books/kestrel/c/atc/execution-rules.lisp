@@ -470,7 +470,7 @@
       (:e iconst->type)
       (:e iconst->unsignedp)
       (:e iconst->value)
-      (:e iconst-tysuffix-kind)
+      (:e iconst-length-kind)
       (:e sint-integerp)
       (:e uint-integerp)
       (:e slong-integerp)

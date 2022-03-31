@@ -130,17 +130,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-iconst-tysuffix ((ts iconst-tysuffixp))
+(define pprint-iconst-length ((ts iconst-lengthp))
   :returns (part msgp)
-  :short "Pretty-print a type suffix of integer constants."
+  :short "Pretty-print a length suffix of integer constants."
   :long
   (xdoc::topstring-p
-   "As noted in @(tsee iconst-tysuffix),
+   "As noted in @(tsee iconst-length),
     we use uppercase letters.")
-  (iconst-tysuffix-case ts
-                        :none ""
-                        :long "L"
-                        :llong "LL")
+  (iconst-length-case ts
+                      :none ""
+                      :long "L"
+                      :llong "LL")
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -206,7 +206,7 @@
                            :oct (pprint-oct-const c.value)
                            :hex (pprint-hex-const c.value))
          (if c.unsignedp "U" "")
-         (pprint-iconst-tysuffix c.type)))
+         (pprint-iconst-length c.type)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
