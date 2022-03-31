@@ -22,6 +22,7 @@
 ;; information and others not have it?).
 
 (include-book "unroll-java-code-common")
+(include-book "output-indicators")
 (include-book "nice-output-indicators")
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/doc" :dir :system)

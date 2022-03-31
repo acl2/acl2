@@ -43,6 +43,7 @@
 (include-book "kestrel/jvm/control-flow" :dir :system)
 (include-book "kestrel/jvm/load-class" :dir :system)
 (include-book "rule-lists-jvm")
+(include-book "output-indicators")
 (include-book "rules-in-rule-lists-jvm") ;include less?  but some of these rules are now used during decompilation?
 (include-book "lifter-utilities")
 (include-book "kestrel/jvm/method-indicators" :dir :system)
@@ -4534,59 +4535,6 @@
                                       nil)))
                             (hard-error 'make-input-assumptions "Bad input-source-alist" nil)))))
       (append assumptions (make-input-assumptions (rest input-source-alist) state-term)))))
-
-(mutual-recursion
- ;;Return a term to wrap around a dag to extract the output.  The special symbol 'replace-me will be replaced with the DAG.
-;todo: compare to wrap-term-with-output-extractor in unroll-java-code
- (defund output-extraction-term-core (output-indicator initial-locals-term class-table-alist)
-   (declare (xargs :guard (and (output-indicatorp-aux output-indicator) ;:auto is handled in the wrapper
-                               (pseudo-termp initial-locals-term)
-                               (class-table-alistp class-table-alist))))
-   (if (eq :all output-indicator)
-       'replace-me
-   (if (eq :return-value output-indicator)
-       '(jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) replace-me)))
-     (if (eq :return-value-long output-indicator)
-         ;; Recall that a long takes 2 stack slots and is stored entirely in the lower slot
-         '(jvm::top-long (jvm::stack (jvm::thread-top-frame (th) replace-me)))
-       (if (eq :array-return-value output-indicator)
-           `(get-field (jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) replace-me)))
-                       ',(array-contents-pair)
-                       (jvm::heap replace-me))
-         (if (eq (car output-indicator) :array-local) ;;this means "get the final value of the array that was initially pointed to by array local N.  TODO: This could be an abbreviation for a :field of a :local...
-             (let ((local-num (cadr output-indicator)))
-               `(get-field (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
-                           ',(array-contents-pair)
-                           (jvm::heap replace-me)))
-           (if (eq (car output-indicator) :field)
-               (let ((pair (farg1 output-indicator)))
-                 (if (not (field-pair-okayp pair class-table-alist))
-                     (er hard? 'output-extraction-term-core "Bad field: ~x0." pair)
-                   `(get-field ,(output-extraction-term-core (farg2 output-indicator) initial-locals-term class-table-alist)
-                               ',pair
-                               (jvm::heap replace-me))))
-             (if (eq (car output-indicator) :param-field)
-                 (let ((pair (farg1 output-indicator))
-                       (local-num (farg2 output-indicator)))
-                   (if (not (field-pair-okayp pair class-table-alist))
-                       (er hard? 'output-extraction-term-core "Bad field: ~x0." pair)
-                     `(GET-FIELD (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
-                                 ',pair
-                                 (jvm::heap replace-me))))
-               (if (eq (car output-indicator) :tuple)
-                   (output-extraction-terms-core (fargs output-indicator)
-                                                 initial-locals-term class-table-alist)
-                 (er hard 'output-extraction-term-core "Unrecognized output-indicator"))))))))))
-
- (defund output-extraction-terms-core (output-indicators initial-locals-term class-table-alist)
-   (declare (xargs :guard (and (output-indicatorp-aux-lst output-indicators) ;:auto is handled in the wrapper
-                               (pseudo-termp initial-locals-term)
-                               (class-table-alistp class-table-alist))))
-   (if (endp output-indicators)
-       *nil*
-     `(cons ,(output-extraction-term-core (first output-indicators) initial-locals-term class-table-alist)
-            ,(output-extraction-terms-core (rest output-indicators) initial-locals-term class-table-alist)))))
-
 
 ;;Return a term to wrap around a dag to extract the output.  The special symbol 'replace-me will be replaced with the DAG.
 ;todo: compare to wrap-term-with-output-extractor in unroll-java-code
