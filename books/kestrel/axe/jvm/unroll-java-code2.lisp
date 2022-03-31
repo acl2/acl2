@@ -762,7 +762,7 @@
          :off :all
          :on error
          :gag-mode nil (make-event ,form))))
-  :parents (lifter)
+  :parents (lifters)
   :short "Given a Java method, define a function that represents
   the (unrolled) effect of the given method on the JVM state (under the given
   assumptions).  This uses symbolic execution including unrolling all loops."
