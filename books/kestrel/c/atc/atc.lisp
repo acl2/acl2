@@ -47,14 +47,29 @@
    This is like a symbol table for ACL2's representation of the C code."
 
   "@('prec-fns') is an alist from ACL2 function symbols to function information.
-   The function symbols are the ones in @('t1...tp') that precede,
+   The function symbols are the ones in @('targets') that precede,
    in the latter list,
-   the symbol @('fn') in @('t1...tp') for which code is being generated;
-   @('fn') is often also a parameter of
-   the ATC function that has @('prec-fns') as parameter.
-   According to the restrictions stated in the ATC user documentation,
-   @('prec-fns') consists of (information about) the target function symbols
-   that @('fn') is allowed to call."
+   the target in @('targets') for which C code is being generated."
+
+  "@('prec-tags') is an alist
+   from ACL2 @(tsee defstruct) symbols to their associated information.
+   The @(tsee defstruct) symbols are the ones in @('targets') that precede,
+   in the latter list,
+   the target in @('targets') for which C code is being generated.
+   The @('prec-tags') alist is always a subset of the "
+  (xdoc::seetopic "defstruct-table-definition" "@(tsee defstruct) table")
+  " that is constructed by @(tsee defstruct) calls
+   and that is part of the ACL2 world prior to calling ATC:
+   the @('prec-tags') is initially empty,
+   gets extended as targets that are @(tsee defstruct) names are processed,
+   and eventually contains all the @(tsee defstruct) table information
+   for the @(tsee defstruct) targets passed to ATC.
+   The reason for using the @('prec-tags') alist this way,
+   instead of using the @(tsee defstruct) table directly,
+   is so that we can ensure that all the targets are supplied to ATC,
+   and in the right order;
+   furthermore, it makes it easier and more efficient
+   to retrieve information about all the target @(tsee defstruct)s of interest."
 
   (xdoc::evmac-topic-implementation-item-input "output-file")
 
