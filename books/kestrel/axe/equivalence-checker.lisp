@@ -252,8 +252,9 @@
     (fresh-name-in-world-with-$s desired-name nil wrld)))
 
 ;returns state
+;;elements after the first are preceded by a newline and a space:
 (defun print-dag-array-to-file-aux (dag-array-name dag-array nodenum channel state)
-  (declare (xargs :mode :program ;because this calls pprint-object-or-string.
+  (declare (xargs :mode :program ; because this calls pprint-object-or-string
                   :stobjs state))
   (if (not (natp nodenum))
       state
@@ -267,7 +268,7 @@
 ;move to acl2-arrays book? maybe not, because of the trust-tag..
 ;remove dag from name?
 (defun print-dag-array-to-file (dag-array-name dag-array dag-len fname state)
-  (declare (xargs :mode :program ;drop?
+  (declare (xargs :mode :program ; because this calls pprint-object-or-string
                   :guard (stringp fname)
                   :stobjs state))
   (mv-let (channel state)
@@ -282,11 +283,11 @@
                                 (close-output-channel channel state))
                       ;;non-empty-array
                     (pprogn (princ$ "(" channel state)
-                            ;the first element is printed with no whitespace before it:
+                            ;the first node is printed with no whitespace before it:
                             (let ((top-nodenum (+ -1 dag-len)))
                               (pprint-object-or-string
-                               (cons top-nodenum (aref1 dag-array-name dag-array top-nodenum)) channel state))
-                            ;;elements after the first are preceded by a newline and a space:
+                               (cons top-nodenum (aref1 dag-array-name dag-array top-nodenum)) channel state)) ; TODO: save this cons?
+                            ;; Print the rest of the nodes:
                             (print-dag-array-to-file-aux dag-array-name dag-array (+ -2 dag-len) channel state)
                             (princ$ ")" channel state)
                             (close-output-channel channel state)))))))
@@ -301,13 +302,13 @@
     (print-dag-array-to-file array-name array array-len (concatenate 'string temp-dir-name "/" base-filename) state)))
 
 ;; Returns state
-(defun print-dag-lst-to-temp-file (dag-lst base-filename state)
+(defun print-dag-to-temp-file (dag-lst base-filename state)
   (declare (xargs :stobjs state
                   :mode :program
                   :guard (stringp base-filename)))
   (mv-let (temp-dir-name state)
     (maybe-make-temp-dir state)
-    (print-dag-lst-to-file dag-lst (concatenate 'string temp-dir-name "/" base-filename) state)))
+    (print-dag-to-file dag-lst (concatenate 'string temp-dir-name "/" base-filename) state)))
 
 ;; (mutual-recursion
 ;;  (defun first-nodenum-aux-lst (objects)
@@ -17454,7 +17455,7 @@
                   (progn$ (cw "Done pre-simplifying (result is a constant).)~%")
                           (mv nil dag-lst interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj))
                 (let* ((tag (pack$ (symbol-name proof-name) '-DAG-AFTER-PS)) ;fixme bad name, since we simplify below!
-                       (state (print-dag-lst-to-temp-file
+                       (state (print-dag-to-temp-file
                                dag-lst
                                (symbol-name tag)
                                state)))
@@ -19746,7 +19747,7 @@
       ;; Did not simplify to a constant:
       (let* ((dag dag-or-quotep)
              (state (if (and simplifyp print)
-                        (print-dag-lst-to-temp-file dag (symbol-name (pack$ miter-name '-after-initial-simplification)) state)
+                        (print-dag-to-temp-file dag (symbol-name (pack$ miter-name '-after-initial-simplification)) state)
                       state)))
         ;; A test case count of 0 now declares that the DAG must rewrite to 't (fixme or should it be any non-nil constant)?
 ;move this check down?
