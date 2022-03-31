@@ -533,7 +533,7 @@
                 (mv (erp-nil) t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
               (b* ((hyp (first hyps))
                    (fn (ffn-symb hyp)) ;; all hyps are conses
-                   (- (and (eq :verbose2 print)
+                   (- (and (eq :verbose! print)
                            (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
                 ;; todo: consider using CASE here:
                 (if (eq :axe-syntaxp fn)
@@ -638,7 +638,7 @@
                                 (if (unquote new-nodenum-or-quotep) ;the unquoted value is non-nil:
                                     (prog2$ (and old-try-count
                                                  print
-                                                 (or (eq :verbose print) (eq :verbose2 print))
+                                                 (or (eq :verbose print) (eq :verbose! print))
                                                  (< 100 (sub-tries tries old-try-count))
                                                  (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                             ;;hyp rewrote to a non-nil constant and so counts as relieved:
@@ -652,7 +652,7 @@
                                   ;;hyp rewrote to 'nil
                                   (progn$ (and old-try-count
                                                print
-                                               (or (eq :verbose print) (eq :verbose2 print))
+                                               (or (eq :verbose print) (eq :verbose! print))
                                                (< 100 (sub-tries tries old-try-count))
                                                (cw "(~x1 tries wasted ~x0:~x2 (rewrote to NIL))~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                           (and (member-eq rule-symbol monitored-symbols)
@@ -664,7 +664,7 @@
                               (if (nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist dag-array) ;todo: only do this if the hyp is not a known-boolean?
                                   (prog2$ (and old-try-count
                                                print
-                                               (or (eq :verbose print) (eq :verbose2 print))
+                                               (or (eq :verbose print) (eq :verbose! print))
                                                (< 100 (sub-tries tries old-try-count))
                                                (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                           ;;hyp rewrote to a known assumption and so counts as relieved:
@@ -678,7 +678,7 @@
                                 ;; Failed to relieve the hyp:
                                 (progn$ (and old-try-count
                                              print
-                                             (or (eq :verbose print) (eq :verbose2 print))
+                                             (or (eq :verbose print) (eq :verbose! print))
                                              (< 100 (sub-tries tries old-try-count))
                                              (cw "(~x1 tries wasted: ~x0:~x2 (non-constant result))~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                         (and (member-eq rule-symbol monitored-symbols)
@@ -746,7 +746,7 @@
                      node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
                      (+ -1 count))
                   ;; The rule matched, so try to relieve its hyps:
-                  (b* ((- (and (eq print ':verbose2)
+                  (b* ((- (and (eq print :verbose!)
                                (cw "(Trying to apply ~x0.~%" (stored-rule-symbol stored-rule))))
                        (hyps (stored-rule-hyps stored-rule))
                        ((mv erp hyps-relievedp alist ; may get extended by the binding of free vars
@@ -764,7 +764,7 @@
                        ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
                     (if hyps-relievedp
                         ;; the hyps were relieved, so instantiate the RHS:
-                        (prog2$ (and (eq print ':verbose2)
+                        (prog2$ (and (eq print :verbose!)
                                      (cw "Rewriting with ~x0.)~%" (stored-rule-symbol stored-rule)))
                                 (mv (erp-nil)
                                     ;; could use a faster version where we know there are no free vars:
@@ -777,7 +777,7 @@
                                     (and limits (decrement-rule-limit stored-rule limits))
                                     node-replacement-array))
                       ;;failed to relieve the hyps, so try the next rule:
-                      (prog2$ (and (eq print :verbose2)
+                      (prog2$ (and (eq print :verbose!)
                                    (cw "Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
                               (,try-to-apply-rules-name
                                (cdr stored-rules)
@@ -1554,14 +1554,14 @@
                                  ;; TODO: might it be possible to not check for ground-terms because we never build them? -- think about where terms might come from other than sublis-var-simple, which we could change to not build ground terms (of functions we know about)
                                  ;; TODO: maybe we should try to apply rules here (maybe outside-in rules) instead of rewriting the args
                                  ;; TODO: could pass in a flag for the common case where the args are known to be already simplified (b/c the tree is a dag node?)
-                                 (- (and (eq :verbose2 print) (cw "(Rewriting args of ~x0:~%" fn)))
+                                 (- (and (eq :verbose! print) (cw "(Rewriting args of ~x0:~%" fn)))
                                  ((mv erp args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                                   (,simplify-trees-and-add-to-dag-name args
                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                                        rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes print
                                                                        interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
                                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-                                 (- (and (eq :verbose2 print) (cw "Done rewriting args.)~%")))
+                                 (- (and (eq :verbose! print) (cw "Done rewriting args.)~%")))
                                  ;;ARGS is now a list of nodenums and quoteps.
                                  ;;Now we simplify FN applied to (the simplified) ARGS:
                                  )

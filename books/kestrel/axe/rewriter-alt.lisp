@@ -294,7 +294,7 @@
        (mv (erp-nil) t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
      (b* ((hyp (first hyps)) ;known to be a non-lambda function call
           (fn (ffn-symb hyp))
-          (- (and (eq :verbose2 print) (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
+          (- (and (eq :verbose! print) (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
        (if (eq 'axe-rewrite-objective fn)
            (let ((arg (farg1 hyp)))
              (if (and (quotep arg) ;check when making the rule?  would we ever want a term that evaluates to an objective?
@@ -422,7 +422,7 @@
                                              (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)))
                                  ;;hyp didn't rewrite to a constant:
                                  (prog2$
-                                  (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw "(~x0 tries wasted: ~x1:~x2 (non-constant result))~%" try-diff rule-symbol hyp-num))
+                                  (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x0 tries wasted: ~x1:~x2 (non-constant result))~%" try-diff rule-symbol hyp-num))
                                   (if (and work-hardp
                                            ;;work-hard-when-instructedp fffffixme thread this through
                                            )
@@ -430,7 +430,7 @@
                                       (progn$
                                        (cw "(Axe Rewriter is working hard on a hyp of ~x0, namely: ~x1~%" rule-symbol hyp) ;print the instantiated-hyp and hyp num too?
                                        (cw "(Rewrote to:~%")
-                                       (if (member-eq print '(t :verbose :verbose2))
+                                       (if (member-eq print '(t :verbose :verbose!))
                                            (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep) ;fixme print the assumptions (of all kinds)?
                                          (cw ":elided"))
                                        (cw ")~%")
@@ -523,7 +523,7 @@
                                        refined-assumption-alist equality-array print monitored-symbols info tries simplify-xorsp state result-array-stobj)
          ;;the rule matched, so try to relieve its hyps:
          (b* ((rule-symbol (stored-rule-symbol stored-rule))
-              (- (and (eq print ':verbose2)
+              (- (and (eq print :verbose!)
                           (cw "(Trying to apply ~x0.~%" rule-symbol)))
               (hyps (stored-rule-hyps stored-rule)))
            (mv-let (erp hyps-relievedp alist ;may get extended by the binding of free vars
@@ -543,7 +543,7 @@
                      (if hyps-relievedp
                          ;;the hyps were relieved:
                          (let* ((info (and info (increment-hit-count-in-info-world rule-symbol info))))
-                           (prog2$ (and (eq print ':verbose2)
+                           (prog2$ (and (eq print :verbose!)
                                         (cw "Rewriting with ~x0.)~%" rule-symbol))
                                    (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                                      (merge-term-into-dag-array (stored-rule-rhs stored-rule) alist
@@ -553,7 +553,7 @@
                                          (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
                                        (mv (erp-nil) nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)))))
                        ;;failed to relieve the hyps, so try the next rule:
-                       (prog2$ (and (eq print :verbose2)
+                       (prog2$ (and (eq print :verbose!)
                                     (cw "Failed to apply rule ~x0.)~%" rule-symbol))
                                (try-to-apply-rewrite-rules (rest stored-rules) args-to-match rewrite-objective
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -920,7 +920,7 @@
       (if (quotep final-result) ;check consp?
           (mv (erp-nil) final-result state result-array-stobj)
         (prog2$
-         (and (eq print :verbose2)
+         (and (eq print :verbose!)
               (prog2$ (cw "array before crunching:~%")
                       (print-array-vals (+ -1 dag-len) 0 'dag-array dag-array)))
          (mv (erp-nil)

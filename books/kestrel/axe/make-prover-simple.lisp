@@ -1115,7 +1115,7 @@
                 (mv (erp-nil) t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
               (b* ((hyp (first hyps)) ;known to be a non-lambda function call
                    (fn (ffn-symb hyp))
-                   (- (and (member-eq print '(:verbose2 :verbose)) (cw " Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
+                   (- (and (member-eq print '(:verbose! :verbose)) (cw " Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
                 (if (eq :axe-syntaxp fn)
                     (let* ((syntaxp-expr (cdr hyp)) ;; strip off the :AXE-SYNTAXP; dag-array formals have been removed from the calls in this
                            (result (and ;(all-vars-in-term-bound-in-alistp syntaxp-expr alist) ; TODO: remove this check, since it should be guaranteed statically!
@@ -1190,14 +1190,14 @@
                            (try-diff (and old-try-count (sub-tries tries old-try-count))))
                         (if (consp new-nodenum-or-quotep) ;tests for quotep
                             (if (unquote new-nodenum-or-quotep) ;hyp rewrote to a non-nil constant:
-                                (prog2$ (and old-try-count (member-eq print '(t :verbose :verbose2)) (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
+                                (prog2$ (and old-try-count (member-eq print '(t :verbose :verbose!)) (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
                                         (,relieve-rule-hyps-name
                                          (rest hyps) (+ 1 hyp-num) alist rule-symbol ;alist may have been extended by a hyp with free vars
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          equiv-alist rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                               ;;hyp rewrote to *nil* :
                               (progn$
-                               (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
+                               (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
                                (and (member-eq rule-symbol monitored-symbols)
                                     (cw "(Failed to relieve hyp ~x3 for ~x0.~% Reason: Rewrote to nil.~%Alist: ~x1.~%Assumptions (to assume false):~%~x2~%DAG:~x4)~%"
                                         rule-symbol
@@ -1209,7 +1209,7 @@
                                (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                           ;;hyp didn't rewrite to a constant:
                           (prog2$
-                           (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
+                           (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
                            ;; Give up:
                            (prog2$ ;todo: improve this printing?
                             (and (member-eq rule-symbol monitored-symbols)
@@ -1271,7 +1271,7 @@
                   (,try-to-apply-rules-name (rest stored-rules) rule-alist args-to-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                             equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                 ;; The rule matched. now try to relieve its hyps:
-                (b* ((- (and (member-eq print '(:verbose :verbose2))
+                (b* ((- (and (member-eq print '(:verbose :verbose!))
                              (cw "(Trying: ~x0. Alist: ~x1~%"
                                  (stored-rule-symbol stored-rule)
                                  (reverse alist-or-fail) ;nicer to read if reversed
@@ -1294,7 +1294,7 @@
                       ;; instantiate the RHS:
                       ;; could use a faster version where we know there are no free vars:
                       (let ((rhs (,sublis-var-and-eval-name alist (stored-rule-rhs stored-rule) interpreted-function-alist))) ;fixme what if there are free vars in the rhs?
-                        (prog2$ (and (member-eq print '(:verbose2 :verbose))
+                        (prog2$ (and (member-eq print '(:verbose! :verbose))
                                      (cw "Rewriting with ~x0. RHS: ~x1.)~%"
                                          (stored-rule-symbol stored-rule)
                                          rhs))
@@ -1305,7 +1305,7 @@
                                     tries
                                     )))
                     ;;failed to relieve the hyps, so try the next rule
-                    (prog2$ (and (member-eq print '(:verbose2 :verbose))
+                    (prog2$ (and (member-eq print '(:verbose! :verbose))
                                  (cw "Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
                             (,try-to-apply-rules-name
                              (rest stored-rules)
@@ -1619,7 +1619,7 @@
                    rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes equiv-alist
                    print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                 ;; No rule fired, so no simplification can be done.  This node is ready to add to the dag:
-                (b* ((- (and (member-eq print '(:verbose2 :verbose)) (cw "(Making ~x0 term with args: ~x1.)~%" fn args)))
+                (b* ((- (and (member-eq print '(:verbose! :verbose)) (cw "(Making ~x0 term with args: ~x1.)~%" fn args)))
                      ((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
                       ;; todo: perhaps inline this:
                       (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))
@@ -2854,7 +2854,7 @@
                                         nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                         rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
                                         case-designator prover-depth options (+ -1 count))
-                 (b* ( ;; (- (and (member-eq print '(:verbose2 :verbose))
+                 (b* ( ;; (- (and (member-eq print '(:verbose! :verbose))
                       ;;         (cw "Processing node ~x0 (may have to process the args first).~%" nodenum)))
                       (expr (aref1 'dag-array dag-array nodenum)))
                    (if (atom expr) ;must be a variable - just see if its node needs to be replaced
@@ -2934,7 +2934,7 @@
                                (if (eq fn 'boolif)
                                    (b* ((simplified-args (lookup-args-in-result-array args result-array-name result-array))
                                         (expr (cons fn simplified-args)) ; todo: consider cons-with-hint here, or avoid this cons
-                                        ;; (- (and (member-eq print '(:verbose2 :verbose))
+                                        ;; (- (and (member-eq print '(:verbose! :verbose))
                                         ;;         (cw "(Rewriting node ~x0." nodenum)))
                                         ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                                          ;; TODO: Optimize this.  Calling ,simplify-tree-name here is overkill.  See what we do for if/myif above, but we do need to deal with the possibility of adding a bool-fix here.
@@ -2992,7 +2992,7 @@
                                                             rule-alist equiv-alist interpreted-function-alist print info tries
                                                             monitored-symbols case-designator prover-depth options (+ -1 count))
                                      ;; Not a ground term we could evaluate:
-                                     (b* ( ;; (- (and (member-eq print '(:verbose2 :verbose))
+                                     (b* ( ;; (- (and (member-eq print '(:verbose! :verbose))
                                           ;;         (cw "(Rewriting node ~x0." nodenum)))
                                           ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                                            (,simplify-fun-call-name fn
@@ -3126,7 +3126,7 @@
                                      (symbolp result-array-name)
                                      (symbol-listp known-booleans)
                                      (simple-prover-optionsp options))))
-         (b* ((- (and (or (eq :verbose print) (eq :verbose2 print))
+         (b* ((- (and (or (eq :verbose print) (eq :verbose! print))
                       (cw "(Rewriting literal ~x0.~%" nodenum)))
               ;; See what info this literal contributed to the assumption-array:
               ((mv assumption-nodenum assumption-item)
@@ -3154,7 +3154,7 @@
                                     *equiv-alist* ;do we need to pass this around?
                                     interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 (expt 2 59))))
               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries assumption-array))
-              (- (and (or (eq :verbose print) (eq :verbose2 print))
+              (- (and (or (eq :verbose print) (eq :verbose! print))
                       (cw "  Done rewriting literal ~x0.)~%" nodenum)))
               (new-nodenum-or-quotep (aref1 result-array-name result-array nodenum))
               ((when (not new-nodenum-or-quotep)) ;todo: prove that this can't happen
@@ -3316,7 +3316,7 @@
                                      (simple-prover-optionsp options))
                          :guard-hints (("Goal" :do-not-induct t))))
          (if (endp work-list)
-             (progn$ (and (member-eq print '(:verbose2 :verbose))
+             (progn$ (and (member-eq print '(:verbose! :verbose))
                           (progn$ (cw "(Literals after rewriting them all:~%")
                                   (print-dag-only-supporters-lst done-list 'dag-array dag-array)
                                   (cw "):~%")))
@@ -3586,7 +3586,7 @@
               ((when erp) (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               (hit-count-alist-after (make-hit-count-alist (uniquify-alist-eq info) nil))
               (hit-count-alist (sort-hit-count-alist (subtract-hit-count-alists hit-count-alist-after hit-count-alist-before)))
-              (- (and (member-eq print '(t :verbose :verbose2)) (cw "(Hits: ~x0)~%" hit-count-alist))))
+              (- (and (member-eq print '(t :verbose :verbose!)) (cw "(Hits: ~x0)~%" hit-count-alist))))
            (if provedp
                (prog2$ (and print (cw "  Rewriting proved case ~s0.)~%" case-designator))
                        (mv (erp-nil)
@@ -4056,7 +4056,7 @@
          (if (atom rule-alists)
              ;; No error but failed to prove this case and no more rule-alists after left:
              (prog2$
-              (and (member-eq print '(:verbose2 :verbose)) ;; TODO: improve this printing.
+              (and (member-eq print '(:verbose! :verbose)) ;; TODO: improve this printing.
                    (prog2$ (cw "Case ~s0 didn't simplify to true.  Literal nodenums:~% ~x1~%(This case: ~x2)~%Literals:~%"
                                case-designator
                                literal-nodenums
@@ -4454,7 +4454,7 @@
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  (- (cw "(True case reduced dag: ~x0)~%" (drop-non-supporters-array 'dag-array dag-array nodenum nil)))
-                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
+                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
                          (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "true"))))
               ;; Attempt to prove case #1:
               (,prove-or-split-case-name literal-nodenums
@@ -4510,7 +4510,7 @@
                                  print))
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
+                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
                          (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "false"))))
               ;; Attempt to prove case #2:
               (,prove-or-split-case-name literal-nodenums
@@ -4596,7 +4596,7 @@
                     (b* ((- (and print (cw "(Splitting on node ~x0:~%" nodenum)))
                          ;;todo: elide this if too big:
                          (- (and print (print-dag-only-supporters 'dag-array dag-array nodenum)))
-                         ;; (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
+                         ;; (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
                          ;;         (progn$ (cw "Literals:~%")
                          ;;                 (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
                          ;;                 ;;(cw "parent array:~%")

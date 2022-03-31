@@ -199,7 +199,7 @@
        (mv (erp-nil) t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)
      (b* ((hyp (first hyps))
           (fn (ffn-symb hyp)) ;; all hyps are conses
-          (- (and (eq :verbose2 print)
+          (- (and (eq :verbose! print)
                   (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
        ;; todo: consider using CASE here:
        (if (eq :axe-syntaxp fn)
@@ -316,7 +316,7 @@
                       (try-diff (and old-try-count (- tries old-try-count))))
                    (if (consp new-nodenum-or-quotep) ;tests for quotep
                        (if (unquote new-nodenum-or-quotep) ;the unquoted value is non-nil:
-                           (prog2$ (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol try-diff hyp-num))
+                           (prog2$ (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol try-diff hyp-num))
                                    ;;hyp rewrote to a non-nil constant and so counts as relieved:
                                    (relieve-rule-hyps (rest hyps)
                                                       (+ 1 hyp-num)
@@ -326,7 +326,7 @@
                                                       print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
                                                       memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
                          ;;hyp rewrote to *nil*:
-                         (progn$ (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw "(~x1 tries wasted ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
+                         (progn$ (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
                                  (and (member-eq rule-symbol monitored-symbols)
                                       (progn$ (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.~%" hyp rule-symbol)
                                               ;; (cw "Alist: ~x0.~%Assumptions:~%~x1~%DAG:~x2~%" ;;ffixme improve this printing
@@ -342,7 +342,7 @@
                      ;;hyp didn't rewrite to a constant (new-nodenum-or-quotep is a node number):
                      ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?
                      (if (nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist dag-array)
-                         (prog2$ (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol try-diff hyp-num))
+                         (prog2$ (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol try-diff hyp-num))
                                  ;;hyp rewrote to a known assumption and so counts as relieved:
                                  (relieve-rule-hyps (rest hyps)
                                                     (+ 1 hyp-num)
@@ -352,12 +352,12 @@
                                                     print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
                                                     memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
                        (prog2$
-                        (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw "(~x1 tries wasted: ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
+                        (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted: ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
                         (if (and work-hardp work-hard-when-instructedp)
                             ;;If we have been instructed to work hard:
                             (b* ((- (cw "(Rewriter is working hard on a hyp of ~x0, namely: ~x1~%" rule-symbol hyp)) ;print the instantiated-hyp and hyp num too?
                                  (- (cw "(Rewrote to:~%"))
-                                 (- (if (member-eq print '(t :verbose :verbose2))
+                                 (- (if (member-eq print '(t :verbose :verbose!))
                                         (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep) ;fixme print the assumptions (of all kinds)?
                                       (cw ":elided")))
                                  (- (cw ")~%"))
@@ -369,7 +369,7 @@
                                           (append (decode-refined-assumption-alist refined-assumption-alist)
                                                   (make-equalities-from-dotted-pairs node-replacement-alist) ;fffixme is all this info already in the refined-assumption-alist?
                                                   )))
-                                     (prog2$ (and (member-eq print '(t :verbose :verbose2)) (cw "(assumption terms: ~x0)" assumption-terms))
+                                     (prog2$ (and (member-eq print '(t :verbose :verbose!)) (cw "(assumption terms: ~x0)" assumption-terms))
                                              (negate-terms assumption-terms)))
                                    nil
                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array
@@ -450,7 +450,7 @@
             node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
             embedded-dag-depth work-hard-when-instructedp tag limits state)
          ;; The rule matched, so try to relieve its hyps:
-         (b* ((- (and (eq print ':verbose2)
+         (b* ((- (and (eq print :verbose!)
                       (cw "(Trying to apply ~x0.~%" (stored-rule-symbol stored-rule))))
               (hyps (stored-rule-hyps stored-rule))
               ((mv erp hyps-relievedp alist ; may get extended by the binding of free vars
@@ -468,7 +468,7 @@
               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)))
            (if hyps-relievedp
                ;; the hyps were relieved, so instantiate the RHS:
-               (prog2$ (and (eq print ':verbose2)
+               (prog2$ (and (eq print :verbose!)
                             (cw "Rewriting with ~x0.)~%" (stored-rule-symbol stored-rule)))
                        (mv (erp-nil)
                            (sublis-var-and-eval alist (stored-rule-rhs stored-rule) interpreted-function-alist)
@@ -480,7 +480,7 @@
                            (and limits (decrement-rule-limit stored-rule limits))
                            state))
              ;;failed to relieve the hyps, so try the next rule:
-             (prog2$ (and (eq print :verbose2)
+             (prog2$ (and (eq print :verbose!)
                           (cw "Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
                      (try-to-apply-rules
                       (cdr stored-rules)
@@ -986,7 +986,7 @@
                         ;; fixme might it be possible to not check for ground-terms because we never build them -- think about where terms might come from other than sublis-var-simple, which we could change to not build ground terms (of functions we know about)
                         ;; ffixme maybe we should try to apply rules here (maybe outside-in rules) instead of rewriting the args
                         ;; fixme could pass in a flag for the common case where the args are known to be already simplified (b/c the tree is a dag node?)
-                        (- (and (eq :verbose2 print) (cw "(Rewriting args of ~x0:~%" fn)))
+                        (- (and (eq :verbose! print) (cw "(Rewriting args of ~x0:~%" fn)))
                         ((mv erp args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries & limits state) ;ffixme dont ignore and use any-arg-was-simplifiedp?
                          (simplify-trees-and-add-to-dag args
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -994,7 +994,7 @@
                                                         refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print
                                                         memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
                         ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state))
-                        (- (and (eq :verbose2 print) (cw "Done rewriting args.)~%")))
+                        (- (and (eq :verbose! print) (cw "Done rewriting args.)~%")))
                         ;;ARGS is now a list of nodenums and quoteps.
                         ;;Now we simplify FN applied to (the simplified) ARGS:
                         )
@@ -1151,7 +1151,7 @@
                  ;;(equality-assumption-alist-for-this-node (add-equality-pairs context-assumptions equality-assumption-alist))
                  ;;(assumptions-for-this-node (refine-assumptions-for-matching context-assumptions assumptions))
                  (- (and print
-                         (progn$ (and (or (eq print :verbose2) (eq print :verbose))
+                         (progn$ (and (or (eq print :verbose!) (eq print :verbose))
                                       nil ;(cw "Using ~x0 context assumption(s) for node ~x1 (including ~x2 for matching free vars).~%" (len node-replacement-alist-for-this-node) nodenum (len context-exprs-for-this-node))
                                       )
                                  (and (not (eq :brief print)) ;new
@@ -1663,7 +1663,7 @@
           (prog2$ (and (> total-rule-set-count 1) (cw ")~%"))
                   (if (quotep dag-or-quotep)
                       (mv (erp-nil) dag-or-quotep limits state)
-                    (prog2$ (and (member-eq print '(t :verbose :verbose2))
+                    (prog2$ (and (member-eq print '(t :verbose :verbose!))
                                  (print-list dag-or-quotep))
                             ;;apply the rest of the rule sets:
                             (simplify-with-rule-sets-aux dag-or-quotep (rest tagged-rule-sets) slack-amount simplify-xorsp refined-assumption-alist equality-assumption-alist
