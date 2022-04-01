@@ -6573,6 +6573,7 @@
 ;; NOTE: Keep this in sync with SHOW-LIFT-JAVA-CODE below.
 ;; TODO: Consider re-playing with :print t if the lift attempt fails.
 ;; TODO: Suppress more printing if :print is nil.
+;; todo: get doc from kestrel-acl2/axe/doc.lisp
 (defmacro lift-java-code (&whole whole-form
                                  method-indicator
                                  program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
