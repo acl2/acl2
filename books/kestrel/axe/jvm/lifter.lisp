@@ -6615,7 +6615,7 @@
                                   ,program-name
                                   ',param-names
                                   ,array-length-alist
-                                  ,output
+                                  ',output
                                   ,assumptions
                                   ,classes-to-assume-initialized
                                   ,print
@@ -6828,7 +6828,7 @@
                                          method-indicator
                                          start-pc
                                          segment-pcs ;is there a nicer way to specify the segment (line numbers in the source)?
-                                         output-indicator ;an output-indicatorp (TODO: make this a keyword arg defaulting to :auto)
+                                         output-indicator ;an output-indicatorp (TODO: make this a keyword arg defaulting to :auto) ;todo: call this "output"
                                          &key
                                          (input-source-alist 'nil) ;an input-source-alistp
                                          (assumptions 'nil)
@@ -6858,7 +6858,7 @@
                                           ,start-pc
                                           ,segment-pcs ;is there a nicer way to specify the segment?
                                           ,input-source-alist
-                                          ,output-indicator
+                                          ,output-indicator ; todo: don't evaluate this?
                                           ,assumptions
                                           ,classes-to-assume-initialized
                                           ,print
