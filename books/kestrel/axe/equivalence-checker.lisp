@@ -16749,7 +16749,8 @@
                                          var-type-alist top-node print traced-nodes interpreted-function-alist
                                          rewriter-rule-alist prover-rule-alist
                                          extra-stuff monitored-symbols assumptions
-                                         test-cases test-case-array-alist sweep-num step-num
+                                         test-cases test-case-array-alist sweep-num
+                                         step-num total-steps
                                          next-nodenum-to-consider ;think about this
                                          analyzed-function-table
                                          unroll miter-is-purep
@@ -16762,7 +16763,7 @@
        ;;bozo put in some checks here?  maybe not, since we already made sure the top node is all t's
        (prog2$ (cw "Done replacing nodes.  The miter has been reduced to TRUE!~%")
                (mv (erp-nil) :proved-miter miter-array analyzed-function-table rand state result-array-stobj))
-     (b* ((- (cw "(Depth ~x0 / sweep ~x1 / step ~x2:~%" miter-depth sweep-num step-num))
+     (b* ((- (cw "(Depth ~x0 / sweep ~x1 / step ~x2 of ~x3:~%" miter-depth sweep-num step-num total-steps))
           ;;(nodenum-with-bad-parents (find-nodenum-with-bad-parents (+ -1 miter-len) parent-array-name parent-array)) ;fixme remove this stuff - it's for debugging
           ;; (if nodenum-with-bad-parents
           ;;     (prog2$
@@ -16822,7 +16823,7 @@
                                                 var-type-alist top-node print
                                                 traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                 extra-stuff monitored-symbols assumptions test-cases
-                                                test-case-array-alist sweep-num (+ 1 step-num)
+                                                test-case-array-alist sweep-num (+ 1 step-num) total-steps
                                                 nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
                                                 analyzed-function-table
                                                 unroll miter-is-purep nodes-to-not-use-prover-for
@@ -16873,7 +16874,7 @@
                                               tag-array2 ;parent-array-name parent-array
                                               var-type-alist
                                               top-node print traced-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols
-                                              assumptions test-cases test-case-array-alist sweep-num (+ 1 step-num) nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
+                                              assumptions test-cases test-case-array-alist sweep-num (+ 1 step-num) total-steps nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
                                               analyzed-function-table unroll miter-is-purep nodes-to-not-use-prover-for
                                               (or some-goal-timed-outp
                                                   (eq :timed-out result))
@@ -16936,12 +16937,14 @@
         ;; mark nodes that are probably equal to other nodes (including constants, in case we can't prove x=const and y=const but can prove x=y):
         (tag-array2 (prog2$ (and print (eq :verbose print) (cw "Tagging probably-equal nodes for replacement...~%"))
                             (tag-probably-equal-node-sets probably-equal-node-sets tag-array2 probably-constant-node-alist)))
-        (- (progn$ (cw "(~x0 total probably-equal-node-sets.~%" (len probably-equal-node-sets)) ;fixme this total should exclude the probably constant nodes..
+        (num-probably-equal-node-sets (len probably-equal-node-sets))
+        (num-probable-constants (len probably-constant-node-alist))
+        (- (progn$ (cw "(~x0 total probably-equal-node-sets.~%" num-probably-equal-node-sets) ;fixme this total should exclude the probably constant nodes..
                    (and print (progn$ (cw "Here they are, after excluding probably-constant nodes:~%") ;count the nodes involved (or track that number)
                                       (print-non-constant-probably-equal-sets probably-equal-node-sets tag-array2) ;sort these?
                                       ))
                    (cw ")~%")
-                   (cw "~%(Probably-constant nodes (~x0 total)" (len probably-constant-node-alist))
+                   (cw "~%(Probably-constant nodes (~x0 total)" num-probable-constants)
                    (and print (progn$ (cw ":~%")
                                       (print-list (merge-sort-car-<-2 probably-constant-node-alist))
                                       ))
@@ -16960,7 +16963,10 @@
                                   rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols assumptions
                                   (firstn 512 test-cases) ;fixme
                                   test-case-array-alist
-                                  sweep-num 0 0 analyzed-function-table unroll
+                                  sweep-num
+                                  1 ; step-num (todo: but depth and sweep numbers start at 0)
+                                  (+ num-probably-equal-node-sets num-probable-constants)
+                                  0 analyzed-function-table unroll
                                   miter-is-purep
                                   (nodes-to-not-use-prover-for (+ -1 miter-len) miter-array-name miter-array)
                                   nil ;some-goal-timed-outp ;no nodes have timed out yet
@@ -19732,7 +19738,7 @@
                                   :use-internal-contextsp use-context-when-miteringp ;think about this..
                                   :work-hard-when-instructedp nil
                                   :check-inputs nil))))
-          (prog2$ (cw "(We don't simplify the miter to start, because no rules are given.)")
+          (prog2$ (cw "(We don't simplify the miter to start, because no rules are given.)~%")
                   (mv (erp-nil) dag state))))
        ((when erp) (mv erp nil state rand result-array-stobj))
        ;;should we print the simplified dag?  we print it at the start of the sweep?
