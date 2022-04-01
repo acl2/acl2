@@ -224,14 +224,21 @@
             nil nil nil nil
             state))
        (method-info (lookup-equal method-id method-info-alist))
+       (param-slot-to-name-alist (make-param-slot-to-name-alist method-info param-names))
+       (parameter-names (strip-cdrs param-slot-to-name-alist)) ; the actual names used
        (class-table-term (make-class-table-term-compact class-alist 'initial-class-table))
        (locals-term 'locals)
        (initial-heap-term 'initial-heap)
        (initial-intern-table-term 'initial-intern-table)
        (user-assumptions (translate-terms user-assumptions 'unroll-java-code-fn (w state))) ;throws an error on bad input
+       ;; TODO: Not quite right.  Need to allow the byte- or bit-blasted array var names (todo: what about clashes between those and the other param names?):
+       ;; (allowed-assumption-vars (append parameter-names
+       ;;                                  '(locals initial-heap initial-static-field-map and initial-intern-table)))
+       ;; ((when (not (subsetp-eq (free-vars-in-terms user-assumptions) allowed-assumption-vars)))
+       ;;  (er hard? 'unroll-java-code-fn-aux "Disallowed variables in assumptions, ~x0,(only allowed vars are ~x1)." user-assumptions allowed-assumption-vars)
+       ;;  (mv :bad-assumption-vars nil nil nil nil nil state))
        (user-assumptions (desugar-calls-of-contents-in-terms user-assumptions initial-heap-term))
-       (param-slot-to-name-alist (make-param-slot-to-name-alist method-info param-names))
-       (parameter-names (strip-cdrs param-slot-to-name-alist)) ; the actual names used
+       ;; todo: have this return all the var names creates for array components/bits:
        (parameter-assumptions (parameter-assumptions method-info array-length-alist locals-term initial-heap-term
                                                      vars-for-array-elements
                                                      param-slot-to-name-alist
@@ -575,7 +582,7 @@
            "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
          (method-indicator
           "The Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").  The descriptor (input and output type) can be omitted if only one method in the given class has the given name.")
-         (assumptions             "Terms to assume true when unrolling")
+         (assumptions             "Terms to assume true when unrolling.  The assumptions can mention the parameter names (symbols), and the variables @('locals'), @('initial-heap'), @('initial-static-field-map'), and @('initial-intern-table').")
          (array-length-alist      "An alist pairing array parameter names (symbols) with their lengths.")
          (classes-to-assume-initialized "Classes to assume the JVM has already initialized (or :all)")
          (ignore-exceptions       "Whether to assume exceptions do not happen (e.g., out-of-bounds array accesses)")
