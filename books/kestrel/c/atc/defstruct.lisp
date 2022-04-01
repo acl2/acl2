@@ -108,7 +108,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For each C structure, we store a list of member information,
+    "For each C structure type defined via @(tsee defstruct),
+     we store a list of member information,
      which represents the typed members of the structure;
      see @(tsee member-info) in the deep embedding.")
    (xdoc::p
@@ -134,59 +135,40 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The keys are symbols that represent the tags of the structures.
+    "The keys are strings that are @(tsee symbol-name)s of
+     symbols that represent the tags of the structures.
      The name of each such symbol is a portable ASCII C identifiers,
      but this constraint is not enforced in the table's guard.
-     The symbol names of the keys are unique.")
+     The keys in the table are unique.")
    (xdoc::p
     "The values are the information about the structures.
      See @(tsee defstruct-info)."))
 
   (make-event
    `(table ,*defstruct-table* nil nil
-      :guard (and (symbolp acl2::key)
+      :guard (and (stringp acl2::key)
                   (defstruct-infop acl2::val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-table-lookup ((tag symbolp) (wrld plist-worldp))
-  :returns (info? defstruct-info-optionp)
+(define defstruct-table-lookup ((tag stringp) (wrld plist-worldp))
+  :returns (info? defstruct-info-optionp
+                  :hints (("Goal" :in-theory (enable defstruct-info-optionp))))
   :short "Retrieve information about a shallowly embedded C structure."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The lookup is based on the name of the symbol,
-     because we disallow shallowly embedded C structures
-     to have different symbols with the same name,
-     since it is the symbol name that represents the C structure tag."))
-  (b* ((table (table-alist+ *defstruct-table* wrld))
-       (info? (defstruct-table-lookup-aux (symbol-name tag) table)))
-    (if (defstruct-info-optionp info?)
-        info?
-      (raise "Internal error: malformed structure information ~x0 for ~x1."
-             info? tag)))
-
-  :prepwork
-
-  ((local (include-book "std/alists/top" :dir :system))
-
-   (define defstruct-table-lookup-aux ((tag-name stringp) (table alistp))
-     :parents nil
-     (b* (((when (endp table)) nil)
-          ((cons key val) (car table))
-          ((when (and (symbolp key)
-                      (equal tag-name
-                             (symbol-name key))))
-           val))
-       (defstruct-table-lookup-aux tag-name (cdr table))))))
+  (b* ((pair (assoc-equal tag (table-alist+ *defstruct-table* wrld)))
+       ((when (not (consp pair))) nil)
+       (info (cdr pair))
+       ((unless (defstruct-infop info))
+        (raise "Internal error: malformed DEFSTRUCT information ~x0." info)))
+    info))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-table-record-event ((tag symbolp) (info defstruct-infop))
+(define defstruct-table-record-event ((tag stringp) (info defstruct-infop))
   :returns (event pseudo-event-formp)
   :short "Event to update the table of shallowly embedded C structures
           by recording a new C structure in it."
-  `(table ,*defstruct-table* ',tag ',info))
+  `(table ,*defstruct-table* ,tag ',info))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -297,14 +279,14 @@
                   "The first input must be a symbol, ~
                    but ~x0 is not."
                   tag))
-       ((unless (atc-ident-stringp (symbol-name tag)))
+       (tag-name (symbol-name tag))
+       ((unless (atc-ident-stringp tag-name))
         (er-soft+ ctx t irrelevant
-                  "The name of the symbol ~x0 passed as first input, ~
+                  "The name ~x0 of the symbol ~x1 passed as first input, ~
                    which defines the name of the structure, ~
-                   must be a portable ASCII C identifier, ~
-                   but its name ~x1 is not."
-                  tag (symbol-name tag)))
-       (info (defstruct-table-lookup tag (w state)))
+                   must be a portable ASCII C identifier."
+                  tag-name tag))
+       (info (defstruct-table-lookup tag-name (w state)))
        ((when info)
         (if (equal (defstruct-info->call info) call)
             (acl2::value (list tag nil t))
@@ -313,7 +295,7 @@
                      recorded in the table of shallowly embedded C structures, ~
                      but its call ~x1 differs from the current ~x2, ~
                      so the call is not redundant."
-                    tag (defstruct-info->call info) call)))
+                    tag-name (defstruct-info->call info) call)))
        (members (cdr args))
        ((mv erp members state) (defstruct-process-members members ctx state))
        ((when erp) (mv erp irrelevant state)))
@@ -664,7 +646,7 @@
        (info (make-defstruct-info :members members
                                   :return-thms return-thms
                                   :call call))
-       (table-event (defstruct-table-record-event tag info)))
+       (table-event (defstruct-table-record-event (symbol-name tag) info)))
     `(progn
        ,recognizer-event
        ,fixer-event

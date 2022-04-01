@@ -3630,7 +3630,7 @@
                           (eq p
                               (intern-in-package-of-symbol "P" recognizer))))
              nil)
-            (info (defstruct-table-lookup tag wrld))
+            (info (defstruct-table-lookup (symbol-name tag) wrld))
             ((unless info) nil)
             (tag (symbol-name tag))
             ((unless (atc-ident-stringp tag))
@@ -3898,16 +3898,16 @@
      thinking of the different allowed forms of these functions' bodies:")
    (xdoc::ul
     (xdoc::li
-     "A formal parameter is constrained to be a value by the guard.")
+     "A formal parameter is constrained to be a C value by the guard.")
     (xdoc::li
      "Calls of @(tsee sint-dec-const), @(tsee add-sint-sint), etc.
-      are known to return values.")
+      are known to return C values.")
     (xdoc::li
      "Calls of arrays and structure readers and writers
       are known to return C values.")
     (xdoc::li
      "A @(tsee let) or @(tsee mv-let) variable is equal to a term that,
-      recursively, always returns a value.")
+      recursively, always returns a C value.")
     (xdoc::li
      "A call of a preceding function returns (a) C value(s),
       as proved by the same theorems for the preceding functions.")
@@ -3959,7 +3959,7 @@
      which is @('nil') for recursive functions,
      and may or may not be @('void') for non-recursive functions.
      The affected variables are also considered as results.
-     We concatenate zero or one type from @('type?')
+     We concatenate zero or one types from @('type?')
      with zero or more types from @('affect') and @('typed-formals').
      More precisely, we make an alist instead of a list,
      whose values are the types in question
@@ -4136,8 +4136,7 @@
           (arraylength-conjunct?
            (b* (((unless (type-case type :pointer)) nil)
                 (reftype (type-pointer->to type))
-                ((unless (type-integerp reftype))
-                 (raise "Internal error: pointer type ~x0 for ~x1." type name))
+                ((unless (type-integerp reftype)) nil)
                 (reftype-array-length (pack (integer-type-to-fixtype reftype)
                                             '-array-length)))
              (list `(equal (,reftype-array-length ,theresult)
@@ -6055,7 +6054,7 @@
        ((when (consp (assoc-eq tag prec-tags)))
         (raise "Internal error: tag ~x0 already encountered." tag)
         (acl2::value irr))
-       (info (defstruct-table-lookup tag (w state)))
+       (info (defstruct-table-lookup (symbol-name tag) (w state)))
        ((unless info)
         (er-soft+ ctx t irr
                   "There is no DEFSTRUCT associated to the tag ~x0."
