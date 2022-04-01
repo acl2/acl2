@@ -66,7 +66,7 @@
     "Note, however, that lambda expressions are always closed
      in translated terms directly obtained from untranslated terms.
      ACL2 accomplishes this closure
-     by adding formal paramaters to the lambda expressions
+     by adding formal parameters to the lambda expressions
      for the otherwise free variables,
      and adding actual arguments identical to those variables;
      see @(tsee remove-trivial-vars).
