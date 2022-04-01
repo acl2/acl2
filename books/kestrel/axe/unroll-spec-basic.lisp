@@ -260,7 +260,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         `(progn (defconst ,defconst-name ',dag)
                 ,@(and produce-function `((,defun-variant ,function-name ,function-params ,function-body)))
                 ,@(and produce-theorem (list theorem))
-                (table unroll-spec-basic-table ',whole-form ':fake)
+                (with-output :off :all (table unroll-spec-basic-table ',whole-form ':fake))
                 (value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
                 )
         state)))
