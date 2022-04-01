@@ -4024,7 +4024,8 @@
                                               (if (consp (cdr results))
                                                   0
                                                 nil)
-                                              fn-call))
+                                              fn-call
+                                              wrld))
        (conclusion
         (if (and (consp conjuncts)
                  (not (consp (cdr conjuncts))))
@@ -4123,7 +4124,8 @@
 
    (define atc-gen-fn-result-thm-aux2 ((results atc-symbol-type-alistp)
                                        (index? maybe-natp)
-                                       (fn-call pseudo-termp))
+                                       (fn-call pseudo-termp)
+                                       (wrld plist-worldp))
      :returns conjuncts
      :parents nil
      (b* (((when (endp results)) nil)
@@ -4131,7 +4133,7 @@
                          `(mv-nth ,index? ,fn-call)
                        fn-call))
           ((cons name type) (car results))
-          (type-conjunct `(,(atc-type-predicate type) ,theresult))
+          (type-conjunct `(,(atc-type-predicate type wrld) ,theresult))
           (nonnil-conjunct? (and index? (list theresult)))
           (arraylength-conjunct?
            (b* (((unless (type-case type :pointer)) nil)
@@ -4146,7 +4148,8 @@
                arraylength-conjunct?
                (atc-gen-fn-result-thm-aux2 (cdr results)
                                            (and index? (1+ index?))
-                                           fn-call))))))
+                                           fn-call
+                                           wrld))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
