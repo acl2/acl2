@@ -108,22 +108,28 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For each C structure type defined via @(tsee defstruct),
-     we store a list of member information,
-     which represents the typed members of the structure;
-     see @(tsee member-info) in the deep embedding.")
-   (xdoc::p
-    "We also store the tag, as an identifier.
-     While currently @(tsee ident) is just a wrapper of @(tsee string),
-     it may include invariants in the future.
-     Thus, having the tag stored as an identifier in the structure information
-     will spare us from having to double-check the invariants
-     if we were to construct the identifier from the string.")
-   (xdoc::p
-    "We also store the call of @(tsee defstruct) that defines the structure.
-     This supports redundancy checking."))
+    "For each C structure type defined via @(tsee defstruct), we store:")
+   (xdoc::ul
+    (xdoc::li
+     "The tag, as an identifier.
+      While currently @(tsee ident) is just a wrapper of @(tsee string),
+      it may include invariants in the future.
+      Thus, having the tag stored as an identifier in the structure information
+      will spare us from having to double-check the invariants
+      if we were to construct the identifier from the string.")
+    (xdoc::li
+     "Information for the members (names and types);
+      see @(tsee member-info) in the deep embedding.")
+    (xdoc::li
+     "The recognizer of the structures.")
+    (xdoc::li
+     "A list of return type theorems for all the member readers and writers.")
+    (xdoc::p
+     "The call of @(tsee defstruct).
+      This supports redundancy checking.")))
   ((tag ident)
    (members member-info-list)
+   (recognizer symbolp)
    (return-thms symbol-listp)
    (call pseudo-event-form))
   :pred defstruct-infop)
@@ -656,6 +662,7 @@
        (return-thms (append reader-return-thms writer-return-thms))
        (info (make-defstruct-info :tag tag-ident
                                   :members members
+                                  :recognizer struct-tag-p
                                   :return-thms return-thms
                                   :call call))
        (table-event (defstruct-table-record-event (symbol-name tag) info)))
