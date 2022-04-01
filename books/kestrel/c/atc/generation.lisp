@@ -6060,15 +6060,12 @@
                   "There is no DEFSTRUCT associated to the tag ~x0."
                   tag))
        (meminfos (defstruct-info->members info))
+       (tag-ident (defstruct-info->tag info))
        (struct-declons (atc-gen-struct-declon-list meminfos))
        (info (atc-tag-info info))
-       (prec-tags (acons tag info prec-tags))
-       (tag (symbol-name tag))
-       ((unless (atc-ident-stringp tag))
-        (raise "Internal error: structure tag ~x0 invalid identifier." tag)
-        (acl2::value irr)))
+       (prec-tags (acons tag info prec-tags)))
     (acl2::value
-     (list (make-tag-declon-struct :tag (ident tag)
+     (list (make-tag-declon-struct :tag tag-ident
                                    :members struct-declons)
            prec-tags))))
 

@@ -113,9 +113,17 @@
      which represents the typed members of the structure;
      see @(tsee member-info) in the deep embedding.")
    (xdoc::p
+    "We also store the tag, as an identifier.
+     While currently @(tsee ident) is just a wrapper of @(tsee string),
+     it may include invariants in the future.
+     Thus, having the tag stored as an identifier in the structure information
+     will spare us from having to double-check the invariants
+     if we were to construct the identifier from the string.")
+   (xdoc::p
     "We also store the call of @(tsee defstruct) that defines the structure.
      This supports redundancy checking."))
-  ((members member-info-list)
+  ((tag ident)
+   (members member-info-list)
    (return-thms symbol-listp)
    (call pseudo-event-form))
   :pred defstruct-infop)
@@ -256,6 +264,7 @@
                                   state)
   :returns (mv erp
                (val (tuple (tag symbolp)
+                           (tag-ident identp)
                            (members member-info-listp)
                            (redundant booleanp)
                            val))
@@ -268,7 +277,7 @@
      If the table already contains an entry for this tag,
      the call must be identical, in which case the call is redundant;
      if the call is not identical, it is an error."))
-  (b* ((irrelevant (list nil nil nil))
+  (b* ((irrelevant (list nil (irr-ident) nil nil))
        ((unless (consp args))
         (er-soft+ ctx t irrelevant
                   "There must be at least one input, ~
@@ -286,10 +295,11 @@
                    which defines the name of the structure, ~
                    must be a portable ASCII C identifier."
                   tag-name tag))
+       (tag-ident (ident tag-name))
        (info (defstruct-table-lookup tag-name (w state)))
        ((when info)
         (if (equal (defstruct-info->call info) call)
-            (acl2::value (list tag nil t))
+            (acl2::value (list tag (irr-ident) nil t))
           (er-soft+ ctx t irrelevant
                     "There is already a structure with tag ~x0 ~
                      recorded in the table of shallowly embedded C structures, ~
@@ -299,7 +309,7 @@
        (members (cdr args))
        ((mv erp members state) (defstruct-process-members members ctx state))
        ((when erp) (mv erp irrelevant state)))
-    (acl2::value (list tag members nil)))
+    (acl2::value (list tag tag-ident members nil)))
   ///
   (more-returns
    (val true-listp :rule-classes :type-prescription)))
@@ -614,6 +624,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defstruct-gen-everything ((tag symbolp)
+                                  (tag-ident identp)
                                   (members member-info-listp)
                                   (call pseudo-event-formp))
   :returns (event pseudo-event-formp)
@@ -643,7 +654,8 @@
         (defstruct-gen-writers
           struct-tag struct-tag-p struct-tag-fix members members))
        (return-thms (append reader-return-thms writer-return-thms))
-       (info (make-defstruct-info :members members
+       (info (make-defstruct-info :tag tag-ident
+                                  :members members
                                   :return-thms return-thms
                                   :call call))
        (table-event (defstruct-table-record-event (symbol-name tag) info)))
@@ -665,11 +677,11 @@
                       state)
   :returns (mv erp (event pseudo-event-formp) state)
   :short "Process the inputs and generate the events."
-  (b* (((mv erp (list tag members redundant) state)
+  (b* (((mv erp (list tag tag-ident members redundant) state)
         (defstruct-process-inputs args call ctx state))
        ((when erp) (mv erp '(_) state))
        ((when redundant) (acl2::value '(value-triple :redundant)))
-       (event (defstruct-gen-everything tag members call)))
+       (event (defstruct-gen-everything tag tag-ident members call)))
     (acl2::value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
