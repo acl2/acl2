@@ -106,9 +106,7 @@
                               (booleanp memoizep)
                               (booleanp count-hits)
                               ;; (booleanp simplify-xorsp) ;todo: strengthen
-                              ))
-           (ignore print) ;todo
-           )
+                              )))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
        (term (translate-term term 'def-simplified-fn (w state)))
@@ -127,9 +125,9 @@
                              monitor
                              memoizep
                              count-hits
+                             print
                              (w state)
                              ;; :simplify-xorsp simplify-xorsp
-                             ;; :print print
                              ))
        ((when erp)
         (mv erp nil state)))

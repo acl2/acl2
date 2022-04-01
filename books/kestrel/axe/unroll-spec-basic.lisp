@@ -103,9 +103,7 @@
                               (member-eq function-type '(:term :lets :embedded-dag :auto))
                               (or (symbol-listp function-params)
                                   (eq :auto function-params))
-                              (booleanp produce-theorem)))
-           (ignore print) ;todo
-           )
+                              (booleanp produce-theorem))))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
        ((when (and (not produce-function)
@@ -184,10 +182,9 @@
                              monitor
                              memoizep
                              count-hits
+                             print
                              (w state)
-                             ;; :assumptions assumptions
                              ;; :simplify-xorsp simplify-xorsp
-                             ;; :print print
                              ))
        ((when erp)
         (mv erp nil state))
