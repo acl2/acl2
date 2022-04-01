@@ -225,10 +225,32 @@
     bvcat-normalize-constant-arg4
     bvplus-trim-leading-constant))
 
+(defun leftrotate-intro-rules ()
+  (declare (xargs :guard t))
+  '(;;todo: think about these rules (why so many?):
+    ;; TODO: These can't fire if we are expanding the shift ops, which we usually are
+    ;; TTODO: handle other idioms (bvxor, bvplus, and a version with shift ops expanded)
+    bvor-of-bvshl-and-bvshr-becomes-leftrotate
+    bvor-of-bvshr-and-bvshl-becomes-leftrotate
+    bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen
+    bvor-of-bvshr-and-bvshl-becomes-leftrotate32-gen
+    bvor-of-bvshl-and-bvshr       ;; introduces leftrotate
+    bvor-of-bvshr-and-bvshl       ;; introduces leftrotate
+    bvor-of-bvshl-and-bvshr-alt   ;; introduces leftrotate
+    bvor-of-bvshr-and-bvshl-alt   ;; introduces leftrotate
+    bvor-of-bvshl-and-bvashr      ;; introduces leftrotate
+    bvor-of-bvashr-and-bvshl      ;; introduces leftrotate
+    bvor-of-bvshl-and-bvashr-alt  ;; introduces leftrotate
+    bvor-of-bvashr-and-bvshl-alt  ;; introduces leftrotate
+    bvcat-of-slice-becomes-leftrotate ;; todo: loops with defn?
+    bvcat-of-getbit-becomes-leftrotate ;; todo: loops with defn?
+    ))
+
 ;;includes rules from bv-rules-axe.lisp (bad?) and axerulescore.lisp and dagrulesmore.lisp and dagrules.lisp
 (defun core-rules-bv ()
   (declare (xargs :guard t))
   (append
+   (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
    (safe-trim-rules) ;in case trimming is disabled
    '(;; our normal form is to let these open up to calls to bvlt and sbvlt:
      bvle ;Thu Jan 19 16:35:59 2017
@@ -271,24 +293,6 @@
      equal-of-constant-and-leftrotate32
      getbit-of-leftrotate32-high
      slice-of-leftrotate32-high
-
-     ;;todo: think about these rules (why so many?):
-     ;; TODO: These can't fire if we are expanding the shift ops, which we usually are
-     ;; TTODO: handle other idioms (bvxor, bvplus, and a version with shift ops expanded)
-     bvor-of-bvshl-and-bvshr-becomes-leftrotate
-     bvor-of-bvshr-and-bvshl-becomes-leftrotate
-     bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen
-     bvor-of-bvshr-and-bvshl-becomes-leftrotate32-gen
-     bvor-of-bvshl-and-bvshr              ;; introduces leftrotate
-     bvor-of-bvshr-and-bvshl              ;; introduces leftrotate
-     bvor-of-bvshl-and-bvshr-alt          ;; introduces leftrotate
-     bvor-of-bvshr-and-bvshl-alt          ;; introduces leftrotate
-     bvor-of-bvshl-and-bvashr    ;; introduces leftrotate
-     bvor-of-bvashr-and-bvshl    ;; introduces leftrotate
-     bvor-of-bvshl-and-bvashr-alt ;; introduces leftrotate
-     bvor-of-bvashr-and-bvshl-alt ;; introduces leftrotate
-     ;; bvcat-of-slice-becomes-leftrotate ;; todo: add back, but what about loops?
-     ;; bvcat-of-getbit-becomes-leftrotate ;; todo: add back, but what about loops?
 
      not-sbvlt-when-sbvlt-rev-cheap-2
      equal-of-constant-when-sbvlt ; rename

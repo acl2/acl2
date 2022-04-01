@@ -39,6 +39,7 @@
 (defun unroll-spec-basic-rules ()
   (append (base-rules)
           (amazing-rules-bv)
+          (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
           (list-rules)
           ;; (introduce-bv-array-rules)
           ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
