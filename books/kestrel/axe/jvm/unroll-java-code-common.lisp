@@ -75,60 +75,7 @@
 
 (ensure-rules-known (unroll-java-code-rules))
 
-;todo: compare to output-extraction-term
-(mutual-recursion
- ;;TTTODO: Add support for :param-field (or just replace this with output-extraction-term!)
- ;; TODO: Add support for :all
- ;; TODO: Merge with output-extraction-term or just use that?
- ;; TODO: The lambdas here may be problematic.
- (defun wrap-term-with-output-extractor (output-indicator
-                                         original-locals
-                                         term
-                                         class-alist)
-   (declare (xargs :guard (and (output-indicatorp-aux output-indicator)
-                               (class-table-alistp class-alist))))
-   (if (eq :all output-indicator)
-       term
-     (if (eq :return-value output-indicator)
-         `(jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) ,term)))
-       (if (eq :return-value-long output-indicator)
-           `(jvm::top-long (jvm::stack (jvm::thread-top-frame (th) ,term)))
-         (if (eq :array-return-value output-indicator) ;TODO: add support for this wherever output-indicators are used
-             `((lambda (XXX) ; since XXX appears twice
-                 (get-field (jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) xxx)))
-                            ',(array-contents-pair)
-                            (jvm::heap xxx)))
-               ,term)
-           (if (eq (car output-indicator) :array-local) ;;this means "get the final value of the array that was initially pointed to by array local N.  TODO: This could be an abbreviation for a :field of a :local...
-               (let ((local-num (cadr output-indicator)))
-                 `(get-field (jvm::nth-local ',local-num ,original-locals) ;;note: these are the locals in the original state
-                             ',(array-contents-pair)
-                             (jvm::heap ,term)))
-             (if (eq (car output-indicator) :field)
-                 (b* ((pair (farg1 output-indicator))
-                      ((when (not (field-pair-okayp pair class-alist)))
-                       (er hard? 'wrap-term-with-output-extractor "Bad field: ~x0." pair))
-                      (obj-indicator (farg2 output-indicator))
-                      (obj (wrap-term-with-output-extractor obj-indicator ;return-type
-                                                            original-locals term class-alist)))
-                   `(get-field ,obj ',pair (jvm::heap ,term)))
-               (if (eq (car output-indicator) :tuple)
-                   ;; TODO: Introduce a let?
-                   (wrap-term-with-output-extractors (fargs output-indicator) ;return-type
-                                                     original-locals term class-alist)
-                 ;; FIXME: Handle :param-field
-                 (er hard? 'wrap-term-with-output-extractor "Unsupported case: ~x0" output-indicator)))))))))
 
- (defun wrap-term-with-output-extractors (output-indicators original-locals term class-alist)
-   (declare (xargs :guard (and (output-indicatorp-aux-lst output-indicators)
-                               (class-table-alistp class-alist))))
-   (if (endp output-indicators)
-       *nil*
-     ;; not a lambda (hope that is okay):
-     `(cons ,(wrap-term-with-output-extractor (first output-indicators) ;return-type
-                                              original-locals term class-alist)
-            ,(wrap-term-with-output-extractors (rest output-indicators) ;return-type
-                                               original-locals term class-alist)))))
 
 ;; ;; Wrap initial-term in a list of calls to S, setting each class name to its corresponding class-info.
 ;; (defun make-class-table-term (class-alist initial-term)

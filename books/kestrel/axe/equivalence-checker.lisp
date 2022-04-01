@@ -19668,7 +19668,7 @@
        (dag dag-or-quotep)
        ;;(state (f-put-global 'fmt-hard-right-margin 197 state)) fixme illegal in ACL2 4.3. work around?
        ;;(state (f-put-global 'fmt-soft-right-margin 187 state))
-       (state (submit-event '(set-inhibit-warnings "double-rewrite" "subsume") state))
+       (state (submit-event-quiet '(set-inhibit-warnings "double-rewrite" "subsume") state))
        (rand (if random-seed (update-seed random-seed rand) rand)) ;this happens even if the dag is a quotep - dumb?
        (interpreted-function-alist (make-interpreted-function-alist
                                     (get-non-built-in-supporting-fns-list (dag-fns dag) (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
