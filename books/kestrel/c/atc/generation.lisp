@@ -580,6 +580,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-symbol-taginfo-alist-to-recognizers
+  ((prec-tags atc-symbol-taginfo-alistp))
+  :returns (recognizers symbol-listp)
+  :short "Project the recognizers out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (recog (defstruct-info->recognizer (atc-tag-info->struct info)))
+       (recogs (atc-symbol-taginfo-alist-to-recognizers (cdr prec-tags))))
+    (cons recog recogs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-symbol-2part ((sym symbolp))
   :returns (mv (yes/no booleanp)
                (part1 symbolp)
@@ -4001,7 +4013,7 @@
      the example theorems mentioned above still fail.
      To prove these non-@('nil') theorems,
      it seems sufficient to enable
-     the executable counterparts of the integer value recognizers;
+     the executable counterparts of the type recognizers;
      the subgoals that arise without them have the form
      @('(<recognizer> nil)').")
    (xdoc::p
@@ -4097,7 +4109,11 @@
                     (:e ulong-arrayp)
                     (:e slong-arrayp)
                     (:e ullong-arrayp)
-                    (:e sllong-arrayp))))
+                    (:e sllong-arrayp)
+                    ,@(loop$ for recog
+                             in (atc-symbol-taginfo-alist-to-recognizers
+                                 prec-tags)
+                             collect `(:e ,recog)))))
                 '(:use (:guard-theorem ,fn))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
