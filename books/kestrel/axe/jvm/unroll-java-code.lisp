@@ -232,10 +232,11 @@
        (initial-intern-table-term 'initial-intern-table)
        (user-assumptions (translate-terms user-assumptions 'unroll-java-code-fn (w state))) ;throws an error on bad input
        ;; TODO: Not quite right.  Need to allow the byte- or bit-blasted array var names (todo: what about clashes between those and the other param names?):
+       ;; (assumption-vars (free-vars-in-terms user-assumptions))
        ;; (allowed-assumption-vars (append parameter-names
        ;;                                  '(locals initial-heap initial-static-field-map and initial-intern-table)))
-       ;; ((when (not (subsetp-eq (free-vars-in-terms user-assumptions) allowed-assumption-vars)))
-       ;;  (er hard? 'unroll-java-code-fn-aux "Disallowed variables in assumptions, ~x0,(only allowed vars are ~x1)." user-assumptions allowed-assumption-vars)
+       ;; ((when (not (subsetp-eq assumption-vars allowed-assumption-vars)))
+       ;;  (er hard? 'unroll-java-code-fn-aux "Disallowed variables in assumptions, ~x0.  The only allowed vars are ~x1." user-assumptions allowed-assumption-vars)
        ;;  (mv :bad-assumption-vars nil nil nil nil nil state))
        (user-assumptions (desugar-calls-of-contents-in-terms user-assumptions initial-heap-term))
        ;; todo: have this return all the var names creates for array components/bits:
@@ -582,7 +583,7 @@
            "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
          (method-indicator
           "The Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").  The descriptor (input and output type) can be omitted if only one method in the given class has the given name.")
-         (assumptions             "Terms to assume true when unrolling.  The assumptions can mention the parameter names (symbols), and the variables @('locals'), @('initial-heap'), @('initial-static-field-map'), and @('initial-intern-table').")
+         (assumptions             "Terms to assume true when unrolling.  These assumptions can mention the method's parameter names (symbols), the byte-variables and/or bit-variables in the contents of array parameters, and the special variables @('locals'), @('initial-heap'), @('initial-static-field-map'), and @('initial-intern-table').")
          (array-length-alist      "An alist pairing array parameter names (symbols) with their lengths.")
          (classes-to-assume-initialized "Classes to assume the JVM has already initialized (or :all)")
          (ignore-exceptions       "Whether to assume exceptions do not happen (e.g., out-of-bounds array accesses)")
