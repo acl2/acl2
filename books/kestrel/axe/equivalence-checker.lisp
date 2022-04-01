@@ -16436,7 +16436,7 @@
                     (eq 'equal (ffn-symb expr))
                     (equal (farg1 expr)
                            (farg2 expr))))
-         (cw "Trivial equality.~%")
+         (cw "  Trivial equality.~%")
          (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj)))
      ;; Not a trivial equality:
      (if (and (not (if (g :treat-as-purep options) (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil))
