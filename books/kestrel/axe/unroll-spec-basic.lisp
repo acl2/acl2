@@ -25,6 +25,7 @@
 (include-book "dag-to-term-with-lets")
 (include-book "rules-in-rule-lists")
 (include-book "evaluator") ;; since this calls dag-val-with-axe-evaluator to embed the resulting dag in a function, introduces a skip-proofs
+(include-book "kestrel/utilities/doc" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
@@ -61,7 +62,7 @@
           sbvlt                      ;new
           ))
 
-;; TODO: Add more options, such as :print and :print-interval, to pass through to simp-term
+;; TODO: Add more options, such as :print-interval, to pass through to simp-term
 ;; Returns (mv erp event state)
 (defun unroll-spec-basic-fn (defconst-name ;should begin and end with *
                               term
@@ -73,7 +74,7 @@
                               interpreted-function-alist
                               monitor
                               memoizep
-                              count-hitsp
+                              count-hits
                               ;; simplify-xorsp ;todo
                               produce-function
                               disable-function
@@ -83,9 +84,7 @@
                               print
                               whole-form
                               state)
-  (declare (xargs :stobjs state
-                  :mode :program ;; because this calls translate (todo: factor that out)
-                  :guard (and (symbolp defconst-name)
+  (declare (xargs :guard (and (symbolp defconst-name)
                               ;; (pseudo-termp term) ;; really an untranlated term
                               (or (eq :standard rules)
                                   (eq :auto rules)
@@ -96,14 +95,17 @@
                               (interpreted-function-alistp interpreted-function-alist) ;todo: extract from the terms and rules?
                               (symbol-listp monitor)
                               (booleanp memoizep)
-                              (booleanp count-hitsp)
+                              (booleanp count-hits)
                               ;; (booleanp simplify-xorsp) ;todo: strengthen
                               (booleanp produce-function)
                               (booleanp disable-function)
                               (member-eq function-type '(:term :lets :embedded-dag :auto))
                               (or (symbol-listp function-params)
                                   (eq :auto function-params))
-                              (booleanp produce-theorem)))
+                              (booleanp produce-theorem))
+                  :stobjs state
+                  :mode :program ;; because this calls translate (todo: factor that out)
+                  )
            (ignore print) ;todo
            )
   (b* (((when (command-is-redundantp whole-form state))
@@ -183,7 +185,7 @@
                              interpreted-function-alist
                              monitor
                              memoizep
-                             count-hitsp
+                             count-hits
                              (w state)
                              ;; :assumptions assumptions
                              ;; :simplify-xorsp simplify-xorsp
@@ -266,27 +268,32 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                 )
         state)))
 
-;TODO: Automate even more by unrolling all functions down to the BV and array ops?
-(defmacro unroll-spec-basic (&whole whole-form
-                                    defconst-name ;; The name of the DAG constant to create
-                                    term          ;; The term to simplify
-                                    &key
-                                    (rules ':standard) ;to completely replace the usual set of rules
-                                    (extra-rules 'nil) ; to add to the usual set of rules
-                                    (remove-rules 'nil) ; to remove from to the usual set of rules
-                                    ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
-                                    (assumptions 'nil)
-                                    (interpreted-function-alist 'nil)
-                                    (monitor 'nil)
-                                    (memoizep 't)
-                                    (count-hitsp 'nil)
-                                    ;; (simplify-xorsp 't)
-                                    (produce-function 'nil)
-                                    (disable-function 'nil) ;todo: consider making 't the default
-                                    (function-type ':auto)
-                                    (function-params ':auto)
-                                    (produce-theorem 'nil)
-                                    (print 'nil))
+(defmacrodoc unroll-spec-basic (&whole whole-form
+                                       defconst-name ;; The name of the DAG constant to create
+                                       term          ;; The term to simplify
+                                       &key
+                                       ;; Options that affect the meaning of the result:
+                                       (assumptions 'nil)
+                                       (interpreted-function-alist 'nil)
+                                       ;; Options that affect how the rewriting goes:
+                                       (rules ':standard) ;to completely replace the usual set of rules
+                                       ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
+                                       (extra-rules 'nil) ; to add to the usual set of rules
+                                       (remove-rules 'nil) ; to remove from to the usual set of rules
+                                       ;; (simplify-xorsp 't)
+                                       ;; Options that affect performance:
+                                       (memoizep 't)
+                                       ;; Options for debugging:
+                                       (monitor 'nil)
+                                       (count-hits 'nil)
+                                       (print 'nil)
+                                       ;; Options that affect what is produced:
+                                       (produce-function 'nil)
+                                       (disable-function 'nil) ;todo: consider making 't the default
+                                       (function-type ':auto)
+                                       (function-params ':auto)
+                                       (produce-theorem 'nil)
+                                       )
   `(make-event-quiet (unroll-spec-basic-fn ',defconst-name
                                            ,term
                                            ,rules
@@ -297,7 +304,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                            ,interpreted-function-alist
                                            ,monitor
                                            ,memoizep
-                                           ,count-hitsp
+                                           ,count-hits
                                            ;; ,simplify-xorsp
                                            ,produce-function
                                            ,disable-function
@@ -306,33 +313,25 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                            ,produce-theorem
                                            ,print
                                            ',whole-form
-                                           state)))
-
-;; (defxdoc unroll-spec-basic
-;;   :parents (axe)
-;;   :short "Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
-;;   :long "<h3>General Form:</h3>
-;; @({
-;;      (unroll-spec-basic
-;;         defconst-name        ;; The name of the DAG defconst to create
-;;         term                 ;; The term to simplify
-;;         [:rules]             ;; If non-nil, rules to use to completely replace the usual set of rules
-;;         [:extra-rules]       ;; Rules to add to the usual set of rules, Default: nil
-;;         [:remove-rules]      ;; Rules to remove from the usual set of rules, Default: nil
-;;         [:assumptions]       ;; Assumptions to use when unrolling, Default: nil
-;;         [:monitor]           ;; List of symbols to monitor, Default: nil
-;;         [:interpreted-function-alist]           ;; Definitions of non-built-in functions to evaluate; Default: nil
-;;         [:memoizep]           ;; Whether to memoize during rewriting, Default: nil
-;;         [:count-hitsp]           ;; Whether to count rule hits rewriting, Default: nil
-;;         [:produce-function]           ;; Whether to produce a function (in addition to a defconst), Default: nil
-;;         [:disable-function]           ;; Whether to disable the produced function, Default: nil
-;;         [:function-type]           ;; How to create a function for the DAG (:term, :embedded-dag, :lets, or :auto), Default:: auto
-;;         [:function-params]           ;; The param to use for the produced function (specifies their order)
-;;         [:produce-theorem]           ;; Whether to create a theorem stating that the dag is equal to the orignal term (using skip-proofs).
-;;         [:print]           ;; How much to print
-;;         )
-;; })"
-
-;; <p>To decide which rewrite rules to use, the tool starts with either the @(':rules') if supplied, or a basic default set of rules, @('def-simplified-rules').  Then the @(':extra-rules') are added and then @(':remove-rules') are removed.<p>
-
-;;)
+                                           state))
+  :parents (axe) ; or can we consider this a lifter?
+  :short "Open functions and unroll recursion in a spec."
+  :args ((defconst-name
+           "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
+         (term "The term to simplify.")
+         (assumptions "Assumptions to use when unrolling")
+         (interpreted-function-alist "Definitions of non-built-in functions to evaluate.")
+         (rules "The basic set of rules to use (a list of symbols), or :standard (meaning to use the standard set), or :auto (meaning to try to open functions until only supported Axe operations [on bit-vectors, booleans, arrays, etc.] remain).")
+         (extra-rules "Rules to add to the base set of rules.")
+         (remove-rules "Rules to remove from the base set of rules.")
+         (memoizep "Whether to memoize during rewriting.")
+         (monitor "Rules to monitor, a list of symbols.")
+         (count-hits "Whether to count rule hits rewriting")
+         (print "How much to print, a print-level")
+         (produce-function "Whether to produce a function (in addition to a defconst).")
+         (disable-function "Whether to disable the produced function.")
+         (function-type "How to create a function for the DAG (:term, :embedded-dag, :lets, or :auto).")
+         (function-params "The param to use for the produced function (specifies their order).")
+         (produce-theorem "Whether to create a theorem stating that the dag is equal to the orignal term (using skip-proofs)."))
+  :description ("Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
+                "To decide which rewrite rules to use, the tool starts with either the @(':rules') if supplied, or a basic default set of rules, @('unroll-spec-basic-rules').  Then the @(':extra-rules') are added and then @(':remove-rules') are removed."))

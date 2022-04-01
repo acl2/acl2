@@ -149,6 +149,7 @@
 (include-book "numeric-lists")
 (include-book "packbv-axe")
 (include-book "print-constant")
+(include-book "print-levels")
 (include-book "printing")
 (include-book "prover-common")
 (include-book "prover-stress-test")

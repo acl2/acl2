@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "lifter-utilities")
+(include-book "output-indicators")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 

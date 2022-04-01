@@ -22,6 +22,7 @@
 ;; information and others not have it?).
 
 (include-book "unroll-java-code-common")
+(include-book "output-indicators")
 (include-book "nice-output-indicators")
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/doc" :dir :system)
@@ -223,14 +224,22 @@
             nil nil nil nil
             state))
        (method-info (lookup-equal method-id method-info-alist))
+       (param-slot-to-name-alist (make-param-slot-to-name-alist method-info param-names))
+       (parameter-names (strip-cdrs param-slot-to-name-alist)) ; the actual names used
        (class-table-term (make-class-table-term-compact class-alist 'initial-class-table))
        (locals-term 'locals)
        (initial-heap-term 'initial-heap)
        (initial-intern-table-term 'initial-intern-table)
        (user-assumptions (translate-terms user-assumptions 'unroll-java-code-fn (w state))) ;throws an error on bad input
+       ;; TODO: Not quite right.  Need to allow the byte- or bit-blasted array var names (todo: what about clashes between those and the other param names?):
+       ;; (assumption-vars (free-vars-in-terms user-assumptions))
+       ;; (allowed-assumption-vars (append parameter-names
+       ;;                                  '(locals initial-heap initial-static-field-map and initial-intern-table)))
+       ;; ((when (not (subsetp-eq assumption-vars allowed-assumption-vars)))
+       ;;  (er hard? 'unroll-java-code-fn-aux "Disallowed variables in assumptions, ~x0.  The only allowed vars are ~x1." user-assumptions allowed-assumption-vars)
+       ;;  (mv :bad-assumption-vars nil nil nil nil nil state))
        (user-assumptions (desugar-calls-of-contents-in-terms user-assumptions initial-heap-term))
-       (param-slot-to-name-alist (make-param-slot-to-name-alist method-info param-names))
-       (parameter-names (strip-cdrs param-slot-to-name-alist)) ; the actual names used
+       ;; todo: have this return all the var names creates for array components/bits:
        (parameter-assumptions (parameter-assumptions method-info array-length-alist locals-term initial-heap-term
                                                      vars-for-array-elements
                                                      param-slot-to-name-alist
@@ -505,27 +514,32 @@
                                       defconst-name
                                       method-indicator
                                       &key
-                                      (output ':auto)
-                                      (array-length-alist 'nil)
-                                      (extra-rules 'nil) ; to add to the usual set of rules
-                                      (remove-rules 'nil)
-                                      (monitor 'nil) ;rules to monitor
-                                      (rule-alists 'nil) ;to completely replace the usual sets of rules
+                                      ;; Options affecting what is proved:
                                       (assumptions 'nil) ;TODO: What variables are these over? 'locals'?  well, at least the params of the function
-                                      (simplify-xors 't)
+                                      (array-length-alist 'nil)
                                       (classes-to-assume-initialized ''("java.lang.Object" "java.lang.System")) ;TODO; Try making :all the default
                                       (ignore-exceptions 'nil)
                                       (ignore-errors 'nil)
                                       (vars-for-array-elements 't) ;whether to introduce vars for individual array elements
-                                      (print 'nil)
-                                      (print-interval 'nil)
-                                      (memoizep 't)
+                                      (param-names ':auto)
+                                      (output ':auto)
+                                      (steps ':auto) ; todo: can this ever be less than the whole run, other than to debug a failed run?
+                                      ;; Options affecting how the proof goes:
+                                      (rule-alists 'nil) ;to completely replace the usual sets of rules
+                                      (extra-rules 'nil) ; to add to the usual set of rules
+                                      (remove-rules 'nil)
+                                      (simplify-xors 't)
                                       (prune-branches 'nil) ;todo: make t the default
                                       (call-stp 'nil)
-                                      (steps ':auto)
+                                      ;; Options affecting performance:
+                                      (memoizep 't)
                                       (branches ':smart) ;; either :smart (try to merge at join points) or :split (split the execution and don't re-merge)
-                                      (param-names ':auto)
                                       (chunkedp 'nil)
+                                      ;; Options for debugging:
+                                      (monitor 'nil) ;rules to monitor
+                                      (print 'nil)
+                                      (print-interval 'nil)
+                                      ;; Options to produce extra events:
                                       (produce-theorem 'nil)
                                       (produce-function 'nil))
   (let ((form `(unroll-java-code-fn ',defconst-name
@@ -564,37 +578,37 @@
          :gag-mode nil
          (make-event ,form))))
   :parents (lifters)
-  :short "Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
+  :short "Lift a Java method to create a DAG, unrolling loops as needed."
   :args ((defconst-name
            "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
          (method-indicator
           "The Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").  The descriptor (input and output type) can be omitted if only one method in the given class has the given name.")
-         (output                  "An indication of which state component to extract")
+         (assumptions             "Terms to assume true when unrolling.  These assumptions can mention the method's parameter names (symbols), the byte-variables and/or bit-variables in the contents of array parameters, and the special variables @('locals'), @('initial-heap'), @('initial-static-field-map'), and @('initial-intern-table').")
          (array-length-alist      "An alist pairing array parameter names (symbols) with their lengths.")
-         (assumptions             "Terms to assume true when unrolling")
-         (simplify-xors           "Whether to normalize xor nests (t or nil)")
          (classes-to-assume-initialized "Classes to assume the JVM has already initialized (or :all)")
          (ignore-exceptions       "Whether to assume exceptions do not happen (e.g., out-of-bounds array accesses)")
          (ignore-errors           "Whether to assume JVM errors do not happen")
+         (rule-alists             "If non-nil, rule-alists to use (these completely replace the usual rule sets)")
          (extra-rules             "Rules to add to the usual set of rules")
          (remove-rules            "Rules to remove from the usual set of rules")
-         (monitor                 "Rules to monitor (to help debug failures)")
-         (rule-alists             "If non-nil, rule-alists to use (these completely replace the usual rule sets)")
-         (print                   "How much to print (t or nil or :brief, etc.)")
          (vars-for-array-elements "whether to introduce vars for individual array elements (nil, t, or :bits)")
+         (param-names "Names to use for the parameters (e.g., if no debugging information is available), or :auto.")
+         (output                  "An indication of which state component to extract")
+         (steps "A number of steps to run, or :auto, meaning run until the method returns. (Consider using :output :all when using :steps, especially if the computation may not complete after that many steps.)")
+         (simplify-xors           "Whether to normalize xor nests (t or nil)")
          (prune-branches          "whether to aggressively prune unreachable branches in the result")
          (call-stp                "whether to call STP when pruning (t, nil, or a number of conflicts before giving up)")
-         (print-interval "How often to print (number of nodes)")
          (memoizep "Whether to memoize rewrites during unrolling (a boolean).")
-         (steps "A number of steps to run, or :auto, meaning run until the method returns. (Consider using :output :all when using :steps, especially if the computation may not complete after that many steps.)")
          (branches "How to handle branches in the execution. Either :smart (try to merge at join points) or :split (split the execution and don't re-merge).")
-         (param-names "Names to use for the parameters (e.g., if no debugging information is available), or :auto.")
-         (produce-theorem "Whether to produce a theorem about the result of the lifting (currently has to be trusted).")
-         (produce-function "Whether to produce a defun in addition to a DAG, a boolean.")
          (chunkedp "whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code)")
-         )
-  :description "<p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>"
-  )
+         (monitor                 "Rules to monitor (to help debug failures)")
+         (print                   "How much to print (t or nil or :brief, etc.)")
+         (print-interval "How often to print (number of nodes)")
+         (produce-theorem "Whether to produce a theorem about the result of the lifting (currently has to be trusted).")
+         (produce-function "Whether to produce a defun in addition to a DAG, a boolean."))
+  :description ("Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
+                "This event creates a @(see defconst) whose name is @('defconst-name')."
+                "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))
 
 ;; Ensure all the rules needed by the unroller are included:
 (assert-event (ensure-all-theoremsp (unroll-java-code-rules) (w state)))

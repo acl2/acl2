@@ -21,11 +21,11 @@
 ;fixme better way to catch the return value from the bottommost frame?
 ;fixme maybe the dummy frame is not needed anymore?
 ;todo: pass in th
-(defun build-make-state-for-method (method-name
+(defun build-make-state-for-method (class-name
+                                    method-name
                                     method-descriptor ; a string
                                     method-info
                                     locals
-                                    class-name ;todo: put this before the locals?
                                     heap class-table initial-static-field-map initialized-classes pc intern-table)
   (declare (xargs :guard (and (jvm::method-namep method-name)
                               (jvm::method-descriptorp method-descriptor)
@@ -78,9 +78,10 @@
                               (pseudo-termp heap)
                               (pseudo-termp class-table)
                               (pseudo-termp initialized-classes))))
-  `(run-until-return ,(build-make-state-for-method "FAKE" ;ffffixme: a fake method-name
+  `(run-until-return ,(build-make-state-for-method class-name
+                                                   "FAKE" ;ffffixme: a fake method-name
                                                    "()V" ;ffffixme: a fake method-descriptor
-                                                   method-info locals class-name heap class-table
+                                                   method-info locals heap class-table
                                                    *nil* ;fixme this is the initial-static-field-map ;fixme, avoid setting this to nil, now that interned strings are not here?
                                                    initialized-classes '0
 ;*nil* ;don't ignore errors (fixme this was wrong, so the var nil was introduced into the term!)
@@ -104,9 +105,10 @@
                               (pseudo-termp initial-static-field-map)
                               (pseudo-termp initialized-classes)
                               (pseudo-termp intern-table))))
-  `(run-until-return ,(build-make-state-for-method method-name
+  `(run-until-return ,(build-make-state-for-method class-name
+                                                   method-name
                                                    method-descriptor ; a string
-                                                   method-info locals class-name heap class-table
+                                                   method-info locals heap class-table
                                                    initial-static-field-map
                                                    initialized-classes '0
                                                    ;;*nil* ;don't ignore errors (fixme this was wrong, so the var nil was introduced into the term!)
@@ -135,9 +137,10 @@
                               (pseudo-termp initial-static-field-map)
                               (pseudo-termp initialized-classes)
                               (pseudo-termp intern-table))))
-  `(jvm::run-n-steps ',steps ,(build-make-state-for-method method-name
+  `(jvm::run-n-steps ',steps ,(build-make-state-for-method class-name
+                                                           method-name
                                                            method-descriptor ; a string
-                                                           method-info locals class-name heap class-table
+                                                           method-info locals heap class-table
                                                            initial-static-field-map
                                                            initialized-classes '0
 ;*nil* ;don't ignore errors (fixme this was wrong, so the var nil was introduced into the term!)

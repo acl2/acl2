@@ -85,7 +85,7 @@
                             interpreted-function-alist
                             monitor
                             memoizep
-                            count-hitsp
+                            count-hits
                             ;; simplify-xorsp ;todo
                             print
                             whole-form
@@ -104,7 +104,7 @@
                               (interpreted-function-alistp interpreted-function-alist) ;todo: extract from the terms and rules?
                               (symbol-listp monitor)
                               (booleanp memoizep)
-                              (booleanp count-hitsp)
+                              (booleanp count-hits)
                               ;; (booleanp simplify-xorsp) ;todo: strengthen
                               ))
            (ignore print) ;todo
@@ -126,7 +126,7 @@
                              interpreted-function-alist
                              monitor
                              memoizep
-                             count-hitsp
+                             count-hits
                              (w state)
                              ;; :simplify-xorsp simplify-xorsp
                              ;; :print print
@@ -179,7 +179,7 @@
                                  (interpreted-function-alist 'nil)
                                  (monitor 'nil)
                                  (memoizep 't)
-                                 (count-hitsp 'nil)
+                                 (count-hits 'nil)
                                  ;; (simplify-xorsp 't)
                                  (print 'nil))
   `(make-event-quiet (def-simplified-fn
@@ -193,7 +193,7 @@
                        ,interpreted-function-alist
                        ,monitor
                        ,memoizep
-                       ,count-hitsp
+                       ,count-hits
                        ;; ,simplify-xorsp
                        ,print
                        ',whole-form

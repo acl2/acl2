@@ -114,7 +114,7 @@
                              interpreted-function-alist
                              monitored-rules
                              nil ; memoizep
-                             nil ; count-hitsp
+                             nil ; count-hits
                              (w state)))
        ((when erp) (mv erp nil state))
        ((when (quotep simplified-dag-or-quotep))

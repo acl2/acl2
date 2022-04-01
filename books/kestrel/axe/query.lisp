@@ -99,6 +99,7 @@
 
 ;; Try to find values of the variables in TERM that make TERM true.  TERM will
 ;; often be a conjunction.  TERM need not already be translated.
+;; todo: get doc from kestrel-acl2/axe/doc.lisp
 (defmacro query (term &key
                       (rules 'nil)
                       (print 'nil))

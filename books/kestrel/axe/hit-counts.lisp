@@ -1,7 +1,7 @@
 ; Counting how many times rewrite rules apply
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -84,7 +84,8 @@
 ;; A true-list of triples of the form (sym prop . val).  See :doc world.  A
 ;; specialization of plist-worldp that requires the values to be rationals.
 ;; Note that nil satisfies info-worldp but means that we are not counting hits
-;; at all (see empty-info-world).  So we could call this maybe-info-worldp.
+;; at all (see empty-info-world).  Every valid info-world will have an entry
+;; for the special key :fake.  So we could perhaps call this maybe-info-worldp.
 (defund info-worldp (alist)
   (declare (xargs :guard t))
   (cond ((atom alist) (eq alist nil))
@@ -128,7 +129,7 @@
            (info-worldp (increment-hit-count-in-info-world rule-symbol info)))
   :hints (("Goal" :in-theory (enable increment-hit-count-in-info-world info-worldp))))
 
-(defun empty-info-world ()
+(defund empty-info-world ()
   (declare (xargs :guard t))
   (prog2$ (retract-world 'info-world nil)
           ;setting :fake means that info is nil iff we are not tracking the info
@@ -189,7 +190,7 @@
 
 ;; The info should be uniquify-ed before calling this.
 ;; This gets rid of the mention of :fake.
-(defun make-hit-count-alist (info acc)
+(defund make-hit-count-alist (info acc)
   (declare (xargs :guard (and (info-worldp info)
                               (alistp acc))
                   :guard-hints (("Goal" :in-theory (enable info-worldp)))))
@@ -205,25 +206,29 @@
   (implies (and (info-worldp info)
                 (hit-count-alistp acc))
            (hit-count-alistp (make-hit-count-alist info acc)))
-  :hints (("Goal" :in-theory (enable hit-count-alistp SYMBOL-ALISTP strip-cdrs INFO-WORLDP))))
+  :hints (("Goal" :in-theory (enable hit-count-alistp SYMBOL-ALISTP strip-cdrs INFO-WORLDP
+                                     make-hit-count-alist))))
 
 (defthm all-consp-of-make-hit-count-alist
   (implies (all-consp acc)
-           (all-consp (make-hit-count-alist info acc))))
+           (all-consp (make-hit-count-alist info acc)))
+  :hints (("Goal" :in-theory (enable make-hit-count-alist))))
 
 (defthm true-listp-of-make-hit-count-alist
   (implies (true-listp acc)
-           (true-listp (make-hit-count-alist info acc))))
+           (true-listp (make-hit-count-alist info acc)))
+  :hints (("Goal" :in-theory (enable make-hit-count-alist))))
 
 (defthm alistp-of-make-hit-count-alist
   (implies (alistp acc)
-           (alistp (make-hit-count-alist info acc))))
+           (alistp (make-hit-count-alist info acc)))
+  :hints (("Goal" :in-theory (enable make-hit-count-alist))))
 
 (defthm all-cdrs-rationalp-of-make-hit-count-alist
   (implies (and (info-worldp info)
                 (all-cdrs-rationalp acc))
            (all-cdrs-rationalp (make-hit-count-alist info acc)))
-  :hints (("Goal" :in-theory (enable info-worldp))))
+  :hints (("Goal" :in-theory (enable info-worldp make-hit-count-alist))))
 
 (defthm info-worldp-of-uniquify-alist-eq-aux
   (implies (and (info-worldp info)
@@ -262,30 +267,26 @@
   :hints (("Goal" :in-theory (enable summarize-info-world
                                      info-worldp))))
 
-;better message if no hits?
-;use this more?
-(defun print-hit-counts (print info all-rule-names)
-  (declare (xargs :guard (and (info-worldp info)
-                              (symbol-listp all-rule-names)))
-           (ignore all-rule-names ;todo)
-                   ))
-  (let ((len (len info)))
-    ;; TODO: We are transitioning to not counting hits for :brief printing
-    (if (eq :brief print)
-        ;; Just print the number of hits (TODO: In this case, we could keep a simple count of hits, rather than counting the hits of each rule):
-        (if (= 0 len)
-            (cw "(No hits.)")
-          (if (eql 1 len)
-              (cw "(1 hit.)")
-            (cw "(~x0 hits.)" len)))
-      ;; Print the rules and their hit counts, and print the useless rules:
-      (let ((rule-count-alist (summarize-info-world info)))
-        (prog2$ (if (= 0 len)
+(defund maybe-print-hit-counts (print info)
+  (declare (xargs :guard (and ;; something about print
+                          (info-worldp info))))
+  (if (not info)
+      nil ;; We are not counting hits, so do nothing
+    (let ((num-hits (+ -1 (len info)))) ; each item in the INFO represents one hit, but remove the entry for :fake
+      ;; TODO: We are transitioning to not counting hits for :brief printing
+      (if (eq :brief print)
+          ;; Just print the number of hits (TODO: In this case, we could keep a simple count of hits, rather than counting the hits of each rule):
+          (if (= 0 num-hits)
+              (cw "(No hits.)")
+            (if (eql 1 num-hits)
+                (cw "(1 hit.)")
+              (cw "(~x0 hits.)" num-hits)))
+        ;; Print the rules and their hit counts:
+        (progn$ (if (= 0 num-hits)
                     (cw "(No hits.)")
-                  (if (eql 1 len)
-                      (cw "(1 hit:~%~y0)" rule-count-alist)
-                    (cw "(~x0 hits:~%~y1)" len rule-count-alist)))
-                nil
+                  (if (eql 1 num-hits)
+                      (cw "(1 hit:~%~y0)" (summarize-info-world info))
+                    (cw "(~x0 hits:~%~y1)" num-hits (summarize-info-world info))))
                 ;;todo: put this back but make it a separate option, off by default:
                 ;; (let* ((useful-rules (strip-cars rule-count-alist))
                 ;;        (useless-rules (set-difference-eq all-rule-names useful-rules)))
@@ -297,7 +298,7 @@
 ;; its count in alist2.  We expect alist1 to be an "superset" (in the sense of
 ;; each rule having at least as many hits) of alist2, so the subtractions will
 ;; never give negative numbers, but we just call nfix to enforce that.
-(defun subtract-hit-count-alists (alist1 alist2)
+(defund subtract-hit-count-alists (alist1 alist2)
   (declare (xargs :guard (and (hit-count-alistp alist1)
                               (hit-count-alistp alist2))
                   :guard-hints (("Goal" :in-theory (enable HIT-COUNT-ALISTP)))
