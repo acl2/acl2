@@ -739,6 +739,7 @@
 
 ;todo: allow :rule-classes
 ;todo: add option to suppress generation of the theorem
+;; todo: get doc from kestrel-acl2/axe/doc.lisp
 (defmacro prove-with-tactics (&whole whole-form
                               dag-or-term
                               &key
@@ -892,25 +893,29 @@
        ;;               :use-context-when-miteringp use-context-when-miteringp))
 
 ;todo: allow :rule-classes
-(defmacro prove-equivalence2 (&whole whole-form
+;; todo: get doc from kestrel-acl2/axe/doc.lisp
+(defmacro prove-equivalence2 (&whole
+                              whole-form
                               dag-or-term1
                               dag-or-term2
                               &key
-                              ;;(tests '100) ;defaults to 100, 0 is used if :tactic is :rewrite
-                              (tactics ''(:rewrite))
+                              ;; Options that affect what is proved:
                               (assumptions 'nil) ;assumed when rewriting the miter
-                              (print ':brief)
-                              ;;(types 'nil) ;gives types to the vars so we can generate tests for sweeping
-                              (name 'nil) ;the name of the miter, if we care to give it one.  also used for the name of the theorem
-                              ;;(debug 'nil)
-                              (max-conflicts '*default-stp-max-conflicts*)
-                              (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include acl2 rules here...
                               (interpeted-fns 'nil)
-                              (monitor 'nil)
-                              (simplify-xors 't)
-                              (different-vars-ok 'nil)
+                              ;; Options that affect how the proof goes:
+                              (tactics ''(:rewrite))
+                              (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include acl2 rules here...
+                              ;;(tests '100) ;defaults to 100, 0 is used if :tactic is :rewrite
+                              ;;(types 'nil) ;gives types to the vars so we can generate tests for sweeping
                               (call-stp-when-pruning 't)
-                              )
+                              (max-conflicts '*default-stp-max-conflicts*)
+                              (simplify-xors 't)
+                              ;; Options for debugging:
+                              (name 'nil) ;the name of the miter, if we care to give it one.  also used for the name of the theorem
+                              (print ':brief)
+                              ;;(debug 'nil)
+                              (monitor 'nil)
+                              (different-vars-ok 'nil))
   `(make-event (prove-equivalence2-fn ,dag-or-term1
                                       ,dag-or-term2
                                       ;; ,tests
@@ -929,4 +934,4 @@
                                       ',different-vars-ok
                                       ',whole-form
                                       state ; rand
-                                     )))
+                                      )))
