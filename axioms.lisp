@@ -22573,9 +22573,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro set-inhibit-er-soft (&rest lst)
   `(local (set-inhibit-er-soft! ,@lst)))
 
-(defmacro set-inhibit-er-soft (&rest lst)
-  `(local (set-inhibit-er-soft! ,@lst)))
-
 (defmacro toggle-inhibit-er-soft! (str)
   `(table inhibit-er-soft-table
           nil
