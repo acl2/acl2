@@ -4149,7 +4149,7 @@
                          `(mv-nth ,index? ,fn-call)
                        fn-call))
           ((cons name type) (car results))
-          (type-conjunct `(,(atc-type-predicate type wrld) ,theresult))
+          (type-conjunct `(,(atc-type-to-recognizer type wrld) ,theresult))
           (nonnil-conjunct? (and index? (list theresult)))
           (arraylength-conjunct?
            (b* (((unless (type-case type :pointer)) nil)
