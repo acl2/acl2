@@ -23,6 +23,8 @@
 (local (include-book "../arithmetic-light/floor2"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/plus-and-minus"))
+(local (include-book "../arithmetic-light/floor-mod-expt"))
+(local (include-book "../arithmetic-light/mod-and-expt"))
 (local (include-book "unsigned-byte-p"))
 
 (defthm getbit-type
@@ -542,3 +544,25 @@
                 (natp n)
                 (integerp size))
            (not (equal k (bvchop size x)))))
+
+; see also equal-of-bvchop-when-equal-of-getbit-widen-polarity
+(defthmd equal-of-bvchop-when-equal-of-getbit-widen
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (equal (getbit size x) k2)
+                (syntaxp (quotep k2))
+                (natp size))
+           (equal (equal (bvchop size x) k)
+                  (and (unsigned-byte-p size k) ;gets computed
+                       (equal (bvchop (+ 1 size) x)
+                              ;; gets computed
+                              (+ (* k2 (expt 2 size))
+                                 k)))))
+  :hints (("Goal" :cases ((equal 0 (MOD (FLOOR X (EXPT 2 SIZE)) 2)))
+           :in-theory (e/d (bvchop expt-of-+
+                                   getbit
+                                   slice
+                                   LOGTAIL$INLINE
+                                   mod-of-*-of-2-and-expt)
+                           (BVCHOP-1-BECOMES-GETBIT
+                            slice-BECOMES-GETBIT)))))
