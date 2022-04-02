@@ -34,7 +34,7 @@
 ;; TODO: Consider making a separate memoization for tree that are functions applied to simplified args (common).
 ;; TODO: Consider using an info world for the memoization (to make it per head symbol)
 ;; TODO: Consider memoizing only destructor trees, not constructor trees
-;; NOTE: For anything we won't memoize, we should avoid consing it onto tree-equal-to-tree in the rewriter
+;; NOTE: For anything we won't memoize, we should avoid consing it onto trees-equal-to-tree in the rewriter
 
 ;maybe we should think of the memoization as part of the dag (it is just a list of equalities which mention nodenums from the dag)
 
