@@ -164,10 +164,9 @@
     Thus, ATC can be used at the end of an APT derivation.")
 
   (xdoc::p
-   "Currently ATC recognizes a very limited subset of ACL2
-    and translates it to a very limited subset of C.
-    This is just a first step (the development of ATC has just started);
-    we plan to extend ATC to increasingly larger subsets of ACL2 and C."))
+   "Currently ATC recognizes a limited subset of ACL2
+    and translates it to a limited subset of C.
+    We plan to extend ATC to increasingly larger subsets of ACL2 and C."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
