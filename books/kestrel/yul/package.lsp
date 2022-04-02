@@ -21,7 +21,8 @@
                        '(block
                          error
                          funcall
-                         value))
+                         value
+                         values))
                       '(any
                         bool
                         boolean-resultp
