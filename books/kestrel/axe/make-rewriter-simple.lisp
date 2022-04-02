@@ -4227,21 +4227,6 @@
                   (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld))))
          :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
-       ;; (defthm ,(pack$ 'weak-dagp-of-mv-nth-1-of- simplify-term-name)
-       ;;   (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld)))
-       ;;                 (not (quotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld))))
-       ;;                 (pseudo-termp term)
-       ;;                 (pseudo-term-listp assumptions)
-       ;;                 (rule-alistp rule-alist)
-       ;;                 (interpreted-function-alistp interpreted-function-alist)
-       ;;                 (symbol-listp monitored-symbols)
-       ;;                 (booleanp memoizep)
-       ;;                 (booleanp count-hits)
-       ;;                 (plist-worldp wrld))
-       ;;            (weak-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld))))
-       ;;   :hints (("Goal" :use (:instance ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))
-       ;;            :in-theory (disable ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name)))))
-
        ;; Simplify a term and return a term (not a DAG).  Returns (mv erp term).
        (defund ,simp-term-name (term
                                 assumptions
