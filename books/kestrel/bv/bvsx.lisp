@@ -18,6 +18,7 @@
 (local (include-book "bvchop"))
 (local (include-book "slice"))
 (local (include-book "repeatbit"))
+(local (include-book "repeatbit2"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -184,4 +185,18 @@
            (equal (equal (bvsx n lowsize x) (bvsx n lowsize y))
                   (equal (bvchop lowsize x)
                          (bvchop lowsize y))))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
+;work on this:
+(defthm bvchop-of-bvsx
+  (implies (and (<= n new-size)
+;                (<= old-size new-size)
+                (<= old-size n)
+                (< 0 old-size)
+
+                (natp n)
+                (natp new-size)
+                (natp old-size))
+           (equal (bvchop n (bvsx new-size old-size val))
+                  (bvsx n old-size val)))
   :hints (("Goal" :in-theory (enable bvsx))))
