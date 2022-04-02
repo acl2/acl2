@@ -4415,7 +4415,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-cfun-final-compustate ((mod-arrs symbol-listp)
+(define atc-gen-cfun-final-compustate ((affect symbol-listp)
+                                       (typed-formals atc-symbol-type-alistp)
                                        (pointer-subst symbol-symbol-alistp)
                                        (compst-var symbolp))
   :returns (term "An untranslated term.")
@@ -4430,40 +4431,63 @@
      and on generic arguments
      yields an optional result (absent if the function is @('void'))
      and a computation state obtained by modifying
-     one or more arrays in the computation state.
-     These are the arrays affected by the C function,
+     zero or more arrays and structures in the computation state.
+     These are the arrays and structures affected by the C function,
      which the correctness theorem binds to the results of
      the ACL2 function that represents the C function.
      The modified computation state is expressed as
-     a nest of @(tsee write-array) calls.
+     a nest of @(tsee write-array) and @(tsee write-struct) calls.
      This ACL2 code here generates that nest.")
    (xdoc::p
-    "The parameter @('mod-arrs') passed to this code
-     consists of the formals of @('fn') that represent arrays
+    "The parameter @('affect') passed to this code
+     consists of the formals of @('fn') that represent arrays and structures
      affected by the body of the ACL2 function that represents the C function.
      The parameter @('pointer-subst') is
      the result of @(tsee atc-gen-outer-bindings-and-hyps)
-     that maps array formals of the ACL2 function
+     that maps array and structure formals of the ACL2 function
      to the corresponding pointer variables used by the correctness theorems.
-     Thus, we go through @('mod-arrs'),
+     Thus, we go through @('affect'),
      looking up the corresponding pointer variables in @('pointer-subst'),
-     and we construct each nested @(tsee write-array) call,
-     which needs both a pointer and an array.")
+     and we construct
+     each nested @(tsee write-array) or @(tsee write-struct) call,
+     which needs both a pointer and an array or structure;
+     we distinguish between arrays and structures
+     via the types of the formals.")
    (xdoc::p
     "Note that, in the correctness theorem,
-     the new array variables are bound to
-     the possibly modified arrays returned by the ACL2 function:
-     these new array variables are obtained by adding @('-NEW')
+     the new array and structure variables are bound to
+     the possibly modified arrays and structures returned by the ACL2 function:
+     these new array and structure variables are obtained by adding @('-NEW')
      to the corresponding formals of the ACL2 function;
      these new names should not cause any conflicts,
      because the names of the formals must be portable C identifiers."))
-  (cond ((endp mod-arrs) compst-var)
-        (t `(write-array (pointer->address
-                          ,(cdr (assoc-eq (car mod-arrs) pointer-subst)))
-                         ,(add-suffix-to-fn (car mod-arrs) "-NEW")
-                         ,(atc-gen-cfun-final-compustate (cdr mod-arrs)
-                                                         pointer-subst
-                                                         compst-var)))))
+  (b* (((when (endp affect)) compst-var)
+       (formal (car affect))
+       (type (cdr (assoc-eq formal typed-formals)))
+       ((when (not type))
+        (raise "Internal error: formal ~x0 not found." formal))
+       ((unless (type-case type :pointer))
+        (raise "Internal error: affected formal ~x0 has type ~x1."
+               formal type))
+       (write-array/struct
+        (case (type-kind (type-pointer->to type))
+          ((:schar :uchar
+            :sshort :ushort
+            :sint :uint
+            :slong :ulong
+            :sllong :uloong)
+           'write-array)
+          (:strut 'write-struct)
+          (t (raise "Internal error: affected formal ~x0 has type ~x1."
+                    formal type)))))
+    `(,write-array/struct (pointer->address
+                           ,(cdr (assoc-eq formal pointer-subst)))
+                          ,(add-suffix-to-fn formal "-NEW")
+                          ,(atc-gen-cfun-final-compustate (cdr affect)
+                                                          typed-formals
+                                                          pointer-subst
+                                                          compst-var)))
+  :prepwork ((local (include-book "std/alists/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4635,7 +4659,10 @@
                       (car fn-results)
                     `(mv ,@fn-results)))
        (final-compst
-        (atc-gen-cfun-final-compustate affect pointer-subst compst-var))
+        (atc-gen-cfun-final-compustate affect
+                                       typed-formals
+                                       pointer-subst
+                                       compst-var))
        (concl `(equal (exec-fun (ident ,(symbol-name fn))
                                 (list ,@exec-fun-args)
                                 ,compst-var
