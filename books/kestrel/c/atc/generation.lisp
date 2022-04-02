@@ -4374,18 +4374,22 @@
   (xdoc::topstring
    (xdoc::p
     "The ACL2 functions that represent C functions and loops
-     take and return whole arrays as inputs:
-     thus, the possible modification to each array only applies to that array.
-     In C code, arrays are passed as pointers instead.
-     If two of these pointers, for different arrays in ACL2, were equal,
-     then the C code would not be correct in general,
-     because modifying one array would also modify the other one:
-     there is, in fact, just one array, which both pointers point to,
-     but here we are talking about the two different arrays
+     take and return whole arrays and structured as inputs:
+     thus, the possible modification to each array or structure
+     only applies to that array or structure.
+     In the generated C code,
+     arrays and structures are passed as pointers instead.
+     If two of these pointers, for different arrays or structures in ACL2,
+     were equal, then the C code would not be correct in general,
+     because modifying one array or structure would also modify the other one:
+     there is, in fact, just one array or structure,
+     which both pointers point to,
+     but here we are talking about the two different arrays or structures
      in the ACL2 representation.
      It is thus critical that the generated correctness theorems
      include the assumption that all the pointers are distinct.
-     This is the case not only for the arrays that may be modified,
+     This is the case
+     not only for the arrays and structures that may be modified,
      but also for the ones that may not:
      otherwise, we could not rely on the latter to be unmodified,
      during the symbolic execution proof.")
@@ -4396,7 +4400,8 @@
      More precisely, we generate hypotheses saying that
      the addresses in the pointers are distinct.
      We need the addresses to be distinct,
-     so that they are two different arrays in our model of the heap.
+     so that they are two different arrays or structures
+     in our model of the heap.
      The other component of a pointer (see @(tsee pointer)) is a type,
      but that one is already independently constrained
      by other hypotheses in the generated correctness theorems."))
