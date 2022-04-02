@@ -1679,6 +1679,16 @@
                                      :clause-set '(nil)
                                      :hint-settings nil)
                                pool))))
+      ((and do-not-induct-hint-val
+            (not (member-eq do-not-induct-hint-val '(t :otf :otf-flg-override)))
+            (not (assoc-eq :induct
+                           (access prove-spec-var pspv :hint-settings))))
+
+; In this case, we have seen a :DO-NOT-INDUCT name hint (where name isn't t)
+; that is not overridden by an :INDUCT hint.  We would like to give this clause
+; a :BY.  We can't do it here, as explained above.  So we will 'MISS instead.
+
+       (mv 'miss nil nil nil))
       ((and (or (and (not (access prove-spec-var pspv :otf-flg))
                      (eq do-not-induct-hint-val t))
                 (eq do-not-induct-hint-val :otf-flg-override)
@@ -1719,16 +1729,6 @@
                                      :clause-set '(nil)
                                      :hint-settings nil)
                                pool))))
-      ((and do-not-induct-hint-val
-            (not (member-eq do-not-induct-hint-val '(t :otf :otf-flg-override)))
-            (not (assoc-eq :induct
-                           (access prove-spec-var pspv :hint-settings))))
-
-; In this case, we have seen a :DO-NOT-INDUCT name hint (where name isn't t)
-; that is not overridden by an :INDUCT hint.  We would like to give this clause
-; a :BY.  We can't do it here, as explained above.  So we will 'MISS instead.
-
-       (mv 'miss nil nil nil))
       ((and (not (access prove-spec-var pspv :otf-flg))
             (not (eq do-not-induct-hint-val :otf))
             (or
