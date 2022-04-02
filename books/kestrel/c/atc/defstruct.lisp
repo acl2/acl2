@@ -123,6 +123,8 @@
     (xdoc::li
      "The recognizer of the structures.")
     (xdoc::li
+     "The fixer of the structures.")
+    (xdoc::li
      "The readers of (the members of) the structures.")
     (xdoc::li
      "The writers of (the members of) the structures.")
@@ -134,6 +136,7 @@
   ((tag ident)
    (members member-info-list)
    (recognizer symbolp)
+   (fixer symbolp)
    (readers symbol-listp)
    (writers symbol-listp)
    (return-thms symbol-listp)
@@ -794,6 +797,7 @@
        (info (make-defstruct-info :tag tag-ident
                                   :members members
                                   :recognizer struct-tag-p
+                                  :fixer struct-tag-fix
                                   :readers reader-names
                                   :writers writer-names
                                   :return-thms return-thms
