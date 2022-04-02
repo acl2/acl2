@@ -21067,7 +21067,7 @@
                   (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
                           `(progn))
                 defthm))
-       (event (extend-progn event `(table prove-equivalence-table ',whole-form ',event)))
+       (event (extend-progn event `(with-output :off :all (table prove-equivalence-table ',whole-form ',event))))
        (event (extend-progn event `(value-triple ',miter-name))))
     (mv (erp-nil) event state rand result-array-stobj)))
 
