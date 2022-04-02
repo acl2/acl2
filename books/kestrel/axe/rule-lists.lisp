@@ -1418,8 +1418,10 @@
     bvmult-trim-arg2-dag-all  ;seemed to need this for rc6 decrypt
     ;; bvmult-trim-arg1-dag
     ;; bvmult-trim-arg2-dag
+    ;; todo: why are the minus rules here if the plus rule isn't?
     bvminus-trim-arg1-dag ;this is an all rule..
     bvminus-trim-arg2-dag ;this is an all rule (others in this list may be too)
+    bvuminus-trim-dag-all
     bvnot-trim-dag-all
     bvxor-trim-arg1-dag
     bvxor-trim-arg2-dag
@@ -1550,7 +1552,6 @@
             bvplus-commutative-2-axe ;seemed to fire a lot?! in rc4 example
             bvplus-associative
 
-            bvuminus-trim-dag-all
             bvuminus-1
             bvuminus-of-bvplus
 
