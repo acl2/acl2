@@ -4208,20 +4208,23 @@
     "Consider a non-recursive @('fn'), which represents a C function.
      Its correctness theorem equates (roughly speaking)
      a call of @(tsee exec-fun) with a call of @('fn').
-     However, while @('fn') takes arrays as arguments,
-     @(tsee exec-fun) takes pointers to those arrays.
+     However, while @('fn') takes arrays and structures as arguments,
+     @(tsee exec-fun) takes pointers to those arrays and structures.
      So we introduce variables for the pointers,
-     named after the formals of @('fn') that are arrays:
+     named after the formals of @('fn') that are arrays or structures:
      we add @('-PTR') to the formals of @('fn'),
      which should not cause name conflicts because
      the names of the formals must be portable C identifiers.
-     For each array formal @('a') of @('fn'),
+     For each array or structure formal @('a') of @('fn'),
      we generate a pointer variable @('a-ptr') as explained,
-     along with a binding @('(a (read-array (pointer->address a-ptr) compst))'):
+     along with a binding
+     @('(a (read-array (pointer->address a-ptr) compst))') or
+     @('(a (read-struct (pointer->address a-ptr) compst))'):
      this binding relates the two variables,
      and lets us use the guard of @('fn') as hypothesis in the theorem,
      which uses @('a'),
-     which the binding replaces with the array pointed to by @('a-ptr').
+     which the binding replaces with the array or structure
+     pointed to by @('a-ptr').
      Along with this binding, we also generate hypotheses saying that
      @('a-ptr') is a non-null pointer of the appropriate type;
      the type is determined from the type of the formal @('a').
@@ -4233,7 +4236,7 @@
      this way, @('a') gets substituted with @('a-ptr'),
      which is what we want since @(tsee exec-fun) takes pointers, not arrays.")
    (xdoc::p
-    "The non-array formals of a non-recursive @('fn')
+    "The non-array non-structure formals of a non-recursive @('fn')
      do not cause any bindings, hypotheses, or substitutions to be generated.
      They are passed to both @(tsee exec-fun) and @('fn') in the theorem,
      and it is the guard of @('fn') that constrains them
@@ -4248,20 +4251,23 @@
      as is the case for a non-recursive @('fn') as explained above.
      There is still a correspondence, of course:
      the formals of @('fn') correspond to variables in the computation state.
-     We consider the cases of arrays and non-arrays separately.")
+     We consider separately
+     the case of arrays or structures,
+     and the case of non-arrays and non-structures.")
    (xdoc::p
-    "If @('a') is a non-array formal of a recursive @('fn'),
+    "If @('a') is a non-array non-structure formal of a recursive @('fn'),
      it corresponds to @('(read-var <a> compst)'),
      where @('<a>') is the identifier derived from the name of @('a').
      Thus, in this case we generate the binding @('(a (read-var <a> compst))').
      Since no pointers are involved, in this case we generate
      no hypotheses and no substitutions.")
    (xdoc::p
-    "If @('a') is an array formal of a recursive @('fn'),
+    "If @('a') is an array or structure formal of a recursive @('fn'),
      we introduce an additional @('a-ptr') variable,
      similarly to the case of non-recursive @('fn').
-     We generate two bindings @('(a-ptr (read-var <a> compst))')
-     and @('(a (read-array (pointer->address a-ptr) compst))'),
+     We generate two bindings (i) @('(a-ptr (read-var <a> compst))')
+     and (ii) either @('(a (read-array (pointer->address a-ptr) compst))')
+     or @('(a (read-struct (pointer->address a-ptr) compst))'),
      in that order.
      The first binding serves to tie @('a-ptr')
      to the corresponding variable in the computation state,
@@ -4296,32 +4302,60 @@
        (formal-ptr (add-suffix-to-fn formal "-PTR"))
        (formal-addr `(pointer->address ,formal-ptr))
        (formal-id `(ident ,(symbol-name formal)))
-       (arrayp (type-case type :pointer))
-       (bindings (if fn-recursivep
-                     (if arrayp
-                         (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                               `(,formal (read-array ,formal-addr ,compst-var)))
-                       (list `(,formal (read-var ,formal-id ,compst-var))))
-                   (if arrayp
-                       (list `(,formal (read-array ,formal-addr ,compst-var)))
-                     nil)))
-       (subst? (and arrayp
+       ((mv arrayp structp)
+        (if (type-case type :pointer)
+            (case (type-kind (type-pointer->to type))
+              ((:schar :uchar
+                :sshort :ushort
+                :sint :uint
+                :slong :ulong
+                :sllong :ullong)
+               (mv t nil))
+              (:struct (mv nil t))
+              (t (prog2$ (raise "Internal error: formal ~x0 has type ~x1."
+                                formal type)
+                         (mv nil nil))))
+          (mv nil nil)))
+       (bindings
+        (if fn-recursivep
+            (cond (arrayp
+                   (list `(,formal-ptr (read-var ,formal-id ,compst-var))
+                         `(,formal (read-array ,formal-addr ,compst-var))))
+                  (structp
+                   (list `(,formal-ptr (read-var ,formal-id ,compst-var))
+                         `(,formal (read-struct ,formal-addr ,compst-var))))
+                  (t (list `(,formal (read-var ,formal-id ,compst-var)))))
+          (cond (arrayp
+                 (list `(,formal (read-array ,formal-addr ,compst-var))))
+                (structp
+                 (list `(,formal (read-struct ,formal-addr ,compst-var))))
+                (t nil))))
+       (subst? (and (or arrayp structp)
                     (list (cons formal formal-ptr))))
-       (hyps (and arrayp
+       (hyps (and (or arrayp structp)
                   (list `(pointerp ,formal-ptr)
                         `(not (pointer-nullp ,formal-ptr))
                         `(equal (pointer->reftype ,formal-ptr)
-                                ',(type-pointer->to type)))))
+                                ',(if arrayp
+                                      (type-pointer->to type)
+                                    type)))))
        (inst (if fn-recursivep
-                 (if arrayp
-                     (list `(,formal (read-array (pointer->address
-                                                  (read-var ,formal-id
-                                                            ,compst-var))
-                                                 ,compst-var)))
-                   (list `(,formal (read-var ,formal-id ,compst-var))))
-               (if arrayp
-                   (list `(,formal (read-array ,formal-addr ,compst-var)))
-                 nil)))
+                 (cond (arrayp
+                        (list `(,formal (read-array (pointer->address
+                                                     (read-var ,formal-id
+                                                               ,compst-var))
+                                                    ,compst-var))))
+                       (structp
+                        (list `(,formal (read-struct (pointer->address
+                                                      (read-var ,formal-id
+                                                                ,compst-var))
+                                                     ,compst-var))))
+                       (t (list `(,formal (read-var ,formal-id ,compst-var)))))
+               (cond (arrayp
+                      (list `(,formal (read-array ,formal-addr ,compst-var))))
+                     (structp
+                      (list `(,formal (read-struct ,formal-addr ,compst-var))))
+                     (t nil))))
        ((mv more-bindings more-hyps more-subst more-inst)
         (atc-gen-outer-bindings-and-hyps (cdr typed-formals)
                                          compst-var
