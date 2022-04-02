@@ -200,3 +200,8 @@
            (equal (bvchop n (bvsx new-size old-size val))
                   (bvsx n old-size val)))
   :hints (("Goal" :in-theory (enable bvsx))))
+
+(defthm bvsx-same
+  (equal (bvsx new-size new-size x)
+         (bvchop new-size x))
+  :hints (("Goal" :in-theory (enable bvsx))))
