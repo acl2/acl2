@@ -71,16 +71,18 @@
                 (natp m))
            (equal (bvsx m n x)
                   (bvchop m (logext n x))))
-  :hints (("Goal"  :in-theory (e/d (bvsx logext posp repeatbit ;bvplus
-                                         slice
-;                                         EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
+  :hints (("Goal"  :in-theory (e/d (bvsx logext
+                                         ;posp
+                                         ;repeatbit ;bvplus
+                                         slice-alt-def         ;slice
+                                         getbit
+                                         ;; EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
                                          )
-                                   (;|+-BECOMES-BVPLUS-HACK| BVPLUS-OF-*-ARG2 ;anti-bvplus
-                                    ;BVCAT-OF-+-HIGH ;looped
+                                   ( ;|+-BECOMES-BVPLUS-HACK| BVPLUS-OF-*-ARG2 ;anti-bvplus
+                                    ;;BVCAT-OF-+-HIGH ;looped
                                     BVCHOP-OF-LOGTAIL-BECOMES-SLICE
- ;                                   EXPONENTS-ADD
-;                                  EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
-                                    expt
+                                    BVCHOP-1-BECOMES-GETBIT
+                                    SLICE-BECOMES-GETBIT
                                     ))
            :cases ((equal (GETBIT (+ -1 n) X) 0) (equal (GETBIT (+ -1 n) X) 1)))))
 

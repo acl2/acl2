@@ -2704,6 +2704,27 @@
                   (bitxor y x)))
   :hints (("Goal" :in-theory (e/d (bitxor) (BVXOR-1-BECOMES-BITXOR)))))
 
+(defthm slice-of-repeatbit
+   (implies (and (< high size)
+                 (<= low high)
+                 (natp low)
+                 (natp high)
+                 (natp size))
+            (equal (slice high low (repeatbit size bit))
+                   (repeatbit (+ 1 high (- low)) bit)))
+   :hints (("Goal" :do-not '(preprocess)
+            :use (:instance BVCHOP-OF-MASK-OTHER
+                            (size2 (+ 1 HIGH (- LOW)))
+                            (size1 (- size low))
+                            )
+            :in-theory (e/d (repeatbit slice
+                             ;bvplus bvchop logtail
+                                       )
+                            (;anti-slice BVPLUS-RECOLLAPSE
+                             BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                             BVCHOP-OF-MASK-OTHER
+                             )))))
+
 ;fixme
 (defthmd introduce-bvsx-25-7
   (equal (bvcat '25 (repeatbit '25 (getbit '7 x)) '7 x)
@@ -2806,12 +2827,24 @@
                   (bvsx 25 1 (getbit 7 x))))
   :hints (("Goal" :in-theory (e/d (slice LOGEXT) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE BVCHOP-OF-LOGTAIL)))))
 
+(defthm high-slice-of-logext
+  (implies (and (<= (+ -1 n) low)
+                (posp n)
+                (natp low)
+                (integerp high))
+           (equal (slice high low (logext n x))
+                  (bvsx (+ 1 high (- low))
+                        1
+                        (getbit (+ -1 n) x))))
+  :hints (("Goal" :in-theory (e/d (slice logext repeatbit bvsx) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE BVCHOP-OF-LOGTAIL)))))
+
 ;fixme
 (defthm bvchop-32-logext-8
   (implies (integerp x)
            (equal (bvchop 32 (logext 8 x))
                   (bvsx 32 8 x)))
-  :hints (("Goal" :in-theory (enable bvsx))))
+  :hints (("Goal" :cases ((equal 0 (GETBIT 7 X)))
+           :in-theory (enable bvsx))))
 
 ;; ;bozo gen
 (defthm bvplus-of-logext-arg1-32-8
@@ -2837,16 +2870,7 @@
                                               ;EXPONENTS-ADD
                                               )))))
 
-(defthm high-slice-of-logext
-  (implies (and (<= (+ -1 n) low)
-                (posp n)
-                (natp low)
-                (integerp high))
-           (equal (slice high low (logext n x))
-                  (bvsx (+ 1 high (- low))
-                        1
-                        (getbit (+ -1 n) x))))
-  :hints (("Goal" :in-theory (e/d (slice logext repeatbit bvsx) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE BVCHOP-OF-LOGTAIL)))))
+
 
 ;BOZO do this for all ops
 (defthm bvminus-bound-2
@@ -3314,26 +3338,7 @@
   :hints (("Goal" :use (:instance bvplus-of-logext)
            :in-theory (disable bvplus-of-logext))))
 
-(defthm slice-of-repeatbit
-   (implies (and (< high size)
-                 (<= low high)
-                 (natp low)
-                 (natp high)
-                 (natp size))
-            (equal (slice high low (repeatbit size bit))
-                   (repeatbit (+ 1 high (- low)) bit)))
-   :hints (("Goal" :do-not '(preprocess)
-            :use (:instance BVCHOP-OF-MASK-OTHER
-                            (size2 (+ 1 HIGH (- LOW)))
-                            (size1 (- size low))
-                            )
-            :in-theory (e/d (repeatbit slice
-                             ;bvplus bvchop logtail
-                                       )
-                            (;anti-slice BVPLUS-RECOLLAPSE
-                             BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                             BVCHOP-OF-MASK-OTHER
-                                        )))))
+
 
 (defthm bvchop-hack1b2
   (implies (and (integerp x)
