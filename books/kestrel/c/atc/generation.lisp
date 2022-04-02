@@ -3637,14 +3637,13 @@
     (ullong-arrayp (type-pointer (type-ullong)))
     (t (b* (((mv okp struct tag p) (atc-check-symbol-3part recognizer))
             ((unless (and okp
-                          (eq struct
-                              (intern-in-package-of-symbol "STRUCT" recognizer))
-                          (eq p
-                              (intern-in-package-of-symbol "P" recognizer))))
+                          (equal (symbol-name struct) "STRUCT")
+                          (equal (symbol-name p) "P")))
              nil)
-            (info (defstruct-table-lookup (symbol-name tag) wrld))
-            ((unless info) nil)
             (tag (symbol-name tag))
+            (info (defstruct-table-lookup tag wrld))
+            ((unless info) nil)
+            ((unless (eq recognizer (defstruct-info->recognizer info))) nil)
             ((unless (atc-ident-stringp tag))
              (raise "Internal error: tag ~x0 not valid identifier." tag)))
          (type-pointer (type-struct (ident tag)))))))
