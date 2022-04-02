@@ -159,7 +159,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defalist atc-symbol-type-alist
-  :short "Fixtype of  alists from symbols to types."
+  :short "Fixtype of alists from symbols to types."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -553,19 +553,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist atc-symbol-taginfo-alist
+(fty::defalist atc-string-taginfo-alist
   :short "Fixtype of alists from symbols to tag information."
-  :key-type symbol
+  :key-type string
   :val-type atc-tag-info
   :true-listp t
-  :keyp-of-nil t
+  :keyp-of-nil nil
   :valp-of-nil nil
-  :pred atc-symbol-taginfo-alistp)
+  :pred atc-string-taginfo-alistp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-symbol-taginfo-alist-to-return-thms
-  ((prec-tags atc-symbol-taginfo-alistp))
+(define atc-string-taginfo-alist-to-return-thms
+  ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
   :short "Project the return type theorems
           for structure readers and writers
@@ -573,21 +573,21 @@
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
        (thms (defstruct-info->return-thms (atc-tag-info->struct info)))
-       (more-thms (atc-symbol-taginfo-alist-to-return-thms (cdr prec-tags))))
+       (more-thms (atc-string-taginfo-alist-to-return-thms (cdr prec-tags))))
     (append thms more-thms))
   :prepwork
   ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-symbol-taginfo-alist-to-recognizers
-  ((prec-tags atc-symbol-taginfo-alistp))
+(define atc-string-taginfo-alist-to-recognizers
+  ((prec-tags atc-string-taginfo-alistp))
   :returns (recognizers symbol-listp)
   :short "Project the recognizers out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
        (recog (defstruct-info->recognizer (atc-tag-info->struct info)))
-       (recogs (atc-symbol-taginfo-alist-to-recognizers (cdr prec-tags))))
+       (recogs (atc-string-taginfo-alist-to-recognizers (cdr prec-tags))))
     (cons recog recogs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1149,7 +1149,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-struct-read ((term pseudo-termp)
-                               (prec-tags atc-symbol-taginfo-alistp))
+                               (prec-tags atc-string-taginfo-alistp))
   :returns (mv (yes/no booleanp)
                (arg pseudo-termp)
                (tag identp)
@@ -1186,16 +1186,15 @@
        ((pseudo-term-fncall term) term)
        ((mv okp struct tag read member) (atc-check-symbol-4part term.fn))
        ((unless (and okp
-                     (eq struct (intern-in-package-of-symbol "STRUCT" term.fn))
-                     (eq read (intern-in-package-of-symbol "READ" term.fn))))
+                     (equal (symbol-name struct) "STRUCT")
+                     (equal (symbol-name read) "READ")))
         (no))
-       (info (cdr (assoc-eq tag prec-tags)))
+       (tag (symbol-name tag))
+       (info (cdr (assoc-equal tag prec-tags)))
        ((unless info) (no))
        (info (atc-tag-info->struct info))
+       (tag (defstruct-info->tag info))
        (members (defstruct-info->members info))
-       (tag (symbol-name tag))
-       ((unless (atc-ident-stringp tag)) (no))
-       (tag (ident tag))
        (member (symbol-name member))
        ((unless (atc-ident-stringp member)) (no))
        (member (ident member))
@@ -1218,7 +1217,7 @@
 
 (define atc-check-struct-write ((var symbolp)
                                 (val pseudo-termp)
-                                (prec-tags atc-symbol-taginfo-alistp))
+                                (prec-tags atc-string-taginfo-alistp))
   :returns (mv (yes/no booleanp)
                (mem pseudo-termp)
                (tag identp)
@@ -1255,16 +1254,15 @@
        ((pseudo-term-fncall val) val)
        ((mv okp struct tag write member) (atc-check-symbol-4part val.fn))
        ((unless (and okp
-                     (eq struct (intern-in-package-of-symbol "STRUCT" val.fn))
-                     (eq write (intern-in-package-of-symbol "WRITE" val.fn))))
+                     (equal (symbol-name struct) "STRUCT")
+                     (equal (symbol-name write) "WRITE")))
         (no))
-       (info (cdr (assoc-eq tag prec-tags)))
+       (tag (symbol-name tag))
+       (info (cdr (assoc-equal tag prec-tags)))
        ((unless info) (no))
        (info (atc-tag-info->struct info))
        (members (defstruct-info->members info))
-       (tag (symbol-name tag))
-       ((unless (atc-ident-stringp tag)) (no))
-       (tag (ident tag))
+       (tag (defstruct-info->tag info))
        (member (symbol-name member))
        ((unless (atc-ident-stringp member)) (no))
        (member (ident member))
@@ -1624,7 +1622,7 @@
 
   (define atc-gen-expr-pure ((term pseudo-termp)
                              (inscope atc-symbol-type-alist-listp)
-                             (prec-tags atc-symbol-taginfo-alistp)
+                             (prec-tags atc-string-taginfo-alistp)
                              (fn symbolp)
                              (ctx ctxp)
                              state)
@@ -1884,7 +1882,7 @@
 
   (define atc-gen-expr-bool ((term pseudo-termp)
                              (inscope atc-symbol-type-alist-listp)
-                             (prec-tags atc-symbol-taginfo-alistp)
+                             (prec-tags atc-string-taginfo-alistp)
                              (fn symbolp)
                              (ctx ctxp)
                              state)
@@ -2017,7 +2015,7 @@
 
 (define atc-gen-expr-pure-list ((terms pseudo-term-listp)
                                 (inscope atc-symbol-type-alist-listp)
-                                (prec-tags atc-symbol-taginfo-alistp)
+                                (prec-tags atc-string-taginfo-alistp)
                                 (fn symbolp)
                                 (ctx ctxp)
                                 state)
@@ -2065,7 +2063,7 @@
                       (inscope atc-symbol-type-alist-listp)
                       (fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
-                      (prec-tags atc-symbol-taginfo-alistp)
+                      (prec-tags atc-string-taginfo-alistp)
                       (ctx ctxp)
                       state)
   :returns (mv erp
@@ -2253,7 +2251,7 @@
                       (affect symbol-listp)
                       (fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
-                      (prec-tags atc-symbol-taginfo-alistp)
+                      (prec-tags atc-string-taginfo-alistp)
                       (proofs booleanp)
                       (ctx ctxp)
                       state)
@@ -3422,7 +3420,7 @@
                            (measure-for-fn symbolp)
                            (measure-formals symbol-listp)
                            (prec-fns atc-symbol-fninfo-alistp)
-                           (prec-tags atc-symbol-taginfo-alistp)
+                           (prec-tags atc-string-taginfo-alistp)
                            (proofs booleanp)
                            (ctx ctxp)
                            state)
@@ -3891,7 +3889,7 @@
                                (affect symbol-listp)
                                (typed-formals atc-symbol-type-alistp)
                                (prec-fns atc-symbol-fninfo-alistp)
-                               (prec-tags atc-symbol-taginfo-alistp)
+                               (prec-tags atc-string-taginfo-alistp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
@@ -4062,7 +4060,7 @@
                   *atc-array-read-return-rewrite-rules*
                   *atc-array-write-return-rewrite-rules*
                   *atc-array-length-write-rules*
-                  ',(atc-symbol-taginfo-alist-to-return-thms prec-tags)
+                  ',(atc-string-taginfo-alist-to-return-thms prec-tags)
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-result-thms
                        prec-fns (all-fnnames (ubody+ fn wrld)))
@@ -4111,7 +4109,7 @@
                     (:e ullong-arrayp)
                     (:e sllong-arrayp)
                     ,@(loop$ for recog
-                             in (atc-symbol-taginfo-alist-to-recognizers
+                             in (atc-string-taginfo-alist-to-recognizers
                                  prec-tags)
                              collect `(:e ,recog)))))
                 '(:use (:guard-theorem ,fn))))
@@ -4832,7 +4830,7 @@
 
 (define atc-gen-fundef ((fn symbolp)
                         (prec-fns atc-symbol-fninfo-alistp)
-                        (prec-tags atc-symbol-taginfo-alistp)
+                        (prec-tags atc-string-taginfo-alistp)
                         (proofs booleanp)
                         (prog-const symbolp)
                         (init-fun-env-thm symbolp)
@@ -5838,7 +5836,7 @@
 
 (define atc-gen-loop ((fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
-                      (prec-tags atc-symbol-taginfo-alistp)
+                      (prec-tags atc-string-taginfo-alistp)
                       (proofs booleanp)
                       (prog-const symbolp)
                       (fn-thms symbol-symbol-alistp)
@@ -6050,15 +6048,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-tag-declon ((tag symbolp)
-                            (prec-tags atc-symbol-taginfo-alistp)
+                            (prec-tags atc-string-taginfo-alistp)
                             (ctx ctxp)
                             state)
   :returns (mv erp
                (val (tuple (declon tag-declonp)
-                           (updated-prec-tags atc-symbol-taginfo-alistp)
+                           (updated-prec-tags atc-string-taginfo-alistp)
                            val)
                     :hyp (and (symbolp tag)
-                              (atc-symbol-taginfo-alistp prec-tags)))
+                              (atc-string-taginfo-alistp prec-tags)))
                state)
   :short "Generate a C structure type declaration."
   :long
@@ -6070,10 +6068,11 @@
    (xdoc::p
     "This has no accompanying generated theorems."))
   (b* ((irr (list (irr-tag-declon) nil))
-       ((when (consp (assoc-eq tag prec-tags)))
+       (tag (symbol-name tag))
+       ((when (consp (assoc-equal tag prec-tags)))
         (raise "Internal error: tag ~x0 already encountered." tag)
         (acl2::value irr))
-       (info (defstruct-table-lookup (symbol-name tag) (w state)))
+       (info (defstruct-table-lookup tag (w state)))
        ((unless info)
         (er-soft+ ctx t irr
                   "There is no DEFSTRUCT associated to the tag ~x0."
@@ -6092,7 +6091,7 @@
 
 (define atc-gen-ext-declon-list ((targets symbol-listp)
                                  (prec-fns atc-symbol-fninfo-alistp)
-                                 (prec-tags atc-symbol-taginfo-alistp)
+                                 (prec-tags atc-string-taginfo-alistp)
                                  (proofs booleanp)
                                  (prog-const symbolp)
                                  (init-fun-env-thm symbolp)
