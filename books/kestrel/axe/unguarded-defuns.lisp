@@ -585,10 +585,10 @@
       0
       (if (<-unguarded new-size old-size)
           (bvchop-unguarded new-size val)
-          (bvcat-unguarded (+ 1 (- new-size old-size))
-                           (repeatbit-unguarded (+ 1 (- new-size old-size))
+          (bvcat-unguarded (- new-size old-size)
+                           (repeatbit-unguarded (- new-size old-size)
                                                 (getbit-unguarded (+ -1 old-size) val))
-                           (+ -1 old-size)
+                           old-size
                            val))))
 
 (defthm bvsx-unguarded-correct
