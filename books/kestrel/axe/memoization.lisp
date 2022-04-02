@@ -95,6 +95,7 @@
 (mutual-recursion
 
  ;; If OBJECT is a ground-term, this should return ACC (usually 0).
+ ;; TODO: Can variables actually occur in this?
  (defun sum-of-nodenums-aux (object acc)
    (declare (xargs :guard (and (axe-treep object)
                                (natp acc))
@@ -275,7 +276,7 @@
 ;;; lookup-in-memoization
 ;;;
 
-;; Returns a nodenum/quotep (to which to memozation equates TREE), or nil
+;; Returns a nodenum/quotep (to which the memozation equates TREE), or nil
 ;; (meaning TREE is not equated to anything in the memoization).
 ;todo: check *fns-not-to-memoize*?
 ;todo: can't we sort the memoization by function symbol?

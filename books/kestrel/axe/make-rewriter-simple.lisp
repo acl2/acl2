@@ -34,8 +34,6 @@
 
 ;; TODO: Add checks (or guards?) that interpreted-function-alists are complete.
 
-;; TODO: Skip consing tree onto trees-equal-to-tree if we are not memoizing.
-
 ;; TODO: Consider making a separate version for when we are not memoizing.
 
 (include-book "rewriter-common")
@@ -1491,7 +1489,7 @@
                           new-nodenum-or-quotep
                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                           (and memoization
-                               (add-pairs-to-memoization trees-equal-to-tree ;the items ; TODO: Should we include TREE itself?
+                               (add-pairs-to-memoization trees-equal-to-tree ;the items (TODO: Can this be non-empty?) ; Can't include TREE itself, because we only memoize rewrites of conses.
                                                          new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
                                                          memoization))
                           info tries limits node-replacement-array))
@@ -1732,7 +1730,7 @@
                 (mv (erp-nil)
                     new-nodenum-or-quotep
                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                    (and memoization
+                    (and memoization ; we could save this cons:
                          (add-pairs-to-memoization (cons-if-not-equal-car expr trees-equal-to-tree) ; might be the same as tree if the args aren't simplified?) well, each arg should be simplified and memoed.
                                                    new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
                                                    memoization))
@@ -4099,7 +4097,6 @@
                                                                (natp
                                                                 NATP-WHEN-DARGP ;caused problems when natp is known
                                                                 ))))))
-         ;; Could create a variant of ,simplify-tree-and-add-to-dag-name that is restricted to terms:
          (b* ((dag-array (make-empty-array 'dag-array 1000000)) ;todo: make this size adjustable
               (dag-parent-array (make-empty-array 'dag-parent-array 1000000)) ;todo: make this size adjustable
               ;; Create the refined-assumption-alist and add nodes it refers to to the DAG:
@@ -4134,7 +4131,7 @@
                    & ; node-replacement-array
                    )
                ;; TODO: Consider making a version of ,simplify-tree-and-add-to-dag-name that applies only to terms, not axe-trees, and calling it here.
-               ;; TODO: Consider handling vars separately and then dropping support for vars in ,simplify-tree-and-add-to-dag-name.
+               ;; TODO: Or consider handling vars separately and then dropping support for vars in ,simplify-tree-and-add-to-dag-name (and in the memoization).
                (,simplify-tree-and-add-to-dag-name term
                                                    nil ;trees-equal-to-tree
                                                    dag-array
