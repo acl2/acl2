@@ -146,14 +146,15 @@
                     (opener-rules-for-fns defined-supporting-fns t '-for-unroll-spec-basic nil nil state))
                    (- (cw "Will use the following ~x0 additional rules: ~X12~%" (len rule-names) rule-names nil))
                    ;; todo: name this rule set?:  what else should go in it
+                   ;; try to use unroll-spec-basic-rules here
                    (rule-names (append '(;consp-of-cons  ; about primitives ; todo: when else might be needed?
                                          ;car-cons
                                          ;cdr-cons
                                          list-to-bv-array
-                                         BVCAT-OF-IFIX-ARG2 ; add to core-rules-bv
-                                         BVCAT-OF-IFIX-ARG4 ; add to core-rules-bv
-                                         BV-ARRAY-WRITE-OF-BVCHOP-ARG3
-                                         BV-ARRAY-WRITE-OF-BVCHOP-ARG4
+                                         ;BVCAT-OF-IFIX-ARG2 ; add to core-rules-bv
+                                         ;BVCAT-OF-IFIX-ARG4 ; add to core-rules-bv
+                                         ;BV-ARRAY-WRITE-OF-BVCHOP-ARG3
+                                         ;BV-ARRAY-WRITE-OF-BVCHOP-ARG4
                                          )
                                        (bv-array-rules-simple)
                                        (type-rules) ; give us type facts about bv ops

@@ -380,6 +380,8 @@
      bitxor-of-unary-minus-arg2
      bvcat-of-unary-minus-low
      bvcat-of-unary-minus-high
+     bvcat-of-ifix-arg2
+     bvcat-of-ifix-arg4
 
      bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
      getbit-too-high-cheap-free
@@ -720,8 +722,6 @@
 
     bvcat-of-getbit-arg2
     bvcat-of-getbit-arg4
-    bvcat-of-ifix-arg2
-    bvcat-of-ifix-arg4
 
     myif-x-x-t-not-nil
 
@@ -1232,6 +1232,8 @@
   (declare (xargs :guard t))
   '(bv-array-read-of-bv-array-write-same ;bv-array-read-of-bv-array-write-same-work-hard
     bv-array-read-of-bv-array-write-diff-safe-gen ;added the -gen ;thu mar 25 04:05:19 2010
+    BV-ARRAY-WRITE-OF-BVCHOP-ARG3
+    BV-ARRAY-WRITE-OF-BVCHOP-ARG4
     ))
 
 (defun bv-array-rules ()
