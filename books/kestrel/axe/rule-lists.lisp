@@ -502,8 +502,8 @@
 
      ;; BVCHOP-OF-BVPLUS  ;do we want to do this, or does it replicate the bvplus term at many different sizes?
      ;; bvchop-of-bvminus2 ;see bvchop-identity-axe
-     bvchop-of-bvminus ;don't we get rid of bvminus?
-     bvchop-of-bvuminus
+     ;bvchop-of-bvminus ;don't we get rid of bvminus?
+     ;bvchop-of-bvuminus
 
 ;trying without...
      ;; bvchop-of-bvmult2 ; just a special case of bvchop-identity
