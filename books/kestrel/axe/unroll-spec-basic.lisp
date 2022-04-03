@@ -150,13 +150,9 @@
                    (rule-names (append '(;consp-of-cons  ; about primitives ; todo: when else might be needed?
                                          ;car-cons
                                          ;cdr-cons
-                                         list-to-bv-array
-                                         ;BVCAT-OF-IFIX-ARG2 ; add to core-rules-bv
-                                         ;BVCAT-OF-IFIX-ARG4 ; add to core-rules-bv
-                                         ;BV-ARRAY-WRITE-OF-BVCHOP-ARG3
-                                         ;BV-ARRAY-WRITE-OF-BVCHOP-ARG4
                                          )
                                        (bv-array-rules-simple)
+                                       (list-to-bv-array-rules)
                                        (type-rules) ; give us type facts about bv ops
                                        (set-difference-eq (core-rules-bv)
                                                           ;; these are kind of like trim rules, and can make the result worse:
@@ -164,7 +160,6 @@
                                                             BVCHOP-OF-bvuminus
                                                             ))
                                        (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
-                                       '(LIST-TO-BV-ARRAY-AUX-BASE LIST-TO-BV-ARRAY-AUX-unroll) ; todo: make an "of cons" rule
                                        (unsigned-byte-p-forced-rules)
                                        rule-names)))
                 ;; todo: this doesn't include any standard rules -- should it?  they could loop with the openers (e.g., nth-of-cdr)
