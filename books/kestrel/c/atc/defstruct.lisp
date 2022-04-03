@@ -130,9 +130,13 @@
      "The writers of (the members of) the structures.")
     (xdoc::li
      "A list of return type theorems for all the member readers and writers.")
-    (xdoc::p
-     "The call of @(tsee defstruct).
-      This supports redundancy checking.")))
+    (xdoc::li
+     "The name of a theorem asserting that
+      if something is a structure of this type
+      then it is not an error."))
+   (xdoc::p
+    "The call of @(tsee defstruct).
+     This supports redundancy checking."))
   ((tag ident)
    (members member-info-list)
    (recognizer symbolp)
@@ -140,6 +144,7 @@
    (readers symbol-listp)
    (writers symbol-listp)
    (return-thms symbol-listp)
+   (not-error-thm symbolp)
    (call pseudo-event-form))
   :pred defstruct-infop)
 
@@ -505,22 +510,37 @@
 (define defstruct-gen-recognizer ((struct-tag-p symbolp)
                                   (tag symbolp)
                                   (members member-info-listp))
-  :returns (event pseudo-event-formp)
+  :returns (mv (event pseudo-event-formp)
+               (not-error-thm symbolp))
   :short "Generate the recognizer of
           the structures defined by the @(tsee defstruct)."
   :long
   (xdoc::topstring
    (xdoc::p
     "This recognizes structures
-     with the appropriate types, member names, and member types."))
-  `(define ,struct-tag-p (x)
-     :returns (yes/no booleanp)
-     (and (structp x)
-          (equal (struct->tag x)
-                 (ident ,(symbol-name tag)))
-          (equal (members-to-infos (struct->members x))
-                 ',members))
-     :hooks (:fix)))
+     with the appropriate types, member names, and member types.")
+   (xdoc::p
+    "We also generate a theorem saying that
+     if something satisfies this recognizer then it is not an error.
+     We return the name of the theorem as well."))
+  (b* ((not-errorp-when-struct-tag-p
+        (packn-pos (list 'not-errorp-when- struct-tag-p)
+                   struct-tag-p))
+       (event
+        `(define ,struct-tag-p (x)
+           :returns (yes/no booleanp)
+           (and (structp x)
+                (equal (struct->tag x)
+                       (ident ,(symbol-name tag)))
+                (equal (members-to-infos (struct->members x))
+                       ',members))
+           :hooks (:fix)
+           ///
+           (defrule ,not-errorp-when-struct-tag-p
+             (implies (,struct-tag-p x)
+                      (not (errorp x)))
+             :enable (errorp ,struct-tag-p structp)))))
+    (mv event not-errorp-when-struct-tag-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -787,7 +807,8 @@
        (struct-tag-p (packn-pos (list struct-tag '-p) tag))
        (struct-tag-fix (packn-pos (list struct-tag '-fix) tag))
        (struct-tag-equiv (packn-pos (list struct-tag '-equiv) tag))
-       (recognizer-event (defstruct-gen-recognizer struct-tag-p tag members))
+       ((mv recognizer-event not-errorp-when-struct-tag-p)
+        (defstruct-gen-recognizer struct-tag-p tag members))
        (fixer-event (defstruct-gen-fixer
                       struct-tag-fix struct-tag-p tag members))
        (fixtype-event (defstruct-gen-fixtype
@@ -807,6 +828,7 @@
                                   :readers reader-names
                                   :writers writer-names
                                   :return-thms return-thms
+                                  :not-error-thm not-errorp-when-struct-tag-p
                                   :call call))
        (table-event (defstruct-table-record-event (symbol-name tag) info)))
     `(progn
