@@ -482,7 +482,7 @@
                   (rest arg-lists)
                   (cons (cons fn (first arg-lists)) acc))))
 
-(defun decode-refined-assumption-alist-aux (refined-assumption-alist acc)
+(defund decode-refined-assumption-alist-aux (refined-assumption-alist acc)
   (declare (xargs :guard (refined-assumption-alistp refined-assumption-alist)))
   (if (endp refined-assumption-alist)
       acc
@@ -494,14 +494,14 @@
 
 ;turns refined-assumption-alist back into the equivalent list of axe-trees
 ;; todo: prove return type
-(defun decode-refined-assumption-alist (refined-assumption-alist)
+(defund decode-refined-assumption-alist (refined-assumption-alist)
   (declare (xargs :guard (refined-assumption-alistp refined-assumption-alist)))
   (decode-refined-assumption-alist-aux refined-assumption-alist nil))
 
 
 (local (in-theory (disable wf-dagp wf-dagp-expander)))
 
-;; For each of the ASSUMPTIONS, adds its args to the dag-array.  Returns a list of all the the fns applied to their corresponding args (added to the array).
+;; For each of the ASSUMPTIONS, adds its args to the dag-array.  Returns a list of all the fns applied to their corresponding args (added to the array).
 ;; Returns (mv erp refined-assumptions ;function calls applied to quoteps / nodenums in dag-array
 ;;             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;call this "add-fn-call-terms-to-dag-array"? well, that might be assumed to return a list of nodenums, but this doesn't...
