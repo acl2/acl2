@@ -202,7 +202,7 @@
                                                  interpreted-function-alist)
             ;;fixme what about ground terms?!
             (let* ((args (dargs expr))
-                   (renamed-args (rename-args args 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array)
+                   (renamed-args (rename-dargs args 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array)
                                  ))
               (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                 (add-function-call-expr-to-dag-array-with-name fn renamed-args
