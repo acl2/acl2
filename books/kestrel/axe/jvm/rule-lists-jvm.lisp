@@ -2604,20 +2604,21 @@
   (declare (xargs :stobjs state
                   :guard (ilks-plist-worldp (w state))))
   (list (make-rule-alist! (phase-1-rules)
-                         (w state))
+                          (w state))
+        ;; here's what gets turned on here (BVPLUS-COMMUTATIVE-AXE BVPLUS-COMMUTATIVE-2-AXE BVPLUS-ASSOCIATIVE BVUMINUS-OF-BVPLUS GETBIT-OF-BVXOR BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT BVASHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT):
         (make-rule-alist! (set-difference-equal (append '( ;bvshl ;this makes things much bigger
-                                                         )
-                                                       (amazing-rules-spec-and-dag)
-                                                       (map-rules)
-                                                       (jvm-semantics-rules)
-                                                       (jvm-simplification-rules)
-                                                       (run-until-return-from-stack-height-rules-smart))
-                                               '( ;BVOR-WITH-SMALL-ARG2
-                                                 ;;GETBIT-OF-BVXOR
-                                                 ;;BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT
-                                                 ;;BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT
-                                                 ))
-                         (w state))))
+                                                          )
+                                                        (amazing-rules-spec-and-dag)
+                                                        (map-rules)
+                                                        (jvm-semantics-rules)
+                                                        (jvm-simplification-rules)
+                                                        (run-until-return-from-stack-height-rules-smart))
+                                                '( ;BVOR-WITH-SMALL-ARG2
+                                                  ;;GETBIT-OF-BVXOR
+                                                  ;;BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT
+                                                  ;;BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT
+                                                  ))
+                          (w state))))
 
 ;;
 ;; priorities
