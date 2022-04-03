@@ -28,7 +28,8 @@
          (script-path (concatenate 'string system-books-dir "kestrel/axe/" script-name)))
     (mv-let (erp output state)
       (sys-call+ script-path script-args state)
-      (prog2$ (cw "(Output from ~s0: ~X12)~%" script-name output nil)
+      (declare (ignore output))
+      (progn$ ;; (cw "(Output from ~s0: ~X12)~%" script-name output nil) ; todo; add debug option and check it here?
               (if erp
                   (if (not (natp erp))
                       (prog2$ (er hard? 'call-axe-script "Unexpected (non-natp) exit status from script: ~x0." erp)

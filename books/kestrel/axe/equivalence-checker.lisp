@@ -7941,9 +7941,9 @@
                                                            var-type-alist ;fixme think hard about using this (btw, do we check that it's pure?)..
                                                            print max-conflicts miter-name state)
   (declare (xargs :mode :program :stobjs state))
-  (b* (;(- (and print (cw "(Subdag that supports the nodes:~%")))
-       ;(- (and print (print-dag-only-supporters-of-nodes miter-array-name miter-array (list smaller-nodenum larger-nodenum))))
-       ;(- (and print (cw ")~%")))
+  (b* ( ;;(- (and print (cw "(Subdag that supports the nodes:~%")))
+       ;;(- (and print (print-dag-only-supporters-of-nodes miter-array-name miter-array (list smaller-nodenum larger-nodenum))))
+       ;;(- (and print (cw ")~%")))
        ;;todo: move this printing to the caller?
        (smaller-node-supporting-vars (vars-that-support-dag-node smaller-nodenum miter-array-name miter-array miter-len))
        (larger-node-supporting-vars (vars-that-support-dag-node larger-nodenum miter-array-name miter-array miter-len))
@@ -7953,61 +7953,60 @@
        ;; (- (cw "(Vars that support both nodes: ~x0.)~%" vars-that-support-both-nodes))
        (- (and vars-that-support-only-smaller-node (cw "(Vars that support node ~x0 only: ~x1.)~%" smaller-nodenum vars-that-support-only-smaller-node)))
        (- (and vars-that-support-only-larger-node (cw "(Vars that support node ~x0 only: ~x1.)~%" larger-nodenum vars-that-support-only-larger-node)))
-       )
-    ;;first try with our proof-cutting heuristic (cuts at shared nodes):
-    ;;fixme if we have contexts, how will we cut them (not clear what "shared nodes" means with 3 or more terms)?
-    ;;probably best not to use contexts here, since this usually succeeds, and contexts are rarely needed
-    (mv-let (provedp
-             nodenums-translated ;below we check these to determine the depth of the deepest translated node
-             state)
-      (prog2$
-       (cw "(Attempting aggressively cut proof:~%")
+       (- (cw "(Attempting aggressively cut proof:~%"))
+       ;;first try with our proof-cutting heuristic (cuts at shared nodes):
+       ;;fixme if we have contexts, how will we cut them (not clear what "shared nodes" means with 3 or more terms)?
+       ;;probably best not to use contexts here, since this usually succeeds, and contexts are rarely needed
        ;;aggressive cut that replaces all shared nodes with variables:
-       (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state))
-      (prog2$
-       (cw ")~%")
-       (if provedp
-           (mv t state)
-         (mv-let
-           (depth-array max-depth)
-           ;;bad to do this over and over?
-           (make-depth-array-for-nodes (list smaller-nodenum larger-nodenum) miter-array-name miter-array miter-len) ;fixme any way to avoid rebuilding this?
-           (let ( ;;deepest node translated when we tried our heuristic: (attempt-aggressively-cut-equivalence-proof could compute this if we pass it the depth array, but that might be expensive?
-                 (depth-of-deepest-translated-node (max-array-elem2 nodenums-translated
-                                                                    0 ;fixme think about the 0..
-                                                                    'depth-array depth-array)))
-             ;;fixme we should start this at a depth at least deep enough for every path from the root to end on a shared var?
-             ;;fixme maybe the depth should be measured from the shared-var frontier?
-             (mv-let (success-flg state)
-               (prog2$
-                  (cw "(Attempting cut proofs (min-depth ~x0, max-depth ~x1):~%" depth-of-deepest-translated-node max-depth)
-                  (attempt-cut-equivalence-proofs depth-of-deepest-translated-node ;(ffixme should we add 1 to start?)
-                                                  ;;(min max-depth ;(+ 1 (safe-min smaller-nodenum-depth larger-nodenum-depth)) ;starting depth (essentially depth 2; depth1 seems almost always useless to try)
-                                                  ;;                                                              starting-depth
-                                                  ;;                                                              )
-                                                  ;;                                                         ;; the min above prevents us form starting out over max depth
-                                                  max-depth
-                                                  depth-array
-                                                  smaller-nodenum
-                                                  larger-nodenum
-                                                  miter-array-name
-                                                  miter-array
-                                                  miter-len
-                                                  var-type-alist
-                                                  print max-conflicts miter-name
-                                                  (n-string-append (symbol-name miter-name)
-                                                                   "-"
-                                                                   (nat-to-string smaller-nodenum)
-                                                                   "="
-                                                                   (nat-to-string larger-nodenum)
-                                                                   "-depth-")
-                                                  state))
-               (prog2$ (cw ")")
-                       (mv (if success-flg
-                               t
-                             (prog2$ (cw "!! STP failed to prove the equality of nodes ~x0 and ~x1. !!~%" smaller-nodenum larger-nodenum)
-                                     nil))
-                           state))))))))))
+       ((mv provedp
+            nodenums-translated ;below we check these to determine the depth of the deepest translated node
+            state)
+        (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state))
+       (- (if provedp
+              (cw "  Proved.)~%")
+            (cw "  Failed.)~%"))))
+    (if provedp
+        (mv t state)
+      (mv-let
+        (depth-array max-depth)
+        ;;bad to do this over and over?
+        (make-depth-array-for-nodes (list smaller-nodenum larger-nodenum) miter-array-name miter-array miter-len) ;fixme any way to avoid rebuilding this?
+        (let ( ;;deepest node translated when we tried our heuristic: (attempt-aggressively-cut-equivalence-proof could compute this if we pass it the depth array, but that might be expensive?
+              (depth-of-deepest-translated-node (max-array-elem2 nodenums-translated
+                                                                 0 ;fixme think about the 0..
+                                                                 'depth-array depth-array)))
+          ;;fixme we should start this at a depth at least deep enough for every path from the root to end on a shared var?
+          ;;fixme maybe the depth should be measured from the shared-var frontier?
+          (mv-let (success-flg state)
+            (prog2$
+             (cw "(Attempting cut proofs (min-depth ~x0, max-depth ~x1):~%" depth-of-deepest-translated-node max-depth)
+             (attempt-cut-equivalence-proofs depth-of-deepest-translated-node ;(ffixme should we add 1 to start?)
+                                             ;;(min max-depth ;(+ 1 (safe-min smaller-nodenum-depth larger-nodenum-depth)) ;starting depth (essentially depth 2; depth1 seems almost always useless to try)
+                                             ;;                                                              starting-depth
+                                             ;;                                                              )
+                                             ;;                                                         ;; the min above prevents us form starting out over max depth
+                                             max-depth
+                                             depth-array
+                                             smaller-nodenum
+                                             larger-nodenum
+                                             miter-array-name
+                                             miter-array
+                                             miter-len
+                                             var-type-alist
+                                             print max-conflicts miter-name
+                                             (n-string-append (symbol-name miter-name)
+                                                              "-"
+                                                              (nat-to-string smaller-nodenum)
+                                                              "="
+                                                              (nat-to-string larger-nodenum)
+                                                              "-depth-")
+                                             state))
+            (prog2$ (cw ")")
+                    (mv (if success-flg
+                            t
+                          (prog2$ (cw "!! STP failed to prove the equality of nodes ~x0 and ~x1. !!~%" smaller-nodenum larger-nodenum)
+                                  nil))
+                        state))))))))
 
 ;a worklist algorithm:
 ;returns the list of all fns on nodes that 1) support nodes in NODENUMS and 2) are not tagged
@@ -13006,6 +13005,20 @@
 ;; the main mutual-recursion of the Axe Equivalence Checker (fixme should more stuff above use this to prove goals by mitering?):
 ;;
 
+;; TODO: Is this really right, if a set has more than 2 nodes and some of the attempted merges fail?
+(defund count-merges-in-probably-equal-node-sets (sets acc)
+  (declare (xargs :guard (and (true-list-listp sets)
+                              (natp acc))))
+  (if (endp sets)
+      acc
+    (let ((set (first sets)))
+      (if (not (consp set))
+          (er hard? 'count-merges-in-probably-equal-node-sets "Empty set found.")
+        (count-merges-in-probably-equal-node-sets (rest sets)
+                                                  (+ -1 ; a set of 2 contributes 1 merge, and so on
+                                                     (len set)
+                                                     acc))))))
+
 ;todo: use better erps than t here in the error cases.  maybe get rid of :error since we now have the erp return value
 ;todo: thread through a parent array for the miter and use it to fixup parents when merging constant nodes (could also evaluate ground terms?).  would need to maintain the parent array as we merge...
 (mutual-recursion
@@ -16763,7 +16776,7 @@
        ;;bozo put in some checks here?  maybe not, since we already made sure the top node is all t's
        (prog2$ (cw "Done replacing nodes.  The miter has been reduced to TRUE!~%")
                (mv (erp-nil) :proved-miter miter-array analyzed-function-table rand state result-array-stobj))
-     (b* ((- (cw "(Depth ~x0 / sweep ~x1 / step ~x2 of ~x3:~%" miter-depth sweep-num step-num total-steps))
+     (b* ((- (cw "(Depth ~x0 / sweep ~x1 / step ~x2 of ~~~x3:~%" miter-depth sweep-num step-num total-steps))
           ;;(nodenum-with-bad-parents (find-nodenum-with-bad-parents (+ -1 miter-len) parent-array-name parent-array)) ;fixme remove this stuff - it's for debugging
           ;; (if nodenum-with-bad-parents
           ;;     (prog2$
@@ -16937,7 +16950,7 @@
         ;; mark nodes that are probably equal to other nodes (including constants, in case we can't prove x=const and y=const but can prove x=y):
         (tag-array2 (prog2$ (and print (eq :verbose print) (cw "Tagging probably-equal nodes for replacement...~%"))
                             (tag-probably-equal-node-sets probably-equal-node-sets tag-array2 probably-constant-node-alist)))
-        (num-probably-equal-node-sets (len probably-equal-node-sets))
+        (num-probably-equal-node-sets (count-merges-in-probably-equal-node-sets probably-equal-node-sets 0)) ;; TODO: Can we really count this ahead of time?
         (num-probable-constants (len probably-constant-node-alist))
         (- (progn$ (cw "(~x0 total probably-equal-node-sets.~%" num-probably-equal-node-sets) ;fixme this total should exclude the probably constant nodes..
                    (and print (progn$ (cw "Here they are, after excluding probably-constant nodes:~%") ;count the nodes involved (or track that number)
@@ -21054,7 +21067,7 @@
                   (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
                           `(progn))
                 defthm))
-       (event (extend-progn event `(table prove-equivalence-table ',whole-form ',event)))
+       (event (extend-progn event `(with-output :off :all (table prove-equivalence-table ',whole-form ',event))))
        (event (extend-progn event `(value-triple ',miter-name))))
     (mv (erp-nil) event state rand result-array-stobj)))
 
