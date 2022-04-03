@@ -592,6 +592,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-taginfo-alist-to-not-error-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the non-error theroems out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->not-error-thm (atc-tag-info->struct info)))
+       (thms (atc-string-taginfo-alist-to-not-error-thms (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-symbol-2part ((sym symbolp))
   :returns (mv (yes/no booleanp)
                (part1 symbolp)
@@ -4496,6 +4508,7 @@
                                   (type typep)
                                   (affect symbol-listp)
                                   (prec-fns atc-symbol-fninfo-alistp)
+                                  (prec-tags atc-string-taginfo-alistp)
                                   (prog-const symbolp)
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-fun-env-thm symbolp)
@@ -4526,16 +4539,16 @@
      calculated by @(tsee atc-gen-cfun-final-compustate).")
    (xdoc::p
     "The function @('fn') returns
-     an optional C result and zero or more modified arrays.
+     an optional C result and zero or more modified arrays and structures.
      If it returns a C result (i.e. if the C function is not @('void')),
      we bind a result variable to it;
      the value is @('nil') if the C function is @('void').
-     We also bind the formals that are arrays
+     We also bind the formals that are arrays or structures
      to the (other or only) results of @('fn') (if any).
      We actually use new variables for the latter,
      for greater clarity in the theorem formulation:
      the new variables are obtained by adding @('-NEW')
-     to the corresponding array formals of @('fn');
+     to the corresponding array and structure formals of @('fn');
      these new names should not cause any conflicts,
      because the names of the formals must be portable C identifiers.")
    (xdoc::p
@@ -4571,12 +4584,18 @@
    (xdoc::p
     "The proof is a symbolic execution of the generated translation unit,
      which is a constant: see @(see atc-proof-support).
-     The proof is carried out in the theory that consists of
-     exactly the general rules listed there,
+     The proof is carried out in the theory that consists of exactly
+     the general rules in @(tsee *atc-all-rules*),
+     some structure-specific rules that are similar to
+     rules for arrays in @(tsee *atc-all-rules*),
+     plus the definition of @(tse not) (more on this below),
      plus the definition of @('fn') (clearly),
      plus the theorems about the results of the functions called by @('fn'),
      plust the type prescriptions of the functions called by @('fn'),
-     plus the correctness theorems of the functions called by @('fn');
+     plus the correctness theorems of the functions called by @('fn'),
+     plus the theorems asserting that
+     the measures of the called recursive functions are naturals,
+     plus the theorem about the current function in the function environment;
      here `called' means `directly called'.
      During symbolic execution, the initial limit for @('fn')
      is progressively decremented,
@@ -4593,9 +4612,8 @@
      these functions return errors.
      The type prescriptions of the callable functions
      are needed to discharge some proof subgoal that arise.
-     We also enable @(tsee not),
-     because without it we have found at least one case
-     in which some ACL2 heuristic defeats
+     We enable @(tsee not) because, without it,
+     we have found at least one case in which some ACL2 heuristic defeats
      what should be a propositional inference;
      the issue is related to clausification,
      and enabling @(tsee not) seems to overcome the issue,
@@ -4603,7 +4621,8 @@
    (xdoc::p
     "Furthermore, we generate a @(':use') hint
      to augment the theorem's formula with the guard theorem of @('fn'),
-     with the pointer arguments replaced by the dereferenced arrays.
+     with the pointer arguments replaced by
+     the dereferenced arrays and structures.
      This is critical to ensure that the symbolic execution of the C operators
      does not split on the error cases:
      the fact that @('fn') is guard-verified
@@ -4672,6 +4691,7 @@
                         (mv ,result-var ,final-compst))))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
+       (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (correct-thms
@@ -4684,10 +4704,11 @@
        (hints `(("Goal"
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
-                             '(not
+                             '(,@not-error-thms
+                               not
                                ,fn
-                               ,@type-prescriptions
                                ,@result-thms
+                               ,@type-prescriptions
                                ,@correct-thms
                                ,@measure-thms
                                ,fn-fun-env-thm))
@@ -5022,6 +5043,7 @@
                                             type
                                             affect
                                             prec-fns
+                                            prec-tags
                                             prog-const
                                             fn-thms
                                             fn-fun-env-thm
