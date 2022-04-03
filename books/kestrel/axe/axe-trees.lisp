@@ -163,6 +163,15 @@
               (all-bounded-axe-treep trees bound)))
   :hints (("Goal" :in-theory (enable all-bounded-axe-treep))))
 
+(defthm all-bounded-axe-treep-when-all-dargp
+  (implies (all-dargp items)
+           (equal (all-bounded-axe-treep items bound)
+                  (all-dargp-less-than items bound)))
+  :hints (("Goal" :expand ((bounded-axe-treep (car items) bound)
+                           (all-bounded-axe-treep items bound))
+           :induct t
+           :in-theory (enable all-bounded-axe-treep all-dargp-less-than))))
+
 (defthm all-axe-treep-of-cdr
   (implies (and (axe-treep tree)
                 (consp tree)

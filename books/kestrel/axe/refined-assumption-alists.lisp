@@ -36,15 +36,6 @@
 
 ;; See also the comment "How we use the refined-assumption-alist" in make-rewriter-simple.lisp
 
-;move
-(defthm all-bounded-axe-treep-when-all-dargp
-  (implies (all-dargp items)
-           (equal (all-bounded-axe-treep items bound)
-                  (all-dargp-less-than items bound)))
-  :hints (("Goal" :expand ((bounded-axe-treep (car items) bound)
-                           (all-bounded-axe-treep items bound))
-           :in-theory (enable all-bounded-axe-treep all-dargp-less-than))))
-
 (local (in-theory (disable symbol-listp))) ; prevent inductions
 
 ;;;
