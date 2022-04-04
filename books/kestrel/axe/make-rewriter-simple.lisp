@@ -1037,11 +1037,11 @@
                                 (triesp tries)
                                 (rule-limitsp limits)
                                 (symbol-listp monitored-symbols))))
-          (if (or (not (mbt (natp count)))
-                  (= 0 count))
-              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-            ;; First, try to resolve the test (fixme would like to do this in an iff context):
-            (b* ((args (fargs tree))
+            (b* (((when (or (not (mbt (natp count)))
+                            (= 0 count)))
+                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                 ;; First, try to resolve the test (TODO: would like to do this in an iff context):
+                 (args (fargs tree))
                  (test (first args))
                  ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                   (b* (((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
@@ -1058,7 +1058,7 @@
                         (mv (erp-nil) simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                       ;; simplified-test is a nodenum.  Now try looking it up in the refined-assumption-alist:
                       ;; TODO: Do this also for the other kinds of IF below
-                      (if (nodenum-equal-to-refined-assumptionp simplified-test refined-assumption-alist dag-array)  ;todo: only do this if the hyp is not a known-boolean?
+                      (if (nodenum-equal-to-refined-assumptionp simplified-test refined-assumption-alist dag-array)  ;todo: only do this if the hyp is not a known-boolean? ; todo: can we do this lookup faster (just use a list of nodenums?)
                           ;; Since the test is known to be true from the refined-assumption-alist, it's as if it rewrote to 't (even though it may not be a predicate, IF/MYIF only looks at whether it is nil):
                           (mv (erp-nil) *t* dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                         ;; Failed to resolve the test:
@@ -1075,7 +1075,7 @@
                 ;; Failed to resolve the test:
                 (progn$
                  ;; If this gets printed too often for known predicates, we can preprocess such things:
-                 (and (equal test (second args)) (cw "Unresolved IF test with test same as then-branch (from an OR?): ~x0.~%" test))
+                 (and (equal test (second args)) (cw "Unresolved IF test with test same as then-branch (from an OR?): ~x0.~%" test)) ; todo: comment out
                  (,simplify-if-tree-and-add-to-dag2-name (ffn-symb tree) ; if or myif
                                                          simplified-test
                                                          (second args) ;"then" branch
@@ -1088,7 +1088,7 @@
                                                          node-replacement-array-num-valid-nodes
                                                          print
                                                          interpreted-function-alist known-booleans monitored-symbols
-                                                         (+ -1 count)))))))
+                                                         (+ -1 count))))))
 
         ;; Continue rewriting a tree that is an BOOLIF.  This is separate just to keep the main function small.
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).

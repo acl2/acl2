@@ -591,6 +591,7 @@
               info tries limits state)
         ;;Try looking it up in equality-assumption-alist (BOZO should we move this down? or up?)
         ;; this uses the simplified args, so assumptions not in normal form may not ever match ;fffixme what about node-replacement-alist?
+        ;; TODO: Doesn't equality-assumption-alist contain terms, rather than axe-trees?
         (let ((assumption-match (replace-fun-call-using-equality-assumption-alist equality-assumption-alist fn args dag-array)))
           (if assumption-match
               ;; we replace the term with something it's equated to in assumptions...

@@ -26,6 +26,7 @@
 ;; Returns (mv node-replacement-array node-replacement-array-num-valid-nodes).
 ;; Updates NODE-REPLACEMENT-ARRAY, if possible, to reflect the fact that
 ;; NODENUM is non-nil.
+;; TODO: Can we do better if the node is an equality (taking care to avoid loops)?
 (defund assume-nodenum-true-in-node-replacement-array (nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)
   (declare (xargs :guard (and (natp nodenum) ;; should be the nodenum of a function call
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
