@@ -359,7 +359,7 @@
    (and (not erp)
         (equal (dag-to-term res) '(if (not (foo x)) y (foo x))))))
 
-;; Test with a non-boolean assumptions that appears in an IF test.  This works
+;; Test with a non-boolean assumption that appears in an IF test.  This works
 ;; because we lookup IF tests in the refined-assumption alist.
 (assert!
  (mv-let (erp res)
@@ -381,3 +381,14 @@
 ;;                         nil nil t nil t (w state))
 ;;    (and (not erp)
 ;;         (equal (dag-to-term res) 'w))))
+
+;; TODO: Get this to work.  Not that the IF-TEST is an equality that should be used for replacement
+;; (assert!
+;;  (mv-let (erp res)
+;;    (simplify-term-basic '(if (equal x '3) (equal (+ '1 x) '4) t)
+;;                         '()
+;;                         (make-rule-alist! nil
+;;                                          (w state))
+;;                         nil nil t nil (w state))
+;;    (and (not erp)
+;;         (equal (dag-to-term res) ''t))))
