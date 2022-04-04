@@ -604,6 +604,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-taginfo-alist-to-structp-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the @(tsee structp) theroems out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->structp-thm (atc-tag-info->struct info)))
+       (thms (atc-string-taginfo-alist-to-structp-thms (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-symbol-2part ((sym symbolp))
   :returns (mv (yes/no booleanp)
                (part1 symbolp)
@@ -4692,6 +4704,7 @@
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
+       (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (correct-thms
@@ -4705,6 +4718,7 @@
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
                              '(,@not-error-thms
+                               ,@structp-thms
                                not
                                ,fn
                                ,@result-thms
