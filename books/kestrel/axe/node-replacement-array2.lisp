@@ -44,11 +44,11 @@
              (not (consp (darg1 expr))) ;avoid (not <constant>) but that should not happen
              )
         ;; To assume (not <noden>) is true, we assume <noden> is nil:
-        (add-node-replacement-entry-and-maybe-expand (darg1 expr) *nil* 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
+        (add-node-replacement-entry-and-maybe-expand (darg1 expr) *nil* node-replacement-array node-replacement-array-num-valid-nodes)
       ;; Assume nodenum is T, but only if it's a call of a known boolean:
       (if (and (consp expr) ;always true?
                (member-eq (ffn-symb expr) known-booleans))
-          (add-node-replacement-entry-and-maybe-expand nodenum *t* 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
+          (add-node-replacement-entry-and-maybe-expand nodenum *t* node-replacement-array node-replacement-array-num-valid-nodes)
         ;; TODO: Do something better in this case, perhaps by tracking nodenums known to be non-nil:
         ;; Or assume that (not <nodenum>) is nil, but that might require adding the NOT node to the dag.
         (mv node-replacement-array node-replacement-array-num-valid-nodes)))))
@@ -165,11 +165,11 @@
           (if (and (consp noden-expr)
                    (member-eq (ffn-symb noden-expr) known-booleans))
               ;; We are assuming that (not <noden>) is false where <noden> is boolean
-              (add-node-replacement-entry-and-maybe-expand noden *t* 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
+              (add-node-replacement-entry-and-maybe-expand noden *t* node-replacement-array node-replacement-array-num-valid-nodes)
             ;; TODO: Do something better in this case, perhaps by tracking nodenums known to be non-nil:
-            (add-node-replacement-entry-and-maybe-expand nodenum *nil* 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)))
+            (add-node-replacement-entry-and-maybe-expand nodenum *nil* node-replacement-array node-replacement-array-num-valid-nodes)))
       ;; Assume nodenum is nil:
-      (add-node-replacement-entry-and-maybe-expand nodenum *nil* 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes))))
+      (add-node-replacement-entry-and-maybe-expand nodenum *nil* node-replacement-array node-replacement-array-num-valid-nodes))))
 
 (defthm node-replacement-arrayp-of-mv-nth-0-of-assume-nodenum-false-in-node-replacement-array
   (implies (and (natp nodenum)
@@ -283,11 +283,11 @@
              (not (consp (darg1 expr))) ;avoid (not <constant>) but that should not happen
              )
         ;; To unassume (not <noden>), we clear the entry for <noden>:
-        (add-node-replacement-entry-and-maybe-expand (darg1 expr) nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
+        (add-node-replacement-entry-and-maybe-expand (darg1 expr) nil node-replacement-array node-replacement-array-num-valid-nodes)
       (if (and (consp expr) ;always true?
                (member-eq (ffn-symb expr) known-booleans))
           ;; Clear the entry for nodenum itself:
-          (add-node-replacement-entry-and-maybe-expand nodenum nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
+          (add-node-replacement-entry-and-maybe-expand nodenum nil node-replacement-array node-replacement-array-num-valid-nodes)
         (mv node-replacement-array node-replacement-array-num-valid-nodes)))))
 
 (defthm node-replacement-arrayp-of-mv-nth-0-of-unassume-nodenum-true-in-node-replacement-array
@@ -406,11 +406,11 @@
           (if (and (consp noden-expr)
                    (member-eq (ffn-symb noden-expr) known-booleans))
               ;; Clear the entry for the argument of NODENUM:
-              (add-node-replacement-entry-and-maybe-expand noden nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
+              (add-node-replacement-entry-and-maybe-expand noden nil node-replacement-array node-replacement-array-num-valid-nodes)
             ;; Clear the entry for NODENUM itself:
-            (add-node-replacement-entry-and-maybe-expand nodenum nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)))
+            (add-node-replacement-entry-and-maybe-expand nodenum nil node-replacement-array node-replacement-array-num-valid-nodes)))
       ;; Clear the entry for NODENUM itself:
-      (add-node-replacement-entry-and-maybe-expand nodenum nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes))))
+      (add-node-replacement-entry-and-maybe-expand nodenum nil node-replacement-array node-replacement-array-num-valid-nodes))))
 
 (defthm node-replacement-arrayp-of-mv-nth-0-of-unassume-nodenum-false-in-node-replacement-array
   (implies (and (natp nodenum)

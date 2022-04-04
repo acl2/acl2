@@ -259,8 +259,7 @@
 ;;;
 
 ;; Returns NODENUM (no replacement for NODENUM) or a nodenum/quotep with which to replace NODENUM.
-;; TODO: Consider We
-;; could even have the array map non-replaced nodes to themselves, to avoid
+;; TODO: Consider having the array map non-replaced nodes to themselves, to avoid
 ;; having to check whether the result is nil.
 (defund apply-node-replacement-array (nodenum node-replacement-array num-valid-nodes)
   (declare (xargs :guard (and (natp nodenum)
@@ -306,17 +305,18 @@
 ;;; add-node-replacement-entry-and-maybe-expand
 ;;;
 
+;; Augments the node-replacement-array with the fact that NODENUM is equal to REPLACEMENT.
 ;; Returns (mv node-replacement-array num-valid-nodes).
-(defund add-node-replacement-entry-and-maybe-expand (nodenum replacement array-name array num-valid-nodes)
+(defund add-node-replacement-entry-and-maybe-expand (nodenum replacement node-replacement-array num-valid-nodes)
   (declare (xargs :guard (and (natp nodenum)
                               (< nodenum 2147483646)
                               (or (dargp replacement)
                                   (null replacement))
-                              (node-replacement-arrayp array-name array)
+                              (node-replacement-arrayp 'node-replacement-array node-replacement-array)
                               (natp num-valid-nodes)
-                              (<= num-valid-nodes (alen1 array-name array)))))
-  (let ((array (maybe-expand-array array-name array nodenum)))
-    (mv (aset1 array-name array nodenum replacement)
+                              (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))))
+  (let ((node-replacement-array (maybe-expand-array 'node-replacement-array node-replacement-array nodenum)))
+    (mv (aset1 'node-replacement-array node-replacement-array nodenum replacement)
         (max (+ 1 nodenum)
              num-valid-nodes))))
 
@@ -338,12 +338,12 @@
                 (< nodenum 2147483646)
                 (or (dargp replacement)
                     (null replacement))
-                (node-replacement-arrayp array-name array)
+                (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 array-name array))
+                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
                 )
-           (node-replacement-arrayp array-name
-                                    (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array-name array num-valid-nodes))))
+           (node-replacement-arrayp 'node-replacement-array
+                                    (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes))))
   :hints (("Goal" :in-theory (e/d (maybe-expand-array
                                    add-node-replacement-entry-and-maybe-expand)
                                   (node-replacement-arrayp-aux-of-aset1
@@ -354,12 +354,12 @@
                 (< nodenum 2147483646)
                 (or (dargp-less-than replacement bound)
                     (null replacement))
-                (bounded-node-replacement-arrayp array-name array bound)
+                (bounded-node-replacement-arrayp 'node-replacement-array array bound)
                 ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 array-name array))
+                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
                 )
-           (bounded-node-replacement-arrayp array-name
-                                            (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array-name array num-valid-nodes))
+           (bounded-node-replacement-arrayp 'node-replacement-array
+                                            (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes))
                                             bound))
   :hints (("Goal" :cases ((consp replacement))
            :in-theory (e/d (add-node-replacement-entry-and-maybe-expand) (node-replacement-arrayp-aux-of-aset1 alen1-of-expand-array)))))
@@ -367,7 +367,7 @@
 (defthm natp-of-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand
   (implies (and (natp nodenum)
                 (natp num-valid-nodes))
-           (natp (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array-name array num-valid-nodes))))
+           (natp (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes))))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (e/d (maybe-expand-array
                                    add-node-replacement-entry-and-maybe-expand)
@@ -379,12 +379,12 @@
   (implies (and (natp nodenum)
                 (< nodenum 2147483646)
                 ;; (dargp replacement)
-                (node-replacement-arrayp array-name array)
+                (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 array-name array))
+                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
                 )
-           (<= (alen1 array-name array)
-               (alen1 array-name (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array-name array num-valid-nodes)))))
+           (<= (alen1 'node-replacement-array array)
+               (alen1 'node-replacement-array (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes)))))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (e/d (maybe-expand-array
                                    add-node-replacement-entry-and-maybe-expand)
@@ -392,16 +392,16 @@
                                    alen1-of-expand-array)))))
 
 (defthm bound-on-alen1-of-mv-nth-0-of-add-node-replacement-entry-and-maybe-expand-gen
-  (implies (and (<= x (alen1 array-name array))
+  (implies (and (<= x (alen1 'node-replacement-array array))
                 (integerp x)
                 (natp nodenum)
                 (< nodenum 2147483646)
                 ;; (dargp replacement)
-                (node-replacement-arrayp array-name array)
+                (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 array-name array))
+                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
                 )
-           (<= x (alen1 array-name (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array-name array num-valid-nodes)))))
+           (<= x (alen1 'node-replacement-array (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes)))))
   :hints (("Goal" :use (:instance bound-on-alen1-of-mv-nth-0-of-add-node-replacement-entry-and-maybe-expand)
            :in-theory (disable bound-on-alen1-of-mv-nth-0-of-add-node-replacement-entry-and-maybe-expand))))
 
@@ -409,12 +409,12 @@
   (implies (and (natp nodenum)
                 (< nodenum 2147483646)
                 ;; (dargp replacement)
-                (node-replacement-arrayp array-name array)
+                (node-replacement-arrayp 'node-replacement-array array)
                 (natp num-valid-nodes)
-                (<= num-valid-nodes (alen1 array-name array)))
-           (<= (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array-name array num-valid-nodes))
-               (alen1 array-name (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array-name array num-valid-nodes)))))
-  :rule-classes ((:linear :trigger-terms ((mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array-name array num-valid-nodes)))))
+                (<= num-valid-nodes (alen1 'node-replacement-array array)))
+           (<= (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes))
+               (alen1 'node-replacement-array (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes)))))
+  :rule-classes ((:linear :trigger-terms ((mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes)))))
   :hints (("Goal" :in-theory (e/d (maybe-expand-array
                                    add-node-replacement-entry-and-maybe-expand
                                    NODE-REPLACEMENT-ARRAYP)
@@ -423,14 +423,14 @@
                                    )))))
 
 (defthm bound-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand-gen
-  (implies (and (<= x (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array-name array num-valid-nodes)))
+  (implies (and (<= x (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes)))
                 (natp nodenum)
                 (< nodenum 2147483646)
                 ;; (dargp replacement)
-                (node-replacement-arrayp array-name array)
+                (node-replacement-arrayp 'node-replacement-array array)
                 (natp num-valid-nodes)
-                (<= num-valid-nodes (alen1 array-name array)))
-           (<= x (alen1 array-name (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array-name array num-valid-nodes)))))
+                (<= num-valid-nodes (alen1 'node-replacement-array array)))
+           (<= x (alen1 'node-replacement-array (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes)))))
   :hints (("Goal" :in-theory (e/d (maybe-expand-array
                                    add-node-replacement-entry-and-maybe-expand
                                    NODE-REPLACEMENT-ARRAYP)
@@ -443,12 +443,12 @@
   (implies (and (natp nodenum)
                 (< nodenum 2147483646)
                 ;; (dargp replacement)
-                (node-replacement-arrayp array-name array)
+                (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 array-name array))
+                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
                 )
            (<= num-valid-nodes
-               (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array-name array num-valid-nodes))))
+               (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes))))
   :hints (("Goal" :in-theory (e/d (maybe-expand-array
                                    add-node-replacement-entry-and-maybe-expand)
                                   (node-replacement-arrayp-aux-of-aset1
@@ -459,10 +459,10 @@
                 (natp nodenum)
                 (< nodenum 2147483646)
                 ;; (dargp replacement)
-                (node-replacement-arrayp array-name array)
+                (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 array-name array))
+                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
                 )
-           (<= x (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array-name array num-valid-nodes))))
+           (<= x (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes))))
   :hints (("Goal" :use (:instance bound2-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand)
            :in-theory (disable bound2-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand))))
