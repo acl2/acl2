@@ -41,7 +41,10 @@
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (include-book "projects/apply/loop" :dir :system))
 (local (in-theory (disable acl2::loop-book-theory)))
@@ -574,9 +577,7 @@
        (info (cdar prec-tags))
        (thms (defstruct-info->return-thms (atc-tag-info->struct info)))
        (more-thms (atc-string-taginfo-alist-to-return-thms (cdr prec-tags))))
-    (append thms more-thms))
-  :prepwork
-  ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
+    (append thms more-thms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -600,9 +601,7 @@
        (info (cdar prec-tags))
        (readers (defstruct-info->readers (atc-tag-info->struct info)))
        (more-readers (atc-string-taginfo-alist-to-readers (cdr prec-tags))))
-    (append readers more-readers))
-  :prepwork
-  ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
+    (append readers more-readers)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -648,9 +647,7 @@
        ((unless (= (len parts) 2)) (mv nil nil nil))
        (part1 (intern-in-package-of-symbol (first parts) sym))
        (part2 (intern-in-package-of-symbol (second parts) sym)))
-    (mv t part1 part2))
-  :prepwork
-  ((local (include-book "std/typed-lists/string-listp" :dir :system))))
+    (mv t part1 part2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -675,9 +672,7 @@
        (part1 (intern-in-package-of-symbol (first parts) sym))
        (part2 (intern-in-package-of-symbol (second parts) sym))
        (part3 (intern-in-package-of-symbol (third parts) sym)))
-    (mv t part1 part2 part3))
-  :prepwork
-  ((local (include-book "std/typed-lists/string-listp" :dir :system))))
+    (mv t part1 part2 part3)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -704,9 +699,7 @@
        (part2 (intern-in-package-of-symbol (second parts) sym))
        (part3 (intern-in-package-of-symbol (third parts) sym))
        (part4 (intern-in-package-of-symbol (fourth parts) sym)))
-    (mv t part1 part2 part3 part4))
-  :prepwork
-  ((local (include-book "std/typed-lists/string-listp" :dir :system))))
+    (mv t part1 part2 part3 part4)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3621,8 +3614,6 @@
     (acl2::value (list stmt test then affect body-limit limit)))
   :measure (pseudo-term-count term)
   :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p)))
-  :prepwork
-  ((local (include-book "std/typed-lists/symbol-listp" :dir :system)))
   ///
 
   (more-returns
@@ -3791,9 +3782,7 @@
                                        (cdr guard-conjuncts)
                                        prelim-alist
                                        ctx
-                                       state))
-     :prepwork
-     ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
+                                       state)))
 
    (define atc-typed-formals-final-alist ((fn symbolp)
                                           (formals symbol-listp)
@@ -3869,8 +3858,7 @@
        ((er params)
         (atc-gen-param-declon-list (cdr typed-formals) fn ctx state)))
     (acl2::value (cons param params)))
-  :prepwork ((local (include-book "std/alists/top" :dir :system))
-             (local
+  :prepwork ((local
               (in-theory
                (e/d
                 (symbol-listp-of-strip-cars-when-atc-symbol-type-alistp)
@@ -4449,7 +4437,8 @@
                     collect `(not (equal (pointer->address ,var)
                                          (pointer->address ,var2)))))
        (more-hyps (atc-gen-diff-address-hyps (cdr pointer-vars))))
-    (append hyps more-hyps)))
+    (append hyps more-hyps))
+  :prepwork ((local (in-theory (enable acl2::loop-book-theory)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4524,8 +4513,7 @@
                           ,(atc-gen-cfun-final-compustate (cdr affect)
                                                           typed-formals
                                                           pointer-subst
-                                                          compst-var)))
-  :prepwork ((local (include-book "std/alists/top" :dir :system))))
+                                                          compst-var))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4943,8 +4931,7 @@
   :measure (pseudo-term-count term)
   :prepwork
   ((local (in-theory
-           (enable symbol-listp-of-strip-cars-when-atc-symbol-type-alistp)))
-   (local (include-book "std/typed-lists/symbol-listp" :dir :system))))
+           (enable symbol-listp-of-strip-cars-when-atc-symbol-type-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
