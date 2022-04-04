@@ -899,7 +899,7 @@
           (if (or (not (mbt (natp count)))
                   (= 0 count))
               (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-            (b* (;; Assume the test false (if not memoizing):
+            (b* (;; Assume the test false (if not memoizing): (TODO: Also augment the refined-assumption-alist, and then undo that):
                  ((mv node-replacement-array node-replacement-array-num-valid-nodes)
                   (if memoization ;can't use context if we are memoizing:
                       (mv node-replacement-array node-replacement-array-num-valid-nodes)
@@ -970,7 +970,7 @@
           (if (or (not (mbt (natp count)))
                   (= 0 count))
               (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-            (b* (;; Assume the test true
+            (b* (;; Assume the test true (if not memoizing): (TODO: Also augment the refined-assumption-alist, and then undo that):
                  ((mv node-replacement-array node-replacement-array-num-valid-nodes)
                   (if memoization ;can't use context if we are memoizing:
                       (mv node-replacement-array node-replacement-array-num-valid-nodes)
@@ -4104,48 +4104,42 @@
                                                                 NATP-WHEN-DARGP ;caused problems when natp is known
                                                                 ))))))
          ;; Could create a variant of ,simplify-tree-and-add-to-dag-name that is restricted to terms:
-         (b* ((dag-array (make-empty-array 'dag-array 1000000)) ;todo: make this size adjustable
-              (dag-parent-array (make-empty-array 'dag-parent-array 1000000)) ;todo: make this size adjustable
+         (b* (;; Create an empty dag-array:
+              (slack-amount 1000000) ;todo: make this adjustable
+              ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+               (empty-dag-array slack-amount))
+
               ;; Create the refined-assumption-alist and add nodes it refers to to the DAG:
               ((mv erp refined-assumption-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+               ;; TODO: Make a version specialized to these array names:
                (refine-assumptions-and-add-to-dag-array assumptions
-                                                        'dag-array dag-array
-                                                        0 ;dag-len
-                                                        'dag-parent-array dag-parent-array
-                                                        nil ;;dag-constant-alist
-                                                        nil ;;dag-variable-alist
+                                                        'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist
                                                         (known-booleans wrld)))
               ((when erp) (mv erp nil))
-              ;; TODO: Combine this with the above:
+
+              ;; Create the node-replacement-array (TODO: Consider combining this with the above, in a single pass through the assumptions):
               ((mv erp node-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+               ;; TODO: Make a version specialized to these array names:
                (make-node-replacement-alist-and-add-to-dag-array assumptions
-                                                                 'dag-array ;todo: make a specialized version?
-                                                                 dag-array dag-len
-                                                                 'dag-parent-array ;todo: make a specialized version?
-                                                                 dag-parent-array dag-constant-alist dag-variable-alist
+                                                                 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist
                                                                  wrld))
               ((when erp) (mv erp nil))
+              ;; TODO: Combine this with the above (don't actually create the node-replacement-alist):
               (node-replacement-array (make-into-array 'node-replacement-array node-replacement-alist))
               (node-replacement-array-num-valid-nodes (+ 1 (max-key node-replacement-alist 0))) ;todo: optimize if no assumptions?  the array len of 0 will prevent any lookup
-              ((mv erp
-                   new-nodenum-or-quotep
+
+              ;; Call the core term simplification function:
+              ((mv erp new-nodenum-or-quotep
                    dag-array
                    & & & & ; dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                   memoization
-                   info
-                   &                                          ; tries
-                   &                                          ; limits
-                   & ; node-replacement-array
+                   memoization info
+                   & & & ; tries limits node-replacement-array
                    )
                ;; TODO: Consider making a version of ,simplify-tree-and-add-to-dag-name that applies only to terms, not axe-trees, and calling it here.
                ;; TODO: Consider handling vars separately and then dropping support for vars in ,simplify-tree-and-add-to-dag-name.
                (,simplify-tree-and-add-to-dag-name term
                                                    nil ;trees-equal-to-tree
-                                                   dag-array
-                                                   dag-len
-                                                   dag-parent-array
-                                                   dag-constant-alist
-                                                   dag-variable-alist
+                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                    (if memoizep
                                                        (empty-memoization)
                                                      ;; not memoizing:
