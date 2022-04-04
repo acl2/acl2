@@ -2704,27 +2704,6 @@
                   (bitxor y x)))
   :hints (("Goal" :in-theory (e/d (bitxor) (BVXOR-1-BECOMES-BITXOR)))))
 
-(defthm slice-of-repeatbit
-   (implies (and (< high size)
-                 (<= low high)
-                 (natp low)
-                 (natp high)
-                 (natp size))
-            (equal (slice high low (repeatbit size bit))
-                   (repeatbit (+ 1 high (- low)) bit)))
-   :hints (("Goal" :do-not '(preprocess)
-            :use (:instance BVCHOP-OF-MASK-OTHER
-                            (size2 (+ 1 HIGH (- LOW)))
-                            (size1 (- size low))
-                            )
-            :in-theory (e/d (repeatbit slice
-                             ;bvplus bvchop logtail
-                                       )
-                            (;anti-slice BVPLUS-RECOLLAPSE
-                             BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                             BVCHOP-OF-MASK-OTHER
-                             )))))
-
 ;fixme
 (defthmd introduce-bvsx-25-7
   (equal (bvcat '25 (repeatbit '25 (getbit '7 x)) '7 x)
@@ -7947,3 +7926,98 @@
   (implies (integerp x)
            (equal (equal 0 (bvchop 32 (logext 8 x)))
                   (equal 0 (bvchop 8 x)))))
+
+;; Best to keep diabled or it could apply again
+(defthmd bvlt-split-top
+  (implies (posp size)
+           (equal (bvlt size x y)
+                  (or (and (equal 0 (getbit (+ -1 size) x))
+                           (equal 1 (getbit (+ -1 size) y)))
+                      (and (equal (getbit (+ -1 size) y)
+                                  (getbit (+ -1 size) x))
+                           (bvlt (+ -1 size) x y)))))
+  ::hints (("Goal" :use ((:instance split-bv
+                                    (n size)
+                                    (y (bvchop size x))
+                                    (m (+ -1 size)))
+                         (:instance split-bv
+                                    (n size)
+                                    (y (bvchop size y))
+                                    (m (+ -1 size))))
+            :in-theory (e/d (bvlt bvcat logapp
+                                  UNSIGNED-BYTE-P-OF-BVCHOP-TIGHTER)
+                            (BVCHOP-1-BECOMES-GETBIT
+                             ;slice-BECOMES-GETBIT
+                             REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER ; looped
+                             bvchop-identity
+                             logtail-equal-0 ;looped
+                             )))))
+
+;;Disabled since it can introduce case splits
+(defthmd bvlt-when-bvlt-narrower
+  (implies (and (bvlt freesize x y)
+                (syntaxp (quotep freesize))
+                (equal freesize (+ -1 size)))
+           (equal (bvlt size x y)
+                  (not (and (equal 1 (getbit (+ -1 size) x))
+                            (equal 0 (getbit (+ -1 size) y))))))
+  :hints (("Goal" :use (:instance bvlt-split-top))))
+
+(defthm bvlt-of-expt-of-one-less-arg3
+  (implies (posp size)
+           (equal (bvlt size x (expt 2 (+ -1 size)))
+                  (equal 0 (getbit (+ -1 size) x))))
+  :hints (("Goal" :in-theory (enable bvlt-split-top))))
+
+;enable?
+(defthmd bvlt-of-expt-of-one-less-arg3-constant-version
+  (implies (and (syntaxp (quotep k))
+                (equal k (expt 2 (+ -1 size)))
+                (posp size))
+           (equal (bvlt size x k)
+                  (equal 0 (getbit (+ -1 size) x))))
+  :hints (("Goal" :in-theory (enable bvlt-of-expt-of-one-less-arg3))))
+
+(defthm bvlt-of-one-less-of-expt-of-one-less-arg2
+  (implies (posp size)
+           (equal (bvlt size (+ -1 (expt 2 (+ -1 size))) x)
+                  (equal 1 (getbit (+ -1 size) x))))
+  :hints (("Goal" :in-theory (enable bvlt-split-top))))
+
+;enable?
+(defthmd bvlt-of-one-less-of-expt-of-one-less-arg2-constant-version
+  (implies (and (syntaxp (quotep k))
+                (equal k (+ -1 (expt 2 (+ -1 size))))
+                (posp size))
+           (equal (bvlt size k x)
+                  (equal 1 (getbit (+ -1 size) x))))
+  :hints (("Goal" :in-theory (enable bvlt-of-one-less-of-expt-of-one-less-arg2))))
+
+
+(defthm bvchop-when-top-bit-0-linear-cheap
+  (implies (and (equal 0 (getbit (+ -1 size) x))
+                (posp size))
+           (< (bvchop size x)
+              (expt 2 (+ -1 size))))
+  :rule-classes ((:linear :backchain-limit-lst (1 nil)
+                          :trigger-terms ((BVCHOP SIZE X))
+                          ))
+  :hints (("Goal" :use (:instance split-bv
+                                  (y (bvchop size x))
+                                  (n size)
+                                  (m (+ -1 size)))
+           :in-theory (enable bvcat logapp))))
+
+(defthm bvchop-when-top-bit-1-linear-cheap
+  (implies (and (equal 1 (getbit (+ -1 size) x))
+                (posp size))
+           (<= (expt 2 (+ -1 size))
+               (bvchop size x)))
+  :rule-classes ((:linear :backchain-limit-lst (1 nil)
+                          :trigger-terms ((BVCHOP SIZE X))
+                          ))
+  :hints (("Goal" :use (:instance split-bv
+                                  (y (bvchop size x))
+                                  (n size)
+                                  (m (+ -1 size)))
+           :in-theory (enable bvcat logapp))))

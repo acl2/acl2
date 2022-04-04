@@ -14,6 +14,8 @@
 (include-book "repeatbit")
 (include-book "bvchop")
 (include-book "logtail")
+(include-book "slice-def")
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -36,3 +38,23 @@
                   (repeatbit (- size n) bit)))
   :hints (("Goal" :in-theory (enable repeatbit logtail
                                      expt-of-+))))
+
+(defthm slice-of-repeatbit
+   (implies (and (< high size)
+                 (natp low)
+                 (natp high)
+                 (integerp size))
+            (equal (slice high low (repeatbit size bit))
+                   (repeatbit (+ 1 high (- low)) bit)))
+   :hints (("Goal" :do-not '(preprocess)
+            :use (:instance BVCHOP-OF-MASK-OTHER
+                            (size2 (+ 1 HIGH (- LOW)))
+                            (size1 (- size low))
+                            )
+            :in-theory (e/d (repeatbit slice
+                             ;bvplus bvchop logtail
+                                       )
+                            (;anti-slice BVPLUS-RECOLLAPSE
+                             BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                             BVCHOP-OF-MASK-OTHER
+                             )))))
