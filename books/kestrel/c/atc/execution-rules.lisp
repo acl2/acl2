@@ -79,6 +79,7 @@
                                        exec-const
                                        exec-iconst
                                        exec-arrsub
+                                       exec-memberp
                                        exec-unary
                                        exec-cast
                                        exec-binary-strict-pure
