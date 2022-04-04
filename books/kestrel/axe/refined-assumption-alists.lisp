@@ -175,6 +175,7 @@
 ;; axe-trees, all of which are function calls applied to args that are nodenums
 ;; / quoteps.  We use "term indexing": the alist maps each topmost function to
 ;; a list of arg-lists (one for each call of fn in the list).
+;; TODO: Consider using a propery list world instead of an alist.
 
 ;could add more checks to this
 (defun refined-assumption-alistp (alist)
@@ -185,7 +186,7 @@
       (and (consp entry)
            (symbolp (car entry)) ;; should lambdas be allowed?
            ;; (not (eq 'quote (car entry))) ;; TODO: Uncomment
-           (dargp-list-listp (cdr entry)) ;(true-listp (cdr entry)) ; check that each member of (cdr entry) is a list of nodenum/quoteps
+           (dargp-list-listp (cdr entry)) ; check that each member of (cdr entry) is a list of nodenum/quoteps
            (refined-assumption-alistp (cdr alist))))))
 
 (defthm symbol-alistp-when-refined-assumption-alistp-cheap
