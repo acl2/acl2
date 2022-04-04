@@ -275,6 +275,7 @@
 
      ;; Handling rotates (32 bit):
      rightrotate32-becomes-leftrotate32-gen ;turn rightrotate32 into leftrotate32
+     getbit-of-leftrotate32-simple
      leftrotate32-of-0-arg1
      leftrotate32-of-0-arg2
      leftrotate32-of-bvchop-arg2
