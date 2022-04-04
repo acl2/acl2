@@ -18,7 +18,9 @@
 ;;; dag-function-call-exprp
 ;;;
 
-;; See dag-function-call-exprp-redef below for a better definition.
+;; See dag-function-call-exprp-redef below for a better definition (calls dargs
+;; instead of fargs; can't call dargs here because this function is the guard
+;; of dargs)).
 (defund dag-function-call-exprp (expr)
   (declare (xargs :guard t))
   (and (consp expr)
