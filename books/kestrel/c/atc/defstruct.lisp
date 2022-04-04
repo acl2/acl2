@@ -133,7 +133,10 @@
     (xdoc::li
      "The name of a theorem asserting that
       if something is a structure of this type
-      then it is not an error."))
+      then it is not an error.")
+    (xdoc::li
+     "The name of the theorem asserting that
+      the recognizer implies @(tsee structp)."))
    (xdoc::p
     "The call of @(tsee defstruct).
      This supports redundancy checking."))
@@ -145,6 +148,7 @@
    (writers symbol-listp)
    (return-thms symbol-listp)
    (not-error-thm symbolp)
+   (structp-thm symbolp)
    (call pseudo-event-form))
   :pred defstruct-infop)
 
@@ -511,7 +515,8 @@
                                   (tag symbolp)
                                   (members member-info-listp))
   :returns (mv (event pseudo-event-formp)
-               (not-error-thm symbolp))
+               (not-error-thm symbolp)
+               (structp-thm symbolp))
   :short "Generate the recognizer of
           the structures defined by the @(tsee defstruct)."
   :long
@@ -522,9 +527,16 @@
    (xdoc::p
     "We also generate a theorem saying that
      if something satisfies this recognizer then it is not an error.
-     We return the name of the theorem as well."))
+     We return the name of the theorem.")
+   (xdoc::p
+    "We also generate a theorem saying that the recognizer
+     implies @(tsee structp).
+     We return the name of the theorem."))
   (b* ((not-errorp-when-struct-tag-p
         (packn-pos (list 'not-errorp-when- struct-tag-p)
+                   struct-tag-p))
+       (structp-when-struct-tag-p
+        (packn-pos (list 'structp-when- struct-tag-p)
                    struct-tag-p))
        (event
         `(define ,struct-tag-p (x)
@@ -539,8 +551,14 @@
            (defrule ,not-errorp-when-struct-tag-p
              (implies (,struct-tag-p x)
                       (not (errorp x)))
-             :enable (errorp ,struct-tag-p structp)))))
-    (mv event not-errorp-when-struct-tag-p)))
+             :enable (errorp ,struct-tag-p structp))
+           (defrule ,structp-when-struct-tag-p
+             (implies (,struct-tag-p x)
+                      (structp x))
+             :in-theory '(,struct-tag-p)))))
+    (mv event
+        not-errorp-when-struct-tag-p
+        structp-when-struct-tag-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -807,7 +825,9 @@
        (struct-tag-p (packn-pos (list struct-tag '-p) tag))
        (struct-tag-fix (packn-pos (list struct-tag '-fix) tag))
        (struct-tag-equiv (packn-pos (list struct-tag '-equiv) tag))
-       ((mv recognizer-event not-errorp-when-struct-tag-p)
+       ((mv recognizer-event
+            not-errorp-when-struct-tag-p
+            structp-when-struct-tag-p)
         (defstruct-gen-recognizer struct-tag-p tag members))
        (fixer-event (defstruct-gen-fixer
                       struct-tag-fix struct-tag-p tag members))
@@ -829,6 +849,7 @@
                                   :writers writer-names
                                   :return-thms return-thms
                                   :not-error-thm not-errorp-when-struct-tag-p
+                                  :structp-thm structp-when-struct-tag-p
                                   :call call))
        (table-event (defstruct-table-record-event (symbol-name tag) info)))
     `(progn
