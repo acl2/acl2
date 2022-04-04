@@ -88,6 +88,16 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable dag-function-call-exprp))))
 
+(defthm dag-function-call-exprp-of-cons
+  (equal (dag-function-call-exprp (cons fn args))
+         (and (symbolp fn)
+              (not (eq 'quote fn))
+              (all-dargp args)
+              (true-listp args)))
+  :hints (("Goal" :in-theory (enable dag-function-call-exprp-redef))))
+
+
+
 ;todo: rename to dag-exprp once that one is renamed
 ;; A expression that can appear at a DAG node must be a variable, quoted constant, or function symbol applied to nodenums/constants.
 ;; Note that we do not allow simply the number of another node.  Also, note that lambdas applications are not allowed  (each function must be a symbol).

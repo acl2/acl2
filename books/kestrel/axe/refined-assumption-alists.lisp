@@ -314,30 +314,30 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-refined-assumption-alistp))))
 
-;does not check that the nodenums are not too big
-;todo: replace?  just use DAG-FUNCTION-CALL-EXPRP?
-;a kind of axe-tree
-(defund weak-dag-fun-call-exprp (expr)
-  (declare (xargs :guard t))
-  (and (consp expr)
-       (symbolp (ffn-symb expr)) ;disallows lambdas
-       (not (eq 'quote (ffn-symb expr)))
-       (dargp-listp (fargs expr))))
+;; ;does not check that the nodenums are not too big
+;; ;todo: replace?  just use DAG-FUNCTION-CALL-EXPRP?
+;; ;a kind of axe-tree
+;; (defund weak-dag-fun-call-exprp (expr)
+;;   (declare (xargs :guard t))
+;;   (and (consp expr)
+;;        (symbolp (ffn-symb expr)) ;disallows lambdas
+;;        (not (eq 'quote (ffn-symb expr)))
+;;        (dargp-listp (fargs expr))))
 
-(defthm weak-dag-fun-call-exprp-forward-to-true-listp
-  (implies (weak-dag-fun-call-exprp expr)
-           (true-listp expr))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable weak-dag-fun-call-exprp))))
+;; (defthm weak-dag-fun-call-exprp-forward-to-true-listp
+;;   (implies (weak-dag-fun-call-exprp expr)
+;;            (true-listp expr))
+;;   :rule-classes :forward-chaining
+;;   :hints (("Goal" :in-theory (enable weak-dag-fun-call-exprp))))
 
-(defthm weak-dag-fun-call-exprp-of-cons
-  (equal (weak-dag-fun-call-exprp (cons fn args))
-         (and (symbolp fn)
-              (not (eq 'quote fn))
-              (dargp-listp args)))
-  :hints (("Goal" :in-theory (enable weak-dag-fun-call-exprp))))
+;; (defthm weak-dag-fun-call-exprp-of-cons
+;;   (equal (weak-dag-fun-call-exprp (cons fn args))
+;;          (and (symbolp fn)
+;;               (not (eq 'quote fn))
+;;               (dargp-listp args)))
+;;   :hints (("Goal" :in-theory (enable weak-dag-fun-call-exprp))))
 
-(defforall all-weak-dag-fun-call-exprp (items) (weak-dag-fun-call-exprp items)
+(defforall all-dag-function-call-exprp (items) (dag-function-call-exprp items)
   :declares ((type t items)))
 
 (defthm all-dargp-listp-of-lookup-equal
@@ -352,7 +352,7 @@
 ;the exprs are fn calls applied to nodenums / quoteps
 (defund extend-refined-assumption-alist (exprs acc)
   (declare (xargs :guard (and (true-listp exprs)
-                              (all-weak-dag-fun-call-exprp exprs)
+                              (all-dag-function-call-exprp exprs)
                               (refined-assumption-alistp acc))))
   (if (endp exprs)
       (uniquify-alist-eq acc)
@@ -368,33 +368,33 @@
 
 (defthm refined-assumption-alistp-of-extend-refined-assumption-alist
   (implies (and (refined-assumption-alistp acc)
-                (all-weak-dag-fun-call-exprp exprs))
+                (all-dag-function-call-exprp exprs))
            (refined-assumption-alistp (extend-refined-assumption-alist exprs acc)))
   :hints (("Goal" :in-theory (enable extend-refined-assumption-alist))))
 
 (defthm bounded-refined-assumption-alistp-of-extend-refined-assumption-alist
   (implies (and (bounded-refined-assumption-alistp acc bound)
-                (all-weak-dag-fun-call-exprp exprs)
+                (all-dag-function-call-exprp exprs)
                 (all-bounded-axe-treep exprs bound))
            (bounded-refined-assumption-alistp (extend-refined-assumption-alist exprs acc) bound))
   :hints (("Goal" :expand ((all-bounded-axe-treep exprs bound)
                            (bounded-axe-treep (car exprs) bound)
-                           (all-weak-dag-fun-call-exprp exprs))
+                           (all-dag-function-call-exprp exprs))
            :in-theory (enable bounded-refined-assumption-alistp extend-refined-assumption-alist
-                              weak-dag-fun-call-exprp))))
+                              dag-function-call-exprp))))
 
 (defund make-refined-assumption-alist (exprs)
   (declare (xargs :guard (and (true-listp exprs)
-                              (all-weak-dag-fun-call-exprp exprs))))
+                              (all-dag-function-call-exprp exprs))))
   (extend-refined-assumption-alist exprs nil))
 
 (defthm refined-assumption-alistp-of-make-refined-assumption-alist
-  (implies (all-weak-dag-fun-call-exprp exprs)
+  (implies (all-dag-function-call-exprp exprs)
            (refined-assumption-alistp (make-refined-assumption-alist exprs)))
   :hints (("Goal" :in-theory (enable make-refined-assumption-alist))))
 
 (defthm bounded-refined-assumption-alistp-of-make-refined-assumption-alist
-  (implies (and (all-weak-dag-fun-call-exprp exprs)
+  (implies (and (all-dag-function-call-exprp exprs)
                 (all-bounded-axe-treep exprs bound))
            (bounded-refined-assumption-alistp (make-refined-assumption-alist exprs) bound))
   :hints (("Goal" :in-theory (enable make-refined-assumption-alist
@@ -531,16 +531,16 @@
                                                   (cons (cons (ffn-symb assumption) nodenums-or-quoteps)
                                                         acc))))))))
 
-(defthm all-weak-dag-fun-call-exprp-of-mv-nth-1-of-add-refined-assumptions-to-dag-array
+(defthm all-dag-function-call-exprp-of-mv-nth-1-of-add-refined-assumptions-to-dag-array
   (implies (and (pseudo-term-listp assumptions)
                 (all-consp assumptions)                 ;todo: what if quoted?
                 (symbol-listp (strip-cars assumptions)) ;strengthen?
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 ;;no error:
                 (not (mv-nth 0 (add-refined-assumptions-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc)))
-                (all-weak-dag-fun-call-exprp acc)
+                (all-dag-function-call-exprp acc)
                 )
-           (all-weak-dag-fun-call-exprp (mv-nth 1 (add-refined-assumptions-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc))))
+           (all-dag-function-call-exprp (mv-nth 1 (add-refined-assumptions-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc))))
   :hints (("Goal" :expand (pseudo-termp (car assumptions))
            :in-theory (enable pseudo-termp add-refined-assumptions-to-dag-array symbol-listp))))
 
