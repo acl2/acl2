@@ -115,6 +115,7 @@
                              monitored-rules
                              nil ; memoizep
                              nil ; count-hits
+                             nil ; print
                              (w state)))
        ((when erp) (mv erp nil state))
        ((when (quotep simplified-dag-or-quotep))

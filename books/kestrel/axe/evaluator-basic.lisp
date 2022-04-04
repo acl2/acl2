@@ -103,7 +103,7 @@
     (max max-unguarded)
     (integer-length integer-length-unguarded)
     ;; (return-last return-last-unguarded) ;we don't want to execute this normally, because that would mean executing the eager-arg
-;    (width-of-widest-int width-of-widest-int-unguarded)
+    (width-of-widest-int width-of-widest-int-unguarded)
 
     ;; bv functions:
 

@@ -183,3 +183,17 @@
   :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit
                                             leftrotate32
                                             slice-becomes-getbit)))))
+
+(defthmd getbit-of-leftrotate32-simple
+  (implies (and (syntaxp (and (quotep amt)
+                              (quotep n)))
+                (< amt 32) ; avoids mod in rhs
+                (natp n)
+                (natp amt))
+           (equal (getbit n (leftrotate32 amt x))
+                  (if (< n 32)
+                      (if (< n amt) ; this case
+                          (getbit (+ 32 (- amt) n) x)
+                        (getbit (- n amt) x))
+                    0)))
+  :hints (("Goal" :in-theory (enable leftrotate32))))

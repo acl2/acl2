@@ -4081,6 +4081,7 @@
                                     memoizep
                                     ;; todo: add context array and other args?
                                     count-hits
+                                    print
                                     wrld)
          (declare (xargs :guard (and (pseudo-termp term)
                                      (pseudo-term-listp assumptions)
@@ -4089,6 +4090,7 @@
                                      (symbol-listp monitored-symbols)
                                      (booleanp memoizep)
                                      (booleanp count-hits)
+                                     (axe-print-levelp print)
                                      (plist-worldp wrld))
                          :guard-hints (("Goal" :in-theory (e/d (natp-when-dargp
                                                                 natp-of-+-of-1
@@ -4158,7 +4160,7 @@
                                                    rule-alist
                                                    refined-assumption-alist
                                                    node-replacement-array-num-valid-nodes
-                                                   nil ;print ;todo: pass a print arg
+                                                   print
                                                    interpreted-function-alist
                                                    (known-booleans wrld) ;skip if memoizing since we can't use contexts?
                                                    monitored-symbols
@@ -4175,7 +4177,7 @@
              (mv (erp-nil) (drop-non-supporters-array 'dag-array dag-array new-nodenum-or-quotep nil)))))
 
        (defthm ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)
-         (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld))) ; no error
+         (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))) ; no error
                    (pseudo-termp term)
                    (pseudo-term-listp assumptions)
                    (rule-alistp rule-alist)
@@ -4184,8 +4186,8 @@
                    (booleanp memoizep)
                    (booleanp count-hits)
                    (plist-worldp wrld))
-                  (or (myquotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld)))
-                      (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld)))))
+                  (or (myquotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld)))
+                      (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld)))))
          :rule-classes nil
          :hints (("Goal" :in-theory (e/d (,simplify-term-name
                                           axe-treep-when-pseudo-termp
@@ -4200,8 +4202,8 @@
                                          (natp)))))
 
        (defthm ,(pack$ 'consp-of-cdr-of-mv-nth-1-of- simplify-term-name '-when-quotep)
-         (implies (and (equal 'quote (car (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld))))
-                       (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld))) ; no error
+         (implies (and (equal 'quote (car (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))))
+                       (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))) ; no error
                        (pseudo-termp term)
                        (pseudo-term-listp assumptions)
                        (rule-alistp rule-alist)
@@ -4210,12 +4212,12 @@
                        (booleanp memoizep)
                        (booleanp count-hits)
                        (plist-worldp wrld))
-                  (consp (cdr (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld)))))
+                  (consp (cdr (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld)))))
          :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
        (defthm ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name)
-         (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld))) ; no error
-                       (not (quotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld)))) ;not a constant
+         (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))) ; no error
+                       (not (quotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld)))) ;not a constant
                        (pseudo-termp term)
                        (pseudo-term-listp assumptions)
                        (rule-alistp rule-alist)
@@ -4224,12 +4226,12 @@
                        (booleanp memoizep)
                        (booleanp count-hits)
                        (plist-worldp wrld))
-                  (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld))))
+                  (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))))
          :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
        ;; (defthm ,(pack$ 'weak-dagp-of-mv-nth-1-of- simplify-term-name)
-       ;;   (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld)))
-       ;;                 (not (quotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld))))
+       ;;   (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld)))
+       ;;                 (not (quotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))))
        ;;                 (pseudo-termp term)
        ;;                 (pseudo-term-listp assumptions)
        ;;                 (rule-alistp rule-alist)
@@ -4238,7 +4240,7 @@
        ;;                 (booleanp memoizep)
        ;;                 (booleanp count-hits)
        ;;                 (plist-worldp wrld))
-       ;;            (weak-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld))))
+       ;;            (weak-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))))
        ;;   :hints (("Goal" :use (:instance ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))
        ;;            :in-theory (disable ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name)))))
 
@@ -4251,6 +4253,7 @@
                                 memoizep
                                 ;; todo: add context array and other args?
                                 count-hits
+                                print
                                 wrld)
          (declare (xargs :guard (and (pseudo-termp term)
                                      (pseudo-term-listp assumptions)
@@ -4259,6 +4262,7 @@
                                      (symbol-listp monitored-symbols)
                                      (booleanp memoizep)
                                      (booleanp count-hits)
+                                     (axe-print-levelp print)
                                      (plist-worldp wrld))))
          (b* (((mv erp dag) (,simplify-term-name term
                                                  assumptions
@@ -4268,6 +4272,7 @@
                                                  memoizep
                                                  ;; todo: add context array and other args?
                                                  count-hits
+                                                 print
                                                  wrld))
               ((when erp) (mv erp nil)))
            (mv (erp-nil) (if (quotep dag)
@@ -4283,7 +4288,7 @@
                        (booleanp memoizep)
                        (booleanp count-hits)
                        (plist-worldp wrld))
-                  (pseudo-termp (mv-nth 1 (,simp-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld))))
+                  (pseudo-termp (mv-nth 1 (,simp-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))))
          :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name))
                   :in-theory (e/d (,simp-term-name) (,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))))))
 
@@ -4297,6 +4302,7 @@
                                 memoizep
                                 ;; todo: add context array and other args?
                                 count-hits
+                                print
                                 wrld)
          (declare (xargs :guard (and (pseudo-term-listp terms)
                                      (pseudo-term-listp assumptions)
@@ -4305,6 +4311,7 @@
                                      (symbol-listp monitored-symbols)
                                      (booleanp memoizep)
                                      (booleanp count-hits)
+                                     (axe-print-levelp print)
                                      (plist-worldp wrld))))
          (if (endp terms)
              (mv (erp-nil) nil)
@@ -4316,6 +4323,7 @@
                                   nil
                                   nil
                                   t
+                                  print
                                   wrld))
                 ((when erp) (mv erp nil))
                 ((mv erp rest-res)
@@ -4326,13 +4334,14 @@
                                    monitored-symbols
                                    memoizep
                                    count-hits
+                                   print
                                    wrld))
                 ((when erp) (mv erp nil)))
              (mv (erp-nil)
                  (cons first-res rest-res)))))
 
        (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- simp-terms-name)
-         (true-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld)))
+         (true-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld)))
          :rule-classes :type-prescription
          :hints (("Goal" :in-theory (enable ,simp-terms-name))))
 
@@ -4345,7 +4354,7 @@
                        (booleanp memoizep)
                        (booleanp count-hits)
                        (plist-worldp wrld))
-                  (pseudo-term-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits wrld))))
+                  (pseudo-term-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))))
          :hints (("Goal" :in-theory (enable ,simp-terms-name))))
        )))
 

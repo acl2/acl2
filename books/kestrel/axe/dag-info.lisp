@@ -1,7 +1,7 @@
-; Computing information about DAGs
+; Computing information and statistics about DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -19,6 +19,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
+(local (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system))
 
 (defun pair-with-rational-cdrp (x)
   (declare (xargs :guard t))
@@ -172,7 +173,7 @@
          ;; These usually get inlined (we could count those):
          ;; (constants (dag-constants dag))
          ;; (- (cw "~x0 constants~%" (len constants)))
-         (vars (dag-vars dag))
+         (vars (merge-sort-symbol< (dag-vars dag)))
          (- (cw " ~x0 Variables:~%" (len vars)))
          (- (print-symbols-4-per-line vars))
          (fns (dag-fns dag))
