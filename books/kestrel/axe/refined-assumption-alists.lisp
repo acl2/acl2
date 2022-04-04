@@ -101,7 +101,7 @@
                       ;;can't refine this assumption:
                       assumption)))))))))))
 
-(defthm pseudo-term-listp-of-refine-assumption-for-matching
+(defthm pseudo-termp-of-refine-assumption-for-matching
   (implies (pseudo-termp assumption)
            (pseudo-termp (refine-assumption-for-matching assumption known-boolean-fns)))
   :hints (("Goal" :in-theory (enable refine-assumption-for-matching))))
