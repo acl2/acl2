@@ -158,6 +158,7 @@
 (include-book "rebuild-literals")
 (include-book "rebuild-nodes2")
 (include-book "rebuild-nodes")
+(include-book "refine-assumptions")
 (include-book "refined-assumption-alists")
 (include-book "remove-duplicates-from-sorted-list")
 (include-book "renaming-array")
