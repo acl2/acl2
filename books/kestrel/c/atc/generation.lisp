@@ -592,6 +592,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-taginfo-alist-to-readers
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (readers symbol-listp)
+  :short "Project the readers out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (readers (defstruct-info->readers (atc-tag-info->struct info)))
+       (more-readers (atc-string-taginfo-alist-to-readers (cdr prec-tags))))
+    (append readers more-readers))
+  :prepwork
+  ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-string-taginfo-alist-to-not-error-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -4711,9 +4725,12 @@
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
         (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns called-fns))
-       (type-prescriptions
+       (type-prescriptions-called
         (loop$ for called in (strip-cars prec-fns)
                collect `(:t ,called)))
+       (type-prescriptions-struct-readers
+        (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
+               collect `(:t ,reader)))
        (hints `(("Goal"
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
@@ -4722,7 +4739,8 @@
                                not
                                ,fn
                                ,@result-thms
-                               ,@type-prescriptions
+                               ,@type-prescriptions-called
+                               ,@type-prescriptions-struct-readers
                                ,@correct-thms
                                ,@measure-thms
                                ,fn-fun-env-thm))
