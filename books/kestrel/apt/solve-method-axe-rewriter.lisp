@@ -76,6 +76,7 @@
                                              nil ; monitored-symbols
                                              nil ; memoizep
                                              nil ; count-hits
+                                             nil ; print
                                              wrld))
        ((when erp) (er-soft+ ctx t nil
                              "The Axe rewiter failed on the term ~x0, ~

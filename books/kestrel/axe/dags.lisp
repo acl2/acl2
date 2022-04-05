@@ -707,6 +707,7 @@
            (symbol-listp (dag-vars-aux dag acc)))
   :hints (("Goal" :in-theory (enable weak-dagp dag-exprp0))))
 
+;; The result is not necessarily sorted
 (defund dag-vars (dag)
   (declare (xargs :guard (or (quotep dag)
                              (alistp dag))))

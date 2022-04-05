@@ -106,9 +106,7 @@
                               (booleanp produce-theorem))
                   :stobjs state
                   :mode :program ;; because this calls translate (todo: factor that out)
-                  )
-           (ignore print) ;todo
-           )
+                  ))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
        ((when (and (not produce-function)
@@ -146,16 +144,13 @@
                     (opener-rules-for-fns defined-supporting-fns t '-for-unroll-spec-basic nil nil state))
                    (- (cw "Will use the following ~x0 additional rules: ~X12~%" (len rule-names) rule-names nil))
                    ;; todo: name this rule set?:  what else should go in it
+                   ;; try to use unroll-spec-basic-rules here
                    (rule-names (append '(;consp-of-cons  ; about primitives ; todo: when else might be needed?
                                          ;car-cons
                                          ;cdr-cons
-                                         list-to-bv-array
-                                         BVCAT-OF-IFIX-ARG2 ; add to core-rules-bv
-                                         BVCAT-OF-IFIX-ARG4 ; add to core-rules-bv
-                                         BV-ARRAY-WRITE-OF-BVCHOP-ARG3
-                                         BV-ARRAY-WRITE-OF-BVCHOP-ARG4
                                          )
                                        (bv-array-rules-simple)
+                                       (list-to-bv-array-rules)
                                        (type-rules) ; give us type facts about bv ops
                                        (set-difference-eq (core-rules-bv)
                                                           ;; these are kind of like trim rules, and can make the result worse:
@@ -163,7 +158,6 @@
                                                             BVCHOP-OF-bvuminus
                                                             ))
                                        (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
-                                       '(LIST-TO-BV-ARRAY-AUX-BASE LIST-TO-BV-ARRAY-AUX-unroll) ; todo: make an "of cons" rule
                                        (unsigned-byte-p-forced-rules)
                                        rule-names)))
                 ;; todo: this doesn't include any standard rules -- should it?  they could loop with the openers (e.g., nth-of-cdr)
@@ -187,10 +181,9 @@
                              monitor
                              memoizep
                              count-hits
+                             print
                              (w state)
-                             ;; :assumptions assumptions
                              ;; :simplify-xorsp simplify-xorsp
-                             ;; :print print
                              ))
        ((when erp)
         (mv erp nil state))
@@ -264,7 +257,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         `(progn (defconst ,defconst-name ',dag)
                 ,@(and produce-function `((,defun-variant ,function-name ,function-params ,function-body)))
                 ,@(and produce-theorem (list theorem))
-                (table unroll-spec-basic-table ',whole-form ':fake)
+                (with-output :off :all (table unroll-spec-basic-table ',whole-form ':fake))
                 (value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
                 )
         state)))

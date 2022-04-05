@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -355,7 +355,8 @@
            (equal (sbvlt size (bvsx size size2 x) y)
                   (sbvlt size2 x y)))
   :hints (("Goal" :cases ((equal size size2))
-           :in-theory (e/d (bvsx bvlt-of-bvcat-trim-gen boolor bvlt trim sbvlt-rewrite)
+           :in-theory (e/d (bvsx bvlt-of-bvcat-trim-gen boolor bvlt trim sbvlt-rewrite
+                                 BVCHOP-TOP-BIT-CASES)
                                   (EXPONENTS-ADD
                                    ;BVCAT-OF-+-HIGH ;looped
                                    BVLT-OF-BVCHOP-ARG3-SAME

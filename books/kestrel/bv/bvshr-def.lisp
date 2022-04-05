@@ -28,6 +28,6 @@
                               (<= shift-amount width) ;what happens if they're equal? i guess we get 0
                               )
                   :split-types t)
-           (type (integer 0 *) shift-amount)
-           (type integer x width))
+           (type (integer 0 *) shift-amount width)
+           (type integer x))
   (slice (+ -1 width) shift-amount x))

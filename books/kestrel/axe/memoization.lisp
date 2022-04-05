@@ -34,7 +34,7 @@
 ;; TODO: Consider making a separate memoization for tree that are functions applied to simplified args (common).
 ;; TODO: Consider using an info world for the memoization (to make it per head symbol)
 ;; TODO: Consider memoizing only destructor trees, not constructor trees
-;; NOTE: For anything we won't memoize, we should avoid consing it onto tree-equal-to-tree in the rewriter
+;; NOTE: For anything we won't memoize, we should avoid consing it onto trees-equal-to-tree in the rewriter
 
 ;maybe we should think of the memoization as part of the dag (it is just a list of equalities which mention nodenums from the dag)
 
@@ -95,6 +95,7 @@
 (mutual-recursion
 
  ;; If OBJECT is a ground-term, this should return ACC (usually 0).
+ ;; TODO: Can variables actually occur in this?
  (defun sum-of-nodenums-aux (object acc)
    (declare (xargs :guard (and (axe-treep object)
                                (natp acc))
@@ -275,7 +276,7 @@
 ;;; lookup-in-memoization
 ;;;
 
-;; Returns a nodenum/quotep (to which to memozation equates TREE), or nil
+;; Returns a nodenum/quotep (to which the memozation equates TREE), or nil
 ;; (meaning TREE is not equated to anything in the memoization).
 ;todo: check *fns-not-to-memoize*?
 ;todo: can't we sort the memoization by function symbol?

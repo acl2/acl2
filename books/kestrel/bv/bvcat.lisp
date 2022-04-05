@@ -1491,3 +1491,10 @@
   :hints (("Goal" :in-theory (enable bvcat logapp
                                      BVCHOP-OF-SUM-CASES
                                      EXPT-OF-+))))
+
+;; todo: consider generalizing this
+(defthm bvcat-1-1-lowsize-0
+  (implies (posp lowsize)
+           (equal (bvcat 1 1 lowsize 0)
+                  (expt 2 lowsize)))
+  :hints (("Goal" :in-theory (enable bvcat logapp))))
