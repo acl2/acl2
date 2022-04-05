@@ -18,7 +18,9 @@
 ;;; dag-function-call-exprp
 ;;;
 
-;; See dag-function-call-exprp-redef below for a better definition.
+;; See dag-function-call-exprp-redef below for a better definition (calls dargs
+;; instead of fargs; can't call dargs here because this function is the guard
+;; of dargs)).
 (defund dag-function-call-exprp (expr)
   (declare (xargs :guard t))
   (and (consp expr)
@@ -85,6 +87,16 @@
            (true-listp (dargs expr)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable dag-function-call-exprp))))
+
+(defthm dag-function-call-exprp-of-cons
+  (equal (dag-function-call-exprp (cons fn args))
+         (and (symbolp fn)
+              (not (eq 'quote fn))
+              (all-dargp args)
+              (true-listp args)))
+  :hints (("Goal" :in-theory (enable dag-function-call-exprp-redef))))
+
+
 
 ;todo: rename to dag-exprp once that one is renamed
 ;; A expression that can appear at a DAG node must be a variable, quoted constant, or function symbol applied to nodenums/constants.
@@ -190,6 +202,16 @@
                 (natp n)
                 (not (equal 'quote (nth 0 expr))))
            (equal (natp (nth n (dargs expr)))
+                  (not (consp (nth n (dargs expr))))))
+  :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp
+                                     not-<-of-0-and-nth-when-all-dargp))))
+
+(defthm rationalp-of-nth-of-dargs
+  (implies (and (dag-exprp0 expr)
+                (< n (len (dargs expr)))
+                (natp n)
+                (not (equal 'quote (nth 0 expr))))
+           (equal (rationalp (nth n (dargs expr)))
                   (not (consp (nth n (dargs expr))))))
   :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp
                                      not-<-of-0-and-nth-when-all-dargp))))

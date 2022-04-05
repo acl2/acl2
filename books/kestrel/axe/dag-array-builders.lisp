@@ -765,3 +765,21 @@
   :hints (("Goal" :in-theory (enable wf-dagp
                                      ;dag-variable-alist-correct-after-add-function-call-expr-to-dag-array
                                      dag-constant-alist-correct-after-add-function-call-expr-to-dag-array))))
+
+;; Returns (mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+(defund empty-dag-array (slack-amount)
+  (declare (xargs :guard (and (posp slack-amount)
+                              (<= slack-amount 2147483646))))
+  (mv (make-empty-array 'dag-array slack-amount)
+      0
+      (make-empty-array 'dag-parent-array slack-amount)
+      nil
+      nil))
+
+(defthm wf-dagp-after-empty-dag-array
+  (implies (and (posp slack-amount)
+                (<= slack-amount 2147483646))
+           (mv-let (dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (empty-dag-array slack-amount)
+             (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)))
+  :hints (("Goal" :in-theory (enable wf-dagp empty-dag-array))))

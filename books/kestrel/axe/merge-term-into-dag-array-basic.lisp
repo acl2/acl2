@@ -450,6 +450,23 @@
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type)
            :in-theory (disable merge-term-into-dag-array-basic-return-type))))
 
+(defthm mv-nth-3-of-merge-term-into-dag-array-basic-bound-linear
+  (implies (and (pseudo-termp term)
+                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                (symbol-alistp var-replacement-alist)
+                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                ;;no errors:
+                (not (mv-nth 0 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (<= (mv-nth 3 (merge-term-into-dag-array-basic
+                          term
+                          var-replacement-alist
+                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                          interpreted-function-alist))
+               2147483646))
+  :rule-classes (:linear :rewrite)
+  :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type)
+           :in-theory (e/d (wf-dagp) (merge-term-into-dag-array-basic-return-type)))))
+
 (defthm dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-basic
   (implies (and (<= (mv-nth 3 (merge-term-into-dag-array-basic
                                term
@@ -537,6 +554,30 @@
               bound))
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type-corollary3)
            :in-theory (disable merge-term-into-dag-array-basic-return-type-corollary3))))
+
+
+(defthm merge-term-into-dag-array-basic-return-type-corollary6
+  (implies (and (pseudo-termp term)
+                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                (symbol-alistp var-replacement-alist)
+                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                ;;no errors:
+                (not (mv-nth 0 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
+                (not (consp (mv-nth 1 (merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
+                )
+           (< (mv-nth 1 (merge-term-into-dag-array-basic
+                         term
+                         var-replacement-alist
+                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                         interpreted-function-alist))
+              2147483646))
+  :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type-corollary3-gen
+                                  (bound 2147483646)
+                                  )
+           :in-theory (disable merge-term-into-dag-array-basic-return-type
+                               dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-basic
+                               MERGE-TERM-INTO-DAG-ARRAY-BASIC-RETURN-TYPE-COROLLARY
+                               merge-term-into-dag-array-basic-return-type-corollary3-gen))))
 
 ;use consp as the normal form
 (defthm merge-term-into-dag-array-basic-return-type-corollary4

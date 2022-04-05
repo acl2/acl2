@@ -22,6 +22,7 @@
 
 ;; Check that EXPR is a suitable DAG expr for node NODENUM.  That is, EXPR must
 ;; be a dag-expr and all nodenums it mentions must be less that NODENUM.
+;; TODO: Put the bound second, to match dargp-less-than?
 (defund bounded-dag-exprp (nodenum expr)
   (declare (type (integer 0 *) nodenum))
   (and (dag-exprp0 expr)
@@ -384,3 +385,33 @@
                   (myquotep expr)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
+
+;;;
+;;; all-bounded-dag-exprp
+;;;
+
+(defund all-bounded-dag-exprp (nodenum exprs)
+  (declare (type (integer 0 *) nodenum))
+  (if (atom exprs)
+      t
+    (and (bounded-dag-exprp nodenum (first exprs))
+         (all-bounded-dag-exprp nodenum (rest exprs)))))
+
+(defthm all-bounded-dag-exprp-of-cons
+  (equal (all-bounded-dag-exprp nodenum (cons expr exprs))
+         (and (bounded-dag-exprp nodenum expr)
+              (all-bounded-dag-exprp nodenum exprs)))
+  :hints (("Goal" :in-theory (enable all-bounded-dag-exprp))))
+
+(defthm all-bounded-dag-exprp-of-nil
+  (all-bounded-dag-exprp nodenum nil)
+  :hints (("Goal" :in-theory (enable all-bounded-dag-exprp))))
+
+(defthm all-bounded-dag-exprp-monotone
+  (implies (and (all-bounded-dag-exprp nodenum2 exprs)
+                (<= nodenum2 nodenum)
+                ;(integerp nodenum)
+                ;(integerp nodenum2)
+                )
+           (all-bounded-dag-exprp nodenum exprs))
+  :hints (("Goal" :in-theory (enable all-bounded-dag-exprp))))
