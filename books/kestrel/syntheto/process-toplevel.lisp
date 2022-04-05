@@ -222,6 +222,7 @@
 
 (define process-syntheto-toplevel-fn (top/tops state)
   ;:returns (mv erp (outcomes outcome-listp) state)
+  :parents (syntheto)
   :short "Translate a Syntheto top-level construct, or a list of them,
           into corresponding ACL2 events and execute them, returning a list of outcomes."
   :long
@@ -278,6 +279,7 @@
     (value `(progn ,@events (value-triple ',make-final-outcome-form)))))
 
 (defmacro+ process-syntheto-toplevel (top/tops)
+  :parents (syntheto)
   :short "Translate to ACL2 and Syntheto top-level construct or a list of them."
   :long
   (xdoc::topstring
