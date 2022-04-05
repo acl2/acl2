@@ -297,8 +297,9 @@
      We introduce similar rules for terms of the form
      @('(create-var <ident> ...)'),
      @('(read-var <ident> ...)'),
-     @('(write-var <ident> ...)'), and
-     @('(type-struct <ident>)')."))
+     @('(write-var <ident> ...)'),
+     @('(type-struct <ident>)'), and
+     @('(exec-memberp ... <ident> ...)')."))
 
   (defruled equal-of-ident-and-const
     (implies (and (syntaxp (and (quotep x)
@@ -351,7 +352,13 @@
     (implies (and (syntaxp (quotep tag))
                   (identp tag))
              (equal (type-struct tag)
-                    (type-struct (ident (ident->name tag)))))))
+                    (type-struct (ident (ident->name tag))))))
+
+  (defruled exec-memberp-of-const-identifier
+    (implies (and (syntaxp (quotep mem))
+                  (identp mem))
+             (equal (exec-memberp val mem compst)
+                    (exec-memberp val (ident (ident->name mem)) compst)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -373,7 +380,8 @@
     create-var-of-const-identifier
     read-var-of-const-identifier
     write-var-of-const-identifier
-    type-struct-of-const-identifier))
+    type-struct-of-const-identifier
+    exec-memberp-of-const-identifier))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
