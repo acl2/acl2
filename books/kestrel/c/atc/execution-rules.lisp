@@ -1683,6 +1683,7 @@
     '(exec-expr-pure-when-ident
       exec-expr-pure-when-const
       exec-expr-pure-when-arrsub
+      exec-expr-pure-when-memberp
       exec-expr-pure-when-unary
       exec-expr-pure-when-cast
       exec-expr-pure-when-strict-pure-binary
@@ -1696,6 +1697,8 @@
       (:e expr-const->get)
       (:e expr-arrsub->arr)
       (:e expr-arrsub->sub)
+      (:e expr-memberp->target)
+      (:e expr-memberp->name)
       (:e expr-unary->op)
       (:e expr-unary->arg)
       (:e expr-cast->type)
