@@ -606,6 +606,7 @@
  ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
  ;; where nodenum-or-quotep is equivalent to the tree passed in, and nodes already in the dag passed in remain unchanged (and the aux. data structures have been updated, of course)
  ;; todo: when this is called on a term, we could instead call a simpler version that only works on terms
+ ;; Handles embedded DAGs in TREE
  (defund merge-tree-into-dag-array (tree
                                     var-replacement-alist ;maps vars in the term to nodenums/quoteps
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
@@ -1093,6 +1094,7 @@
 
 ;returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;will nodenum-or-quotep always be a quotep or the top node?
+;; Handles embedded DAGs in TERM.
 (defund make-term-into-dag-array (term dag-array-name dag-parent-array-name interpreted-function-alist)
   (declare (xargs :guard (and (pseudo-termp term)
                               (symbolp dag-array-name)

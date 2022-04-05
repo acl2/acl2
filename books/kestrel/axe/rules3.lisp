@@ -4098,7 +4098,8 @@
                                    <-becomes-bvlt <-becomes-bvlt-alt
                                    <-of-bvmult-hack ;bozo
                                    <-of-bvplus-becomes-bvlt-arg1
-                                   <-of-bvplus-becomes-bvlt-arg2)))))
+                                   <-of-bvplus-becomes-bvlt-arg2
+                                   BVLT-OF-EXPT-OF-ONE-LESS-ARG3-CONSTANT-VERSION)))))
 
 ;can we gen the 4??
 (defthm bvmult-of-bvplus-4-3-5
@@ -4135,7 +4136,8 @@
                                    <-becomes-bvlt <-becomes-bvlt-alt
                                    <-of-bvmult-hack ;bozo
                                    <-of-bvplus-becomes-bvlt-arg1
-                                   <-of-bvplus-becomes-bvlt-arg2)))))
+                                   <-of-bvplus-becomes-bvlt-arg2
+                                   BVLT-OF-EXPT-OF-ONE-LESS-ARG3-CONSTANT-VERSION)))))
 
 (defthm bvplus-minus-13-tighten-6
   (implies (and (unsigned-byte-p 5 x) ;use bind-free
@@ -6927,7 +6929,8 @@
   (equal (unsigned-byte-p 9 (bvplus 10 k x))
          (bvlt 10 (bvplus 10 k x) (expt 2 9)))
   :hints (("Goal" :in-theory (e/d (bvlt) (<-becomes-bvlt <-becomes-bvlt-alt
-                                                         <-of-bvplus-becomes-bvlt-arg1)))))
+                                                         <-of-bvplus-becomes-bvlt-arg1
+                                                         BVLT-OF-EXPT-OF-ONE-LESS-ARG3-CONSTANT-VERSION)))))
 
 
 
@@ -7271,7 +7274,8 @@
   (implies (and (syntaxp (want-to-weaken (BVLT 5 16 x)))
                 (NOT (EQUAL 4 (SLICE 4 2 x))))
            (equal (BVLT 5 16 x)
-                  (BVLT 5 15 x))))
+                  (BVLT 5 15 x)))
+  :hints (("Goal" :in-theory (disable BVLT-OF-ONE-LESS-OF-EXPT-OF-ONE-LESS-ARG2-CONSTANT-VERSION))))
 
 ;gen the 4
 (defthm equal-of-0-and-bvmult
@@ -7733,7 +7737,9 @@
 (defthm UNSIGNED-BYTE-P-of-bvplus-smaller
   (equal (UNSIGNED-BYTE-P 3 (bvplus 4 x y))
          (bvlt 4 (bvplus 4 x y) 8))
-  :hints (("Goal" :in-theory (enable bvlt UNSIGNED-BYTE-P integer-range-p))))
+  :hints (("Goal" :in-theory (e/d (bvlt UNSIGNED-BYTE-P integer-range-p
+                                        ) (BVLT-OF-ONE-LESS-OF-EXPT-OF-ONE-LESS-ARG2-CONSTANT-VERSION
+                                           BVLT-OF-EXPT-OF-ONE-LESS-ARG3-CONSTANT-VERSION)))))
 
 
 
@@ -8037,6 +8043,9 @@
                     (bvplus 32 (expt 2 31) (bvplus 32 (bvuminus 31 x) y)))))
   :hints (("Goal" :use (:instance bvplus-of-bvuminus-tighten2)
            :in-theory (disable bvplus-of-bvuminus-tighten2))))
+
+(local (in-theory (disable BVLT-OF-EXPT-OF-ONE-LESS-ARG3-CONSTANT-VERSION
+                           BVLT-OF-ONE-LESS-OF-EXPT-OF-ONE-LESS-ARG2-CONSTANT-VERSION))) ;todo: why?
 
 (defthm bvlt-of-bvplus-of-bvminus-expt
   (implies (unsigned-byte-p 31 x)

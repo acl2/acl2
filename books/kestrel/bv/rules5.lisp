@@ -146,7 +146,7 @@
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;unsigned-byte-p-when-not-bvlt-tighten
                                    ;bvlt-when-unsigned-byte-p-better-non-constant
-                                   ;bvlt-tighten-free
+                                   ;;bvlt-tighten-free
                                    bvlt-tighten-when-getbit-0-alt)))))
 
 (defthmd sbvlt-add-to-both-only-x-overflows

@@ -33,3 +33,21 @@
   (implies (syntaxp (want-to-weaken (equal (getbit n x) 0)))
            (equal (equal 0 (getbit n x))
                   (not (equal 1 (getbit n x))))))
+
+(defthmd equal-of-bvchop-when-equal-of-getbit-widen-polarity
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (syntaxp (want-to-strengthen (equal (bvchop size x) k))) ;todo: why can't I put this in the syntaxp call above?
+                (equal (getbit size x) k2)
+                (syntaxp (quotep k2))
+                (natp size))
+           (equal (equal (bvchop size x) k)
+                  (and (unsigned-byte-p size k) ;gets computed
+                       (equal (bvchop (+ 1 size) x)
+                              ;; gets computed
+                              (+ (* k2 (expt 2 size))
+                                 k)))))
+  :hints (("Goal" :by equal-of-bvchop-when-equal-of-getbit-widen)))
+
+(theory-invariant (incompatible (:rewrite BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE)
+                                (:rewrite equal-of-bvchop-when-equal-of-getbit-widen-polarity)))

@@ -855,3 +855,8 @@
                 (natp freesize))
            (not (bvlt size x y)))
   :hints (("Goal" :in-theory (enable bvlt))))
+
+(defthm not-bvlt-of-expt-same-arg3
+  (implies (natp size)
+           (not (bvlt size x (expt 2 size))))
+  :hints (("Goal" :in-theory (enable bvlt))))
