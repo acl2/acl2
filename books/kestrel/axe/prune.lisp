@@ -19,7 +19,8 @@
 ;(include-book "rewriter")
 (include-book "rewriter-basic") ;because we call simplify-term-basic
 (include-book "prove-with-stp")
-(include-book "dagify") ; todo: brings in skip-proofs, try something simpler
+(include-book "make-term-into-dag-simple")
+(include-book "interpreted-function-alists")
 (include-book "dag-size-fast")
 (include-book "kestrel/utilities/subtermp" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -520,9 +521,9 @@
 
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
 ;; term size. Returns (mv erp result-dag state).
-(defun prune-dag-with-rule-alist-new (dag-lst assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-  (declare (xargs :guard (and (or (pseudo-dagp dag-lst)
-                                  ;; (QUOTEP DAG-lst) ; possible?
+(defun prune-dag-with-rule-alist-new (dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+  (declare (xargs :guard (and (or (pseudo-dagp dag)
+                                  ;; (QUOTEP dag) ; possible?
                                   )
                               (pseudo-term-listp assumptions)
                               (rule-alistp rule-alist)
@@ -531,11 +532,11 @@
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp)))
                   :stobjs state))
-  (b* ((term (dag-to-term dag-lst)) ; can explode!
+  (b* ((term (dag-to-term dag)) ; can explode!
        ((mv erp term state)
         (prune-term-new term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
        ((when erp) (mv erp nil state))
-       ((mv erp dag) (dagify-term2 term)) ; todo: try make-term-into-dag-simple here
+       ((mv erp dag) (make-term-into-dag-simple term))
        ((when erp) (mv erp nil state)))
     (mv (erp-nil) dag state)))
 
