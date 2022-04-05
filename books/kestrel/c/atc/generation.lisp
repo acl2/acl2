@@ -4362,7 +4362,7 @@
                   (list `(pointerp ,formal-ptr)
                         `(not (pointer-nullp ,formal-ptr))
                         `(equal (pointer->reftype ,formal-ptr)
-                                ',(type-pointer->to type)))))
+                                ,(type-to-maker (type-pointer->to type))))))
        (inst (if fn-recursivep
                  (cond (arrayp
                         (list `(,formal (read-array (pointer->address
