@@ -4707,6 +4707,8 @@
        (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
+       (struct-return-thms
+        (atc-string-taginfo-alist-to-return-thms prec-tags))
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
@@ -4725,6 +4727,7 @@
                                not
                                ,fn
                                ,@result-thms
+                               ,@struct-return-thms
                                ,@type-prescriptions-called
                                ,@type-prescriptions-struct-readers
                                ,@correct-thms
