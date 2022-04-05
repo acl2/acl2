@@ -88,6 +88,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-tyname-to-type-rules
+  :short "Rules for turning type names into types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Type names arise, in quoted constant form,
+     from the abstract syntax that is symbolically executed.
+     In some circumstance, these type names are turned into types,
+     via @(tsee tyname-to-type).
+     If we just enabled the executable counterpart of this function
+     we would end up with types in quoted constant form.
+     Instead, we want to keep types as terms with constructors,
+     particularly because some types include identifiers (e.g. structure types),
+     and we want to keep identifiers as terms with constructors
+     instead of in quoted constant form (see @(see atc-identifier-rules).")
+   (xdoc::p
+    "Thus, here we collect rules to rewrite quoted type names
+     to types that are terms with constructors."))
+
+  (defval *atc-tyname-to-type-rules*
+    '(tyname-to-type
+      tyname-to-type-aux
+      (:e tyname->tyspec)
+      (:e tyname->declor)
+      (:e obj-adeclor-kind)
+      (:e obj-adeclor-pointer->to)
+      (:e obj-adeclor-array->of)
+      tyspecseq-to-type
+      (:e tyspecseq-kind)
+      (:e tyspecseq-struct->tag))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-valuep-rules
   :short "Rules for discharging @(tsee valuep) hypotheses."
   :long
@@ -2191,8 +2224,7 @@
       (:e block-item-kind)
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
-      (:e obj-declon-to-ident+tyname+init)
-      (:e tyname-to-type))))
+      (:e obj-declon-to-ident+tyname+init))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2268,5 +2300,4 @@
       eq
       (:e init-scope)
       (:e param-declonp)
-      (:e param-declon-to-ident+tyname)
-      (:e tyname-to-type))))
+      (:e param-declon-to-ident+tyname))))
