@@ -206,6 +206,16 @@
   :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp
                                      not-<-of-0-and-nth-when-all-dargp))))
 
+(defthm rationalp-of-nth-of-dargs
+  (implies (and (dag-exprp0 expr)
+                (< n (len (dargs expr)))
+                (natp n)
+                (not (equal 'quote (nth 0 expr))))
+           (equal (rationalp (nth n (dargs expr)))
+                  (not (consp (nth n (dargs expr))))))
+  :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp
+                                     not-<-of-0-and-nth-when-all-dargp))))
+
 (defthm not-equal-of-header-and-nth-of-dargs
   (implies (and (dag-exprp0 expr)
                 (not (equal 'quote (car expr))))
