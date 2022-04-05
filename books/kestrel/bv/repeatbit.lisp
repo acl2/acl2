@@ -105,3 +105,12 @@
                         (not (equal bit 0))
                       nil))))
   :hints (("Goal" :in-theory (enable repeatbit))))
+
+;; restrict to constant k?
+(defthm <-of-repeatbit-small
+  (implies (and (<= k (+ -1 (expt 2 n)))
+                (posp k)
+                (natp n))
+           (equal (< (repeatbit n bit) k)
+                  (equal bit 0)))
+  :hints (("Goal" :in-theory (enable repeatbit))))

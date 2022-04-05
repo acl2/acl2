@@ -83,3 +83,14 @@
                   (floor i (expt 2 (+ -1 n)))))
   :hints (("Goal"
            :in-theory (enable not-equal-when-even-and-odd))))
+
+;for splitting off the top bit
+(defthmd mod-of-*-of-2-and-expt
+  (IMPLIES (AND (natp size)
+                (INTEGERP X))
+           (EQUAL (MOD X (* 2 (EXPT 2 SIZE)))
+                  (+ (MOD X (EXPT 2 SIZE))
+                     (* (MOD (FLOOR X (EXPT 2 SIZE)) 2)
+                        (EXPT 2 SIZE)))))
+  :hints (("Goal" :cases ((equal 0 (MOD (FLOOR X (EXPT 2 SIZE)) 2)))
+           :in-theory (enable mod ))))

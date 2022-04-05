@@ -1876,20 +1876,6 @@
 ;;                           (and (equal 1 x) (equal 0 y))
 ;;                           (and (equal 1 x) (equal 1 y))))))
 
-;work on this:
-(defthm bvchop-of-bvsx
-  (implies (and (<= n new-size)
-;                (<= old-size new-size)
-                (<= old-size n)
-                (< 0 old-size)
-
-                (natp n)
-                (natp new-size)
-                (natp old-size))
-           (equal (bvchop n (bvsx new-size old-size val))
-                  (bvsx n old-size val)))
-  :hints (("Goal" :in-theory (enable bvsx))))
-
 (defthm unsigned-byte-p-bound
   (implies (and (< small big)
                 (natp small)
@@ -2479,8 +2465,7 @@
                                   (i (+ 1 m))
                                   (j n)))))
 
-
-
+;move?
 (defthm logext-of-bvsx
   (implies (and (<= n m)
                 (posp n)
