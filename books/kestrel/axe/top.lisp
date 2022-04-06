@@ -143,6 +143,7 @@
 (include-book "sublis-var-and-eval-basic")
 (include-book "no-atoms")
 (include-book "node-replacement-alist")
+(include-book "node-info")
 (include-book "node-replacement-array")
 (include-book "node-replacement-array2")
 (include-book "node-replacement-array3")
