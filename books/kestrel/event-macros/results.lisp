@@ -1,6 +1,6 @@
 ; Event Macros Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -28,8 +28,8 @@
    (xdoc::p
     "This nomenclature is particular relevant to
      the screen printing performed by the event macros:
-     see @(tsee evmac-input-print-p).
-     When the @(':print') option is @(':result') or higher,
+     see @(see event-macro-screen-printing).
+     When the @(':print') input is @(':result') or higher,
      generated events are normally printed on screen as Lisp forms.
      However, in some cases only their names and short descriptions are printed
      (e.g. when they are large and thus not necessarily useful
