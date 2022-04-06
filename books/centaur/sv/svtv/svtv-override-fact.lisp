@@ -16,11 +16,16 @@
    input-vars
    input-var-bindings
    output-vars
+   output-parts
+   output-part-vars
    hyp
    concl
    svtv
+   enable
    triples-name
    triples-val
+   lemma-defthm
+   lemma-args
    pkg-sym))
 
 (program)
@@ -48,16 +53,25 @@
     (cons (cons trip.testvar -1)
           (svtv-ovfact-override-test-alist (cdr override-valnames) triples triples-name))))
 
-(defun svtv-ovfact-integerp-conclusions (output-vars)
-  (if (Atom output-vars)
+(defun svtv-ovfact-integerp-conclusions-aux (outputs)
+  (if (Atom outputs)
       nil
-    (cons `(integerp ,(car output-vars))
-          (svtv-ovfact-integerp-conclusions (cdr output-vars)))))
+    (cons `(integerp ,(car outputs))
+          (svtv-ovfact-integerp-conclusions-aux (cdr outputs)))))
 
-(defun svtv-ovfact-initial-fgl-lemma (x)
+(defun svtv-ovfact-output-expressions (x)
+  (b* (((svtv-override-fact x)))
+    (append (set-difference-eq x.output-vars x.output-part-vars)
+            x.output-parts)))
+
+(defun svtv-ovfact-integerp-conclusions (x)
+  (svtv-ovfact-integerp-conclusions-aux
+   (svtv-ovfact-output-expressions x)))
+
+(defun svtv-ovfact-initial-override-lemma (x)
   (declare (Xargs :mode :program))
   (b* (((svtv-override-fact x))
-       (template '(fgl::def-fgl-thm <name>-fgl-lemma
+       (template '(<defthm> <name>-override-lemma
                     (implies <hyp>
                              (b* ((run (svtv-run (<svtv>)
                                                  (append <input-bindings>
@@ -67,10 +81,12 @@
                                                  :include '<outputs-list>))
                                   ((svassocs <outputs>) run))
                                (and <integerp-concls>
-                                    <concl>))))))
+                                    <concl>)))
+                    <args>)))
     (acl2::template-subst
      template
-     :atom-alist `((<hyp> . ,x.hyp)
+     :atom-alist `((<defthm> . ,x.lemma-defthm)
+                   (<hyp> . ,x.hyp)
                    (<svtv> . ,x.svtv)
                    (<concl> . ,x.concl)
                    (<input-bindings> . (list . ,(svtv-ovfact-input-var-bindings-alist-termlist x.input-var-bindings)))
@@ -79,7 +95,8 @@
                    (<override-vals> . (list . ,(svtv-ovfact-var-alist-termlist x.override-vars)))
                    (<outputs-list> . ,x.output-vars))
      :splice-alist `((<outputs> . ,x.output-vars)
-                     (<integerp-concls> . ,(svtv-ovfact-integerp-conclusions x.output-vars)))
+                     (<integerp-concls> . ,(svtv-ovfact-integerp-conclusions x))
+                     (<args> . ,x.lemma-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
      :pkg-sym x.pkg-sym)))
 
@@ -103,7 +120,7 @@
     (cons `(equal ,name ,term)
           (svtv-ovfact-input-binding-hyp-termlist (cdr input-var-bindings)))))
 
-(defun svtv-ovfact-override-lemma (x)
+(defun svtv-ovfact-mono-lemma (x)
   (b* (((svtv-override-fact x))
        (template '(defthm <name>-<<=-lemma
                     (b* (((svassocs <input-var-svassocs>
@@ -232,7 +249,7 @@
                                (b* (((svassocs <outputs>) run))
                                  <concl>)))
                     :hints (("goal" :use (<name>-<<=-lemma
-                                          (:instance <name>-fgl-lemma
+                                          (:instance <name>-override-lemma
                                            <override-var-instantiation>
                                            <input-var-instantiation>))
                              :in-theory '((BINARY-APPEND)
@@ -248,7 +265,8 @@
                                           (:REWRITE SVEX-ENV-LOOKUP-IN-SVTV-RUN-WITH-INCLUDE)
                                           (:REWRITE SVEX-ENV-LOOKUP-WHEN-INTEGERP-AND-<<=)
                                           (:TYPE-PRESCRIPTION SVEX-ENV-<<=)
-                                          (:TYPE-PRESCRIPTION SVEX-ENV-LOOKUP)))))))
+                                          (:TYPE-PRESCRIPTION SVEX-ENV-LOOKUP)
+                                          <enable>))))))
     (acl2::template-subst
      template
      :atom-alist
@@ -262,7 +280,8 @@
        (<input-binding-hyp> .  ,(svtv-ovfact-input-binding-hyp-termlist x.input-var-bindings))
        (<override-var-instantiation> . ,(svtv-ovfact-override-var-instantiation x.override-vars x.svtv))
        (<input-var-instantiation> . ,(svtv-ovfact-input-var-instantiation x.input-vars))
-       (<outputs> . ,x.output-vars))
+       (<outputs> . ,x.output-vars)
+       (<enable> . ,x.enable))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
      :pkg-sym x.pkg-sym)))
 
@@ -306,25 +325,38 @@
        (err (svtv-ovfact-error x))
        ((when err) (er hard? `(def-svtv-override-fact ,x.name) "Error: ~@0" err)))
     `(defsection ,x.name
-       (local ,(svtv-ovfact-initial-fgl-lemma x))
-       (local ,(svtv-ovfact-override-lemma x))
+       (local ,(svtv-ovfact-initial-override-lemma x))
+       (local ,(svtv-ovfact-mono-lemma x))
        ,(svtv-ovfact-final-thm x))))
 
 (table svtv-override-fact-defaults nil nil :clear)
 
+(defun svtv-ovfact-translate-lst (x ctx w state)
+  (declare (xargs :stobjs state))
+  (if (atom x)
+      (value nil)
+    (er-let* ((first (acl2::translate (car x) t nil nil ctx w state))
+              (rest (svtv-ovfact-translate-lst (cdr x) ctx w state)))
+      (value (cons first rest)))))
+
 (defun svtv-override-fact-fn (name args state)
   (declare (xargs :stobjs state))
   (b* ((defaults (table-alist 'svtv-override-fact-defaults (w state)))
+       (ctx `(def-svtv-override-fact ,name))
        ((std::extract-keyword-args
          :defaults defaults
-         :ctx `(def-svtv-override-fact ,name)
+         :ctx ctx
          svtv
          override-vars
          input-vars
          output-vars
+         output-parts
          input-var-bindings
+         enable
          (hyp 't)
          concl
+         (lemma-defthm 'fgl::def-fgl-thm)
+         lemma-args
          (pkg-sym name))
         args)
        (triples (acl2::template-subst
@@ -332,20 +364,29 @@
                  :str-alist `(("<SVTV>" . ,(symbol-name svtv)))
                  :pkg-sym pkg-sym))
        ((mv err triples-val) (magic-ev-fncall triples nil state t t))
-       ((when err) (er hard? 'svtv-override-fact "Couldn't evaluate ~x0" (list triples))))
-    (svtv-override-fact-events
-     (make-svtv-override-fact
-      :name name
-      :override-vars override-vars
-      :input-vars input-vars
-      :output-vars output-vars
-      :input-var-bindings input-var-bindings
-      :hyp hyp
-      :concl concl
-      :svtv svtv
-      :triples-name triples
-      :triples-val triples-val
-      :pkg-sym pkg-sym))))
+       ((when err) (er soft ctx "Couldn't evaluate ~x0" (list triples)))
+       ((mv err trans-parts state) (svtv-ovfact-translate-lst output-parts ctx (w state) state))
+       ((when err) (er soft ctx "Couldn't translate output-parts: ~@0~%" err))
+       (output-part-vars (all-vars1-lst trans-parts nil)))
+    (value
+     (svtv-override-fact-events
+      (make-svtv-override-fact
+       :name name
+       :override-vars override-vars
+       :input-vars input-vars
+       :output-vars output-vars
+       :output-parts output-parts
+       :output-part-vars output-part-vars
+       :input-var-bindings input-var-bindings
+       :enable enable
+       :hyp hyp
+       :concl concl
+       :svtv svtv
+       :triples-name triples
+       :triples-val triples-val
+       :lemma-defthm lemma-defthm
+       :lemma-args lemma-args
+       :pkg-sym pkg-sym)))))
 
 (defmacro def-svtv-override-fact (name &rest args)
   `(make-event (svtv-override-fact-fn ',name ',args state)))
@@ -355,8 +396,9 @@
 
 (defxdoc def-svtv-override-fact
   :parents (svtv-data)
-  :short "Prove a theorem about an SVTV using FGL, then generalize it to remove
-overrides and reliance on a particular shape of input env."
+  :short "Prove a theorem about an SVTV using a specific input env, perhaps
+with overrides, then generalize it to remove overrides and reliance on a
+particular shape of input env."
   :long "
 <p>Usage:</p>
 @({
@@ -366,8 +408,10 @@ overrides and reliance on a particular shape of input env."
    :input-var-bindings input-variable-binding-list
    :override-vars override-variable-list
    :output-vars output-variable-list
+   :output-parts output-part-list
    :hyp hypothesis-term
-   :concl conclusion-term)
+   :concl conclusion-term
+   :enable rules-list)
  })
 
 <p>For each of the keyword arguments, if absent a default will be looked up in
@@ -399,6 +443,12 @@ and reference variables (i.e. they should appear in the
 
 <li>@(':output-vars') is a list of output variables of the SVTV that are used in the conclusion.</li>
 
+<li>@(':output-parts') is a list of 4vec expressions -- part selects, zero
+extends, shifts, concatenations -- of the output variables.  The given parts of
+the outputs will be proved to be integerp in order to use a monotonicity
+argument.  Variables that are not mentioned in output-parts will be proved
+integerp as a whole.</li>
+
 <li>@(':hyp') is a term (default T), which may reference variables
 listed in input-vars and override-vars as well as variables used in the
 expressions of input-bindings</li>
@@ -406,15 +456,27 @@ expressions of input-bindings</li>
 <li>@(':concl') is a term which may reference the same variables available to
 @(':hyp') as well as the output-vars.</li>
 
+<li>@(':enable') is a list of rules to be included in the theory for the final
+generalized theorm, mainly useful when specifying @(':output-parts').</li>
+
+<li>@(':lemma-defthm') defaults to @('fgl::def-fgl-thm') but can be set
+to (e.g.) @('defthm') or @('fgl::def-fgl-param-thm') to change how the initial
+lemma is proved.</li>
+
+<li>@(':lemma-args') gives additional arguments to be passed to the form
+proving the initial lemma, which could be hints for a @('defthm') form or FGL
+keyword args for @('fgl::def-fgl-thm') or @('fgl::def-fgl-param-thm').
+
 </ul>
 
-<h3>FGL theorem</h3>
+<h3>Initial override theorem</h3>
 
-<p>The FGL theorem says that under the given hypotheses, a run of the SVTV on a
-particular, explicitly constructed environment produces outputs satisfying the
-conclusion.  In addition, it proves that those outputs are integers (whereas
-they could otherwise be arbitrary @(see 4vec)s including X and Z bits).  The
-environment is constructed as follows:</p>
+<p>The initial override theorem is typically proved with FGL. It says that
+under the given hypotheses, a run of the SVTV on a particular, explicitly
+constructed environment produces outputs satisfying the conclusion.  In
+addition, it proves that those outputs are integers (whereas they could
+otherwise be arbitrary @(see 4vec)s including X and Z bits).  The environment
+is constructed as follows:</p>
 
 <ul>
 <li>Input variables bound in @(':input-var-bindings') are bound to their respective values</li>
@@ -435,9 +497,9 @@ listed in @(':override-vars') are all bound to -1.</li>
    :hyp (unsigned-byte-p 128 partial-products)
    :concl (equal product (sum-partial-products partial-products)))
  })
-<p>produces approximately the following FGL lemma:</p>
+<p>produces approximately the following initial lemma:</p>
 @({
- (fgl::def-fgl-thm partial-prods-to-product-fgl-lemma
+ (fgl::def-fgl-thm partial-prods-to-product-override-lemma
    (implies (unsigned-byte-p 128 partial-products)
             (b* ((run (svtv-run (multiplier-svtv)
                                 `((opcode . ,*mul-opcode*)

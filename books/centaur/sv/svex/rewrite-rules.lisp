@@ -2268,17 +2268,16 @@
                       (svex-to-rsh-of-concat-table y))))
   :rhs res)
 
-(def-svex-rewrite rsh-of-concat-greater-quote
+(def-svex-rewrite rsh-of-concat-greater-var-or-quote
   :lhs (rsh n (concat m x y))
   :checks ((svex-quoted-index-p n)
            (svex-quoted-index-p m)
            (< (2vec->val (svex-quote->val n))
               (2vec->val (svex-quote->val m))) ;; otherwise, covered by rsh-of-concat-less
-           (svex-case x :quote)
-           (bind x1 (svex-quote (4vec-rsh (svex-quote->val n) (svex-quote->val x))))
+           (svex-case x :quote t :var t :call nil)
            (bind m1 (svex-quote (2vec (- (2vec->val (svex-quote->val m))
                                          (2vec->val (svex-quote->val n)))))))
-  :rhs (concat m1 x1 y)
+  :rhs (concat m1 (rsh n x) y)
   :hints(("Goal" :in-theory (enable svex-apply
                                     4vec-concat
                                     4vec-rsh
@@ -4893,6 +4892,7 @@
   (b* ((xeval (svex-s4xeval (svex-call fn args)))
        ((when (s4vec-xfree-under-mask xeval mask))
         (mv t (svex-quote (s4vec->4vec (s4vec-mask-to-zero mask xeval))) nil)))
+    nil
     (svex-rewrite-cases mask
                         (mbe :logic (fnsym-fix fn) :exec fn)
                         args
