@@ -64,7 +64,7 @@
 (include-book "kestrel/utilities/defconst-computed" :dir :system) ;not strictly needed
 ;(include-book "def-dag-builder-theorems")
 (include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
-(include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system) ;drop?
+;(include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system) ;drop?
 (include-book "kestrel/alists-light/strip-cdrs" :dir :system) ;need strip-cdrs-of-append for the generated proofs
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -171,6 +171,18 @@
          (append (strip-cars x)
                  (strip-cars y)))
   :hints (("Goal" :in-theory (enable strip-cars))))
+
+(defthmd pseudo-termp-of-car-when-pseudo-term-listp-cheap-for-make-rewriter-simple
+  (implies (pseudo-term-listp terms)
+           (pseudo-termp (car terms)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+(defthmd pseudo-term-listp-of-cdr-when-pseudo-term-listp-cheap-for-make-rewriter-simple
+  (implies (pseudo-term-listp terms)
+           (pseudo-term-listp (cdr terms)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
 
 ;; How we use the refined-assumption-alist:
 ;; 1. To bind free vars in a hyp (calling lookup-eq on the fn and unifying the hyp's args against each arglist).
@@ -379,6 +391,7 @@
        (local (include-book "kestrel/arithmetic-light/less-than-or-equal" :dir :system))
        (local (include-book "kestrel/lists-light/nth" :dir :system))
        (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+       (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system)) ;reduce?
 
        (local (in-theory (disable wf-dagp wf-dagp-expander
                                   default-car
@@ -405,6 +418,8 @@
                           ;;myquotep-of-cdr-of-assoc-equal-when-node-replacement-alistp
                           ;;natp-of-cdr-of-assoc-equal-when-node-replacement-alistp
                           strip-cars-of-append-for-make-rewriter-simple
+                          pseudo-termp-of-car-when-pseudo-term-listp-cheap-for-make-rewriter-simple
+                          pseudo-term-listp-of-cdr-when-pseudo-term-listp-cheap-for-make-rewriter-simple
                           )))
 
        ;; Make a version of sublis-var-and-eval:
