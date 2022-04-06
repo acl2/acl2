@@ -25,7 +25,8 @@
 (include-book "all-dargp")
 (include-book "all-dargp-less-than")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
-(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)) ;todo
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 ;; TODO: Consider using a stobj for the memoization, perhaps with a Lisp hash table.
 ;; TODO: Consider not memoizing things with unsimplified args? (that seemed to slow things down)
@@ -38,13 +39,21 @@
 
 ;maybe we should think of the memoization as part of the dag (it is just a list of equalities which mention nodenums from the dag)
 
-(local (in-theory (disable mod)))
+(local (in-theory (disable mod natp)))
+
+(local (in-theory (enable integerp-when-natp
+                           <=-of-0-when-0-natp)))
 
 ;; Recognize an axe-tree that is a cons
 (defund tree-to-memoizep (tree)
   (declare (xargs :guard t))
   (and (axe-treep tree)
        (consp tree)))
+
+(defthmd axe-treep-when-tree-to-memoizep
+  (implies (tree-to-memoizep tree)
+           (axe-treep tree))
+  :hints (("Goal" :in-theory (enable tree-to-memoizep))))
 
 (defthm tree-to-memoizep-when-axe-treep
   (implies (axe-treep tree)
@@ -70,6 +79,12 @@
   (equal (trees-to-memoizep (cons tree trees))
          (and (tree-to-memoizep tree)
               (trees-to-memoizep trees)))
+  :hints (("Goal" :in-theory (enable trees-to-memoizep))))
+
+(defthm tree-to-memoizep-of-car
+  (implies (and (trees-to-memoizep trees)
+                (consp trees))
+           (tree-to-memoizep (car trees)))
   :hints (("Goal" :in-theory (enable trees-to-memoizep))))
 
 (defthm dargp-of-lookup-equal-alt ;name clash
@@ -123,17 +138,17 @@
 
 (make-flag sum-of-nodenums-aux)
 
-(defthm-flag-sum-of-nodenums-aux
-  (defthm integerp-of-sum-of-nodenums-aux-lst
-    (implies (and (integerp acc)
-                  (all-axe-treep objects))
-             (integerp (sum-of-nodenums-aux-lst objects acc)))
-    :flag sum-of-nodenums-aux-lst)
-  (defthm integerp-of-sum-of-nodenums-aux
-    (implies (and (integerp acc)
-                  (axe-treep object))
-             (integerp (sum-of-nodenums-aux object acc)))
-    :flag sum-of-nodenums-aux))
+;; (defthm-flag-sum-of-nodenums-aux
+;;   (defthm integerp-of-sum-of-nodenums-aux-lst
+;;     (implies (and (integerp acc)
+;;                   (all-axe-treep objects))
+;;              (integerp (sum-of-nodenums-aux-lst objects acc)))
+;;     :flag sum-of-nodenums-aux-lst)
+;;   (defthm integerp-of-sum-of-nodenums-aux
+;;     (implies (and (integerp acc)
+;;                   (axe-treep object))
+;;              (integerp (sum-of-nodenums-aux object acc)))
+;;     :flag sum-of-nodenums-aux))
 
 (defthm-flag-sum-of-nodenums-aux
   (defthm natp-of-sum-of-nodenums-aux-lst
@@ -155,7 +170,7 @@
 ;this will be the memo-key
 ;todo: use logand with a mask instead of mod?
 (defund sum-of-nodenums (object)
-  (declare (xargs :guard (axe-treep object)))
+  (declare (xargs :guard (tree-to-memoizep object)))
   (mod (sum-of-nodenums-aux object 0)
        *memoization-size*))
 
@@ -179,22 +194,37 @@
 ;;; memo-alistp
 ;;;
 
-(defun memo-alistp (alist)
+;; Maps trees (that can be memoized) to the nodenums/quoteps to which they rewrote.
+(defund memo-alistp (alist)
   (declare (xargs :guard t))
   (and (alistp alist)
-       ;; todo: keys are axe trees to memoize
+       (trees-to-memoizep (strip-cars alist))
        (all-dargp (strip-cdrs alist))))
+
+(defthm memo-alistp-of-cons-of-cons
+  (equal (memo-alistp (cons (cons object result) memo-alist))
+         (and (tree-to-memoizep object)
+              (dargp result)
+              (memo-alistp memo-alist)))
+  :hints (("Goal" :in-theory (enable memo-alistp))))
 
 (local
  (defthm alistp-when-memo-alistp
    (implies (memo-alistp alist)
-            (alistp alist))))
+            (alistp alist))
+   :hints (("Goal" :in-theory (enable memo-alistp)))))
 
 (local
  (defthm all-dargp-of-strip-cdrs-when-memo-alistp
    (implies (memo-alistp alist)
-            (all-dargp (strip-cdrs alist)))))
+            (all-dargp (strip-cdrs alist)))
+   :hints (("Goal" :in-theory (enable memo-alistp)))))
 
+(local
+ (defthm trees-to-memoizep-of-strip-cars-when-memo-alistp
+   (implies (memo-alistp alist)
+            (trees-to-memoizep (strip-cars alist)))
+   :hints (("Goal" :in-theory (enable memo-alistp)))))
 
 ;;;
 ;;; memoizationp
@@ -202,6 +232,7 @@
 
 (def-typed-acl2-array2 array-of-memo-alistsp (memo-alistp val))
 
+;; Maps tree hashes to memo-alists.
 (defund memoizationp (memoization)
   (declare (xargs :guard t))
   (and (array-of-memo-alistsp 'memoization memoization)
@@ -245,7 +276,9 @@
                               (dargp result)
                               (memoizationp memoization))
                   :guard-hints (("Goal" :in-theory (enable memoizationp
-                                                           TREES-TO-MEMOIZEP)))))
+                                                           axe-treep-when-tree-to-memoizep
+                                                           ;TREES-TO-MEMOIZEP
+                                                           )))))
   (if (endp objects)
       memoization
     ;;test *fns-not-to-memoize*?
@@ -303,7 +336,7 @@
 ;;; bounded memoizations
 ;;;
 
-(def-typed-acl2-array2 array-of-bounded-memo-alistsp (and (alistp val) (all-dargp-less-than (strip-cdrs val) bound))
+(def-typed-acl2-array2 array-of-bounded-memo-alistsp (and (memo-alistp val) (all-dargp-less-than (strip-cdrs val) bound))
   :extra-vars (bound)
   :extra-guards ((natp bound)))
 
@@ -482,6 +515,7 @@
 
 (defund print-memo-stats-aux (n memoization total-items longest-slot longest-slot-len last-filled-slot memo-count-world)
   (declare (xargs :measure (nfix (- *memoization-size* n))
+                  :hints (("Goal" :in-theory (enable natp)))
                   :guard (and (memoizationp memoization)
                               (natp n)
                               (natp total-items)
