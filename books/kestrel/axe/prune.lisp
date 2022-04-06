@@ -16,7 +16,6 @@
 
 ;; TODO: Use counterexamples returned by STP to avoid later calls that will fail.
 
-;(include-book "rewriter")
 (include-book "rewriter-basic") ;because we call simplify-term-basic
 (include-book "prove-with-stp")
 (include-book "make-term-into-dag-simple")
