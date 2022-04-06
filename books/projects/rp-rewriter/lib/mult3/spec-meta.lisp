@@ -1,7 +1,6 @@
 
 ;; Mertcan Temel
 
-
 (in-package "RP")
 (include-book "svl-spec")
 
@@ -39,8 +38,6 @@
  (include-book "lemmas"))
 (local
  (include-book "lemmas-2"))
-
-
 
 #|
 (BINARY-* (ACL2::RP 'INTEGERP
@@ -93,7 +90,8 @@
                            (RW->-TO-GT
                             (:REWRITE LT-TO-GT)
                             (:REWRITE RW-<-TO-LTE)))))
-  (b* ((x (ex-from-rp x)))
+  (b* ((x-orig x)
+       (x (ex-from-rp x)))
     (case-match x
       (('svl::bits vec ('quote start) ('quote size))
        (b* (((unless (and (natp start)
@@ -118,9 +116,14 @@
            (mv (logsize x) t)
          (mv -1 nil)))
       (&
-       (if (atom x)
-           (mv -1 (check-context-for-integerp x context))
-         (mv -1 nil))))))
+       (cond ((atom x)
+              (mv -1 (check-context-for-integerp x context)))
+             ((or* (bit-of-p x)
+                   (binary-fnc-p x)
+                   (has-bitp-rp x-orig))
+              (mv 1 t))
+             (t
+              (mv -1 nil)))))))
 
 #|(calculate-vec-size '(ACL2::RP 'INTEGERP
                                (SVL::4VEC-CONCAT$ '23
@@ -130,8 +133,8 @@
                                                   '1))
                     '((integerp src1)))|#
 
-(define *-to-mult-spec-meta ((term rp-termp)
-                             (context rp-term-listp))
+(define */+-to-mult-spec-meta ((term rp-termp)
+                               (context rp-term-listp))
   (case-match term
     (('binary-* x y)
      (b* (((mv size-x integerp-x)
@@ -145,6 +148,36 @@
            (mv term nil)))
        (mv `(svl-mult-final-spec ,x ,y ',(+ size-x size-y))
            `(nil t t t))))
+    (('binary-+ x y)
+     (b* (((mv size-x integerp-x)
+           (calculate-vec-size x context))
+          ((mv size-y integerp-y)
+           (calculate-vec-size y context))
+          ((unless (and integerp-x
+                        integerp-y
+                        (not (equal size-x -1))
+                        (not (equal size-x 1))
+                        (not (equal size-y -1))
+                        (not (equal size-y 1))))
+           (mv term nil)))
+       (mv `(2vec-adder ,x ,y '0 ',(1+ (max size-x size-y)))
+           `(nil t t t t))))
+    (('binary-+ x ('binary-+ y z))
+     (b* (((mv size-x integerp-x)
+           (calculate-vec-size x context))
+          ((mv size-y integerp-y)
+           (calculate-vec-size y context))
+          ((mv size-z integerp-z)
+           (calculate-vec-size z context))
+          ((unless (and integerp-x
+                        integerp-y
+                        integerp-z
+                        (equal size-z 1)
+                        (not (equal size-x -1))
+                        (not (equal size-y -1))))
+           (mv term nil)))
+       (mv `(2vec-adder ,x ,y ,z ',(1+ (max size-x size-y)))
+           `(nil t t t t))))
     (& (mv term nil))))
 
 #|(*-to-mult-spec-meta  '(BINARY-* (ACL2::RP 'INTEGERP
@@ -177,24 +210,46 @@
   (with-output
     :off :all
     :gag-mode nil
-    (rp::def-formula-checks *-to-mult-spec-meta-fchecks
+    (rp::def-formula-checks */+-to-mult/adder-spec-meta-fchecks
       (svl::bits svl::4vec-concat$ *
-                 SVL-MULT-FINAL-SPEC))))
+                 2vec-adder
+                 SVL-MULT-FINAL-SPEC
+                 binary-or binary-xor binary-and binary-?
+                 bit-of binary-not))))
 
-(local
- (progn
-   (rp::create-regular-eval-lemma svl::4VEC-CONCAT$ 3
-                                  *-to-mult-spec-meta-fchecks)
-   (rp::create-regular-eval-lemma SVL-MULT-FINAL-SPEC 3  *-to-mult-spec-meta-fchecks)
-   (rp::create-regular-eval-lemma svl::Bits 3  *-to-mult-spec-meta-fchecks)
-   (rp::create-regular-eval-lemma binary-* 2  *-to-mult-spec-meta-fchecks)
-   (rp::create-regular-eval-lemma integerp 1  *-to-mult-spec-meta-fchecks)))
+(with-output
+  :off :all
+  :gag-mode nil
+  (local
+   (progn
+     (rp::create-regular-eval-lemma svl::4VEC-CONCAT$ 3
+                                    */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma SVL-MULT-FINAL-SPEC 3
+                                    */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma 2vec-adder 4  */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma svl::Bits 3  */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma binary-* 2  */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma binary-+ 2  */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma integerp 1  */+-to-mult/adder-spec-meta-fchecks)
+
+     (rp::create-regular-eval-lemma binary-or 2
+                                    */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma binary-and 2
+                                    */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma binary-xor 2
+                                    */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma bit-of 2
+                                    */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma binary-not 1
+                                    */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma binary-? 3  */+-to-mult/adder-spec-meta-fchecks)
+     )))
 
 (local
  (defthm CHECK-CONTEXT-FOR-INTEGERP-correct
    (implies (and (eval-and-all context a)
                  (rp-evl-meta-extract-global-facts)
-                 (*-to-mult-spec-meta-fchecks state)
+                 (*/+-to-mult/adder-spec-meta-fchecks state)
                  (check-context-for-integerp term context))
             (integerp (rp-evlt term a)))
    :hints (("Subgoal *1/2"
@@ -216,7 +271,6 @@
             (equal (rp-evlt term a)
                    (cadr term)))))
 
-
 (defthm unsigned-byte-p-of-logsize
   (implies (natp x)
            (unsigned-byte-p (logsize x)
@@ -234,7 +288,6 @@
                              acl2::logcar
                              +-IS-SUM)))))
 
-
 (local
  (defthm unsigned-byte-p-of-logapp
    (implies (and (natp size)
@@ -249,7 +302,7 @@
             :induct (unsigned-byte-p-recursive size2 x)
             :expand ((LOGAPP SIZE2 0 Y)
                      (UNSIGNED-BYTE-P-RECURSIVE SIZE
-                                 (ACL2::LOGCONS 0 (LOGAPP (+ -1 SIZE2) 0 Y))))
+                                                (ACL2::LOGCONS 0 (LOGAPP (+ -1 SIZE2) 0 Y))))
             :in-theory (e/d* (SVL::4VEC-CONCAT$
                               BITOPS::LOGCDR-OF-LOGCONS
                               unsigned-byte-p-redef-to-recursive
@@ -289,7 +342,7 @@
             :do-not-induct t
             :in-theory (e/d* (SVL::4VEC-CONCAT$
                               unsigned-byte-p-redef-to-recursive
-                              
+
                               SV::4VEC-CONCAT
                               bitops::ihsext-inductions
                               bitops::ihsext-recursive-redefs
@@ -323,10 +376,56 @@
                  (natp y))
             (natp (+ x y)))))
 
+(local
+ (defthmd rp-trans-when-is-rp
+   (implies (is-rp term)
+            (equal (rp-evlt term a)
+                   (rp-evlt (caddr term) a)))))
+
+(defthm has-bitp-rp-lemma
+  (implies (and (valid-sc term a)
+                (HAS-BITP-RP term))
+           (and (bitp (rp-evlt (ex-from-rp term) a))
+                (bitp (rp-evlt term a))))
+  :hints (("Goal"
+           :induct (HAS-BITP-RP term)
+           :do-not-induct t
+           :in-theory (e/d (valid-sc-single-step
+                            rp-trans-when-is-rp
+                            HAS-BITP-RP)
+                           ()))))
+
+(local
+ (defthm calculate-vec-size-correct-lemma
+   (implies (and (OR* (BIT-OF-P (EX-FROM-RP X))
+                      (BINARY-FNC-P (EX-FROM-RP X))
+                      (HAS-BITP-RP X))
+                 (valid-sc x a)
+                 (rp-evl-meta-extract-global-facts)
+                 (*/+-to-mult/adder-spec-meta-fchecks state))
+            (and (bitp (rp-evlt x a))
+                 (bitp (rp-evlt (ex-from-rp x) a))))
+   :hints (("Goal"
+            :do-not-induct t
+            :in-theory (e/d* (or*
+                              RP-EVLT-OF-EX-FROM-RP-REVERSE
+                              BINARY-FNC-P
+                              regular-eval-lemmas
+                              regular-eval-lemmas-with-ex-from-rp)
+                             (valid-sc
+                              rp-evlt-of-ex-from-rp))))))
+
+(local
+ (defthm bitp-implies-integerp
+   (implies (bitp x)
+            (and (integerp x)
+                 (UNSIGNED-BYTE-P 1 x)))))
+
 (defret calculate-vec-size-correct
   (implies (and (rp-evl-meta-extract-global-facts)
                 (eval-and-all context a)
-                (*-to-mult-spec-meta-fchecks state)
+                (valid-sc x a)
+                (*/+-to-mult/adder-spec-meta-fchecks state)
                 integerp)
            (and (integerp (rp-evlt x a))
                 (integerp size)
@@ -335,35 +434,49 @@
                                                (rp-evlt x a))
                               (natp size)))))
   :fn calculate-vec-size
-  :hints (("Subgoal *1/7"
-           :use ((:instance CHECK-CONTEXT-FOR-INTEGERP-correct
-                            (term (EX-FROM-RP X)))))
-          ("Goal"
+  :hints (("subgoal *1/7"
+           :use ((:instance check-context-for-integerp-correct
+                            (term (ex-from-rp x)))))
+          ("goal"
            :do-not-induct t
            :induct (calculate-vec-size x context)
            :in-theory (e/d* (calculate-vec-size
                              natp
-                             RP-EVLT-OF-EX-FROM-RP-REVERSE
-                             regular-eval-lemmas
-                             regular-eval-lemmas-with-ex-from-rp)
-                            (UNSIGNED-BYTE-P
-                             RP-TERMP-IMPLIES-SUBTERMS
-                             RP-TERM-LISTP
+                             rp-evlt-of-ex-from-rp-reverse
+                             (:rewrite
+                              regular-rp-evl-of_4vec-concat$_when_*/+-to-mult/adder-spec-meta-fchecks_with-ex-from-rp)
+                             (:rewrite
+                              regular-rp-evl-of_bits_when_*/+-to-mult/adder-spec-meta-fchecks_with-ex-from-rp))
+                            (unsigned-byte-p
+                             (:rewrite default-cdr)
+                             (:definition ex-from-rp)
+                             (:rewrite acl2::or*-true-second)
+                             (:type-prescription mult-formula-checks)
+                             (:rewrite valid-sc-ex-from-rp-2)
+                             (:rewrite not-include-rp)
+                             (:rewrite acl2::or*-true-first)
+                             (:rewrite default-car)
+                             valid-sc
+                             rp-termp-implies-subterms
+                             rp-term-listp
                              rw-dir1
                              natp
-                             +-IS-SUM
+                             +-is-sum
                              rp-trans
-                             INCLUDE-FNC
+                             include-fnc
                              rp-evlt-of-ex-from-rp
-                             CHECK-CONTEXT-FOR-INTEGERP-correct
+                             check-context-for-integerp-correct
                              logcount)))))
 
 
-(defret *-to-mult-spec-meta-correct
+
+  
+(defthm */+-to-mult-spec-meta-correct
   (implies (and (rp-evl-meta-extract-global-facts)
                 (eval-and-all context a)
-                (*-to-mult-spec-meta-fchecks state))
-           (equal (rp-evlt (mv-nth 0 (*-to-mult-spec-meta term context)) a)
+                (valid-sc term a)
+                (*/+-to-mult/adder-spec-meta-fchecks state))
+           (equal (rp-evlt (mv-nth 0 (*/+-to-mult-spec-meta term context)) a)
                   (rp-evlt term a)))
   :hints (("Goal"
            :do-not-induct t
@@ -375,11 +488,21 @@
                                                                context)))
                             (size2 (mv-nth 0
                                            (calculate-vec-size (caddr term)
+                                                               context))))
+                 (:instance +-of-known-sized-vecs
+                            (x (rp-evlt (cadr term) a))
+                            (y (rp-evlt (caddr term) a))
+                            (size1 (mv-nth 0
+                                           (calculate-vec-size (cadr term)
+                                                               context)))
+                            (size2 (mv-nth 0
+                                           (calculate-vec-size (caddr term)
                                                                context)))))
-           :in-theory (e/d* (*-to-mult-spec-meta
+           :in-theory (e/d* (*/+-to-mult-spec-meta
                              regular-eval-lemmas-with-ex-from-rp
                              regular-eval-lemmas)
                             (+-IS-SUM
+                             max
                              *-of-known-sized-vecs
                              SVL-MULT-FINAL-SPEC
                              RP-TRANS-LST
@@ -390,28 +513,35 @@
                              RP-TRANS-OPENER
                              INCLUDE-FNC)))))
 
-(defret *-to-mult-spec-meta-valid-sc
+(defret */+-to-mult-spec-meta-valid-sc
   (implies (valid-sc term a)
-           (valid-sc (mv-nth 0 (*-to-mult-spec-meta term context)) a))
+           (valid-sc (mv-nth 0 (*/+-to-mult-spec-meta term context)) a))
   :hints (("Goal"
            :do-not-induct t
-           
-           :in-theory (e/d* (*-to-mult-spec-meta
+
+           :in-theory (e/d* (*/+-to-mult-spec-meta
                              valid-sc is-rp is-if)
                             ()))))
 
-(defret *-to-mult-spec-meta-rp-termp
+(defret */+-to-mult-spec-meta-rp-termp
   (implies (rp-termp term)
-           (rp-termp (mv-nth 0 (*-to-mult-spec-meta term context))))
+           (rp-termp (mv-nth 0 (*/+-to-mult-spec-meta term context))))
   :hints (("Goal"
            :do-not-induct t
-           
-           :in-theory (e/d* (*-to-mult-spec-meta
+
+           :in-theory (e/d* (*/+-to-mult-spec-meta
                              valid-sc is-rp is-if)
                             ()))))
 (rp::add-meta-rule
- :meta-fnc *-to-mult-spec-meta
+ :meta-fnc */+-to-mult-spec-meta
  :trig-fnc binary-*
  :valid-syntaxp t
- :formula-checks *-to-mult-spec-meta-fchecks
+ :formula-checks */+-to-mult/adder-spec-meta-fchecks
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc */+-to-mult-spec-meta
+ :trig-fnc binary-+
+ :valid-syntaxp t
+ :formula-checks */+-to-mult/adder-spec-meta-fchecks
  :returns (mv term dont-rw))

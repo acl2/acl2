@@ -1205,10 +1205,128 @@
            :in-theory (e/d (is-rp
                             rp-termp-single-step) ()))))
 
-
-
 (defthm rp-term-listp-of-rev
   (implies (rp-term-listp x)
            (rp-term-listp (rev x)))
   :hints (("Goal"
            :in-theory (e/d (rev) ()))))
+
+
+(progn
+  (define binary-or**/and**-guard-meta-aux (term)
+    (cond
+     ((atom term)
+      term)
+     ((atom (cdr term))
+      term)
+     ((atom (cddr term))
+      (case-match term
+        (('hide x)
+         (binary-or**/and**-guard-meta-aux x))
+        (& term)))
+     ((atom (cdddr term))
+      (case-match term
+        (('acl2::binary-or* x y)
+         `(binary-or** ,(binary-or**/and**-guard-meta-aux x)
+                       ,(binary-or**/and**-guard-meta-aux y)))
+        (('acl2::binary-and* x y)
+         `(binary-and** ,(binary-or**/and**-guard-meta-aux x)
+                        ,(binary-or**/and**-guard-meta-aux y)))
+        (('binary-or** x y)
+         `(binary-or** ,(binary-or**/and**-guard-meta-aux x)
+                       ,(binary-or**/and**-guard-meta-aux y)))
+        (('binary-and** x y)
+         `(binary-and** ,(binary-or**/and**-guard-meta-aux x)
+                        ,(binary-or**/and**-guard-meta-aux y)))
+        (('equal x y)
+         (b* ((x (binary-or**/and**-guard-meta-aux x))
+              (y (binary-or**/and**-guard-meta-aux y)))
+           (if (equal x y)
+               ''t
+             `(equal ,x ,y))))
+        (& term)))
+     ((atom (cddddr term))
+      (case-match term
+        (('RETURN-LAST & & x)
+         (binary-or**/and**-guard-meta-aux x))
+      
+        (('if x x y)
+         `(binary-or** ,(binary-or**/and**-guard-meta-aux x)
+                       ,(binary-or**/and**-guard-meta-aux y)))
+        (('if x y ''nil)
+         `(binary-and** ,(binary-or**/and**-guard-meta-aux x)
+                        ,(binary-or**/and**-guard-meta-aux y)))
+        (& term)))
+     (t term)))
+                   
+
+  (define binary-or**/and**-guard-meta (term)
+    (case-match term
+      (('equal & ('hide &))
+       (binary-or**/and**-guard-meta-aux
+        (beta-search-reduce term *big-number*)))
+      (('equal ('hide &) &)
+       (binary-or**/and**-guard-meta-aux
+        (beta-search-reduce term *big-number*)))
+      (& term)))
+
+  (defevaluator binary-or**/and**-guard-meta-eval
+    binary-or**/and**-guard-meta-eval-lst
+    ((acl2::binary-or* x y)
+     (binary-or** x y)
+     (acl2::binary-and* x y)
+     (binary-and** x y)
+     (hide x)
+     (equal x y)
+     (if x y z)
+     (RETURN-LAST x y z))
+    :namedp t)
+
+  (defthm binary-or**/and**-guard-meta-eval-beta-search-reduce
+    (implies
+     (pseudo-termp term)
+     (equal (binary-or**/and**-guard-meta-eval (beta-search-reduce term limit) a)
+            (binary-or**/and**-guard-meta-eval term a)))
+    :hints (("Goal"
+             :use ((:functional-instance
+                    eval-of-beta-search-reduce
+                    (acl2::beta-eval binary-or**/and**-guard-meta-eval)
+                    (acl2::beta-eval-list binary-or**/and**-guard-meta-eval-lst)))
+             :in-theory (e/d (binary-or**/and**-guard-meta-eval-of-fncall-args) ()))))
+
+  (defthm binary-or**/and**-guard-meta-aux-correct
+    (implies t
+             (equal (binary-or**/and**-guard-meta-eval
+                     (binary-or**/and**-guard-meta-aux term) a)
+                    (binary-or**/and**-guard-meta-eval
+                     term a)))
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((:free (x) (hide x)))
+             :induct (binary-or**/and**-guard-meta-aux term)
+             :in-theory (e/d (binary-or**/and**-guard-meta-aux
+                              BINARY-AND**
+                              acl2::BINARY-AND*
+                              BINARY-or**
+                              acl2::BINARY-or*)
+                             ()))))
+
+  (defthm binary-or**/and**-guard-meta-correct
+    (implies (pseudo-termp term)
+             (equal (binary-or**/and**-guard-meta-eval term a)
+                    (binary-or**/and**-guard-meta-eval
+                     (binary-or**/and**-guard-meta term) a)))
+    :rule-classes ((:meta :trigger-fns (equal)))
+    :hints (("Goal"                 
+             :do-not-induct t
+             :in-theory (e/d (binary-or**/and**-guard-meta)
+                             ())))))
+
+  
+#|(defthm binary-and**-of-nil/t
+  (and (equal (binary-and** nil a)
+              nil)
+       (equal (binary-and** t a)
+              a))
+  :hints (("Goal"
+           :in-theory (e/d (binary-and**) ()))))|#

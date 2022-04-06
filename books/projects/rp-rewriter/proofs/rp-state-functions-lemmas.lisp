@@ -866,27 +866,27 @@
 
 
 (progn
-  (defthm rp-statep-of-update-rewriting-context-flg
+  (defthm rp-statep-of-update-rw-context-disabled
     (implies (and (rp-statep rp-state)
                   (booleanp flg))
-             (rp-statep (UPDATE-REWRITING-CONTEXT-FLG flg rp-state)))
+             (rp-statep (UPDATE-RW-CONTEXT-DISABLED flg rp-state)))
     :hints (("Goal"
              :in-theory (e/d () ()))))
 
-  (defthm valid-rp-state-syntaxp-update-rewriting-context-flg
+  (defthm valid-rp-state-syntaxp-update-rw-context-disabled
     (implies (and (valid-rp-state-syntaxp rp-state)
                   (booleanp flg))
-             (valid-rp-state-syntaxp (UPDATE-REWRITING-CONTEXT-FLG flg
+             (valid-rp-state-syntaxp (UPDATE-RW-CONTEXT-DISABLED flg
                                                                    rp-state)))
     :hints (("Goal"
              :in-theory (e/d (VALID-RP-STATE-SYNTAXP) ()))))
 
-  (defthm valid-rp-statep-update-rewriting-context-flg
+  (defthm valid-rp-statep-update-rw-context-disabled
     (implies (and (valid-rp-statep rp-state)
                   (booleanp flg))
-             (valid-rp-statep (UPDATE-REWRITING-CONTEXT-FLG flg rp-state)))
+             (valid-rp-statep (UPDATE-RW-CONTEXT-DISABLED flg rp-state)))
     :hints (("Goal"
              :in-theory (e/d () ()))))
 
 
-  (in-theory (disable UPDATE-REWRITING-CONTEXT-FLG)))
+  (in-theory (disable update-rw-context-disabled)))

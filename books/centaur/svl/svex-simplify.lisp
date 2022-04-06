@@ -186,7 +186,7 @@
    :hints (("goal"
             :in-theory (e/d (rp::rp-state-new-run
                              rp::rp-statep
-                             RP::UPDATE-REWRITING-CONTEXT-FLG)
+                             RP::UPDATE-RW-CONTEXT-DISABLED)
                             ())))))
 
 (local
@@ -949,7 +949,7 @@
 
          ((mv rw rp::rp-state)
           (rp::rp-rw
-           term nil context nil nil (rp::rw-step-limit rp::rp-state)
+           term nil context nil  (rp::rw-step-limit rp::rp-state)
            rp::rp-state state))
 
          #|((mv rw rp::rp-state)
@@ -959,7 +959,7 @@
          
          ((mv integerp rp::rp-state)
           (rp::rp-rw
-           `(integerp ,rw) `(nil t) context t nil (rp::rw-step-limit rp::rp-state)
+           `(integerp ,rw) `(nil t) context t  (rp::rw-step-limit rp::rp-state)
            rp::rp-state state))
 
          ;; (- (cw "node: ~p0 ~%" node))
@@ -1018,7 +1018,7 @@
                                          (rp::rp 'sv::svex-env-p svex-env)))
          ((mv rw rp::rp-state)
           (rp::rp-rw
-           term nil context nil nil (rp::rw-step-limit rp::rp-state) rp::rp-state state))
+           term nil context nil (rp::rw-step-limit rp::rp-state) rp::rp-state state))
          ((mv err node-new) (4vec-to-svex-termlist rw t nil))
          (- (and err
                  (hard-error
@@ -1304,7 +1304,7 @@
        (context (if (rp::context-syntaxp context) context nil))
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
-         context nil nil nil (rp::rw-step-limit rp::rp-state)  rp::rp-state state))
+         context nil nil  (rp::rw-step-limit rp::rp-state)  rp::rp-state state))
        (context (if (rp::context-syntaxp context) context nil))
 
        ((mv svexl rp::rp-state)
@@ -1321,7 +1321,7 @@
         (if only-local
             (mv term rp::rp-state)
           (rp::rp-rw
-           term nil context nil nil (rp::rw-step-limit rp::rp-state) rp::rp-state state)))
+           term nil context nil  (rp::rw-step-limit rp::rp-state) rp::rp-state state)))
 
        ;; restore rp-state setting
        (rp::rp-state (rp::update-not-simplified-action
@@ -1428,7 +1428,7 @@
 
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
-         context nil nil nil (rp::rw-step-limit rp::rp-state)
+         context nil nil (rp::rw-step-limit rp::rp-state)
          rp::rp-state state))
 
        (context (if (rp::context-syntaxp context) context nil))
@@ -1446,7 +1446,7 @@
         (if only-local
             (mv term rp::rp-state)
           (rp::rp-rw
-           term nil context  nil nil (rp::rw-step-limit rp::rp-state) rp::rp-state state)))
+           term nil context  nil  (rp::rw-step-limit rp::rp-state) rp::rp-state state)))
 
        ;; restore rp-state setting
        (rp::rp-state (rp::update-not-simplified-action

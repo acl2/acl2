@@ -190,3 +190,5 @@ Forced term is ~p2 ~% "
 (add-rp-rule return-last-from-mbe :outside-in t)
 
 (add-rp-rule acl2::throw-nonexec-error :outside-in t)
+
+(add-rp-rule fmt-to-comment-window) 

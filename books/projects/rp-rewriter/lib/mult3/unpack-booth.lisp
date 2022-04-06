@@ -352,7 +352,10 @@
      (let ((limit (1- limit)))
        (b* ((pp-arg-lst (list-to-lst pp-arg))
             (pp-arg-lst (unpack-booth-buried-in-pp-lst pp-arg-lst))
-            (pp-arg-lst (unpack-booth-for-pp-lst pp-arg-lst)))
+            (pp-arg-lst (unpack-booth-for-pp-lst pp-arg-lst))
+            #|(- (and (not (pp-lst-orderedp pp-arg-lst))
+                    (not (cw "in unpack-booth-process-pp-arg 
+                         ~%"))))|#)
          (pp-radix8+-fix pp-arg-lst)))))
 
  (define unpack-booth-buried-in-pp-lst ((lst rp-term-listp)
@@ -401,18 +404,42 @@
             (b* ((- hash)
                  (& (cw "Unpack-booth-meta: s hash ~p0 ~%" hash))
 
+                 
+
+                 
                  ;; first lest unpack these pp args
                  ((mv s-arg-lst0 pp-arg-lst c-arg-lst0)
                   (unpack-booth-process-pp-arg pp-arg))
 
+
+                 #|(- (and (not (ordered-s/c-p-lst s-arg-lst0))
+                         (not (cw "in unpack-booth-for-s. s-arg-lst0 after unpack-booth-process-pp-arg
+                         ~%"))
+                         (cwe "pp-arg that goes into
+                         unpack-booth-process-pp-arg:~p0 ~%"
+                              pp-arg)))|#
                  
-                 
+
+                 #|(- (and (not (pp-lst-orderedp pp-arg-lst2))
+                         (not (cw "in unpack-booth-for-s. pp-arg-lst2 before unpack-booth-for-c-lst ~%"))))|#
 
                  ;; then unpack the c-args
                  (c-arg-lst (list-to-lst c-arg))
                  ((mv s-arg-lst pp-arg-lst2 c-arg-lst)
                   (unpack-booth-for-c-lst c-arg-lst))
                  ;; merge the new pp args derived from the c args
+
+                 #|(- (and (not (ordered-s/c-p-lst s-arg-lst))
+                         (not (cw "in unpack-booth-for-s. s-arg-lst after unpack-booth-for-c-lst
+                         ~%"))))|#
+
+                 #|(- (and (not (pp-lst-orderedp pp-arg-lst))
+                         (not (cw "in unpack-booth-for-s. pp-arg-lst before
+                         pp-sum-merge-lst-for-s ~%"))))|#
+
+                 #|(- (and (not (pp-lst-orderedp pp-arg-lst2))
+                         (not (cw "in unpack-booth-for-s. pp-arg-lst2 before pp-sum-merge-lst-for-s ~%"))))|#
+                 
                  (pp-arg-lst (pp-sum-merge-lst-for-s pp-arg-lst pp-arg-lst2))
 
                  (& (or (pp-lst-orderedp pp-arg-lst)
@@ -423,6 +450,18 @@ input:~p0~%output:~p1~%" (list (cons #\0 s-term)
 
                  (c-arg-lst (sum-merge-lst-for-s c-arg-lst0 c-arg-lst))
                  (s-arg-lst (sum-merge-lst-for-s s-arg-lst0 s-arg-lst)) ;; no need to keep it sorted
+
+
+                #| (- (and (not (pp-lst-orderedp pp-arg-lst))
+                         (not (cw "in unpack-booth-for-s. before s-of-s-fix-lst
+                         ~%"))))
+
+                 (- (and (not (ordered-s/c-p-lst s-arg-lst))
+                         (not (cw "in unpack-booth-for-s. s-arg-lst before
+                         s-of-s-fix-lst ~%"))))
+
+                 (- (and (not (ordered-s/c-p-lst c-arg-lst))
+                         (not (cw "in unpack-booth-for-s. c-arg-lst before s-of-s-fix-lst ~%"))))|#
                  
                  ((mv pp-arg-lst c-arg-lst)
                   (s-of-s-fix-lst (s-fix-pp-args-aux s-arg-lst)
@@ -445,6 +484,9 @@ input:~p0~%output:~p1~%" (list (cons #\0 s-term)
 ;; input:~p0~%output:~p1~%" (list (cons #\0 s-term)
 ;;                                (cons #\1 pp-arg-lst)))))
 
+                 #|(- (and (not (pp-lst-orderedp pp-arg-lst))
+                         (not (cw "in unpack-booth-for-s. before s-fix-pp-args-aux ~%"))))|#
+                 
                  (pp-arg-lst (s-fix-pp-args-aux pp-arg-lst))
                  (c-arg-lst (s-fix-pp-args-aux c-arg-lst))
 
@@ -466,6 +508,13 @@ c-arg-lst  ~p1. Unique: pp-arg-lst ~p2 c-arg-lst ~p3 ~%"
 ;; input:~p0~%output:~p1~%" (list (cons #\0 s-term)
 ;;                                (cons #\1 c-arg-lst)))))
 
+
+                 #|(- (and (not (pp-lst-orderedp pp-arg-lst))
+                         (not (cw "in unpack-booth-for-s. pp-arg-lst is not
+                         ordered ~%"))
+                         (cwe "Input s-term: ~p0. Current pp-arg-lst ~p1~%"
+                              s-term pp-arg-lst)))|#
+                 
                  ((mv s-res-lst pp-res-lst c-res-lst)
                   (create-s-instance (create-list-instance pp-arg-lst)
                                      (create-list-instance c-arg-lst))))
@@ -607,6 +656,9 @@ coughed-s-lst2 ~p2, coughed-pp-lst2 ~p3, coughed-c-lst2 ~p4. Unique pp-arg-lst ~
 c-res-lst ~p2, ~%~%" (len pp-res-lst)
 (len s-res-lst)
 (len c-res-lst)))
+
+                 #|(- (and (not (pp-lst-orderedp pp-res-lst))
+                         (cw "in unpack-booth-for-c. pp-res-lst is not ordered ~%")))|#
 
                  (& (or (pp-lst-orderedp pp-res-lst)
                         (hard-error 'unpack-booth-for-c
@@ -783,7 +835,13 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
 ;;                              "unordered pp-res-lst
 ;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
 ;;                                (cons #\1 pp-res-lst)))))
-          (res (create-s-c-res-instance s-res-lst pp-res-lst c-res-lst has-bitp))
+          (res (create-s-c-res-instance s-res-lst pp-res-lst c-res-lst
+                                        has-bitp))
+
+          #|(- (and (not (ordered-s/c-p res))
+                  (not (cwe "res has unordered things in it in unpack-booth-meta ~%"))
+                  (not (cwe "input term: ~p0 ~%" term))
+                  (hard-error nil "" nil)))|#
 
           ;; (& (or (ordered-s/c-p res)
 ;;                  (hard-error 'unpack-booth-meta

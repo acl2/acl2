@@ -61,7 +61,6 @@
                         )))))
 
 
-                  
 
 (encapsulate
   nil
@@ -222,9 +221,8 @@
                               bits)
                              (sv::4vec-bitnot
                               sv::4vec)))))
-  
+
   (add-svex-simplify-rule bits-of-4vec-bitnot)
-  
 
   (defthmd bits-of-4vec-bitand-old
     (implies (and (natp size)
@@ -722,18 +720,19 @@
                   (posp size))
              (and (equal (equal x
                                 (4vec-concat$ size k l))
-                         (and (equal (bits x 0 1)
-                                     (bits k 0 1))
-                              (equal (svl::4vec-rsh 1 x)
-                                     (sv::4vec-rsh 1 (4vec-concat$ size k l)))))
+                         (acl2::and* (equal (bits x 0 1)
+                                            (bits k 0 1))
+                                     (equal (svl::4vec-rsh 1 x)
+                                            (sv::4vec-rsh 1 (4vec-concat$ size k l)))))
                   (equal (equal (4vec-concat$ size k l) x)
-                         (and (equal (bits x 0 1)
-                                     (bits k 0 1))
-                              (equal (svl::4vec-rsh 1 x)
-                                     (sv::4vec-rsh 1 (4vec-concat$ size k l)))))))
+                         (acl2::and* (equal (bits x 0 1)
+                                            (bits k 0 1))
+                                     (equal (svl::4vec-rsh 1 x)
+                                            (sv::4vec-rsh 1 (4vec-concat$ size k l)))))))
     :hints (("Goal"
              :use (:instance equal-of-4vec-concat-with-posp-size)
-             :in-theory (e/d* (4vec-concat$)
+             :in-theory (e/d* (4vec-concat$
+                               acl2::and*)
                               (equal-of-4vec-concat-with-posp-size
                                4VEC-PART-SELECT-OF-CONCAT-1
                                4VEC-RSH-OF-4VEC-CONCAT-2
@@ -1779,7 +1778,7 @@
                               SV::4VEC->UPPER)
                              (bitp
                               convert-4vec-concat-to-4vec-concat$)))))
-  
+
   (add-svex-simplify-rule bitp-bits-size=1)
 
   (def-rp-rule bit$-of-negated-bit
@@ -1880,7 +1879,7 @@
                               SV::3VEC-BITNOT) ()))))
 
   (add-svex-simplify-rule integerp-4vec-bitnot)
-  
+
   (def-rp-rule integerp-4vec-bitnot$
     (implies (and (integerp x)
                   (natp size))
@@ -2282,7 +2281,6 @@
 
 (add-svex-simplify-rule bits-of-4vec-bit?!)
 
-
 (progn
   (def-rp-rule 4vec-concat$-same-var-merge
     (implies (and (natp csize1)
@@ -2296,7 +2294,7 @@
                                         other))
                     (svl::4vec-concat$ (+ csize1 csize2) (svl::bits x start1 (+
                                                                               csize1 csize2))
-                                     
+
                                        other)))
     :hints (("Goal"
              :use ((:instance 4vec-concat-same-var-merge))
@@ -2324,3 +2322,70 @@
              :use ((:instance 4vec-concat-same-var-merge-with-bitnot))
              :in-theory (e/d (4VEC-CONCAT$) (4vec-concat-same-var-merge-with-bitnot)))))
   (add-svex-simplify-rule 4vec-concat$-same-var-merge-with-4vec-bitnot$))
+
+
+(progn
+  (defthmd bits-of--4vec-plus-propagate
+    (implies (and (natp start)
+                  (natp size)
+                  (integerp x)
+                  (integerp y))
+             (equal (bits (4vec-plus x y) start size)
+                    (bits
+                     (4vec-plus$ (+ start size)
+                                 (bits x 0 (+ start size))
+                                 (bits y 0 (+ start size)))
+                     start size)))
+    :hints (("Goal"
+             :do-not-induct t
+             :use ((:instance 4vec-part-select-of-4vec-plus-propagate))
+             :in-theory (e/d (bits)
+                             (4vec-part-select-of-4vec-plus-propagate
+                              )))))
+  (defthm bits-of--4vec-plus-propagate-side-cond
+    (implies (and (integerp x)
+                  (integerp y))
+             (and (integerp x)
+                  (integerp y)))
+    :rule-classes nil)
+  (rp-attach-sc bits-of--4vec-plus-propagate
+                ;; in case it takes a long time to calculate that x and y are
+                ;; integerp, attach their side-cond.
+                bits-of--4vec-plus-propagate-side-cond)
+  (add-svex-simplify-rule bits-of--4vec-plus-propagate))
+
+(progn
+  (defthmd bits-of-4vec-plus$
+    (implies (and (syntaxp (and (quotep start)
+                                (quotep size)
+                                (quotep size2)))
+                  (natp start)
+                  (natp size)
+                  (natp size2)
+                  (implies (not (= start 0)) ;; put this hyp here so it doesn't 
+                           (not (equal size2 (+ start size)))))
+             (equal (bits (4vec-plus$ size2 x y) start size)
+                    (cond ((<= size2 start)
+                           0)
+                          ((< size2 (+ start size))
+                           (bits (4vec-plus$ size2 x y) start (- size2 start)))
+                          ((> size2 (+ start size))
+                           (bits (4vec-plus x y) start size) ;; trigger
+                           ;; bits-of--4vec-plus-propagate again. 
+                           )
+                          ((= start 0)
+                           (4vec-plus$ size2 x y))
+                          (t t)))) ;; should never come to this case
+    :hints (("Goal"
+             :cases ((= size 0)
+                     (= size2 0))
+             :expand ((4VEC-PART-SELECT START SIZE 0))
+             :in-theory (e/d (4vec-plus$
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              BITS)
+                             ()))))
+  (add-svex-simplify-rule bits-of-4vec-plus$))
+                         
+                         
+           
