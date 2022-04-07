@@ -39,10 +39,11 @@
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 
 ;move
-(defthm nat-listp-of-reverse-list
+(local
+ (defthm nat-listp-of-reverse-list
   (equal (nat-listp (reverse-list x))
          (all-natp x))
-  :hints (("Goal" :in-theory (enable nat-listp reverse-list))))
+  :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
 
 (local (in-theory (disable nth-of-cdr
                            ;; cadr-becomes-nth-of-1 ; we want to keep the cdr because it gets the fargs
