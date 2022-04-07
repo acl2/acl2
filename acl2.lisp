@@ -208,7 +208,8 @@
                      (progn (format t "Note: Setting SPACE to ~s."
                                     our-space)
                             our-space)
-                   #+cmu 1 #-cmu 0)))
+                   #+(or cmu sbcl) 1 ; see :DOC note-8-5 (system-level changes)
+                   #-(or cmu sbcl) 0)))
 
 ; WARNING:  Do not proclaim (cl-user::fixnum-safety 0) for LispWorks.  Any
 ; fixnum-safety less than 3 expects all integers to be fixnums!
