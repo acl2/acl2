@@ -67,6 +67,7 @@
 (include-book "kestrel/utilities/strings" :dir :system)
 (include-book "kestrel/utilities/temp-dirs" :dir :system)
 (include-book "conjunctions-and-disjunctions") ;for possibly-negated-nodenumsp
+(include-book "std/io/read-file-characters" :dir :system) ; todo: use file-io-light
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system)) ;for character-listp-of-take
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
