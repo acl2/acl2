@@ -74,7 +74,8 @@
 (include-book "kestrel/utilities/make-tuple" :dir :system)
 (include-book "kestrel/lists-light/all-same-eql" :dir :system)
 (include-book "coi/lists/nth-and-update-nth" :dir :system) ;drop, but list::nth-of-cons is mentioned below
-(in-theory (disable LIST::UPDATE-NTH-EQUAL-REWRITE))
+(in-theory (disable LIST::UPDATE-NTH-EQUAL-REWRITE
+                    LIST::FIX-OF-NTHCDR))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
