@@ -71,6 +71,7 @@
 (include-book "add-to-end")
 (include-book "first-non-member")
 (include-book "count-occs")
+(include-book "prefixp-def")
 (include-book "prefixp")
 (include-book "prefixp2")
 (include-book "remove-nth")

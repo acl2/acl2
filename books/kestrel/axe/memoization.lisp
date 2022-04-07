@@ -30,6 +30,7 @@
 
 ;; TODO: Consider using a stobj for the memoization, perhaps with a Lisp hash table.
 ;; TODO: Consider not memoizing things with unsimplified args? (that seemed to slow things down)
+;; TODO: Consider not memoizing things that didn't take a lot of work to compute.
 ;; TODO: Consider whether to memoize rewrites of lambda applications (but not memoizing them slowed things down?)
 ;; TODO: Consider whether to memoize rewrites of ground terms
 ;; TODO: Consider making a separate memoization for tree that are functions applied to simplified args (common).
