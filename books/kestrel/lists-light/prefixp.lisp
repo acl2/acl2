@@ -13,17 +13,9 @@
 
 ;; TODO: Clean up this book
 
+(include-book "prefixp-def")
 (local (include-book "true-list-fix"))
 (local (include-book "len"))
-
-;dup in books/std/lists/list-defuns.lisp
-(defund prefixp (x y)
-  (declare (xargs :guard t))
-  (if (consp x)
-      (and (consp y)
-           (equal (car x) (car y))
-           (prefixp (cdr x) (cdr y)))
-    t))
 
 (defthm prefixp-of-nil-arg1
   (prefixp nil y)
