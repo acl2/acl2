@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "std/strings/decimal" :dir :system)
+(include-book "std/strings/decimal" :dir :system) ; todo: reduce
 (include-book "std/strings/binary" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "kestrel/utilities/read-chars" :dir :system)
