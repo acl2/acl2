@@ -43,16 +43,6 @@
           (remove1-equal nil y)))
   :hints (("Goal" :in-theory (enable append))))
 
-;dup
-(defthm len-of-cdr-better
-  (equal (len (cdr x))
-         (if (equal 0 (len x))
-             0
-           (+ -1 (len x)))))
-
-;(in-theory (disable len))
-;add theory invar?
-
 ;move
 (defthm perm-of-append-of-mv-nth-0-of-split-list-fast-aux-and-mv-nth-1-of-split-list-fast-aux
   (implies (<= (len tail) (len lst))
@@ -150,7 +140,7 @@
                   :hints
                   (("Goal"
                     :in-theory
-                    (union-theories '(o-p o-finp o< len-of-cdr-better
+                    (union-theories '(o-p o-finp o< len-of-cdr
                                           (:compound-recognizer natp-compound-recognizer)
                                           (:type-prescription len)
                                           consp-when-len-equal-constant
@@ -171,7 +161,7 @@
                   :hints
                   (("Goal"
                     :in-theory
-                    (union-theories '(o-p o-finp o< len-of-cdr-better
+                    (union-theories '(o-p o-finp o< len-of-cdr
                                           (:compound-recognizer natp-compound-recognizer)
                                           (:type-prescription len)
                                           ;;consp-when-len-equal-constant
