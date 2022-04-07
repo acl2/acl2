@@ -21,9 +21,7 @@
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/lists-light/perm-def" :dir :system)
 (include-book "kestrel/lists-light/perm" :dir :system) ;for the fact that perm is an equiv
-;(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
-;; (local (include-book "kestrel/lists-light/perm" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 
 ;(local (in-theory (disable all-vars)))
