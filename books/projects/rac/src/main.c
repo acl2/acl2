@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <iostream>
 #include <fstream>
 using namespace std;
@@ -10,31 +11,43 @@ extern FILE *yyout;
 extern int yylineno;
 extern Program prog;
 ofstream fout;
-char buf[80];
 
 int main(int argc, char **argv) {
   ++argv, --argc;  /* skip over program name */
+
+
   if (argc > 0) {
-    strcpy(buf, argv[0]);
-    strcat(buf, ".i");
-    yyin = fopen(buf, "r");
+
+    string buf = argv[0];
+
+    buf += ".i";
+    yyin = fopen(buf.c_str(), "r");
     if (yyin == NULL) {
-      printf("Failed to open file '%s'\n", buf);
+      printf("Failed to open file '%s'\n", buf.c_str());
     }
     else {
       yylineno = 1;
-      yyparse();
+      if (yyparse())
+        return 1;
+
+      // Restore basename.
+      buf.pop_back();
+      buf.pop_back();
+
+      if (prog.isEmpty())
+        puts("Warning: no function definitions found,"
+             " maybe you forgot the `RAC begin` guard");
+
       if (argc > 1) {
-        strcpy(buf, argv[0]);
         if (!strcmp(argv[1], "-acl2")) {
-          strcat(buf, ".ast.lsp");
-          fout.open(buf);
+          buf +=  ".ast.lsp";
+          fout.open(buf.c_str());
           prog.display(fout, acl2);
           fout.close();
         }
         else if (!strcmp(argv[1], "-rac")) {
-          strcat(buf, ".pc");
-          fout.open(buf);
+          buf += ".pc";
+          fout.open(buf.c_str());
           prog.display(fout, rac);
           fout.close();
         }

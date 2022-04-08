@@ -1027,6 +1027,7 @@ public:
   void displayFunDefs(ostream& os, DispMode mode, const char *prefix="");
   void displayFunDecs(ostream& os);
   void display(ostream& os, DispMode mode=rac);
+  bool isEmpty() const;
 };
 
 extern Program prog;
