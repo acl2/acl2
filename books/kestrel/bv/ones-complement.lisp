@@ -40,6 +40,13 @@
 ;;   :rule-classes :linear
 ;;   :hints (("Goal" :in-theory (enable expt-of-+))))
 
+;move
+(local
+ (defthm +-of-*-of-1/2-and-*-of-1/2-same
+   (implies (acl2-numberp x)
+            (equal (+ (* 1/2 X) (* 1/2 X))
+                   x))))
+
 (defthm expt-of-+-of-1-linear
   (implies (natp n1)
            (< (expt 2 n1)
@@ -153,11 +160,6 @@
       x
     (bvnot size (- x))))
 
-(defthm bvnot-of-+-of-1-and-expt-same
-  (equal (bvnot size (+ -1 (expt 2 size)))
-         0)
-  :hints (("Goal" :in-theory (enable bvnot lognot))))
-
 ;todo: make a mod-when-negative-and-small
 (defthmd bvchop-when-negative-and-small
   (IMPLIES (AND (< X 0) ; x is negative
@@ -169,16 +171,6 @@
            (EQUAL (BVCHOP SIZE X)
                   (+ (expt 2 size) x)))
   :hints (("Goal" :in-theory (enable bvchop mod FLOOR-WHEN-NEGATIVE-AND-SMALL))))
-
-(defthm bvnot-of--
-  (implies (and (integerp size)
-                (< 0 size)
-                (integerp x))
-           (equal (bvnot size (- x))
-                  (if (equal (bvchop size x) 0)
-                      (+ -1 (expt 2 size))
-                    (+ (bvchop size x) -1))))
-  :hints (("Goal" :in-theory (enable bvnot lognot bvchop MOD-SUM-CASES))))
 
 (defthm from-ones-complement-of-to-ones-complement
   (implies (and (posp size)
@@ -278,11 +270,6 @@
                                      bvplus
                                      bvchop-of-sum-cases
                                      unsigned-byte-p))))
-
-(defthm +-of-*-of-1/2-and-*-of-1/2-same
-  (implies (acl2-numberp x)
-           (equal (+ (* 1/2 X) (* 1/2 X))
-                  x)))
 
 ;; Check whether X is equal to positive 0 (all zeros) or negative 0 (all ones).
 (defund ones-complement-zerop (size x)
