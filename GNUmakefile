@@ -181,6 +181,11 @@ ACL2 ?= $(ACL2_WD)/${PREFIXsaved_acl2}
 ACL2_SAFETY =
 ACL2_STACK_ACCESS =
 
+# It can be useful to set the space to other than its default (in
+# other than CMUCL) of 0.  In particular, we have seen improved
+# floating-point performance with SBCL.
+ACL2_SPACE =
+
 # Set ACL2_COMPILER_DISABLED, say with ACL2_COMPILER_DISABLED=t, to
 # build the image with (SET-COMPILER-ENABLED NIL STATE), thus
 # disabling use of the compiler for certify-book and include-book; see
@@ -332,6 +337,9 @@ acl2r.lisp:
 	fi
 	@if [ "$(ACL2_SAFETY)" != "" ] ; then \
 	echo "(defparameter *acl2-safety* $(ACL2_SAFETY))" >> $@ ;\
+	fi
+	@if [ "$(ACL2_SPACE)" != "" ] ; then \
+	echo "(defparameter *acl2-space* $(ACL2_SPACE))" >> $@ ;\
 	fi
 	@if [ "$(ACL2_STACK_ACCESS)" != "" ] ; then \
 	echo "(defparameter *acl2-stack-access* $(ACL2_STACK_ACCESS))" >> $@ ;\
@@ -728,6 +736,7 @@ $(PREFIXsaved_acl2): $(ACL2_DEPS)
 	PREFIX=$(PREFIX) \
 	LISP=$(LISP) \
 	ACL2_SAFETY=$(ACL2_SAFETY) \
+	ACL2_SPACE=$(ACL2_SPACE) \
 	ACL2_STACK_ACCESS=$(ACL2_STACK_ACCESS) \
 	ACL2_COMPILER_DISABLED=$(ACL2_COMPILER_DISABLED) \
 	ACL2_EGC_ON=$(ACL2_EGC_ON) \
