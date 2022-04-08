@@ -262,6 +262,12 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                 )
         state)))
 
+(defun check-boolean (val)
+  (declare (xargs :guard t))
+  (if (member-eq val '(t nil))
+      val
+    (er hard? 'check-boolean "Value is not boolean: ~x0." val)))
+
 (defmacrodoc unroll-spec-basic (&whole whole-form
                                        defconst-name ;; The name of the DAG constant to create
                                        term          ;; The term to simplify
@@ -287,27 +293,31 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                        (function-type ':auto)
                                        (function-params ':auto)
                                        (produce-theorem 'nil)
+                                       (local 't)
                                        )
-  `(make-event-quiet (unroll-spec-basic-fn ',defconst-name
-                                           ,term
-                                           ,rules
-                                           ;; ,rule-alists
-                                           ,extra-rules
-                                           ,remove-rules
-                                           ,assumptions
-                                           ,interpreted-function-alist
-                                           ,monitor
-                                           ,memoizep
-                                           ,count-hits
-                                           ;; ,simplify-xorsp
-                                           ,produce-function
-                                           ,disable-function
-                                           ,function-type
-                                           ,function-params
-                                           ,produce-theorem
-                                           ,print
-                                           ',whole-form
-                                           state))
+  (let ((form `(make-event-quiet (unroll-spec-basic-fn ',defconst-name
+                                                       ,term
+                                                       ,rules
+                                                       ;; ,rule-alists
+                                                       ,extra-rules
+                                                       ,remove-rules
+                                                       ,assumptions
+                                                       ,interpreted-function-alist
+                                                       ,monitor
+                                                       ,memoizep
+                                                       ,count-hits
+                                                       ;; ,simplify-xorsp
+                                                       ,produce-function
+                                                       ,disable-function
+                                                       ,function-type
+                                                       ,function-params
+                                                       ,produce-theorem
+                                                       ,print
+                                                       ',whole-form
+                                                       state))))
+    (if (check-boolean local)
+        (list 'local form)
+      form))
   :parents (axe) ; or can we consider this a lifter?
   :short "Open functions and unroll recursion in a spec."
   :args ((defconst-name
@@ -326,6 +336,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
          (disable-function "Whether to disable the produced function.")
          (function-type "How to create a function for the DAG (:term, :embedded-dag, :lets, or :auto).")
          (function-params "The param to use for the produced function (specifies their order).")
-         (produce-theorem "Whether to create a theorem stating that the dag is equal to the orignal term (using skip-proofs)."))
+         (produce-theorem "Whether to create a theorem stating that the dag is equal to the orignal term (using skip-proofs).")
+         (local "Whether to make the result of @('unroll-spec-basic') local to the enclosing book (or @('encapsulate')).  This prevents a large DAG from being stored in the @(tsee certificate) of the book, but it means that the result of @('unroll-spec-basic') is not accessible from other books.  Usually, the default value of @('t') is appropriate, because the book that calls @('unroll-spec-basic') is not included by other books."))
   :description ("Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
                 "To decide which rewrite rules to use, the tool starts with either the @(':rules') if supplied, or a basic default set of rules, @('unroll-spec-basic-rules').  Then the @(':extra-rules') are added and then @(':remove-rules') are removed."))
