@@ -215,7 +215,7 @@
         (er-soft+ ctx t irrelevant
                   "The target ~x0 is not a symbol."
                   target))
-       ((unless (defstruct-table-lookup target (w state)))
+       ((unless (defstruct-table-lookup (symbol-name target) (w state)))
         (er-soft+ ctx t irrelevant
                   "The target ~x0 is neither a function name ~
                    nor a DEFSTRUCT name."
