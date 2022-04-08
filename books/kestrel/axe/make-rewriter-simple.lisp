@@ -328,7 +328,6 @@
                                                         print interpreted-function-alist known-booleans monitored-symbols count))
 
         (call-of-simplify-boolif-tree-and-add-to-dag1 `(,simplify-boolif-tree-and-add-to-dag1-name
-                                                        args
                                                         tree
                                                         trees-equal-to-tree
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
@@ -349,7 +348,6 @@
                                                       print interpreted-function-alist known-booleans monitored-symbols count))
 
         (call-of-simplify-bvif-tree-and-add-to-dag1 `(,simplify-bvif-tree-and-add-to-dag1-name
-                                                      args
                                                       tree
                                                       trees-equal-to-tree
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
@@ -1160,7 +1158,7 @@
                                                          interpreted-function-alist known-booleans monitored-symbols
                                                          (+ -1 count))))))
 
-        ;; Continue rewriting a tree that is an BOOLIF.  This is separate just to keep the main function small.
+        ;; Continue rewriting a tree that is a BOOLIF.  This is separate just to keep the main function small.
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         (defund ,simplify-boolif-tree-and-add-to-dag2-name (simplified-test ; a nodenum
                                                             args ;the args of the call to boolif
@@ -1226,11 +1224,10 @@
                                                     refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
                                                     (+ -1 count))))
 
-        ;; Rewrite a tree that is an BOOLIF.
+        ;; Rewrite a tree that is a BOOLIF.
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;; This is separate just to keep the main function small
-        (defund ,simplify-boolif-tree-and-add-to-dag1-name (args ;the args of the call to boolif
-                                                            tree
+        (defund ,simplify-boolif-tree-and-add-to-dag1-name (tree ; a call of BOOLIF
                                                             trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                             rewriter-rule-alist
@@ -1238,11 +1235,11 @@
                                                             node-replacement-array-num-valid-nodes
                                                             print interpreted-function-alist known-booleans monitored-symbols count)
           (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                      (all-axe-treep args)
-                                      (true-listp args)
-                                      (all-bounded-axe-treep args dag-len)
-                                      ;; (equal 3 (len args))
-                                      (tree-to-memoizep tree)
+                                      (axe-treep tree)
+                                      (bounded-axe-treep tree dag-len)
+                                      (consp tree)
+                                      (equal 'boolif (ffn-symb tree))
+                                      ;; (tree-to-memoizep tree) implied by the above
                                       (trees-to-memoizep trees-equal-to-tree)
                                       (axe-print-levelp print)
                                       (interpreted-function-alistp interpreted-function-alist)
@@ -1264,6 +1261,7 @@
           (b* (((when (or (not (mbt (natp count)))
                           (= 0 count)))
                 (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               (args (fargs tree))
                ((when (not (consp (rest (rest args))))) ;; for guards
                 (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                ;; First, try to resolve the if-test:
@@ -1433,8 +1431,7 @@
         ;; Rewrite a call of 'BVIF on ARGS.
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;; This is separate just to keep the main function small
-        (defund ,simplify-bvif-tree-and-add-to-dag1-name (args
-                                                          tree ;bvif applied to the args
+        (defund ,simplify-bvif-tree-and-add-to-dag1-name (tree ;bvif applied to the args
                                                           trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                           rewriter-rule-alist
@@ -1442,12 +1439,10 @@
                                                           node-replacement-array-num-valid-nodes
                                                           print interpreted-function-alist known-booleans monitored-symbols count)
           (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                      (all-axe-treep args)
-                                      (true-listp args)
-                                      (all-bounded-axe-treep args dag-len)
-                                      ;; (equal 4 (len args))
-                                      (consp tree)
                                       (axe-treep tree)
+                                      (bounded-axe-treep tree dag-len)
+                                      (consp tree)
+                                      (equal 'bvif (ffn-symb tree))
                                       (trees-to-memoizep trees-equal-to-tree)
                                       (axe-print-levelp print)
                                       (interpreted-function-alistp interpreted-function-alist)
@@ -1470,7 +1465,8 @@
                   (= 0 count))
               (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
             ;; First, try to resolve the if-test:
-            (b* (((when (not (consp (rest (rest (rest args)))))) ;; for guards
+            (b* ((args (fargs tree))
+                 ((when (not (consp (rest (rest (rest args)))))) ;; for guards
                   (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                  ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                   (,simplify-tree-and-add-to-dag-name (second args) ;the if-test
@@ -1631,15 +1627,13 @@
                                                                  print interpreted-function-alist known-booleans monitored-symbols
                                                                  (+ -1 count) ;could perhaps be avoided with a more complex measure
                                                                  ))
-                        (boolif (,simplify-boolif-tree-and-add-to-dag1-name (fargs tree)
-                                                                            tree trees-equal-to-tree
+                        (boolif (,simplify-boolif-tree-and-add-to-dag1-name tree trees-equal-to-tree
                                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                                             rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes
                                                                             print interpreted-function-alist known-booleans monitored-symbols
                                                                             (+ -1 count) ;could perhaps be avoided with a more complex measure
                                                                             ))
-                        (bvif (,simplify-bvif-tree-and-add-to-dag1-name (fargs tree)
-                                                                        tree trees-equal-to-tree
+                        (bvif (,simplify-bvif-tree-and-add-to-dag1-name tree trees-equal-to-tree
                                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                                                         rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes
                                                                         print interpreted-function-alist known-booleans monitored-symbols
@@ -2621,12 +2615,10 @@
            :flag ,simplify-boolif-tree-and-add-to-dag2-name)
 
          (defthm ,(pack$ 'theorem-for-simplify-boolif-tree-and-add-to-dag1- suffix)
-           (implies (and (all-axe-treep args)
-                         (all-bounded-axe-treep args dag-len)
-                         ;; (equal 3 (len args))
-                         (consp tree)
-                         (axe-treep tree)
+           (implies (and (axe-treep tree)
                          (bounded-axe-treep tree dag-len)
+                         (consp tree)
+                         (equal 'boolif (ffn-symb tree))
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag1))
                          (maybe-bounded-memoizationp memoization dag-len)
@@ -2729,12 +2721,10 @@
 
          (defthm ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag1- suffix)
            (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-axe-treep args)
-                         (all-bounded-axe-treep args dag-len)
-                         (consp tree)
                          (axe-treep tree)
                          (bounded-axe-treep tree dag-len)
-                         ;; (equal 4 (len args))
+                         (consp tree)
+                         (equal 'bvif (ffn-symb tree))
                          (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag1))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (trees-to-memoizep trees-equal-to-tree)
@@ -3148,12 +3138,10 @@
                   :in-theory (disable ,(pack$ 'theorem-for-simplify-boolif-tree-and-add-to-dag2- suffix)))))
 
        (defthm ,(pack$ 'bound-theorem-for-simplify-boolif-tree-and-add-to-dag1- suffix)
-         (implies (and (all-axe-treep args)
-                       (all-bounded-axe-treep args dag-len)
-                       ;; (equal 3 (len args))
-                       (consp tree)
-                       (axe-treep tree)
+         (implies (and (axe-treep tree)
                        (bounded-axe-treep tree dag-len)
+                       (consp tree)
+                       (equal 'boolif (ffn-symb tree))
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag1))
                        (maybe-bounded-memoizationp memoization dag-len)
@@ -3215,12 +3203,10 @@
 
        (defthm ,(pack$ 'bound-theorem-for-simplify-bvif-tree-and-add-to-dag1- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-axe-treep args)
-                       (all-bounded-axe-treep args dag-len)
-                       (consp tree)
                        (axe-treep tree)
                        (bounded-axe-treep tree dag-len)
-                       ;; (equal 4 (len args))
+                       (consp tree)
+                       (equal 'bvif (ffn-symb tree))
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag1))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
@@ -3228,8 +3214,7 @@
                        (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                        (rule-alistp rewriter-rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                       (<= x dag-len)
-                       )
+                       (<= x dag-len))
                   (<= x
                       (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag1- suffix))
@@ -3609,13 +3594,11 @@
                   :in-theory (disable ,(pack$ 'theorem-for-simplify-boolif-tree-and-add-to-dag2- suffix)))))
 
        (defthm ,(pack$ 'node-replacement-array-bound-theorem-for-simplify-boolif-tree-and-add-to-dag1- suffix)
-         (implies (and (all-axe-treep args)
-                       (all-bounded-axe-treep args dag-len)
-                       ;; (equal 3 (len args))
-                       (consp tree)
+         (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (axe-treep tree)
                        (bounded-axe-treep tree dag-len)
-                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (consp tree)
+                       (equal 'boolif (ffn-symb tree))
                        (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag1))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
@@ -3675,12 +3658,10 @@
 
        (defthm ,(pack$ 'node-replacement-array-bound-theorem-for-simplify-bvif-tree-and-add-to-dag1- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-axe-treep args)
-                       (all-bounded-axe-treep args dag-len)
-                       (consp tree)
                        (axe-treep tree)
                        (bounded-axe-treep tree dag-len)
-                       ;; (equal 4 (len args))
+                       (consp tree)
+                       (equal 'bvif (ffn-symb tree))
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag1))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
@@ -3861,13 +3842,11 @@
                     :in-theory (disable ,(pack$ 'theorem-for-simplify-boolif-tree-and-add-to-dag2- suffix)))))
 
          (defthm ,(pack$ 'node-replacement-arrayp-of-simplify-boolif-tree-and-add-to-dag1- suffix)
-           (implies (and (all-axe-treep args)
-                         (all-bounded-axe-treep args dag-len)
-                         ;; (equal 3 (len args))
-                         (consp tree)
+           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (axe-treep tree)
                          (bounded-axe-treep tree dag-len)
-                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                         (consp tree)
+                         (equal 'boolif (ffn-symb tree))
                          (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag1))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (trees-to-memoizep trees-equal-to-tree)
@@ -3924,12 +3903,10 @@
 
          (defthm ,(pack$ 'node-replacement-arrayp-of-simplify-bvif-tree-and-add-to-dag1- suffix)
            (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-axe-treep args)
-                         (all-bounded-axe-treep args dag-len)
-                         (consp tree)
                          (axe-treep tree)
                          (bounded-axe-treep tree dag-len)
-                         ;; (equal 4 (len args))
+                         (consp tree)
+                         (equal 'bvif (ffn-symb tree))
                          (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag1))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (trees-to-memoizep trees-equal-to-tree)
