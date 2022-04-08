@@ -4600,7 +4600,7 @@
      the general rules in @(tsee *atc-all-rules*),
      some structure-specific rules that are similar to
      rules for arrays in @(tsee *atc-all-rules*),
-     plus the definition of @(tse not) (more on this below),
+     plus the definition of @(tsee not) (more on this below),
      plus the definition of @('fn') (clearly),
      plus the theorems about the results of the functions called by @('fn'),
      plust the type prescriptions of the functions called by @('fn'),
