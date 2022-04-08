@@ -384,7 +384,7 @@
 
 (defthm dargp-less-than-of-apply-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum bound)
+                (< nodenum bound) ; in case no replacement happens
                 (natp num-valid-nodes)
                 (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                 (natp bound)
@@ -396,6 +396,93 @@
                                   (array node-replacement-array)
                                   (index nodenum))
            :in-theory (e/d (apply-node-replacement-array)
+                           (type-of-aref1-when-bounded-node-replacement-arrayp)))))
+
+;;;
+;;; apply-node-replacement-array-bool
+;;;
+
+;; Returns NODENUM (no replacement for NODENUM) or a nodenum/quotep with which to replace NODENUM.
+;; The result is equivalent to NODENUM under iff (but not necessarily equal), given the information in the array.
+(defund apply-node-replacement-array-bool (nodenum node-replacement-array num-valid-nodes)
+  (declare (xargs :guard (and (natp nodenum)
+                              (natp num-valid-nodes)
+                              (node-replacement-arrayp 'node-replacement-array node-replacement-array)
+                              (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))))
+  (if (<= num-valid-nodes nodenum) ;can't possibly be replaced, and looking it up might be illegal
+      nodenum
+    ;; either nil or a replacement (a nodenum or quotep) or *non-nil*:
+    (let ((res (aref1 'node-replacement-array node-replacement-array nodenum)))
+      (if (not res)
+          nodenum ; no change
+        (if (eq res *non-nil*)
+            *t*           ; equivalent to anything else non-nil under IFF
+          (if (consp res) ; check for quotep
+              (if (equal res *nil*)
+                  *nil*
+                *t* ; any non-nil constant is equivalent to t
+                )
+            res ; a replacement nodenum (this should be rare, but perhaps we just simplified something and replaced it with nodenum using the node-replament-array, and are now replacing again)
+            ))))))
+
+(defthm dargp-of-apply-node-replacement-array-bool
+  (implies (and ;(apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes) ;; node is being replaced with something
+                (natp nodenum)
+                (natp num-valid-nodes)
+                (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
+           (dargp (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)))
+  :hints (("Goal" :use (:instance type-of-aref1-when-node-replacement-arrayp
+                                  (array-name 'node-replacement-array)
+                                  (array node-replacement-array)
+                                  (index nodenum))
+           :in-theory (e/d (apply-node-replacement-array-bool) (type-of-aref1-when-bounded-node-replacement-arrayp)))))
+
+;; Use consp as the normal form
+(defthm natp-of-apply-node-replacement-array-bool
+  (implies (and (natp nodenum)
+                (natp num-valid-nodes)
+                (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
+           (equal (natp (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes))
+                  (not (consp (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)))))
+  :hints (("Goal" :use (:instance type-of-aref1-when-node-replacement-arrayp
+                                  (array-name 'node-replacement-array)
+                                  (array node-replacement-array)
+                                  (index nodenum))
+           :in-theory (e/d (apply-node-replacement-array-bool) (type-of-aref1-when-bounded-node-replacement-arrayp)))))
+
+(defthm dargp-less-than-of-apply-node-replacement-array-bool
+  (implies (and (natp nodenum)
+                (< nodenum bound) ; in case no replacement happens
+                (natp num-valid-nodes)
+                (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                (natp bound)
+                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
+           (dargp-less-than (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)
+                            bound))
+  :hints (("Goal" :use (:instance type-of-aref1-when-bounded-node-replacement-arrayp
+                                  (array-name 'node-replacement-array)
+                                  (array node-replacement-array)
+                                  (index nodenum))
+           :in-theory (e/d (apply-node-replacement-array-bool)
+                           (type-of-aref1-when-bounded-node-replacement-arrayp)))))
+
+(defthm <-of-apply-node-replacement-array-bool
+  (implies (and (not (consp (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)))
+                (natp nodenum)
+                (< nodenum bound) ; in case no replacement happens
+                (natp num-valid-nodes)
+                (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                (natp bound)
+                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
+           (< (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)
+              bound))
+  :hints (("Goal" :use (:instance type-of-aref1-when-bounded-node-replacement-arrayp
+                                  (array-name 'node-replacement-array)
+                                  (array node-replacement-array)
+                                  (index nodenum))
+           :in-theory (e/d (apply-node-replacement-array-bool)
                            (type-of-aref1-when-bounded-node-replacement-arrayp)))))
 
 ;;;

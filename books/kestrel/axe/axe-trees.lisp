@@ -100,11 +100,190 @@
                        (true-listp args))))
   :hints (("Goal" :in-theory (enable axe-treep))))
 
+(defthm all-axe-treep-of-cdr
+  (implies (and (axe-treep tree)
+                (consp tree)
+                (not (equal 'quote (car tree))))
+           (all-axe-treep (cdr tree))))
+
+(defthm all-axe-treep-of-cdr-2
+  (implies (all-axe-treep trees)
+           (all-axe-treep (cdr trees))))
+
+(defthm axe-treep-of-car
+  (implies (and (all-axe-treep trees)
+                ;; (consp trees)
+                )
+           (axe-treep (car trees))))
+
+(defthm axe-treep-compound-recognizer
+  (implies (axe-treep tree)
+           (or (and (consp tree)
+                    (true-listp tree))
+               (symbolp tree)
+               (natp tree)))
+  :rule-classes :compound-recognizer)
+
+;disable outside axe
+(defthm symbolp-of-car-when-axe-treep-cheap
+  (implies (and (axe-treep tree)
+                (not (consp (car tree))))
+           (symbolp (car tree)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0))))
+
+(defthm len-of-nth-1-of-car-when-axe-treep-cheap
+  (implies (and (axe-treep tree)
+                (consp (car tree)))
+           (equal (len (nth 1 (car tree))) ;the lambda formals
+                  (len (cdr tree))         ;the args
+                  ))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+
+(defthm len-of-nth-1-of-nth-0-when-axe-treep-cheap
+  (implies (and (axe-treep tree)
+                (consp (car tree)))
+           (equal (len (nth 1 (nth 0 tree))) ;the lambda formals
+                  (len (cdr tree))         ;the args
+                  ))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+
+(defthm axe-treep-of-nth-2-of-car-when-axe-treep-cheap
+  (implies (and (axe-treep tree)
+                (consp (car tree)))
+           (axe-treep (nth 2 (car tree))) ;the lambda body
+           )
+  :hints (("Goal" :expand ((axe-treep tree))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+
+(defthm axe-treep-of-nth-2-of-nth-0-when-axe-treep-cheap
+  (implies (and (axe-treep tree)
+                (consp (nth 0 tree)))
+           (axe-treep (nth 2 (nth 0 tree))) ;the lambda body
+           )
+  :hints (("Goal" :expand ((axe-treep tree))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+
+(defthm axe-treep-when-equal-of-car-and-quote-cheap
+  (implies (equal 'quote (car tree))
+           (equal (axe-treep tree)
+                  (myquotep tree)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthm symbol-of-nth-0-when-axe-treep
+  (implies (axe-treep tree)
+           (equal (symbolp (nth 0 tree))
+                  (not (consp (nth 0 tree)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthm symbol-listp-of-nth1-of-nth-0-when-axe-treep
+  (implies (axe-treep tree)
+           (symbol-listp (nth 1 (nth 0 tree))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :expand ((axe-treep tree))
+           :in-theory (enable axe-treep))))
+
+(defthm consp-of-cddr-of-nth-0-when-axe-treep
+  (implies (axe-treep tree)
+           (equal (consp (cddr (nth 0 tree)))
+                  (consp (nth 0 tree))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :expand ((axe-treep tree))
+           :in-theory (enable axe-treep))))
+
+(defthm cdr-of-nth-0-when-axe-treep-iff
+  (implies (axe-treep tree)
+           (iff (cdr (nth 0 tree))
+                (consp (nth 0 tree))))
+    :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :expand ((axe-treep tree))
+           :in-theory (enable axe-treep))))
+
+(defthm len-of-nth-0-when-axe-treep-cheap
+  (implies (axe-treep tree)
+           (equal (len (nth 0 tree))
+                  (if (consp (nth 0 tree))
+                      3
+                      0)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthm axe-treep-of-nth
+  (implies (and (all-axe-treep trees)
+                ;; (consp trees)
+                )
+           (axe-treep (nth n trees)))
+  :hints (("Goal" :in-theory (enable all-axe-treep nth))))
+
+(defthm true-listp-of-nth-1-of-nth-0-when-axe-treep
+  (implies (and ;(bounded-axe-treep tree bound2) ;free var
+;                (<= bound bound2)
+            (axe-treep tree)
+            (consp (car tree)))
+           (TRUE-LISTP (NTH 1 (NTH 0 TREE))) ;the lambda formals
+           )
+  :hints (("Goal" :expand ((axe-treep tree)
+                           ;;(bounded-axe-treep tree bound2)
+                           ))))
+
+(defthm myquotep-when-axe-treep
+  (implies (and (syntaxp (want-to-weaken (myquotep x)))
+                (axe-treep x))
+           (equal (myquotep x)
+                  (equal 'quote (car x)))))
+
+(defthm axe-treep-of-cons-strong
+  (equal (axe-treep (cons fn args))
+         (if (equal 'quote fn)
+             (and (= 1 (len args))
+                  (true-listp args))
+           (and (all-axe-treep args)
+                (true-listp args)
+                (or (symbolp fn)
+                    (and (true-listp fn)
+                         (equal (len fn) 3)
+                         (eq (car fn) 'lambda)
+                         (symbol-listp (cadr fn))
+                         (pseudo-termp (caddr fn))
+                         (equal (len (cadr fn))
+                                (len args)))))))
+  :hints (("Goal" :in-theory (enable axe-treep))))
+
+(defthm axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
+  (implies (and (all-dargp (strip-cdrs alist))
+                ;; (assoc-equal form alist)
+                )
+           (axe-treep (cdr (assoc-equal form alist))))
+  :hints (("Goal" :use (:instance dargp-of-cdr-of-assoc-equal (var form))
+           :in-theory (disable dargp-of-cdr-of-assoc-equal))))
+
+(defthm axe-treep-when-not-consp-and-not-symbolp-cheap
+  (implies (and (not (consp tree))
+                (not (symbolp tree)))
+           (equal (axe-treep tree)
+                  (natp tree)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
+
+;enable?
+(defthmd axe-treep-when-consp-of-car
+  (implies (consp (car tree))
+           (equal (axe-treep tree)
+                  (and (all-axe-treep (fargs tree))
+                       (true-listp (fargs tree))
+                       (true-listp (car tree))
+                       (equal (len (car tree)) 3)
+                       (eq (car (car tree)) 'lambda)
+                       (symbol-listp (cadr (car tree)))
+                       (pseudo-termp (caddr (car tree))) ;todo: can an axe tree appear here?
+                       (equal (len (cadr (car tree)))
+                              (len (fargs tree))))))
+  :hints (("Goal" :in-theory (enable axe-treep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
  ;; Check that all nodenums in TREE are less than BOUND.
  ;; TODO: Perhaps rename to is-bounded-axe-treep.
- (defun bounded-axe-treep (tree bound)
+ (defund bounded-axe-treep (tree bound)
    (declare (xargs :guard (and (axe-treep tree)
                                (integerp bound))))
    (if (atom tree)
@@ -117,7 +296,7 @@
          (all-bounded-axe-treep (fargs tree) bound) ;todo: can nodenums appear in the lambda body?
          ))))
 
- (defun all-bounded-axe-treep (trees bound)
+ (defund all-bounded-axe-treep (trees bound)
    (declare (xargs :guard (and (all-axe-treep trees)
                                (integerp bound))))
    (if (atom trees)
@@ -172,30 +351,6 @@
            :induct t
            :in-theory (enable all-bounded-axe-treep all-dargp-less-than))))
 
-(defthm all-axe-treep-of-cdr
-  (implies (and (axe-treep tree)
-                (consp tree)
-                (not (equal 'quote (car tree))))
-           (all-axe-treep (cdr tree))))
-
-(defthm all-axe-treep-of-cdr-2
-  (implies (all-axe-treep trees)
-           (all-axe-treep (cdr trees))))
-
-(defthm axe-treep-of-car
-  (implies (and (all-axe-treep trees)
-                ;; (consp trees)
-                )
-           (axe-treep (car trees))))
-
-(defthm axe-treep-compound-recognizer
-  (implies (axe-treep tree)
-           (or (and (consp tree)
-                    (true-listp tree))
-               (symbolp tree)
-               (natp tree)))
-  :rule-classes :compound-recognizer)
-
 ;; Pseudo terms have no nodenums in them, so any bound works.
 (defthm-flag-axe-treep
   (defthm bounded-axe-treep-when-pseudo-termp
@@ -205,7 +360,9 @@
   (defthm all-bounded-axe-treep-when-pseudo-term-listp
     (implies (pseudo-term-listp trees)
              (all-bounded-axe-treep trees bound))
-    :flag all-axe-treep))
+    :flag all-axe-treep)
+  :hints (("Goal" :in-theory (enable bounded-axe-treep
+                                     all-bounded-axe-treep))))
 
 (defthm-flag-axe-treep
   (defthm bounded-axe-treep-mono
@@ -219,7 +376,9 @@
                   (<= bound2 bound)
                   (all-axe-treep trees))
              (all-bounded-axe-treep trees bound))
-    :flag all-axe-treep))
+    :flag all-axe-treep)
+  :hints (("Goal" :in-theory (enable bounded-axe-treep
+                                     all-bounded-axe-treep))))
 
 (defthm all-bounded-axe-treep-of-cdr-2
   (implies (and (bounded-axe-treep tree bound)
@@ -227,16 +386,6 @@
                 (not (equal 'quote (car tree))))
            (all-bounded-axe-treep (cdr tree) bound))
   :hints (("Goal" :in-theory (enable bounded-axe-treep))))
-
-(in-theory (disable bounded-axe-treep
-                    all-bounded-axe-treep))
-
-;disable outside axe
-(defthm symbolp-of-car-when-axe-treep-cheap
-  (implies (and (axe-treep tree)
-                (not (consp (car tree))))
-           (symbolp (car tree)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0))))
 
 ;todo: disable outside of axe...
 (defthm <-when-bounded-axe-treep
@@ -257,38 +406,6 @@
            (all-bounded-axe-treep (cdr trees) dag-len))
   :hints (("Goal" :in-theory (enable all-bounded-axe-treep))))
 
-(defthm len-of-nth-1-of-car-when-axe-treep-cheap
-  (implies (and (axe-treep tree)
-                (consp (car tree)))
-           (equal (len (nth 1 (car tree))) ;the lambda formals
-                  (len (cdr tree))         ;the args
-                  ))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-(defthm len-of-nth-1-of-nth-0-when-axe-treep-cheap
-  (implies (and (axe-treep tree)
-                (consp (car tree)))
-           (equal (len (nth 1 (nth 0 tree))) ;the lambda formals
-                  (len (cdr tree))         ;the args
-                  ))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-(defthm axe-treep-of-nth-2-of-car-when-axe-treep-cheap
-  (implies (and (axe-treep tree)
-                (consp (car tree)))
-           (axe-treep (nth 2 (car tree))) ;the lambda body
-           )
-  :hints (("Goal" :expand ((axe-treep tree))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-(defthm axe-treep-of-nth-2-of-nth-0-when-axe-treep-cheap
-  (implies (and (axe-treep tree)
-                (consp (nth 0 tree)))
-           (axe-treep (nth 2 (nth 0 tree))) ;the lambda body
-           )
-  :hints (("Goal" :expand ((axe-treep tree))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
 ;; because it's a pseudo-term
 (defthm bounded-axe-treep-of-nth-2-of-car
   (implies (and ;(bounded-axe-treep tree bound2) ;free var
@@ -301,73 +418,12 @@
                            ;;(bounded-axe-treep tree bound2)
                            ))))
 
-(defthm axe-treep-when-equal-of-car-and-quote-cheap
-  (implies (equal 'quote (car tree))
-           (equal (axe-treep tree)
-                  (myquotep tree)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
-
-(defthm symbol-of-nth-0-when-axe-treep
-  (implies (axe-treep tree)
-           (equal (symbolp (nth 0 tree))
-                  (not (consp (nth 0 tree)))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
-
-(defthm symbol-listp-of-nth1-of-nth-0-when-axe-treep
-  (implies (axe-treep tree)
-           (symbol-listp (nth 1 (nth 0 tree))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :expand ((axe-treep tree))
-           :in-theory (enable axe-treep))))
-
-(defthm consp-of-cddr-of-nth-0-when-axe-treep
-  (implies (axe-treep tree)
-           (equal (consp (cddr (nth 0 tree)))
-                  (consp (nth 0 tree))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :expand ((axe-treep tree))
-           :in-theory (enable axe-treep))))
-
-(defthm cdr-of-nth-0-when-axe-treep-iff
-  (implies (axe-treep tree)
-           (iff (cdr (nth 0 tree))
-                (consp (nth 0 tree))))
-    :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :expand ((axe-treep tree))
-           :in-theory (enable axe-treep))))
-
-(defthm len-of-nth-0-when-axe-treep-cheap
-  (implies (axe-treep tree)
-           (equal (len (nth 0 tree))
-                  (if (consp (nth 0 tree))
-                      3
-                      0)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
-
-(defthm axe-treep-of-nth
-  (implies (and (all-axe-treep trees)
-                ;; (consp trees)
-                )
-           (axe-treep (nth n trees)))
-  :hints (("Goal" :in-theory (enable all-axe-treep nth))))
-
 (defthm bounded-axe-treep-of-nth-2-of-car-alt
   (implies (and ;(bounded-axe-treep tree bound2) ;free var
 ;                (<= bound bound2)
             (axe-treep tree)
             (consp (car tree)))
            (bounded-axe-treep (nth 2 (nth 0 tree)) bound) ;the lambda body
-           )
-  :hints (("Goal" :expand ((axe-treep tree)
-                           ;;(bounded-axe-treep tree bound2)
-                           ))))
-
-(defthm true-listp-of-nth-1-of-nth-0-when-axe-treep
-  (implies (and ;(bounded-axe-treep tree bound2) ;free var
-;                (<= bound bound2)
-            (axe-treep tree)
-            (consp (car tree)))
-           (TRUE-LISTP (NTH 1 (NTH 0 TREE))) ;the lambda formals
            )
   :hints (("Goal" :expand ((axe-treep tree)
                            ;;(bounded-axe-treep tree bound2)
@@ -395,37 +451,6 @@
               (all-bounded-axe-treep y bound)))
   :hints (("Goal" :in-theory (enable all-bounded-axe-treep append))))
 
-(defthm myquotep-when-axe-treep
-  (implies (and (syntaxp (want-to-weaken (myquotep x)))
-                (axe-treep x))
-           (equal (myquotep x)
-                  (equal 'quote (car x)))))
-
-(defthm axe-treep-of-cons-strong
-  (equal (axe-treep (cons fn args))
-         (if (equal 'quote fn)
-             (and (= 1 (len args))
-                  (true-listp args))
-           (and (all-axe-treep args)
-                (true-listp args)
-                (or (symbolp fn)
-                    (and (true-listp fn)
-                         (equal (len fn) 3)
-                         (eq (car fn) 'lambda)
-                         (symbol-listp (cadr fn))
-                         (pseudo-termp (caddr fn))
-                         (equal (len (cadr fn))
-                                (len args)))))))
-  :hints (("Goal" :in-theory (enable axe-treep))))
-
-(defthm axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
-  (implies (and (all-dargp (strip-cdrs alist))
-                ;; (assoc-equal form alist)
-                )
-           (axe-treep (cdr (assoc-equal form alist))))
-  :hints (("Goal" :use (:instance dargp-of-cdr-of-assoc-equal (var form))
-           :in-theory (disable dargp-of-cdr-of-assoc-equal))))
-
 (defthm bounded-axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
   (implies (and (all-dargp-less-than (strip-cdrs alist) dag-len)
                 ;; (assoc-equal form alist)
@@ -433,31 +458,8 @@
            (bounded-axe-treep (cdr (assoc-equal form alist)) dag-len))
   :hints (("Goal" :in-theory (enable assoc-equal strip-cdrs))))
 
-(defthm axe-treep-when-not-consp-and-not-symbolp-cheap
-  (implies (and (not (consp tree))
-                (not (symbolp tree)))
-           (equal (axe-treep tree)
-                  (natp tree)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
-  :hints (("Goal" :in-theory (enable axe-treep))))
-
 (defthmd bounded-axe-treep-when-natp-strong
   (implies (natp tree)
            (equal (bounded-axe-treep tree bound)
                   (< tree bound)))
   :hints (("Goal" :in-theory (enable bounded-axe-treep))))
-
-;enable?
-(defthmd axe-treep-when-consp-of-car
-  (implies (consp (car tree))
-           (equal (axe-treep tree)
-                  (and (all-axe-treep (fargs tree))
-                       (true-listp (fargs tree))
-                       (true-listp (car tree))
-                       (equal (len (car tree)) 3)
-                       (eq (car (car tree)) 'lambda)
-                       (symbol-listp (cadr (car tree)))
-                       (pseudo-termp (caddr (car tree))) ;todo: can an axe tree appear here?
-                       (equal (len (cadr (car tree)))
-                              (len (fargs tree))))))
-  :hints (("Goal" :in-theory (enable axe-treep))))
