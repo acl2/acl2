@@ -44,10 +44,9 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 ;(local (in-theory (disable car-becomes-nth-of-0)))
-
-(in-theory (disable rational-listp))
 
 (local (in-theory (disable NAT-LISTP
                            DAG-EXPRP0
@@ -60,7 +59,7 @@
                            ALL-<-TRANSITIVE-FREE
                            NOT-<-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-2
                            <=-OF-NTH-WHEN-ALL-<= ;disable globally?
-                           )))
+                           rational-listp)))
 
 (local (in-theory (enable consp-of-cdr
                           nth-of-cdr
@@ -78,9 +77,6 @@
            (equal (< x (+ 1 y))
                   (<= x y))))
 
-(local (in-theory (disable <-of-+-of-1-when-integerp)))
-
-
 (defthm consp-of-nth-forward-to-consp
   (implies (consp (nth n x))
            (consp x))
@@ -92,9 +88,6 @@
 (defthm <-of-maxelem-and-maxelem-of-cdr
   (implies (consp (cdr x))
            (not (< (maxelem x) (maxelem (cdr x))))))
-
-
-
 
 ;defforall could do these too?
 (defthm all-integerp-of-mv-nth-0-of-split-list-fast-aux
@@ -153,8 +146,7 @@
            (decreasingp (rest items))))))
 
 (defthmd maxelem-when-decreasingp
-  (implies (and (decreasingp items)
-                )
+  (implies (decreasingp items)
            (equal (maxelem items)
                   (if (consp items)
                       (car items)
@@ -184,7 +176,6 @@
             ;;drop them both:
             (cdr list)
           (cons first-item (insert-into-sorted-list-and-remove-dups item (cdr list))))))))
-
 
 (defthm all-integerp-of-insert-into-sorted-list-and-remove-dups
   (implies (integerp item)
@@ -283,10 +274,6 @@
                 (translation-arrayp-aux (+ -1 dag-len) translation-array))
            (all-natp (mv-nth 0 (translate-nodenums-for-xor-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))))
   :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev))))
-
-(defthmd integerp-when-natp
-  (implies (natp x)
-           (integerp x)))
 
 ;; (defthm all-integerp-of-mv-nth-0-of-translate-nodenums-for-xor-rev
 ;;   (implies (and (all-natp nodenum-acc)
@@ -1288,11 +1275,6 @@
                                            bound))
   :hints (("Goal" :use (:instance type-of-simplify-xors-aux-other-params)
            :in-theory (disable type-of-simplify-xors-aux-other-params natp))))
-
-(defthm TRANSLATION-ARRAYP-AUX-when-negative
-  (implies (< TOP-NODENUM-TO-CHECK 0)
-           (TRANSLATION-ARRAYP-AUX TOP-NODENUM-TO-CHECK ARRAY))
-  :hints (("Goal" :in-theory (enable TRANSLATION-ARRAYP-AUX))))
 
 (defthm type-of-simplify-xors-aux-other-params-gen-2
   (implies (and (natp n)
