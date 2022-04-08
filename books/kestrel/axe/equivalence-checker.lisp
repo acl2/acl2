@@ -20962,7 +20962,7 @@
                              use-context-when-miteringp
                              normalize-xors
                              interpreted-function-alist
-                             check-varsp
+                             check-vars
                              whole-form
                              state rand result-array-stobj)
   (declare (xargs :guard (and (natp tests)
@@ -20982,7 +20982,7 @@
                               (booleanp use-context-when-miteringp)
                               (booleanp normalize-xors)
                               (interpreted-function-alistp interpreted-function-alist)
-                              (booleanp check-varsp))
+                              (booleanp check-vars))
                   :mode :program
                   :stobjs (state rand result-array-stobj)))
   ;;TODO: error or warning if :tactic is rewrite and :tests is given?
@@ -21000,7 +21000,7 @@
        (- (cw "Variables in DAG1: ~x0~%" vars1))
        (vars2 (merge-sort-symbol< (dag-vars dag2)))
        (- (cw "Variables in DAG2: ~x0~%" vars2))
-       ((when (and check-varsp
+       ((when (and check-vars
                    (not (perm vars1 vars2))))
         (hard-error 'prove-equivalence-fn "The two dags have different variables." nil)
         (mv (erp-t) nil state rand result-array-stobj))
@@ -21119,7 +21119,7 @@
                                     (use-context-when-miteringp 'nil) ;todo: try t
                                     (normalize-xors 't)
                                     (interpreted-function-alist 'nil) ;affects soundness
-                                    (check-varsp 't))
+                                    (check-vars 't))
   `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
                                            ,dag-or-term2
                                            ,tests
@@ -21136,6 +21136,6 @@
                                            ,use-context-when-miteringp
                                            ',normalize-xors
                                            ,interpreted-function-alist
-                                           ,check-varsp
+                                           ,check-vars
                                            ',whole-form
                                            state rand result-array-stobj)))
