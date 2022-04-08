@@ -214,15 +214,14 @@
         (equal (dag-to-term res) '(if (not (foo x)) y (foo x))))))
 
 ;; Special case: Test that negated if tests rewrite in the else branch when negated there, even when not boolean.
-;; TODO: Get this to work again by adding special handling for rewriting a call of NOT:
-;; (assert!
-;;  (mv-let (erp res)
-;;    (simplify-term-basic '(if (not (foo x)) y (not (foo x)))
-;;                         nil
-;;                         nil
-;;                         nil nil nil nil t (w state))
-;;    (and (not erp)
-;;         (equal (dag-to-term res) '(if (not (foo x)) y 'nil)))))
+(assert!
+ (mv-let (erp res)
+   (simplify-term-basic '(if (not (foo x)) y (not (foo x)))
+                        nil
+                        nil
+                        nil nil nil nil t (w state))
+   (and (not erp)
+        (equal (dag-to-term res) '(if (not (foo x)) y 'nil)))))
 
 ;;;
 ;;; Tests when not memoizing (no context info should be used)
@@ -372,18 +371,41 @@
    (and (not erp)
         (equal (dag-to-term res) 'w))))
 
-;; TODO: get this to work.  The known assumption appears in a call of NOT.
-;; Need to check whether args of NOT are :non-nil.
-;; Or I suppose we could rewrite "if of not".
-;; (assert!
-;;  (mv-let (erp res)
-;;    (simplify-term-basic '(if (not (member-equal x y)) w z)
-;;                         '((member-equal x y))
-;;                         (make-rule-alist! nil
-;;                                          (w state))
-;;                         nil nil t nil t (w state))
-;;    (and (not erp)
-;;         (equal (dag-to-term res) 'w))))
+;; The known assumption appears in a call of NOT.
+(assert!
+ (mv-let (erp res)
+   (simplify-term-basic '(if (not (member-equal x y)) w z)
+                        '((member-equal x y))
+                        (make-rule-alist! nil
+                                         (w state))
+                        nil nil t nil t (w state))
+   (and (not erp)
+        (equal (dag-to-term res) 'z))))
+
+;; Test with a non-boolean assumption that appears in an IF test.  This works
+;; because we store :non-nil for it in the node-replacement-array
+(assert!
+ (mv-let (erp res)
+   (simplify-term-basic '(if (member-equal x y) w z)
+                        '((not (member-equal x y)))
+                        (make-rule-alist! nil
+                                         (w state))
+                        nil nil t nil t (w state))
+   (and (not erp)
+        (equal (dag-to-term res) 'z))))
+
+;; The known assumption appears in a call of NOT.
+(assert!
+ (mv-let (erp res)
+   (simplify-term-basic '(if (not (member-equal x y)) w z)
+                        '((not (member-equal x y)))
+                        (make-rule-alist! nil
+                                         (w state))
+                        nil nil t nil t (w state))
+   (and (not erp)
+        (equal (dag-to-term res) 'w))))
+
+
 
 ;; Note that the IF-TEST is an equality that should be used for replacement
 (deftest
