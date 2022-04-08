@@ -229,7 +229,7 @@
 ;; Returns (mv nodenums combined-constant).  Translates the nodenums according
 ;; to translation-array and xors all the constants.  The nodenums returned are
 ;; in reverse order, but callers should not care.  Should avoid stack overflows
-;; when nodenums may be very long. Unlike rename-args, the first argument
+;; when nodenums may be very long. Unlike rename-dargs, the first argument
 ;; cannot contain quoted constants.  Also, this is tail recursive.  Also, this
 ;; requires the array to be named 'translation-array and allows null entries in
 ;; the array.  Note that nodes that are merely internal nodes of xor nests

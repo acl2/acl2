@@ -1,7 +1,7 @@
 ; Tests of rewriter-basic
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -360,7 +360,7 @@
         (equal (dag-to-term res) '(if (not (foo x)) y (foo x))))))
 
 ;; Test with a non-boolean assumption that appears in an IF test.  This works
-;; because we lookup IF tests in the refined-assumption alist.
+;; because we store :non-nil for it in the node-replacement-array
 (assert!
  (mv-let (erp res)
    (simplify-term-basic '(if (member-equal x y) w z)
@@ -371,24 +371,70 @@
    (and (not erp)
         (equal (dag-to-term res) 'w))))
 
-;; ;; TODO: get this to work.  The known assumption appears in a call of NOT.  I suppose we could rewrite "if of not".
-;; (assert!
-;;  (mv-let (erp res)
-;;    (simplify-term-basic '(if (not (member-equal x y)) w z)
-;;                         '((member-equal x y))
-;;                         (make-rule-alist! nil
-;;                                          (w state))
-;;                         nil nil t nil t (w state))
-;;    (and (not erp)
-;;         (equal (dag-to-term res) 'w))))
+;; The known assumption appears in a call of NOT.
+(assert!
+ (mv-let (erp res)
+   (simplify-term-basic '(if (not (member-equal x y)) w z)
+                        '((member-equal x y))
+                        (make-rule-alist! nil
+                                         (w state))
+                        nil nil t nil t (w state))
+   (and (not erp)
+        (equal (dag-to-term res) 'z))))
 
-;; TODO: Get this to work.  Not that the IF-TEST is an equality that should be used for replacement
-;; (assert!
-;;  (mv-let (erp res)
-;;    (simplify-term-basic '(if (equal x '3) (equal (+ '1 x) '4) t)
-;;                         '()
-;;                         (make-rule-alist! nil
-;;                                          (w state))
-;;                         nil nil t nil (w state))
-;;    (and (not erp)
-;;         (equal (dag-to-term res) ''t))))
+;; Test with a non-boolean assumption that appears in an IF test.  This works
+;; because we store :non-nil for it in the node-replacement-array
+(assert!
+ (mv-let (erp res)
+   (simplify-term-basic '(if (member-equal x y) w z)
+                        '((not (member-equal x y)))
+                        (make-rule-alist! nil
+                                         (w state))
+                        nil nil t nil t (w state))
+   (and (not erp)
+        (equal (dag-to-term res) 'z))))
+
+;; The known assumption appears in a call of NOT.
+(assert!
+ (mv-let (erp res)
+   (simplify-term-basic '(if (not (member-equal x y)) w z)
+                        '((not (member-equal x y)))
+                        (make-rule-alist! nil
+                                         (w state))
+                        nil nil t nil t (w state))
+   (and (not erp)
+        (equal (dag-to-term res) 'w))))
+
+
+
+;; Note that the IF-TEST is an equality that should be used for replacement
+(deftest
+  (defthm if-same (equal (if x y y) y))
+  (assert!
+   (mv-let (erp res)
+     (simplify-term-basic '(if (equal x '3) (equal (binary-+ '1 x) '4) 't)
+                          '()
+                          (make-rule-alist! '(if-same)
+                                            (w state))
+                          nil nil
+                          nil ; can't be memoizing if we want to use contexts
+                          nil t (w state))
+     (and (not erp)
+          (equal (dag-to-term res) ''t)))))
+
+;; Note that the IF-TEST has a term that is needed for free var matching
+(deftest
+  (defthmd <-trans-simple
+    (implies (and (< x z) (< z y))
+             (< x y)))
+  (assert!
+   (mv-let (erp res)
+     (simplify-term-basic '(if (< x y) (if (< y z) (< x z) blah) blah2)
+                          '()
+                          (make-rule-alist! '(<-TRANS-simple)
+                                            (w state))
+                          nil
+                          '(<-trans-simple)
+                          nil nil t (w state))
+     (and (not erp)
+          (equal (dag-to-term res) '(if (< x y) (if (< y z) 't blah) blah2))))))

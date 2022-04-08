@@ -19,7 +19,7 @@
 (local (include-book "kestrel/arithmetic-light/divides" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
-;; TODO: Prove this is the same as group of map-packbv.
+;; TODO: Prove this is the same as map-packbv of group.
 
 ;; "Pack bit-vectors"
 ;; Packs the ITEMS into larger bit-vectors.  Take ITEMS-PER-CHUNK elements of
@@ -47,9 +47,9 @@
            (all-unsigned-byte-p size (packbvs items-per-chunk itemsize items)))
   :hints (("Goal" :in-theory (enable packbvs))))
 
+;gen?
 (defthm len-of-packbvs
   (implies (and (posp items-per-chunk)
-                (natp itemsize)
                 (equal (mod (len items) items-per-chunk)
                        0))
            (equal (len (packbvs items-per-chunk itemsize items))

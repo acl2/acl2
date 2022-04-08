@@ -19,6 +19,7 @@
   ;; :verbosep t
   :returns (num integerp)
   :verify-guards nil
+  :parents (kestrel-utilities)          ; Move to kestrel/utilities?
   :short "Returns the number of the most recent top-level ACL2 command."
   :long
   (xdoc::topstring

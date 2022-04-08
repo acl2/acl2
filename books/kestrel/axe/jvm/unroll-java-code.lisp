@@ -28,7 +28,7 @@
 (include-book "kestrel/utilities/doc" :dir :system)
 ;(include-book "../dag-size-fast")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
-(include-book "../prune") ;brings in the rewriter
+(include-book "../prune") ;brings in rewriter-basic
 (include-book "../dag-info")
 
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))

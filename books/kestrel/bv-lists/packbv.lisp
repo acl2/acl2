@@ -18,20 +18,25 @@
 (include-book "../lists-light/repeat")
 (local (include-book "../bv/bvcat"))
 (local (include-book "../bv/unsigned-byte-p"))
-(local (include-book "../../ihs/ihs-lemmas")) ;why? for <-*-left-cancel
 (local (include-book "../lists-light/butlast"))
 (local (include-book "../lists-light/nthcdr"))
+(local (include-book "../arithmetic-light/times"))
+(local (include-book "../arithmetic-light/plus-and-minus"))
+(local (include-book "../arithmetic-light/minus"))
+(local (include-book "../arithmetic-light/floor"))
+(local (include-book "../arithmetic-light/mod"))
 (local (include-book "../../meta/meta-plus-lessp"))
 
-(local (in-theory (disable mod-x-y-=-x+y-for-rationals))) ;bad
+;(local (in-theory (disable mod-x-y-=-x+y-for-rationals))) ;bad
 
-(defthm <-cancel-hack
-  (implies (and (posp size)
-                (rationalp count)
-                (rationalp n))
-           (equal (< (+ (- size) (* count size)) (* n size))
-                  (< (+ -1 count) n)))
-  :hints (("Goal" :use (:instance <-*-left-cancel (z size) (x (+ -1 count)) (y n)))))
+(local
+ (defthm <-cancel-hack
+   (implies (and (posp size)
+                 (rationalp count)
+                 (rationalp n))
+            (equal (< (+ (- size) (* count size)) (* n size))
+                   (< (+ -1 count) n)))
+   :hints (("Goal" :use (:instance <-of-*-and-*-cancel (y size) (x1 (+ -1 count)) (x2 n))))))
 
 (defthmd packbv-base
   (implies (zp itemcount)

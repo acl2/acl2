@@ -34,7 +34,16 @@
      ;; correct.
      (defund ,checker-fn (array-name array index ,@extra-vars)
        (declare (xargs :measure (nfix (+ 1 index))
-                       :hints (("Goal" :in-theory (enable natp)))
+                       :hints (("Goal" :in-theory '(natp
+                                                    nfix
+                                                    fix
+                                                    (:e binary-+)
+                                                    (:e o-p)
+                                                    o-p
+                                                    o-finp
+                                                    o<
+                                                    fold-consts-in-+
+                                                    unicity-of-0)))
                        :guard (and (array1p array-name array)
                                    (integerp index)
                                    (< index (alen1 array-name array))

@@ -18,7 +18,8 @@
 ;;; make-term-into-dag-simple
 ;;;
 
-;; Returns (mv erp dag-or-quotep).  Returns the DAG as a list but uses arrays to do the work.
+;; Returns (mv erp dag-or-quotep).  Returns a dagp (a list) but uses arrays to do the work.
+;; This one does not evaluate ground terms.
 ;; See also make-term-into-dag-basic.
 (defund make-term-into-dag-simple (term)
   (declare (xargs :guard (pseudo-termp term)

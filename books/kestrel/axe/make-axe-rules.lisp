@@ -28,7 +28,6 @@
 (include-book "axe-syntax") ;since this book knows about axe-syntaxp and axe-bind-free
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
-;(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -40,7 +39,6 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
-;(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))

@@ -535,7 +535,7 @@
              ;;function call:
              ;;first fixup the call to be about nodenums in the main dag:
              (let* ((args (dargs expr))
-                    (args (rename-args args renaming-array-name renaming-array2))
+                    (args (rename-dargs args renaming-array-name renaming-array2))
                     (expr (cons fn args)))
                ;;then simplify the function applied to the simplified args:
                (mv-let (erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)

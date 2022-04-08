@@ -202,7 +202,8 @@
     VARIABLEP
 
 ; Symbols below should probably be added to *acl2-exports*.
-    
+
+    GET-SERIALIZE-CHARACTER
   ))
 
 (defconst *special-ops*

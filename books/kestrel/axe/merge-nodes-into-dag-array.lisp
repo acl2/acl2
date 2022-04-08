@@ -74,7 +74,7 @@
                                           (aset1 'renaming-array renaming-array nodenum expr))
             ;;else, it's a regular function call:
             (let* ((args (dargs expr))
-                   (renamed-args (rename-args args 'renaming-array renaming-array)))
+                   (renamed-args (rename-dargs args 'renaming-array renaming-array)))
               (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
                 (add-function-call-expr-to-dag-array fn renamed-args dag-array dag-len dag-parent-array dag-constant-alist)
                 (if erp

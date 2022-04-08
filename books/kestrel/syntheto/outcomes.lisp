@@ -33,25 +33,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum outcome
-    :short "Fixtype of Syntheto outcomes."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Each type of top-level definition, when submitted to ACL2,
+  :parents (language)
+  :short "Fixtype of Syntheto outcomes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each type of top-level definition, when submitted to ACL2,
        will be accepted or rejected.  The success or failure
        of the submission is modeled by an outcome, which is returned
        to the submitter.")
-     (xdoc::p
-      "A function or clique of mutually-recursive functions, when
+   (xdoc::p
+    "A function or clique of mutually-recursive functions, when
        submitted successfully to ACL2, is represented by @('function-success').
        Similarly, a type definition or clique of mutually-recursive type
        definitions is represented by @('type-success').  Specifications,
        theorems, and transformations also have success types.")
-     (xdoc::p
-      "Since a successful transformation results in new submitted top-level
+   (xdoc::p
+    "Since a successful transformation results in new submitted top-level
        definitions, those are returned as part of the success outcome.")
-     (xdoc::p
-      "For submission of a top-level definition to be accepted,
+   (xdoc::p
+    "For submission of a top-level definition to be accepted,
        there are certain implicit proof obligations such as termination and
        guard verification.  If one of these fails, a
        @('proof-obligation-failure') outcome is returned, containing
@@ -59,32 +60,32 @@
        number of different reasons, and may result from a number of different
        top-level constructs including failure to prove the applicability
        condition of a transformation.")
-     (xdoc::p
-      "If a theorem is submitted that is not mechanically proved by ACL2,
+   (xdoc::p
+    "If a theorem is submitted that is not mechanically proved by ACL2,
        a @('theorem-failure') outcome is returned.")
-     (xdoc::p
-      "If a transformation is submitted that is applicable, but fails
+   (xdoc::p
+    "If a transformation is submitted that is applicable, but fails
        due to some other reason, potentially a @('transformation-failure')
        outcome is returned.")
-     (xdoc::p
-      "Any other submission failure results in a @('unexpected-failure')
+   (xdoc::p
+    "Any other submission failure results in a @('unexpected-failure')
        outcome, which might have been expected but is at least not otherwise
        classified."))
-    (:function-success ((message stringp)))
-    (:type-success ((message stringp)))
-    (:specification-success ((message stringp)))
-    (:theorem-success ((message stringp)))
-    (:transformation-success ((message stringp)
-                              (toplevels toplevel-listp)))
-    (:proof-obligation-failure ((message stringp)
-                                (obligation-expr expressionp)
-                                ;; (source-expr expressionp)
-                                ;; (toplevel-name stringp)
-                                ))
-    (:theorem-failure ((message stringp)))
-    (:transformation-failure ((message stringp)))
-    (:unexpected-failure ((message stringp)))
-    :pred outcomep)
+  (:function-success ((message stringp)))
+  (:type-success ((message stringp)))
+  (:specification-success ((message stringp)))
+  (:theorem-success ((message stringp)))
+  (:transformation-success ((message stringp)
+                            (toplevels toplevel-listp)))
+  (:proof-obligation-failure ((message stringp)
+                              (obligation-expr expressionp)
+                              ;; (source-expr expressionp)
+                              ;; (toplevel-name stringp)
+                              ))
+  (:theorem-failure ((message stringp)))
+  (:transformation-failure ((message stringp)))
+  (:unexpected-failure ((message stringp)))
+  :pred outcomep)
 
 ;; Defines outcome--make-myself (see language/make-myself.lisp)
 (make-mm-sum outcome
@@ -104,6 +105,7 @@
     (:unexpected-failure . ((message . string))) ))
 
 (fty::deflist outcome-list
+  :parents (language)
   :short "Fixtype of lists of Syntheto Ocutomes"
   :elt-type outcome
   :true-listp t

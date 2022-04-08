@@ -20,8 +20,7 @@
 ;;; all-dargp
 ;;;
 
-;; This recognizes a list of args in a DAG node that is a function call.
-;; Todo: Rename this all-dargp.
+;; Recognizes a list of dargs, e.g., the arguments in a DAG node that is a function call.
 (defforall all-dargp (items) (dargp items)
   :declares ((type t items)))
 

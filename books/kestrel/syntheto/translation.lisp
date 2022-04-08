@@ -40,6 +40,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod trans-state
+  :parents (translation)
   :short "Fixtype of translation states."
   :long
   (xdoc::topstring
@@ -83,6 +84,7 @@
 
 (define init-trans-state ()
   :returns (tstate trans-statep)
+  :parents (trans-state)
   :short "Initial translation state."
   (make-trans-state :tops nil))
 
@@ -90,6 +92,7 @@
 
 (define extend-trans-state ((top toplevelp) (tstate trans-statep))
   :returns (new-tstate trans-statep)
+  :parents (trans-state)
   :short "Extend the translation state with a Syntheto top-level construct."
   :long
   (xdoc::topstring
@@ -103,6 +106,7 @@
 
 (define extend-trans-state-list ((tops toplevel-listp) (tstate trans-statep))
   :returns (new-tstate trans-statep)
+  :parents (trans-state)
   :short "Lift @(tsee extend-trans-state) to lists."
   (cond ((endp tops) (trans-state-fix tstate))
         (t (extend-trans-state-list (cdr tops)
@@ -112,6 +116,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection trans-state-table
+  :parents (trans-state)
   :short "Table of translation states."
 
   (table trans-state-table nil nil
@@ -124,6 +129,7 @@
 
 (define get-trans-state ((wrld plist-worldp))
   :returns (tstate trans-statep)
+  :parents (trans-state)
   :short "Get the translation state from the table."
   (b* ((table (table-alist 'trans-state-table wrld))
        ((unless (alistp table))
@@ -148,6 +154,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ translate-to-acl2 (top/tops)
+  :parents (translation)
   :short "Translate to ACL2 a Syntheto top-level construct or a list of them."
   :long
   (xdoc::topstring
@@ -168,6 +175,7 @@
 (define translate-to-acl2-fn (top/tops ctx state)
   :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
   :mode :program
+  :parents (translation)
   :short "Translate a Syntheto top-level construct, or a list of them,
           into corresponding ACL2 events."
   :long
