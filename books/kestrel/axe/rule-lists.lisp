@@ -2416,7 +2416,7 @@
     nth-of-cons-constant-version
     mv-nth-of-cons-alt))
 
-(defun reassemble-bvcat-rules ()
+(defun reassemble-bv-rules ()
   (declare (xargs :guard t))
   '(bvcat-of-slice-and-slice-adjacent
     bvcat-of-slice-and-getbit-adjacent
@@ -2424,19 +2424,18 @@
     bvcat-of-getbit-and-getbit-adjacent
     bvcat-of-slice-and-x-adjacent
     bvcat-of-getbit-and-x-adjacent
-
+    ;; versions with 3 BVs:
     bvcat-of-slice-and-slice-adjacent-2
     bvcat-of-slice-and-getbit-adjacent-2
     bvcat-of-getbit-and-slice-adjacent-2
     bvcat-of-getbit-and-getbit-adjacent-2
-
-    bvcat-of-getbit-and-x-adjacent-2
-    bvcat-of-slice-and-x-adjacent-2))
+    bvcat-of-slice-and-x-adjacent-2
+    bvcat-of-getbit-and-x-adjacent-2))
 
 ;reprecate?
 (defun anti-blast-rules ()
   (declare (xargs :guard t))
-  (reassemble-bvcat-rules))
+  (reassemble-bv-rules))
 
 
 (defun strengthening-rules ()
