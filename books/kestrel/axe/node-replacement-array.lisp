@@ -384,7 +384,7 @@
 
 (defthm dargp-less-than-of-apply-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum bound)
+                (< nodenum bound) ; in case no replacement happens
                 (natp num-valid-nodes)
                 (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                 (natp bound)
@@ -438,15 +438,46 @@
                                   (index nodenum))
            :in-theory (e/d (apply-node-replacement-array-bool) (type-of-aref1-when-bounded-node-replacement-arrayp)))))
 
+;; Use consp as the normal form
+(defthm natp-of-apply-node-replacement-array-bool
+  (implies (and (natp nodenum)
+                (natp num-valid-nodes)
+                (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
+           (equal (natp (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes))
+                  (not (consp (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)))))
+  :hints (("Goal" :use (:instance type-of-aref1-when-node-replacement-arrayp
+                                  (array-name 'node-replacement-array)
+                                  (array node-replacement-array)
+                                  (index nodenum))
+           :in-theory (e/d (apply-node-replacement-array-bool) (type-of-aref1-when-bounded-node-replacement-arrayp)))))
+
 (defthm dargp-less-than-of-apply-node-replacement-array-bool
   (implies (and (natp nodenum)
-                (< nodenum bound)
+                (< nodenum bound) ; in case no replacement happens
                 (natp num-valid-nodes)
                 (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                 (natp bound)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
            (dargp-less-than (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)
                             bound))
+  :hints (("Goal" :use (:instance type-of-aref1-when-bounded-node-replacement-arrayp
+                                  (array-name 'node-replacement-array)
+                                  (array node-replacement-array)
+                                  (index nodenum))
+           :in-theory (e/d (apply-node-replacement-array-bool)
+                           (type-of-aref1-when-bounded-node-replacement-arrayp)))))
+
+(defthm <-of-apply-node-replacement-array-bool
+  (implies (and (not (consp (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)))
+                (natp nodenum)
+                (< nodenum bound) ; in case no replacement happens
+                (natp num-valid-nodes)
+                (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                (natp bound)
+                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
+           (< (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)
+              bound))
   :hints (("Goal" :use (:instance type-of-aref1-when-bounded-node-replacement-arrayp
                                   (array-name 'node-replacement-array)
                                   (array node-replacement-array)
