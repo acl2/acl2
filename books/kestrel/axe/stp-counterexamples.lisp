@@ -12,8 +12,8 @@
 
 (in-package "ACL2")
 
-(include-book "std/strings/decimal" :dir :system) ; for STR::PARSE-NAT-FROM-CHARLIST and str::skip-leading-digits
-(include-book "std/strings/binary" :dir :system) ; for STR::PARSE-BITS-FROM-CHARLIST and str::skip-leading-bit-digits
+(include-book "std/strings/decimal" :dir :system) ; todo: reduce, for STR::PARSE-NAT-FROM-CHARLIST and str::skip-leading-digits
+(include-book "std/strings/binary" :dir :system) ; todo: reduce, for STR::PARSE-BITS-FROM-CHARLIST and str::skip-leading-bit-digits
 (include-book "kestrel/utilities/read-chars" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
