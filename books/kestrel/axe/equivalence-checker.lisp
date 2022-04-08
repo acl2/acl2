@@ -73,7 +73,7 @@
 ;(include-book "kestrel/lists-light/cdr" :dir :system) ;for cdr-iff
 (include-book "kestrel/utilities/make-tuple" :dir :system)
 (include-book "kestrel/lists-light/all-same-eql" :dir :system)
-(include-book "coi/lists/nth-and-update-nth" :dir :system) ;drop, but list::nth-of-cons is mentioned below
+(include-book "coi/lists/nth-and-update-nth" :dir :system) ;drop?
 (in-theory (disable LIST::UPDATE-NTH-EQUAL-REWRITE
                     LIST::FIX-OF-NTHCDR))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
@@ -7297,7 +7297,7 @@
                                             (,fn ,@(make-nth-terms arity 'limited-result))))
                                    :rule-classes nil
                                    :hints (("Goal" :in-theory (union-theories (theory 'minimal-theory)
-                                                                              '(,fn ,limited-fn list::nth-of-cons zp boolor))))))
+                                                                              '(,fn ,limited-fn nth-of-cons zp boolor))))))
                                state)))
     (mv split-lemma-helper-name base-case-lemma-name state)))
 
@@ -7343,7 +7343,7 @@
                                             (,fn ,@(make-nth-terms arity 'limited-result))))
                                    :rule-classes nil
                                    :hints (("Goal" :in-theory (union-theories (theory 'minimal-theory)
-                                                                              '(,fn ,limited-fn list::nth-of-cons zp boolor))))))
+                                                                              '(,fn ,limited-fn nth-of-cons zp boolor))))))
                                state)))
     (mv split-lemma-helper-name unroller-lemma-name state)))
 
@@ -9506,7 +9506,7 @@
                                                 (formal-renaming-alist formals cdred-formals)
                                                 (sublis-var-simple-lst param-replacement-alist formals))))
                                :in-theory (union-theories (theory 'minimal-theory)
-                                                          '(,new-fn LIST::CONSP-OF-NTHCDR natp nfix LIST::CDR-NTHCDR)))))
+                                                          '(,new-fn CONSP-OF-NTHCDR natp nfix CDR-of-NTHCDR)))))
 
                     (defthm ,lemma-name
                       (equal (,fn ,@formals)
@@ -11828,7 +11828,7 @@
                                                                               nth-of-cons-constant-version
                                                                               equal-of-cons-of-nth-0-same
                                                                               equal-of-nthcdr-and-nth-same
-                                                                              LIST::CONSP-OF-NTHCDR
+                                                                              CONSP-OF-NTHCDR
                                                                               equal-of-nthcdr-and-cons
                                                                               equal-of-cons-when-equal-nth-0
                                                                               LIST::NTHCDR-IFF
@@ -12064,7 +12064,7 @@
                                                                               '((:executable-counterpart boolor)
                                                                                 (:executable-counterpart zp)
                                                                                 (:executable-counterpart binary-+)
-                                                                                (:REWRITE LIST::NTH-OF-CONS)
+                                                                                (:REWRITE NTH-OF-CONS)
                                                                                 (:definition boolor) ;new
                                                                                 ,combined-fn
                                                                                 ,new-fn))
@@ -15087,7 +15087,7 @@
                                                                   '(prefixp-when-lens-equal
                                                                     take-does-nothing
                                                                     firstn-becomes-take-gen
-                                                                    list::true-listp-fix)))
+                                                                    true-list-fix-when-true-listp)))
                                                       max-conflicts
 ;monitored symbols (inefficient but remember that each theorem can generate several dag rules):
                                                       (cons 'prefixp-when-lens-equal
@@ -17964,7 +17964,7 @@
 ;;                     ALIST
 ;;                     FORM-LST INTERPRETED-FUNCTION-ALIST)
 ;;            :do-not '(generalize eliminate-destructors)
-;;            :in-theory (e/d (LIST::NTH-OF-CONS true-listp NTH-OF-CONS-CONSTANT-VERSION NTH-0) ()))))
+;;            :in-theory (e/d (NTH-OF-CONS true-listp NTH-OF-CONS-CONSTANT-VERSION NTH-0) ()))))
 
 ;; (defthm EVAL-GROUND-TERM-LST-FOR-AXE-EVALUATOR-opener
 ;;   (implies (not (endp form-lst))
