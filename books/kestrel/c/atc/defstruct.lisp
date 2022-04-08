@@ -108,13 +108,47 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For each C structure, we store a list of member information,
-     which represents the typed members of the structure;
-     see @(tsee member-info) in the deep embedding.")
+    "For each C structure type defined via @(tsee defstruct), we store:")
+   (xdoc::ul
+    (xdoc::li
+     "The tag, as an identifier.
+      While currently @(tsee ident) is just a wrapper of @(tsee string),
+      it may include invariants in the future.
+      Thus, having the tag stored as an identifier in the structure information
+      will spare us from having to double-check the invariants
+      if we were to construct the identifier from the string.")
+    (xdoc::li
+     "Information for the members (names and types);
+      see @(tsee member-info) in the deep embedding.")
+    (xdoc::li
+     "The recognizer of the structures.")
+    (xdoc::li
+     "The fixer of the structures.")
+    (xdoc::li
+     "The readers of (the members of) the structures.")
+    (xdoc::li
+     "The writers of (the members of) the structures.")
+    (xdoc::li
+     "A list of return type theorems for all the member readers and writers.")
+    (xdoc::li
+     "The name of a theorem asserting that
+      if something is a structure of this type
+      then it is not an error.")
+    (xdoc::li
+     "The name of the theorem asserting that
+      the recognizer implies @(tsee structp)."))
    (xdoc::p
-    "We also store the call of @(tsee defstruct) that defines the structure.
+    "The call of @(tsee defstruct).
      This supports redundancy checking."))
-  ((members member-info-list)
+  ((tag ident)
+   (members member-info-list)
+   (recognizer symbolp)
+   (fixer symbolp)
+   (readers symbol-listp)
+   (writers symbol-listp)
+   (return-thms symbol-listp)
+   (not-error-thm symbolp)
+   (structp-thm symbolp)
    (call pseudo-event-form))
   :pred defstruct-infop)
 
@@ -133,59 +167,152 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The keys are symbols that represent the tags of the structures.
+    "The keys are strings that are @(tsee symbol-name)s of
+     symbols that represent the tags of the structures.
      The name of each such symbol is a portable ASCII C identifiers,
      but this constraint is not enforced in the table's guard.
-     The symbol names of the keys are unique.")
+     The keys in the table are unique.")
    (xdoc::p
     "The values are the information about the structures.
      See @(tsee defstruct-info)."))
 
   (make-event
    `(table ,*defstruct-table* nil nil
-      :guard (and (symbolp acl2::key)
+      :guard (and (stringp acl2::key)
                   (defstruct-infop acl2::val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-table-lookup ((tag symbolp) (wrld plist-worldp))
-  :returns (info? defstruct-info-optionp)
+(define defstruct-table-lookup ((tag stringp) (wrld plist-worldp))
+  :returns (info? defstruct-info-optionp
+                  :hints (("Goal" :in-theory (enable defstruct-info-optionp))))
   :short "Retrieve information about a shallowly embedded C structure."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The lookup is based on the name of the symbol,
-     because we disallow shallowly embedded C structures
-     to have different symbols with the same name,
-     since it is the symbol name that represents the C structure tag."))
-  (b* ((table (table-alist+ *defstruct-table* wrld))
-       (info? (defstruct-table-lookup-aux (symbol-name tag) table)))
-    (if (defstruct-info-optionp info?)
-        info?
-      (raise "Internal error: malformed structure information ~x0 for ~x1."
-             info? tag)))
-
-  :prepwork
-
-  ((local (include-book "std/alists/top" :dir :system))
-
-   (define defstruct-table-lookup-aux ((tag-name stringp) (table alistp))
-     :parents nil
-     (b* (((when (endp table)) nil)
-          ((cons key val) (car table))
-          ((when (and (symbolp key)
-                      (equal tag-name
-                             (symbol-name key))))
-           val))
-       (defstruct-table-lookup-aux tag-name (cdr table))))))
+  (b* ((pair (assoc-equal tag (table-alist+ *defstruct-table* wrld)))
+       ((when (not (consp pair))) nil)
+       (info (cdr pair))
+       ((unless (defstruct-infop info))
+        (raise "Internal error: malformed DEFSTRUCT information ~x0." info)))
+    info))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-table-record-event ((tag symbolp) (info defstruct-infop))
+(define defstruct-table-record-event ((tag stringp) (info defstruct-infop))
   :returns (event pseudo-event-formp)
   :short "Event to update the table of shallowly embedded C structures
           by recording a new C structure in it."
-  `(table ,*defstruct-table* ',tag ',info))
+  `(table ,*defstruct-table* ,tag ',info))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-type-to-recognizer ((type typep) (wrld plist-worldp))
+  :returns (recognizer symbolp)
+  :short "ACL2 recognizer corresponding to a C type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For a supported integer type,
+     the predicate is the recognizer of values of that type.
+     For a pointer to integer type,
+     the predicate is the recognizer of arrays with that element type.
+     For a pointer to structure type,
+     the predicate is the recognizer of structures of that type.
+     This is based on our current ACL2 representation of C types,
+     which may be extended in the future;
+     note that, in the current representation,
+     the predicate corresponding to the type
+     is not a recognizer of pointer values.
+     We return @('nil') for other types."))
+  (type-case
+   type
+   :void nil
+   :char nil
+   :schar 'scharp
+   :uchar 'ucharp
+   :sshort 'sshortp
+   :ushort 'ushortp
+   :sint 'sintp
+   :uint 'uintp
+   :slong 'slongp
+   :ulong 'ulongp
+   :sllong 'sllongp
+   :ullong 'ullongp
+   :struct nil
+   :pointer (type-case
+             type.to
+             :void nil
+             :char nil
+             :schar 'schar-arrayp
+             :uchar 'uchar-arrayp
+             :sshort 'sshort-arrayp
+             :ushort 'ushort-arrayp
+             :sint 'sint-arrayp
+             :uint 'uint-arrayp
+             :slong 'slong-arrayp
+             :ulong 'ulong-arrayp
+             :sllong 'sllong-arrayp
+             :ullong 'ullong-arrayp
+             :struct (b* ((info (defstruct-table-lookup
+                                  (ident->name type.to.tag)
+                                  wrld))
+                          ((unless info)
+                           (raise "Internal error: no recognizer for ~x0."
+                                  type)))
+                       (defstruct-info->recognizer info))
+             :pointer nil
+             :array nil)
+   :array nil)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-type-to-fixer ((type typep) (wrld plist-worldp))
+  :returns (fixer symbolp)
+  :short "ACL2 fixer corresponding to a C type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the fixers for
+     the predicates returned by @(tsee atc-type-to-recognizer)."))
+  (type-case
+   type
+   :void nil
+   :char nil
+   :schar 'schar-fix
+   :uchar 'uchar-fix
+   :sshort 'sshort-fix
+   :ushort 'ushort-fix
+   :sint 'sint-fix
+   :uint 'uint-fix
+   :slong 'slong-fix
+   :ulong 'ulong-fix
+   :sllong 'sllong-fix
+   :ullong 'ullong-fix
+   :struct nil
+   :pointer (type-case
+             type.to
+             :void nil
+             :char nil
+             :schar 'schar-array-fix
+             :uchar 'uchar-array-fix
+             :sshort 'sshort-array-fix
+             :ushort 'ushort-array-fix
+             :sint 'sint-array-fix
+             :uint 'uint-array-fix
+             :slong 'slong-array-fix
+             :ulong 'ulong-array-fix
+             :sllong 'sllong-array-fix
+             :ullong 'ullong-array-fix
+             :struct (b* ((info (defstruct-table-lookup
+                                  (ident->name type.to.tag)
+                                  wrld))
+                          ((unless info)
+                           (raise "Internal error: no fixer for ~x0."
+                                  type)))
+                       (defstruct-info->fixer info))
+             :pointer nil
+             :array nil)
+   :array nil)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -273,6 +400,7 @@
                                   state)
   :returns (mv erp
                (val (tuple (tag symbolp)
+                           (tag-ident identp)
                            (members member-info-listp)
                            (redundant booleanp)
                            val))
@@ -285,7 +413,7 @@
      If the table already contains an entry for this tag,
      the call must be identical, in which case the call is redundant;
      if the call is not identical, it is an error."))
-  (b* ((irrelevant (list nil nil nil))
+  (b* ((irrelevant (list nil (irr-ident) nil nil))
        ((unless (consp args))
         (er-soft+ ctx t irrelevant
                   "There must be at least one input, ~
@@ -296,27 +424,28 @@
                   "The first input must be a symbol, ~
                    but ~x0 is not."
                   tag))
-       ((unless (atc-ident-stringp (symbol-name tag)))
+       (tag-name (symbol-name tag))
+       ((unless (atc-ident-stringp tag-name))
         (er-soft+ ctx t irrelevant
-                  "The name of the symbol ~x0 passed as first input, ~
+                  "The name ~x0 of the symbol ~x1 passed as first input, ~
                    which defines the name of the structure, ~
-                   must be a portable ASCII C identifier, ~
-                   but its name ~x1 is not."
-                  tag (symbol-name tag)))
-       (info (defstruct-table-lookup tag (w state)))
+                   must be a portable ASCII C identifier."
+                  tag-name tag))
+       (tag-ident (ident tag-name))
+       (info (defstruct-table-lookup tag-name (w state)))
        ((when info)
         (if (equal (defstruct-info->call info) call)
-            (acl2::value (list tag nil t))
+            (acl2::value (list tag (irr-ident) nil t))
           (er-soft+ ctx t irrelevant
                     "There is already a structure with tag ~x0 ~
                      recorded in the table of shallowly embedded C structures, ~
                      but its call ~x1 differs from the current ~x2, ~
                      so the call is not redundant."
-                    tag (defstruct-info->call info) call)))
+                    tag-name (defstruct-info->call info) call)))
        (members (cdr args))
        ((mv erp members state) (defstruct-process-members members ctx state))
        ((when erp) (mv erp irrelevant state)))
-    (acl2::value (list tag members nil)))
+    (acl2::value (list tag tag-ident members nil)))
   ///
   (more-returns
    (val true-listp :rule-classes :type-prescription)))
@@ -385,22 +514,51 @@
 (define defstruct-gen-recognizer ((struct-tag-p symbolp)
                                   (tag symbolp)
                                   (members member-info-listp))
-  :returns (event pseudo-event-formp)
+  :returns (mv (event pseudo-event-formp)
+               (not-error-thm symbolp)
+               (structp-thm symbolp))
   :short "Generate the recognizer of
           the structures defined by the @(tsee defstruct)."
   :long
   (xdoc::topstring
    (xdoc::p
     "This recognizes structures
-     with the appropriate types, member names, and member types."))
-  `(define ,struct-tag-p (x)
-     :returns (yes/no booleanp)
-     (and (structp x)
-          (equal (struct->tag x)
-                 (ident ,(symbol-name tag)))
-          (equal (members-to-infos (struct->members x))
-                 ',members))
-     :hooks (:fix)))
+     with the appropriate types, member names, and member types.")
+   (xdoc::p
+    "We also generate a theorem saying that
+     if something satisfies this recognizer then it is not an error.
+     We return the name of the theorem.")
+   (xdoc::p
+    "We also generate a theorem saying that the recognizer
+     implies @(tsee structp).
+     We return the name of the theorem."))
+  (b* ((not-errorp-when-struct-tag-p
+        (packn-pos (list 'not-errorp-when- struct-tag-p)
+                   struct-tag-p))
+       (structp-when-struct-tag-p
+        (packn-pos (list 'structp-when- struct-tag-p)
+                   struct-tag-p))
+       (event
+        `(define ,struct-tag-p (x)
+           :returns (yes/no booleanp)
+           (and (structp x)
+                (equal (struct->tag x)
+                       (ident ,(symbol-name tag)))
+                (equal (members-to-infos (struct->members x))
+                       ',members))
+           :hooks (:fix)
+           ///
+           (defrule ,not-errorp-when-struct-tag-p
+             (implies (,struct-tag-p x)
+                      (not (errorp x)))
+             :enable (errorp ,struct-tag-p structp))
+           (defrule ,structp-when-struct-tag-p
+             (implies (,struct-tag-p x)
+                      (structp x))
+             :in-theory '(,struct-tag-p)))))
+    (mv event
+        not-errorp-when-struct-tag-p
+        structp-when-struct-tag-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -472,8 +630,11 @@
                               (struct-tag-fix symbolp)
                               (name identp)
                               (type typep)
-                              (members member-info-listp))
-  :returns (event pseudo-event-formp)
+                              (members member-info-listp)
+                              (wrld plist-worldp))
+  :returns (mv (event pseudo-event-formp)
+               (reader symbolp)
+               (return-thm symbolp))
   :short "Generate the reader for a member of
           the structures defined by the @(tsee defstruct)."
   :long
@@ -484,29 +645,37 @@
      in particular, it never returns an error.
      To prove the output type,
      we need some intermediate lemmas
-     about @(tsee struct-read-member) and @('struct-read-member-aux')."))
-  (b* ((typep (atc-type-predicate type))
+     about @(tsee struct-read-member) and @('struct-read-member-aux').")
+   (xdoc::p
+    "Also return the name of the reader
+     and the name of the return type theorem of the reader.
+     The latter is generated by @(tsee define)."))
+  (b* ((typep (atc-type-to-recognizer type wrld))
        (struct-tag-read-name (packn-pos (list struct-tag
                                               '-read-
                                               (ident->name name))
-                                        struct-tag)))
-    `(encapsulate ()
-       (defrulel lemma
-         (implies (,struct-tag-p struct)
-                  (,typep (struct-read-member ',name struct)))
-         :enable (,struct-tag-p
-                  struct-read-member
-                  ,(packn-pos (list typep '-to-type-of-value) typep))
-         :use (:instance defstruct-reader-lemma
-               (meminfos ',members)
-               (name ',name)
-               (members (struct->members struct))))
-       (define ,struct-tag-read-name ((struct ,struct-tag-p))
-         :returns (val ,typep)
-         (struct-read-member (ident ,(ident->name name))
-                             (,struct-tag-fix struct))
-         :guard-hints (("Goal" :in-theory (enable ,struct-tag-p)))
-         :hooks (:fix)))))
+                                        struct-tag))
+       (return-thm (packn-pos (list typep '-of- struct-tag-read-name)
+                              struct-tag-read-name))
+       (event
+        `(encapsulate ()
+           (defrulel lemma
+             (implies (,struct-tag-p struct)
+                      (,typep (struct-read-member ',name struct)))
+             :enable (,struct-tag-p
+                      struct-read-member
+                      ,(packn-pos (list typep '-to-type-of-value) typep))
+             :use (:instance defstruct-reader-lemma
+                   (meminfos ',members)
+                   (name ',name)
+                   (members (struct->members struct))))
+           (define ,struct-tag-read-name ((struct ,struct-tag-p))
+             :returns (val ,typep)
+             (struct-read-member (ident ,(ident->name name))
+                                 (,struct-tag-fix struct))
+             :guard-hints (("Goal" :in-theory (enable ,struct-tag-p)))
+             :hooks (:fix)))))
+    (mv event struct-tag-read-name return-thm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -514,19 +683,33 @@
                                (struct-tag-p symbolp)
                                (struct-tag-fix symbolp)
                                (members member-info-listp)
-                               (all-members member-info-listp))
-  :returns (events pseudo-event-form-listp)
+                               (all-members member-info-listp)
+                               (wrld plist-worldp))
+  :returns (mv (events pseudo-event-form-listp)
+               (readers symbol-listp)
+               (return-thms symbol-listp))
   :short "Generate the readers for the members of
           the structures defined by the @(tsee defstruct)."
-  (b* (((when (endp members)) nil)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Also return the list of readers
+     and the list of return type theorems of the readers."))
+  (b* (((when (endp members)) (mv nil nil nil))
        ((member-info member) (car members))
-       (event (defstruct-gen-reader
-                struct-tag struct-tag-p struct-tag-fix
-                member.name member.type all-members))
-       (events (defstruct-gen-readers
-                 struct-tag struct-tag-p struct-tag-fix
-                 (cdr members) all-members)))
-    (cons event events)))
+       ((mv event reader return-thm)
+        (defstruct-gen-reader
+          struct-tag struct-tag-p struct-tag-fix
+          member.name member.type all-members
+          wrld))
+       ((mv events readers return-thms)
+        (defstruct-gen-readers
+          struct-tag struct-tag-p struct-tag-fix
+          (cdr members) all-members
+          wrld)))
+    (mv (cons event events)
+        (cons reader readers)
+        (cons return-thm return-thms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -535,8 +718,11 @@
                               (struct-tag-fix symbolp)
                               (name identp)
                               (type typep)
-                              (members member-info-listp))
-  :returns (event pseudo-event-formp)
+                              (members member-info-listp)
+                              (wrld plist-worldp))
+  :returns (mv (event pseudo-event-formp)
+               (writer symbolp)
+               (return-thm symbolp))
   :short "Generate the writer for a member of
           the structures defined by the @(tsee defstruct)."
   :long
@@ -547,34 +733,42 @@
      in particular, it never returns an error.
      To prove the output type,
      we need some intermediate lemmas
-     about @(tsee struct-write-member) and @('struct-write-member-aux')."))
-  (b* ((typep (atc-type-predicate type))
-       (type-fix (atc-type-fixer type))
+     about @(tsee struct-write-member) and @('struct-write-member-aux').")
+   (xdoc::p
+    "Also return the name of the writer
+     and the name of the return type theorem of the writer.
+     The latter is generated by @(tsee define)."))
+  (b* ((typep (atc-type-to-recognizer type wrld))
+       (type-fix (atc-type-to-fixer type wrld))
        (struct-tag-write-name (packn-pos (list struct-tag
                                                '-write-
                                                (ident->name name))
-                                         struct-tag)))
-    `(encapsulate ()
-       (defrulel lemma
-         (implies (and (,struct-tag-p struct)
-                       (,typep val))
-                  (,struct-tag-p (struct-write-member ',name val struct)))
-         :enable (,struct-tag-p
-                  struct-write-member
-                  ,(packn-pos (list 'type-of-value-when- typep '-forward)
-                              'type-of-value))
-         :use (:instance defstruct-writer-lemma
-               (meminfos ',members)
-               (name ',name)
-               (members (struct->members struct))
-               (val val)))
-       (define ,struct-tag-write-name ((val ,typep) (struct ,struct-tag-p))
-         :returns (new-struct ,struct-tag-p)
-         (struct-write-member (ident ,(ident->name name))
-                              (,type-fix val)
-                              (,struct-tag-fix struct))
-         :guard-hints (("Goal" :in-theory (enable ,struct-tag-p)))
-         :hooks (:fix)))))
+                                         struct-tag))
+       (return-thm (packn-pos (list struct-tag-p '-of- struct-tag-write-name)
+                              struct-tag-write-name))
+       (event
+        `(encapsulate ()
+           (defrulel lemma
+             (implies (and (,struct-tag-p struct)
+                           (,typep val))
+                      (,struct-tag-p (struct-write-member ',name val struct)))
+             :enable (,struct-tag-p
+                      struct-write-member
+                      ,(packn-pos (list 'type-of-value-when- typep '-forward)
+                                  'type-of-value))
+             :use (:instance defstruct-writer-lemma
+                   (meminfos ',members)
+                   (name ',name)
+                   (members (struct->members struct))
+                   (val val)))
+           (define ,struct-tag-write-name ((val ,typep) (struct ,struct-tag-p))
+             :returns (new-struct ,struct-tag-p)
+             (struct-write-member (ident ,(ident->name name))
+                                  (,type-fix val)
+                                  (,struct-tag-fix struct))
+             :guard-hints (("Goal" :in-theory (enable ,struct-tag-p)))
+             :hooks (:fix)))))
+    (mv event struct-tag-write-name return-thm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -582,55 +776,91 @@
                                (struct-tag-p symbolp)
                                (struct-tag-fix symbolp)
                                (members member-info-listp)
-                               (all-members member-info-listp))
-  :returns (events pseudo-event-form-listp)
+                               (all-members member-info-listp)
+                               (wrld plist-worldp))
+  :returns (mv (events pseudo-event-form-listp)
+               (writers symbol-listp)
+               (return-thms symbol-listp))
   :short "Generate the writers for the members of
           the structures defined by the @(tsee defstruct)."
-  (b* (((when (endp members)) nil)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Also return the list of writers
+     and the list of return type theorems of the writers."))
+  (b* (((when (endp members)) (mv nil nil nil))
        ((member-info member) (car members))
-       (event (defstruct-gen-writer
-                struct-tag struct-tag-p struct-tag-fix
-                member.name member.type all-members))
-       (events (defstruct-gen-writers
-                 struct-tag struct-tag-p struct-tag-fix
-                 (cdr members) all-members)))
-    (cons event events)))
+       ((mv event writer return-thm)
+        (defstruct-gen-writer
+          struct-tag struct-tag-p struct-tag-fix
+          member.name member.type all-members
+          wrld))
+       ((mv events writers return-thms)
+        (defstruct-gen-writers
+          struct-tag struct-tag-p struct-tag-fix
+          (cdr members) all-members
+          wrld)))
+    (mv (cons event events)
+        (cons writer writers)
+        (cons return-thm return-thms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defstruct-gen-everything ((tag symbolp)
+                                  (tag-ident identp)
                                   (members member-info-listp)
-                                  (call pseudo-event-formp))
+                                  (call pseudo-event-formp)
+                                  (wrld plist-worldp))
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are the recognizer, fixer, fixtype, readers, and writers,
-     and the table event."))
+     and the table event.")
+   (xdoc::p
+    "We store the return type theorems of the readers and writers
+     into the table."))
   (b* ((struct-tag (packn-pos (list 'struct- tag) tag))
        (struct-tag-p (packn-pos (list struct-tag '-p) tag))
        (struct-tag-fix (packn-pos (list struct-tag '-fix) tag))
        (struct-tag-equiv (packn-pos (list struct-tag '-equiv) tag))
-       (recognizer-event (defstruct-gen-recognizer struct-tag-p tag members))
+       ((mv recognizer-event
+            not-errorp-when-struct-tag-p
+            structp-when-struct-tag-p)
+        (defstruct-gen-recognizer struct-tag-p tag members))
        (fixer-event (defstruct-gen-fixer
                       struct-tag-fix struct-tag-p tag members))
        (fixtype-event (defstruct-gen-fixtype
                         struct-tag struct-tag-p
                         struct-tag-fix struct-tag-equiv))
-       (reader-events (defstruct-gen-readers
-                        struct-tag struct-tag-p struct-tag-fix members members))
-       (writer-events (defstruct-gen-writers
-                        struct-tag struct-tag-p struct-tag-fix members members))
-       (info (make-defstruct-info :members members :call call))
-       (table-event (defstruct-table-record-event tag info)))
+       ((mv reader-events reader-names reader-return-thms)
+        (defstruct-gen-readers
+          struct-tag struct-tag-p struct-tag-fix members members wrld))
+       ((mv writer-events writer-names writer-return-thms)
+        (defstruct-gen-writers
+          struct-tag struct-tag-p struct-tag-fix members members wrld))
+       (return-thms (append reader-return-thms writer-return-thms))
+       (info (make-defstruct-info :tag tag-ident
+                                  :members members
+                                  :recognizer struct-tag-p
+                                  :fixer struct-tag-fix
+                                  :readers reader-names
+                                  :writers writer-names
+                                  :return-thms return-thms
+                                  :not-error-thm not-errorp-when-struct-tag-p
+                                  :structp-thm structp-when-struct-tag-p
+                                  :call call))
+       (table-event (defstruct-table-record-event (symbol-name tag) info)))
     `(progn
        ,recognizer-event
        ,fixer-event
        ,fixtype-event
        ,@reader-events
        ,@writer-events
-       ,table-event)))
+       ,table-event))
+  :prepwork
+  ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -640,11 +870,12 @@
                       state)
   :returns (mv erp (event pseudo-event-formp) state)
   :short "Process the inputs and generate the events."
-  (b* (((mv erp (list tag members redundant) state)
+  (b* ((wrld (w state))
+       ((mv erp (list tag tag-ident members redundant) state)
         (defstruct-process-inputs args call ctx state))
        ((when erp) (mv erp '(_) state))
        ((when redundant) (acl2::value '(value-triple :redundant)))
-       (event (defstruct-gen-everything tag members call)))
+       (event (defstruct-gen-everything tag tag-ident members call wrld)))
     (acl2::value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
