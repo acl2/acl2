@@ -164,7 +164,7 @@
                               (or (myquotep term)
                                   (and (natp term)
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term)))))))
-  (if (quotep term)
+  (if (consp term) ; check for quotep
       (or (not (natp (unquote term)))
           ;;(< width (integer-length (unquote term)))
           (<= (expt 2 width) (unquote term)) ;this may be faster, since expt may be built in (maybe just a shift)?
@@ -190,24 +190,29 @@
 ;OPERATORS should be 'all or 'non-arithmetic
 ;maybe we should add the option to not trim logical ops?  but that's not as dangerous as trimming arithmetic ops...
 (defund term-should-be-trimmed-axe (quoted-width term operators dag-array)
-  (declare (xargs :guard (and (or (myquotep term)
+  (declare (xargs :guard (and (or (myquotep quoted-width)
+                                  (and (natp quoted-width)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 quoted-width))))
+                              (or (myquotep term)
                                   (and (natp term)
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))
                               ;; (member-equal operators '('all 'non-arithmetic)) ;todo: why are these quoted?
                               )))
-  (if (not (and (myquotep quoted-width)
+  (if (not (and (consp quoted-width)          ; test for quotep
                 (natp (unquote quoted-width)) ;check natp or posp?
+                ;; todo: can we avoid this?  use one as the default?
                 (or (equal operators ''all)
                     (equal operators ''non-arithmetic))))
-      (prog2$ (cw "Warning: In term-should-be-trimmed-axe: Unexpected arguments (width: ~x0).~%"
-                  (if (myquotep quoted-width)
+      (prog2$ (cw "Warning: In term-should-be-trimmed-axe: Unexpected arguments (width: ~x0, operators ~x1).~%"
+                  (if (consp quoted-width) ; check for quotep
                       quoted-width
                     ;; simplify this?:
                     (if (and (not (myquotep term))
                              (natp quoted-width)
                              (< quoted-width (alen1 'dag-array dag-array)))
                         (aref1 'dag-array dag-array quoted-width)
-                      :unknown)))
+                      :unknown))
+                  operators)
               nil)
     (let ((width (unquote quoted-width)))
       (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
