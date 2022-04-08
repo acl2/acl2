@@ -68,6 +68,11 @@
                                                    ))
            :in-theory (enable translation-arrayp-aux))))
 
+(defthm translation-arrayp-aux-when-negative
+  (implies (< top-nodenum-to-check 0)
+           (translation-arrayp-aux top-nodenum-to-check array))
+  :hints (("Goal" :in-theory (enable translation-arrayp-aux))))
+
 ;;;
 ;;; bounded-translation-arrayp-aux
 ;;;

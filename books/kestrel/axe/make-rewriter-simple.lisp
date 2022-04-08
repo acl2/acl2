@@ -103,8 +103,8 @@
          (all-dargp x))
   :hints (("Goal" :in-theory (enable all-dargp))))
 
-;dup.  needed for proofs of the generated functions
-(defthm symbol-listp-of-append2
+;needed for proofs of the generated functions
+(defthmd symbol-listp-of-append-disabled
   (equal (symbol-listp (append x y))
          (and (symbol-listp (true-list-fix x))
               (symbol-listp y)))
@@ -2831,7 +2831,8 @@
                                    not-equal-when-member-equal
                                    not-equal-when-member-equal-alt
                                    <=-transitive-1
-                                   <=-transitive-2)
+                                   <=-transitive-2
+                                   symbol-listp-of-append-disabled)
                                   (dargp-less-than
                                    natp
                                    quotep
