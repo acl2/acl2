@@ -63,6 +63,22 @@
           sbvlt                      ;new
           ))
 
+(defund filter-function-names (rule-names wrld)
+  (declare (xargs :guard (and (symbol-listp rule-names)
+                              (plist-worldp wrld))))
+  (if (endp rule-names)
+      nil
+    (let ((rule-name (first rule-names)))
+      (if (function-symbolp rule-name wrld)
+          (cons rule-name
+                (filter-function-names (rest rule-names) wrld))
+        (filter-function-names (rest rule-names) wrld)))))
+
+(defthm symbol-listp-of-filter-function-names
+  (implies (symbol-listp rule-names)
+           (symbol-listp (filter-function-names rule-names wrld)))
+  :hints (("Goal" :in-theory (enable filter-function-names))))
+
 ;; TODO: Add more options, such as :print-interval, to pass through to simp-term
 ;; Returns (mv erp event state)
 (defun unroll-spec-basic-fn (defconst-name ;should begin and end with *
@@ -93,7 +109,8 @@
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               ;; (pseudo-term-listp assumptions) ;; untranslated terms
-                              (interpreted-function-alistp interpreted-function-alist) ;todo: extract from the terms and rules?
+                              (or (eq :auto interpreted-function-alist)
+                                  (interpreted-function-alistp interpreted-function-alist))
                               (symbol-listp monitor)
                               (booleanp memoizep)
                               (booleanp count-hits)
@@ -169,9 +186,23 @@
        (rules (set-difference-equal rules remove-rules))
        ;; Submit any needed defopener rules:
        (state (submit-events-quiet pre-events state))
+       ;; Make the rule-alist:
        ((mv erp rule-alist)
         (make-rule-alist rules (w state)))
        ((when erp) (mv erp nil state))
+       ;; Create the interpreted-function-alist:
+       (interpreted-function-alist
+        (if (eq :auto interpreted-function-alist)
+            ;; Since we're expanding these functions, we might as well also evaluate them
+            ;; todo: also add recursive functions that we are unrolling?
+            ;; todo: also add functions that may be introduced by rules?
+            (make-complete-interpreted-function-alist
+             (set-difference-eq (filter-function-names rules (w state))
+                                ;; we can already evaluate these:
+                                *axe-evaluator-basic-fns-and-aliases*)
+             (w state))
+          ;; The user supplied one, so use it:
+          interpreted-function-alist))
        ;; Call the rewriter:
        ((mv erp dag)
         (simplify-term-basic term
@@ -274,7 +305,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                        &key
                                        ;; Options that affect the meaning of the result:
                                        (assumptions 'nil)
-                                       (interpreted-function-alist 'nil)
+                                       (interpreted-function-alist ':auto) ;; todo: instead, pass in extra-interpreted-fns?  and bring in their subfunctions too...
                                        ;; Options that affect how the rewriting goes:
                                        (rules ':standard) ;to completely replace the usual set of rules
                                        ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
@@ -324,7 +355,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
            "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
          (term "The term to simplify.")
          (assumptions "Assumptions to use when unrolling")
-         (interpreted-function-alist "Definitions of non-built-in functions to evaluate.")
+         (interpreted-function-alist "Definitions of non-built-in functions to evaluate, or :auto.")
          (rules "The basic set of rules to use (a list of symbols), or :standard (meaning to use the standard set), or :auto (meaning to try to open functions until only supported Axe operations [on bit-vectors, booleans, arrays, etc.] remain).")
          (extra-rules "Rules to add to the base set of rules.")
          (remove-rules "Rules to remove from the base set of rules.")
