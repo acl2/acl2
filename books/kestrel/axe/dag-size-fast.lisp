@@ -22,6 +22,12 @@
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
+
+(local (in-theory (enable not-<-of-car-when-all-<
+                          <=-of-0-when-0-natp
+                          acl2-numberp-when-natp
+                          integerp-when-natp)))
 
 ;dup
 (def-typed-acl2-array size-arrayp (natp val) :default-satisfies-predp nil)
@@ -52,12 +58,6 @@
    (implies (and (natp x)
                  (natp y))
             (natp (+ x y)))))
-
-;dup
-(local
- (defthm acl2-numberp-when-natp
-   (implies (natp x)
-            (acl2-numberp x))))
 
 (defthmd <-of-car-of-car-when-all-<-of-strip-cars
   (implies (and (all-< (strip-cars x) bound)
@@ -97,33 +97,35 @@
            :in-theory (disable size-arrayp-of-aset1-at-end))))
 
 ;;;
-;;; add-arg-sizes
+;;; add-darg-sizes
 ;;;
 
-(defund add-arg-sizes (dargs size-array acc)
+(defund add-darg-sizes (dargs size-array acc)
   (declare (xargs :guard (and (true-listp dargs)
                               (all-dargp dargs)
                               (size-arrayp 'size-array size-array (+ 1 (largest-non-quotep dargs)))
                               (natp acc))
-                  :guard-hints (("Goal" :in-theory (disable natp)))))
+                  :split-types t
+                  :guard-hints (("Goal" :in-theory (disable natp))))
+           (type (integer 0 *) acc))
   (if (endp dargs)
       acc
     (let ((darg (first dargs)))
-      (add-arg-sizes (rest dargs)
+      (add-darg-sizes (rest dargs)
                      size-array
-                     (+ (if (consp darg) ;check for a quotep, which we say has size 1
-                            1
-                          ;; dargs is a nodenum, so look up its size:
-                          (aref1 'size-array size-array darg))
-                        acc)))))
+                     (if (consp darg) ;check for a quotep, which we say has size 1
+                         (+ 1 acc)
+                       ;; dargs is a nodenum, so look up its size:
+                       (+ (the (integer 0 *) (aref1 'size-array size-array darg))
+                          acc))))))
 
-(defthm natp-of-add-arg-sizes
+(defthm natp-of-add-darg-sizes
   (implies (and ;(true-listp dargs)
                 (all-dargp dargs)
                 (size-arrayp 'size-array size-array (+ 1 (largest-non-quotep dargs)))
                 (natp acc))
-           (natp (add-arg-sizes dargs size-array acc)))
-  :hints (("Goal" :in-theory (enable add-arg-sizes))))
+           (natp (add-darg-sizes dargs size-array acc)))
+  :hints (("Goal" :in-theory (enable add-darg-sizes))))
 
 ;;;
 ;;; make-size-array-for-rev-dag-aux
@@ -155,7 +157,7 @@
                                                 ;; the size of a function call node is 1 plus the sizes of its node args,
                                                 ;; plus 1 for each constant arg:
                                                 ;; todo: bake in the size array name to a version of this:
-                                                (add-arg-sizes (dargs expr) size-array 1)))))))
+                                                (add-darg-sizes (dargs expr) size-array 1)))))))
 
 (local (in-theory (disable weak-dagp-aux)))
 
@@ -262,6 +264,7 @@
 ;;; dag-or-quotep-size-fast
 ;;;
 
+;; Smashes the array named 'size-array.
 (defund dag-or-quotep-size-fast (x)
   (declare (xargs :guard (or (and (pseudo-dagp x)
                                   (< (len x) 2147483647))
@@ -281,6 +284,8 @@
 ;;; dag-or-quotep-size-less-thanp
 ;;;
 
+;; Smashes the array named 'size-array.
+;; We could just compare to dag-or-quotep-size-fast, but not if we optimize this to use the limit
 (defund dag-or-quotep-size-less-thanp (dag-or-quotep limit)
   (declare (xargs :guard (and (or (and (pseudo-dagp dag-or-quotep)
                                        (< (len dag-or-quotep) 2147483647))
