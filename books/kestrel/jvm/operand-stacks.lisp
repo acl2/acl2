@@ -1,7 +1,7 @@
 ; Operand stacks
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,9 @@
 
 (in-package "JVM")
 
+;; TODO: Consider restricting the type of the operands on the stack.  We could
+;; even create a macro to define a typed stack, given the operand type.
+
 (include-book "types") ;for *two-slot-types*
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/utilities/myif-def" :dir :system)
@@ -22,43 +25,59 @@
 ;;; operand stacks
 ;;;
 
-(defund operand-stackp (stack) (declare (xargs :guard t)) (true-listp stack)) ;fixme define a notion of a typed-stack!
-(defund empty-operand-stack () (declare (xargs :guard t)) nil) ; was a macro
-(defund empty-operand-stackp (stack) (declare (xargs :guard (operand-stackp stack) :guard-hints (("Goal" :in-theory (enable operand-stackp))))) (endp stack)) ; was a macro
+;; Recognize an operand stack
+(defund operand-stackp (stack) (declare (xargs :guard t)) (true-listp stack))
+
+;; Create an empty operand stack
+(defund empty-operand-stack () (declare (xargs :guard t)) nil)
+
+;; Check whether a stack is empty.
+;; We could get rid of this, since the empty stack is unique.
+(defund empty-operand-stackp (stack)
+  (declare (xargs :guard (operand-stackp stack) :guard-hints (("Goal" :in-theory (enable operand-stackp)))))
+  (endp stack))
 
 (defthm operand-stackp-of-empty-operand-stack
   (operand-stackp (empty-operand-stack))
   :hints (("Goal" :in-theory (enable empty-operand-stack operand-stackp))))
 
-;fixme define an operandp??
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund push-operand (obj stack)
+(defund push-operand (item stack)
   (declare (xargs :guard (operand-stackp stack)))
-  (cons obj stack))
+  (cons item stack))
 
-;guard to require a non-empty-stack?
+(defthm operand-stackp-of-push-operand
+  (equal (operand-stackp (push-operand item stack))
+         (and (operand-stackp stack)
+              ;; for a typed stack, we'd have a claim here about item
+              ))
+  :hints (("Goal" :in-theory (enable operand-stackp push-operand))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Strengthen guard to require a non-empty-stack?
 (defund top-operand (stack)
   (declare (xargs :guard (operand-stackp stack) :guard-hints (("Goal" :in-theory (enable operand-stackp)))))
   (car stack))
 
-;guard to require a non-empty-stack?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Strengthen guard to require a non-empty-stack?
 (defund pop-operand (stack)
   (declare (xargs :guard (operand-stackp stack) :guard-hints (("Goal" :in-theory (enable operand-stackp)))))
   (cdr stack))
 
-(defthm operand-stackp-of-pop
+(defthm operand-stackp-of-pop-operand
   (implies (and (operand-stackp stack)
-                ;; fixme require non-empty
+                ;; todo: require non-empty?
                 )
            (operand-stackp (pop-operand stack)))
   :hints (("Goal" :in-theory (enable operand-stackp pop-operand))))
 
-(defthm push-operand-equal-rewrite
-  (equal (equal (push-operand a x) (push-operand b y))
-         (and (equal a b)
-              (equal x y)))
-  :hints (("Goal" :in-theory (enable push-operand))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Compute the size (or length) of a stack
 (defund operand-stack-size (stack)
   (declare (xargs :guard (operand-stackp stack) :guard-hints (("Goal" :in-theory (enable operand-stackp)))))
   (len stack))
@@ -69,7 +88,7 @@
   :hints (("Goal" :in-theory (enable empty-operand-stack))))
 
 (defthm operand-stack-size-of-push-operand
-  (equal (operand-stack-size (push-operand obj stack))
+  (equal (operand-stack-size (push-operand item stack))
          (+ 1 (operand-stack-size stack)))
   :hints (("Goal" :in-theory (enable push-operand operand-stack-size))))
 
@@ -79,33 +98,34 @@
                   (+ -1 (operand-stack-size stack))))
   :hints (("Goal" :in-theory (enable pop-operand operand-stack-size empty-operand-stackp))))
 
-;which do we prefer?
+;; A variant of operand-stack-size-of-pop-operand; which do we prefer?
 (defthm operand-stack-size-of-pop-operand-2
   (implies (< 0 (operand-stack-size stack))
            (equal (operand-stack-size (pop-operand stack))
                   (+ -1 (operand-stack-size stack))))
   :hints (("Goal" :in-theory (enable pop-operand operand-stack-size))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm top-operand-of-push-operand
-  (equal (top-operand (push-operand x s))
-         x)
+  (equal (top-operand (push-operand item stack))
+         item)
   :hints (("Goal" :in-theory (enable top-operand push-operand))))
 
 (defthm pop-operand-of-push-operand
-  (equal (pop-operand (push-operand x s))
-         s)
+  (equal (pop-operand (push-operand item stack))
+         stack)
   :hints (("Goal" :in-theory (enable pop-operand push-operand))))
 
-(defthm push-operand-onto-x-cant-equal-x
-  (not (equal (push-operand a x) x))
+(defthm not-equal-of-push-operand-same
+  (not (equal (push-operand item stack) stack))
   :hints (("Goal" :in-theory (enable push-operand))))
 
-(defthm operand-stackp-of-push-operand
-  (equal (operand-stackp (push-operand item stack))
-         (and (operand-stackp stack)
-              ;; fixme require the item pushed to be okay?
-              ))
-  :hints (("Goal" :in-theory (enable operand-stackp push-operand))))
+(defthm equal-of-push-operand-and-push-operand
+  (equal (equal (push-operand item1 stack1) (push-operand item2 stack2))
+         (and (equal item1 item2)
+              (equal stack1 stack2)))
+  :hints (("Goal" :in-theory (enable push-operand))))
 
 ;;;
 ;;; topn-operands
@@ -218,7 +238,7 @@
   :hints (("Goal" :in-theory (enable push-long))))
 
 (defthm operand-stack-size-of-push-long
-  (equal (operand-stack-size (push-long obj stack))
+  (equal (operand-stack-size (push-long item stack))
          (+ 2 (operand-stack-size stack)))
   :hints (("Goal" :in-theory (enable push-long))))
 
