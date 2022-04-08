@@ -174,17 +174,19 @@
 (defund insert-into-sorted-list-and-remove-dups (item list)
   (declare (xargs :guard (and (integerp item)
                               (all-integerp list) ;use integer-listp?
-                              )))
+                              )
+                  :split-types t)
+           (type integer item))
   (if (atom list) ;use endp?
       (list item)
-    (let ((first-item (car list)))
+    (let ((first-item (the integer (first list))))
+      ;; Put the larger one first, but drop both if they are equal:
       (if (< first-item item)
-          (cons item list)
+          (cons item list) ;; item is larger than anything in the list
         (if (eql item first-item)
             ;;drop them both:
             (cdr list)
           (cons first-item (insert-into-sorted-list-and-remove-dups item (cdr list))))))))
-
 
 (defthm all-integerp-of-insert-into-sorted-list-and-remove-dups
   (implies (integerp item)
@@ -207,6 +209,13 @@
   (implies (and (< item bound)
                 (all-< list bound))
            (all-< (insert-into-sorted-list-and-remove-dups item list) bound))
+  :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups))))
+
+(defthm all-<=-of-insert-into-sorted-list-and-remove-dups
+  (implies (and (<= val2 val)
+                (all-<= lst val))
+           (all-<= (insert-into-sorted-list-and-remove-dups val2 lst)
+                   val))
   :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups))))
 
 ;; ;not quite right because of dups
@@ -532,13 +541,6 @@
   :hints (("Goal" :in-theory (enable decreasingp))))
 
 (local (in-theory (enable not-<-of-nth-0-and-nth-1-when-decreasingp)))
-
-(defthm all-<=-of-insert-into-sorted-list-and-remove-dups
-  (implies (and (<= val2 val)
-                (all-<= lst val))
-           (all-<= (insert-into-sorted-list-and-remove-dups val2 lst)
-                   val))
-  :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups))))
 
 (defthm all-<=of-cdr-and-nth-0-when-decreasingp
   (implies (decreasingp pending-list)
