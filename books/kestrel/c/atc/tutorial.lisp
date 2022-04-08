@@ -126,7 +126,7 @@
     of the correctness of the generated C code.")
 
   (xdoc::p
-   "The fact that ATC is much simpler than ATJ
+   "The fact that ATC is simpler than ATJ
     facilitates the generation of proofs.
     Generating proofs for ATJ is a larger task,
     due to the greater complexity.")
@@ -164,10 +164,9 @@
     Thus, ATC can be used at the end of an APT derivation.")
 
   (xdoc::p
-   "Currently ATC recognizes a very limited subset of ACL2
-    and translates it to a very limited subset of C.
-    This is just a first step (the development of ATC has just started);
-    we plan to extend ATC to increasingly larger subsets of ACL2 and C."))
+   "Currently ATC recognizes a limited subset of ACL2
+    and translates it to a limited subset of C.
+    We plan to extend ATC to increasingly larger subsets of ACL2 and C."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
