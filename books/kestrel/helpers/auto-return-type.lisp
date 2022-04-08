@@ -14,7 +14,8 @@
 
 ;; STATUS: In-progress
 
-;; TODO: Handle functions that return multiple values.
+;; TODO: Handle functions that return multiple values (challenging example:
+;; FNS-SUPPORTING-FNS-AUX with no types about the accs).
 
 ;; TODO: Handle more kinds of patterns
 

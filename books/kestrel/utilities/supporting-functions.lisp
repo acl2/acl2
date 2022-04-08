@@ -14,18 +14,23 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
-(defun fns-supporting-fns-aux (count
-                               worklist
-                               donelist ; includes all the fns in the 3 accumulators (it's their union?)
-                               stopper-fns
-                               defined-fns-acc
-                               undefined-fns-acc
-                               stopper-fns-acc
-                               wrld)
+(local (in-theory (disable mv-nth)))
+
+(defund fns-supporting-fns-aux (count
+                                worklist
+                                donelist ; includes all the fns in the 3 accumulators (it's their union?)
+                                stopper-fns
+                                defined-fns-acc
+                                undefined-fns-acc
+                                stopper-fns-acc
+                                wrld)
   (declare (xargs :guard (and (natp count)
                               (symbol-listp worklist)
                               (symbol-listp donelist)
                               (symbol-listp stopper-fns)
+                              (symbol-listp defined-fns-acc)
+                              (symbol-listp undefined-fns-acc)
+                              (symbol-listp stopper-fns-acc)
                               (plist-worldp wrld))))
   (if (zp count)
       (prog2$ (er hard? 'fns-supporting-fns "Count reached.")
@@ -76,19 +81,42 @@
                                           stopper-fns-acc
                                           wrld))))))))))
 
+(defthm fns-supporting-fns-aux-type
+  (implies (and (natp count)
+                (symbol-listp worklist)
+                (symbol-listp donelist)
+                (symbol-listp stopper-fns)
+                (plist-worldp wrld)
+                (symbol-listp defined-fns-acc)
+                (symbol-listp undefined-fns-acc)
+                (symbol-listp stopper-fns-acc))
+           (and (symbol-listp (mv-nth 0 (fns-supporting-fns-aux count worklist donelist stopper-fns defined-fns-acc undefined-fns-acc stopper-fns-acc wrld)))
+                (symbol-listp (mv-nth 1 (fns-supporting-fns-aux count worklist donelist stopper-fns defined-fns-acc undefined-fns-acc stopper-fns-acc wrld)))
+                (symbol-listp (mv-nth 2 (fns-supporting-fns-aux count worklist donelist stopper-fns defined-fns-acc undefined-fns-acc stopper-fns-acc wrld)))))
+  :hints (("Goal" :in-theory (enable fns-supporting-fns-aux))))
+
 ;; Considers the supplied FNS and the functions they call, etc., back to functions
 ;; that are STOPPER-FNS or are undefined.  Classifies the discovered functions.
 ;; Returns (mv defined-fns undefined-fns stopper-fns), where the results include just those functions reachable from the FNS without looking inside any STOPPER-FNS.
 ;; Example: (fns-supporting-fns '(fns-supporting-fns) nil (w state))
-(defun fns-supporting-fns (fns stopper-fns wrld)
+(defund fns-supporting-fns (fns stopper-fns wrld)
   (declare (xargs :guard (and (symbol-listp fns)
                               (symbol-listp stopper-fns)
                               (plist-worldp wrld))))
   (fns-supporting-fns-aux 1000000000 fns nil stopper-fns nil nil nil wrld))
 
+(defthm fns-supporting-fns-type
+  (implies (and (symbol-listp fns)
+                (symbol-listp stopper-fns)
+                (plist-worldp wrld))
+           (and (symbol-listp (mv-nth 0 (fns-supporting-fns fns stopper-fns wrld)))
+                (symbol-listp (mv-nth 1 (fns-supporting-fns fns stopper-fns wrld)))
+                (symbol-listp (mv-nth 2 (fns-supporting-fns fns stopper-fns wrld)))))
+  :hints (("Goal" :in-theory (enable fns-supporting-fns))))
+
 ;; Returns (mv defined-fns undefined-fns stopper-fns), where the results include just those functions reachable from the FNS without looking inside any STOPPER-FNS.
 ;; See fns-supporting-fns.
-(defun fns-supporting-term (term stopper-fns wrld)
+(defund fns-supporting-term (term stopper-fns wrld)
   (declare (xargs :guard (and (pseudo-termp term)
                               (symbol-listp stopper-fns)
                               (plist-worldp wrld))))
@@ -97,3 +125,12 @@
         (prog2$ (er hard? 'fns-supporting-term "Bad list of called fns, ~x0, in term ~x1 ." fns term)
                 (mv nil nil nil))
       (fns-supporting-fns fns stopper-fns wrld))))
+
+(defthm fns-supporting-term-type
+  (implies (and (pseudo-termp term)
+                (symbol-listp stopper-fns)
+                (plist-worldp wrld))
+           (and (symbol-listp (mv-nth 0 (fns-supporting-term term stopper-fns wrld)))
+                (symbol-listp (mv-nth 1 (fns-supporting-term term stopper-fns wrld)))
+                (symbol-listp (mv-nth 2 (fns-supporting-term term stopper-fns wrld)))))
+  :hints (("Goal" :in-theory (enable fns-supporting-term))))
