@@ -75,6 +75,7 @@
                   (set-field ref2 pair2 value2
                              (set-field ref1 pair1 value1 heap)))))
 
+;; For the same ref, sort by pairs:
 (defthmd set-field-of-set-field-reorder-pairs
   (implies (and (axe-syntaxp (heavier-dag-term pair2 pair1))
                 (not (equal pair1 pair2)))
