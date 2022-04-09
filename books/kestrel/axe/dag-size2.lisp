@@ -1,7 +1,7 @@
 ; DAG size tools dealing only with relevant nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 ;; This book deals with computing the size of some, but not necessarily all,
-;; nodes in a DAG.  See also dag-size.lisp.
+;; nodes in a DAG.  See also dag-size.lisp and dag-size-fast.lisp.
 
 (include-book "dag-arrays")
 (include-book "numeric-lists")

@@ -493,7 +493,7 @@
                               (if produce-theorem (list theorem-name) nil)))
        (- (cw "Unrolling finished.~%"))
        ;; (- (cw "Info on unrolled DAG:~%"))
-       ((mv & & state) (dag-info-fn-aux dag (symbol-name defconst-name) state)) ; maybe suppress with print arg?
+       ((mv & & state) (dag-info-fn-aux dag (symbol-name defconst-name) nil state)) ; maybe suppress with print arg?
        (- (cw ")~%")))
     (mv (erp-nil)
         (extend-progn (extend-progn event `(with-output :off :all (table unroll-java-code-table ',whole-form ',event)))
