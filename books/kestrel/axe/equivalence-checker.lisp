@@ -21100,6 +21100,13 @@
 
 <p>If the call to @('prove-equivalence') completes without error, the DAG/terms are equal, given the :assumptions (including the :types).</p>")
 
+;dup
+(defun check-boolean (val)
+  (declare (xargs :guard t))
+  (if (member-eq val '(t nil))
+      val
+    (er hard? 'check-boolean "Value is not boolean: ~x0." val)))
+
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
 (defmacro prove-equivalence (&whole whole-form
                                     dag-or-term1
@@ -21119,23 +21126,27 @@
                                     (use-context-when-miteringp 'nil) ;todo: try t
                                     (normalize-xors 't)
                                     (interpreted-function-alist 'nil) ;affects soundness
-                                    (check-varsp 't))
-  `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
-                                           ,dag-or-term2
-                                           ,tests
-                                           ,tactic
-                                           ,assumptions
-                                           ,types
-                                           ,name
-                                           ,print
-                                           ,debug
-                                           ,max-conflicts
-                                           ,extra-rules
-                                           ,initial-rule-sets
-                                           ,monitor
-                                           ,use-context-when-miteringp
-                                           ',normalize-xors
-                                           ,interpreted-function-alist
-                                           ,check-varsp
-                                           ',whole-form
-                                           state rand result-array-stobj)))
+                                    (check-varsp 't)
+                                    (local 't))
+  (let ((form `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
+                                                       ,dag-or-term2
+                                                       ,tests
+                                                       ,tactic
+                                                       ,assumptions
+                                                       ,types
+                                                       ,name
+                                                       ,print
+                                                       ,debug
+                                                       ,max-conflicts
+                                                       ,extra-rules
+                                                       ,initial-rule-sets
+                                                       ,monitor
+                                                       ,use-context-when-miteringp
+                                                       ',normalize-xors
+                                                       ,interpreted-function-alist
+                                                       ,check-varsp
+                                                       ',whole-form
+                                                       state rand result-array-stobj))))
+    (if (check-boolean local)
+        (list 'local form)
+      form)))
