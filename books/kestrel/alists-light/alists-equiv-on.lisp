@@ -24,6 +24,9 @@
                   (cdr (assoc-equal key alist2)))
            (alists-equiv-on (rest keys) alist1 alist2)))))
 
+(defthm alists-equiv-on-keys-same
+  (alists-equiv-on keys alist1 alist1))
+
 (defthm alists-equiv-on-of-union-equal
   (equal (alists-equiv-on (union-equal keys1 keys2) alist1 alist2)
          (and (alists-equiv-on keys1 alist1 alist2)
