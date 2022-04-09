@@ -65,7 +65,7 @@
                 (,list-name terms a))
          :hints (("Goal" :in-theory (enable append (:I len)))))
 
-       ;; Helps prove the :function-instance used to switch a theorem to a richer evaluator.
+       ;; Helps prove the :functional-instance used to switch a theorem to a richer evaluator.
        ;; TODO: Consider disabling by default and instead providing a tool to lift a rule to a richer evaluator.
        (defthm ,(pack$ name '-of-fncall-args-back)
          (implies (and (consp x)
