@@ -250,7 +250,7 @@
                  ;; If some vars remain in the instantiated-hyp, we search the REFINED-ASSUMPTIONS for matches to bind them:
                  ;; fffixme search node-replacement-alist too? or make sure all the context info gets put into REFINED-ASSUMPTIONS?
                  ;;the refined-assumptions have been refined so that (equal (pred x) t) becomes (pred x) for better matching
-                 (relieve-free-var-hyp-and-all-others (lookup-eq (ffn-symb instantiated-hyp) refined-assumption-alist)
+                 (relieve-free-var-hyp-and-all-others (lookup-in-refined-assumption-alist (ffn-symb instantiated-hyp) refined-assumption-alist)
                                                       (fargs instantiated-hyp)
                                                       hyp-num
                                                       (rest hyps)
@@ -1242,7 +1242,7 @@
        (dag-parent-array (copy-array-vals max-external-context-nodenum external-context-parent-array-name external-context-parent-array 'dag-parent-array dag-parent-array))
        (dag-constant-alist external-context-dag-constant-alist) ;inline?
        (dag-variable-alist external-context-dag-variable-alist) ;inline?
-       (- (and print (cw "(Simplifying with no internal contexts (memoize ~x0):~%" memoizep)))
+       (- (and print (cw "(Simplifying without using contexts (memoize ~x0):~%" memoizep)))
        ;; Work hard on the first rewrite if there won't be a second one:
        (work-hard-on-first-rewrite (not use-internal-contextsp) ;nil ;work-hard-when-instructedp ;Mon Sep 20 09:54:39 2010 since we are not using contexts, working hard can be a big waste.  on the other hand, we are memoizing on this rewrite (but can't on the one with contexts), so work-hards would be memoized here but not there
                                    )
@@ -1272,7 +1272,7 @@
        ((when erp) (mv erp nil limits state))
        (- (and print (maybe-print-hit-counts print info)))
        (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
-       (- (and print (cw ")"))) ; balances "(Simplifying with no internal contexts"
+       (- (and print (cw ")~%"))) ; balances "(Simplifying with no internal contexts"
        (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))
     (if (consp renamed-top-node) ; checks for quotep
         (prog2$ (and print (cw "Result: ~x0)~%" renamed-top-node)) ; balances "(Simplifying DAG ...

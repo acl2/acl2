@@ -20,6 +20,7 @@
 (include-book "all-dargp-less-than")
 (include-book "axe-tree-vars")
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
+(include-book "kestrel/terms-light/lambda-free-termp" :dir :system)
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 
 (defthmd assoc-equal-iff-member-equal-of-strip-cars
@@ -167,6 +168,15 @@
        (defthm ,(pack$ 'consp-of- instantiate-hyp-name)
          (implies (consp term)
                   (consp (,instantiate-hyp-name term alist interpreted-function-alist)))
+         :hints (("Goal" :expand ((,instantiate-hyp-name term alist interpreted-function-alist)))))
+
+       ;; hyps match exactly what we know when this is used
+       ;; todo: disable?
+       (defthm ,(pack$ 'symbol-of-car-of- instantiate-hyp-name)
+         (implies (and (pseudo-termp term)
+                       (lambda-free-termp term)
+                       (consp term))
+                  (symbolp (car (,instantiate-hyp-name term alist interpreted-function-alist))))
          :hints (("Goal" :expand ((,instantiate-hyp-name term alist interpreted-function-alist)))))
 
        (,(pack$ 'defthm-flag- instantiate-hyp-name)
