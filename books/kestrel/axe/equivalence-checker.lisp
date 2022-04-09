@@ -20962,7 +20962,7 @@
                              use-context-when-miteringp
                              normalize-xors
                              interpreted-function-alist
-                             check-varsp
+                             check-vars
                              whole-form
                              state rand result-array-stobj)
   (declare (xargs :guard (and (natp tests)
@@ -20982,7 +20982,7 @@
                               (booleanp use-context-when-miteringp)
                               (booleanp normalize-xors)
                               (interpreted-function-alistp interpreted-function-alist)
-                              (booleanp check-varsp))
+                              (booleanp check-vars))
                   :mode :program
                   :stobjs (state rand result-array-stobj)))
   ;;TODO: error or warning if :tactic is rewrite and :tests is given?
@@ -20996,14 +20996,18 @@
        ((when erp) (mv erp nil state rand result-array-stobj))
        ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 wrld))
        ((when erp) (mv erp nil state rand result-array-stobj))
-       (vars1 (merge-sort-symbol< (dag-vars dag1)))
-       (- (cw "Variables in DAG1: ~x0~%" vars1))
-       (vars2 (merge-sort-symbol< (dag-vars dag2)))
-       (- (cw "Variables in DAG2: ~x0~%" vars2))
-       ((when (and check-varsp
+       (vars1 (and check-vars (merge-sort-symbol< (dag-vars dag1))))
+       (vars2 (and check-vars (merge-sort-symbol< (dag-vars dag2))))
+       ((when (and check-vars
                    (not (perm vars1 vars2))))
-        (hard-error 'prove-equivalence-fn "The two dags have different variables." nil)
+        (and (not (subsetp-eq vars1 vars2))
+             (er hard? 'prove-equivalence-fn "The first dag has vars, ~x0, not in the second dag.~%" (set-difference-eq vars1 vars2)))
+        (and (not (subsetp-eq vars2 vars1))
+             (er hard? 'prove-equivalence-fn "The second dag has vars, ~x0, not in the first dag.~%" (set-difference-eq vars2 vars1)))
+        ;; (- (cw "Variables in DAG1: ~x0~%" vars1))
+        ;; (- (cw "Variables in DAG2: ~x0~%" vars2))
         (mv (erp-t) nil state rand result-array-stobj))
+       ;; Todo: handle this better by passing in the tactic:
        (tests (if (eq :rewrite tactic)
                   0
                 tests))
@@ -21126,7 +21130,7 @@
                                     (use-context-when-miteringp 'nil) ;todo: try t
                                     (normalize-xors 't)
                                     (interpreted-function-alist 'nil) ;affects soundness
-                                    (check-varsp 't)
+                                    (check-vars 't)
                                     (local 't))
   (let ((form `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
                                                        ,dag-or-term2
@@ -21144,7 +21148,7 @@
                                                        ,use-context-when-miteringp
                                                        ',normalize-xors
                                                        ,interpreted-function-alist
-                                                       ,check-varsp
+                                                       ,check-vars
                                                        ',whole-form
                                                        state rand result-array-stobj))))
     (if (check-boolean local)

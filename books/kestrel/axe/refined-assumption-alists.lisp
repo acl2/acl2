@@ -30,9 +30,9 @@
 ;;; 1. Call refine-assumptions-for-matching to produce a list of terms.
 ;;;
 ;;; 2. Call add-refined-assumptions-to-dag-array to add the args of the refined
-;;;    assumptions to the dag-array, yielding a list of function call axe-trees.
+;;;    assumptions to the dag-array, yielding a list of function call exprs.
 ;;;
-;;; 3. Call make-refined-assumption-alist on the resulting axe-trees.
+;;; 3. Call make-refined-assumption-alist on the resulting exprs.
 
 ;; See also the comment "How we use the refined-assumption-alist" in make-rewriter-simple.lisp
 
@@ -352,6 +352,26 @@
            (natp (mv-nth 3 (refine-assumptions-and-add-to-dag-array assumptions dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist known-boolean-fns))))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable refine-assumptions-and-add-to-dag-array))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Just lookup-eq (currently) but kept separate to make a nice abstraction for refined-assumption-alists.
+;; Returns a
+(defund-inline lookup-in-refined-assumption-alist (fn refined-assumption-alist)
+  (declare (xargs :guard (and (symbolp fn)
+                              (refined-assumption-alistp refined-assumption-alist))))
+  (lookup-eq fn refined-assumption-alist))
+
+(defthm all-dargp-listp-of-lookup-in-refined-assumption-alist
+  (implies (refined-assumption-alistp refined-assumption-alist)
+           (all-dargp-listp (lookup-in-refined-assumption-alist fn refined-assumption-alist)))
+  :hints (("Goal" :in-theory (enable lookup-in-refined-assumption-alist))))
+
+(defthm dargp-less-than-list-listp-of-lookup-in-refined-assumption-alist
+  (implies (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+           (dargp-less-than-list-listp (lookup-in-refined-assumption-alist fn refined-assumption-alist)
+                                       dag-len))
+  :hints (("Goal" :in-theory (enable lookup-in-refined-assumption-alist))))
 
 ;;;
 ;;; nodenum-equal-to-refined-assumptionp

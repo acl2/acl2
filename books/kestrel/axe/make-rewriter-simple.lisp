@@ -196,7 +196,7 @@
 ;;              0 (+ -1 (len x)))))
 
 ;; How we use the refined-assumption-alist:
-;; - To bind free vars in a hyp (calling lookup-eq on the fn and unifying the hyp's args against each arglist).
+;; - To bind free vars in a hyp (calling lookup-in-refined-assumption-alist on the fn and unifying the hyp's args against each arglist).
 ;; - When rewriting, a THEN or ELSE branch, if not memoizing, temporarily add info by calling extend-refined-assumption-alist-assuming-node
 ;;   or extend-refined-assumption-alist-assuming-negation-of-node.
 
@@ -647,7 +647,7 @@
                           ;; fffixme search node-replacement-array too? or make sure all the context info gets put into REFINED-ASSUMPTIONS?
                           ;; The refined-assumptions have been refined so that (equal (pred x) t) becomes (pred x) for better matching.
                           ;; TODO: Should we simplify the terms to which the free vars were bound (in case the assumptions are not simplified)?
-                          (,relieve-free-var-hyp-and-all-others-name (lookup-eq (ffn-symb instantiated-hyp) refined-assumption-alist)
+                          (,relieve-free-var-hyp-and-all-others-name (lookup-in-refined-assumption-alist (ffn-symb instantiated-hyp) refined-assumption-alist)
                                                                      (fargs instantiated-hyp)
                                                                      hyp-num
                                                                      (rest hyps)
