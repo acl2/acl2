@@ -15,11 +15,16 @@
 ;; This book contains a utility to compute the size of a DAG (if it were
 ;; represented as a tree).  See also dag-size2.lisp and dag-size-fast.lisp.
 
+;; TODO: Consider making a version that doesn't use bignum and only approximates the size.
+
 (include-book "dag-arrays")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
-(local (in-theory (enable not-<-of-car-when-all-<)))
+(local (in-theory (enable not-<-of-car-when-all-<
+                          <=-of-0-when-0-natp
+                          acl2-numberp-when-natp)))
 
 (local
  (defthm integer-when-natp
@@ -65,41 +70,43 @@
                            (type-of-aref1-when-size-arrayp-aux)))))
 
 ;;;
-;;; add-arg-sizes-with-name
+;;; add-darg-sizes-with-name
 ;;;
 
 ;; Add to ACC the sizes of all of the DARGS that are nodenums
-(defund add-arg-sizes-with-name (dargs size-array-name size-array acc)
+(defund add-darg-sizes-with-name (dargs size-array-name size-array acc)
   (declare (xargs :guard (and (true-listp dargs)
                               (all-dargp dargs)
                               (size-arrayp size-array-name size-array (+ 1 (largest-non-quotep dargs)))
-                              (natp acc))))
+                              (natp acc))
+                  :split-types t)
+           (type (integer 0 *) acc))
   (if (endp dargs)
       acc
     (let ((darg (first dargs)))
-      (add-arg-sizes-with-name (rest dargs)
+      (add-darg-sizes-with-name (rest dargs)
                                size-array-name
                                size-array
-                               (+ (if (consp darg) ;check for a quotep, which we say has size 1
-                                      1
-                                    ;; dargs is a nodenum, so look up its size:
-                                    (aref1 size-array-name size-array darg))
-                                  acc)))))
+                               (if (consp darg) ;check for a quotep, which we say has size 1
+                                   (+ 1 acc)
+                                 ;; dargs is a nodenum, so look up its size:
+                                 (+ (the (integer 0 *) (aref1 size-array-name size-array darg))
+                                    acc))))))
 
-(defthm natp-of-add-arg-sizes-with-name
+(defthm natp-of-add-darg-sizes-with-name
   (implies (and (all-dargp dargs)
                 (size-arrayp size-array-name size-array (+ 1 (largest-non-quotep dargs)))
                 (natp acc))
-           (natp (add-arg-sizes-with-name dargs size-array-name size-array acc)))
-  :hints (("Goal" :in-theory (enable add-arg-sizes-with-name))))
+           (natp (add-darg-sizes-with-name dargs size-array-name size-array acc)))
+  :hints (("Goal" :in-theory (enable add-darg-sizes-with-name))))
 
 ;;;
-;;; make-size-array-for-dag-array-aux
+;;; make-size-array-for-dag-array-with-name-aux
 ;;;
 
 ;; This version of the array filler stores a size for every node in the array.
 ;; Returns the populated size-array.
-(defund make-size-array-for-dag-array-aux (n dag-len dag-array-name dag-array size-array-name size-array)
+(defund make-size-array-for-dag-array-with-name-aux (n dag-len dag-array-name dag-array size-array-name size-array)
   (declare (xargs :measure (+ 1 (nfix (- dag-len n)))
                   :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (natp n)
@@ -110,7 +117,7 @@
           (not (mbt (natp n)))
           (not (mbt (natp dag-len))))
       size-array
-    (make-size-array-for-dag-array-aux (+ 1 n)
+    (make-size-array-for-dag-array-with-name-aux (+ 1 n)
                                        dag-len
                                        dag-array-name
                                        dag-array
@@ -125,28 +132,28 @@
                                                     1
                                                   ;; the size of a function call node is 1 plus the sizes of its node args,
                                                   ;; plus 1 for each constant arg:
-                                                  (add-arg-sizes-with-name (dargs expr) size-array-name size-array 1)))))))
+                                                  (add-darg-sizes-with-name (dargs expr) size-array-name size-array 1)))))))
 
-(defthm array1p-of-make-size-array-for-dag-array-aux
+(defthm array1p-of-make-size-array-for-dag-array-with-name-aux
   (implies (and (array1p size-array-name size-array)
                 (natp n)
                 (equal len (alen1 size-array-name size-array)))
-           (array1p size-array-name (make-size-array-for-dag-array-aux n len dag-array-name dag-array size-array-name size-array)))
+           (array1p size-array-name (make-size-array-for-dag-array-with-name-aux n len dag-array-name dag-array size-array-name size-array)))
   :hints (("Goal"
-           :induct (make-size-array-for-dag-array-aux n len dag-array-name dag-array size-array-name size-array)
-           :in-theory (enable make-size-array-for-dag-array-aux))))
+           :induct (make-size-array-for-dag-array-with-name-aux n len dag-array-name dag-array size-array-name size-array)
+           :in-theory (enable make-size-array-for-dag-array-with-name-aux))))
 
-(defthm alen1-of-make-size-array-for-dag-array-aux
+(defthm alen1-of-make-size-array-for-dag-array-with-name-aux
   (implies (and (array1p size-array-name size-array)
                 (natp n)
                 (equal len (alen1 size-array-name size-array)))
-           (equal (alen1 size-array-name (make-size-array-for-dag-array-aux n len dag-array-name dag-array size-array-name size-array))
+           (equal (alen1 size-array-name (make-size-array-for-dag-array-with-name-aux n len dag-array-name dag-array size-array-name size-array))
                   (alen1 size-array-name size-array)))
   :hints (("Goal"
-           :induct (make-size-array-for-dag-array-aux n len dag-array-name dag-array size-array-name size-array)
-           :in-theory (enable make-size-array-for-dag-array-aux))))
+           :induct (make-size-array-for-dag-array-with-name-aux n len dag-array-name dag-array size-array-name size-array)
+           :in-theory (enable make-size-array-for-dag-array-with-name-aux))))
 
-(defthm size-arrayp-of-make-size-array-for-dag-array-aux
+(defthm size-arrayp-of-make-size-array-for-dag-array-with-name-aux
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (natp n)
                 (<= n dag-len)
@@ -155,35 +162,35 @@
                 (<= bound dag-len)
                 (natp bound))
            (size-arrayp size-array-name
-                        (make-size-array-for-dag-array-aux n dag-len dag-array-name dag-array size-array-name size-array)
+                        (make-size-array-for-dag-array-with-name-aux n dag-len dag-array-name dag-array size-array-name size-array)
                         bound))
-  :hints (("Goal" :in-theory (enable make-size-array-for-dag-array-aux))))
+  :hints (("Goal" :in-theory (enable make-size-array-for-dag-array-with-name-aux))))
 
 ;;;
-;;; make-size-array-for-dag-array
+;;; make-size-array-for-dag-array-with-name
 ;;;
 
 ;; Makes an array named SIZE-ARRAY-NAME and populates it with a size for every
 ;; node in the dag less than dag-len.  Returns the populated size-array.
-(defund make-size-array-for-dag-array (dag-len dag-array-name dag-array size-array-name)
+(defund make-size-array-for-dag-array-with-name (dag-len dag-array-name dag-array size-array-name)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (posp dag-len)
                               (symbolp size-array-name))))
-  (make-size-array-for-dag-array-aux 0
-                                     dag-len
-                                     dag-array-name
-                                     dag-array
-                                     size-array-name
-                                     (make-empty-array size-array-name dag-len)))
+  (make-size-array-for-dag-array-with-name-aux 0
+                                               dag-len
+                                               dag-array-name
+                                               dag-array
+                                               size-array-name
+                                               (make-empty-array size-array-name dag-len)))
 
-(defthm array1p-of-make-size-array-for-dag-array
+(defthm array1p-of-make-size-array-for-dag-array-with-name
   (implies (and (posp dag-len)
                 (<= dag-len 2147483646)
                 (symbolp size-array-name))
-           (array1p size-array-name (make-size-array-for-dag-array dag-len dag-array-name dag-array size-array-name)))
-  :hints (("Goal" :in-theory (enable make-size-array-for-dag-array))))
+           (array1p size-array-name (make-size-array-for-dag-array-with-name dag-len dag-array-name dag-array size-array-name)))
+  :hints (("Goal" :in-theory (enable make-size-array-for-dag-array-with-name))))
 
-(defthm size-arrayp-of-make-size-array-for-dag-array
+(defthm size-arrayp-of-make-size-array-for-dag-array-with-name
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (posp dag-len)
                 (<= dag-len 2147483646)
@@ -191,17 +198,17 @@
                 (<= bound dag-len)
                 (natp bound))
            (size-arrayp size-array-name
-                        (make-size-array-for-dag-array dag-len dag-array-name dag-array size-array-name)
+                        (make-size-array-for-dag-array-with-name dag-len dag-array-name dag-array size-array-name)
                         bound))
-  :hints (("Goal" :in-theory (enable make-size-array-for-dag-array))))
+  :hints (("Goal" :in-theory (enable make-size-array-for-dag-array-with-name))))
 
-(defthm alen1-of-make-size-array-for-dag-array
+(defthm alen1-of-make-size-array-for-dag-array-with-name
   (implies (and (posp dag-len)
                 (<= dag-len 2147483646)
                 (symbolp size-array-name))
-           (equal (alen1 size-array-name (make-size-array-for-dag-array dag-len dag-array-name dag-array size-array-name))
+           (equal (alen1 size-array-name (make-size-array-for-dag-array-with-name dag-len dag-array-name dag-array size-array-name))
                   dag-len))
-  :hints (("Goal" :in-theory (enable make-size-array-for-dag-array))))
+  :hints (("Goal" :in-theory (enable make-size-array-for-dag-array-with-name))))
 
 ;;;
 ;;; dag-size
@@ -217,10 +224,10 @@
   (let* ((size-array-name 'size-array)
          (dag-array-name 'dag-array-for-size-computation)
          (dag-array (make-into-array dag-array-name dag)) ;todo: avoid making this array?
-         (size-array (make-size-array-for-dag-array (len dag)
-                                                    dag-array-name
-                                                    dag-array
-                                                    size-array-name)))
+         (size-array (make-size-array-for-dag-array-with-name (len dag)
+                                                              dag-array-name
+                                                              dag-array
+                                                              size-array-name)))
     ;; The size of the DAG is the size of its top node in the populated size-array:
     (aref1 size-array-name size-array (top-nodenum-of-dag dag))))
 

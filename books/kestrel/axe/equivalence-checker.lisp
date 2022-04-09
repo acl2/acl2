@@ -8839,7 +8839,7 @@
 ;destroys 'size-array
 (defun find-a-node-to-split-miter-on (dag-array-name dag-len dag-array test-cases interpreted-function-alist)
   (b* ( ;fixme don't bother to compute sizes if there are no candidates (or for nodes above the largest candidate?)
-         (size-array (make-size-array-for-dag-array dag-len dag-array-name dag-array 'size-array)) ;fffixme use a worklist?
+         (size-array (make-size-array-for-dag-array-with-name dag-len dag-array-name dag-array 'size-array)) ;; TODO: Consider using a worklist?
          ;;fixme don't bother to cons this up (track the smallest node found so far):
          (candidates (find-node-to-split-candidates 0 dag-len dag-array-name dag-array nil)) ;fixme use the worklist version?
          (candidates (merge-sort-< candidates)) ;fixme remove dups from candidates

@@ -1126,7 +1126,7 @@
       (if (quotep expr) ;inline? ;this should be rare...
           (add-simplified-dag-to-dag-array (rest rev-dag)
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                           (aset1-safe 'renaming-array renaming-array nodenum expr)
+                                           (aset1 'renaming-array renaming-array nodenum expr)
                                            rewriter-rule-alist refined-assumption-alist equality-assumption-alist print-interval print memoization info tries interpreted-function-alist
                                            monitored-symbols internal-context-array context-for-all-nodes known-booleans work-hard-when-instructedp tag limits state)
         ;;expr is a variable or function call (TODO: Split out the var case):
@@ -1140,7 +1140,7 @@
                       (add-simplified-dag-to-dag-array
                        (rest rev-dag)
                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                       (aset1-safe 'renaming-array renaming-array nodenum (enquote :irrelevant)) ;fixme think about this
+                       (aset1 'renaming-array renaming-array nodenum (enquote :irrelevant)) ;fixme think about this
                        rewriter-rule-alist refined-assumption-alist equality-assumption-alist print-interval print memoization info tries interpreted-function-alist
                        monitored-symbols internal-context-array context-for-all-nodes known-booleans work-hard-when-instructedp tag limits state))
             (b* ((node-replacement-alist-for-this-node (node-replacement-alist-for-context full-context dag-array known-booleans print)) ;fffixme this gets redone over and over for context-for-all-nodes?
@@ -1181,7 +1181,7 @@
                  ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array info tries limits state)))
               (add-simplified-dag-to-dag-array (rest rev-dag)
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                               (aset1-safe 'renaming-array renaming-array nodenum new-nodenum-or-quotep)
+                                               (aset1 'renaming-array renaming-array nodenum new-nodenum-or-quotep)
                                                rewriter-rule-alist refined-assumption-alist equality-assumption-alist print-interval print
                                                memoization ;invalid if internal-context-array is non-nil but won't be used on future iterations
                                                info tries interpreted-function-alist monitored-symbols

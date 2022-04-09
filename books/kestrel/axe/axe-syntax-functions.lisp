@@ -25,7 +25,7 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(defund axe-quotep (item)
+(defund-inline axe-quotep (item)
   (declare (xargs :guard (dargp item)))
   (consp item) ;; means that it is a quotep, not a nodenum
   )

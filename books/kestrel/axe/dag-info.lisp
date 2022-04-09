@@ -159,17 +159,20 @@
   (tabulate-dag-fns-aux dag nil))
 
 ;; Returns the error triple (mv nil :invisible state).
-(defun dag-info-fn-aux (dag name state)
+(defun dag-info-fn-aux (dag name print-sizep state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (< (len dag) 2147483647)
-                              (stringp name))
+                              (stringp name)
+                              (booleanp print-sizep))
                   :stobjs state))
   (if (quotep dag) ; not possible, given the guard
       (b* ((- (cw "The entire DAG ~s0 is: ~x1.~%" name dag)))
         (value :invisible))
     (b* ((- (cw "(DAG info for ~s0:~%" name))
          (- (cw " Unique nodes: ~x0~%" (len dag)))
-         (- (cw " Total nodes: ~x0~%" (dag-size dag)))
+         ;; Can be slow:
+         (- (and print-sizep
+                 (cw " Total nodes: ~x0~%" (dag-size dag))))
          ;; These usually get inlined (we could count those):
          ;; (constants (dag-constants dag))
          ;; (- (cw "~x0 constants~%" (len constants)))
@@ -193,7 +196,9 @@
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (< (len dag) 2147483647))
                   :stobjs state))
-  (dag-info-fn-aux dag "DAG" state))
+  (dag-info-fn-aux dag "DAG"
+                   t ; print size, since the user called dag-info explicitly
+                   state))
 
 ;; Prine info about the given DAG.  The DAG argument is evaluated.
 (defmacro dag-info (dag)
