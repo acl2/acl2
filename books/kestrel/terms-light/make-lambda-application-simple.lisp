@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 ;; See also make-lambda-term-simple.
+;; See proof of correctness in make-lambda-application-simple-proof.lisp
 
 (include-book "free-vars-in-term")
 (local (include-book "kestrel/lists-light/append" :dir :system))
