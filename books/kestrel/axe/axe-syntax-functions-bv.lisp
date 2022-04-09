@@ -60,9 +60,9 @@
 ;the args are nodenums or quoteps - we don't deref nodenums that may point to quoteps
 ;fixme make sure all callers of this handle nil okay (would it ever be better to throw an error?)?
 ;what if the number of arguments is wrong?
-(defund get-type-of-bv-expr-axe (fn args)
-  (declare (xargs :guard (and (true-listp args)
-                              (all-dargp args))))
+(defund get-type-of-bv-expr-axe (fn dargs)
+  (declare (xargs :guard (and (true-listp dargs)
+                              (all-dargp dargs))))
   (cond ;see unsigned-byte-p-1-of-bitxor, etc.:
    ((member-eq fn '(getbit bitxor bitand bitor bitnot bool-to-bit))
     (make-bv-type 1))
@@ -78,8 +78,8 @@
                     bvif
                     bvnth ;drop?
                     ))
-    (if (consp args)
-        (let ((width (first args)))
+    (if (consp dargs)
+        (let ((width (first dargs)))
           (if (quoted-natp width) ;could use consp instead of quotep in this?
               (make-bv-type (unquote width))
             nil))
@@ -91,8 +91,8 @@
    ;;ffixme think about what these do with non power of 2 sizes:
    ;;see unsigned-byte-p-of-leftrotate and unsigned-byte-p-of-rightrotate
    ((eq fn 'slice)
-    (let ((high (unquote-if-possible (first args)))
-          (low (unquote-if-possible (second args))))
+    (let ((high (unquote-if-possible (first dargs)))
+          (low (unquote-if-possible (second dargs))))
       (if (and (natp high)
                (natp low)
                (<= low high))
@@ -100,8 +100,8 @@
         nil ;fixme error?
         )))
    ((eq fn 'bvcat)
-    (let ((high-size (unquote-if-possible (first args)))
-          (low-size (unquote-if-possible (third args))))
+    (let ((high-size (unquote-if-possible (first dargs)))
+          (low-size (unquote-if-possible (third dargs))))
       (if (and (natp high-size) (natp low-size))
           (make-bv-type (+ high-size low-size))
         nil ;fixme error?
@@ -109,19 +109,19 @@
    (t nil)))
 
 (defthm get-type-of-bv-expr-axe-type
-  (or (null (get-type-of-bv-expr-axe fn args))
-      (integerp (get-type-of-bv-expr-axe fn args))) ;strengthen to natp?
+  (or (null (get-type-of-bv-expr-axe fn dargs))
+      (integerp (get-type-of-bv-expr-axe fn dargs))) ;strengthen to natp?
   :rule-classes (:type-prescription)
   :hints (("Goal" :in-theory (enable get-type-of-bv-expr-axe))))
 
 (defthm bv-typep-of-get-type-of-bv-expr-axe
-  (implies (get-type-of-bv-expr-axe fn args)
-           (bv-typep (get-type-of-bv-expr-axe fn args)))
+  (implies (get-type-of-bv-expr-axe fn dargs)
+           (bv-typep (get-type-of-bv-expr-axe fn dargs)))
   :hints (("Goal" :in-theory (enable get-type-of-bv-expr-axe))))
 
 (defthm axe-typep-of-get-type-of-bv-expr-axe
-  (implies (get-type-of-bv-expr-axe fn args)
-           (axe-typep (get-type-of-bv-expr-axe fn args)))
+  (implies (get-type-of-bv-expr-axe fn dargs)
+           (axe-typep (get-type-of-bv-expr-axe fn dargs)))
   :hints (("Goal" :in-theory (enable get-type-of-bv-expr-axe))))
 
 ;returns an alist that binds VARNAME to the size of the nodenum-or-quotep, if it is a bit vector with a statically known size, or nil to indicate failure.
@@ -164,7 +164,7 @@
                               (or (myquotep term)
                                   (and (natp term)
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term)))))))
-  (if (quotep term)
+  (if (consp term) ; check for quotep
       (or (not (natp (unquote term)))
           ;;(< width (integer-length (unquote term)))
           (<= (expt 2 width) (unquote term)) ;this may be faster, since expt may be built in (maybe just a shift)?
@@ -190,24 +190,29 @@
 ;OPERATORS should be 'all or 'non-arithmetic
 ;maybe we should add the option to not trim logical ops?  but that's not as dangerous as trimming arithmetic ops...
 (defund term-should-be-trimmed-axe (quoted-width term operators dag-array)
-  (declare (xargs :guard (and (or (myquotep term)
+  (declare (xargs :guard (and (or (myquotep quoted-width)
+                                  (and (natp quoted-width)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 quoted-width))))
+                              (or (myquotep term)
                                   (and (natp term)
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))
                               ;; (member-equal operators '('all 'non-arithmetic)) ;todo: why are these quoted?
                               )))
-  (if (not (and (myquotep quoted-width)
+  (if (not (and (consp quoted-width)          ; test for quotep
                 (natp (unquote quoted-width)) ;check natp or posp?
+                ;; todo: can we avoid this?  use one as the default?
                 (or (equal operators ''all)
                     (equal operators ''non-arithmetic))))
-      (prog2$ (cw "Warning: In term-should-be-trimmed-axe: Unexpected arguments (width: ~x0).~%"
-                  (if (myquotep quoted-width)
+      (prog2$ (cw "Warning: In term-should-be-trimmed-axe: Unexpected arguments (width: ~x0, operators ~x1).~%"
+                  (if (consp quoted-width) ; check for quotep
                       quoted-width
                     ;; simplify this?:
                     (if (and (not (myquotep term))
                              (natp quoted-width)
                              (< quoted-width (alen1 'dag-array dag-array)))
                         (aref1 'dag-array dag-array quoted-width)
-                      :unknown)))
+                      :unknown))
+                  operators)
               nil)
     (let ((width (unquote quoted-width)))
       (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
