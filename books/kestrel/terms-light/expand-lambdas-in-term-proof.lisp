@@ -17,6 +17,7 @@
 
 (include-book "expand-lambdas-in-term")
 (include-book "make-lambda-term-simple")
+(include-book "no-nils-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -53,52 +54,6 @@
                 (subsetp-equal (free-vars-in-terms (strip-cdrs alist)) free))
            (subsetp-equal (free-vars-in-term (sublis-var-simple alist term))
                           free)))
-
-
-
-
-;; This is needed due to a deficiency in how defevaluator evaluates NIL, which
-;; is syntactically a variable although not a legal one:
-(mutual-recursion
- (defun no-nils-in-termp (term)
-   (declare (xargs :guard (pseudo-termp term)))
-   (if (variablep term)
-       (not (equal term nil))
-     (let ((fn (ffn-symb term)))
-       (if (eq 'quote fn)
-           t
-         (and (no-nils-in-termsp (fargs term))
-              (if (consp fn)
-                  (no-nils-in-termp (lambda-body fn))
-                t))))))
- (defun no-nils-in-termsp (terms)
-   (declare (xargs :guard (pseudo-term-listp terms)))
-   (if (endp terms)
-       t
-     (and (no-nils-in-termp (first terms))
-          (no-nils-in-termsp (rest terms))))))
-
-(defthm-flag-free-vars-in-term
-  (defthm not-member-equal-of-nil-and-free-vars-in-term
-    (implies (and (pseudo-termp term)
-                  (no-nils-in-termp term))
-             ;; This is weaker than (no-nils-in-termp term) because it doesn't
-             ;; check lambda bodies:
-             (not (member-equal nil (free-vars-in-term term))))
-    :flag free-vars-in-term)
-  (defthm not-member-equal-of-nil-and-free-vars-in-terms
-    (implies (and (pseudo-term-listp terms)
-                  (no-nils-in-termsp terms))
-             (not (member-equal nil (free-vars-in-terms terms))))
-    :flag free-vars-in-terms)
-  :hints (("Goal" :expand ((expand-lambdas-in-term terms)
-                           (FREE-VARS-IN-TERM TERM))
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (expand-lambdas-in-term
-                            empty-eval-of-fncall-args
-                            free-vars-in-terms
-                            lambdas-closed-in-termp)
-                           (empty-eval-of-fncall-args-back)))))
 
 ;this holds for any evaluator?
 ;term may often be a var

@@ -52,3 +52,4 @@
 (include-book "function-call-subterms")
 (include-book "replace-term-with-term")
 (include-book "count-occurrences-in-term")
+(include-book "no-nils-in-termp")

@@ -12,14 +12,14 @@
 
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "make-lambda-application-simple")
+(include-book "no-nils-in-termp")
+(include-book "kestrel/alists-light/lookup-equal" :dir :system) ; make local?
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
-(include-book "kestrel/alists-light/lookup-equal" :dir :system) ; make local?
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(include-book "kestrel/terms-light/expand-lambdas-in-term-proof" :dir :system) ; todo: reduce, for no-nils-in-termp
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
@@ -35,6 +35,7 @@
 
 ;; todo: add this to defevaluator+
 (defthm-flag-free-vars-in-term
+  ;; Bind a variable in the alist has no effect if it is not one of the free vars in the term.
   (defthm empty-eval-of-cons-irrel
     (implies (and (not (member-equal var (free-vars-in-term term)))
                   (pseudo-termp term))
@@ -52,6 +53,7 @@
 
 ;; todo: add this to defevaluator+
 (defthm-flag-free-vars-in-term
+  ;; Binds a var to the value it already has in the alist has no effect
   (defthm empty-eval-of-cons-irrel2
     (implies (and (equal val (cdr (assoc-equal var a))) ; so binding var to val has no effect
                   (pseudo-termp term))
