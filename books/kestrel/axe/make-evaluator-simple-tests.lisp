@@ -104,7 +104,7 @@
               (t
                (let ((fn (ffn-symb form)))
                  (if (and (or (eq fn 'if) (eq fn 'myif))
-                          (= 3 (len (fargs form))))
+                          (consp (cdr (cdr (fargs form)))))
                      (b* ((test-form (second form))
                           ((mv erp test-result)
                            (eval-axe-evaluator-for-len alist

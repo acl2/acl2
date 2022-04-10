@@ -216,7 +216,7 @@
         (defund ,eval-function-name (alist form interpreted-function-alist count)
           (declare (type (unsigned-byte 60) count)
                    (xargs :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 1 (acl2-count form)))
-                          :guard (and (symbol-alistp alist)
+                          :guard (and (symbol-alistp alist) ;todo: must bind all free vars in form?
                                       (pseudo-termp form)
                                       (interpreted-function-alistp interpreted-function-alist)
                                       (natp count)
@@ -225,12 +225,13 @@
                   (= 0 count))
               (mv :count-exceeded nil)
             (cond ((variablep form) (mv (erp-nil) (lookup-eq form alist))) ;; TODO: Error if the var is not bound?
-                  ((fquotep form)(mv (erp-nil) (unquote form))) ;the value returned is unquoted
+                  ((fquotep form) (mv (erp-nil) (unquote form))) ;the value returned is unquoted
                   (t (let ((fn (ffn-symb form)))
-                       ;;special handling for if: fixme other kinds of if?!
+                       ;;special handling for if (TODO: Consider adding support for boolif, bvif, maybe booland/boolor)
                        (if (and (or (eq fn 'if)
-                                    (eq fn 'myif)) ;bozo, consider handling bvif (different arity) as well? also boolif?
-                                (= 3 (len (fargs form))))
+                                    (eq fn 'myif))
+                                (consp (cdr (cdr (fargs form)))))
+                           ;; Evaluate the test and the either the then-branch or the else-branch, according to the test:
                            (b* ((test-form (second form))
                                 ((mv erp test-result)
                                  (,eval-function-name alist test-form interpreted-function-alist count))
