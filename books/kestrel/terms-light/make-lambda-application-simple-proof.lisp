@@ -14,6 +14,7 @@
 (include-book "make-lambda-application-simple")
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (include-book "kestrel/alists-light/lookup-equal" :dir :system) ; make local?
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -24,25 +25,13 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
+(local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;; TODO: Clean up and harvest this file
 
-(local
- (defthm subsetp-equal-of-intersection-equal-arg2
-   (equal (subsetp-equal z (intersection-equal x y))
-          (and (subsetp-equal z x)
-               (subsetp-equal z y)))
-   :hints (("Goal" :in-theory (enable subsetp-equal intersection-equal)))))
-
-
-(local
- (defthm SUBSETP-EQUAL-of-INTERSECTION-EQUAL-and-INTERSECTION-EQUAL-swapped
-   (SUBSETP-EQUAL (INTERSECTION-EQUAL X Y)
-                  (INTERSECTION-EQUAL Y X))
-   :hints (("Goal" :in-theory (enable SUBSETP-EQUAL INTERSECTION-EQUAL)))))
-
-(local (in-theory (disable PAIRLIS$ SET-DIFFERENCE-EQUAL len symbol-listp)))
+(local (in-theory (disable alistp)))
 
 ;; todo: add this to defevaluator+
 (defthm-flag-free-vars-in-term
@@ -105,6 +94,7 @@
 
 (local (in-theory (disable no-duplicatesp-equal))) ;move up
 
+;; todo: just use alists-equiv-on.
 (defun alists-equiv-on-keys (keys alist1 alist2)
   (if (endp keys)
       t
@@ -143,11 +133,6 @@
            (equal (equal (empty-eval term alist1)
                          (empty-eval term alist2))
                   t)))
-
-(local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
-(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
-
-(local (in-theory (disable append strip-cars)))
 
 (defthm alists-equiv-on-keys-of-append-arg1
   (implies (alistp x)
@@ -281,7 +266,7 @@
            (iff (equal (cons key (cdr (assoc-equal key a)))
                        (assoc-equal key a))
                 (assoc-equal key a)))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
+  :hints (("Goal" :in-theory (enable assoc-equal alistp))))
 
 (defthm cdr-of-assoc-equal-of-pairlis$-of-map-lookup-equal
   (implies (and (member-equal key keys)
@@ -328,8 +313,6 @@
            :in-theory (enable alists-equiv-on-keys pairlis$
                               map-lookup-equal lookup-equal))))
 
-(local (in-theory (disable alistp)))
-
 (defthm intersection-equal-of-set-difference-equal-arg1-when-subsetp-equal
   (implies (subsetp-equal z y)
            (equal (intersection-equal (set-difference-equal x y)
@@ -348,7 +331,6 @@
                   (MAP-LOOKUP-EQUAL keys alist)))
   :hints (("Goal" :in-theory (enable MAP-LOOKUP-EQUAL))))
 
-(local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 
 (defthm mv-nth-1-of-FILTER-FORMALS-AND-ACTUALS
   (implies (no-duplicatesp-equal formals)
