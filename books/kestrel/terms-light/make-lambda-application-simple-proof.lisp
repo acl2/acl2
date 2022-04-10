@@ -14,6 +14,7 @@
 (include-book "make-lambda-application-simple")
 (include-book "no-nils-in-termp")
 (include-book "kestrel/alists-light/lookup-equal" :dir :system) ; make local?
+(include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
@@ -96,29 +97,17 @@
 
 (local (in-theory (disable no-duplicatesp-equal))) ;move up
 
-;; todo: just use alists-equiv-on.
-(defun alists-equiv-on-keys (keys alist1 alist2)
-  (if (endp keys)
-      t
-    (let ((key (first keys)))
-      (and (equal (cdr (assoc-equal key alist1)) ; taking the cdrs allows one alist to bind key to nil and the other to not bind key
-                  (cdr (assoc-equal key alist2)))
-           (alists-equiv-on-keys (rest keys) alist1 alist2)))))
-
-(defthm alists-equiv-on-keys-same
-  (alists-equiv-on-keys keys alist1 alist1))
-
 (defthm-flag-free-vars-in-term
-  (defthm equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-keys
-    (implies (and (alists-equiv-on-keys keys alist1 alist2)
+  (defthm equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-alt ; todo: similar to one in the proof of expand-lambdas
+    (implies (and (alists-equiv-on keys alist1 alist2)
                   (subsetp-equal (free-vars-in-term term) keys)
                   (pseudo-termp term))
              (equal (equal (empty-eval term alist1)
                            (empty-eval term alist2))
                     t))
     :flag free-vars-in-term)
-  (defthm equal-of-empty-eval-list-and-empty-eval-list-when-alists-equiv-on-keys
-    (implies (and (alists-equiv-on-keys keys alist1 alist2)
+  (defthm equal-of-empty-eval-list-and-empty-eval-list-when-alists-equiv-on-alt
+    (implies (and (alists-equiv-on keys alist1 alist2)
                   (subsetp-equal (free-vars-in-terms terms) keys)
                   (pseudo-term-listp terms))
              (equal (equal (empty-eval-list terms alist1)
@@ -129,20 +118,20 @@
            :in-theory (e/d (empty-eval-of-fncall-args)
                            (empty-eval-of-fncall-args-back)))))
 
-(defthm empty-eval-when-alists-equiv-on-keys-special
-  (implies (and (alists-equiv-on-keys (free-vars-in-term term) alist1 alist2)
+(defthm empty-eval-when-alists-equiv-on-special
+  (implies (and (alists-equiv-on (free-vars-in-term term) alist1 alist2)
                 (pseudo-termp term))
            (equal (equal (empty-eval term alist1)
                          (empty-eval term alist2))
                   t)))
 
-(defthm alists-equiv-on-keys-of-append-arg1
+(defthm alists-equiv-on-of-append-arg1
   (implies (alistp x)
-           (equal (alists-equiv-on-keys keys (binary-append x y) z)
-                  (and (alists-equiv-on-keys (intersection-equal keys (strip-cars x))
+           (equal (alists-equiv-on keys (binary-append x y) z)
+                  (and (alists-equiv-on (intersection-equal keys (strip-cars x))
                                              x
                                              z)
-                       (alists-equiv-on-keys (set-difference-equal keys (strip-cars x))
+                       (alists-equiv-on (set-difference-equal keys (strip-cars x))
                                              y
                                              z))))
   :hints (("Goal" :in-theory (enable (:d SET-DIFFERENCE-EQUAL)
@@ -150,14 +139,14 @@
                                      MEMBER-EQUAL-OF-STRIP-CARS-IFF
                                      ))))
 
-(defthm alists-equiv-on-keys-of-append-arg2
+(defthm alists-equiv-on-of-append-arg2
   (implies (and (alistp x)
                 )
-           (equal (alists-equiv-on-keys keys z (binary-append x y))
-                  (and (alists-equiv-on-keys (intersection-equal keys (strip-cars x))
+           (equal (alists-equiv-on keys z (binary-append x y))
+                  (and (alists-equiv-on (intersection-equal keys (strip-cars x))
                                              z
                                              x)
-                       (alists-equiv-on-keys (set-difference-equal keys (strip-cars x))
+                       (alists-equiv-on (set-difference-equal keys (strip-cars x))
                                              z
                                              y))))
   :hints (("Goal" :in-theory (enable (:d SET-DIFFERENCE-EQUAL)
@@ -284,9 +273,9 @@
 ;; (thm
 ;;  (implies (and (alistp a)
 ;;                (subsetp-equal keys (strip-cars a)))
-;;           (alists-equiv-on-keys keys (pairlis$ keys (map-lookup-equal keys a)) a))
+;;           (alists-equiv-on keys (pairlis$ keys (map-lookup-equal keys a)) a))
 ;;  :hints (("Goal"  :induct (map-lookup-equal keys a)
-;;           :in-theory (enable alists-equiv-on-keys pairlis$ lookup-equal))))
+;;           :in-theory (enable alists-equiv-on pairlis$ lookup-equal))))
 
 (defthm assoc-equal-of-car-when-subsetp-equal-of-strip-cars
   (implies (and (subsetp-equal keys (strip-cars a))
@@ -295,24 +284,24 @@
            (assoc-equal (car keys) a))
   :hints (("Goal" :in-theory (enable ASSOC-EQUAL-IFF))))
 
-(defthm alists-equiv-on-keys-of-pairlis$-of-map-lookup-equal
+(defthm alists-equiv-on-of-pairlis$-of-map-lookup-equal
   (implies (and (alistp a)
 ;                (subsetp-equal keys keys2)
                 ;(subsetp-equal keys (strip-cars a))
                 )
-           (alists-equiv-on-keys keys (pairlis$ keys (map-lookup-equal keys a)) a))
+           (alists-equiv-on keys (pairlis$ keys (map-lookup-equal keys a)) a))
   :hints (("Goal"  :induct (map-lookup-equal keys a)
-           :in-theory (enable alists-equiv-on-keys pairlis$
+           :in-theory (enable alists-equiv-on pairlis$
                               map-lookup-equal lookup-equal))))
 
-(defthm alists-equiv-on-keys-of-pairlis$-of-map-lookup-equal-gen
+(defthm alists-equiv-on-of-pairlis$-of-map-lookup-equal-gen
   (implies (and (alistp a)
                 (subsetp-equal keys keys2)
                 ;(subsetp-equal keys (strip-cars a))
                 )
-           (alists-equiv-on-keys keys (pairlis$ keys2 (map-lookup-equal keys2 a)) a))
+           (alists-equiv-on keys (pairlis$ keys2 (map-lookup-equal keys2 a)) a))
   :hints (("Goal"  :induct (map-lookup-equal keys a)
-           :in-theory (enable alists-equiv-on-keys pairlis$
+           :in-theory (enable alists-equiv-on pairlis$
                               map-lookup-equal lookup-equal))))
 
 (defthm intersection-equal-of-set-difference-equal-arg1-when-subsetp-equal
