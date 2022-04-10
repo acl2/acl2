@@ -125,6 +125,7 @@
                          (empty-eval term alist2))
                   t)))
 
+;move
 (defthm alists-equiv-on-of-append-arg1
   (implies (alistp x)
            (equal (alists-equiv-on keys (binary-append x y) z)
@@ -139,6 +140,7 @@
                                      MEMBER-EQUAL-OF-STRIP-CARS-IFF
                                      ))))
 
+;move
 (defthm alists-equiv-on-of-append-arg2
   (implies (and (alistp x)
                 )
