@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
-(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
+(local (include-book "assoc-equal"))
+(local (include-book "pairlis-dollar"))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 
 ;; Checks whether ALIST1 and ALIST2 are equivalent wrt the KEYS.  For these
