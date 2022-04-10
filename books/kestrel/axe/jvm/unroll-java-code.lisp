@@ -501,6 +501,13 @@
                       )
         state)))
 
+;dup
+(defun check-boolean (val)
+  (declare (xargs :guard t))
+  (if (member-eq val '(t nil))
+      val
+    (er hard? 'check-boolean "Value is not boolean: ~x0." val)))
+
 ;; This introduces a defconst that represents the unrolled computation
 ;; performed by the indicated method.
 ;;TODO: Could make unroll-java-code just be a call to lift-java-code with :unroll t.
@@ -541,42 +548,47 @@
                                       (print-interval 'nil)
                                       ;; Options to produce extra events:
                                       (produce-theorem 'nil)
-                                      (produce-function 'nil))
-  (let ((form `(unroll-java-code-fn ',defconst-name
-                                    ',method-indicator
-                                    ',output
-                                    ,array-length-alist
-                                    ,extra-rules
-                                    ,remove-rules
-                                    ,rule-alists
-                                    ,monitor
-                                    ,assumptions
-                                    ',simplify-xors
-                                    ,classes-to-assume-initialized
-                                    ,ignore-exceptions
-                                    ,ignore-errors
-                                    ,print
-                                    ,print-interval
-                                    ,memoizep
-                                    ,vars-for-array-elements
-                                    ',prune-branches
-                                    ',call-stp
-                                    ',produce-theorem
-                                    ',steps
-                                    ',branches
-                                    ',param-names
-                                    ',produce-function
-                                    ',chunkedp
-                                    ;; end of normal args
-                                    ',whole-form
-                                    state)))
-    (if print
-        `(make-event ,form)
-      `(with-output ; todo: suppress the output from processing the events even if :print is t?
-         :off :all
-         :on (comment error)
-         :gag-mode nil
-         (make-event ,form))))
+                                      (produce-function 'nil)
+                                      (local 't))
+  (let* ((form `(unroll-java-code-fn ',defconst-name
+                                     ',method-indicator
+                                     ',output
+                                     ,array-length-alist
+                                     ,extra-rules
+                                     ,remove-rules
+                                     ,rule-alists
+                                     ,monitor
+                                     ,assumptions
+                                     ',simplify-xors
+                                     ,classes-to-assume-initialized
+                                     ,ignore-exceptions
+                                     ,ignore-errors
+                                     ,print
+                                     ,print-interval
+                                     ,memoizep
+                                     ,vars-for-array-elements
+                                     ',prune-branches
+                                     ',call-stp
+                                     ',produce-theorem
+                                     ',steps
+                                     ',branches
+                                     ',param-names
+                                     ',produce-function
+                                     ',chunkedp
+                                     ;; end of normal args
+                                     ',whole-form
+                                     state))
+         (form (if print
+                   `(make-event ,form)
+                 `(with-output ; todo: suppress the output from processing the events even if :print is t?
+                    :off :all
+                    :on (comment error)
+                    :gag-mode nil
+                    (make-event ,form))))
+         (form (if (check-boolean local)
+                   (list 'local form)
+                 form)))
+    form)
   :parents (lifters)
   :short "Lift a Java method to create a DAG, unrolling loops as needed."
   :args ((defconst-name
@@ -605,7 +617,8 @@
          (print                   "How much to print (t or nil or :brief, etc.)")
          (print-interval "How often to print (number of nodes)")
          (produce-theorem "Whether to produce a theorem about the result of the lifting (currently has to be trusted).")
-         (produce-function "Whether to produce a defun in addition to a DAG, a boolean."))
+         (produce-function "Whether to produce a defun in addition to a DAG, a boolean.")
+         (local "Whether to make the result of @('unroll-java-code') local to the enclosing book (or @('encapsulate')).  This prevents a large DAG from being stored in the @(tsee certificate) of the book, but it means that the result of @('unroll-java-code') is not accessible from other books.  Usually, the default value of @('t') is appropriate, because the book that calls @('unroll-java-code') is not included by other books."))
   :description ("Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
                 "This event creates a @(see defconst) whose name is @('defconst-name')."
                 "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))
