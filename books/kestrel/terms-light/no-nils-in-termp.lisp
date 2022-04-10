@@ -57,3 +57,29 @@
                             free-vars-in-terms
                             )
                            ()))))
+
+(defthm no-nils-in-termp-when-symbolp
+  (implies (symbolp term)
+           (equal (no-nils-in-termp term)
+                  (not (equal term nil))))
+  :hints (("Goal" :in-theory (enable no-nils-in-termp))))
+
+(defthm no-nils-in-termsp-of-remove-equal
+  (implies (no-nils-in-termsp terms)
+           (no-nils-in-termsp (remove-equal term terms)))
+  :hints (("Goal" :in-theory (enable no-nils-in-termsp
+                                     remove-equal))))
+
+(defthm no-nils-in-termsp-of-union-equal
+  (equal (no-nils-in-termsp (union-equal terms1 terms2))
+         (and (no-nils-in-termsp terms1)
+              (no-nils-in-termsp terms2)))
+  :hints (("Goal" :in-theory (enable no-nils-in-termsp
+                                     union-equal))))
+
+(defthm no-nils-in-termsp-of-intersection-equal
+  (implies (or (no-nils-in-termsp terms1)
+               (no-nils-in-termsp terms2))
+           (no-nils-in-termsp (intersection-equal terms1 terms2)))
+  :hints (("Goal" :in-theory (enable no-nils-in-termsp
+                                     intersection-equal))))
