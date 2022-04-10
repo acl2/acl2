@@ -531,7 +531,7 @@
                                       (param-names ':auto)
                                       (output ':auto)
                                       (steps ':auto) ; todo: can this ever be less than the whole run, other than to debug a failed run?
-                                      ;; Options affecting how the proof goes:
+                                      ;; Options affecting how the lifting goes:
                                       (rule-alists 'nil) ;to completely replace the usual sets of rules
                                       (extra-rules 'nil) ; to add to the usual set of rules
                                       (remove-rules 'nil)
