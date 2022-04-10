@@ -14,6 +14,7 @@
 
 (include-book "imported-symbols")
 (local (include-book "imported-symbols-theorems"))
+(local (include-book "intern-in-package-of-symbol"))
 (include-book "map-symbol-name")
 (local (include-book "../lists-light/member-equal"))
 
@@ -94,46 +95,6 @@
                                   (set-difference-equal
                                    (:e set-difference-equal))))))
 
-;; Note that a legal variable can sometimes have an empty
-;; name. For example, (legal-variablep 'acl2::||) = t.
-
-(defthmd equal-of-intern-in-package-of-symbol
-  (implies (and (stringp str)
-                (symbolp sym2)
-                (not (member-symbol-name str (pkg-imports (symbol-package-name sym2)))))
-           (equal (equal sym (intern-in-package-of-symbol str sym2))
-                  (and (symbolp sym)
-                       (equal str (symbol-name sym))
-                       (equal (symbol-package-name sym)
-                              (symbol-package-name sym2)))))
-  :hints (("Goal" :cases ((symbol-package-name sym2)))))
-
-(defthm member-symbol-name-iff
-  (iff (member-symbol-name str l)
-       (member-equal str (map-symbol-name l)))
-  :hints (("Goal" :in-theory (enable member-symbol-name))))
-
-(defthm car-of-member-symbol-name-iff
-  (implies (not (equal "NIL" str))
-           (iff (car (member-symbol-name str l))
-                (member-equal str (map-symbol-name l))))
-  :hints (("GOAL" :in-theory (enable member-symbol-name))))
-
-;; If a string is in the pkg-imports of the ACL2 package, then importing in
-;; into the ACL2 package gives a symbol not in the acl2 package.
-
-(defthm intern-in-package-of-symbol-iff
-  (implies (and (equal (symbol-package-name sym) "ACL2") ;gen?
-                ;; (not (member-symbol-name str (pkg-imports (symbol-package-name sym))))
-                (stringp str)
-                ;; (symbolp sym) ; not needed since non-symbols have a symbol-package-name of ""
-                )
-           (iff (intern-in-package-of-symbol str sym)
-                (not (equal str "NIL"))))
-  :hints (("Goal" :use (:instance equal-of-intern-in-package-of-symbol (sym2 sym) (sym nil))
-           :cases ((symbolp sym))
-           :in-theory (e/d (intern-in-package-of-symbol-is-identity) (equal-of-intern-in-package-of-symbol)))))
-
 ;; Yikes!  This applies to terms like (equal x 'foo), due to ACL2's overly aggressive unification of constants.
 (defthmd not-equal-of-intern-in-package-of-symbol-when-not-equal-of-symbol-name
   (implies (and (not (equal str (symbol-name sym2)))
@@ -204,7 +165,7 @@
            (equal (equal (symbol-package-name (car (member-symbol-name str syms)))
                          str2)
                   (equal "COMMON-LISP" str2)))
-  :hints (("Goal" :in-theory (disable member-symbol-name-iff
+  :hints (("Goal" :in-theory (disable ;member-symbol-name-iff
                                       MEMBER-EQUAL-OF-SYMBOL-PACKAGE-NAME-AND-MAP-SYMBOL-PACKAGE-NAME))))
 
 (defthm not-equal-of-symbol-package-name-of-car-of-member-symbol-name
@@ -432,6 +393,21 @@
   (implies (and (member-equal str (map-symbol-name x))
                 (subsetp x y))
            (member-equal str (map-symbol-name y))))
+
+(local
+ (defthm member-symbol-name-iff
+   (iff (member-symbol-name str l)
+        (member-equal str (map-symbol-name l)))
+   :hints (("Goal" :in-theory (enable member-symbol-name
+                                      member-equal)))))
+
+(local
+ (defthm car-of-member-symbol-name-iff
+   (implies (not (equal "NIL" str))
+            (iff (car (member-symbol-name str l))
+                 (member-equal str (map-symbol-name l))))
+   :hints (("GOAL" :in-theory (enable member-symbol-name
+                                      member-equal)))))
 
 ;; Precisely characterizes when interning a symbol in the ACL2 package results
 ;; in a legal variable.
