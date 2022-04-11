@@ -206,9 +206,7 @@
      (equal (-- (sum x y))
             (sum (-- x) (-- y))))
 
-   (defthm --of---
-     (equal (-- (-- x))
-            (ifix x)))
+   
 
    (defthm equal-of-m2-dummy1
      (equal (equal (m2 (sum x a))

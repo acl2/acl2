@@ -4099,6 +4099,8 @@
                           (equal rest-s-lst nil)))
              (mv nil nil nil nil))
             (new-pp-lst (pp-sum-merge-aux rest-pp-lst new-pp-lst))
+            (new-pp-lst (s-fix-pp-args-aux new-pp-lst))
+            (rest-c-lst (s-fix-pp-args-aux rest-c-lst))
             ((mv res-s-lst res-pp-lst res-c-lst)
              (create-s-instance (create-list-instance new-pp-lst)
                                 (create-list-instance rest-c-lst))))
@@ -4107,6 +4109,7 @@
        (b* (((mv new-pp-lst valid)
              (pp-radix8+-fix-aux-for-pp-lst pp-lst e-lst))
             ((unless valid) (mv nil nil nil nil))
+            (new-pp-lst (s-fix-pp-args-aux new-pp-lst))
             ((mv res-s-lst res-pp-lst res-c-lst)
              (create-s-instance (create-list-instance new-pp-lst)
                                 ''nil)))
@@ -4431,7 +4434,16 @@
             (new-sum-merge-aux-add-negated-coughed to-be-coughed-c-lst
                                                    abs-term-w/-sc
                                                    negated))
-           (pp-lst (pp-sum-merge-aux coughed-pp-lst pp-lst)))
+           (pp-lst (pp-sum-merge-aux coughed-pp-lst pp-lst))
+
+           #|(- (or (and (not (ordered-s/c-p-lst-main (list-to-lst s)))
+                       (acl2::raise "bad 1 s ~p0 ~%" s))
+                  (and (not (ordered-s/c-p-lst-main pp-lst))
+                       (acl2::raise "bad 1 pp-lst ~p0 ~%" pp-lst))
+                  (and (not (ordered-s/c-p-lst-main c-lst))
+                       (acl2::raise "bad 1 c-lst ~p0 ~%" c-lst))
+                  (and (not (ordered-s/c-p-lst-main to-be-coughed-c-lst))
+                       (acl2::raise "bad 1 to-be-coughed-c-lst ~p0 ~%" to-be-coughed-c-lst))))|#)
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
      ((single-s-p abs-term)
       (b* ((s (s-sum-merge s (create-list-instance
@@ -4483,20 +4495,18 @@
                                                (not
                                                 (pp-is-a-part-of-radix8+-summation ABS-TERM-W/-SC)))))
 
+           (?pp-lst-orig pp-lst2)
+           
+           
            ((mv s-lst2 pp-lst2 c-lst2) (ex-from-pp-lst pp-lst2))
            (s (s-sum-merge s (create-list-instance s-lst2)))
            (c-lst (s-sum-merge-aux c-lst c-lst2))
 
-           (?pp-lst-orig pp-lst2)
            ((mv s-lst2 pp-lst2 c-lst2) (pp-radix8+-fix pp-lst2))
            (s (s-sum-merge s (create-list-instance s-lst2)))
            (c-lst (s-sum-merge-aux c-lst c-lst2))
-           #|(- (and (include-fnc-subterms pp-lst2 's)
-           (hard-error 'pp-radix8+-fix
-           "pp-lst-orig: ~p0, pp-lst-after: ~p1 ~%"
-           (list (cons #\0 pp-lst-orig)
-           (cons #\1 pp-lst2)))))|#
-
+          
+           
            ((mv pp-lst2 recollected-c-lst) (recollect-pp-lst-to-sc-main pp-lst2))
            (c-lst (s-sum-merge-aux recollected-c-lst c-lst))
            (pp-lst (pp-sum-merge-aux pp-lst pp-lst2)))
