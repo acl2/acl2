@@ -26,6 +26,8 @@
    triples-val
    lemma-defthm
    lemma-args
+   no-lemmas
+   hints
    pkg-sym))
 
 (program)
@@ -248,32 +250,35 @@
                                      (svar-override-triplelist->testvars (<triples>)) env))
                                (b* (((svassocs <outputs>) run))
                                  <concl>)))
-                    :hints (("goal" :use (<name>-<<=-lemma
-                                          (:instance <name>-override-lemma
-                                           <override-var-instantiation>
-                                           <input-var-instantiation>))
-                             :in-theory '((BINARY-APPEND)
-                                          (CONS)
-                                          (INTEGERP)
-                                          (MEMBER-EQUAL)
-                                          (SVAR-FIX$INLINE)
-                                          (TRUE-LIST-FIX)
-                                          (:REWRITE ACL2::APPEND-OF-CONS)
-                                          (:REWRITE ACL2::APPEND-OF-NIL)
-                                          (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
-                                          (:REWRITE ACL2::LIST-FIX-OF-CONS)
-                                          (:REWRITE SVEX-ENV-LOOKUP-IN-SVTV-RUN-WITH-INCLUDE)
-                                          (:REWRITE SVEX-ENV-LOOKUP-WHEN-INTEGERP-AND-<<=)
-                                          (:TYPE-PRESCRIPTION SVEX-ENV-<<=)
-                                          (:TYPE-PRESCRIPTION SVEX-ENV-LOOKUP)
-                                          <enable>))))))
+                    :hints (:@ :no-lemmas <hints>)
+                    (:@ (not :no-lemmas)
+                     (("goal" :use (<name>-<<=-lemma
+                                    (:instance <name>-override-lemma
+                                     <override-var-instantiation>
+                                     <input-var-instantiation>))
+                       :in-theory '((BINARY-APPEND)
+                                    (CONS)
+                                    (INTEGERP)
+                                    (MEMBER-EQUAL)
+                                    (SVAR-FIX$INLINE)
+                                    (TRUE-LIST-FIX)
+                                    (:REWRITE ACL2::APPEND-OF-CONS)
+                                    (:REWRITE ACL2::APPEND-OF-NIL)
+                                    (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
+                                    (:REWRITE ACL2::LIST-FIX-OF-CONS)
+                                    (:REWRITE SVEX-ENV-LOOKUP-IN-SVTV-RUN-WITH-INCLUDE)
+                                    (:REWRITE SVEX-ENV-LOOKUP-WHEN-INTEGERP-AND-<<=)
+                                    (:TYPE-PRESCRIPTION SVEX-ENV-<<=)
+                                    (:TYPE-PRESCRIPTION SVEX-ENV-LOOKUP)
+                                    <enable>)))))))
     (acl2::template-subst
      template
      :atom-alist
      `((<hyp> . ,x.hyp)
        (<concl> . ,x.concl)
        (<svtv> . ,x.svtv)
-       (<triples> . ,x.triples-name))
+       (<triples> . ,x.triples-name)
+       (<hints> . ,x.hints))
      :splice-alist
      `((<input-var-svassocs> . ,(append x.input-vars (strip-cars x.input-var-bindings)))
        (<override-svassocs> . ,(svtv-ovfact-override-svassocs x.override-vars x.triples-val x.triples-name))
@@ -283,6 +288,7 @@
        (<outputs> . ,x.output-vars)
        (<enable> . ,x.enable))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
+     :features (and x.no-lemmas '(:no-lemmas))
      :pkg-sym x.pkg-sym)))
 
 
@@ -325,11 +331,12 @@
        (err (svtv-ovfact-error x))
        ((when err) (er hard? `(def-svtv-override-fact ,x.name) "Error: ~@0" err)))
     `(defsection ,x.name
-       (local ,(svtv-ovfact-initial-override-lemma x))
-       (local ,(svtv-ovfact-mono-lemma x))
+       ,@(and (not x.no-lemmas)
+              `((local ,(svtv-ovfact-initial-override-lemma x))
+                (local ,(svtv-ovfact-mono-lemma x))))
        ,(svtv-ovfact-final-thm x))))
 
-(table svtv-override-fact-defaults nil nil :clear)
+; (table svtv-override-fact-defaults nil nil :clear)
 
 (defun svtv-ovfact-translate-lst (x ctx w state)
   (declare (xargs :stobjs state))
@@ -357,6 +364,8 @@
          concl
          (lemma-defthm 'fgl::def-fgl-thm)
          lemma-args
+         no-lemmas
+         hints
          (pkg-sym name))
         args)
        (triples (acl2::template-subst
@@ -386,6 +395,8 @@
        :triples-val triples-val
        :lemma-defthm lemma-defthm
        :lemma-args lemma-args
+       :hints hints
+       :no-lemmas no-lemmas
        :pkg-sym pkg-sym)))))
 
 (defmacro def-svtv-override-fact (name &rest args)
@@ -466,6 +477,11 @@ lemma is proved.</li>
 <li>@(':lemma-args') gives additional arguments to be passed to the form
 proving the initial lemma, which could be hints for a @('defthm') form or FGL
 keyword args for @('fgl::def-fgl-thm') or @('fgl::def-fgl-param-thm').
+
+<li>@(':no-lemmas') says to skip the initial override theorem and monotonicity lemma
+and tries to prove the final theorem directly, with the hints given by the user.</li>
+
+<li>@(':hints') are hints for the final theorem, only used if @(':no-lemmas') is set.</li>
 
 </ul>
 
