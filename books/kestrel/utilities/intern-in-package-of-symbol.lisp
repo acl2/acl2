@@ -10,6 +10,10 @@
 
 (in-package "ACL2")
 
+(local (include-book "map-symbol-name"))
+
+(local (in-theory (disable member-equal)))
+
 ;; Should usually be left disabled.
 (defthmd symbol-equality-strong
   (implies (or (symbolp s1)
@@ -31,3 +35,47 @@
   :hints (("Goal" :use (:instance symbol-equality-strong
                                   (s1 (intern-in-package-of-symbol x1 y))
                                   (s2 (intern-in-package-of-symbol x2 y))))))
+
+(defthmd equal-of-intern-in-package-of-symbol
+  (implies (and (stringp str)
+                (symbolp sym2)
+                (not (member-symbol-name str (pkg-imports (symbol-package-name sym2)))))
+           (equal (equal sym (intern-in-package-of-symbol str sym2))
+                  (and (symbolp sym)
+                       (equal str (symbol-name sym))
+                       (equal (symbol-package-name sym)
+                              (symbol-package-name sym2)))))
+  :hints (("Goal" :cases ((symbol-package-name sym2)))))
+
+;; Note that a legal variable can sometimes have an empty
+;; name. For example, (legal-variablep 'acl2::||) = t.
+
+(local
+ (defthm member-symbol-name-iff
+   (iff (member-symbol-name str l)
+        (member-equal str (map-symbol-name l)))
+   :hints (("Goal" :in-theory (enable member-symbol-name
+                                      member-equal)))))
+
+(local
+ (defthm car-of-member-symbol-name-iff
+   (implies (not (equal "NIL" str))
+            (iff (car (member-symbol-name str l))
+                 (member-equal str (map-symbol-name l))))
+   :hints (("GOAL" :in-theory (enable member-symbol-name
+                                      member-equal)))))
+
+;; If a string is in the pkg-imports of the ACL2 package, then importing in
+;; into the ACL2 package gives a symbol not in the acl2 package.
+
+(defthm intern-in-package-of-symbol-iff
+  (implies (and (equal (symbol-package-name sym) "ACL2") ;gen?
+                ;; (not (member-symbol-name str (pkg-imports (symbol-package-name sym))))
+                (stringp str)
+                ;; (symbolp sym) ; not needed since non-symbols have a symbol-package-name of ""
+                )
+           (iff (intern-in-package-of-symbol str sym)
+                (not (equal str "NIL"))))
+  :hints (("Goal" :use (:instance equal-of-intern-in-package-of-symbol (sym2 sym) (sym nil))
+           :cases ((symbolp sym))
+           :in-theory (e/d (intern-in-package-of-symbol-is-identity) (equal-of-intern-in-package-of-symbol)))))

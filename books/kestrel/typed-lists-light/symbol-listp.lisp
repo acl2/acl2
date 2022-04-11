@@ -134,3 +134,9 @@
            (equal (symbol-listp l1)
                   (true-listp l1)))
   :hints (("Goal" :in-theory (enable nth))))
+
+(defthmd symbolp-when-member-equal-and-symbol-listp
+  (implies (and (member-equal a x)
+                (symbol-listp x))
+           (symbolp a))
+  :hints (("Goal" :in-theory (enable symbol-listp member-equal))))

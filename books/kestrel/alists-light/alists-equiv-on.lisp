@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
-(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
+(local (include-book "assoc-equal"))
+(local (include-book "pairlis-dollar"))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 
 ;; Checks whether ALIST1 and ALIST2 are equivalent wrt the KEYS.  For these
@@ -23,6 +23,9 @@
       (and (equal (cdr (assoc-equal key alist1)) ; ok if bound to nil in one alist and not bound in the other
                   (cdr (assoc-equal key alist2)))
            (alists-equiv-on (rest keys) alist1 alist2)))))
+
+(defthm alists-equiv-on-same
+  (alists-equiv-on keys alist1 alist1))
 
 (defthm alists-equiv-on-of-union-equal
   (equal (alists-equiv-on (union-equal keys1 keys2) alist1 alist2)
