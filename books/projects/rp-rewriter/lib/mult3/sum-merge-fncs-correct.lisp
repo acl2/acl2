@@ -637,6 +637,9 @@
                             `(binary-sum (sum-list ,term1)
                                          (sum-list ,term2))))))
 
+
+
+
 (defthm valid-sc-of-create-list-instance
   (equal (valid-sc (create-list-instance lst) a)
          (valid-sc-subterms lst a))
@@ -1616,3 +1619,64 @@
            (valid-sc-subterms (pp-sum-sort-lst pp-lst) a))
   :hints (("Goal"
            :in-theory (e/d (pp-sum-sort-lst) ()))))
+
+
+(defthm s-sum-sort-lst-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state))
+           (equal (sum-list-eval (s-sum-sort-lst s-lst) a)
+                  (sum-list-eval s-lst a)))
+  :hints (("Goal"
+           :in-theory (e/d (s-sum-sort-lst)
+                           (evens odds)))))
+
+(defthm s-sum-sort-lst-valid-sc
+  (implies (valid-sc-subterms s-lst a)
+           (valid-sc-subterms (s-sum-sort-lst s-lst) a))
+  :hints (("Goal"
+           :in-theory (e/d (s-sum-sort-lst) ()))))
+
+
+(create-regular-eval-lemma s-c-res 3 mult-formula-checks)
+
+(defthm sum-list-eval-of-append-wog
+  (implies (and (mult-formula-checks state)
+                (rp-evl-meta-extract-global-facts))
+           (equal (sum-list-eval (append-wog x y) a)
+                  (sum (sum-list (rp-evlt-lst x a))
+                       (sum-list (rp-evlt-lst y a)))))
+  :hints (("Goal"
+           :induct (append-wog x y)
+           :do-not-induct t
+           :in-theory (e/d (append-wog) ()))))
+
+
+(local
+ (defthm --of-sum
+   (equal (-- (sum a b))
+          (sum (-- a)
+               (-- b)))
+   :hints (("Goal"
+            :in-theory (e/d (-- sum)
+                            (+-is-SUM))))))
+
+
+
+(defthm  sum-list-eval-of-negate-lst
+  (implies (and (mult-formula-checks state)
+                (rp-evl-meta-extract-global-facts))
+           (equal (sum-list-eval (negate-lst lst enabled) a)
+                  (if enabled
+                      (-- (sum-list-eval lst a))
+                    (sum-list-eval lst a))))
+  :hints (("Goal"
+           :induct (negate-lst-aux lst)
+           :do-not-induct t
+           :in-theory (e/d (NEGATE-LST
+                            regular-rp-evl-of_--_when_mult-formula-checks
+                            regular-rp-evl-of_--_when_mult-formula-checks_with-ex-from-rp
+                            negate-lst-aux)
+                           ()))))
+
+
+

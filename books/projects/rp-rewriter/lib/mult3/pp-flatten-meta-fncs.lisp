@@ -974,57 +974,6 @@
             term-))
           (t term))))
 
-(defthm rp-term-listp-of-append-wog
-  (implies (and (rp-term-listp lst1)
-                (rp-term-listp lst2))
-           (rp-term-listp (append-wog lst1 lst2)))
-  :hints (("Goal"
-           :induct (append-wog lst1 lst2)
-           :do-not-induct t
-           :in-theory (e/d (append-wog) ()))))
-
-(define ex-from-pp-lst ((pp-lst rp-term-listp))
-  :returns (mv (s-lst rp-term-listp :hyp (rp-term-listp pp-lst))
-               (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
-               (c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
-  :verify-guards :after-returns
-  (if (atom pp-lst)
-      (mv nil nil nil)
-    (b* ((cur (car pp-lst))
-         (cur-orig cur)
-         ((mv cur signed)
-          (case-match cur
-            (('-- x) (mv x t))
-            (& (mv cur nil))))
-         ((mv s-lst rest-pp-lst c-lst)
-          (ex-from-pp-lst (cdr pp-lst))))
-      (case-match cur
-        (('and-list & ('list x))
-         (b* (((unless (has-bitp-rp x))
-               (mv s-lst
-                   (cons-with-hint cur-orig rest-pp-lst pp-lst)
-                   c-lst))
-              (x-extracted (ex-from-rp x)))
-           (case-match x-extracted
-             (('s & & &)
-              (mv (cons (if signed `(-- ,x) x) s-lst)
-                  rest-pp-lst
-                  c-lst))
-             (('c & & & &)
-              (mv s-lst rest-pp-lst
-                  (cons (if signed `(-- ,x) x) c-lst)))
-             (('s-c-res s pp c)
-              (mv (append-wog (negate-lst (list-to-lst s)  signed) s-lst)
-                  (append-wog (negate-lst (list-to-lst pp) signed) rest-pp-lst)
-                  (append-wog (negate-lst (list-to-lst c)  signed) c-lst)))
-             (& (mv s-lst
-                    (cons-with-hint cur-orig
-                                    rest-pp-lst
-                                    pp-lst)
-                    c-lst)))))
-        (& (mv s-lst
-               (cons-with-hint cur-orig rest-pp-lst pp-lst)
-               c-lst))))))
 
 (define pp-flatten ((term pp-term-p)
                     (sign booleanp)

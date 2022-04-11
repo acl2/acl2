@@ -269,7 +269,7 @@
   (if (equal (car x) y)
   (mv nil
   (equal x-orig y-orig)
-;(atom (cdr x)) ; ; ;
+;(atom (cdr x)) ; ; ; ;
   )
   (mv (not (lexorder y (car x))) nil))
   (mv t nil)))
@@ -278,7 +278,7 @@
   (if (equal (car y) x)
   (mv (not (atom y))
   (equal x-orig y-orig)
-;(atom y) ; ; ;
+;(atom y) ; ; ; ;
   )
   (mv (not (lexorder (car y) x)) nil))
   (mv nil nil)))
@@ -304,7 +304,6 @@
       (''nil
        t)
       (& nil))))
-
 
 
 (define pp-order-and-negated-termsp ((term1 rp-termp)
@@ -579,6 +578,23 @@
                       (b* ((rest (sum-merge-lst-for-s s1-lst (cdr s2-lst))))
                         (cons cur2 rest))))))))
 
+  (define s-sum-sort-lst ((s-lst rp-term-listp))
+    :measure (cons-count s-lst)
+    :hints (("Goal"
+             :in-theory (e/d () (evens odds))))
+    :verify-guards :after-returns
+    :returns (res-pp-lst rp-term-listp
+                         :hyp (rp-term-listp s-lst))
+    (b* (((when (or (atom s-lst)
+                    (atom (cdr s-lst))))
+          s-lst)
+         (odds (odds s-lst))
+         (evens (evens s-lst))
+         (odds-sorted (s-sum-sort-lst odds))
+         (evens-sorted (s-sum-sort-lst evens))
+         (res (s-sum-merge-aux odds-sorted evens-sorted)))
+      res))
+
   (define s-sum-merge ((s1 rp-termp)
                        (s2 rp-termp))
     :returns (merged-s rp-termp
@@ -690,7 +706,6 @@
     (if cond
         (c-fix-arg-aux arg-lst neg-flag)
       (mv nil arg-lst)))
-
 
   (defmacro cough-lst (lst)
     `(c-fix-arg-aux ,lst t))
@@ -1051,9 +1066,12 @@
               (ordered-s/c-p-lst (shrinking-list-to-lst c))))
         (('-- term)
          (ordered-s/c-p term))
+        (('and-list & ('list . lst))
+         (ordered-s/c-p-lst lst))
         (('quote &)
          t)
         (& (if (or (binary-fnc-p term)
+                   (and-list-p term)
                    (bit-of-p term)
                    (atom term))
                t
@@ -1066,3 +1084,95 @@
         (equal lst nil)
       (and (ordered-s/c-p (car lst))
            (ordered-s/c-p-lst (cdr lst))))))
+
+(define ordered-s/c-p-lst-main ((lst rp-term-listp)
+                                &key (rep-ok 't))
+  (if (or (atom lst)
+          (and-list-p (ex-from-rp/-- (car lst)))
+          (binary-fnc-p (ex-from-rp/-- (car lst)))
+          (bit-of-p (ex-from-rp/-- (car lst)))
+          (quotep (ex-from-rp/-- (car lst))))
+      (and (pp-lst-orderedp lst)
+           (or rep-ok (no-rep-p lst)))
+    (and (or (single-s-p (ex-from-rp/-- (car lst)))
+             (s-sum-ordered-listp lst))
+         (or rep-ok (no-rep-p lst))
+         (ordered-s/c-p-lst lst))))
+
+
+(defthm rp-term-listp-of-append-wog
+  (implies (and (rp-term-listp lst1)
+                (rp-term-listp lst2))
+           (rp-term-listp (append-wog lst1 lst2)))
+  :hints (("Goal"
+           :induct (append-wog lst1 lst2)
+           :do-not-induct t
+           :in-theory (e/d (append-wog) ()))))
+
+(define ex-from-pp-lst-aux ((pp-lst rp-term-listp))
+  :prepwork ((local
+              (in-theory (disable rp-termp)))
+             (local
+              (defthm rp-termp-of---
+                (iff (rp-termp (list '-- x))
+                     (rp-termp x))
+                :hints (("Goal"
+                         :in-theory (e/d (rp-termp) ())))))
+             (local
+              (defthm rp-termp-car-when-rp-term-listp
+                (implies (and (consp x)
+                              (rp-term-listp x))
+                         (rp-termp (car x)))
+                :hints (("Goal"
+                         :in-theory (e/d (rp-term-listp) ()))))))
+  :returns (mv (s-lst rp-term-listp :hyp (rp-term-listp pp-lst))
+               (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
+               (c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
+  :verify-guards :after-returns
+  (if (atom pp-lst)
+      (mv nil nil nil)
+    (b* ((cur (car pp-lst))
+         (cur-orig cur)
+         ((mv cur signed)
+          (case-match cur
+            (('-- x) (mv x t))
+            (& (mv cur nil))))
+         ((mv s-lst rest-pp-lst c-lst)
+          (ex-from-pp-lst-aux (cdr pp-lst))))
+      (case-match cur
+        (('and-list & ('list x))
+         (b* (((unless (has-bitp-rp x))
+               (mv s-lst
+                   (cons-with-hint cur-orig rest-pp-lst pp-lst)
+                   c-lst))
+              (x-extracted (ex-from-rp x)))
+           (case-match x-extracted
+             (('s & & &)
+              (mv (cons (if signed `(-- ,x) x) s-lst)
+                  rest-pp-lst
+                  c-lst))
+             (('c & & & &)
+              (mv s-lst rest-pp-lst
+                  (cons (if signed `(-- ,x) x) c-lst)))
+             (('s-c-res s pp c)
+              (mv (append-wog (negate-lst (list-to-lst s)  signed) s-lst)
+                  (append-wog (negate-lst (list-to-lst pp) signed) rest-pp-lst)
+                  (append-wog (negate-lst (list-to-lst c)  signed) c-lst)))
+             (& (mv s-lst
+                    (cons-with-hint cur-orig
+                                    rest-pp-lst
+                                    pp-lst)
+                    c-lst)))))
+        (& (mv s-lst
+               (cons-with-hint cur-orig rest-pp-lst pp-lst)
+               c-lst))))))
+
+(define ex-from-pp-lst ((pp-lst rp-term-listp))
+  :returns (mv (s-lst rp-term-listp :hyp (rp-term-listp pp-lst))
+               (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
+               (c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
+  (b* (((mv s-lst res-pp-lst c-lst)
+        (ex-from-pp-lst-aux pp-lst)))
+    (mv (if (s-sum-ordered-listp s-lst) s-lst (s-sum-sort-lst s-lst))
+        (if (pp-lst-orderedp res-pp-lst) res-pp-lst (pp-sum-sort-lst res-pp-lst))
+        (if (s-sum-ordered-listp c-lst) c-lst (s-sum-sort-lst c-lst)))))
