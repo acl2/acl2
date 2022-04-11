@@ -1,7 +1,7 @@
 ; A stobj to track results of rewriting
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,50 +16,50 @@
 
 (local (in-theory (disable dargp)))
 
+;; Either a darg or nil
 (defund maybe-dargp (x)
   (declare (xargs :guard t))
   (or (null x)
       (dargp x)))
 
-;; An stobj that stores a "renaming", that is, a map from some initial segment
-;; of the natural numbers (nodenums) to dargps.
-;; Perhaps we could choose some darg as the initial value, but using nil
-;; ensures that we have to prove values are valid when we use them.
-
+;; The renaming-stobj is a stobj that stores a "renaming", that is, a map from
+;; some initial segment of the natural numbers (nodenums) to dargs.  Perhaps we
+;; could choose some darg as the initial value, but using nil ensures that we
+;; have to prove values are valid when we use them.
 (defstobj renaming-stobj
-  (thearray :type (array (satisfies maybe-dargp) (10000)) :resizable t :initially nil))
+  (renaming :type (array (satisfies maybe-dargp) (10000)) :resizable t :initially nil))
 
-(in-theory (disable thearrayi thearray-length update-thearrayi renaming-stobjp)) ; todo: better names?
+(in-theory (disable renaming-stobjp renamingi renaming-length update-renamingi)) ; todo: better names?
 
-(defthm thearray-length-of-update-thearrayi
+(defthm renaming-length-of-update-renamingi
   (implies (and (renaming-stobjp renaming-stobj)
-                (< i (thearray-length renaming-stobj))
+                (< i (renaming-length renaming-stobj))
                 (natp i)
                 )
-           (equal (thearray-length (update-thearrayi i darg renaming-stobj))
-                  (thearray-length renaming-stobj)))
-  :hints (("Goal" :in-theory (enable thearray-length update-thearrayi thearrayp))))
+           (equal (renaming-length (update-renamingi i darg renaming-stobj))
+                  (renaming-length renaming-stobj)))
+  :hints (("Goal" :in-theory (enable renaming-length update-renamingi renamingp))))
 
-(defthm thearrayi-of-update-thearrayi-same
+(defthm renamingi-of-update-renamingi-same
   (implies (and; (renaming-stobjp renaming-stobj)
-;                (< i (thearray-length renaming-stobj))
+;                (< i (renaming-length renaming-stobj))
                 (natp i)
                 )
-           (equal (thearrayi i (update-thearrayi i darg renaming-stobj))
+           (equal (renamingi i (update-renamingi i darg renaming-stobj))
                   darg))
-  :hints (("Goal" :in-theory (enable thearrayi thearray-length update-thearrayi thearrayp))))
+  :hints (("Goal" :in-theory (enable renamingi renaming-length update-renamingi renamingp))))
 
-(defthm thearrayi-of-update-thearrayi-diff
+(defthm renamingi-of-update-renamingi-diff
   (implies (and (not (equal i j))
           ;      (renaming-stobjp renaming-stobj)
-        ;        (< i (thearray-length renaming-stobj))
+        ;        (< i (renaming-length renaming-stobj))
                 (natp i)
-       ;         (< j (thearray-length renaming-stobj))
+       ;         (< j (renaming-length renaming-stobj))
                 (natp j)
                 )
-           (equal (thearrayi i (update-thearrayi j darg renaming-stobj))
-                  (thearrayi i renaming-stobj)))
-  :hints (("Goal" :in-theory (enable thearrayi thearray-length update-thearrayi thearrayp))))
+           (equal (renamingi i (update-renamingi j darg renaming-stobj))
+                  (renamingi i renaming-stobj)))
+  :hints (("Goal" :in-theory (enable renamingi renaming-length update-renamingi renamingp))))
 
 ;;;
 ;;; renaming-entries-good-through
@@ -68,12 +68,12 @@
 ;; That that all the entries from 0 through i are dargs, not nil.
 (defun renaming-entries-good-through (i renaming-stobj)
   (declare (xargs :guard (and (integerp i)
-                              (< i (thearray-length renaming-stobj)))
+                              (< i (renaming-length renaming-stobj)))
                   :stobjs renaming-stobj
                   :measure (nfix (+ 1 i))))
   (if (not (natp i))
       t
-    (and (dargp (thearrayi i renaming-stobj))
+    (and (dargp (renamingi i renaming-stobj))
          (renaming-entries-good-through (+ -1 i) renaming-stobj))))
 
 (defthm renaming-entries-good-through-monotone
@@ -84,20 +84,20 @@
            (renaming-entries-good-through m renaming-stobj))
   :hints (("Goal" :in-theory (enable renaming-entries-good-through))))
 
-(defthm RENAMING-ENTRIES-GOOD-THROUGH-of-update-thearrayi-irrel
+(defthm RENAMING-ENTRIES-GOOD-THROUGH-of-update-renamingi-irrel
   (implies (and (< i j)
                 (natp i)
                 (natp j)
-  ;              (< i (thearray-length renaming-stobj))
- ;               (< j (thearray-length renaming-stobj))
+  ;              (< i (renaming-length renaming-stobj))
+ ;               (< j (renaming-length renaming-stobj))
 ;                (renaming-stobjp renaming-stobj)
 ;                (RENAMING-ENTRIES-GOOD-THROUGH (+ -1 I) RENAMING-STOBJ)
                 )
-           (equal (RENAMING-ENTRIES-GOOD-THROUGH I (UPDATE-THEARRAYI j DARG RENAMING-STOBJ))
+           (equal (RENAMING-ENTRIES-GOOD-THROUGH I (UPDATE-RENAMINGI j DARG RENAMING-STOBJ))
                   (RENAMING-ENTRIES-GOOD-THROUGH I RENAMING-STOBJ)))
   :hints (("Goal" :expand ((RENAMING-ENTRIES-GOOD-THROUGH 0 RENAMING-STOBJ)
                            (RENAMING-ENTRIES-GOOD-THROUGH 0
-                                                         (UPDATE-THEARRAYI J DARG RENAMING-STOBJ)))
+                                                         (UPDATE-RENAMINGI J DARG RENAMING-STOBJ)))
            :in-theory (enable RENAMING-ENTRIES-GOOD-THROUGH))))
 
 ;;;
@@ -108,7 +108,7 @@
 (defund good-renaming-stobj-through (i renaming-stobj)
   (declare (xargs :guard (integerp i)
                   :stobjs renaming-stobj))
-  (and (< i (thearray-length renaming-stobj))
+  (and (< i (renaming-length renaming-stobj))
        (renaming-entries-good-through i renaming-stobj)))
 
 (defthm good-renaming-stobj-through-of-if
@@ -142,7 +142,7 @@
   (if (consp darg)
       darg ; quoted constant, do nothing
     ;; nodenum to fixup:
-    (thearrayi darg renaming-stobj)))
+    (renamingi darg renaming-stobj)))
 
 (defthm dargp-of-rename-darg-with-stobj
   (implies (and (dargp darg)
@@ -195,11 +195,11 @@
 
 ;; TODO: Add notion of bounded renaming
 
-(defthm good-renaming-stobj-through-after-update-thearrayi
+(defthm good-renaming-stobj-through-after-update-renamingi
   (implies (and (renaming-stobjp renaming-stobj)
                 (good-renaming-stobj-through i renaming-stobj)
                 (natp i)
-                (< (+ 1 i) (THEARRAY-LENGTH RENAMING-STOBJ))
+                (< (+ 1 i) (RENAMING-LENGTH RENAMING-STOBJ))
                 (dargp darg))
-           (good-renaming-stobj-through (+ 1 i) (update-thearrayi (+ 1 i) darg renaming-stobj)))
+           (good-renaming-stobj-through (+ 1 i) (update-renamingi (+ 1 i) darg renaming-stobj)))
   :hints (("Goal" :in-theory (enable good-renaming-stobj-through))))
