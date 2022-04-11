@@ -1,7 +1,7 @@
 ; DAGs, represented as lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -81,7 +81,7 @@
 ;; weak-dagp
 ;;
 
-;; Checks that DAG is a true-list of dag "entries" (TODO: name that notion?).
+;; Checks that DAG is a true-list of bounded-dag-exprs.
 (defun weak-dagp-aux (dag)
   (declare (xargs :guard t))
   (if (atom dag)
