@@ -5045,9 +5045,9 @@
                                                       integerp-of-renamingi
                                                       natp-of-renamingi)
                                                      (natp))))))
-      (b* ((- (cw "(Simplifying DAG:~%"))
-           (old-top-nodenum (top-nodenum dag))
+      (b* ((old-top-nodenum (top-nodenum dag))
            (old-len (+ 1 old-top-nodenum))
+           (- (cw "(Simplifying DAG (~x0 nodes):~%" old-len))
            (slack-amount old-len) ;todo: make this adjustable
            ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (empty-dag-array slack-amount))
