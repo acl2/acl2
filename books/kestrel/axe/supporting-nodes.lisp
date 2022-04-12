@@ -459,13 +459,11 @@
 ;; TODO: avoid making a node that is a quotep (but then consider what to do about possible duplicate exprs caused by that!).
 (defund build-reduced-dag2 (n top-nodenum dag-array-name dag-array
                               tag-array ; nodes that we want to keep have been tagged
-                              dag-len ;the next nodenum to use in the new DAG
+                              dag-len   ;the next nodenum to use in the new DAG
                               translation-array
                               dag-acc ; the DAG being built up
                               )
-  (declare (xargs :measure (+ 1 (nfix (+ 1 (- top-nodenum n))))
-                  :guard-hints (("Goal" :in-theory (enable pseudo-dag-arrayp))) ;fixme?
-                  :guard (and (array1p 'translation-array translation-array)
+  (declare (xargs :guard (and (array1p 'translation-array translation-array)
                               (array1p 'tag-array tag-array)
                               (alistp dag-acc)
                               (natp top-nodenum)
@@ -475,7 +473,11 @@
                               (< top-nodenum (alen1 'tag-array tag-array))
                               (< top-nodenum (alen1 'translation-array translation-array))
                               (<= n (+ 1 top-nodenum))
-                              (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array))))
+                              (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array))
+                  :measure (+ 1 (nfix (+ 1 (- top-nodenum n))))
+                  :guard-hints (("Goal" :in-theory (enable pseudo-dag-arrayp))) ;fixme?
+                  :split-types t)
+           (type (integer 0 *) top-nodenum n dag-len))
   (if (or (not (mbt (natp n)))
           (not (mbt (natp top-nodenum)))
           (> n top-nodenum))

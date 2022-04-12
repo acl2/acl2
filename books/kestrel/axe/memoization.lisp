@@ -531,7 +531,7 @@
              (len-of-slot0 (len contents-of-slot-0))
              (contents-of-longest-slot (aref1 'memoization memoization longest-slot))
              (len-of-longest-slot (len contents-of-longest-slot)))
-        (progn$ (cw "(Memo stats:~%")
+        (progn$ (cw "~%(Memo stats:~%")
                 (cw "Memo items: ~x0.~%" total-items)
                 (cw "Index with the most items : ~x0 (~x1 items)~%" longest-slot longest-slot-len)
                 (cw "Last used index: ~x0.~%" last-filled-slot)

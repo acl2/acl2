@@ -1,7 +1,7 @@
 ; DAGs, represented as lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -81,7 +81,7 @@
 ;; weak-dagp
 ;;
 
-;; Checks that DAG is a true-list of dag "entries" (TODO: name that notion?).
+;; Checks that DAG is a true-list of bounded-dag-exprs.
 (defun weak-dagp-aux (dag)
   (declare (xargs :guard t))
   (if (atom dag)
@@ -138,6 +138,13 @@
            (integerp (car (car dag))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
 
+(defthm integerp-of-car-of-car-of-last-when-weak-dagp-aux-cheap
+  (implies (and (weak-dagp-aux dag)
+                (consp dag))
+           (integerp (car (car (last dag)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
 ;even holds for bad nodenums or nodenums of vars, since the cdr will return nil
 (defthm true-listp-of-dargs-of-lookup-equal-when-weak-dagp-aux-cheap
   (implies (weak-dagp-aux dag)
@@ -182,6 +189,13 @@
   (equal (weak-dagp-aux (reverse-list dag))
          (weak-dagp-aux (true-list-fix dag)))
   :hints (("Goal" :in-theory (enable reverse-list))))
+
+(defthm weak-dagp-aux-forward-to-natp-of-car-of-car
+  (implies (and (weak-dagp-aux dag)
+                (consp dag))
+           (natp (car (car dag))))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
 ;this does enforce that children are less than the parents
 ;does not enforce that all the nodes come in order!
