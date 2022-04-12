@@ -1,7 +1,7 @@
 ; Another Axe Rewriter (not used much yet)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,8 @@
 (in-package "ACL2")
 
 ;; Instead of this rewriter, consider using rewriter-basic or rewriter-jvm or
-;; another newer rewriter.
+;; another newer rewriter.  But note that xor simplification is built into this
+;; one in a deep way.
 
 (include-book "rewriter-common")
 (include-book "equality-pairs")
@@ -192,20 +193,6 @@
                            quote-lemma-for-all-dargp-less-than-gen-alt)))
 
 (local (in-theory (disable symbol-alistp))) ;don't induct on this
-
-
-;todo: remove this
-(defun add-bvxor-nest-to-dag-array-ignore-errors (rev-leaves
-                                                  size
-                                                  quoted-size
-                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
-  (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-    (add-bvxor-nest-to-dag-array rev-leaves
-                                 size
-                                 quoted-size
-                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
-    (declare (ignore erp))
-    (mv nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
 
 ;fixme move this up?
 ;;
@@ -795,8 +782,8 @@
                                                                   (nodenum-leaves-decreasing (merge-and-remove-dups arg2-leaves-increasing arg3-leaves-increasing nil))
                                                                   (accumulated-constant (bvxor bvxor-width arg2-constant arg3-constant))
                                                                   ;; Build the new nest:
-                                                                  ((mv new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                                                                   (add-bvxor-nest-to-dag-array-ignore-errors ;fixme handle the constant separately
+                                                                  ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                                                                   (add-bvxor-nest-to-dag-array ;fixme handle the constant separately
                                                                     ;;add-bvxor-nest-to-dag-array takes the list of items in *increasing* (reverse) order:
                                                                     (if (eql 0 accumulated-constant)
                                                                         (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it
@@ -804,7 +791,8 @@
                                                                                  (list (enquote accumulated-constant))))
                                                                     bvxor-width
                                                                     (enquote bvxor-width)
-                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array)))
+                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array))
+                                                                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)))
                                                                (if (consp new-nodenum-or-quotep) ;the bvxor nest became a constant
                                                                    (let ((result-array-stobj (set-result nodenum rewrite-objective new-nodenum-or-quotep result-array-stobj)))
                                                                      (rewrite-dag-core (cons (rest stack) (rest stacks)) ;pop the nodenum
