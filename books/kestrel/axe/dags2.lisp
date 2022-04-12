@@ -15,6 +15,7 @@
 ;; Used only by the x86 lifter.
 
 (include-book "dags")
+(include-book "cars-increasing-by-1")
 (include-book "kestrel/utilities/polarity" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (local (include-book "kestrel/lists-light/append" :dir :system))
@@ -257,17 +258,6 @@
   :rule-classes (:type-prescription)
   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
-;; TODO: Same as consecutivep of strip-cars?
-(defun cars-increasing-by-1 (rev-dag)
-  (declare (xargs :guard (weak-dagp-aux rev-dag)))
-  (if (endp rev-dag)
-      t
-    (if (endp (cdr rev-dag))
-        t
-      (and (equal (car (second rev-dag))
-                  (+ 1 (car (first rev-dag))))
-           (cars-increasing-by-1 (rest rev-dag))))))
-
 
 ;; (thm
 ;;  (BINDS-ALL-NATS-UP-TO 0 RENUMBERING)
@@ -445,7 +435,7 @@
                   :guard-hints (("Goal" :do-not-induct t
                                  :do-not '(generalize eliminate-destructors)
                                  :expand (WEAK-DAGP-AUX REV-DAG-TO-MERGE)
-                                 :in-theory (e/d (WEAK-DAGP-AUX add-to-dag)
+                                 :in-theory (e/d (WEAK-DAGP-AUX add-to-dag cars-increasing-by-1)
                                                  (weak-dagp-aux-when-pseudo-dagp-aux ;why?
                                                   ))))))
   (if (endp rev-dag-to-merge)
@@ -461,17 +451,6 @@
                                 main-dag
                                 (acons nodenum new-nodenum renumbering))))))
 
-(defthm CARS-INCREASING-BY-1-of-append
-  (equal (CARS-INCREASING-BY-1 (APPEND x y))
-         (if (not (consp x))
-             (CARS-INCREASING-BY-1 y)
-           (if (not (consp y))
-               (CARS-INCREASING-BY-1 x)
-             (and (CARS-INCREASING-BY-1 x)
-                  (CARS-INCREASING-BY-1 y)
-                  (equal (car (car y))
-                         (+ 1 (car (car (last x))))))))))
-
 ;; (defthm car-of-last-of-rev
 ;;   (equal (CAR (LAST (REV x)))
 ;;          (car x))
@@ -482,12 +461,6 @@
 ;;            (equal (car (rev x))
 ;;                   (car (last x))))
 ;;   :hints (("Goal" :in-theory (enable rev))))
-
-(defthm cars-increasing-by-1-of-reverse-list
-  (implies (and (pseudo-dagp-aux dag-to-merge nodenum)
-                (integerp nodenum))
-           (cars-increasing-by-1 (reverse-list dag-to-merge)))
-  :hints (("Goal" :in-theory (enable pseudo-dagp-aux reverse-list))))
 
 (defthm car-of-nth-of-car-of-car-when-pseudo-dagp-aux
   (implies (and (pseudo-dagp-aux dag nodenum)
