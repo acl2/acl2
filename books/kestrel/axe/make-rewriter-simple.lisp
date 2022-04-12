@@ -4695,9 +4695,10 @@
       (if (endp rev-dag)
           ;; Done rewriting nodes.  The caller can use the renaming-stobj to lookup what the old top node rewrote to:
           (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj)
-        (let* ((entry (first rev-dag))
-               (nodenum (car entry)) ; or, since they are consecutive, we could track this numerically..
-               (expr (cdr entry)))
+        (b* ((entry (first rev-dag))
+             (nodenum (car entry)) ; or, since they are consecutive, we could track this numerically..
+             (- (and print (= 0 (mod nodenum 1000)) (cw "Simplifying node ~x0.~%" nodenum)))
+             (expr (cdr entry)))
           (if (atom expr)
               ;; EXPR is a variable:
               (b* ( ;; Add it to the DAG:
