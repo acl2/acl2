@@ -66,6 +66,8 @@
 (include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
 ;(include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system) ;drop?
 (include-book "kestrel/alists-light/strip-cdrs" :dir :system) ;need strip-cdrs-of-append for the generated proofs
+(include-book "renaming-stobj")
+(include-book "cars-increasing-by-1")
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
@@ -184,6 +186,51 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))
 
+;todo: move some of these?
+
+(defthmd acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
+  (implies (and (weak-dagp-aux rev-dag)
+                (consp rev-dag))
+           (acl2-numberp (car (car (last rev-dag)))))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+(defthmd natp-of-car-of-car-when-weak-dagp-aux
+  (implies (and (weak-dagp-aux dag)
+                (consp dag))
+           (natp (car (car dag))))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+(defthmd consp-of-car-of-last-when-weak-dagp-aux
+  (implies (and (weak-dagp-aux rev-dag)
+                (consp rev-dag))
+           (consp (car (last rev-dag))))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+;; (defthm dargp-of-cdr-of-car-when-weak-dagp-aux
+;;   (implies (and (weak-dagp-aux dag)
+;;                 (consp dag))
+;;            (dargp (cdr (car dag))))
+;;   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+(defthmd axe-treep-when-dag-exprp0
+  (implies (dag-exprp0 expr)
+           (axe-treep expr))
+  :hints (("Goal" :in-theory (enable axe-treep dag-exprp0))))
+
+(defthmd consp-of-cdr-when-dag-exprp0-and-quote
+  (implies (and (dag-exprp0 expr)
+                (equal 'quote (car expr)))
+           (consp (cdr expr))))
+
+(defthmd not-<-of-0-when-natp
+  (implies (natp x)
+           (not (< x 0))))
+
+(defthmd natp-of-+-of--1-when-natp
+  (implies (natp x)
+           (equal (natp (+ -1 x))
+                  (< 0 x))))
+
 ;; ;loops with LEN-WHEN-DARGP-LESS-THAN?
 ;; (defthmd consp-to-len-bound-for-make-rewriter-simple
 ;;   (equal (consp x) (< 0 (len x)))
@@ -250,6 +297,10 @@
          (simplify-bvif-tree-and-add-to-dag1-name (pack$ 'simplify-bvif-tree-and-add-to-dag1- suffix))
          (simplify-tree-and-add-to-dag-name (pack$ 'simplify-tree-and-add-to-dag- suffix))
          (simplify-fun-call-and-add-to-dag-name (pack$ 'simplify-fun-call-and-add-to-dag- suffix))
+         (simplify-dag-aux-name (pack$ 'simplify-dag-aux- suffix))
+         (simplify-dag-name (pack$ 'simplify-dag- suffix))
+         (def-simplified-dag-name (pack$ 'def-simplified-dag- suffix))
+         (def-simplified-dag-fn-name (pack$ 'def-simplified-dag-fn- suffix))
 
          ;; Keep these in sync with the formals of each function:
 
@@ -373,12 +424,14 @@
 
        (local (include-book "kestrel/lists-light/cdr" :dir :system))
        (local (include-book "kestrel/lists-light/len" :dir :system))
+       (local (include-book "kestrel/lists-light/nth" :dir :system))
+       (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+       (local (include-book "kestrel/lists-light/last" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
        (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
        (local (include-book "kestrel/arithmetic-light/less-than-or-equal" :dir :system))
-       (local (include-book "kestrel/lists-light/nth" :dir :system))
-       (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+       (local (include-book "kestrel/arithmetic-light/types" :dir :system))
        (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system)) ;reduce?
 
        (local (in-theory (disable wf-dagp wf-dagp-expander
@@ -398,6 +451,8 @@
                                   EQLABLE-ALISTP ;prevent inductions
                                   member-equal   ; prevent case splitting
                                   strip-cars
+                                  nat-listp ; !
+                                  weak-dagp-aux
                                   )))
 
        (local (in-theory (enable ;;consp-of-assoc-equal-when-node-replacement-alistp
@@ -2882,6 +2937,7 @@
                                  (mv-nth 6 ,call-of-simplify-fun-call-and-add-to-dag))
                         (DARGP-LESS-THAN (mv-nth 1 ,call-of-simplify-fun-call-and-add-to-dag)
                                          (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag))
+                        (DARGP (mv-nth 1 ,call-of-simplify-fun-call-and-add-to-dag)) ; follows from the above but no free vars
                         (<= dag-len
                             (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag))
                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-fun-call-and-add-to-dag)
@@ -2971,6 +3027,44 @@
        ;; Now we prove some facts that follow from the main theorem proved about the
        ;; mutual-recursion (e.g., weaker claims that are sometimes needed, or claims
        ;; phrased in a better way for rewriting):
+
+
+       (defthm ,(pack$ 'bound-theorem-for-simplify-fun-call-and-add-to-dag- suffix)
+         (implies (and (<= bound (alen1 'node-replacement-array node-replacement-array))
+                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (symbolp fn)
+                       (not (equal 'quote fn))
+                       (true-listp args)
+                       (all-dargp-less-than args dag-len)
+                       (not (mv-nth 0 ,call-of-simplify-fun-call-and-add-to-dag))
+                       (maybe-bounded-memoizationp memoization dag-len)
+                       (trees-to-memoizep trees-equal-to-tree)
+                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
+                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                  (<= bound
+                      (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-fun-call-and-add-to-dag))))
+         :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-fun-call-and-add-to-dag- suffix))
+                  :in-theory (disable ,(pack$ 'theorem-for-simplify-fun-call-and-add-to-dag- suffix)))))
+
+       (defthm ,(pack$ 'corollary-for-simplify-fun-call-and-add-to-dag- suffix)
+         (implies (and (<= bound (alen1 'node-replacement-array node-replacement-array))
+                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (symbolp fn)
+                       (not (equal 'quote fn))
+                       (true-listp args)
+                       (all-dargp-less-than args dag-len)
+                       (not (mv-nth 0 ,call-of-simplify-fun-call-and-add-to-dag))
+                       (maybe-bounded-memoizationp memoization dag-len)
+                       (trees-to-memoizep trees-equal-to-tree)
+                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
+                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                  (maybe-memoizationp (mv-nth 7 ,call-of-simplify-fun-call-and-add-to-dag)))
+         :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-fun-call-and-add-to-dag- suffix))
+                  :in-theory (disable ,(pack$ 'theorem-for-simplify-fun-call-and-add-to-dag- suffix)))))
 
        (defthm ,(pack$ 'bound-theorem-for-relieve-free-var-hyp-and-all-others- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -4546,6 +4640,515 @@
                     (plist-worldp wrld))
                (pseudo-term-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))))
       :hints (("Goal" :in-theory (enable ,simp-terms-name))))
+
+
+    ;; For each node in REV-DAG, fix up its args (if any) according to the renaming-stobj, then add its simplified form to the dag-array and add its new nodenum or quotep to the renaming-stobj.
+    ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj).
+    ;; TODO: Add support for assumptions that come in array form?
+    ;; TODO: Add support for rewriting nodes in (an approximation of) their contexts -- but disallow memoization in that case!
+    (defund ,simplify-dag-aux-name (rev-dag ;low nodes come first
+                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                   node-replacement-array rule-alist refined-assumption-alist node-replacement-count
+                                   print interpreted-function-alist known-booleans monitored-symbols
+                                   renaming-stobj ; maps nodenums in rev-dag to the dargs (nodenums or quoteps) they rewrote to in dag-array
+                                   )
+      (declare (xargs :guard (and (weak-dagp-aux rev-dag)
+                                  (cars-increasing-by-1 rev-dag)
+                                  (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                  (maybe-bounded-memoizationp memoization dag-len)
+                                  (info-worldp info)
+                                  (triesp tries)
+                                  (rule-limitsp limits)
+                                  (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                  (natp node-replacement-count)
+                                  (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                  (rule-alistp rule-alist)
+                                  (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                  (axe-print-levelp print)
+                                  (interpreted-function-alistp interpreted-function-alist)
+                                  (symbol-listp known-booleans)
+                                  (symbol-listp monitored-symbols)
+                                  (if (consp rev-dag)
+                                      (equal (renaming-length renaming-stobj)
+                                             (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
+                                    t)
+                                  (bounded-good-renaming-stobj (if (consp rev-dag)
+                                                                   (+ -1 (car (first rev-dag)))
+                                                                 -1)
+                                                               dag-len renaming-stobj))
+                      :stobjs renaming-stobj
+                      :guard-hints (("Goal" ;:expand (WEAK-DAGP-AUX REV-DAG)
+                                     :in-theory (enable car-of-car-of-last-when-cars-increasing-by-1-linear maybe-dargp
+                                                        integerp-when-dargp
+                                                        symbolp-of-car-when-dag-exprp0
+                                                        tree-to-memoizep
+                                                        axe-treep-when-dag-exprp0
+                                                        car-of-cadr-when-cars-increasing-by-1
+                                                        all-myquotep-when-all-dargp
+                                                        consp-of-cdr-when-dargp
+                                                        consp-of-cdr-when-dag-exprp0-and-quote
+                                                        not-cddr-when-dag-exprp0-and-quotep
+                                                        consp-of-car-of-last-when-weak-dagp-aux
+                                                        acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux)
+                                     :do-not '(generalize eliminate-destructors)))
+                      ))
+      (if (endp rev-dag)
+          ;; Done rewriting nodes.  The caller can use the renaming-stobj to lookup what the old top node rewrote to:
+          (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj)
+        (let* ((entry (first rev-dag))
+               (nodenum (car entry)) ; or, since they are consecutive, we could track this numerically..
+               (expr (cdr entry)))
+          (if (atom expr)
+              ;; EXPR is a variable:
+              (b* ( ;; Add it to the DAG:
+                   ((mv erp new-nodenum dag-array dag-len dag-parent-array dag-variable-alist)
+                    (add-variable-to-dag-array expr dag-array dag-len dag-parent-array dag-variable-alist))
+                   ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj))
+                   ;; See if the resulting node is known to be equal to something:
+                   (new-nodenum-or-quotep (apply-node-replacement-array new-nodenum node-replacement-array node-replacement-count))
+                   ;; Record the fact that NODENUM rewrote to NEW-NODENUM-OR-QUOTEP:
+                   (renaming-stobj (update-renamingi nodenum new-nodenum-or-quotep renaming-stobj)))
+                (,simplify-dag-aux-name (rest rev-dag)
+                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                        node-replacement-array rule-alist refined-assumption-alist node-replacement-count
+                                        print interpreted-function-alist known-booleans monitored-symbols
+                                        renaming-stobj))
+            (let ((fn (ffn-symb expr)))
+              (case fn
+                (quote ; EXPR is a quoted constant:
+                 ;; Record the fact that NODENUM rewrote to the constant EXPR:
+                 (let ((renaming-stobj (update-renamingi nodenum expr renaming-stobj)))
+                   (,simplify-dag-aux-name (rest rev-dag)
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                           node-replacement-array rule-alist refined-assumption-alist node-replacement-count
+                                           print interpreted-function-alist known-booleans monitored-symbols
+                                           renaming-stobj)))
+                ;; TODO: Flesh out these cases:
+                ;; ((if myif) ..)
+                ;; (bvif ..)
+                ;; (not ..)
+                (t ;; EXPR is some other (non-lambda) function call:
+                 ;; TODO: Consider consulting the memoization here
+                 (b* ((new-dargs (rename-dargs-with-stobj (dargs expr) renaming-stobj)) ; todo: have the renaming function return a groundp flag
+                      ;; handle possible ground term by evaluating:
+                      ((mv erp evaluatedp val)
+                       (if (not (all-consp new-dargs)) ;; test for args being quoted constants
+                           ;; not a ground term:
+                           (mv (erp-nil) nil nil)
+                         ;; ground term, so try to evaluate (may fail, but we may have a constant opener rule to apply later):
+                         (b* (((mv erp val)
+                               (,apply-axe-evaluator-to-quoted-args-name fn new-dargs interpreted-function-alist)))
+                           (if erp
+                               (if (eq :unknown-function erp)
+                                   (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
+                                 ;; anything else non-nil is a true error:
+                                 (mv erp nil nil))
+                             ;; normal case (evaluated to VAL):
+                             (mv (erp-nil) t val)))))
+                      ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj)))
+                   (if evaluatedp
+                       (let* ((quoted-val (enquote val))
+                              ;; Record the fact that NODENUM rewrote to QUOTED-VAL:
+                              (renaming-stobj (update-renamingi nodenum quoted-val renaming-stobj)))
+                         ;; I suppose we could update the memoization here if we wanted to.
+                         (,simplify-dag-aux-name (rest rev-dag)
+                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                 node-replacement-array rule-alist refined-assumption-alist node-replacement-count
+                                                 print interpreted-function-alist known-booleans monitored-symbols
+                                                 renaming-stobj))
+                     ;; Not a ground term we could evaluate, so apply rules:
+                     (b* (((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                           ;; Simplify the non-lambda FN applied to the simplified args:
+                           ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
+                           (,simplify-fun-call-and-add-to-dag-name
+                            fn new-dargs
+                            (and memoization (list expr)) ;FN applied to NEW-DARGS is equal to EXPR
+                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                            node-replacement-array rule-alist refined-assumption-alist node-replacement-count
+                            print interpreted-function-alist known-booleans monitored-symbols 1000000000))
+                          ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj))
+                          ;; Record the fact that NODENUM rewrote to NEW-NODENUM-OR-QUOTEP:
+                          (renaming-stobj (update-renamingi nodenum new-nodenum-or-quotep renaming-stobj)))
+                       (,simplify-dag-aux-name (rest rev-dag)
+                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                               node-replacement-array rule-alist refined-assumption-alist node-replacement-count
+                                               print interpreted-function-alist known-booleans monitored-symbols
+                                               renaming-stobj)))))))))))
+
+    (defthm ,(pack$ simplify-dag-aux-name '-return-type)
+      (implies (and (weak-dagp-aux rev-dag)
+                    (cars-increasing-by-1 rev-dag)
+                    (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                    (maybe-bounded-memoizationp memoization dag-len)
+                    (info-worldp info)
+                    (triesp tries)
+                    (rule-limitsp limits)
+                    (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                    (natp node-replacement-count)
+                    (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                    (rule-alistp rule-alist)
+                    (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                    (axe-print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (if (consp rev-dag)
+                        (equal (renaming-length renaming-stobj)
+                               (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
+                      t)
+                    (bounded-good-renaming-stobj (if (consp rev-dag)
+                                                     (+ -1 (car (first rev-dag)))
+                                                   -1)
+                                                 dag-len renaming-stobj)
+                    (renaming-stobjp renaming-stobj))
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj)
+                 (,simplify-dag-aux-name rev-dag
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                         node-replacement-array rule-alist refined-assumption-alist node-replacement-count
+                                         print interpreted-function-alist known-booleans monitored-symbols
+                                         renaming-stobj)
+                 (declare (ignore tries limits node-replacement-array))
+                 (implies (not erp)
+                          (and (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+                               (info-worldp new-info)
+                               (maybe-memoizationp new-memoization)
+                               (renaming-stobjp new-renaming-stobj)
+                               (bounded-good-renaming-stobj (if (consp rev-dag)
+                                                                (car (car (last rev-dag)))
+                                                              -1)
+                                                            new-dag-len
+                                                            new-renaming-stobj)
+                               (equal (renaming-length new-renaming-stobj) (renaming-length renaming-stobj))))))
+      :hints (("Goal" ;:expand (WEAK-DAGP-AUX REV-DAG)
+               :induct (,simplify-dag-aux-name rev-dag
+                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                               node-replacement-array rule-alist refined-assumption-alist node-replacement-count
+                                               print interpreted-function-alist known-booleans monitored-symbols
+                                               renaming-stobj)
+               :in-theory (enable ,simplify-dag-aux-name
+                                  car-of-car-of-last-when-cars-increasing-by-1-linear
+                                  maybe-dargp
+                                  integerp-when-dargp
+                                  symbolp-of-car-when-dag-exprp0
+                                  tree-to-memoizep
+                                  axe-treep-when-dag-exprp0
+                                  car-of-cadr-when-cars-increasing-by-1
+                                  all-myquotep-when-all-dargp
+                                  consp-of-cdr-when-dargp
+                                  consp-of-cdr-when-dag-exprp0-and-quote
+                                  not-cddr-when-dag-exprp0-and-quotep
+                                  consp-of-car-of-last-when-weak-dagp-aux
+                                  acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
+                                  natp-of-car-of-car-when-weak-dagp-aux)
+               :do-not '(generalize eliminate-destructors))))
+
+    ;; A simple consequence of the return type theorem
+    (defthm ,(pack$ simplify-dag-aux-name '-return-type-corollary0)
+      (implies (and (weak-dagp-aux rev-dag)
+                    (cars-increasing-by-1 rev-dag)
+                    (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                    (maybe-bounded-memoizationp memoization dag-len)
+                    (info-worldp info)
+                    (triesp tries)
+                    (rule-limitsp limits)
+                    (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                    (natp node-replacement-count)
+                    (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                    (rule-alistp rule-alist)
+                    (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                    (axe-print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (if (consp rev-dag)
+                        (equal (renaming-length renaming-stobj)
+                               (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
+                      t)
+                    (bounded-good-renaming-stobj (if (consp rev-dag)
+                                                     (+ -1 (car (first rev-dag)))
+                                                   -1)
+                                                 dag-len renaming-stobj)
+                    (renaming-stobjp renaming-stobj))
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj)
+                 (,simplify-dag-aux-name rev-dag
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                         node-replacement-array rule-alist refined-assumption-alist node-replacement-count
+                                         print interpreted-function-alist known-booleans monitored-symbols
+                                         renaming-stobj)
+                 (declare (ignore new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj))
+                 (implies (not erp)
+                          (and (natp new-dag-len)
+                               (integerp new-dag-len)))))
+      :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
+               :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
+
+    ;; A simple consequence of the return type theorem
+    (defthm ,(pack$ simplify-dag-aux-name '-return-type-corollary)
+      (implies (and (weak-dagp-aux rev-dag)
+                    (cars-increasing-by-1 rev-dag)
+                    (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                    (maybe-bounded-memoizationp memoization dag-len)
+                    (info-worldp info)
+                    (triesp tries)
+                    (rule-limitsp limits)
+                    (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                    (natp node-replacement-count)
+                    (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                    (rule-alistp rule-alist)
+                    (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                    (axe-print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (if (consp rev-dag)
+                        (equal (renaming-length renaming-stobj)
+                               (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
+                      t)
+                    (bounded-good-renaming-stobj (if (consp rev-dag)
+                                                     (+ -1 (car (first rev-dag)))
+                                                   -1)
+                                                 dag-len renaming-stobj)
+                    (renaming-stobjp renaming-stobj))
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj)
+                 (,simplify-dag-aux-name rev-dag
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                         node-replacement-array rule-alist refined-assumption-alist node-replacement-count
+                                         print interpreted-function-alist known-booleans monitored-symbols
+                                         renaming-stobj)
+                 (declare (ignore new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj))
+                 (implies (and (not erp)
+                               (<= bound new-dag-len) ; note this
+                               (natp bound))
+                          (pseudo-dag-arrayp 'dag-array new-dag-array bound))))
+      :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
+               :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
+
+
+    ;; A simple consequence of the return type theorem
+    (defthm ,(pack$ simplify-dag-aux-name '-return-type-corollary2)
+      (implies (and (weak-dagp-aux rev-dag)
+                    (cars-increasing-by-1 rev-dag)
+                    (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                    (maybe-bounded-memoizationp memoization dag-len)
+                    (info-worldp info)
+                    (triesp tries)
+                    (rule-limitsp limits)
+                    (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                    (natp node-replacement-count)
+                    (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                    (rule-alistp rule-alist)
+                    (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                    (axe-print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (if (consp rev-dag)
+                        (equal (renaming-length renaming-stobj)
+                               (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
+                      t)
+                    (bounded-good-renaming-stobj (if (consp rev-dag)
+                                                     (+ -1 (car (first rev-dag)))
+                                                   -1)
+                                                 dag-len renaming-stobj)
+                    (renaming-stobjp renaming-stobj)
+                    (consp rev-dag) ; note this
+                    )
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj)
+                 (,simplify-dag-aux-name rev-dag
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                         node-replacement-array rule-alist refined-assumption-alist node-replacement-count
+                                         print interpreted-function-alist known-booleans monitored-symbols
+                                         renaming-stobj)
+                 (declare (ignore new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array))
+                 (implies (and (not erp)
+                               (natp bound)
+                               (<= bound (car (car (last rev-dag)))))
+                          (good-renaming-stobj bound new-renaming-stobj))))
+      :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
+               :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
+
+    ;; A simple consequence of the return type theorem
+    (defthm ,(pack$ simplify-dag-aux-name '-return-type-corollary3)
+      (implies (and (weak-dagp-aux rev-dag)
+                    (cars-increasing-by-1 rev-dag)
+                    (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                    (maybe-bounded-memoizationp memoization dag-len)
+                    (info-worldp info)
+                    (triesp tries)
+                    (rule-limitsp limits)
+                    (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                    (natp node-replacement-count)
+                    (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                    (rule-alistp rule-alist)
+                    (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                    (axe-print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (if (consp rev-dag)
+                        (equal (renaming-length renaming-stobj)
+                               (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
+                      t)
+                    (bounded-good-renaming-stobj (if (consp rev-dag)
+                                                     (+ -1 (car (first rev-dag)))
+                                                   -1)
+                                                 dag-len renaming-stobj)
+                    (renaming-stobjp renaming-stobj)
+                    (consp rev-dag) ; note this
+                    )
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj)
+                 (,simplify-dag-aux-name rev-dag
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                         node-replacement-array rule-alist refined-assumption-alist node-replacement-count
+                                         print interpreted-function-alist known-booleans monitored-symbols
+                                         renaming-stobj)
+                 (declare (ignore new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array))
+                 (implies (and (not erp)
+                               (natp bound)
+                               (<= bound (car (car (last rev-dag))))
+                               (<= new-dag-len bound2)
+                               (natp bound2)
+                               )
+                          (bounded-good-renaming-stobj bound bound2 new-renaming-stobj))))
+      :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
+               :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
+
+
+    ;; TODO: Return less?
+    ;; Returns (mv erp dag-or-quotep).
+    ;; TODO: Make a version that returns an array but I'll need a version of drop-non-supporters-array that doesn't create a list.
+    ;; TODO: Prove some properties
+    (defun ,simplify-dag-name (dag
+                               assumptions
+                               interpreted-function-alist
+                               limits
+                               rule-alist
+                               print
+                               known-booleans
+                               monitored-symbols)
+      (declare (xargs :guard (and (pseudo-dagp dag)
+                                  (< (top-nodenum dag) 2147483646)
+                                  (pseudo-term-listp assumptions)
+                                  (rule-limitsp limits)
+                                  (rule-alistp rule-alist)
+                                  (axe-print-levelp print)
+                                  (interpreted-function-alistp interpreted-function-alist)
+                                  (symbol-listp known-booleans)
+                                  (symbol-listp monitored-symbols))
+                      :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
+                                     :in-theory (e/d (not-<-of-0-when-natp
+                                                      acl2-numberp-when-natp
+                                                      natp-of-+-of--1-when-natp
+                                                      ;; natp-when-dargp ; too strong?
+                                                      <-of-+-of-1-when-integers
+                                                      NATP-OF-+-OF-1
+                                                      integerp-of-renamingi
+                                                      natp-of-renamingi)
+                                                     (natp))))))
+      (b* ((- (cw "(Simplifying DAG:~%"))
+           (old-top-nodenum (top-nodenum dag))
+           (old-len (+ 1 old-top-nodenum))
+           (slack-amount old-len) ;todo: make this adjustable
+           ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+            (empty-dag-array slack-amount))
+           ;; Create the refined-assumption-alist and add relevant nodes to the DAG:
+           ((mv erp refined-assumption-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+            ;; TODO: Make a version specialized to these array names:
+            (refine-assumptions-and-add-to-dag-array assumptions
+                                                     'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist
+                                                     known-booleans))
+           ((when erp) (mv erp nil))
+           ;; Create the node-replacement-array and add relevant nodes to the DAG:
+           ;; TODO: Consider combining this with the above, in a single pass through the assumptions):
+           ((mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+            (make-node-replacement-array-and-extend-dag assumptions
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                        known-booleans))
+           ((when erp) (mv erp nil)))
+        (with-local-stobj
+          renaming-stobj
+          (mv-let (erp new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj)
+            (b* ((renaming-stobj (resize-renaming old-len renaming-stobj))
+                 ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj)
+                  (,simplify-dag-aux-name (reverse-list dag) ;;we'll simplify nodes from the bottom-up
+                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                          (and ; memoizep
+                                           (empty-memoization)) ; todo: add an option to make this bigger?
+                                          (and print (empty-info-world)) ;used to track the number of rule hits
+                                          (and print (zero-tries)) ;todo: think about this
+                                          limits
+                                          node-replacement-array rule-alist refined-assumption-alist node-replacement-count
+                                          print interpreted-function-alist known-booleans monitored-symbols
+                                          renaming-stobj))
+                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj))
+                 ;; See what the top node of the old dag became (after this point, we won't have access to renaming-stobj anymore, due to with-local-stobj):
+                 (new-top-nodenum-or-quotep (renamingi old-top-nodenum renaming-stobj)))
+              (mv (erp-nil) new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj))
+            ;; Cannot refer to the renaming-stobj:
+            (declare (ignore dag-len dag-parent-array dag-constant-alist dag-variable-alist limits node-replacement-array)) ; print some stats from these?
+            (b* (((when erp) (mv erp nil))
+                 (- (and print (maybe-print-hit-counts print info)))
+                 (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
+                 (- (and (print-level-at-least-tp print) memoization (print-memo-stats memoization)))
+                 (- (and print (cw ")~%"))) ; balances "(Simplifying DAG"
+                 )
+              (if (quotep new-top-nodenum-or-quotep)
+                  (mv (erp-nil) new-top-nodenum-or-quotep)
+                (mv (erp-nil)
+                    (drop-non-supporters-array 'dag-array dag-array new-top-nodenum-or-quotep nil))))))))
+
+    ;; Returns an (mv erp event state).
+    ;; todo: redundancy
+    ;; todo: check if name already exists
+    (defund ,def-simplified-dag-fn-name (name ; the name of the constant to create
+                                         dag
+                                         assumptions
+                                         interpreted-function-alist
+                                         limits
+                                         rules
+                                         print
+                                         monitored-symbols
+                                         state ; todo: just take wrld?
+                                         )
+      (declare (xargs :guard (and (symbolp name)
+                                  (pseudo-dagp dag)
+                                  (< (top-nodenum dag) 2147483646)
+                                  (pseudo-term-listp assumptions)
+                                  (interpreted-function-alistp interpreted-function-alist)
+                                  (rule-limitsp limits)
+                                  (symbol-listp rules)
+                                  (axe-print-levelp print)
+                                  (symbol-listp monitored-symbols)
+                                  (ilks-plist-worldp (w state)))
+                      :stobjs state))
+      (b* ((known-booleans (known-booleans (w state)))
+           ((mv erp rule-alist) (make-rule-alist rules (w state)))
+           ((when erp) (mv erp nil state))
+           ((mv erp dag-or-quotep) (,simplify-dag-name dag
+                                                      assumptions
+                                                      interpreted-function-alist
+                                                      limits
+                                                      rule-alist
+                                                      print
+                                                      known-booleans
+                                                      monitored-symbols))
+           ((when erp) (mv erp nil state)))
+        (mv (erp-nil)
+            `(defconst ,name ',dag-or-quotep)
+            state)))
+
+    ;; Creates a constant named *name*.  TODO: Check for name clashes.
+    (defmacro ,def-simplified-dag-name (name
+                                        dag
+                                        &key
+                                        (assumptions 'nil)
+                                        (interpreted-function-alist 'nil)
+                                        (limits 'nil)
+                                        (rules 'nil)
+                                        (print ':brief)
+                                        (monitored-symbols 'nil))
+      `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,interpreted-function-alist ,limits ,rules ,print ,monitored-symbols state)))
+
     )))
 
 ;; Make a version of the (simple) Axe Rewriter, given an evaluator, a syntaxp evaluator, and an axe-bind-free evaluator.
