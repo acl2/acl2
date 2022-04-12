@@ -619,7 +619,7 @@
                 (if (eq :axe-syntaxp fn)
                     (let* ((syntaxp-expr (cdr hyp)) ;; strip off the AXE-SYNTAXP
                            (result (and (all-vars-in-term-bound-in-alistp syntaxp-expr alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
-                                        (,eval-axe-syntaxp-expr-fn syntaxp-expr alist dag-array) ;could make a version without dag-array (may be very common?).. fixme use :dag-array?
+                                        (,eval-axe-syntaxp-expr-fn syntaxp-expr alist dag-array) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
                                         )))
                       (if result
                           ;;this hyp counts as relieved
@@ -642,7 +642,7 @@
                       ;;TODO: It might be nice to be able to pass in the assumptions to the axe-bind-free-function? e.g., for finding usbp facts.
                       (let* ((bind-free-expr (cadr hyp)) ;; strip off the AXE-BIND-FREE
                              (result (and (all-vars-in-terms-bound-in-alistp (fargs bind-free-expr) alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
-                                          (,eval-axe-bind-free-function-application-fn (ffn-symb bind-free-expr) (fargs bind-free-expr) alist dag-array) ;could make a version without dag-array (may be very common?).. fixme use :dag-array?
+                                          (,eval-axe-bind-free-function-application-fn (ffn-symb bind-free-expr) (fargs bind-free-expr) alist dag-array) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
                                           )))
                         (if result ;; nil to indicate failure, or an alist whose keys should be exactly (cddr hyp)
                             (let ((vars-to-bind (cddr hyp)))
@@ -668,8 +668,8 @@
                              ((when (eq 'quote (ffn-symb instantiated-hyp))) ;todo: this should not happen since there are free vars (unless perhaps we give special treatment to IFs)
                               (er hard? ',relieve-rule-hyps-name "ERROR: Instantiating a hyp with free vars produced a constant.")
                               (mv :error-instantiating nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-                          ;; Some free vars remain in the instantiated-hyp, so we search the REFINED-ASSUMPTIONS for matches to bind them:
-                          ;; fffixme search node-replacement-array too? or make sure all the context info gets put into REFINED-ASSUMPTIONS?
+                          ;; Some free vars remain in the instantiated-hyp, so we search the REFINED-ASSUMPTION-ALIST for matches to bind them:
+                          ;; If the NODE-REPLACEMENT-ARRAY ever contains more information than the REFINED-ASSUMPTION-ALIST, we might need to search it too.
                           ;; The refined-assumptions have been refined so that (equal (pred x) t) becomes (pred x) for better matching.
                           ;; TODO: Should we simplify the terms to which the free vars were bound (in case the assumptions are not simplified)?
                           (,relieve-free-var-hyp-and-all-others-name (lookup-in-refined-assumption-alist (ffn-symb instantiated-hyp) refined-assumption-alist)
@@ -1590,7 +1590,6 @@
 
         ;;leaves nodes below dag-len untouched..
         ;;TODO: could put in simple loop checking; check whether TREE is already present in TREES-EQUAL-TO-TREE (maybe only check the first few elements), but TREES-EQUAL-TO-TREE may only be valid if we are memoizing.
-;fixme the dispatch here requires that there not be a function named nil; enforce that in interpreted-function-alists?
         (defund ,simplify-tree-and-add-to-dag-name (tree
                                                     trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
@@ -1639,8 +1638,8 @@
                                                          memoization))
                           info tries limits
                           node-replacement-array))
-                  ;; TREE is a nodenum (because it's an atom but not a symbol): fixme use equalities?
-;ffffixme, this assumes that nodes in the dag are already rewritten.  but what if this nodenum came from a node-equality assumption? in that case, it may not be rewritten! should we simplify the cdrs of node-replacement-count once at the beginning?  also think about  (they are terms so the cdr gets simplified each time an equality fires, but maybe they get simplified over and over).
+                  ;; TREE is a nodenum (because it's an atom but not a symbol): TODO: use equalities?
+                  ;; TODO: replacement works best if the nodes in the dag are already rewritten.  but what if this nodenum came from a node-equality assumption? in that case, it may not be rewritten! should we simplify the entries in the node-replacement-array once at the beginning?
                   ;; First, see if the nodenum is mapped to anything in the node-replacement-count:
                   (let* ((replacement-match nil ;(assoc-in-node-replacement-count tree node-replacement-count)
                                             )
