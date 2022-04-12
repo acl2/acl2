@@ -21,10 +21,14 @@
 
 ;; Recognize an argument to a function in a DAG node that is a function call
 (defund dargp-less-than (item len)
-  (declare (xargs :guard (natp len)))
+  (declare (xargs :guard (natp len)
+                  :split-types t
+                  )
+           (type (integer 0 *) len))
   (or (myquotep item)
       (and (natp item)
-           (< item len))))
+           (< (the (integer 0 *) item)
+              len))))
 
 (defthm dargp-less-than-forward
   (implies (dargp-less-than item len)

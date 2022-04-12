@@ -20,16 +20,46 @@
 ;;; bounded-dag-exprp
 ;;;
 
+(defund bounded-darg-listp (dargs bound)
+  (declare (xargs :guard (natp bound)
+                  :split-types t)
+           (type (integer 0 *) bound))
+  (if (atom dargs)
+      (null dargs)
+    (let ((darg (first dargs)))
+      (and (dargp-less-than darg bound)
+           (bounded-darg-listp (rest dargs) bound)))))
+
+(defthm bounded-darg-listp-redef
+  (equal (bounded-darg-listp dargs bound)
+         (and (all-dargp-less-than dargs bound)
+              (true-listp dargs)))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp all-dargp-less-than))))
+
 ;; Check that EXPR is a suitable DAG expr for node NODENUM.  That is, EXPR must
-;; be a dag-expr and all nodenums it mentions must be less that NODENUM.
+;; be a dag-expr and all nodenums it mentions must be less than NODENUM.
 ;; TODO: Put the bound second, to match dargp-less-than?
 (defund bounded-dag-exprp (nodenum expr)
-  (declare (type (integer 0 *) nodenum))
-  (and (dag-exprp0 expr)
-       (if (and (consp expr)
-                (not (eq 'quote (car expr))))
-           (all-dargp-less-than (dargs expr) nodenum)
-         t)))
+  (declare (xargs :guard (natp nodenum)
+                  :split-types t
+                  :guard-debug t)
+           (type (integer 0 *) nodenum))
+  (mbe :logic (and (dag-exprp0 expr)
+                   (if (and (consp expr)
+                            (not (eq 'quote (car expr))))
+                       (all-dargp-less-than (dargs expr) nodenum)
+                     t))
+       :exec (if (atom expr)
+                 (symbolp expr)
+               (let ((fn (ffn-symb expr)))
+                 (if (eq 'quote fn)
+                     (let ((cdr (cdr expr)))
+                       (and (consp cdr)
+                            (null (cdr cdr))))
+                   ;; regular function call:
+                   (and (symbolp fn) ; not a lambda
+                        (bounded-darg-listp (cdr ; can't call dargs here due to its guard
+                                             expr) nodenum)))))))
 
 (defthm bounded-dag-exprp-when-not-consp-cheap
   (implies (not (consp expr))
