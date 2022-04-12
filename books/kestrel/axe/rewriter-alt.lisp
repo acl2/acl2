@@ -760,7 +760,7 @@
                                                               interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array
                                                               print monitored-symbols info tries simplify-xorsp state result-array-stobj))
                                                          ;;no equality match:
-                                                         (if (and (eq fn 'bvxor) ;todo: what about bitxor?
+                                                         (if (and (eq fn 'bvxor) ;; TODO: Add similar handling for bitxor!
                                                                   simplify-xorsp
                                                                   (quoted-natp (first simplified-args)))
                                                              ;;it's a bvxor. note that since the args are simplified, if they are bvxor nests they are *normalized* bvxor nests
