@@ -658,7 +658,7 @@
                                         )
                                     (not (eq fn 'repeat)) ;Wed Feb 16 22:23:08 2011
                                     )
-                               ;;it's a ground term:
+                               ;;it's a ground term (TODO: What if it's not evaluatable?):
                                (let* ((result (enquote (apply-axe-evaluator-to-quoted-args fn args interpreted-function-alist 0)))
                                       (result-array-stobj (set-result nodenum rewrite-objective result result-array-stobj)))
                                  (rewrite-dag-core (cons (rest stack) (rest stacks)) ;pop this nodenum
@@ -751,6 +751,7 @@
                                                                        interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries simplify-xorsp state result-array-stobj))
                                                  ;;no rule fired, so add this expr to the dag, then check whether it is equated to anything:
                                                  (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist) ;version for non-ground terms? or maybe we can't eval the fn
+                                                   ;; TODO: Handle xors before we do this?
                                                    (add-function-call-expr-to-dag-array fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist)
                                                    (if erp
                                                        (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
@@ -778,34 +779,27 @@
                                                                   (quoted-natp (first simplified-args)))
                                                              ;;it's a bvxor. note that since the args are simplified, if they are bvxor nests they are *normalized* bvxor nests
                                                              (b* ((bvxor-width (unquote (first simplified-args)))
-                                                                  ;; get xors from arg2:
+                                                                  ;; get xors from arg2 (TODO: Consider memoizing):
                                                                   ((mv arg2-constant arg2-leaves-increasing)
                                                                    (leaves-of-normalized-bvxor-nest (second simplified-args) bvxor-width 'dag-array dag-array dag-len))
-                                                                  ;; get xors from arg3:
+                                                                  ;; get xors from arg3 (TODO: Consider memoizing):
                                                                   ((mv arg3-constant arg3-leaves-increasing)
                                                                    (leaves-of-normalized-bvxor-nest (third simplified-args) bvxor-width 'dag-array dag-array dag-len))
-                                                                  ;; (mv-let
-                                                                  ;;  (nodenum-leaves ;sorted in increasing order
-                                                                  ;;   accumulated-constant)
-                                                                  ;;  (bvxor-nest-leaves-aux (list new-nodenum) (unquote (first simplified-args))
-                                                                  ;;                         'dag-array dag-array nil
-                                                                  ;;                         '0 ;initial constant
-                                                                  ;;                         )
                                                                   ;; Make the leaves of the new nest:
                                                                   (nodenum-leaves-decreasing (merge-and-remove-dups arg2-leaves-increasing arg3-leaves-increasing nil))
                                                                   (accumulated-constant (bvxor bvxor-width arg2-constant arg3-constant))
                                                                   ;; Build the new nest:
                                                                   ((mv new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                                                                   (add-bvxor-nest-to-dag-array-ignore-errors ;fixme handle the constant separately
+                                                                   (add-bvxor-nest-to-dag-array-ignore-errors ;; TODO: handle the constant separately
                                                                     ;;add-bvxor-nest-to-dag-array takes the list of items in *increasing* (reverse) order:
                                                                     (if (eql 0 accumulated-constant)
                                                                         (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it
-                                                                      (revappend nodenum-leaves-decreasing ;fixme handle the constant separately?
+                                                                      (revappend nodenum-leaves-decreasing
                                                                                  (list (enquote accumulated-constant))))
                                                                     bvxor-width
                                                                     (enquote bvxor-width)
                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array)))
-                                                               (if (consp new-nodenum-or-quotep) ;the bvxor nest became a constant
+                                                               (if (consp new-nodenum-or-quotep) ;the bvxor nest became a constant (perhaps duplicate leaves cancelled each other)
                                                                    (let ((result-array-stobj (set-result nodenum rewrite-objective new-nodenum-or-quotep result-array-stobj)))
                                                                      (rewrite-dag-core (cons (rest stack) (rest stacks)) ;pop the nodenum
                                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
