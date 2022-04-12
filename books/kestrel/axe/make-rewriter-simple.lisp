@@ -66,7 +66,7 @@
 (include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
 ;(include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system) ;drop?
 (include-book "kestrel/alists-light/strip-cdrs" :dir :system) ;need strip-cdrs-of-append for the generated proofs
-(include-book "renaming-stobj")
+(include-book "renumbering-stobj")
 (include-book "cars-increasing-by-1")
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -4641,15 +4641,15 @@
       :hints (("Goal" :in-theory (enable ,simp-terms-name))))
 
 
-    ;; For each node in REV-DAG, fix up its args (if any) according to the renaming-stobj, then add its simplified form to the dag-array and add its new nodenum or quotep to the renaming-stobj.
-    ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj).
+    ;; For each node in REV-DAG, fix up its args (if any) according to the renumbering-stobj, then add its simplified form to the dag-array and add its new nodenum or quotep to the renumbering-stobj.
+    ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj).
     ;; TODO: Add support for assumptions that come in array form?
     ;; TODO: Add support for rewriting nodes in (an approximation of) their contexts -- but disallow memoization in that case!
     (defund ,simplify-dag-aux-name (rev-dag ;low nodes come first
                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                    node-replacement-array rule-alist refined-assumption-alist node-replacement-count
                                    print interpreted-function-alist known-booleans monitored-symbols
-                                   renaming-stobj ; maps nodenums in rev-dag to the dargs (nodenums or quoteps) they rewrote to in dag-array
+                                   renumbering-stobj ; maps nodenums in rev-dag to the dargs (nodenums or quoteps) they rewrote to in dag-array
                                    )
       (declare (xargs :guard (and (weak-dagp-aux rev-dag)
                                   (cars-increasing-by-1 rev-dag)
@@ -4668,14 +4668,14 @@
                                   (symbol-listp known-booleans)
                                   (symbol-listp monitored-symbols)
                                   (if (consp rev-dag)
-                                      (equal (renaming-length renaming-stobj)
+                                      (equal (renumbering-length renumbering-stobj)
                                              (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                                     t)
-                                  (bounded-good-renaming-stobj (if (consp rev-dag)
+                                  (bounded-good-renumbering-stobj (if (consp rev-dag)
                                                                    (+ -1 (car (first rev-dag)))
                                                                  -1)
-                                                               dag-len renaming-stobj))
-                      :stobjs renaming-stobj
+                                                               dag-len renumbering-stobj))
+                      :stobjs renumbering-stobj
                       :guard-hints (("Goal" ;:expand (WEAK-DAGP-AUX REV-DAG)
                                      :in-theory (enable car-of-car-of-last-when-cars-increasing-by-1-linear maybe-dargp
                                                         integerp-when-dargp
@@ -4692,8 +4692,8 @@
                                      :do-not '(generalize eliminate-destructors)))
                       ))
       (if (endp rev-dag)
-          ;; Done rewriting nodes.  The caller can use the renaming-stobj to lookup what the old top node rewrote to:
-          (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj)
+          ;; Done rewriting nodes.  The caller can use the renumbering-stobj to lookup what the old top node rewrote to:
+          (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
         (b* ((entry (first rev-dag))
              (nodenum (car entry)) ; or, since they are consecutive, we could track this numerically..
              (- (and print (= 0 (mod nodenum 1000)) (cw "Simplifying node ~x0.~%" nodenum)))
@@ -4703,33 +4703,33 @@
               (b* ( ;; Add it to the DAG:
                    ((mv erp new-nodenum dag-array dag-len dag-parent-array dag-variable-alist)
                     (add-variable-to-dag-array expr dag-array dag-len dag-parent-array dag-variable-alist))
-                   ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj))
+                   ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj))
                    ;; See if the resulting node is known to be equal to something:
                    (new-nodenum-or-quotep (apply-node-replacement-array new-nodenum node-replacement-array node-replacement-count))
                    ;; Record the fact that NODENUM rewrote to NEW-NODENUM-OR-QUOTEP:
-                   (renaming-stobj (update-renamingi nodenum new-nodenum-or-quotep renaming-stobj)))
+                   (renumbering-stobj (update-renumberingi nodenum new-nodenum-or-quotep renumbering-stobj)))
                 (,simplify-dag-aux-name (rest rev-dag)
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                         node-replacement-array rule-alist refined-assumption-alist node-replacement-count
                                         print interpreted-function-alist known-booleans monitored-symbols
-                                        renaming-stobj))
+                                        renumbering-stobj))
             (let ((fn (ffn-symb expr)))
               (case fn
                 (quote ; EXPR is a quoted constant:
                  ;; Record the fact that NODENUM rewrote to the constant EXPR:
-                 (let ((renaming-stobj (update-renamingi nodenum expr renaming-stobj)))
+                 (let ((renumbering-stobj (update-renumberingi nodenum expr renumbering-stobj)))
                    (,simplify-dag-aux-name (rest rev-dag)
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                            node-replacement-array rule-alist refined-assumption-alist node-replacement-count
                                            print interpreted-function-alist known-booleans monitored-symbols
-                                           renaming-stobj)))
+                                           renumbering-stobj)))
                 ;; TODO: Flesh out these cases:
                 ;; ((if myif) ..)
                 ;; (bvif ..)
                 ;; (not ..)
                 (t ;; EXPR is some other (non-lambda) function call:
                  ;; TODO: Consider consulting the memoization here
-                 (b* ((new-dargs (rename-dargs-with-stobj (dargs expr) renaming-stobj)) ; todo: have the renaming function return a groundp flag
+                 (b* ((new-dargs (renumber-dargs-with-stobj (dargs expr) renumbering-stobj)) ; todo: have the renumbering function return a groundp flag
                       ;; handle possible ground term by evaluating:
                       ((mv erp evaluatedp val)
                        (if (not (all-consp new-dargs)) ;; test for args being quoted constants
@@ -4745,17 +4745,17 @@
                                  (mv erp nil nil))
                              ;; normal case (evaluated to VAL):
                              (mv (erp-nil) t val)))))
-                      ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj)))
+                      ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)))
                    (if evaluatedp
                        (let* ((quoted-val (enquote val))
                               ;; Record the fact that NODENUM rewrote to QUOTED-VAL:
-                              (renaming-stobj (update-renamingi nodenum quoted-val renaming-stobj)))
+                              (renumbering-stobj (update-renumberingi nodenum quoted-val renumbering-stobj)))
                          ;; I suppose we could update the memoization here if we wanted to.
                          (,simplify-dag-aux-name (rest rev-dag)
                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                  node-replacement-array rule-alist refined-assumption-alist node-replacement-count
                                                  print interpreted-function-alist known-booleans monitored-symbols
-                                                 renaming-stobj))
+                                                 renumbering-stobj))
                      ;; Not a ground term we could evaluate, so apply rules:
                      (b* (((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                            ;; Simplify the non-lambda FN applied to the simplified args:
@@ -4766,14 +4766,14 @@
                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                             node-replacement-array rule-alist refined-assumption-alist node-replacement-count
                             print interpreted-function-alist known-booleans monitored-symbols 1000000000))
-                          ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj))
+                          ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj))
                           ;; Record the fact that NODENUM rewrote to NEW-NODENUM-OR-QUOTEP:
-                          (renaming-stobj (update-renamingi nodenum new-nodenum-or-quotep renaming-stobj)))
+                          (renumbering-stobj (update-renumberingi nodenum new-nodenum-or-quotep renumbering-stobj)))
                        (,simplify-dag-aux-name (rest rev-dag)
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                node-replacement-array rule-alist refined-assumption-alist node-replacement-count
                                                print interpreted-function-alist known-booleans monitored-symbols
-                                               renaming-stobj)))))))))))
+                                               renumbering-stobj)))))))))))
 
     (defthm ,(pack$ simplify-dag-aux-name '-return-type)
       (implies (and (weak-dagp-aux rev-dag)
@@ -4793,38 +4793,38 @@
                     (symbol-listp known-booleans)
                     (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
-                        (equal (renaming-length renaming-stobj)
+                        (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                       t)
-                    (bounded-good-renaming-stobj (if (consp rev-dag)
+                    (bounded-good-renumbering-stobj (if (consp rev-dag)
                                                      (+ -1 (car (first rev-dag)))
                                                    -1)
-                                                 dag-len renaming-stobj)
-                    (renaming-stobjp renaming-stobj))
-               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj)
+                                                 dag-len renumbering-stobj)
+                    (renumbering-stobjp renumbering-stobj))
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj)
                  (,simplify-dag-aux-name rev-dag
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                          node-replacement-array rule-alist refined-assumption-alist node-replacement-count
                                          print interpreted-function-alist known-booleans monitored-symbols
-                                         renaming-stobj)
+                                         renumbering-stobj)
                  (declare (ignore tries limits node-replacement-array))
                  (implies (not erp)
                           (and (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
                                (info-worldp new-info)
                                (maybe-memoizationp new-memoization)
-                               (renaming-stobjp new-renaming-stobj)
-                               (bounded-good-renaming-stobj (if (consp rev-dag)
+                               (renumbering-stobjp new-renumbering-stobj)
+                               (bounded-good-renumbering-stobj (if (consp rev-dag)
                                                                 (car (car (last rev-dag)))
                                                               -1)
                                                             new-dag-len
-                                                            new-renaming-stobj)
-                               (equal (renaming-length new-renaming-stobj) (renaming-length renaming-stobj))))))
+                                                            new-renumbering-stobj)
+                               (equal (renumbering-length new-renumbering-stobj) (renumbering-length renumbering-stobj))))))
       :hints (("Goal" ;:expand (WEAK-DAGP-AUX REV-DAG)
                :induct (,simplify-dag-aux-name rev-dag
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                node-replacement-array rule-alist refined-assumption-alist node-replacement-count
                                                print interpreted-function-alist known-booleans monitored-symbols
-                                               renaming-stobj)
+                                               renumbering-stobj)
                :in-theory (enable ,simplify-dag-aux-name
                                   car-of-car-of-last-when-cars-increasing-by-1-linear
                                   maybe-dargp
@@ -4861,21 +4861,21 @@
                     (symbol-listp known-booleans)
                     (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
-                        (equal (renaming-length renaming-stobj)
+                        (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                       t)
-                    (bounded-good-renaming-stobj (if (consp rev-dag)
+                    (bounded-good-renumbering-stobj (if (consp rev-dag)
                                                      (+ -1 (car (first rev-dag)))
                                                    -1)
-                                                 dag-len renaming-stobj)
-                    (renaming-stobjp renaming-stobj))
-               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj)
+                                                 dag-len renumbering-stobj)
+                    (renumbering-stobjp renumbering-stobj))
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj)
                  (,simplify-dag-aux-name rev-dag
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                          node-replacement-array rule-alist refined-assumption-alist node-replacement-count
                                          print interpreted-function-alist known-booleans monitored-symbols
-                                         renaming-stobj)
-                 (declare (ignore new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj))
+                                         renumbering-stobj)
+                 (declare (ignore new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj))
                  (implies (not erp)
                           (and (natp new-dag-len)
                                (integerp new-dag-len)))))
@@ -4901,21 +4901,21 @@
                     (symbol-listp known-booleans)
                     (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
-                        (equal (renaming-length renaming-stobj)
+                        (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                       t)
-                    (bounded-good-renaming-stobj (if (consp rev-dag)
+                    (bounded-good-renumbering-stobj (if (consp rev-dag)
                                                      (+ -1 (car (first rev-dag)))
                                                    -1)
-                                                 dag-len renaming-stobj)
-                    (renaming-stobjp renaming-stobj))
-               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj)
+                                                 dag-len renumbering-stobj)
+                    (renumbering-stobjp renumbering-stobj))
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj)
                  (,simplify-dag-aux-name rev-dag
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                          node-replacement-array rule-alist refined-assumption-alist node-replacement-count
                                          print interpreted-function-alist known-booleans monitored-symbols
-                                         renaming-stobj)
-                 (declare (ignore new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj))
+                                         renumbering-stobj)
+                 (declare (ignore new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj))
                  (implies (and (not erp)
                                (<= bound new-dag-len) ; note this
                                (natp bound))
@@ -4943,27 +4943,27 @@
                     (symbol-listp known-booleans)
                     (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
-                        (equal (renaming-length renaming-stobj)
+                        (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                       t)
-                    (bounded-good-renaming-stobj (if (consp rev-dag)
+                    (bounded-good-renumbering-stobj (if (consp rev-dag)
                                                      (+ -1 (car (first rev-dag)))
                                                    -1)
-                                                 dag-len renaming-stobj)
-                    (renaming-stobjp renaming-stobj)
+                                                 dag-len renumbering-stobj)
+                    (renumbering-stobjp renumbering-stobj)
                     (consp rev-dag) ; note this
                     )
-               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj)
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj)
                  (,simplify-dag-aux-name rev-dag
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                          node-replacement-array rule-alist refined-assumption-alist node-replacement-count
                                          print interpreted-function-alist known-booleans monitored-symbols
-                                         renaming-stobj)
+                                         renumbering-stobj)
                  (declare (ignore new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array))
                  (implies (and (not erp)
                                (natp bound)
                                (<= bound (car (car (last rev-dag)))))
-                          (good-renaming-stobj bound new-renaming-stobj))))
+                          (good-renumbering-stobj bound new-renumbering-stobj))))
       :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
                :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
 
@@ -4986,22 +4986,22 @@
                     (symbol-listp known-booleans)
                     (symbol-listp monitored-symbols)
                     (if (consp rev-dag)
-                        (equal (renaming-length renaming-stobj)
+                        (equal (renumbering-length renumbering-stobj)
                                (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                       t)
-                    (bounded-good-renaming-stobj (if (consp rev-dag)
+                    (bounded-good-renumbering-stobj (if (consp rev-dag)
                                                      (+ -1 (car (first rev-dag)))
                                                    -1)
-                                                 dag-len renaming-stobj)
-                    (renaming-stobjp renaming-stobj)
+                                                 dag-len renumbering-stobj)
+                    (renumbering-stobjp renumbering-stobj)
                     (consp rev-dag) ; note this
                     )
-               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renaming-stobj)
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj)
                  (,simplify-dag-aux-name rev-dag
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                          node-replacement-array rule-alist refined-assumption-alist node-replacement-count
                                          print interpreted-function-alist known-booleans monitored-symbols
-                                         renaming-stobj)
+                                         renumbering-stobj)
                  (declare (ignore new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array))
                  (implies (and (not erp)
                                (natp bound)
@@ -5009,7 +5009,7 @@
                                (<= new-dag-len bound2)
                                (natp bound2)
                                )
-                          (bounded-good-renaming-stobj bound bound2 new-renaming-stobj))))
+                          (bounded-good-renumbering-stobj bound bound2 new-renumbering-stobj))))
       :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
                :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
 
@@ -5042,8 +5042,8 @@
                                                       ;; natp-when-dargp ; too strong?
                                                       <-of-+-of-1-when-integers
                                                       NATP-OF-+-OF-1
-                                                      integerp-of-renamingi
-                                                      natp-of-renamingi)
+                                                      integerp-of-renumberingi
+                                                      natp-of-renumberingi)
                                                      (natp))))))
       (b* ((old-top-nodenum (top-nodenum dag))
            (old-len (+ 1 old-top-nodenum))
@@ -5066,10 +5066,10 @@
                                                         known-booleans))
            ((when erp) (mv erp nil)))
         (with-local-stobj
-          renaming-stobj
-          (mv-let (erp new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj)
-            (b* ((renaming-stobj (resize-renaming old-len renaming-stobj))
-                 ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj)
+          renumbering-stobj
+          (mv-let (erp new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
+            (b* ((renumbering-stobj (resize-renumbering old-len renumbering-stobj))
+                 ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
                   (,simplify-dag-aux-name (reverse-list dag) ;;we'll simplify nodes from the bottom-up
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                           (and ; memoizep
@@ -5079,12 +5079,12 @@
                                           limits
                                           node-replacement-array rule-alist refined-assumption-alist node-replacement-count
                                           print interpreted-function-alist known-booleans monitored-symbols
-                                          renaming-stobj))
-                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj))
-                 ;; See what the top node of the old dag became (after this point, we won't have access to renaming-stobj anymore, due to with-local-stobj):
-                 (new-top-nodenum-or-quotep (renamingi old-top-nodenum renaming-stobj)))
-              (mv (erp-nil) new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renaming-stobj))
-            ;; Cannot refer to the renaming-stobj:
+                                          renumbering-stobj))
+                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj))
+                 ;; See what the top node of the old dag became (after this point, we won't have access to renumbering-stobj anymore, due to with-local-stobj):
+                 (new-top-nodenum-or-quotep (renumberingi old-top-nodenum renumbering-stobj)))
+              (mv (erp-nil) new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj))
+            ;; Cannot refer to the renumbering-stobj:
             (declare (ignore dag-len dag-parent-array dag-constant-alist dag-variable-alist limits node-replacement-array)) ; print some stats from these?
             (b* (((when erp) (mv erp nil))
                  (- (and print (maybe-print-hit-counts print info)))
