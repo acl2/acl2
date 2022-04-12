@@ -20,6 +20,8 @@
 ;; translation-array.lisp.  The renaming-array may be appropriate for bottom-up
 ;; algorithms that touch every node.
 
+;; See a faster version of essentially the same concept as this book, see renumbering-stobj.lisp.
+
 ;; TODO: Can we define this using def-typed-acl2-array?
 
 ;;;

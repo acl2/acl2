@@ -334,12 +334,12 @@
 ;;;
 
 ;; Checks whether NODENUM is known to be non-nil.
-(defund known-true-in-node-replacement-arrayp (nodenum node-replacement-array num-valid-nodes)
+(defund known-true-in-node-replacement-arrayp (nodenum node-replacement-array node-replacement-count)
   (declare (xargs :guard (and (natp nodenum)
-                              (natp num-valid-nodes)
+                              (natp node-replacement-count)
                               (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-                              (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))))
-  (if (<= num-valid-nodes nodenum) ; looking it up might be illegal
+                              (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
+  (if (<= node-replacement-count nodenum) ; looking it up might be illegal
       nil
     ;; either nil or a replacement (a nodenum or quotep) or :non-nil:
     (let ((res (aref1 'node-replacement-array node-replacement-array nodenum)))
@@ -355,12 +355,12 @@
 ;; Returns NODENUM (no replacement for NODENUM) or a nodenum/quotep with which to replace NODENUM.
 ;; TODO: Consider having the array map non-replaced nodes to themselves, to avoid
 ;; having to check whether the result is nil.
-(defund apply-node-replacement-array (nodenum node-replacement-array num-valid-nodes)
+(defund apply-node-replacement-array (nodenum node-replacement-array node-replacement-count)
   (declare (xargs :guard (and (natp nodenum)
-                              (natp num-valid-nodes)
+                              (natp node-replacement-count)
                               (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-                              (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))))
-  (if (<= num-valid-nodes nodenum) ;can't possibly be replaced, and looking it up might be illegal
+                              (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
+  (if (<= node-replacement-count nodenum) ;can't possibly be replaced, and looking it up might be illegal
       nodenum
     ;; either nil or a replacement (a nodenum or quotep) or :non-nil:
     (let ((res (aref1 'node-replacement-array node-replacement-array nodenum)))
@@ -370,12 +370,12 @@
         res))))
 
 (defthm dargp-of-apply-node-replacement-array
-  (implies (and ;(apply-node-replacement-array nodenum node-replacement-array num-valid-nodes) ;; node is being replaced with something
+  (implies (and ;(apply-node-replacement-array nodenum node-replacement-array node-replacement-count) ;; node is being replaced with something
                 (natp nodenum)
-                (natp num-valid-nodes)
-                (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array))
-           (dargp (apply-node-replacement-array nodenum node-replacement-array num-valid-nodes)))
+           (dargp (apply-node-replacement-array nodenum node-replacement-array node-replacement-count)))
   :hints (("Goal" :use (:instance type-of-aref1-when-node-replacement-arrayp
                                   (array-name 'node-replacement-array)
                                   (array node-replacement-array)
@@ -385,11 +385,11 @@
 (defthm dargp-less-than-of-apply-node-replacement-array
   (implies (and (natp nodenum)
                 (< nodenum bound) ; in case no replacement happens
-                (natp num-valid-nodes)
-                (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                 (natp bound)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
-           (dargp-less-than (apply-node-replacement-array nodenum node-replacement-array num-valid-nodes)
+           (dargp-less-than (apply-node-replacement-array nodenum node-replacement-array node-replacement-count)
                             bound))
   :hints (("Goal" :use (:instance type-of-aref1-when-bounded-node-replacement-arrayp
                                   (array-name 'node-replacement-array)
@@ -404,12 +404,12 @@
 
 ;; Returns NODENUM (no replacement for NODENUM) or a nodenum/quotep with which to replace NODENUM.
 ;; The result is equivalent to NODENUM under iff (but not necessarily equal), given the information in the array.
-(defund apply-node-replacement-array-bool (nodenum node-replacement-array num-valid-nodes)
+(defund apply-node-replacement-array-bool (nodenum node-replacement-array node-replacement-count)
   (declare (xargs :guard (and (natp nodenum)
-                              (natp num-valid-nodes)
+                              (natp node-replacement-count)
                               (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-                              (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))))
-  (if (<= num-valid-nodes nodenum) ;can't possibly be replaced, and looking it up might be illegal
+                              (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
+  (if (<= node-replacement-count nodenum) ;can't possibly be replaced, and looking it up might be illegal
       nodenum
     ;; either nil or a replacement (a nodenum or quotep) or *non-nil*:
     (let ((res (aref1 'node-replacement-array node-replacement-array nodenum)))
@@ -426,12 +426,12 @@
             ))))))
 
 (defthm dargp-of-apply-node-replacement-array-bool
-  (implies (and ;(apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes) ;; node is being replaced with something
+  (implies (and ;(apply-node-replacement-array-bool nodenum node-replacement-array node-replacement-count) ;; node is being replaced with something
                 (natp nodenum)
-                (natp num-valid-nodes)
-                (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array))
-           (dargp (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)))
+           (dargp (apply-node-replacement-array-bool nodenum node-replacement-array node-replacement-count)))
   :hints (("Goal" :use (:instance type-of-aref1-when-node-replacement-arrayp
                                   (array-name 'node-replacement-array)
                                   (array node-replacement-array)
@@ -441,11 +441,11 @@
 ;; Use consp as the normal form
 (defthm natp-of-apply-node-replacement-array-bool
   (implies (and (natp nodenum)
-                (natp num-valid-nodes)
-                (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array))
-           (equal (natp (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes))
-                  (not (consp (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)))))
+           (equal (natp (apply-node-replacement-array-bool nodenum node-replacement-array node-replacement-count))
+                  (not (consp (apply-node-replacement-array-bool nodenum node-replacement-array node-replacement-count)))))
   :hints (("Goal" :use (:instance type-of-aref1-when-node-replacement-arrayp
                                   (array-name 'node-replacement-array)
                                   (array node-replacement-array)
@@ -455,11 +455,11 @@
 (defthm dargp-less-than-of-apply-node-replacement-array-bool
   (implies (and (natp nodenum)
                 (< nodenum bound) ; in case no replacement happens
-                (natp num-valid-nodes)
-                (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                 (natp bound)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
-           (dargp-less-than (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)
+           (dargp-less-than (apply-node-replacement-array-bool nodenum node-replacement-array node-replacement-count)
                             bound))
   :hints (("Goal" :use (:instance type-of-aref1-when-bounded-node-replacement-arrayp
                                   (array-name 'node-replacement-array)
@@ -469,14 +469,14 @@
                            (type-of-aref1-when-bounded-node-replacement-arrayp)))))
 
 (defthm <-of-apply-node-replacement-array-bool
-  (implies (and (not (consp (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)))
+  (implies (and (not (consp (apply-node-replacement-array-bool nodenum node-replacement-array node-replacement-count)))
                 (natp nodenum)
                 (< nodenum bound) ; in case no replacement happens
-                (natp num-valid-nodes)
-                (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                 (natp bound)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
-           (< (apply-node-replacement-array-bool nodenum node-replacement-array num-valid-nodes)
+           (< (apply-node-replacement-array-bool nodenum node-replacement-array node-replacement-count)
               bound))
   :hints (("Goal" :use (:instance type-of-aref1-when-bounded-node-replacement-arrayp
                                   (array-name 'node-replacement-array)
@@ -490,18 +490,18 @@
 ;;;
 
 ;; Augments the node-replacement-array with the fact that NODENUM is equal to REPLACEMENT.
-;; Returns (mv node-replacement-array num-valid-nodes).
-(defund add-node-replacement-entry-and-maybe-expand (nodenum replacement node-replacement-array num-valid-nodes)
+;; Returns (mv node-replacement-array node-replacement-count).
+(defund add-node-replacement-entry-and-maybe-expand (nodenum replacement node-replacement-array node-replacement-count)
   (declare (xargs :guard (and (natp nodenum)
                               (< nodenum 2147483646)
                               (node-replacement-valp replacement)
                               (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-                              (natp num-valid-nodes)
-                              (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))))
+                              (natp node-replacement-count)
+                              (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
   (let ((node-replacement-array (maybe-expand-array 'node-replacement-array node-replacement-array nodenum)))
     (mv (aset1 'node-replacement-array node-replacement-array nodenum replacement)
         (max (+ 1 nodenum)
-             num-valid-nodes))))
+             node-replacement-count))))
 
 (local (in-theory (disable assoc-keyword))) ;prevent inductions
 
@@ -521,11 +521,11 @@
                 (< nodenum 2147483646)
                 (node-replacement-valp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
+                ;;(natp node-replacement-count)
+                ;;(<= node-replacement-count (alen1 'node-replacement-array array))
                 )
            (node-replacement-arrayp 'node-replacement-array
-                                    (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes))))
+                                    (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count))))
   :hints (("Goal" :in-theory (e/d (maybe-expand-array
                                    add-node-replacement-entry-and-maybe-expand)
                                   (node-replacement-arrayp-aux-of-aset1
@@ -536,19 +536,19 @@
                 (< nodenum 2147483646)
                 (bounded-node-replacement-valp replacement bound)
                 (bounded-node-replacement-arrayp 'node-replacement-array array bound)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
+                ;;(natp node-replacement-count)
+                ;;(<= node-replacement-count (alen1 'node-replacement-array array))
                 )
            (bounded-node-replacement-arrayp 'node-replacement-array
-                                            (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes))
+                                            (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count))
                                             bound))
   :hints (("Goal" :cases ((consp replacement))
            :in-theory (e/d (add-node-replacement-entry-and-maybe-expand) (node-replacement-arrayp-aux-of-aset1 alen1-of-expand-array)))))
 
 (defthm natp-of-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand
   (implies (and (natp nodenum)
-                (natp num-valid-nodes))
-           (natp (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes))))
+                (natp node-replacement-count))
+           (natp (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count))))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (e/d (maybe-expand-array
                                    add-node-replacement-entry-and-maybe-expand)
@@ -561,11 +561,11 @@
                 (< nodenum 2147483646)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
+                ;;(natp node-replacement-count)
+                ;;(<= node-replacement-count (alen1 'node-replacement-array array))
                 )
            (<= (alen1 'node-replacement-array array)
-               (alen1 'node-replacement-array (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes)))))
+               (alen1 'node-replacement-array (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count)))))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (e/d (maybe-expand-array
                                    add-node-replacement-entry-and-maybe-expand)
@@ -579,10 +579,10 @@
                 (< nodenum 2147483646)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
+                ;;(natp node-replacement-count)
+                ;;(<= node-replacement-count (alen1 'node-replacement-array array))
                 )
-           (<= x (alen1 'node-replacement-array (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes)))))
+           (<= x (alen1 'node-replacement-array (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count)))))
   :hints (("Goal" :use (:instance bound-on-alen1-of-mv-nth-0-of-add-node-replacement-entry-and-maybe-expand)
            :in-theory (disable bound-on-alen1-of-mv-nth-0-of-add-node-replacement-entry-and-maybe-expand))))
 
@@ -591,11 +591,11 @@
                 (< nodenum 2147483646)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
-                (natp num-valid-nodes)
-                (<= num-valid-nodes (alen1 'node-replacement-array array)))
-           (<= (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes))
-               (alen1 'node-replacement-array (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes)))))
-  :rule-classes ((:linear :trigger-terms ((mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes)))))
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array array)))
+           (<= (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count))
+               (alen1 'node-replacement-array (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count)))))
+  :rule-classes ((:linear :trigger-terms ((mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count)))))
   :hints (("Goal" :in-theory (e/d (maybe-expand-array
                                    add-node-replacement-entry-and-maybe-expand
                                    NODE-REPLACEMENT-ARRAYP)
@@ -604,14 +604,14 @@
                                    )))))
 
 (defthm bound-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand-gen
-  (implies (and (<= x (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes)))
+  (implies (and (<= x (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count)))
                 (natp nodenum)
                 (< nodenum 2147483646)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
-                (natp num-valid-nodes)
-                (<= num-valid-nodes (alen1 'node-replacement-array array)))
-           (<= x (alen1 'node-replacement-array (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes)))))
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array array)))
+           (<= x (alen1 'node-replacement-array (mv-nth 0 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count)))))
   :hints (("Goal" :in-theory (e/d (maybe-expand-array
                                    add-node-replacement-entry-and-maybe-expand
                                    NODE-REPLACEMENT-ARRAYP)
@@ -619,32 +619,32 @@
                                    ;alen1-of-expand-array
                                    )))))
 
-;; The num-valid-nodes does not decrease
+;; The node-replacement-count does not decrease
 (defthm bound2-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand
   (implies (and (natp nodenum)
                 (< nodenum 2147483646)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
+                ;;(natp node-replacement-count)
+                ;;(<= node-replacement-count (alen1 'node-replacement-array array))
                 )
-           (<= num-valid-nodes
-               (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes))))
+           (<= node-replacement-count
+               (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count))))
   :hints (("Goal" :in-theory (e/d (maybe-expand-array
                                    add-node-replacement-entry-and-maybe-expand)
                                   (node-replacement-arrayp-aux-of-aset1
                                    alen1-of-expand-array)))))
 
 (defthm bound2-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand-gen
-  (implies (and (<= x num-valid-nodes)
+  (implies (and (<= x node-replacement-count)
                 (natp nodenum)
                 (< nodenum 2147483646)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
+                ;;(natp node-replacement-count)
+                ;;(<= node-replacement-count (alen1 'node-replacement-array array))
                 )
-           (<= x (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array num-valid-nodes))))
+           (<= x (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count))))
   :hints (("Goal" :use (:instance bound2-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand)
            :in-theory (disable bound2-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand))))
 
@@ -760,20 +760,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+;; Returns (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 (defund update-node-replacement-array-and-extend-dag-for-alist (alist
                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                node-replacement-array node-replacement-array-num-valid-nodes)
+                                                                node-replacement-array node-replacement-count)
   (declare (xargs :guard (and (term-replacement-alistp alist)
                               ;; the cdrs of the alist are either terms or the special symbol *non-nil*.
                               (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-                              (natp node-replacement-array-num-valid-nodes)
-                              (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))
+                              (natp node-replacement-count)
+                              (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
                   :guard-hints (("Goal" :expand (term-replacement-alistp alist)
                                  :in-theory (enable (:d term-replacement-alistp))))))
   (if (endp alist)
-      (mv (erp-nil) node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+      (mv (erp-nil) node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (b* ((pair (first alist))
          (term (car pair))
          (replacement (cdr pair))
@@ -784,10 +784,10 @@
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array
                                            nil ;interpreted-function-alist
                                            ))
-         ((when erp) (mv erp node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+         ((when erp) (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
          ((when (consp term-nodenum-or-quotep)) ; check for quotep -- todo: prove this can't happen
           (er hard? 'update-node-replacement-array-and-extend-dag-for-alist "Assumption with a quotep LHS: ~x0." `(equal ,term ,replacement))
-          (mv :unexpected-quote node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+          (mv :unexpected-quote node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
          ;; Add the replacement if it is not *non-nil*:
          ((mv erp replacement-item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
           (if (eq replacement *non-nil*)
@@ -798,12 +798,12 @@
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array
                                              nil ;interpreted-function-alist
                                              )))
-         ((when erp) (mv erp node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-         ((mv node-replacement-array node-replacement-array-num-valid-nodes)
-          (add-node-replacement-entry-and-maybe-expand term-nodenum-or-quotep replacement-item node-replacement-array node-replacement-array-num-valid-nodes)))
+         ((when erp) (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+         ((mv node-replacement-array node-replacement-count)
+          (add-node-replacement-entry-and-maybe-expand term-nodenum-or-quotep replacement-item node-replacement-array node-replacement-count)))
       (update-node-replacement-array-and-extend-dag-for-alist (rest alist)
                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                              node-replacement-array node-replacement-array-num-valid-nodes))))
+                                                              node-replacement-array node-replacement-count))))
 
 (defthm update-node-replacement-array-and-extend-dag-for-alist-return-type
   (implies (and (term-replacement-alistp alist)
@@ -811,18 +811,18 @@
                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 ;(node-replacement-arrayp 'node-replacement-array node-replacement-array)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                (natp node-replacement-array-num-valid-nodes)
-                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))
-           (mv-let (erp new-node-replacement-array node-replacement-array-num-valid-nodes dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
+           (mv-let (erp new-node-replacement-array node-replacement-count dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (update-node-replacement-array-and-extend-dag-for-alist alist
                                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                        node-replacement-array node-replacement-array-num-valid-nodes)
+                                                                        node-replacement-array node-replacement-count)
              (implies (not erp)
-                      (and (natp node-replacement-array-num-valid-nodes)
+                      (and (natp node-replacement-count)
                            (node-replacement-arrayp 'node-replacement-array new-node-replacement-array) ; convenient but follows from the below
                            (bounded-node-replacement-arrayp 'node-replacement-array new-node-replacement-array new-dag-len)
                            (<= dag-len new-dag-len)
-                           (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array new-node-replacement-array))
+                           (<= node-replacement-count (alen1 'node-replacement-array new-node-replacement-array))
                            (<= (alen1 'node-replacement-array node-replacement-array) (alen1 'node-replacement-array new-node-replacement-array))
                            (wf-dagp 'dag-array dag-array new-dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)))))
   :hints (("Goal" :induct t
@@ -835,15 +835,15 @@
 ;;                 ;; the cdrs of the alist are either terms or the special symbol *non-nil*.
 ;;                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
 ;;                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-;;                 (natp node-replacement-array-num-valid-nodes)
-;;                 (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))
-;;            (mv-let (erp node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;;                 (natp node-replacement-count)
+;;                 (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
+;;            (mv-let (erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;              (update-node-replacement-array-and-extend-dag-for-alist alist
 ;;                                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-;;                                                                         node-replacement-array node-replacement-array-num-valid-nodes)
+;;                                                                         node-replacement-array node-replacement-count)
 ;;              (declare (ignore DAG-ARRAY DAG-LEN DAG-PARENT-ARRAY DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST))
 ;;              (implies (not erp)
-;;                       (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))))
+;;                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
 ;;   :rule-classes :linear
 ;;   :hints (("Goal" :use update-node-replacement-array-and-extend-dag-for-alist-return-type
 ;;            :in-theory (disable update-node-replacement-array-and-extend-dag-for-alist-return-type))))
@@ -854,29 +854,29 @@
                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                (natp node-replacement-array-num-valid-nodes)
-                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))
-           (mv-let (erp node-replacement-array new-node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
+           (mv-let (erp node-replacement-array new-node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (update-node-replacement-array-and-extend-dag-for-alist alist
                                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                        node-replacement-array node-replacement-array-num-valid-nodes)
+                                                                        node-replacement-array node-replacement-count)
              (declare (ignore DAG-ARRAY DAG-LEN DAG-PARENT-ARRAY DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
-                              new-node-replacement-array-num-valid-nodes))
+                              new-node-replacement-count))
              (implies (and (not erp))
-                      (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))))
+                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
   :hints (("Goal" :use update-node-replacement-array-and-extend-dag-for-alist-return-type
            :in-theory (disable update-node-replacement-array-and-extend-dag-for-alist-return-type))))
 
-;; ;; Returns (mv erp node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+;; ;; Returns (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; (defun update-node-replacement-array-and-extend-dag-for-assumption (assumption
 ;;                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-;;                                                                        node-replacement-array node-replacement-array-num-valid-nodes
+;;                                                                        node-replacement-array node-replacement-count
 ;;                                                                        known-booleans)
 ;;   (declare (xargs :guard (and (pseudo-termp assumption)
 ;;                               (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
 ;;                               (node-replacement-arrayp 'node-replacement-array array)
-;;                               (natp node-replacement-array-num-valid-nodes)
-;;                               (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array array))
+;;                               (natp node-replacement-count)
+;;                               (<= node-replacement-count (alen1 'node-replacement-array array))
 ;;                               (symbol-listp known-booleans))))
 
 ;; )
@@ -888,15 +888,15 @@
   ;;     (b* (;; Add the var to the DAG:
   ;;          ((mv erp nodenum dag-array dag-len dag-parent-array dag-variable-alist)
   ;;           (add-variable-to-dag-array assumption dag-array dag-len dag-parent-array dag-variable-alist))
-  ;;          ((when erp) (mv erp node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+  ;;          ((when erp) (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
   ;;          ;; Add the fact that the var's node in non-nil:
-  ;;          ((mv node-replacement-array num-valid-nodes)
-  ;;           (add-node-replacement-entry-and-maybe-expand nodenum *non-nil* node-replacement-array node-replacement-array-num-valid-nodes)))
-  ;;       (mv (erp-nil) node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+  ;;          ((mv node-replacement-array node-replacement-count)
+  ;;           (add-node-replacement-entry-and-maybe-expand nodenum *non-nil* node-replacement-array node-replacement-count)))
+  ;;       (mv (erp-nil) node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
   ;;   (let ((fn (ffn-symb assumption)))
   ;;     (if (eq 'quote fn)  ;can this happen?
   ;;       (prog2$ (cw "NOTE: Skipping constant assumption ~x0.~%" assumption)
-  ;;               (mv (erp-nil) node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+  ;;               (mv (erp-nil) node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
   ;;       (mv-let (term replacement)
   ;;         (case fn
   ;;           (not (mv (farg1 assumption) *nil*)) ; (not <nodenum>) means assuming <nodenum> is nil
@@ -909,7 +909,7 @@
   ;;        ;; Add the argument of NOT to the DAG:
   ;;        ((mv erp nodenum dag-array dag-len dag-parent-array dag-variable-alist)
   ;;         (add-variable-to-dag-array assumption dag-array dag-len dag-parent-array dag-variable-alist))
-  ;;        ((when erp) (mv erp node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+  ;;        ((when erp) (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
 
 
   ;;       (if (eq 'equal fn) ;fixme consider more sophisticated tests to decide whether to turn around the assumption?
@@ -942,29 +942,29 @@
   ;;                       acc))))))))
 
 
-;; ;; Returns (mv erp node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+;; ;; Returns (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; (defun make-node-replacement-array-and-extend-dag-aux (assumptions
 ;;                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-;;                                                           node-replacement-array node-replacement-array-num-valid-nodes)
+;;                                                           node-replacement-array node-replacement-count)
 ;;   (declare (xargs :guard (and (pseudo-term-listp assumptions)
 ;;                               (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
 ;;                               (node-replacement-arrayp 'node-replacement-array array)
-;;                               (natp node-replacement-array-num-valid-nodes)
-;;                               (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array array)))))
+;;                               (natp node-replacement-count)
+;;                               (<= node-replacement-count (alen1 'node-replacement-array array)))))
 ;;   (if (endp assumptions)
-;;       (mv (erp-nil) node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;;       (mv (erp-nil) node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;     (let ((assumption (first assumptions)))
-;;       (mv-let (mv erp node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;;       (mv-let (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;         (update-node-replacement-array-and-extend-dag-for-assumption assumption
 ;;                                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-;;                                                                         node-replacement-array node-replacement-array-num-valid-nodes)
+;;                                                                         node-replacement-array node-replacement-count)
 ;;         (if erp
-;;             (mv erp node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;;             (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;           (make-node-replacement-array-and-extend-dag-aux (rest assumptions)
 ;;                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-;;                                                              node-replacement-array node-replacement-array-num-valid-nodes))))))
+;;                                                              node-replacement-array node-replacement-count))))))
 
-;; Returns (mv erp node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+;; Returns (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 (defund make-node-replacement-array-and-extend-dag (assumptions
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                     known-booleans)
@@ -973,24 +973,24 @@
                               (symbol-listp known-booleans))))
   (let ((alist (term-replacement-alist-for-assumptions assumptions known-booleans nil))
         (node-replacement-array (make-empty-array 'node-replacement-array 1))
-        (node-replacement-array-num-valid-nodes 0))
+        (node-replacement-count 0))
     (update-node-replacement-array-and-extend-dag-for-alist alist
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                            node-replacement-array node-replacement-array-num-valid-nodes)))
+                                                            node-replacement-array node-replacement-count)))
 
 (defthm make-node-replacement-array-and-extend-dag-return-type
   (implies (and (pseudo-term-listp assumptions)
                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (symbol-listp known-booleans))
-           (mv-let (erp node-replacement-array node-replacement-array-num-valid-nodes dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+           (mv-let (erp node-replacement-array node-replacement-count dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (make-node-replacement-array-and-extend-dag assumptions
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                             known-booleans)
              (implies (not erp)
-                      (and (natp node-replacement-array-num-valid-nodes)
+                      (and (natp node-replacement-count)
                            (node-replacement-arrayp 'node-replacement-array node-replacement-array)
                            (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array new-dag-len)
-                           (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                           (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                            (wf-dagp 'dag-array dag-array new-dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                            (<= dag-len new-dag-len)
                            ))))
@@ -1000,11 +1000,11 @@
   (implies (and (pseudo-term-listp assumptions)
                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (symbol-listp known-booleans))
-           (mv-let (erp node-replacement-array node-replacement-array-num-valid-nodes dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+           (mv-let (erp node-replacement-array node-replacement-count dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (make-node-replacement-array-and-extend-dag assumptions
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                             known-booleans)
-             (declare (ignore node-replacement-array node-replacement-array-num-valid-nodes dag-array dag-parent-array dag-constant-alist dag-variable-alist))
+             (declare (ignore node-replacement-array node-replacement-count dag-array dag-parent-array dag-constant-alist dag-variable-alist))
              (implies (not erp)
                       (and
                            (integerp new-dag-len)
@@ -1017,11 +1017,11 @@
                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (symbol-listp known-booleans)
                 (<= bound dag-len))
-           (mv-let (erp node-replacement-array node-replacement-array-num-valid-nodes dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+           (mv-let (erp node-replacement-array node-replacement-count dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (make-node-replacement-array-and-extend-dag assumptions
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                             known-booleans)
-             (declare (ignore NODE-REPLACEMENT-ARRAY NODE-REPLACEMENT-ARRAY-NUM-VALID-NODES DAG-ARRAY DAG-PARENT-ARRAY DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST))
+             (declare (ignore NODE-REPLACEMENT-ARRAY NODE-REPLACEMENT-COUNT DAG-ARRAY DAG-PARENT-ARRAY DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST))
              (implies (not erp)
                       (<= bound new-dag-len))))
   :hints (("Goal" :use make-node-replacement-array-and-extend-dag-return-type
