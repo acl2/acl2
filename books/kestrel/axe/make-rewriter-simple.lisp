@@ -231,6 +231,11 @@
            (equal (natp (+ -1 x))
                   (< 0 x))))
 
+(defthm consp-of-cdr-forward-to-consp
+  (implies (consp (cdr x))
+           (consp x))
+  :rule-classes :forward-chaining)
+
 ;; ;loops with LEN-WHEN-DARGP-LESS-THAN?
 ;; (defthmd consp-to-len-bound-for-make-rewriter-simple
 ;;   (equal (consp x) (< 0 (len x)))
@@ -453,7 +458,8 @@
                                   strip-cars
                                   nat-listp ; !
                                   weak-dagp-aux
-                                  )))
+                                  myquotep
+                                  dargp-less-than)))
 
        (local (in-theory (enable ;;consp-of-assoc-equal-when-node-replacement-alistp
                           ;;dargp-of-cdr-of-assoc-equal-when-node-replacement-alistp
@@ -465,7 +471,7 @@
                           pseudo-term-listp-of-cdr-when-pseudo-term-listp-cheap-for-make-rewriter-simple
                           ;;consp-to-len-bound-for-make-rewriter-simple
                           ;;len-of-cdr-better-for-make-rewriter-simple
-                          )))
+                          myquotep-when-dag-exprp0-and-quote)))
 
        ;; Make a version of sublis-var-and-eval:
        (make-substitution-code-simple ,suffix ,evaluator-base-name)
@@ -4640,6 +4646,7 @@
                (pseudo-term-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))))
       :hints (("Goal" :in-theory (enable ,simp-terms-name))))
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;; For each node in REV-DAG, fix up its args (if any) according to the renumbering-stobj, then add its simplified form to the dag-array and add its new nodenum or quotep to the renumbering-stobj.
     ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj).
@@ -5013,10 +5020,10 @@
       :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
                :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    ;; TODO: Return less?
     ;; Returns (mv erp dag-or-quotep).
-    ;; TODO: Make a version that returns an array but I'll need a version of drop-non-supporters-array that doesn't create a list.
+    ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array)?
     ;; TODO: Prove some properties
     (defun ,simplify-dag-name (dag
                                assumptions
@@ -5041,7 +5048,7 @@
                                                       natp-of-+-of--1-when-natp
                                                       ;; natp-when-dargp ; too strong?
                                                       <-of-+-of-1-when-integers
-                                                      NATP-OF-+-OF-1
+                                                      natp-of-+-of-1
                                                       integerp-of-renumberingi
                                                       natp-of-renumberingi)
                                                      (natp))))))
@@ -5096,6 +5103,8 @@
                   (mv (erp-nil) new-top-nodenum-or-quotep)
                 (mv (erp-nil)
                     (drop-non-supporters-array 'dag-array dag-array new-top-nodenum-or-quotep nil))))))))
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;; Returns an (mv erp event state).
     ;; todo: redundancy
