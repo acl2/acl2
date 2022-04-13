@@ -67,6 +67,15 @@
            nil))
   :hints (("Goal" :expand ((resize-list nil new-len default)
                            (resize-list lst new-len default))
+           :induct (cdr-sub1-sub1-induct n new-len lst))))
+
+(defthm resize-list-of-update-nth
+  (implies (< (nfix n) (len lst)) ; the update-nth was in bounds
+           (equal (resize-list (update-nth n val lst) new-len default)
+                  (if (< (nfix n) (nfix new-len))
+                      (update-nth n val (resize-list lst new-len default))
+                    (resize-list lst new-len default))))
+  :hints (("Goal" :expand ()
            :induct (cdr-sub1-sub1-induct n new-len lst)
-           :in-theory (e/d ((:i resize-list) (:i nth))
+           :in-theory (e/d (resize-list)
                            (nth-of-cdr)))))
