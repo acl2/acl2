@@ -17,6 +17,8 @@
 
 (include-book "all-dargp")
 (include-book "dargp-less-than")
+(include-book "bounded-dag-exprs") ; todo: reduce, for largest-non-quotep
+(local (include-book "kestrel/lists-light/resize-list" :dir :system))
 
 (local (in-theory (disable dargp myquotep natp)))
 
@@ -31,32 +33,40 @@
            (maybe-dargp darg))
   :hints (("Goal" :in-theory (enable maybe-dargp))))
 
-;; The renumbering-stobj is a stobj that stores a "renumbering", that is, a map from
-;; some initial segment of the natural numbers (nodenums) to dargs.  Perhaps we
-;; could choose some darg as the initial value, but using nil ensures that we
-;; have to prove values are valid when we use them.
+;; The renumbering-stobj is a stobj that stores a "renumbering", that is, a map
+;; from node numbers (up to some limit) to dargs (see dargp).  Entries beyond
+;; the initial region of valid elements will be nil (since nil is not a darg,
+;; this ensures that we have to prove values are valid when we use them).
 (defstobj renumbering-stobj
   (renumbering :type (array (satisfies maybe-dargp) (10000)) :resizable t :initially nil)
   ;; :inline t ;; TODO: Try this
   :renaming ((renumberingp renumbering-entriesp)))
 
  ; todo: better names?
-(in-theory (disable renumbering-stobjp renumberingi renumbering-length update-renumberingi resize-renumbering
+(in-theory (disable renumbering-stobjp
                     create-renumbering-stobj ; reasoning about this involves a list of 10000 nils!
+                    ;; names for the array field:
+                    renumbering-entriesp renumberingi update-renumberingi renumbering-length resize-renumbering
                     ))
 
-;dup
-;; param names match std
-(defthm len-of-resize-list
-  (equal (len (resize-list lst n default))
-         (nfix n))
-  :hints (("Goal" :in-theory (enable resize-list))))
-
-(defthm renumbering-of-resize-list
+(defthm renumbering-entriesp-of-resize-list
   (implies (and (renumbering-entriesp lst)
                 (maybe-dargp default-value))
            (renumbering-entriesp (resize-list lst n default-value)))
   :hints (("Goal" :in-theory (enable resize-list renumbering-entriesp))))
+
+(defthm renumbering-entriesp-of-update-nth
+  (implies (and (renumbering-entriesp renumbering)
+                (natp i)
+                (< i (len renumbering))
+                (maybe-dargp darg))
+           (renumbering-entriesp (update-nth i darg renumbering)))
+  :hints (("Goal" :in-theory (enable update-nth renumbering-entriesp))))
+
+(defthm maybe-dargp-of-nth-when-renumbering-entriesp
+  (implies (renumbering-entriesp renumbering)
+           (maybe-dargp (nth i renumbering)))
+  :hints (("Goal" :in-theory (enable nth renumbering-entriesp))))
 
 (defthm renumbering-length-of-resize-renumbering
   (equal (renumbering-length (resize-renumbering i renumbering-stobj))
@@ -73,15 +83,7 @@
                 (natp i))
            (equal (renumbering-length (update-renumberingi i darg renumbering-stobj))
                   (renumbering-length renumbering-stobj)))
-  :hints (("Goal" :in-theory (enable renumbering-length update-renumberingi renumbering-entriesp))))
-
-(defthm renumbering-of-update-nth
-  (implies (and (renumbering-entriesp renumbering)
-                (natp i)
-                (< i (len renumbering))
-                (maybe-dargp darg))
-           (renumbering-entriesp (update-nth i darg renumbering)))
-  :hints (("Goal" :in-theory (enable update-nth renumbering-entriesp))))
+  :hints (("Goal" :in-theory (enable renumbering-length update-renumberingi))))
 
 (defthm renumbering-stobjp-of-update-renumberingi
   (implies (and (renumbering-stobjp renumbering-stobj)
@@ -89,29 +91,23 @@
                 (natp i)
                 (maybe-dargp darg))
            (renumbering-stobjp (update-renumberingi i darg renumbering-stobj)))
-  :hints (("Goal" :in-theory (enable renumbering-stobjp update-renumberingi renumbering-entriesp RENUMBERING-LENGTH))))
+  :hints (("Goal" :in-theory (enable renumbering-stobjp update-renumberingi renumbering-length))))
 
 (defthm renumberingi-of-update-renumberingi-same
-  (implies (and; (renumbering-stobjp renumbering-stobj)
-;                (< i (renumbering-length renumbering-stobj))
-                (natp i)
-                )
+  (implies (natp i)
            (equal (renumberingi i (update-renumberingi i darg renumbering-stobj))
                   darg))
-  :hints (("Goal" :in-theory (enable renumberingi renumbering-length update-renumberingi renumbering-entriesp))))
+  :hints (("Goal" :in-theory (enable renumberingi renumbering-length update-renumberingi))))
 
 (defthm renumberingi-of-update-renumberingi-diff
   (implies (and (not (equal i j))
-          ;      (renumbering-stobjp renumbering-stobj)
-        ;        (< i (renumbering-length renumbering-stobj))
                 (natp i)
-       ;         (< j (renumbering-length renumbering-stobj))
-                (natp j)
-                )
+                (natp j))
            (equal (renumberingi i (update-renumberingi j darg renumbering-stobj))
                   (renumberingi i renumbering-stobj)))
-  :hints (("Goal" :in-theory (enable renumberingi renumbering-length update-renumberingi renumbering-entriesp))))
+  :hints (("Goal" :in-theory (enable renumberingi renumbering-length update-renumberingi))))
 
+;both cases
 (defthm renumberingi-of-update-renumberingi
   (implies (and (natp i)
                 (natp j))
@@ -119,16 +115,11 @@
                   (if (equal i j)
                       darg
                     (renumberingi i renumbering-stobj))))
-  :hints (("Goal" :in-theory (enable renumberingi renumbering-length update-renumberingi renumbering-entriesp))))
+  :hints (("Goal" :in-theory (enable renumberingi renumbering-length update-renumberingi))))
 
 (defthm renumbering-stobjp-of-create-renumbering-stobj
   (renumbering-stobjp (create-renumbering-stobj))
   :hints (("Goal" :in-theory (enable renumbering-stobjp create-renumbering-stobj))))
-
-(defthm maybe-dargp-of-nth-when-renumbering-entriesp
-  (implies (renumbering-entriesp renumbering)
-           (maybe-dargp (nth i renumbering)))
-  :hints (("Goal" :in-theory (enable nth renumbering-length))))
 
 (defthm maybe-dargp-of-renumberingi
   (implies (and (renumbering-stobjp renumbering-stobj)
@@ -137,6 +128,8 @@
                 )
            (maybe-dargp (renumberingi i renumbering-stobj)))
   :hints (("Goal" :in-theory (enable renumbering-stobjp renumberingi renumbering-length))))
+
+;; End of fairly generic rules
 
 ;; Disabled since hung on natp.
 (defthmd natp-of-renumberingi
@@ -448,11 +441,9 @@
   (implies (and (dargp darg)
                 (bounded-good-renumbering-stobj (if (consp darg) -1 darg) bound renumbering-stobj))
            (dargp-less-than (renumber-darg-with-stobj darg renumbering-stobj) bound))
-  :hints (("Goal" :in-theory (e/d (renumber-darg-with-stobj good-renumbering-stobj
-                                                          BOUNDED-GOOD-RENUMBERING-STOBJ)
-                                  ()))))
-
-;; todo: disable some of these:
+  :hints (("Goal" :in-theory (enable renumber-darg-with-stobj
+                                     good-renumbering-stobj
+                                     bounded-good-renumbering-stobj))))
 
 ; use "not consp" as the normal form for dargs
 ;; Disabled since hung on integerp.
@@ -471,8 +462,6 @@
            (equal (integerp (renumber-darg-with-stobj darg renumbering-stobj))
                   (not (consp (renumber-darg-with-stobj darg renumbering-stobj)))))
   :hints (("Goal" :in-theory (e/d (renumber-darg-with-stobj GOOD-RENUMBERING-STOBJ) ()))))
-
-(include-book "bounded-dag-exprs") ; todo: reduce
 
 ;;;
 ;;; renumber-dargs-with-stobj
@@ -493,8 +482,7 @@
   (implies (and (good-renumbering-stobj (largest-non-quotep dargs) renumbering-stobj)
                 (all-dargp dargs))
            (all-dargp (renumber-dargs-with-stobj dargs renumbering-stobj)))
-  :hints (("Goal" :in-theory (e/d (renumber-dargs-with-stobj all-dargp natp-of-renumber-darg-with-stobj)
-                                  ())
+  :hints (("Goal" :in-theory (enable renumber-dargs-with-stobj all-dargp natp-of-renumber-darg-with-stobj)
            :expand ((all-dargp dargs)
                     (dargp (car dargs)))
            :do-not '(generalize eliminate-destructors))))
@@ -503,8 +491,7 @@
   (implies (and (bounded-good-renumbering-stobj (largest-non-quotep dargs) bound renumbering-stobj)
                 (all-dargp dargs))
            (all-dargp-less-than (renumber-dargs-with-stobj dargs renumbering-stobj) bound))
-  :hints (("Goal" :in-theory (e/d (renumber-dargs-with-stobj all-dargp largest-non-quotep)
-                                  ())
+  :hints (("Goal" :in-theory (enable renumber-dargs-with-stobj all-dargp largest-non-quotep)
            :expand ((all-dargp dargs)
                     (dargp (car dargs)))
            :do-not '(generalize eliminate-destructors))))
