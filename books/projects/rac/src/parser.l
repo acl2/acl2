@@ -14,14 +14,16 @@ static void comment();
 char* tokstr();
 static void lineba();
 char yyfilenm[1024];
+bool term = false;
+#define yyterminate() return (term = !term)?END : YY_NULL
 %}
 
 %%
 
 {lineba}                    {lineba();}
 
-[ ]*\/\/\ *{Rac}\:?\ *begin\ *\n  {BEGIN ACTIVE;}
-\/\/\ *{Rac}\:?\ *end\ *\n        {BEGIN INITIAL;}
+[ ]*\/\/\ *{Rac}\:?\ *begin\ *\n  {BEGIN ACTIVE; return RAC_BEGIN;}
+\/\/\ *{Rac}\:?\ *end\ *\n        {BEGIN INITIAL; return RAC_END;}
 
 <INITIAL>.*\n               {}
 

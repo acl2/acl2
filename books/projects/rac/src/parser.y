@@ -39,8 +39,9 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 
 %define parse.error verbose
 
+%token END
 %token TYPEDEF CONST STRUCT ENUM TEMPLATE
-%token RAC
+%token RAC RAC_BEGIN RAC_END
 %token INT UINT INT64 UINT64 BOOL
 %token SLC SET_SLC
 %token FOR IF ELSE WHILE DO SWITCH CASE DEFAULT BREAK RETURN ASSERT
@@ -52,7 +53,7 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 %token <s> RSHFT_OP LSHFT_OP AND_OP OR_OP LE_OP GE_OP EQ_OP NE_OP
 %token <s> ID NAT TRUE FALSE TYPEID TEMPLATEID
 %token <s> '=' '+' '-' '&' '|' '!' '~' '*' '%' '<' '>' '^' '/'
-%start program
+%start guarded_program
 
 %type <t> type_spec typedef_type
 %type <t> primitive_type array_param_type mv_type register_type struct_type enum_type
@@ -93,6 +94,13 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 // A program consists of a sequence of type definitions, global constant declarations,
 // and function definitions.  The parser produces four linked lists corresponding to
 // these sequences, stored as the values of the variables typeDefs, constDecs, and funDefs.
+
+guarded_program
+  : RAC_BEGIN program RAC_END END {}
+  | RAC_BEGIN program END {yyerror("Missing RAC guard (`// RAC end`)");}
+  | RAC_BEGIN END {yyerror("Missing RAC guard (`// RAC end`)");}
+  | END {yyerror("Missing RAC guard (`// RAC begin`)");}
+  ;
 
 program
   : program program_element {}

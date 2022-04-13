@@ -34,10 +34,6 @@ int main(int argc, char **argv) {
       buf.pop_back();
       buf.pop_back();
 
-      if (prog.isEmpty())
-        puts("Warning: no function definitions found,"
-             " maybe you forgot the `RAC begin` guard");
-
       if (argc > 1) {
         if (!strcmp(argv[1], "-acl2")) {
           buf +=  ".ast.lsp";
