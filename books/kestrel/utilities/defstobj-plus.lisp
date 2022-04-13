@@ -286,7 +286,7 @@
              (resizable (assoc-keyword-with-default :resizable keyword-value-list nil))
              (element-type (cadr type))
              (element-type-pred (type-spec-to-name element-type 'element-type))
-             (nil-obviously-satisfies-element-typep (and (not (eq 'element-type element-type-pred))
+             (nil-obviously-satisfies-element-typep (and (not (eq 'element-type element-type-pred)) ; todo: perhaps use the result of translate-declaration-to-guard-gen here?
                                                          (nil-satisfies-predp element-type-pred state)))
              ;; is (nth n l) here okay (not a variable)?
              (type-claim-for-nth-n-l (translate-declaration-to-guard-gen element-type '(nth n l) t nil))
@@ -327,7 +327,7 @@
                                          (;len-of-cdr
                                           )))))
 
-              ;; Updating gives a well-formed stobj:
+              ;; Updating the array field preserves well-formedness:
               (defthm ,(pack$ top-recognizer '-of- update-fn)
                 (implies (and (,top-recognizer ,stobj-name)
                               (< i (,length-fn ,stobj-name))
@@ -380,9 +380,8 @@
 
               ;; First write-over-write rule:
               (defthm ,(pack$ update-fn '-of- update-fn '-same)
-                (implies t;(natp i)
-                         (equal (,update-fn i v1 (,update-fn i v2 ,stobj-name))
-                                (,update-fn i v1 ,stobj-name)))
+                (equal (,update-fn i v1 (,update-fn i v2 ,stobj-name))
+                       (,update-fn i v1 ,stobj-name))
                 :hints (("Goal" :in-theory (enable ,update-fn))))
 
               ;; Second write-over-write rule:
@@ -442,7 +441,7 @@
                          :hints (("Goal" :in-theory (enable resize-list ,recognizer)
                                   :induct (resize-list lst n default-value))))
 
-                       ;; Resizing gives a well-formed stobj:
+                       ;; Resizing the array field preserves well-formedness:
                        (defthm ,(pack$ top-recognizer '-of- resize-fn)
                          (implies (,top-recognizer ,stobj-name)
                                   (,top-recognizer (,resize-fn i ,stobj-name)))
@@ -465,7 +464,19 @@
                                                  (,accessor-fn i ,stobj-name)
                                                ',initial-value)
                                            nil)))
-                         :hints (("Goal" :in-theory (enable ,accessor-fn ,resize-fn ,length-fn))))))
+                         :hints (("Goal" :in-theory (enable ,accessor-fn ,resize-fn ,length-fn))))
+
+                       ;; TODO: Make safe versions that don't case split:
+                       (defthm ,(pack$ resize-fn '-of- update-fn)
+                         (implies (and (natp i) ; move hyps to conclusion?
+                                       (natp new-size)
+                                       (< i (,length-fn ,stobj-name)))
+                                  (equal (,resize-fn new-size (,update-fn i v ,stobj-name))
+                                         (if (< i new-size)
+                                             (,update-fn i v (,resize-fn new-size ,stobj-name))
+                                           (,resize-fn new-size ,stobj-name))))
+                         :hints (("Goal" :in-theory (enable ,update-fn ,resize-fn ,length-fn))))
+                       ))
               ,@(interaction-theorems-for-array-field all-field-infos 0 stobj-name renaming field-num update-fn resize-fn)
               )
             ;; names:
@@ -492,7 +503,8 @@
              (type-claim-for-v (translate-declaration-to-guard-gen type 'v t nil))
              (type-claim-for-accessor (translate-declaration-to-guard-gen type `(,accessor-fn ,stobj-name) t nil))
              )
-        (mv `((defthm ,(pack$ top-recognizer '-of- update-fn)
+        (mv `(;; Updating the scalar field preserves well-formedness:
+              (defthm ,(pack$ top-recognizer '-of- update-fn)
                 (implies (and (,top-recognizer ,stobj-name)
                               ,type-claim-for-v)
                          (,top-recognizer (,update-fn v ,stobj-name)))
@@ -511,6 +523,7 @@
                        (,update-fn v2 ,stobj-name))
                 :hints (("Goal" :in-theory (enable ,update-fn))))
 
+              ;; The accessor of the scalar field returns a value of the appropriate type:
               ,@(and (not (equal type t)) ; rewrite rule would be illegal
                      `((defthm ,(pack$ field-type-name '-of- accessor-fn)
                          (implies (,top-recognizer ,stobj-name)
@@ -574,6 +587,7 @@
 
            ,@theorems-for-fields
 
+           ;; The stobj creation function returns a well-formed stobj:
            (defthm ,(pack$ top-recognizer '-of- creator)
              (,top-recognizer (,creator))
              :hints (("Goal" :in-theory (enable ,top-recognizer
