@@ -330,7 +330,7 @@
    (and (call-of 'lambda expr)
         (true-listp (fargs expr))
         (<= 2 (len (fargs expr)))
-        (symbol-listp (ulambda-formals expr)) ;the lambda is not necessarily complete (as it will be once translated)!
+        (symbol-listp (ulambda-formals expr)) ;the lambda is not necessarily closed (as it will be once translated)!
         ;todo: check the declares?
         (untranslated-termp (ulambda-body expr))))
 

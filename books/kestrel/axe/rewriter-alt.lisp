@@ -57,7 +57,7 @@
        ,objective)))
 
 ;checks whether all vars in term appear as keys in alist
-;fixme maybe this handles (complete) lambdas naturally?
+;fixme maybe this handles (closed) lambdas naturally?
 (defun any-free-varsp (term alist lst-flg)
   (declare (xargs :guard (and (symbol-alistp alist)
                               (if lst-flg

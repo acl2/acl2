@@ -206,7 +206,7 @@
 ;;                  (lambda-body (third (ffn-symb term)))
 ;;                  (lambda-actuals (fargs term)))
 ;;              (union-eq (vars-in-term-lst lambda-actuals)
-;;                        ;;fixme is this always nil, since lambda have to be complete?:
+;;                        ;;fixme is this always nil, since lambda have to be closed?:
 ;;                        (set-difference-eq (vars-in-term lambda-body)
 ;;                                           lambda-formals)
 ;;                        ))
