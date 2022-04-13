@@ -33,10 +33,10 @@
            (maybe-dargp darg))
   :hints (("Goal" :in-theory (enable maybe-dargp))))
 
-;; The renumbering-stobj is a stobj that stores a "renumbering", that is, a map from
-;; some initial segment of the natural numbers (nodenums) to dargs.  Perhaps we
-;; could choose some darg as the initial value, but using nil ensures that we
-;; have to prove values are valid when we use them.
+;; The renumbering-stobj is a stobj that stores a "renumbering", that is, a map
+;; from node numbers (up to some limit) to dargs (see dargp).  Entries beyond
+;; the initial region of valid elements will be nil (since nil is not a darg,
+;; this ensures that we have to prove values are valid when we use them).
 (defstobj renumbering-stobj
   (renumbering :type (array (satisfies maybe-dargp) (10000)) :resizable t :initially nil)
   ;; :inline t ;; TODO: Try this
