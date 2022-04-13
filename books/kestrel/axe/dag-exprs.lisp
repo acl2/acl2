@@ -359,3 +359,10 @@
   :hints (("Goal" :expand ((nth 1 (cdr (dargs expr)))
                            (nth 2 (dargs expr)))
            :in-theory (enable nth))))
+
+;; use (equal 'quote (car ...)) as the normal form
+;; enable?
+(defthmd myquotep-when-dag-exprp0-and-quote
+  (implies (dag-exprp0 expr)
+           (equal (myquotep expr)
+                  (equal 'quote (car expr)))))

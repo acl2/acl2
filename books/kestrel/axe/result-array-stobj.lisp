@@ -17,17 +17,9 @@
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)
 (include-book "dags") ;for all-dargp
+(local (include-book "kestrel/lists-light/resize-list" :dir :system))
 
 ;a result-array maps nodenums to alists from rewrite-objectives to nodenums-or-quoteps (the alist is nil if the node is not yet rewritten)
-
-;move to a stobj-helpers book?
-(defthm len-of-resize-list
-  ;; [Jared] tweaked from natp hyp to nfix conclusion, and renamed variables,
-  ;; for compatibility with std/lists
-  (equal (len (resize-list lst n default))
-         (nfix n)))
-
-(in-theory (disable resize-list))
 
 (defund result-alistp (alist)
   (declare (xargs :guard t))
