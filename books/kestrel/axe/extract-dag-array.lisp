@@ -18,7 +18,7 @@
 ;tag-array tells us which nodes to keep
 ;returns (mv new-dag-array-len new-dag-array translation-array)
 ;uses the array named TRANSLATION-ARRAY-NAME - what else?
-;TODO: compare to build-reduced-dag2, except this one returns an array
+;TODO: compare to build-reduced-dag, except this one returns an array
 ;todo: avoid making a node that is a quotep?
 ;; We do not use the standard functions to add nodes to dags because we are just shifting and dropping nodes.
 (defun extract-dag-array-aux (old-dag-nodenum dag-len old-dag-len old-dag-array-name old-dag-array

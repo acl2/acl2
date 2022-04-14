@@ -457,7 +457,7 @@
 ;; less a dag-parent-array!), because we assume that the incoming DAG has no
 ;; duplicates, and we are not changing exprs in a way that can introduce duplicates.
 ;; TODO: avoid making a node that is a quotep (but then consider what to do about possible duplicate exprs caused by that!).
-(defund build-reduced-dag2 (n top-nodenum dag-array-name dag-array
+(defund build-reduced-dag (n top-nodenum dag-array-name dag-array
                               tag-array ; nodes that we want to keep have been tagged
                               dag-len   ;the next nodenum to use in the new DAG
                               translation-array
@@ -470,6 +470,7 @@
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 top-nodenum))
                               (natp n)
                               (natp dag-len)
+                              (<= dag-len n)
                               (< top-nodenum (alen1 'tag-array tag-array))
                               (< top-nodenum (alen1 'translation-array translation-array))
                               (<= n (+ 1 top-nodenum))
@@ -477,14 +478,15 @@
                   :measure (+ 1 (nfix (+ 1 (- top-nodenum n))))
                   :guard-hints (("Goal" :in-theory (enable pseudo-dag-arrayp))) ;fixme?
                   :split-types t)
-           (type (integer 0 *) top-nodenum n dag-len))
+           (type (integer 0 2147483645) top-nodenum)
+           (type (integer 0 2147483646) n dag-len))
   (if (or (not (mbt (natp n)))
           (not (mbt (natp top-nodenum)))
           (> n top-nodenum))
       (mv dag-acc translation-array)
     (let ((tag (aref1 'tag-array tag-array n))) ;only nodes that are tagged get put into the result
       (if (not tag) ;drop it and don't increment the dag-len
-          (build-reduced-dag2 (+ 1 n) top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)
+          (build-reduced-dag (+ 1 n) top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)
         (let* ((expr (aref1 dag-array-name dag-array n))
                (expr (if (or (variablep expr)
                              (fquotep expr)) ;todo: maybe inline constants
@@ -498,30 +500,30 @@
                ;; Record the new nodenum for old node N:
                (translation-array (aset1 'translation-array translation-array n dag-len))
                (dag-acc (acons-fast dag-len expr dag-acc)))
-          (build-reduced-dag2 (+ 1 n) top-nodenum dag-array-name dag-array tag-array (+ 1 dag-len) translation-array dag-acc))))))
+          (build-reduced-dag (+ 1 n) top-nodenum dag-array-name dag-array tag-array (+ 1 dag-len) translation-array dag-acc))))))
 
-(defthm consp-of-mv-nth-0-of-build-reduced-dag2
+(defthm consp-of-mv-nth-0-of-build-reduced-dag
   (implies (consp dag-acc)
-           (consp (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))
-  :hints (("Goal" :in-theory (enable build-reduced-dag2))))
+           (consp (mv-nth 0 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))
+  :hints (("Goal" :in-theory (enable build-reduced-dag))))
 
-(defthm alen1-of-mv-nth-1-of-build-reduced-dag2
-  (equal (alen1 'translation-array (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))
+(defthm alen1-of-mv-nth-1-of-build-reduced-dag
+  (equal (alen1 'translation-array (mv-nth 1 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))
          (alen1 'translation-array translation-array))
-  :hints (("Goal" :in-theory (enable build-reduced-dag2))))
+  :hints (("Goal" :in-theory (enable build-reduced-dag))))
 
-(defthm array1p-of-mv-nth-1-of-build-reduced-dag2
+(defthm array1p-of-mv-nth-1-of-build-reduced-dag
   (implies (and (array1p 'translation-array translation-array)
                 (<= 0 n)
                 (<= n top-nodenum)
                 (< top-nodenum (alen1 'translation-array translation-array)))
-           (array1p 'translation-array (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))
-  :hints (("Goal" :in-theory (enable build-reduced-dag2)
-           :expand ((build-reduced-dag2 n n dag-array-name
+           (array1p 'translation-array (mv-nth 1 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))
+  :hints (("Goal" :in-theory (enable build-reduced-dag)
+           :expand ((build-reduced-dag n n dag-array-name
                                         dag-array tag-array dag-len
                                         translation-array dag-acc)))))
 
-(defthm bounded-translation-arrayp-aux-of-translation-array-after-build-reduced-dag2
+(defthm bounded-translation-arrayp-aux-of-translation-array-after-build-reduced-dag
   (implies (and (array1p 'translation-array translation-array)
                 (array1p 'tag-array tag-array)
                 (alistp dag-acc)
@@ -543,8 +545,8 @@
                 (all-natp (strip-cars dag-acc))
                 )
            (bounded-translation-arrayp-aux top-nodenum
-                                           (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
-                                           (+ 1 (car (car (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))))))
+                                           (mv-nth 1 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
+                                           (+ 1 (car (car (mv-nth 0 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))))))
   :hints (;; ("subgoal *1/1" :use (:instance BOUNDED-TRANSLATION-ARRAYP-AUX-MONOTONE
           ;;                                 (BOUND (+ 1 (CAR (CAR DAG-ACC))))
           ;;                                 (TRANSLATION-ARRAY TRANSLATION-ARRAY)
@@ -552,13 +554,13 @@
           ;;                                 (nodenum2 (+ -1 N))
           ;;                                 (bound2 (+ 1 (CAR (CAR DAG-ACC)))))
           ;;  :in-theory (disable BOUNDED-TRANSLATION-ARRAYP-AUX-MONOTONE))
-          ("Goal" :in-theory (enable build-reduced-dag2)
-           :expand ((build-reduced-dag2 n n dag-array-name
+          ("Goal" :in-theory (enable build-reduced-dag)
+           :expand ((build-reduced-dag n n dag-array-name
                                         dag-array tag-array dag-len
                                         translation-array dag-acc)))))
 
-(defthm bounded-translation-arrayp-aux-of-translation-array-after-build-reduced-dag2-gen
-  (implies (and (<= (+ 1 (car (car (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))) bound)
+(defthm bounded-translation-arrayp-aux-of-translation-array-after-build-reduced-dag-gen
+  (implies (and (<= (+ 1 (car (car (mv-nth 0 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))) bound)
                 (array1p 'translation-array translation-array)
                 (array1p 'tag-array tag-array)
                 (alistp dag-acc)
@@ -580,12 +582,12 @@
                 (all-natp (strip-cars dag-acc))
                 )
            (bounded-translation-arrayp-aux top-nodenum
-                                           (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
+                                           (mv-nth 1 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
                                            bound))
-  :hints (("Goal" :use (:instance bounded-translation-arrayp-aux-of-translation-array-after-build-reduced-dag2)
-           :in-theory (disable bounded-translation-arrayp-aux-of-translation-array-after-build-reduced-dag2))))
+  :hints (("Goal" :use (:instance bounded-translation-arrayp-aux-of-translation-array-after-build-reduced-dag)
+           :in-theory (disable bounded-translation-arrayp-aux-of-translation-array-after-build-reduced-dag))))
 
-(defthm build-reduced-dag2-type
+(defthm build-reduced-dag-type
   (implies (and (array1p 'translation-array translation-array)
                 (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array dag-len)
                 (array1p 'tag-array tag-array)
@@ -598,52 +600,52 @@
                 (< top-nodenum (alen1 'tag-array tag-array))
                 (< top-nodenum (alen1 'translation-array translation-array))
                 (<= n (+ 1 top-nodenum))
-                ;;(consp (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))
+                ;;(consp (mv-nth 0 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))
                 )
-           (pseudo-dagp-aux (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
-                            (if (consp (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))
-                                (car (car (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))
+           (pseudo-dagp-aux (mv-nth 0 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
+                            (if (consp (mv-nth 0 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))
+                                (car (car (mv-nth 0 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))
                               -1)))
-  :hints (("Goal" :induct (build-reduced-dag2 n top-nodenum
+  :hints (("Goal" :induct (build-reduced-dag n top-nodenum
                                               dag-array-name dag-array tag-array
                                               dag-len translation-array dag-acc)
            :expand ((pseudo-dagp-aux dag-acc -1)
                     ;;(pseudo-dagp-aux dag-acc (car (car dag-acc)))
                     )
-           :in-theory (e/d (build-reduced-dag2 ; pseudo-dagp-aux
+           :in-theory (e/d (build-reduced-dag ; pseudo-dagp-aux
                             ) (                ;dag-exprp
                             )))))
 
-(defthm consp-of-mv-nth-0-of-build-reduced-dag2-alt
+(defthm consp-of-mv-nth-0-of-build-reduced-dag-alt
   (implies (and (aref1 'tag-array tag-array top-nodenum) ;since the top-nodenum is tagged, the result cannot be empty
                 (natp top-nodenum)
                 (natp n)
                 (<= n top-nodenum))
-           (consp (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))
-  :hints (("Goal" :induct (build-reduced-dag2 n top-nodenum
+           (consp (mv-nth 0 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))
+  :hints (("Goal" :induct (build-reduced-dag n top-nodenum
                                               dag-array-name dag-array tag-array
                                               dag-len translation-array dag-acc)
            :expand ((pseudo-dagp-aux dag-acc -1))
-           :in-theory (e/d (build-reduced-dag2 ; pseudo-dagp-aux
+           :in-theory (e/d (build-reduced-dag ; pseudo-dagp-aux
                             ) (                ;dag-exprp
                                )))))
 
-(defthm natp-of-car-of-car-of-mv-nth-0-of-build-reduced-dag2
+(defthm natp-of-car-of-car-of-mv-nth-0-of-build-reduced-dag
   (implies (and (aref1 'tag-array tag-array top-nodenum) ;since the top-nodenum is tagged, the result cannot be empty
                 (natp top-nodenum)
                 (natp n)
                 (<= n top-nodenum)
                 (natp dag-len))
-           (natp (car (car (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))))
-  :hints (("Goal" :induct (build-reduced-dag2 n top-nodenum
+           (natp (car (car (mv-nth 0 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))))
+  :hints (("Goal" :induct (build-reduced-dag n top-nodenum
                                               dag-array-name dag-array tag-array
                                               dag-len translation-array dag-acc)
            :expand ((pseudo-dagp-aux dag-acc -1))
-           :in-theory (e/d (build-reduced-dag2 ; pseudo-dagp-aux
+           :in-theory (e/d (build-reduced-dag ; pseudo-dagp-aux
                             ) (                ;dag-exprp
                             )))))
 
-(defthm pseudo-dagp-of-mv-nth-0-of-build-reduced-dag2
+(defthm pseudo-dagp-of-mv-nth-0-of-build-reduced-dag
   (implies (and (aref1 'tag-array tag-array top-nodenum) ;since the top-nodenum is tagged, the result cannot be empty
                 (array1p 'translation-array translation-array)
                 (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array dag-len)
@@ -657,41 +659,41 @@
                 (< top-nodenum (alen1 'tag-array tag-array))
                 (< top-nodenum (alen1 'translation-array translation-array))
                 (<= n top-nodenum))
-           (pseudo-dagp (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array
+           (pseudo-dagp (mv-nth 0 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array
                                                       dag-len ;the next nodenum to use in the new dag
                                                       translation-array dag-acc))))
-  :hints (("Goal" :use (build-reduced-dag2-type
-                        consp-of-mv-nth-0-of-build-reduced-dag2)
+  :hints (("Goal" :use (build-reduced-dag-type
+                        consp-of-mv-nth-0-of-build-reduced-dag)
            :expand ()
-           :in-theory (e/d (pseudo-dagp) (natp build-reduced-dag2-type
-                                               consp-of-mv-nth-0-of-build-reduced-dag2
+           :in-theory (e/d (pseudo-dagp) (natp build-reduced-dag-type
+                                               consp-of-mv-nth-0-of-build-reduced-dag
                                                ;;pseudo-dagp-aux-of-car-of-car-when-pseudo-dagp-aux
                                                )))))
 
-(defthm true-listp-of-mv-nth-0-of-build-reduced-dag2
+(defthm true-listp-of-mv-nth-0-of-build-reduced-dag
   (implies (true-listp dag-acc)
            (true-listp
-            (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array
+            (mv-nth 0 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array
                                           dag-len translation-array dag-acc))))
-  :hints (("Goal" :in-theory (enable build-reduced-dag2))))
+  :hints (("Goal" :in-theory (enable build-reduced-dag))))
 
-(defthm <=-of-len-of-mv-nth-0-of-build-reduced-dag2
+(defthm <=-of-len-of-mv-nth-0-of-build-reduced-dag
   (implies (and (natp n)
                 (natp top-nodenum)
                 (<= n (+ 1 top-nodenum)))
-           (<= (len (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))
+           (<= (len (mv-nth 0 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))
                (+ (len dag-acc)
                   (+ 1 (- top-nodenum n)))))
-  :hints (("Goal" :in-theory (enable build-reduced-dag2))))
+  :hints (("Goal" :in-theory (enable build-reduced-dag))))
 
-(defthm <=-of-len-of-mv-nth-0-of-build-reduced-dag2-special
+(defthm <=-of-len-of-mv-nth-0-of-build-reduced-dag-special
   (implies (natp top-nodenum)
-           (<= (len (mv-nth 0 (build-reduced-dag2 0 top-nodenum dag-array-name dag-array tag-array dag-len translation-array nil)))
+           (<= (len (mv-nth 0 (build-reduced-dag 0 top-nodenum dag-array-name dag-array tag-array dag-len translation-array nil)))
                (+ 1 top-nodenum)))
-  :hints (("Goal" :use (:instance <=-of-len-of-mv-nth-0-of-build-reduced-dag2 (dag-acc nil) (n 0))
-           :in-theory (disable <=-of-len-of-mv-nth-0-of-build-reduced-dag2))))
+  :hints (("Goal" :use (:instance <=-of-len-of-mv-nth-0-of-build-reduced-dag (dag-acc nil) (n 0))
+           :in-theory (disable <=-of-len-of-mv-nth-0-of-build-reduced-dag))))
 
-(defthm aref1-of-mv-nth-1-of-build-reduced-dag2-too-low
+(defthm aref1-of-mv-nth-1-of-build-reduced-dag-too-low
   (implies (and (natp nodenum)
                 (< nodenum n)
                 (array1p 'translation-array translation-array)
@@ -700,15 +702,15 @@
                 (<= n (+ 1 top-nodenum))
                 )
            (equal (aref1 'translation-array
-                         (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
+                         (mv-nth 1 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
                          nodenum)
                   (aref1 'translation-array
                          translation-array
                          nodenum)))
-  :hints (("Goal" :in-theory (e/d (build-reduced-dag2) (natp)))))
+  :hints (("Goal" :in-theory (e/d (build-reduced-dag) (natp)))))
 
 ;; nodenum doesn't become unset in the translation-array
-(defthm natp-of-aref1-of-mv-nth-1-of-build-reduced-dag2-when-natp-of-aref1
+(defthm natp-of-aref1-of-mv-nth-1-of-build-reduced-dag-when-natp-of-aref1
   (implies (and (natp (aref1 'translation-array translation-array nodenum))
                 (natp nodenum)
                 (<= nodenum top-nodenum)
@@ -726,11 +728,11 @@
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 )
            (natp (aref1 'translation-array
-                        (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
+                        (mv-nth 1 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
                         nodenum)))
-  :hints (("Goal" :in-theory (e/d (build-reduced-dag2) (natp)))))
+  :hints (("Goal" :in-theory (e/d (build-reduced-dag) (natp)))))
 
-(defthm natp-of-aref1-of-mv-nth-1-of-build-reduced-dag2-when-tagged
+(defthm natp-of-aref1-of-mv-nth-1-of-build-reduced-dag-when-tagged
   (implies (and (aref1 'tag-array tag-array nodenum)
                 (natp nodenum)
                 (<= nodenum top-nodenum)
@@ -748,11 +750,11 @@
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 )
            (natp (aref1 'translation-array
-                        (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
+                        (mv-nth 1 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
                         nodenum)))
-  :hints (("Goal" :in-theory (e/d (build-reduced-dag2) (natp)))))
+  :hints (("Goal" :in-theory (e/d (build-reduced-dag) (natp)))))
 
-(defthm nat-listp-of-aref1-list-aux-of-mv-nth-1-of-build-reduced-dag2-when-all-taggedp
+(defthm nat-listp-of-aref1-list-aux-of-mv-nth-1-of-build-reduced-dag-when-all-taggedp
   (implies (and (all-taggedp nodenums 'tag-array tag-array)
                 (all-natp nodenums)
                 (all-<= nodenums top-nodenum)
@@ -771,12 +773,12 @@
                 (nat-listp acc)
                 )
            (nat-listp (aref1-list-aux 'translation-array
-                                      (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
+                                      (mv-nth 1 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
                                       nodenums
                                       acc)))
   :hints (("Goal" :in-theory (e/d (nat-listp aref1-list-aux ALL-TAGGEDP) (natp)))))
 
-(defthm nat-listp-of-aref1-list-of-mv-nth-1-of-build-reduced-dag2-when-all-taggedp
+(defthm nat-listp-of-aref1-list-of-mv-nth-1-of-build-reduced-dag-when-all-taggedp
   (implies (and (all-taggedp nodenums 'tag-array tag-array)
                 (all-natp nodenums)
                 (all-<= nodenums top-nodenum)
@@ -794,7 +796,7 @@
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 )
            (nat-listp (aref1-list 'translation-array
-                                  (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
+                                  (mv-nth 1 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
                                   nodenums)))
   :hints (("Goal" :in-theory (e/d (aref1-list) ()))))
 
@@ -816,9 +818,9 @@
 ;;                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
 ;;                )
 ;;           (natp (aref1 'translation-array
-;;                        (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
+;;                        (mv-nth 1 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
 ;;                        nodenum)))
-;;  :hints (("Goal" :in-theory (e/d (build-reduced-dag2) (natp)))))
+;;  :hints (("Goal" :in-theory (e/d (build-reduced-dag) (natp)))))
 
 ;; (thm
 ;;  (implies (and (all-taggedp nodenums 'tag-array tag-array)
@@ -838,7 +840,7 @@
 ;;                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
 ;;                )
 ;;           (nat-listp (aref1-list 'translation-array
-;;                                  (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
+;;                                  (mv-nth 1 (build-reduced-dag n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
 ;;                                  nodenums)))
 ;;  :hints (("Goal" :in-theory (enable nat-listp))))
 
@@ -850,12 +852,13 @@
   (declare (xargs :guard (and (natp top-nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 top-nodenum))))
            (ignore print))
-  (let* ((tag-array (tag-supporters-of-node top-nodenum dag-array-name dag-array 'tag-array (+ 1 top-nodenum)))
-         (translation-array (make-empty-array 'translation-array (+ 1 top-nodenum))))
+  (b* ((- (cw "(Discarding unused nodes (~x0 total nodes))~%" (+ 1 top-nodenum)))
+       (tag-array (tag-supporters-of-node top-nodenum dag-array-name dag-array 'tag-array (+ 1 top-nodenum)))
+       (translation-array (make-empty-array 'translation-array (+ 1 top-nodenum))))
     (mv-let (dag-lst translation-array)
-            (build-reduced-dag2 0 top-nodenum dag-array-name dag-array tag-array 0 translation-array nil)
-            (declare (ignore translation-array))
-            dag-lst)))
+      (build-reduced-dag 0 top-nodenum dag-array-name dag-array tag-array 0 translation-array nil)
+      (declare (ignore translation-array))
+      dag-lst)))
 
 (defthm true-listp-of-drop-non-supporters-array
   (true-listp (drop-non-supporters-array dag-array-name dag-array top-nodenum print))
@@ -894,7 +897,7 @@
   (let* ((tag-array (tag-supporters-of-nodes (list smaller-nodenum larger-nodenum) dag-array-name dag-array 'tag-array (+ 1 larger-nodenum)))
          (translation-array (make-empty-array 'translation-array (+ 1 larger-nodenum))))
     (mv-let (dag-lst translation-array)
-            (build-reduced-dag2 0 larger-nodenum dag-array-name dag-array tag-array 0 translation-array nil)
+            (build-reduced-dag 0 larger-nodenum dag-array-name dag-array tag-array 0 translation-array nil)
             (mv (aref1 'translation-array translation-array smaller-nodenum)
                 (aref1 'translation-array translation-array larger-nodenum)
                 dag-lst))))

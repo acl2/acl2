@@ -115,7 +115,7 @@
          (tag-array (tag-supporters-of-nodes nodenums dag-array-name dag-array 'tag-array (+ 1 max-nodenum)))
          (translation-array (make-empty-array 'translation-array (+ 1 max-nodenum))))
     (mv-let (dag-lst translation-array)
-      (build-reduced-dag2 0 max-nodenum dag-array-name dag-array tag-array 0 translation-array nil)
+      (build-reduced-dag 0 max-nodenum dag-array-name dag-array tag-array 0 translation-array nil)
       (mv (aref1-list 'translation-array translation-array nodenums)
           dag-lst))))
 
