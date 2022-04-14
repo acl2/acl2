@@ -1,7 +1,7 @@
 ; Renumbering DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,9 +13,7 @@
 (in-package "ACL2")
 
 (include-book "dag-arrays")
-;(include-book "dag-parent-array") ;todo: drop.  but need ALL-DARGP-LESS-THAN-WHEN-NO-ATOMS etc
 (include-book "kestrel/utilities/erp" :dir :system)
-(include-book "kestrel/lists-light/repeat" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
