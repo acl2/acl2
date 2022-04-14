@@ -265,6 +265,8 @@
                   (,fn array-name array m ,@extra-vars))
          :hints (("Goal" :in-theory (enable ,fn))))
 
+       ;; The first NUM-VALID-NODES entries were all fine, and the value being written is fine,
+       ;; so the first NUM-VALID-NODES entries are still fine, regardless of index.
        (defthm ,(pack$ fn '-of-aset1)
          (implies (and (,fn array-name array num-valid-nodes ,@extra-vars)
                        ,pred ;over index and val
@@ -273,13 +275,26 @@
                   (,fn array-name (aset1 array-name array index val) num-valid-nodes ,@extra-vars))
          :hints (("Goal" :in-theory (enable ,aux-fn ,fn))))
 
+       ;; Special case for extending the range of ok indices.
        (defthm ,(pack$ fn '-of-aset1-at-end)
-         (implies (and (,fn array-name array index ,@extra-vars)
+         (implies (and (,fn array-name array index ,@extra-vars) ; values below index were fine
                        ,pred ;over index and val
                        (< index (alen1 array-name array))
                        (natp index))
                   (,fn array-name (aset1 array-name array index val) (+ 1 index) ,@extra-vars))
          :hints (("Goal" :in-theory (enable ,aux-fn ,fn))))
+
+       ;; Variant of the rule just above that matches better
+       (defthm ,(pack$ fn '-of-aset1-at-end-gen)
+         (implies (and (,fn array-name array index ,@extra-vars) ; values below index were fine
+                       (<= num-valid-nodes (+ 1 index))
+                       ,pred ;over index and val
+                       (< index (alen1 array-name array))
+                       (natp num-valid-nodes)
+                       (natp index))
+                  (,fn array-name (aset1 array-name array index val) num-valid-nodes ,@extra-vars))
+         :hints (("Goal" :use ,(pack$ fn '-of-aset1-at-end)
+                  :in-theory (disable ,(pack$ fn '-of-aset1-at-end)))))
 
        ,@(and default-satisfies-predp
               `((defthm ,(pack$ fn '-of-make-empty-array-with-default)
