@@ -1418,7 +1418,7 @@
                                                      ))
                  ((when erp) (mv erp nil))
                  (top-nodenum (aref1 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array (top-nodenum main-dag))))
-              (mv (erp-nil) (drop-non-supporters-array 'dag-array dag-array top-nodenum nil)))
+              (mv (erp-nil) (drop-non-supporters-array-with-name 'dag-array dag-array top-nodenum nil)))
           (b* ( ;; make the subdag into a dag array:
                (dag-len (+ 1 (top-nodenum subdag-for-var)))
                (dag-array (make-into-array-with-len 'dag-array subdag-for-var (+ dag-len 1 (top-nodenum main-dag))))
@@ -1435,7 +1435,7 @@
                                                    ))
                ((when erp) (mv erp nil))
                (top-nodenum (aref1 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array (top-nodenum main-dag))))
-            (mv (erp-nil) (drop-non-supporters-array 'dag-array dag-array top-nodenum nil))))))))
+            (mv (erp-nil) (drop-non-supporters-array-with-name 'dag-array dag-array top-nodenum nil))))))))
 
 ;;(compose-dags ''3 'x ''4 nil)
 ;;(compose-dags ''3 'x '((2 foo 1) (1 bar 0) (0 . x)) nil)

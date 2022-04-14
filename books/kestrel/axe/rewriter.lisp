@@ -1281,12 +1281,12 @@
           (prog2$ (and print (cw ")~%"))   ; balances "(Simplifying DAG ...
                   (mv (erp-nil)
                       ;; todo: could consider doing prune-with-contexts here
-                      (drop-non-supporters-array 'dag-array dag-array renamed-top-node print) ; also converts to a dag (list)
+                      (drop-non-supporters-array-with-name 'dag-array dag-array renamed-top-node print) ; also converts to a dag (list)
                       limits state))
         ;; STEP 2: Rewrite again, using internal contexts:
         (b* (;;could we stay in the world of arrays when doing this? and use the array to compute internal contexts?
              ;;could check here whether nothing changed and not build a new list?
-             (dag (drop-non-supporters-array 'dag-array dag-array renamed-top-node print))
+             (dag (drop-non-supporters-array-with-name 'dag-array dag-array renamed-top-node print))
              (dag-len (+ 1 (top-nodenum dag)))
              (- (and print (cw "~%(Simplifying again with internal contexts (~x0 nodes)...~%" dag-len)))
              (initial-array-size (+ (* 2 dag-len) external-context-array-len slack-amount)) ;the array starts out containing the dag; we leave space for another copy, plus the external context nodes, plus some slack
@@ -1352,7 +1352,7 @@
               (let ((dag
                      ;;could check here whether nothing changed and not build a new list?
                      ;;is this call still important? (well it converts the array to a list...)
-                     (drop-non-supporters-array 'dag-array dag-array renamed-top-node print)))
+                     (drop-non-supporters-array-with-name 'dag-array dag-array renamed-top-node print)))
                 (prog2$ (and print (cw ")~%"))
                         (mv (erp-nil) dag limits state))))))))))
 

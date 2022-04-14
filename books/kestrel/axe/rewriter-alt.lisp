@@ -906,7 +906,7 @@
               (prog2$ (cw "array before crunching:~%")
                       (print-array-vals (+ -1 dag-len) 0 'dag-array dag-array)))
          (mv (erp-nil)
-             (drop-non-supporters-array 'dag-array dag-array final-result nil)
+             (drop-non-supporters-array-with-name 'dag-array dag-array final-result nil)
              state result-array-stobj))))))
 
 ;; Returns (mv erp dag-lst-or-quotep state result-array-stobj)

@@ -4832,7 +4832,7 @@
 
 ;; ;this can change nodenums
 ;; (defun dag-array-to-dag-lst (dag-array dag-len)
-;;   (drop-non-supporters-array 'dag-array ;fixme?
+;;   (drop-non-supporters-array-with-name 'dag-array ;fixme?
 ;;                              dag-array ;dag-len
 ;;                              (+ -1 dag-len) nil))
 
@@ -15476,7 +15476,7 @@
          (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
         ((mv renamed-smaller-nodenum renamed-larger-nodenum dag-lst)
 ;fixme: do we really need to rewrite the two nodes themselves, rather than just their equality?  i guess rewriting might commute things consistently.  call something like rewrite-nodenum?
-         (drop-non-supporters-array-two-nodes miter-array-name miter-array original-nodenum1 original-nodenum2) ;fixme or use a worklist?
+         (drop-non-supporters-array-two-nodes-with-name miter-array-name miter-array original-nodenum1 original-nodenum2) ;fixme or use a worklist?
          )
         ;;often there are ifs supporting the nodes with tests that have been replaced by constants (really?  shouldn't they have been merged with their then or else branches?
         ;;(dummy3 (print-dag-only-supporters-list (list original-nodenum1 original-nodenum2) miter-array-name miter-array))
@@ -15532,8 +15532,8 @@
         ;; The equality didn't rewrite to a constant.  Now analyze which recursive functions are involved and where they are.
         (let* ((dummy1 (cw "Done rewriting.)~%"))
                ;;could save consing this up? fixme should this analysis use the simplified-dag-lst ??
-               (supporting-nodes1 (supporters-of-node original-nodenum1 miter-array-name miter-array 'tag-array-for-supporters))
-               (supporting-nodes2 (supporters-of-node original-nodenum2 miter-array-name miter-array 'tag-array-for-supporters))
+               (supporting-nodes1 (supporters-of-node-with-name original-nodenum1 miter-array-name miter-array 'tag-array-for-supporters))
+               (supporting-nodes2 (supporters-of-node-with-name original-nodenum2 miter-array-name miter-array 'tag-array-for-supporters))
                (all-relevant-nodes (union-eql-tail supporting-nodes1 supporting-nodes2)) ;could sort both and merge? or don't cons up the lists of nodes at all?
                (rec-fn-nodes-to-handle (filter-rec-fn-nodes-to-handle all-relevant-nodes miter-array-name miter-array state))
                (rec-fn-nodes-to-handle (merge-sort-< rec-fn-nodes-to-handle))
@@ -15579,8 +15579,8 @@
                   ;; Find all the rec fns above the common supporters:
                   (b* ((- (cw "(Didn't prove any lemmas about supporting rec. fns.)~%"))
                        (supporters-array-length (+ 1 original-nodenum2))
-                       (node1-supporters-array (tag-supporters-of-node original-nodenum1 miter-array-name miter-array 'node1-supporters-array supporters-array-length))
-                       (node2-supporters-array (tag-supporters-of-node original-nodenum2 miter-array-name miter-array 'node2-supporters-array supporters-array-length))
+                       (node1-supporters-array (tag-supporters-of-node-with-name original-nodenum1 miter-array-name miter-array 'node1-supporters-array supporters-array-length))
+                       (node2-supporters-array (tag-supporters-of-node-with-name original-nodenum2 miter-array-name miter-array 'node2-supporters-array supporters-array-length))
                        ;;supporters of node1 that don't support node2:
                        (rec-fn-nodes1 (non-tagged-supporters-with-rec-fns-to-handle original-nodenum1 miter-array-name miter-array 'node2-supporters-array node2-supporters-array state))
                        (rec-fns1 (fns-at-nodes rec-fn-nodes1 miter-array-name miter-array))
@@ -16482,7 +16482,7 @@
                (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj))
               ;;ffixme eventually drop the conversion and pass the miter-array to the rewriter (but don't overwrite any existing nodes)??
               ;;  for now the rewriter can only work on an array named 'dag-array
-              (dag-lst (drop-non-supporters-array miter-array-name miter-array nodenum nil))
+              (dag-lst (drop-non-supporters-array-with-name miter-array-name miter-array nodenum nil))
               (dag-len (len dag-lst)) ;just use top nodenum?
               ;;add the equality:
               (dag-lst (acons-fast dag-len `(equal ,(top-nodenum dag-lst) ',constant-value) dag-lst))
@@ -16557,7 +16557,7 @@
                  ;;ffffffixme move this up????
                  (b* ((- (cw "Axe Prover failed)~%")) ;fixme don't say the prover failed if we didnt call it
                       ;;precompute the result for the whole dag? ;only cons up the nodes that have rec fn supporters?
-                      (supporters-of-node (supporters-of-node nodenum miter-array-name miter-array 'tag-array-for-supporters))
+                      (supporters-of-node (supporters-of-node-with-name nodenum miter-array-name miter-array 'tag-array-for-supporters))
                       (nodes-with-rec-fns (filter-rec-fn-nodes-to-handle supporters-of-node miter-array-name miter-array state))
                       ;;move these next 2 down?
                       (nodes-with-rec-fns (merge-sort-< nodes-with-rec-fns))
@@ -17809,7 +17809,7 @@
 
 
 ;;          ;;fixme slow to go to a list?
-;;          (dag-lst (build-reduced-dag 0 dag-len dag-array tag-array 0 nil nil))
+;;          (dag-lst (build-reduced-dag-with-name 0 dag-len dag-array tag-array 0 nil nil))
 ;;          (rev-dag-lst (reverse dag-lst))
 ;;          )
 ;;     (mv-let (translation-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)

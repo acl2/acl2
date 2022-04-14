@@ -1578,7 +1578,7 @@
  ;;               ;; (print-array2 'dag-array dag-array dag-len)
  ;;               (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
  ;;               (let* ( ;;fixme or we could use a worklist starting with literal-nodenums..
- ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
+ ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes-with-name literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
  ;;                                                                                 (+ 1 (maxelem literal-nodenums))))
  ;;                      (rec-fn-nodenums (filter-rec-fn-nodes2 (+ -1 dag-len) 'dag-array dag-array 'tag-array-for-prove-clause-miter tag-array-for-prove-clause-miter state))
  ;;                      (rec-fn-nodenums (merge-sort-< rec-fn-nodenums)) ;handle this better (drop it or call reverse?)

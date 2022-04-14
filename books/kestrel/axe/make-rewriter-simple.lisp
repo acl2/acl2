@@ -4473,7 +4473,7 @@
                    (print-memo-stats memoization))))
         (if (consp new-nodenum-or-quotep) ;check for quotep
             (mv (erp-nil) new-nodenum-or-quotep)
-          (mv (erp-nil) (drop-non-supporters-array 'dag-array dag-array new-nodenum-or-quotep nil)))))
+          (mv (erp-nil) (drop-non-supporters-array-with-name 'dag-array dag-array new-nodenum-or-quotep nil)))))
 
     (defthm ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)
       (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))) ; no error
@@ -5040,7 +5040,7 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;; Returns (mv erp dag-or-quotep).
-    ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array)?
+    ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array-with-name)?
     ;; TODO: Prove some properties
     (defun ,simplify-dag-name (dag
                                assumptions
@@ -5124,7 +5124,7 @@
               (if (quotep new-top-nodenum-or-quotep)
                   (mv (erp-nil) new-top-nodenum-or-quotep)
                 (mv (erp-nil)
-                    (drop-non-supporters-array 'dag-array dag-array new-top-nodenum-or-quotep nil))))))))
+                    (drop-non-supporters-array-with-name 'dag-array dag-array new-top-nodenum-or-quotep nil))))))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
