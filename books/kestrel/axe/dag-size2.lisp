@@ -28,8 +28,6 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
-(in-theory (disable bounded-dag-exprp)) ;move?
-
 (local (in-theory (enable not-<-of-car-when-all-<)))
 
 ;todo: rename to aref1-list (but that already exists)?

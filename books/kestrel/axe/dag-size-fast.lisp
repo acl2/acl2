@@ -15,9 +15,9 @@
 ;; This version of the dag-size utility operates without turning the dag into an array.
 
 (include-book "consecutivep")
-(include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "dags")
+(include-book "dag-size-array")
 (local (include-book "consecutivep2"))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -28,21 +28,6 @@
                           <=-of-0-when-0-natp
                           acl2-numberp-when-natp
                           integerp-when-natp)))
-
-;dup
-(def-typed-acl2-array size-arrayp (natp val) :default-satisfies-predp nil)
-
-;dup
-(defthm type-of-aref1-when-size-arrayp-2
-  (implies (and (size-arrayp array-name array (+ 1 index))
-                (natp index))
-           (let ((val (aref1 array-name array index)))
-             (natp val)))
-  :hints (("Goal"
-           :use (:instance type-of-aref1-when-size-arrayp-aux
-                           (top-index index))
-           :in-theory (e/d (size-arrayp)
-                           (type-of-aref1-when-size-arrayp-aux)))))
 
 (local (in-theory (disable natp)))
 
