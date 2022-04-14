@@ -205,7 +205,7 @@
                   ;; 1) It appears only once in the lambda-body
                   ;; and
                   ;; 2) It is not bound to itself (vars bound to themselves
-                  ;; don't really "count against" us, since lambdas must be complete)
+                  ;; don't really "count against" us, since lambdas must be closed)
                   ;; and
                   ;; 3) It is bound to a term that does not mention any variables that are bound by
                   ;; the lambda, except variables that are bound to themselves.  This prevents clashes.
@@ -214,13 +214,13 @@
                   (vars-to-drop (vars-expressible-without-clashes vars-to-maybe-drop var-term-alist vars-not-bound-to-themselves))
 
                   ;; OLD:
-                  ;; Recall that in ACL2 lambdas are always complete.  A
+                  ;; Recall that in ACL2 lambdas are always closed.  A
                   ;; formal to be dropped is any lambda formal that appears
                   ;; only once in the lambda body and whose corresponding arg
                   ;; is anything other than just the formal.  (TODO: Could
                   ;; also drop if the formal is bound to a variable [or
                   ;; constant?].)  We then substitute the actual for the
-                  ;; formal in the lambda body.  To maintain completeness of
+                  ;; formal in the lambda body.  To maintain closedness of
                   ;; the lambda, any vars mentioned in the arg will need to
                   ;; be added as lambda formals and corresponding args must
                   ;; be added too (unless they are already present).
