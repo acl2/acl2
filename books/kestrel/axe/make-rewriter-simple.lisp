@@ -5047,6 +5047,7 @@
                                interpreted-function-alist
                                limits
                                rule-alist
+                               count-hits
                                print
                                known-booleans
                                monitored-symbols)
@@ -5055,6 +5056,7 @@
                                   (pseudo-term-listp assumptions)
                                   (rule-limitsp limits)
                                   (rule-alistp rule-alist)
+                                  (booleanp count-hits)
                                   (axe-print-levelp print)
                                   (interpreted-function-alistp interpreted-function-alist)
                                   (symbol-listp known-booleans)
@@ -5098,7 +5100,9 @@
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                           (and ; memoizep
                                            (empty-memoization)) ; todo: add an option to make this bigger?
-                                          (and print (empty-info-world)) ;used to track the number of rule hits
+                                          ;; TODO: If print is :brief, maybe-print-hit-counts below will only print the total number of hits, so
+                                          ;; tracking hit counts for each rule is overkill:
+                                          (and count-hits print (empty-info-world)) ;used to track the number of rule hits
                                           (and print (zero-tries)) ;todo: think about this
                                           limits
                                           node-replacement-array rule-alist refined-assumption-alist node-replacement-count
@@ -5111,7 +5115,8 @@
             ;; Cannot refer to the renumbering-stobj:
             (declare (ignore dag-len dag-parent-array dag-constant-alist dag-variable-alist limits node-replacement-array)) ; print some stats from these?
             (b* (((when erp) (mv erp nil))
-                 (- (and print (maybe-print-hit-counts print info)))
+                 ;; todo: do we support both brief hit counting (just the total) and totals per-rule?:
+                 (- (and count-hits print (maybe-print-hit-counts print info)))
                  (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
                  (- (and (print-level-at-least-tp print) memoization (print-memo-stats memoization)))
                  (- (and print (cw ")~%"))) ; balances "(Simplifying DAG"
@@ -5132,6 +5137,7 @@
                                          interpreted-function-alist
                                          limits
                                          rules
+                                         count-hits
                                          print
                                          monitored-symbols
                                          state ; todo: just take wrld?
@@ -5143,6 +5149,7 @@
                                   (interpreted-function-alistp interpreted-function-alist)
                                   (rule-limitsp limits)
                                   (symbol-listp rules)
+                                  (booleanp count-hits)
                                   (axe-print-levelp print)
                                   (symbol-listp monitored-symbols)
                                   (ilks-plist-worldp (w state)))
@@ -5155,6 +5162,7 @@
                                                       interpreted-function-alist
                                                       limits
                                                       rule-alist
+                                                      count-hits
                                                       print
                                                       known-booleans
                                                       monitored-symbols))
@@ -5171,9 +5179,10 @@
                                         (interpreted-function-alist 'nil)
                                         (limits 'nil)
                                         (rules 'nil)
+                                        (count-hits 'nil)
                                         (print ':brief)
                                         (monitored-symbols 'nil))
-      `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,interpreted-function-alist ,limits ,rules ,print ,monitored-symbols state)))
+      `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,interpreted-function-alist ,limits ,rules ,count-hits ,print ,monitored-symbols state)))
 
     )))
 
