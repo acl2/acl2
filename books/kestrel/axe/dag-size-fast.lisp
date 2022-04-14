@@ -67,20 +67,6 @@
          (reverse-list (strip-cars dag)))
   :hints (("Goal" :in-theory (enable reverse-list strip-cars))))
 
-;todo: have def-typed-acl-array-generate this
-(defthm size-arrayp-of-aset1-at-end-gen
-  (implies (and (size-arrayp array-name array index)
-                (natp val)
-                (< index (alen1 array-name array))
-                (natp index)
-                (natp bound)
-                (<= bound (+ 1 index)))
-           (size-arrayp array-name
-                        (aset1 array-name array index val)
-                        bound))
-  :hints (("Goal" :use (:instance size-arrayp-of-aset1-at-end)
-           :in-theory (disable size-arrayp-of-aset1-at-end))))
-
 ;;;
 ;;; add-darg-sizes
 ;;;
