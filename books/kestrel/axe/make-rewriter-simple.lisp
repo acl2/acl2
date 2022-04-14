@@ -4697,13 +4697,12 @@
                                                       consp-of-car-of-last-when-weak-dagp-aux
                                                       acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux)
                                                      (natp dargp))
-                                     :do-not '(generalize eliminate-destructors)))
-                      ))
+                                     :do-not '(generalize eliminate-destructors)))))
       (if (endp rev-dag)
           ;; Done rewriting nodes.  The caller can use the renumbering-stobj to lookup what the old top node rewrote to:
           (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
         (b* ((entry (first rev-dag))
-             (nodenum (car entry)) ; or, since they are consecutive, we could track this numerically..
+             (nodenum (the (integer 0 2147483646) (car entry))) ; or, since they are consecutive, we could track this numerically..
              (- (and print (= 0 (mod nodenum 1000)) (cw "Simplifying node ~x0.~%" nodenum)))
              (expr (cdr entry)))
           (if (atom expr)
