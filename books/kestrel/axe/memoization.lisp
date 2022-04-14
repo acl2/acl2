@@ -47,6 +47,7 @@
                            <=-of-0-when-0-natp)))
 
 ;; Recognize an axe-tree that is a cons
+;; TODO: Restrict to bounded-axe-trees?
 (defund tree-to-memoizep (tree)
   (declare (xargs :guard t))
   (and (axe-treep tree)

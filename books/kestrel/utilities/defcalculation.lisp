@@ -20,6 +20,7 @@
 
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "std/util/bstar" :dir :system)
+(include-book "split-keyword-args")
 
 (defun defcalculation-steps (current steps base-name prev-step-count orig assumptions)
   (if (endp steps)
@@ -53,18 +54,7 @@
       (append thms
               (defcalculation-steps term (rest steps) base-name (+ 1 prev-step-count) orig assumptions)))))
 
-;; Returns (mv non-keyword-args keyword-alist)
-; ex: (split-keyword-args '(x 3 y z :foo 4 :bar 5))
-(defun split-keyword-args (args)
-  (declare (xargs :guard (true-listp args)))
-  (if (endp args)
-      (mv nil nil)
-    (if (keywordp (first args))
-        (mv nil args)
-      (b* (((mv res-args res-keyword-alist)
-            (split-keyword-args (rest args))))
-        (mv (cons (first args) res-args)
-            res-keyword-alist)))))
+
 
 ;assumes all steps are equalities
 (defun defcalculation-fn (name args)

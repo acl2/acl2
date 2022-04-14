@@ -96,7 +96,7 @@
 
 ;; KEEP IN SYNC WITH ADD-BITXOR-NEST-TO-DAG-ARRAY
 ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-(defund add-bvxor-nest-to-dag-array (rev-leaves ;reversed from the order we want them in (since we must build the nest from the bottom up); may have 0 or just 1 element
+(defund add-bvxor-nest-to-dag-array (rev-leaves ;reversed from the order we want them in (since we must build the nest from the bottom up); may have 0 or just 1 element, due to duplicates being removed
                                      size       ;unquoted
                                      quoted-size
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
