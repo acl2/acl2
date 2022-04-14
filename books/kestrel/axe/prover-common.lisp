@@ -43,7 +43,7 @@
 ;(include-book "elim")
 (include-book "kestrel/booleans/boolor" :dir :system) ;since this book knows about boolor
 (include-book "kestrel/booleans/booland" :dir :system) ;since this book knows about booland
-(include-book "dag-size2")
+(include-book "dag-size-sparse")
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))

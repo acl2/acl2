@@ -65,7 +65,7 @@
 (include-book "dag-parent-arrayp")
 (include-book "dag-parent-array-with-name")
 (include-book "dag-size-array")
-(include-book "dag-size2")
+(include-book "dag-size-sparse")
 (include-book "dag-size-fast")
 (include-book "dag-size")
 (include-book "dag-to-term")

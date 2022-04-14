@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 ;; This book contains a utility to compute the size of a DAG (if it were
-;; represented as a tree).  See also dag-size2.lisp and dag-size-fast.lisp.
+;; represented as a tree).  See also dag-size-sparse.lisp and dag-size-fast.lisp.
 
 ;; TODO: Consider making a version that doesn't use bignums and only approximates the size.
 
