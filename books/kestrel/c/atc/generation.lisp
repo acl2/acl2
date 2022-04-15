@@ -551,7 +551,7 @@
      but we make it more general, also in the name,
      so that it can potentially refer to other C types identified by tags,
      namely union types and enumeration types."))
-  ((struct defstruct-info))
+  ((defstruct defstruct-info))
   :pred atc-tag-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -575,7 +575,7 @@
           out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
-       (thms (defstruct-info->return-thms (atc-tag-info->struct info)))
+       (thms (defstruct-info->return-thms (atc-tag-info->defstruct info)))
        (more-thms (atc-string-taginfo-alist-to-return-thms (cdr prec-tags))))
     (append thms more-thms)))
 
@@ -587,7 +587,7 @@
   :short "Project the recognizers out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
-       (recog (defstruct-info->recognizer (atc-tag-info->struct info)))
+       (recog (defstruct-info->recognizer (atc-tag-info->defstruct info)))
        (recogs (atc-string-taginfo-alist-to-recognizers (cdr prec-tags))))
     (cons recog recogs)))
 
@@ -599,7 +599,7 @@
   :short "Project the readers out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
-       (readers (defstruct-info->readers (atc-tag-info->struct info)))
+       (readers (defstruct-info->readers (atc-tag-info->defstruct info)))
        (more-readers (atc-string-taginfo-alist-to-readers (cdr prec-tags))))
     (append readers more-readers)))
 
@@ -611,7 +611,7 @@
   :short "Project the non-error theroems out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
-       (thm (defstruct-info->not-error-thm (atc-tag-info->struct info)))
+       (thm (defstruct-info->not-error-thm (atc-tag-info->defstruct info)))
        (thms (atc-string-taginfo-alist-to-not-error-thms (cdr prec-tags))))
     (cons thm thms)))
 
@@ -623,7 +623,7 @@
   :short "Project the @(tsee structp) theroems out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
-       (thm (defstruct-info->structp-thm (atc-tag-info->struct info)))
+       (thm (defstruct-info->structp-thm (atc-tag-info->defstruct info)))
        (thms (atc-string-taginfo-alist-to-structp-thms (cdr prec-tags))))
     (cons thm thms)))
 
@@ -1223,7 +1223,7 @@
        (tag (symbol-name tag))
        (info (cdr (assoc-equal tag prec-tags)))
        ((unless info) (no))
-       (info (atc-tag-info->struct info))
+       (info (atc-tag-info->defstruct info))
        ((unless (member-eq term.fn (defstruct-info->readers info))) (no))
        (tag (defstruct-info->tag info))
        (members (defstruct-info->members info))
@@ -1292,7 +1292,7 @@
        (tag (symbol-name tag))
        (info (cdr (assoc-equal tag prec-tags)))
        ((unless info) (no))
-       (info (atc-tag-info->struct info))
+       (info (atc-tag-info->defstruct info))
        ((unless (member-eq val.fn (defstruct-info->writers info))) (no))
        (members (defstruct-info->members info))
        (tag (defstruct-info->tag info))
