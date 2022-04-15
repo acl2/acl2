@@ -12,6 +12,7 @@
 
 (include-book "build/ifdef" :dir :system)
 (include-book "dag-tests")
+(include-book "dag-size-sparse-tests")
 (include-book "known-booleans-tests")
 (include-book "unroll-spec-basic-tests")
 (include-book "def-simplified-tests")
