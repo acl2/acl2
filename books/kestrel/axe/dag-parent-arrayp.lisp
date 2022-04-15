@@ -43,7 +43,7 @@
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
 ;(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(local (in-theory (enable symbolp-of-car-when-dag-exprp0)))
+(local (in-theory (enable symbolp-of-car-when-dag-exprp)))
 
 (defthmd all-dargp-less-than-when-<-of-largest-non-quotep
   (implies (and (< (largest-non-quotep items) bound)

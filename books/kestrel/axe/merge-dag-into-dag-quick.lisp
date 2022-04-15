@@ -30,7 +30,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
-(local (in-theory (enable symbolp-of-car-when-dag-exprp0
+(local (in-theory (enable symbolp-of-car-when-dag-exprp
                           car-of-car-when-pseudo-dagp-cheap)))
 
 (local

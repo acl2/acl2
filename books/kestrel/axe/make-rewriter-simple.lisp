@@ -212,13 +212,13 @@
 ;;            (dargp (cdr (car dag))))
 ;;   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
-(defthmd axe-treep-when-dag-exprp0
-  (implies (dag-exprp0 expr)
+(defthmd axe-treep-when-dag-exprp
+  (implies (dag-exprp expr)
            (axe-treep expr))
-  :hints (("Goal" :in-theory (enable axe-treep dag-exprp0))))
+  :hints (("Goal" :in-theory (enable axe-treep dag-exprp))))
 
-(defthmd consp-of-cdr-when-dag-exprp0-and-quote
-  (implies (and (dag-exprp0 expr)
+(defthmd consp-of-cdr-when-dag-exprp-and-quote
+  (implies (and (dag-exprp expr)
                 (equal 'quote (car expr)))
            (consp (cdr expr))))
 
@@ -238,7 +238,7 @@
            (bounded-axe-treep tree bound))
   :hints (("Goal" :in-theory (enable bounded-axe-treep
                                      bounded-dag-exprp
-                                     dag-exprp0))))
+                                     dag-exprp))))
 
 (defthm bounded-axe-treep-of-cdar-when-weak-dagp-aux
   (implies (and (weak-dagp-aux dag)
@@ -486,7 +486,7 @@
                           pseudo-term-listp-of-cdr-when-pseudo-term-listp-cheap-for-make-rewriter-simple
                           ;;consp-to-len-bound-for-make-rewriter-simple
                           ;;len-of-cdr-better-for-make-rewriter-simple
-                          myquotep-when-dag-exprp0-and-quote)))
+                          myquotep-when-dag-exprp-and-quote)))
 
        ;; Make a version of sublis-var-and-eval:
        (make-substitution-code-simple ,suffix ,evaluator-base-name)
@@ -4686,14 +4686,14 @@
                                                       maybe-dargp
                                                       integerp-when-dargp
                                                       rationalp-when-integerp
-                                                      symbolp-of-car-when-dag-exprp0
+                                                      symbolp-of-car-when-dag-exprp
                                                       tree-to-memoizep
-                                                      axe-treep-when-dag-exprp0
+                                                      axe-treep-when-dag-exprp
                                                       car-of-cadr-when-cars-increasing-by-1
                                                       all-myquotep-when-all-dargp
                                                       consp-of-cdr-when-dargp
-                                                      consp-of-cdr-when-dag-exprp0-and-quote
-                                                      not-cddr-when-dag-exprp0-and-quotep
+                                                      consp-of-cdr-when-dag-exprp-and-quote
+                                                      not-cddr-when-dag-exprp-and-quotep
                                                       consp-of-car-of-last-when-weak-dagp-aux
                                                       acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux)
                                                      (natp dargp))
@@ -4840,14 +4840,14 @@
                                   maybe-dargp
                                   integerp-when-dargp
                                   rationalp-when-integerp
-                                  symbolp-of-car-when-dag-exprp0
+                                  symbolp-of-car-when-dag-exprp
                                   tree-to-memoizep
-                                  axe-treep-when-dag-exprp0
+                                  axe-treep-when-dag-exprp
                                   car-of-cadr-when-cars-increasing-by-1
                                   all-myquotep-when-all-dargp
                                   consp-of-cdr-when-dargp
-                                  consp-of-cdr-when-dag-exprp0-and-quote
-                                  not-cddr-when-dag-exprp0-and-quotep
+                                  consp-of-cdr-when-dag-exprp-and-quote
+                                  not-cddr-when-dag-exprp-and-quotep
                                   consp-of-car-of-last-when-weak-dagp-aux
                                   acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
                                   natp-of-car-of-car-when-weak-dagp-aux)

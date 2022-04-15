@@ -192,7 +192,7 @@
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (bounded-dag-exprp dag-len ;upper bound
                                          expr))
-                  :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp0 car-becomes-nth-of-0)
+                  :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp car-becomes-nth-of-0)
                                  :do-not '(generalize eliminate-destructors))))
            (ignore dag-len))
   (if (variablep expr)
@@ -295,7 +295,7 @@
 ;;                            expr))
 ;;            (equal (all-natp (maybe-add-split-candidates expr dag-array-name dag-array dag-len acc))
 ;;                   (all-natp acc)))
-;;   :hints (("Goal" :in-theory (enable maybe-add-split-candidates BOUNDED-DAG-EXPRP DAG-EXPRP0))))
+;;   :hints (("Goal" :in-theory (enable maybe-add-split-candidates BOUNDED-DAG-EXPRP DAG-EXPRP))))
 
 ;; Similar to get-args-not-done and especially to get-unexamined-nodenum-args.
 (defund extend-with-not-done-args (args result-array-name result-array acc)

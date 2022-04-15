@@ -30,7 +30,7 @@
                           not-cddr-of-nth-when-all-dargp
                           consp-of-cdr-of-nth-when-all-dargp
                           equal-of-quote-and-nth-0-of-nth-when-all-dargp
-                          symbolp-of-nth-0-when-dag-exprp0)))
+                          symbolp-of-nth-0-when-dag-exprp)))
 
 ;dup
 (defund unquote-if-possible (x)

@@ -84,7 +84,7 @@
                                            (array-name 'supporters-array)
                                            (array supporters-array)
                                            (index (CAR ARGS))
-                                           (num-valid-nodes (+ 1 (LARGEST-NON-QUOTEP ARGS)))
+                                           (num-valid-indices (+ 1 (LARGEST-NON-QUOTEP ARGS)))
                                            ))
            :in-theory (e/d (<-of-car-when-all-dargp-less-than)
                            (TYPE-OF-AREF1-WHEN-SUPPORTERS-ARRAYP

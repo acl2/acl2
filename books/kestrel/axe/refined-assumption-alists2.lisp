@@ -27,18 +27,18 @@
                               dargs
                               all-dargp))))
 
-(defthm dag-exprp0-when-possibly-negated-nodenumsp
+(defthm dag-exprp-when-possibly-negated-nodenumsp
   (implies (and (possibly-negated-nodenumsp possibly-negated-nodenums)
                 (consp possibly-negated-nodenums)
                 (consp (first possibly-negated-nodenums))
                 )
-           (dag-exprp0 (first possibly-negated-nodenums)))
+           (dag-exprp (first possibly-negated-nodenums)))
   :hints (("Goal" :expand ((all-dargp (cdr possibly-negated-nodenum))
                            (all-dargp (cddr possibly-negated-nodenum)))
            :in-theory (enable possibly-negated-nodenump
                               dargs
                               all-dargp
-                              DAG-EXPRP0))))
+                              DAG-EXPRP))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
