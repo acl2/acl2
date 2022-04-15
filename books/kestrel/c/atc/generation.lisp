@@ -4524,7 +4524,7 @@
             :slong :ulong
             :sllong :uloong)
            'write-array)
-          (:strut 'write-struct)
+          (:struct 'write-struct)
           (t (raise "Internal error: affected formal ~x0 has type ~x1."
                     formal type)))))
     `(,write-array/struct (pointer->address
