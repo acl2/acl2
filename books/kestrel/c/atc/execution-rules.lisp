@@ -1884,7 +1884,7 @@
                  (equal (expr-kind left) :arrsub)
                  (equal arr (expr-arrsub->arr left))
                  (equal sub (expr-arrsub->sub left))
-                 (equal (expr-kind (expr-arrsub->arr left)) :ident)
+                 (equal (expr-kind arr) :ident)
                  (not (zp limit))
                  (equal val+compst1
                         (exec-expr-call-or-pure right compst fenv (1- limit)))
