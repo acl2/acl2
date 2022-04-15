@@ -492,7 +492,8 @@
       (mv dag-acc translation-array)
     (let ((tag (aref1 'tag-array tag-array n))) ;only nodes that are tagged get put into the result
       (if (not tag) ;drop it and don't increment the dag-len
-          (build-reduced-dag-with-name (+ 1 n) top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)
+          (progn$ ;; (cw "Dropping node ~x0: ~x1.~%" n (aref1 dag-array-name dag-array n))
+                  (build-reduced-dag-with-name (+ 1 n) top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
         (let* ((expr (aref1 dag-array-name dag-array n))
                (expr (if (or (variablep expr)
                              (fquotep expr)) ;todo: maybe inline constants
