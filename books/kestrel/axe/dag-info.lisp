@@ -159,19 +159,24 @@
   (tabulate-dag-fns-aux dag nil))
 
 ;; Returns the error triple (mv nil :invisible state).
-(defun dag-info-fn-aux (dag name print-sizep state)
+(defun dag-info-fn-aux (dag name print-size state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (< (len dag) 2147483647)
-                              (stringp name)
-                              (booleanp print-sizep))
+                              (or (symbolp name)
+                                  (null name))
+                              (booleanp print-size))
                   :stobjs state))
   (if (quotep dag) ; not possible, given the guard
-      (b* ((- (cw "The entire DAG ~s0 is: ~x1.~%" name dag)))
+      (b* ((- (if name
+                  (cw "The entire DAG ~x0 is: ~x1.~%" name dag)
+                (cw "The entire DAG is: ~x0.~%" dag))))
         (value :invisible))
-    (b* ((- (cw "(DAG info for ~s0:~%" name))
+    (b* ((- (if name
+                (cw "(DAG info for ~x0:~%" name)
+              (cw "(DAG info:~%")))
          (- (cw " Unique nodes: ~x0~%" (len dag)))
          ;; Can be slow:
-         (- (and print-sizep
+         (- (and print-size
                  (cw " Total nodes: ~x0~%" (dag-size dag))))
          ;; These usually get inlined (we could count those):
          ;; (constants (dag-constants dag))
@@ -189,17 +194,22 @@
       (value :invisible))))
 
 ;; Print some statistics about a DAG:
-;; TODO: print something about constant nodes?
+;; TODO: print something about constant nodes, or constants that appear in nodes?
 ;; This calls dag-size, which uses arrays.
 ;; Returns the error triple (mv nil :invisible state).
-(defun dag-info-fn (dag state)
+(defun dag-info-fn (dag dag-form print-size state)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (< (len dag) 2147483647))
+                              (< (len dag) 2147483647)
+                              (booleanp print-size))
                   :stobjs state))
-  (dag-info-fn-aux dag "DAG"
-                   t ; print size, since the user called dag-info explicitly
+  (dag-info-fn-aux dag
+                   (if (symbolp dag-form)
+                       dag-form
+                     nil ; don't try to print the name of the dag
+                     )
+                   print-size
                    state))
 
 ;; Prine info about the given DAG.  The DAG argument is evaluated.
-(defmacro dag-info (dag)
-  `(dag-info-fn ,dag state))
+(defmacro dag-info (dag &key (print-size 'nil))
+  `(dag-info-fn ,dag ',dag ,print-size state))
