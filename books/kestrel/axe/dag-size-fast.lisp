@@ -14,6 +14,8 @@
 
 ;; This version of the dag-size utility operates without turning the dag into an array.
 
+;; The time spent is dominated by the additions done in ADD-DARG-SIZES.
+
 (include-book "consecutivep")
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "dags")
@@ -23,37 +25,20 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (enable not-<-of-car-when-all-<
                           <=-of-0-when-0-natp
                           acl2-numberp-when-natp
                           integerp-when-natp)))
 
-(local (in-theory (disable natp)))
-
-;dup
-(local
- (defthm natp-of-if
-   (equal (natp (if test tp ep))
-          (if test (natp tp) (natp ep)))))
-
-;dup
-(local
- (defthm natp-of-+-when-natp-and-natp
-   (implies (and (natp x)
-                 (natp y))
-            (natp (+ x y)))))
+(local (in-theory (disable natp weak-dagp-aux top-nodenum)))
 
 (defthmd <-of-car-of-car-when-all-<-of-strip-cars
   (implies (and (all-< (strip-cars x) bound)
                 (consp x))
            (< (car (car x)) bound))
   :hints (("Goal" :in-theory (enable strip-cars all-<))))
-
-(defthm consecutivep-of-strip-cars-of-cdr
-  (implies (consecutivep (strip-cars x))
-           (consecutivep (strip-cars (cdr x))))
-  :hints (("Goal" :in-theory (enable strip-cars))))
 
 ;dup
 (local
@@ -83,16 +68,15 @@
       acc
     (let ((darg (first dargs)))
       (add-darg-sizes (rest dargs)
-                     size-array
-                     (if (consp darg) ;check for a quotep, which we say has size 1
-                         (+ 1 acc)
-                       ;; dargs is a nodenum, so look up its size:
-                       (+ (the (integer 0 *) (aref1 'size-array size-array darg))
-                          acc))))))
+                      size-array
+                      (if (consp darg) ;check for a quotep, which we say has size 1
+                          (+ 1 acc)
+                        ;; dargs is a nodenum, so look up its size:
+                        (+ (the (integer 0 *) (aref1 'size-array size-array darg))
+                           acc))))))
 
 (defthm natp-of-add-darg-sizes
-  (implies (and ;(true-listp dargs)
-                (all-dargp dargs)
+  (implies (and (all-dargp dargs)
                 (size-arrayp 'size-array size-array (+ 1 (largest-non-quotep dargs)))
                 (natp acc))
            (natp (add-darg-sizes dargs size-array acc)))
@@ -111,7 +95,8 @@
                                                                       (car (car rev-dag))
                                                                     0))
                               (all-< (strip-cars rev-dag) (alen1 'size-array size-array))
-                              (consecutivep (strip-cars rev-dag)))))
+                              (consecutivep (strip-cars rev-dag)))
+                  :guard-hints (("Goal" :in-theory (enable weak-dagp-aux)))))
   (if (endp rev-dag)
       size-array
     (make-size-array-for-rev-dag-aux (rest rev-dag)
@@ -130,8 +115,6 @@
                                                 ;; todo: bake in the size array name to a version of this:
                                                 (add-darg-sizes (dargs expr) size-array 1)))))))
 
-(local (in-theory (disable weak-dagp-aux)))
-
 (defthm size-arrayp-of-make-size-array-for-rev-dag-aux
   (implies (and (weak-dagp-aux rev-dag)
                 (size-arrayp 'size-array size-array (if (consp rev-dag)
@@ -145,8 +128,7 @@
                 (natp bound))
            (size-arrayp 'size-array
                         (make-size-array-for-rev-dag-aux rev-dag size-array)
-                        bound
-                        ))
+                        bound))
   :hints (("Goal" :expand ((weak-dagp-aux rev-dag))
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable make-size-array-for-rev-dag-aux
@@ -171,8 +153,6 @@
 ;;;
 ;;; make-size-array-for-dag
 ;;;
-
-(local (in-theory (disable top-nodenum)))
 
 ;; Makes an array named 'SIZE-ARRAY and populates it with a size for every
 ;; node in the dag.
