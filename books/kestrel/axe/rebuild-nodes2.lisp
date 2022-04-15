@@ -1,7 +1,7 @@
 ; Alternate tools to rebuild nodes with substitutions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,7 @@
 
 (include-book "rebuild-nodes") ;todo: reduce
 (include-book "remove-duplicates-from-sorted-list")
+(include-book "kestrel/lists-light/repeat" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
