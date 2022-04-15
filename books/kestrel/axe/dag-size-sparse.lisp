@@ -136,8 +136,9 @@
 ;populates size-array with the size of every node in worklist (and every supporting node), but not necessarily all nodes
 ;; TODO: Consider combining the size-array and the worklist-array, since :examined is not a valid size.
 ;; TODO: Explicate the relationship between the worklist-array, size-array, and
-;; worklist (for any :examined node, all its descendants are either on the
-;; worklist or have a valid entry in the size-array).
+;; worklist (for any :examined node, all of its children are either on the
+;; worklist or have a valid entry in the size-array (or just "are :examined"), and any :examined node no longer on
+;; the worklist has a valid answer in the size-array).  At the end, everything on the initial worklist is now examined.
 (defund size-array-for-nodes-aux (worklist ;must be sorted
                                   dag-array-name dag-array dag-len
                                   size-array-name size-array ;; tracks the results being computed
