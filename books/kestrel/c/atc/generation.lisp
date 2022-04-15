@@ -6149,6 +6149,109 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-tag-exec-memberp-thm ((tag identp)
+                                      (recognizer symbolp)
+                                      (fixer-recognizer-thm symbolp)
+                                      (not-error-thm symbolp)
+                                      (member member-infop)
+                                      (reader symbolp)
+                                      (names-to-avoid symbol-listp)
+                                      (wrld plist-worldp))
+  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+               (exec-memberp-thm "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate a theorem
+          to rewrite @(tsee exec-memberp) to a structure reader."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This class of theorems are the structure counterpart of
+     the ones that rewrite @(tsee exec-arrsub) to array readers,
+     generated in @(see atc-exec-arrsub-rules-generation)."))
+  (b* ((memname (member-info->name member))
+       (thm-name (pack 'exec-memberp-when-
+                       recognizer
+                       '-and-
+                       (ident->name memname)))
+       ((mv thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
+       (formula
+        `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
+                       (pointerp ptr)
+                       (not (pointer-nullp ptr))
+                       (equal struct
+                              (read-struct (pointer->address ptr) compst))
+                       (equal (pointer->reftype ptr)
+                              (type-struct (ident ,(ident->name tag))))
+                       (,recognizer struct))
+                  (equal (exec-memberp ptr
+                                       (ident ,(ident->name memname))
+                                       compst)
+                         (,reader struct))))
+       (hints `(("Goal"
+                 :in-theory
+                 '(exec-memberp
+                   not-errorp-when-valuep-rewrite
+                   valuep-when-pointerp
+                   value-resultp-when-valuep
+                   value-result-fix-when-value-resultp
+                   ,recognizer
+                   ,reader
+                   ,not-error-thm
+                   ,fixer-recognizer-thm))))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (mv (list event) thm-name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-tag-exec-memberp-thms ((tag identp)
+                                       (recognizer symbolp)
+                                       (fixer-recognizer-thm symbolp)
+                                       (not-error-thm symbolp)
+                                       (members member-info-listp)
+                                       (readers symbol-listp)
+                                       (names-to-avoid symbol-listp)
+                                       (wrld plist-worldp))
+  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+               (exec-memberp-thms "A @(tsee symbol-listp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate the theorems
+          to rewrite @(tsee exec-memberp) to structure readers,
+          for all the members of a structure type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This relies on @('readers') be in the same order as @('members')."))
+  (b* (((when (endp members)) (mv nil nil names-to-avoid))
+       ((mv events thm names-to-avoid)
+        (atc-gen-tag-exec-memberp-thm tag
+                                      recognizer
+                                      fixer-recognizer-thm
+                                      not-error-thm
+                                      (car members)
+                                      (car readers)
+                                      names-to-avoid
+                                      wrld))
+       ((mv more-events thms names-to-avoid)
+        (atc-gen-tag-exec-memberp-thms tag
+                                       recognizer
+                                       fixer-recognizer-thm
+                                       not-error-thm
+                                       (cdr members)
+                                       (cdr readers)
+                                       names-to-avoid
+                                       wrld)))
+    (mv (append events more-events)
+        (cons thm thms)
+        names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-struct-declon-list ((meminfos member-info-listp))
   :returns (declons struct-declon-listp)
   :short "Generate a list of C structure declarations
@@ -6166,16 +6269,20 @@
 
 (define atc-gen-tag-declon ((tag symbolp)
                             (prec-tags atc-string-taginfo-alistp)
+                            (proofs booleanp)
+                            (names-to-avoid symbol-listp)
                             (ctx ctxp)
                             state)
   :returns (mv erp
-               (val (tuple (declon tag-declonp)
-                           (updated-prec-tags atc-string-taginfo-alistp)
-                           val)
-                    :hyp (and (symbolp tag)
-                              (atc-string-taginfo-alistp prec-tags)))
+               (val "A @('(tuple (declon tag-declonp)
+                                 (local-events pseudo-event-form-listp)
+                                 (updated-prec-tags atc-string-taginfo-alistp)
+                                 (updated-names-to-avoid symbol-listp)
+                                 val)').")
                state)
-  :short "Generate a C structure type declaration."
+  :mode :program
+  :short "Generate a C structure type declaration,
+          with accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -6184,7 +6291,7 @@
      retrieved from the @(tsee defstruct) table in the ACL2 world")
    (xdoc::p
     "This has no accompanying generated theorems."))
-  (b* ((irr (list (irr-tag-declon) nil))
+  (b* ((irr (list (irr-tag-declon) nil nil nil))
        (tag (symbol-name tag))
        ((when (consp (assoc-equal tag prec-tags)))
         (raise "Internal error: tag ~x0 already encountered." tag)
@@ -6196,14 +6303,31 @@
                   tag))
        (meminfos (defstruct-info->members info))
        (tag-ident (defstruct-info->tag info))
+       (recognizer (defstruct-info->recognizer info))
+       (fixer-recognizer-thm (defstruct-info->fixer-recognizer-thm info))
+       (not-error-thm (defstruct-info->not-error-thm info))
+       (readers (defstruct-info->readers info))
        (struct-declons (atc-gen-struct-declon-list meminfos))
+       ((mv thm-events thm-names names-to-avoid)
+        (if proofs
+            (atc-gen-tag-exec-memberp-thms tag-ident
+                                           recognizer
+                                           fixer-recognizer-thm
+                                           not-error-thm
+                                           meminfos
+                                           readers
+                                           names-to-avoid
+                                           (w state))
+          (mv nil nil names-to-avoid)))
        (info (make-atc-tag-info :defstruct info
-                                :exec-memberp-thms nil))
+                                :exec-memberp-thms thm-names))
        (prec-tags (acons tag info prec-tags)))
     (acl2::value
      (list (make-tag-declon-struct :tag tag-ident
                                    :members struct-declons)
-           prec-tags))))
+           thm-events
+           prec-tags
+           names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6241,8 +6365,10 @@
   (b* (((when (endp targets)) (acl2::value (list nil nil nil names-to-avoid)))
        (target (car targets))
        ((unless (function-symbolp target (w state)))
-        (b* (((mv erp (list tag-declon prec-tags) state)
-              (atc-gen-tag-declon target prec-tags ctx state))
+        (b* (((mv erp
+                  (list tag-declon tag-thms prec-tags names-to-avoid)
+                  state)
+              (atc-gen-tag-declon target prec-tags proofs names-to-avoid ctx state))
              ((when erp) (mv erp (list nil nil nil names-to-avoid) state))
              (ext (ext-declon-tag-declon tag-declon))
              ((er (list exts local-events exported-events names-to-avoid))
@@ -6251,7 +6377,7 @@
                                        fn-appconds appcond-thms
                                        print names-to-avoid ctx state)))
           (acl2::value (list (cons ext exts)
-                             local-events
+                             (append tag-thms local-events)
                              exported-events
                              names-to-avoid))))
        (fn target)
