@@ -987,11 +987,9 @@
                           :split-types t
                           :measure (nfix count))
                    (type (unsigned-byte 60) count))
-          (b* (((when (or (not (mbt (natp count)))
-                          (= 0 count)))
-                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                    node-replacement-array))
-               ;; Assume the test false (if not memoizing): (TODO: Also augment the refined-assumption-alist, and then undo that):
+          (b* (((when (or (not (mbt (natp count))) (= 0 count)))
+                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               ;; Assume the test false (if not memoizing):
                ;; ((mv node-replacement-array node-replacement-count)
                ;;  (if memoization ;can't use context if we are memoizing:
                ;;      (mv node-replacement-array node-replacement-count)
@@ -1005,8 +1003,7 @@
                     refined-assumption-alist
                   (extend-refined-assumption-alist-assuming-negation-of-node refined-assumption-alist simplified-test dag-array dag-len)))
                ;; Rewrite the else branch:
-               ((mv erp elsepart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                    node-replacement-array)
+               ((mv erp elsepart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                 (,simplify-tree-and-add-to-dag-name elsepart
                                                     nil ;no trees are yet known equal to the else branch
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
@@ -1023,7 +1020,7 @@
                ;;    (unassume-nodenum-false-in-node-replacement-array simplified-test dag-array dag-len node-replacement-array node-replacement-count known-booleans)))
                ;; If memoizing, there will be no pairs here:
                (node-replacement-array (undo-writes-to-node-replacement-array undo-pairs node-replacement-array node-replacement-count dag-len)))
-            ;;this function takes simplified args and does not handle ifs specially (or else things might loop):
+            ;; Now apply rules (this function takes simplified args and does not handle ifs specially, or else things might loop):
             (,simplify-fun-call-and-add-to-dag-name fn (list simplified-test simplified-thenpart elsepart-result)
                                                     (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
@@ -1071,8 +1068,7 @@
                    (type (unsigned-byte 60) count))
           (b* (((when (or (not (mbt (natp count)))
                           (= 0 count)))
-                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                    node-replacement-array))
+                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                ;; Assume the test true (if not memoizing):
                ;; ((mv node-replacement-array node-replacement-count)
                ;;  (if memoization ;can't use context if we are memoizing:
@@ -1086,7 +1082,6 @@
                 (if memoization ;can't use context if we are memoizing:
                     refined-assumption-alist
                   (extend-refined-assumption-alist-assuming-node refined-assumption-alist simplified-test dag-array dag-len)))
-
                ;; Rewrite the then-branch:
                ((mv erp simplified-thenpart dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                     node-replacement-array)
@@ -1149,36 +1144,32 @@
                    (type (unsigned-byte 60) count))
           (b* (((when (or (not (mbt (natp count)))
                           (= 0 count)))
-                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                    node-replacement-array))
+                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                (args (fargs tree))
                ((when (not (consp (rest (rest args))))) ;; for guards
                 (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                     node-replacement-array))
                ;; First, try to resolve the test (TODO: would like to do this in an iff context):
                (test (first args))
-               ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                    node-replacement-array)
-                (b* (((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                          node-replacement-array)
-                      (,simplify-tree-and-add-to-dag-name test
-                                                          nil ;no trees are yet known equal to the test
-                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
-                                                          print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
-                     ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-                  (if (consp simplified-test) ; tests for quotep
-                      ;; test simplified to a constant:
-                      (mv (erp-nil) simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                    ;; simplified-test is a nodenum.  Now try looking it up in the node-replacement-array (could skip this if the hyp is a known boolean):
-                    ;; TODO: Do this also for the other kinds of IF below
-                    (if (known-true-in-node-replacement-arrayp simplified-test node-replacement-array node-replacement-count) ; TTODO: Do this for the other kinds of IF
-                        ;; Since the test is known to be non-nil, it's as if it rewrote to 't (even though it may not be a predicate, IF/MYIF only looks at whether it is nil):
-                        (mv (erp-nil) *t* dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                      ;; Failed to resolve the test:
-                      (mv (erp-nil) simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))))
-               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-            (if (consp simplified-test)
+               ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                (,simplify-tree-and-add-to-dag-name test
+                                                    nil ;no trees are yet known equal to the test
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+               ((when erp)
+                (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               ;; Handle a test that is known to be :non-nil:
+               ;; TTODO: Do this for the other kinds of IF:
+               (simplified-test
+                (if (consp simplified-test) ; tests for quotep
+                    simplified-test
+                  ;; Simplified-test is a nodenum, so look it up in the node-replacement-array (skip this if the test is a known boolean?):
+                  (if (known-true-in-node-replacement-arrayp simplified-test node-replacement-array node-replacement-count)
+                      ;; Since the test is known to be non-nil, it's as if it rewrote to 't (even though it may not be a predicate, IF/MYIF only looks at whether it is nil):
+                      *t*
+                    simplified-test))))
+            (if (consp simplified-test) ; test for quote (that is, check whether we resolved the test)
                 ;; Rewrite either the then-branch or the else-branch, according to whether the test simplified to nil:
                 (,simplify-tree-and-add-to-dag-name (if (unquote simplified-test) (second args) (third args))
                                                     (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
@@ -1188,7 +1179,7 @@
               ;; Failed to resolve the test:
               (progn$
                ;; If this gets printed too often for known predicates, we can preprocess such things:
-               (and (equal test (second args)) (cw "Unresolved IF test with test same as then-branch (from an OR?): ~x0.~%" test)) ; todo: comment out
+               ;; (and (equal test (second args)) (cw "Unresolved IF test with test same as then-branch (from an OR?): ~x0.~%" test))
                (,simplify-if-tree-and-add-to-dag2-name (ffn-symb tree) ; if or myif
                                                        simplified-test
                                                        (second args) ;"then" branch
