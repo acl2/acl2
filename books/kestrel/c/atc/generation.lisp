@@ -637,6 +637,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-taginfo-alist-to-exec-memberp-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the @(tsee exec-memberp) theorems
+          out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thms (atc-tag-info->exec-memberp-thms info))
+       (more-thms
+        (atc-string-taginfo-alist-to-exec-memberp-thms (cdr prec-tags))))
+    (append thms more-thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-symbol-2part ((sym symbolp))
   :returns (mv (yes/no booleanp)
                (part1 symbolp)
@@ -4727,6 +4741,8 @@
        (type-prescriptions-struct-readers
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
+       (exec-memberp-thms
+        (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (hints `(("Goal"
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
@@ -4736,6 +4752,7 @@
                                ,fn
                                ,@result-thms
                                ,@struct-return-thms
+                               ,@exec-memberp-thms
                                ,@type-prescriptions-called
                                ,@type-prescriptions-struct-readers
                                ,@correct-thms
