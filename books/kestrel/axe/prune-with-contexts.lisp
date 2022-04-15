@@ -338,7 +338,7 @@
         (mv (erp-nil)
             new-top-nodenum-or-quotep)
       (mv (erp-nil)
-          (drop-non-supporters-array 'dag-array dag-array new-top-nodenum-or-quotep nil)))))
+          (drop-non-supporters-array-with-name 'dag-array dag-array new-top-nodenum-or-quotep nil)))))
 
 ;; Pruning either returns a dag or a quoted constant
 (defthm pseudo-dagp-of-prune-with-contexts

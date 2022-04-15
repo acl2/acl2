@@ -15,7 +15,7 @@
 (include-book "dag-arrays")
 (include-book "worklists")
 (include-book "merge-sort-less-than")
-(include-book "dag-size2") ; for size-array-for-sorted-nodes
+(include-book "dag-size-sparse") ; for size-array-for-sorted-nodes
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/lists-light/nth" :dir :system))

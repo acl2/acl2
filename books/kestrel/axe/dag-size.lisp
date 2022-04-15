@@ -13,40 +13,20 @@
 (in-package "ACL2")
 
 ;; This book contains a utility to compute the size of a DAG (if it were
-;; represented as a tree).  See also dag-size2.lisp and dag-size-fast.lisp.
+;; represented as a tree).  See also dag-size-sparse.lisp and dag-size-fast.lisp.
 
-;; TODO: Consider making a version that doesn't use bignum and only approximates the size.
+;; TODO: Consider making a version that doesn't use bignums and only approximates the size.
 
 (include-book "dag-arrays")
-(include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
+(include-book "dag-size-array")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 (local (in-theory (enable not-<-of-car-when-all-<
                           <=-of-0-when-0-natp
-                          acl2-numberp-when-natp)))
+                          acl2-numberp-when-natp
+                          integerp-when-natp)))
 
-(local
- (defthm integer-when-natp
-   (implies (natp x)
-            (integerp x))))
-
-(local
- (defthm acl2-numberp-when-natp
-   (implies (natp x)
-            (acl2-numberp x))))
-
-(local
- (defthm <=-of-+-when-natp-and-natp
-   (implies (and (natp x)
-                 (natp y))
-            (<= 0 (+ x y)))))
-
-(local
- (defthm natp-of-+-when-natp-and-natp
-   (implies (and (natp x)
-                 (natp y))
-            (natp (+ x y)))))
 (local
  (defthm natp-of-if
    (equal (natp (if test tp ep))
@@ -54,51 +34,7 @@
 
 (local (in-theory (disable natp)))
 
-;; Defines size-arrayp
-(def-typed-acl2-array size-arrayp (natp val) :default-satisfies-predp nil)
 
-;todo: have def-typed-acl2-array generate this
-(defthm type-of-aref1-when-size-arrayp-2
-  (implies (and (size-arrayp array-name array (+ 1 index))
-                (natp index))
-           (let ((val (aref1 array-name array index)))
-             (natp val)))
-  :hints (("Goal"
-           :use (:instance type-of-aref1-when-size-arrayp-aux
-                           (top-index index))
-           :in-theory (e/d (size-arrayp)
-                           (type-of-aref1-when-size-arrayp-aux)))))
-
-;;;
-;;; add-darg-sizes-with-name
-;;;
-
-;; Add to ACC the sizes of all of the DARGS that are nodenums
-(defund add-darg-sizes-with-name (dargs size-array-name size-array acc)
-  (declare (xargs :guard (and (true-listp dargs)
-                              (all-dargp dargs)
-                              (size-arrayp size-array-name size-array (+ 1 (largest-non-quotep dargs)))
-                              (natp acc))
-                  :split-types t)
-           (type (integer 0 *) acc))
-  (if (endp dargs)
-      acc
-    (let ((darg (first dargs)))
-      (add-darg-sizes-with-name (rest dargs)
-                               size-array-name
-                               size-array
-                               (if (consp darg) ;check for a quotep, which we say has size 1
-                                   (+ 1 acc)
-                                 ;; dargs is a nodenum, so look up its size:
-                                 (+ (the (integer 0 *) (aref1 size-array-name size-array darg))
-                                    acc))))))
-
-(defthm natp-of-add-darg-sizes-with-name
-  (implies (and (all-dargp dargs)
-                (size-arrayp size-array-name size-array (+ 1 (largest-non-quotep dargs)))
-                (natp acc))
-           (natp (add-darg-sizes-with-name dargs size-array-name size-array acc)))
-  :hints (("Goal" :in-theory (enable add-darg-sizes-with-name))))
 
 ;;;
 ;;; make-size-array-for-dag-array-with-name-aux
@@ -210,9 +146,7 @@
                   dag-len))
   :hints (("Goal" :in-theory (enable make-size-array-for-dag-array-with-name))))
 
-;;;
-;;; dag-size
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns the size of the tree represented by the DAG (may be a very large number).
 ;; Smashes the array named 'size-array.
@@ -238,9 +172,8 @@
            (natp (dag-size dag)))
   :hints (("Goal" :in-theory (enable dag-size
                                      car-of-car-when-pseudo-dagp-cheap))))
-;;;
-;;; dag-size-unguarded
-;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
 (defund dag-size-unguarded (dag)
@@ -256,9 +189,7 @@
   (natp (dag-size-unguarded dag))
   :hints (("Goal" :in-theory (enable dag-size-unguarded))))
 
-;;;
-;;; dag-or-quotep-size
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund dag-or-quotep-size (x)
   (declare (xargs :guard (or (and (pseudo-dagp x)

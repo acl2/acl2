@@ -1,6 +1,6 @@
 ; Tools for defining predicates that recognize arrays of typed values
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2022 Kestrel Institute
 ; Copyright (C) 2019-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -154,10 +154,10 @@
                                 (aref1-of-cons-of-cons-of-header)))))))
 
 ;; pred should be an expression over at most the vars INDEX and VAL and the EXTRA-VARS
-(defmacro def-array-checker (fn pred &key
-                                (extra-vars 'nil)
-                                (extra-guards 'nil))
-  (def-array-checker-fn fn pred extra-vars extra-guards))
+(defmacro def-array-checker (checker-fn pred &key
+                                        (extra-vars 'nil)
+                                        (extra-guards 'nil))
+  (def-array-checker-fn checker-fn pred extra-vars extra-guards))
 
 ;;;
 ;;; def-typed-acl2-array (this version takes an argument that specifies how many values to check, starting at index 0)
@@ -245,6 +245,17 @@
                                          (top-index (+ -1 num-valid-nodes)))
                   :in-theory (e/d (,fn) (,(pack$ 'type-of-aref1-when- aux-fn))))))
 
+       ;; todo: improve the name here:
+       ;; Special case where num-valid-nodes = index+1
+       (defthm ,(pack$ 'type-of-aref1-when- fn '-special)
+         (implies (and (,fn array-name array (+ 1 index) ,@extra-vars)
+                       (natp index))
+                  (let ((val (aref1 array-name array index)))
+                    ,pred))
+         :hints (("Goal" :use (:instance ,(pack$ 'type-of-aref1-when- fn)
+                                         (num-valid-nodes (+ 1 index)))
+                  :in-theory (e/d () (,(pack$ 'type-of-aref1-when- fn))))))
+
        (defthm ,(pack$ fn '-monotone)
          (implies (and (,fn array-name array n ,@extra-vars)
                        (<= m n)
@@ -254,6 +265,8 @@
                   (,fn array-name array m ,@extra-vars))
          :hints (("Goal" :in-theory (enable ,fn))))
 
+       ;; The first NUM-VALID-NODES entries were all fine, and the value being written is fine,
+       ;; so the first NUM-VALID-NODES entries are still fine, regardless of index.
        (defthm ,(pack$ fn '-of-aset1)
          (implies (and (,fn array-name array num-valid-nodes ,@extra-vars)
                        ,pred ;over index and val
@@ -262,13 +275,26 @@
                   (,fn array-name (aset1 array-name array index val) num-valid-nodes ,@extra-vars))
          :hints (("Goal" :in-theory (enable ,aux-fn ,fn))))
 
+       ;; Special case for extending the range of ok indices.
        (defthm ,(pack$ fn '-of-aset1-at-end)
-         (implies (and (,fn array-name array index ,@extra-vars)
+         (implies (and (,fn array-name array index ,@extra-vars) ; values below index were fine
                        ,pred ;over index and val
                        (< index (alen1 array-name array))
                        (natp index))
                   (,fn array-name (aset1 array-name array index val) (+ 1 index) ,@extra-vars))
          :hints (("Goal" :in-theory (enable ,aux-fn ,fn))))
+
+       ;; Variant of the rule just above that matches better
+       (defthm ,(pack$ fn '-of-aset1-at-end-gen)
+         (implies (and (,fn array-name array index ,@extra-vars) ; values below index were fine
+                       (<= num-valid-nodes (+ 1 index))
+                       ,pred ;over index and val
+                       (< index (alen1 array-name array))
+                       (natp num-valid-nodes)
+                       (natp index))
+                  (,fn array-name (aset1 array-name array index val) num-valid-nodes ,@extra-vars))
+         :hints (("Goal" :use ,(pack$ fn '-of-aset1-at-end)
+                  :in-theory (disable ,(pack$ fn '-of-aset1-at-end)))))
 
        ,@(and default-satisfies-predp
               `((defthm ,(pack$ fn '-of-make-empty-array-with-default)

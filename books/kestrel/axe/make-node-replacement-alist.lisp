@@ -89,7 +89,7 @@
            ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
            ((when (consp lhs-nodenum-or-quotep)) ; check for quotep -- todo: prove this can't happen
             (er hard? 'make-node-replacement-alist-and-add-to-dag-array-aux "Assumption with a quotep LHS: ~x0." `(equal ,lhs ,rhs))
-            (mv :unexpectd-quote nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+            (mv :unexpected-quote nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
            ((mv erp rhs-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (merge-term-into-dag-array-basic rhs
                                              nil ;var-replacement-alist

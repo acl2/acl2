@@ -310,6 +310,14 @@
            (bounded-axe-treep tree bound))
   :hints (("Goal" :in-theory (enable bounded-axe-treep))))
 
+(defthm bounded-axe-treep-when-natp-forward
+  (implies (and (bounded-axe-treep tree bound)
+                (natp tree)
+                (natp bound))
+           (<= tree (+ -1 bound)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable bounded-axe-treep))))
+
 (defthmd bounded-axe-treep-when-dargp-less-than
   (implies (dargp-less-than tree bound)
            (bounded-axe-treep tree bound))

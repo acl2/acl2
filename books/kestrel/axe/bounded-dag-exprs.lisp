@@ -162,12 +162,12 @@
 
 (defthm <-of-nth-of-dargs
   (implies (and (bounded-dag-exprp nodenum expr)
-                (< n2 (len (dargs expr)))
-                (natp n2)
+                (< n (len (dargs expr)))
+                (natp n)
                 (not (equal 'quote (car expr)))
-                (not (consp (nth n2 (dargs expr)))) ;rules out a quotep
+                (not (consp (nth n (dargs expr)))) ;rules out a quotep
                 )
-           (< (nth n2 (dargs expr)) nodenum))
+           (< (nth n (dargs expr)) nodenum))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp <-OF-NTH-WHEN-ALL-DARGP-LESS-THAN))))
 
 (defthm symbolp-of-car-when-bounded-dag-exprp

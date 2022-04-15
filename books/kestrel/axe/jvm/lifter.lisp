@@ -858,7 +858,7 @@
                 (if erp
                     (mv erp nil)
                   (mv (erp-nil)
-                      (drop-non-supporters-array 'dag-array dag-array
+                      (drop-non-supporters-array-with-name 'dag-array dag-array
                                                  (aref1 'translation-array translation-array top-nodenum)
                                                  nil))))))))))
   ;; ;call simplify-dag or something (like a quick version)?

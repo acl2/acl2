@@ -18,7 +18,7 @@
 
 ;; TODO: Rename this to the examined-array?
 
-;; See size-array-for-nodes-aux in dag-size2.lisp for an example of how to use the worklist-array.
+;; See size-array-for-nodes-aux in dag-size-sparse.lisp for an example of how to use the worklist-array.
 
 (include-book "merge-sort-less-than")
 (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)

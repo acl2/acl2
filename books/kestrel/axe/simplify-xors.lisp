@@ -32,7 +32,7 @@
 (include-book "equivalent-dags")
 (include-book "add-bitxor-nest-to-dag-array")
 (include-book "add-bvxor-nest-to-dag-array")
-(include-book "supporting-nodes") ;for drop-non-supporters-array
+(include-book "supporting-nodes") ;for drop-non-supporters-array-with-name
 (include-book "dag-array-builders2")
 (include-book "def-dag-builder-theorems")
 (include-book "translation-array")
@@ -825,7 +825,7 @@
 ;;                                              (cw ")~%"))
 ;;                                             result)
 ;;                                   (let ((dag-lst
-;;                                          (drop-non-supporters-array new-dag-array-name new-dag-array result print)
+;;                                          (drop-non-supporters-array-with-name new-dag-array-name new-dag-array result print)
 ;;                                          ))
 ;;                                     (progn$ (and (eq :verbose print) (print-list dag-lst))
 ;;                                             (and print (cw ")~%"))
@@ -1382,7 +1382,7 @@
                               (prog2$ (and print
                                            (cw ")~%"))
                                       (mv (erp-nil) result t))
-                            (b* ((new-dag (drop-non-supporters-array new-dag-array-name new-dag-array result print))
+                            (b* ((new-dag (drop-non-supporters-array-with-name new-dag-array-name new-dag-array result print))
                                  ((when (<= 2147483646 (+ (len dag) ;;todo: this is for equivalent-dags below but that should be made more flexible (returning an erp)
                                                           (len new-dag))))
                                   (er hard? 'simplify-xors "DAGs too large.")

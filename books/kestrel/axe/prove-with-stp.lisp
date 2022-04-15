@@ -23,7 +23,7 @@
 (include-book "unify-tree-and-dag")
 (include-book "dag-array-printing")
 (include-book "worklists")
-(include-book "supporting-nodes") ;for tag-nodenums
+(include-book "supporting-nodes") ;for tag-nodenums-with-name
 (include-book "merge-sort-less-than")
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -1460,7 +1460,7 @@
                     ;; translate it and mark its children as being needed for node1
                     (gather-nodes-to-translate-for-heuristically-cut-proof
                      (+ -1 n) dag-array-name dag-array dag-len
-                     (tag-nodenums (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
+                     (tag-nodenums-with-name (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
                      needed-for-node2-tag-array
                      (cons n nodenums-to-translate)
                      cut-nodenum-type-alist extra-asserts print var-type-alist))
@@ -1469,7 +1469,7 @@
                 (gather-nodes-to-translate-for-heuristically-cut-proof
                  (+ -1 n) dag-array-name dag-array dag-len
                  needed-for-node1-tag-array
-                 (tag-nodenums (dargs expr) 'needed-for-node2-tag-array needed-for-node2-tag-array)
+                 (tag-nodenums-with-name (dargs expr) 'needed-for-node2-tag-array needed-for-node2-tag-array)
                  (cons n nodenums-to-translate)
                  cut-nodenum-type-alist extra-asserts print var-type-alist))))))))))
 
@@ -1514,7 +1514,7 @@
                                     t)))
                   (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array var-type-alist
                                                 (if translatep
-                                                    (tag-nodenums (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
+                                                    (tag-nodenums-with-name (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
                                                   needed-for-node1-tag-array)
                                                 (if translatep
                                                     (cons n nodenums-to-translate)
@@ -1589,7 +1589,7 @@
               (if translatep
                   ;;translate it and mark its children (if any) as supporters
                   (gather-nodes-to-translate (+ -1 n) depth depth-array dag-array-name dag-array
-                                             (tag-nodenums (dargs expr) 'supporters-tag-array supporters-tag-array)
+                                             (tag-nodenums-with-name (dargs expr) 'supporters-tag-array supporters-tag-array)
                                              (cons n nodenums-to-translate)
                                              cut-nodenum-type-alist
                                              var-type-alist extra-asserts)

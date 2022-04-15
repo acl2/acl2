@@ -18,7 +18,7 @@
 ;tag-array tells us which nodes to keep
 ;returns (mv new-dag-array-len new-dag-array translation-array)
 ;uses the array named TRANSLATION-ARRAY-NAME - what else?
-;TODO: compare to build-reduced-dag2, except this one returns an array
+;TODO: compare to build-reduced-dag-with-name, except this one returns an array
 ;todo: avoid making a node that is a quotep?
 ;; We do not use the standard functions to add nodes to dags because we are just shifting and dropping nodes.
 (defun extract-dag-array-aux (old-dag-nodenum dag-len old-dag-len old-dag-array-name old-dag-array
@@ -86,7 +86,7 @@
          ;; TODO: Call tag-supporters-of-nodes here (but avoid computing the max twice):
          (tag-array (make-empty-array 'tag-array relevant-dag-length)) ;okay to use this name?
          (tag-array (aset1-list 'tag-array tag-array nodenums t))
-         (tag-array (tag-supporters max-nodenum dag-array-name dag-array 'tag-array tag-array))
+         (tag-array (tag-supporters-with-name max-nodenum dag-array-name dag-array 'tag-array tag-array))
          (new-dag-array (make-empty-array new-dag-array-name relevant-dag-length)) ;probably won't need all the space?
          (translation-array (make-empty-array 'translation-array relevant-dag-length)))
     (mv-let (new-dag-len new-dag-array translation-array)

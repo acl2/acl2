@@ -1114,11 +1114,11 @@
     unsigned-byte-p-forced-of-sbvrem
     unsigned-byte-p-forced-of-sbvdiv
     unsigned-byte-p-forced-of-bvsx
+    unsigned-byte-p-forced-of-leftrotate32
+    unsigned-byte-p-forced-of-rightrotate32
     ;todo: repeatbit
     ;;todo leftrotate
-    ;;todo leftrotate32
     ;;todo rightrotate?
-    ;;todo rightrotate32?
     unsigned-byte-p-forced-of-bv-array-read
     ))
 

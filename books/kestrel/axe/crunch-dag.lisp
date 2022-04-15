@@ -135,7 +135,7 @@
                               (all-natp nodenums)
                               (all-< nodenums dag-len))))
   (let* ((max-nodenum (maxelem nodenums))
-         (tag-array (tag-supporters-of-nodes nodenums dag-array-name dag-array 'tag-array (+ 1 max-nodenum)))
+         (tag-array (tag-supporters-of-nodes-with-name nodenums dag-array-name dag-array 'tag-array (+ 1 max-nodenum)))
          (translation-array (make-empty-array 'translation-array (+ 1 max-nodenum))))
     (crunch-dag-array-aux 0
                           max-nodenum

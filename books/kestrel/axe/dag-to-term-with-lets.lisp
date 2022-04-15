@@ -87,7 +87,8 @@
                                            (num-valid-nodes (+ 1 (LARGEST-NON-QUOTEP ARGS)))
                                            ))
            :in-theory (e/d (<-of-car-when-all-dargp-less-than)
-                           (TYPE-OF-AREF1-WHEN-SUPPORTERS-ARRAYP)))))
+                           (TYPE-OF-AREF1-WHEN-SUPPORTERS-ARRAYP
+                            TYPE-OF-AREF1-WHEN-SUPPORTERS-ARRAYP-special)))))
 
 
 ;; Fill in the supporters for nodes N through MAX-NODENUM.

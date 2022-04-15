@@ -38,6 +38,7 @@
 (include-book "bv-syntax")
 (include-book "leftrotate")
 (include-book "leftrotate32")
+(include-book "rightrotate32")
 (include-book "sbvrem")
 (include-book "bvdiv")
 (include-book "sbvdiv")
@@ -3696,6 +3697,14 @@
 
 (defthm unsigned-byte-p-forced-of-bitand
   (unsigned-byte-p-forced 1 (bitand x y))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+(defthm unsigned-byte-p-forced-of-leftrotate32
+  (unsigned-byte-p-forced 32 (leftrotate32 amt val))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+(defthm unsigned-byte-p-forced-of-rightrotate32
+  (unsigned-byte-p-forced 32 (rightrotate32 amt val))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 (defthm unsigned-byte-p-forced-of-bvsx

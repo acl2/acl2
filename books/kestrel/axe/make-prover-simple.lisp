@@ -4164,7 +4164,7 @@
        ;;               ;; (print-array2 'dag-array dag-array dag-len)
        ;;               (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
        ;;               (let* ( ;;fixme or we could use a worklist starting with literal-nodenums..
-       ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
+       ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes-with-name literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
        ;;                                                                                 (+ 1 (maxelem literal-nodenums))))
        ;;                      (rec-fn-nodenums (filter-rec-fn-nodes2 (+ -1 dag-len) 'dag-array dag-array 'tag-array-for-prove-clause-miter tag-array-for-prove-clause-miter state))
        ;;                      (rec-fn-nodenums (merge-sort-< rec-fn-nodenums)) ;handle this better (drop it or call reverse?)
@@ -4453,7 +4453,7 @@
                                  print))
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                 (- (cw "(True case reduced dag: ~x0)~%" (drop-non-supporters-array 'dag-array dag-array nodenum nil)))
+                 (- (cw "(True case reduced dag: ~x0)~%" (drop-non-supporters-array-with-name 'dag-array dag-array nodenum nil)))
                  (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
                          (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "true"))))
               ;; Attempt to prove case #1:

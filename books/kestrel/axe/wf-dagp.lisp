@@ -65,7 +65,7 @@
 
 (defthm wf-dagp-forward-to-<=-of-len
   (implies (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-           (and (<= dag-len 2147483646)))
+           (<= dag-len 2147483646))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable wf-dagp))))
 

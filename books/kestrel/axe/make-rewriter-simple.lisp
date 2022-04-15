@@ -231,6 +231,21 @@
            (equal (natp (+ -1 x))
                   (< 0 x))))
 
+(defthm bounded-axe-treep-when-bounded-dag-exprp
+  (implies (and (bounded-dag-exprp bound2 tree)
+                (natp bound2)
+                (<= bound2 bound))
+           (bounded-axe-treep tree bound))
+  :hints (("Goal" :in-theory (enable bounded-axe-treep
+                                     bounded-dag-exprp
+                                     dag-exprp0))))
+
+(defthm bounded-axe-treep-of-cdar-when-weak-dagp-aux
+  (implies (and (weak-dagp-aux dag)
+                (<= (car (car dag)) bound))
+           (bounded-axe-treep (cdr (car dag)) bound))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
 (defthm consp-of-cdr-forward-to-consp
   (implies (consp (cdr x))
            (consp x))
@@ -2575,8 +2590,7 @@
                         (dargp-less-than simplified-thenpart dag-len)
                         (axe-treep elsepart)
                         (bounded-axe-treep elsepart dag-len)
-                        (consp tree)
-                        (axe-treep tree)
+                        (tree-to-memoizep tree)
                         (bounded-axe-treep tree dag-len)
                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                         (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag3))
@@ -2615,8 +2629,7 @@
                         (bounded-axe-treep thenpart dag-len)
                         (axe-treep elsepart)
                         (bounded-axe-treep elsepart dag-len)
-                        (consp tree)
-                        (axe-treep tree)
+                        (tree-to-memoizep tree)
                         (bounded-axe-treep tree dag-len)
                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                         (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag2))
@@ -2720,8 +2733,7 @@
                         (all-axe-treep args)
                         (all-bounded-axe-treep args dag-len)
                         (consp (rest (rest args))) ; (equal 3 (len args))
-                        (consp tree)
-                        (axe-treep tree)
+                        (tree-to-memoizep tree)
                         (bounded-axe-treep tree dag-len)
                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                         (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag2))
@@ -2791,8 +2803,7 @@
                         (dargp-less-than simplified-thenpart dag-len)
                         (axe-treep elsepart)
                         (bounded-axe-treep elsepart dag-len)
-                        (consp tree)
-                        (axe-treep tree)
+                        (tree-to-memoizep tree)
                         (bounded-axe-treep tree dag-len)
                         (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag3))
                         (maybe-bounded-memoizationp memoization dag-len)
@@ -2826,8 +2837,7 @@
                         (< simplified-test dag-len)
                         (all-axe-treep args)
                         (all-bounded-axe-treep args dag-len)
-                        (consp tree)
-                        (axe-treep tree)
+                        (tree-to-memoizep tree)
                         (bounded-axe-treep tree dag-len)
                         (consp (rest (rest (rest args)))) ; (equal 4 (len args))
                         (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag2))
@@ -3221,8 +3231,7 @@
                        (dargp-less-than simplified-thenpart dag-len)
                        (axe-treep elsepart)
                        (bounded-axe-treep elsepart dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag3))
@@ -3246,8 +3255,7 @@
                        (bounded-axe-treep thenpart dag-len)
                        (axe-treep elsepart)
                        (bounded-axe-treep elsepart dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag2))
@@ -3315,8 +3323,7 @@
                        (all-axe-treep args)
                        (all-bounded-axe-treep args dag-len)
                        (consp (rest (rest args))) ; (equal 3 (len args))
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag2))
@@ -3357,8 +3364,7 @@
                        (dargp-less-than simplified-thenpart dag-len)
                        (axe-treep elsepart)
                        (bounded-axe-treep elsepart dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag3))
                        (maybe-bounded-memoizationp memoization dag-len)
@@ -3378,8 +3384,7 @@
                        (< simplified-test dag-len)
                        (all-axe-treep args)
                        (all-bounded-axe-treep args dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (consp (rest (rest (rest args)))) ; (equal 4 (len args))
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag2))
@@ -3704,8 +3709,7 @@
                        (dargp-less-than simplified-thenpart dag-len)
                        (axe-treep elsepart)
                        (bounded-axe-treep elsepart dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag3))
@@ -3729,8 +3733,7 @@
                        (bounded-axe-treep thenpart dag-len)
                        (axe-treep elsepart)
                        (bounded-axe-treep elsepart dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag2))
@@ -3789,8 +3792,7 @@
                        (all-axe-treep args)
                        (all-bounded-axe-treep args dag-len)
                        (consp (rest (rest args))) ; (equal 3 (len args))
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag2))
@@ -3831,8 +3833,7 @@
                        (dargp-less-than simplified-thenpart dag-len)
                        (axe-treep elsepart)
                        (bounded-axe-treep elsepart dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag3))
                        (maybe-bounded-memoizationp memoization dag-len)
@@ -3852,8 +3853,7 @@
                        (< simplified-test dag-len)
                        (all-axe-treep args)
                        (all-bounded-axe-treep args dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (consp (rest (rest (rest args)))) ; (equal 4 (len args))
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag2))
@@ -3974,8 +3974,7 @@
                          (dargp-less-than simplified-thenpart dag-len)
                          (axe-treep elsepart)
                          (bounded-axe-treep elsepart dag-len)
-                         (consp tree)
-                         (axe-treep tree)
+                         (tree-to-memoizep tree)
                          (bounded-axe-treep tree dag-len)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag3))
@@ -3998,8 +3997,7 @@
                          (bounded-axe-treep thenpart dag-len)
                          (axe-treep elsepart)
                          (bounded-axe-treep elsepart dag-len)
-                         (consp tree)
-                         (axe-treep tree)
+                         (tree-to-memoizep tree)
                          (bounded-axe-treep tree dag-len)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag2))
@@ -4055,8 +4053,7 @@
                          (all-axe-treep args)
                          (all-bounded-axe-treep args dag-len)
                          (consp (rest (rest args))) ; (equal 3 (len args))
-                         (consp tree)
-                         (axe-treep tree)
+                         (tree-to-memoizep tree)
                          (bounded-axe-treep tree dag-len)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag2))
@@ -4095,8 +4092,7 @@
                          (dargp-less-than simplified-thenpart dag-len)
                          (axe-treep elsepart)
                          (bounded-axe-treep elsepart dag-len)
-                         (consp tree)
-                         (axe-treep tree)
+                         (tree-to-memoizep tree)
                          (bounded-axe-treep tree dag-len)
                          (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag3))
                          (maybe-bounded-memoizationp memoization dag-len)
@@ -4115,8 +4111,7 @@
                          (< simplified-test dag-len)
                          (all-axe-treep args)
                          (all-bounded-axe-treep args dag-len)
-                         (consp tree)
-                         (axe-treep tree)
+                         (tree-to-memoizep tree)
                          (bounded-axe-treep tree dag-len)
                          (consp (rest (rest (rest args)))) ; (equal 4 (len args))
                          (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag2))
@@ -4478,7 +4473,7 @@
                    (print-memo-stats memoization))))
         (if (consp new-nodenum-or-quotep) ;check for quotep
             (mv (erp-nil) new-nodenum-or-quotep)
-          (mv (erp-nil) (drop-non-supporters-array 'dag-array dag-array new-nodenum-or-quotep nil)))))
+          (mv (erp-nil) (drop-non-supporters-array-with-name 'dag-array dag-array new-nodenum-or-quotep nil)))))
 
     (defthm ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)
       (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))) ; no error
@@ -4660,6 +4655,9 @@
                                    )
       (declare (xargs :guard (and (weak-dagp-aux rev-dag)
                                   (cars-increasing-by-1 rev-dag)
+                                  (if (consp rev-dag)
+                                      (<= (car (car (last rev-dag))) 2147483646)
+                                    t)
                                   (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                   (maybe-bounded-memoizationp memoization dag-len)
                                   (info-worldp info)
@@ -4684,25 +4682,27 @@
                                                                dag-len renumbering-stobj))
                       :stobjs renumbering-stobj
                       :guard-hints (("Goal" ;:expand (WEAK-DAGP-AUX REV-DAG)
-                                     :in-theory (enable car-of-car-of-last-when-cars-increasing-by-1-linear maybe-dargp
-                                                        integerp-when-dargp
-                                                        symbolp-of-car-when-dag-exprp0
-                                                        tree-to-memoizep
-                                                        axe-treep-when-dag-exprp0
-                                                        car-of-cadr-when-cars-increasing-by-1
-                                                        all-myquotep-when-all-dargp
-                                                        consp-of-cdr-when-dargp
-                                                        consp-of-cdr-when-dag-exprp0-and-quote
-                                                        not-cddr-when-dag-exprp0-and-quotep
-                                                        consp-of-car-of-last-when-weak-dagp-aux
-                                                        acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux)
-                                     :do-not '(generalize eliminate-destructors)))
-                      ))
+                                     :in-theory (e/d (car-of-car-of-last-when-cars-increasing-by-1-linear
+                                                      maybe-dargp
+                                                      integerp-when-dargp
+                                                      rationalp-when-integerp
+                                                      symbolp-of-car-when-dag-exprp0
+                                                      tree-to-memoizep
+                                                      axe-treep-when-dag-exprp0
+                                                      car-of-cadr-when-cars-increasing-by-1
+                                                      all-myquotep-when-all-dargp
+                                                      consp-of-cdr-when-dargp
+                                                      consp-of-cdr-when-dag-exprp0-and-quote
+                                                      not-cddr-when-dag-exprp0-and-quotep
+                                                      consp-of-car-of-last-when-weak-dagp-aux
+                                                      acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux)
+                                                     (natp dargp))
+                                     :do-not '(generalize eliminate-destructors)))))
       (if (endp rev-dag)
           ;; Done rewriting nodes.  The caller can use the renumbering-stobj to lookup what the old top node rewrote to:
           (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
         (b* ((entry (first rev-dag))
-             (nodenum (car entry)) ; or, since they are consecutive, we could track this numerically..
+             (nodenum (the (integer 0 2147483646) (car entry))) ; or, since they are consecutive, we could track this numerically..
              (- (and print (= 0 (mod nodenum 1000)) (cw "Simplifying node ~x0.~%" nodenum)))
              (expr (cdr entry)))
           (if (atom expr)
@@ -4785,6 +4785,9 @@
     (defthm ,(pack$ simplify-dag-aux-name '-return-type)
       (implies (and (weak-dagp-aux rev-dag)
                     (cars-increasing-by-1 rev-dag)
+                    (if (consp rev-dag)
+                        (<= (car (car (last rev-dag))) 2147483646)
+                      t)
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (maybe-bounded-memoizationp memoization dag-len)
                     (info-worldp info)
@@ -4836,6 +4839,7 @@
                                   car-of-car-of-last-when-cars-increasing-by-1-linear
                                   maybe-dargp
                                   integerp-when-dargp
+                                  rationalp-when-integerp
                                   symbolp-of-car-when-dag-exprp0
                                   tree-to-memoizep
                                   axe-treep-when-dag-exprp0
@@ -4853,6 +4857,9 @@
     (defthm ,(pack$ simplify-dag-aux-name '-return-type-corollary0)
       (implies (and (weak-dagp-aux rev-dag)
                     (cars-increasing-by-1 rev-dag)
+                    (if (consp rev-dag)
+                        (<= (car (car (last rev-dag))) 2147483646)
+                      t)
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (maybe-bounded-memoizationp memoization dag-len)
                     (info-worldp info)
@@ -4893,6 +4900,9 @@
     (defthm ,(pack$ simplify-dag-aux-name '-return-type-corollary)
       (implies (and (weak-dagp-aux rev-dag)
                     (cars-increasing-by-1 rev-dag)
+                    (if (consp rev-dag)
+                        (<= (car (car (last rev-dag))) 2147483646)
+                      t)
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (maybe-bounded-memoizationp memoization dag-len)
                     (info-worldp info)
@@ -4935,6 +4945,9 @@
     (defthm ,(pack$ simplify-dag-aux-name '-return-type-corollary2)
       (implies (and (weak-dagp-aux rev-dag)
                     (cars-increasing-by-1 rev-dag)
+                    (if (consp rev-dag)
+                        (<= (car (car (last rev-dag))) 2147483646)
+                      t)
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (maybe-bounded-memoizationp memoization dag-len)
                     (info-worldp info)
@@ -4978,6 +4991,9 @@
     (defthm ,(pack$ simplify-dag-aux-name '-return-type-corollary3)
       (implies (and (weak-dagp-aux rev-dag)
                     (cars-increasing-by-1 rev-dag)
+                    (if (consp rev-dag)
+                        (<= (car (car (last rev-dag))) 2147483646)
+                      t)
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (maybe-bounded-memoizationp memoization dag-len)
                     (info-worldp info)
@@ -5023,13 +5039,14 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;; Returns (mv erp dag-or-quotep).
-    ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array)?
+    ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array-with-name)?
     ;; TODO: Prove some properties
     (defun ,simplify-dag-name (dag
                                assumptions
                                interpreted-function-alist
                                limits
                                rule-alist
+                               count-hits
                                print
                                known-booleans
                                monitored-symbols)
@@ -5038,6 +5055,7 @@
                                   (pseudo-term-listp assumptions)
                                   (rule-limitsp limits)
                                   (rule-alistp rule-alist)
+                                  (booleanp count-hits)
                                   (axe-print-levelp print)
                                   (interpreted-function-alistp interpreted-function-alist)
                                   (symbol-listp known-booleans)
@@ -5081,7 +5099,9 @@
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                           (and ; memoizep
                                            (empty-memoization)) ; todo: add an option to make this bigger?
-                                          (and print (empty-info-world)) ;used to track the number of rule hits
+                                          ;; TODO: If print is :brief, maybe-print-hit-counts below will only print the total number of hits, so
+                                          ;; tracking hit counts for each rule is overkill:
+                                          (and count-hits print (empty-info-world)) ;used to track the number of rule hits
                                           (and print (zero-tries)) ;todo: think about this
                                           limits
                                           node-replacement-array rule-alist refined-assumption-alist node-replacement-count
@@ -5094,7 +5114,8 @@
             ;; Cannot refer to the renumbering-stobj:
             (declare (ignore dag-len dag-parent-array dag-constant-alist dag-variable-alist limits node-replacement-array)) ; print some stats from these?
             (b* (((when erp) (mv erp nil))
-                 (- (and print (maybe-print-hit-counts print info)))
+                 ;; todo: do we support both brief hit counting (just the total) and totals per-rule?:
+                 (- (and count-hits print (maybe-print-hit-counts print info)))
                  (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
                  (- (and (print-level-at-least-tp print) memoization (print-memo-stats memoization)))
                  (- (and print (cw ")~%"))) ; balances "(Simplifying DAG"
@@ -5102,7 +5123,7 @@
               (if (quotep new-top-nodenum-or-quotep)
                   (mv (erp-nil) new-top-nodenum-or-quotep)
                 (mv (erp-nil)
-                    (drop-non-supporters-array 'dag-array dag-array new-top-nodenum-or-quotep nil))))))))
+                    (drop-non-supporters-array-with-name 'dag-array dag-array new-top-nodenum-or-quotep nil))))))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5115,6 +5136,7 @@
                                          interpreted-function-alist
                                          limits
                                          rules
+                                         count-hits
                                          print
                                          monitored-symbols
                                          state ; todo: just take wrld?
@@ -5126,6 +5148,7 @@
                                   (interpreted-function-alistp interpreted-function-alist)
                                   (rule-limitsp limits)
                                   (symbol-listp rules)
+                                  (booleanp count-hits)
                                   (axe-print-levelp print)
                                   (symbol-listp monitored-symbols)
                                   (ilks-plist-worldp (w state)))
@@ -5138,6 +5161,7 @@
                                                       interpreted-function-alist
                                                       limits
                                                       rule-alist
+                                                      count-hits
                                                       print
                                                       known-booleans
                                                       monitored-symbols))
@@ -5154,9 +5178,10 @@
                                         (interpreted-function-alist 'nil)
                                         (limits 'nil)
                                         (rules 'nil)
+                                        (count-hits 'nil)
                                         (print ':brief)
                                         (monitored-symbols 'nil))
-      `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,interpreted-function-alist ,limits ,rules ,print ,monitored-symbols state)))
+      `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,interpreted-function-alist ,limits ,rules ,count-hits ,print ,monitored-symbols state)))
 
     )))
 
