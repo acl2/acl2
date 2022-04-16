@@ -31,6 +31,12 @@
            (equal (car item) 'quote))
   :rule-classes :forward-chaining)
 
+;; ;; In case we are turning car into nth:
+;; (defthm myquotep-forward-to-equal-of-nth-0-and-quotge
+;;   (implies (myquotep item)
+;;            (equal (nth 0 item) 'quote))
+;;   :rule-classes :forward-chaining)
+
 (defthm myquotep-forward-to-consp
   (implies (myquotep item)
            (and (consp item)
@@ -42,6 +48,12 @@
            (equal 2 (len x)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable myquotep))))
+
+;; (defthm myquotep-forward-to-not-cddr
+;;   (implies (myquotep x)
+;;            (not (cdr (cdr x))))
+;;   :rule-classes :forward-chaining
+;;   :hints (("Goal" :in-theory (enable myquotep))))
 
 ;;;
 ;;; all-myquotep
