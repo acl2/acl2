@@ -129,7 +129,11 @@
     (xdoc::li
      "The writers of (the members of) the structures.")
     (xdoc::li
-     "A list of return type theorems for all the member readers and writers.")
+     "The name of the theorem that rewrites away the fixer
+      when the recognizer holds.")
+    (xdoc::li
+     "A list of the names of the return type theorems
+      for all the member readers and writers.")
     (xdoc::li
      "The name of a theorem asserting that
       if something is a structure of this type
@@ -146,6 +150,7 @@
    (fixer symbolp)
    (readers symbol-listp)
    (writers symbol-listp)
+   (fixer-recognizer-thm symbolp)
    (return-thms symbol-listp)
    (not-error-thm symbolp)
    (structp-thm symbolp)
@@ -566,7 +571,8 @@
                              (struct-tag-p symbolp)
                              (tag symbolp)
                              (members member-info-listp))
-  :returns (event pseudo-event-formp)
+  :returns (mv (event pseudo-event-formp)
+               (fixer-recognizer-thm symbolp))
   :short "Generate the fixer of
           the structures defined by the @(tsee defstruct)."
   :long
@@ -575,15 +581,23 @@
     "As the fixing value,
      we pick a structure with the right tag,
      the right member names,
-     and zero integer values of the right types for all the members."))
-  `(std::deffixer ,struct-tag-fix
-     :pred ,struct-tag-p
-     :param x
-     :body-fix (if (,struct-tag-p x)
-                   x
-                 (make-struct :tag (ident ,(symbol-name tag))
-                              :members
-                              (list ,@(defstruct-gen-fixer-aux members)))))
+     and zero integer values of the right types for all the members.")
+   (xdoc::p
+    "We also return the name of the theorem that
+     rewrites the fixer away when the recognizer holds."))
+  (b* ((event
+        `(std::deffixer ,struct-tag-fix
+           :pred ,struct-tag-p
+           :param x
+           :body-fix (if (,struct-tag-p x)
+                         x
+                       (make-struct :tag (ident ,(symbol-name tag))
+                                    :members
+                                    (list ,@(defstruct-gen-fixer-aux
+                                              members))))))
+       (thm (packn-pos (list struct-tag-fix '-when- struct-tag-p)
+                       struct-tag-fix)))
+    (mv event thm))
 
   :prepwork
   ((define defstruct-gen-fixer-aux ((members member-info-listp))
@@ -829,8 +843,9 @@
             not-errorp-when-struct-tag-p
             structp-when-struct-tag-p)
         (defstruct-gen-recognizer struct-tag-p tag members))
-       (fixer-event (defstruct-gen-fixer
-                      struct-tag-fix struct-tag-p tag members))
+       ((mv fixer-event
+            fixer-recognizer-thm)
+        (defstruct-gen-fixer struct-tag-fix struct-tag-p tag members))
        (fixtype-event (defstruct-gen-fixtype
                         struct-tag struct-tag-p
                         struct-tag-fix struct-tag-equiv))
@@ -847,6 +862,7 @@
                                   :fixer struct-tag-fix
                                   :readers reader-names
                                   :writers writer-names
+                                  :fixer-recognizer-thm fixer-recognizer-thm
                                   :return-thms return-thms
                                   :not-error-thm not-errorp-when-struct-tag-p
                                   :structp-thm structp-when-struct-tag-p
