@@ -23,6 +23,7 @@
 
 ;todo: can variables always occur?
 ;like pseudo-termp but allows integers (nodenums in some DAG) to also appear
+;; TODO: Make a more abstract interface to this (e.g., axe-tree-args instead of cdr)
 ;; See also bounded-axe-treep.
 (mutual-recursion
  (defun axe-treep (tree)
@@ -45,6 +46,7 @@
                        (equal (len fn) 3)
                        (eq (car fn) 'lambda)
                        (symbol-listp (cadr fn))
+                       ;; lambda body is a regular, pseudo-term, not an axe-tree:
                        (pseudo-termp (caddr fn))
                        (equal (len (cadr fn))
                               (len (fargs tree))))))))))
@@ -124,7 +126,7 @@
                (natp tree)))
   :rule-classes :compound-recognizer)
 
-;disable outside axe
+;TODO: disable outside axe
 (defthm symbolp-of-car-when-axe-treep-cheap
   (implies (and (axe-treep tree)
                 (not (consp (car tree))))
@@ -293,7 +295,7 @@
      (let ((fn (ffn-symb tree)))
        (if (eq fn 'quote)
            t
-         (all-bounded-axe-treep (fargs tree) bound) ;todo: can nodenums appear in the lambda body?
+         (all-bounded-axe-treep (fargs tree) bound)
          ))))
 
  (defund all-bounded-axe-treep (trees bound)
@@ -399,6 +401,7 @@
 (defthm <-when-bounded-axe-treep
   (implies (and (bounded-axe-treep tree bound2)
                 (<= bound2 bound)
+                ;; or rewrite bounded-axe-treep when these are true:
                 (not (consp tree))
                 (not (symbolp tree)))
            (< tree bound))
