@@ -40,10 +40,9 @@
 (defttag invariant-risk)
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
 
-
 ;; Returns a boolean
 (defun dag-ok-after-symbolic-execution (dag assumptions error-on-incomplete-runsp wrld)
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program)) ; because this calls untranslate
   (let ((dag-fns (dag-fns dag)))
     (if (or (member-eq 'run-until-return-from-stack-height dag-fns) ;todo: pass in a set of functions to look for?
             (member-eq 'jvm::run-n-steps dag-fns)
@@ -71,14 +70,13 @@
                        assumptions
                        simplify-xorsp
                        rules-to-monitor
-                       ;use-internal-contextsp
+                       ;;use-internal-contextsp
                        print
                        print-interval
                        memoizep
                        total-steps
                        state)
-  (declare (xargs :stobjs (state)
-                  :guard (and (natp steps-left)
+  (declare (xargs :guard (and (natp steps-left)
                               (step-incrementp step-increment)
                               (true-listp rule-alists)
                               (all-rule-alistp rule-alists)
@@ -90,6 +88,7 @@
                               (natp total-steps)
                               (booleanp simplify-xorsp))
                   :mode :program ;; because we call simp-dag-fn and untranslate
+                  :stobjs (state)
                   ))
   (if (zp steps-left)
       (mv (erp-nil) dag state)
@@ -138,7 +137,7 @@
                                      (cw "~X01)" dag nil)))))))
               (repeatedly-run dag
                               (- steps-left steps-for-this-iteration)
-                              step-increment rule-alists assumptions simplify-xorsp rules-to-monitor; use-internal-contextsp
+                              step-increment rule-alists assumptions simplify-xorsp rules-to-monitor ; use-internal-contextsp
                               print
                               print-interval
                               memoizep
@@ -175,9 +174,7 @@
                                 chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
                                 error-on-incomplete-runsp ;whether to throw a hard error (may be nil if further pruning can be done in the caller)
                                 state)
-  (declare (xargs :stobjs (state)
-                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
-                  :guard (and (or (eq :auto maybe-nice-output-indicator)
+  (declare (xargs :guard (and (or (eq :auto maybe-nice-output-indicator)
                                   (nice-output-indicatorp maybe-nice-output-indicator))
                               (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
@@ -199,7 +196,9 @@
                               (booleanp chunkedp)
                               (booleanp error-on-incomplete-runsp)
                               (booleanp simplify-xorsp))
-                  :verify-guards nil))
+                  :stobjs (state)
+                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
+                  ))
   (b* ((method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string)) ;todo: should this be called a descriptor?
@@ -314,7 +313,7 @@
                                    ))
        ((mv erp default-rule-alist)
         (make-rule-alist (append (unroll-java-code-rules)
-                                                       symbolic-execution-rules)
+                                 symbolic-execution-rules)
                          (w state)))
        ((when erp) (mv erp nil nil nil nil nil state))
        (rule-alists (or rule-alists ;use user-supplied rule-alists, if any
@@ -401,9 +400,7 @@
                              chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
                              whole-form
                              state)
-  (declare (xargs :stobjs (state)
-                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
-                  :guard (and (or (eq :auto maybe-nice-output-indicator)
+  (declare (xargs :guard (and (or (eq :auto maybe-nice-output-indicator)
                                   (nice-output-indicatorp maybe-nice-output-indicator))
                               (jvm::method-indicatorp method-indicator)
                               (or (eq :all classes-to-assume-initialized)
@@ -428,7 +425,9 @@
                                   (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
                               (booleanp simplify-xorsp))
-                  :verify-guards nil))
+                  :stobjs (state)
+                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
+                  ))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
        ;; check the name that will be defined:
