@@ -25,7 +25,7 @@
 (include-book "output-indicators")
 (include-book "nice-output-indicators")
 (include-book "kestrel/utilities/redundancy" :dir :system)
-(include-book "kestrel/utilities/doc" :dir :system)
+(include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/check-boolean" :dir :system)
 ;(include-book "../dag-size-fast")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)

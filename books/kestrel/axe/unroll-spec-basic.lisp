@@ -26,7 +26,7 @@
 (include-book "rules-in-rule-lists")
 (include-book "evaluator") ;; since this calls dag-val-with-axe-evaluator to embed the resulting dag in a function, introduces a skip-proofs
 (include-book "kestrel/utilities/check-boolean" :dir :system)
-(include-book "kestrel/utilities/doc" :dir :system)
+(include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)

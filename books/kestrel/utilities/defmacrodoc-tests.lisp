@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "doc")
+(include-book "defmacrodoc")
 
 (defxdoc-for-macro bar
   (bar &optional o1 &key (key1 'nil) (key2 ':auto))
