@@ -24,6 +24,7 @@
 (include-book "rewriter") ;TODO: brings in JVM stuff...
 (include-book "rewriter-alt") ;TODO: brings in JVM stuff...
 (include-book "misc/random" :dir :system)
+(include-book "kestrel/utilities/check-boolean" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists2" :dir :system)
 (include-book "kestrel/utilities/subtermp" :dir :system)
@@ -21103,13 +21104,6 @@
 })
 
 <p>If the call to @('prove-equivalence') completes without error, the DAG/terms are equal, given the :assumptions (including the :types).</p>")
-
-;dup
-(defun check-boolean (val)
-  (declare (xargs :guard t))
-  (if (member-eq val '(t nil))
-      val
-    (er hard? 'check-boolean "Value is not boolean: ~x0." val)))
 
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
 (defmacro prove-equivalence (&whole whole-form

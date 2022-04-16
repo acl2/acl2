@@ -26,6 +26,7 @@
 (include-book "nice-output-indicators")
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/doc" :dir :system)
+(include-book "kestrel/utilities/check-boolean" :dir :system)
 ;(include-book "../dag-size-fast")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
 (include-book "../prune") ;brings in rewriter-basic
@@ -500,13 +501,6 @@
                       `(value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
                       )
         state)))
-
-;dup
-(defun check-boolean (val)
-  (declare (xargs :guard t))
-  (if (member-eq val '(t nil))
-      val
-    (er hard? 'check-boolean "Value is not boolean: ~x0." val)))
 
 ;; This introduces a defconst that represents the unrolled computation
 ;; performed by the indicated method.
