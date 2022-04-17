@@ -142,7 +142,7 @@
                 ;(DAG-PARENT-ARRAYP 'DAG-PARENT-ARRAY DAG-PARENT-ARRAY)
                 ;(bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                 ;; (ARRAY1P 'DAG-ARRAY DAG-ARRAY)
-                ;; (ALL-DARGP-LESS-THAN (DARGS EXPR)
+                ;; (BOUNDED-DARG-LISTP (DARGS EXPR)
                 ;;                                 (alen1 'DAG-ARRAY DAG-ARRAY))
                 ;; (EQUAL (alen1 'DAG-ARRAY DAG-ARRAY)
                 ;;        (alen1 'DAG-PARENT-ARRAY
@@ -325,9 +325,8 @@
   (declare (type (integer 0 2147483646) dag-len)
            (xargs :guard (and (symbolp fn)
                               (not (eq 'quote fn))
-                              (true-listp args)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (all-dargp-less-than args dag-len)
+                              (bounded-darg-listp args dag-len)
                               (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                               (dag-constant-alistp dag-constant-alist)
                               (equal (alen1 'dag-array dag-array)
@@ -428,10 +427,9 @@
 
 (defthm pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-dargp-less-than args dag-len)
+                (bounded-darg-listp args dag-len)
                 (symbolp fn)
-                (not (equal 'quote fn))
-                (true-listp args))
+                (not (equal 'quote fn)))
            (pseudo-dag-arrayp 'dag-array (mv-nth 2 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))
                               (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))))
   :hints (("Goal" :cases ((< dag-len 2147483646))
@@ -441,10 +439,9 @@
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (<= n (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))
                 (natp n)
-                (all-dargp-less-than args dag-len)
+                (bounded-darg-listp args dag-len)
                 (symbolp fn)
-                (not (equal 'quote fn))
-                (true-listp args))
+                (not (equal 'quote fn)))
            (pseudo-dag-arrayp 'dag-array
                               (mv-nth 2 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))
                               n))
@@ -490,7 +487,7 @@
   (implies (and (natp dag-len)
                 (bounded-dag-constant-alistp dag-constant-alist dag-len)
                 (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
-                (all-dargp-less-than args (alen1 'dag-array dag-array))
+                (bounded-darg-listp args (alen1 'dag-array dag-array))
                 (equal (alen1 'dag-array dag-array)
                        (alen1 'dag-parent-array dag-parent-array))
                 (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))))
@@ -502,7 +499,7 @@
 
 (defthm bound-on-mv-nth-3-and-mv-nth-1-of-add-function-call-expr-to-dag-array-alt
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                (all-dargp-less-than args (alen1 'dag-array dag-array))
+                (bounded-darg-listp args (alen1 'dag-array dag-array))
                 (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))))
            (< (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))
               (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))))
@@ -530,10 +527,9 @@
 (defthm pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-other
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))
-                (all-dargp-less-than args dag-len)
+                (bounded-darg-listp args dag-len)
                 (symbolp fn)
-                (not (equal 'quote fn))
-                (true-listp args))
+                (not (equal 'quote fn)))
            (pseudo-dag-arrayp 'dag-array
                               (mv-nth 2 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))
                               (+ 1 (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))))
@@ -578,8 +574,8 @@
 ;todo: but we need to know that the other slots in the parent array contain nils, since we leave them unchanged!
 (defthm dag-parent-arrayp-of-mv-nth-4-of-add-function-call-expr-to-dag-array
   (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
-                (all-dargp-less-than args (alen1 'dag-parent-array dag-parent-array))
-                (all-dargp-less-than args dag-len)
+                (bounded-darg-listp args (alen1 'dag-parent-array dag-parent-array))
+                (bounded-darg-listp args dag-len)
                 (natp dag-len)
                 (<= dag-len 2147483646))
            (dag-parent-arrayp 'dag-parent-array
@@ -591,8 +587,8 @@
 
 (defthm array1p-of-mv-nth-4-of-add-function-call-expr-to-dag-array
   (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
-                (all-dargp-less-than args (alen1 'dag-parent-array dag-parent-array))
-                (all-dargp-less-than args dag-len)
+                (bounded-darg-listp args (alen1 'dag-parent-array dag-parent-array))
+                (bounded-darg-listp args dag-len)
                 (natp dag-len)
                 (<= dag-len 2147483646))
            (array1p 'dag-parent-array
@@ -628,7 +624,7 @@
                 (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (<= dag-len (alen1 'dag-parent-array dag-parent-array))
-                (all-dargp-less-than args (alen1 'dag-array dag-array))
+                (bounded-darg-listp args (alen1 'dag-array dag-array))
                 (equal (alen1 'dag-parent-array dag-parent-array)
                        (alen1 'dag-array dag-array)))
            (bounded-dag-parent-entriesp (+ -1 (alen1 'dag-array (mv-nth 2 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))))
@@ -665,7 +661,7 @@
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (equal (alen1 'dag-parent-array dag-parent-array)
                        (alen1 'dag-array dag-array))
-                (all-dargp-less-than args dag-len)
+                (bounded-darg-listp args dag-len)
                 ;;(not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))
                 )
            (bounded-dag-parent-arrayp 'dag-parent-array
@@ -680,8 +676,7 @@
                 (bounded-dag-constant-alistp dag-constant-alist dag-len)
                 (symbolp fn)
                 (not (equal 'quote fn))
-                ;; (true-listp args)
-                (all-dargp-less-than args (alen1 'dag-array dag-array))
+                (bounded-darg-listp args (alen1 'dag-array dag-array))
                 (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                 (equal (alen1 'dag-array dag-array)
                        (alen1 'dag-parent-array
@@ -697,8 +692,7 @@
                 (bounded-dag-constant-alistp dag-constant-alist dag-len)
                 (symbolp fn)
                 (not (equal 'quote fn))
-                ;; (true-listp args)
-                (all-dargp-less-than args (alen1 'dag-array dag-array))
+                (bounded-darg-listp args (alen1 'dag-array dag-array))
                 (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                 (equal (alen1 'dag-array dag-array)
                        (alen1 'dag-parent-array
@@ -714,8 +708,7 @@
                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (symbolp fn)
                 (not (equal 'quote fn))
-                ;; (true-listp args)
-                (all-dargp-less-than args (alen1 'dag-array dag-array))
+                (bounded-darg-listp args (alen1 'dag-array dag-array))
                 (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))))
            (dargp-less-than (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))
                             bound))
@@ -752,8 +745,7 @@
                 ;; (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))
                 (symbolp fn)
                 (not (equal 'quote fn))
-                (true-listp args)
-                (all-dargp-less-than args dag-len))
+                (bounded-darg-listp args dag-len))
            (wf-dagp 'dag-array
                     (mv-nth 2 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))
                     (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))

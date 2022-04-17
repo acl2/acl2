@@ -211,7 +211,7 @@
 
 (defthm all-axe-treep-of-lookup-args-in-result-array
   (implies (and (result-arrayp result-array-name result-array bound)
-                (all-dargp-less-than args (alen1 result-array-name result-array)) ;new
+                (bounded-darg-listp args (alen1 result-array-name result-array)) ;new
                 ;(all-dargp args)
                 )
            ;; works because nil is an axe-tree but it would be better not to rely on that
@@ -228,7 +228,7 @@
 
 (defthm all-bounded-axe-treep-of-lookup-args-in-result-array
   (implies (and (result-arrayp result-array-name result-array bound)
-                (all-dargp-less-than args (alen1 result-array-name result-array)) ;new
+                (bounded-darg-listp args (alen1 result-array-name result-array)) ;new
                 ;(all-dargp args)
                 )
            (all-bounded-axe-treep (lookup-args-in-result-array args result-array-name result-array) bound))

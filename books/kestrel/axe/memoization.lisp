@@ -23,7 +23,7 @@
 (include-book "axe-trees")
 (include-book "count-worlds")
 (include-book "all-dargp")
-(include-book "all-dargp-less-than")
+(include-book "bounded-darg-listp")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)) ;todo
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
@@ -160,7 +160,7 @@
 
 (defthm dargp-less-than-of-lookup-equal-alt ;name clash
   (implies (and ;(alistp alist)
-                (all-dargp-less-than (strip-cdrs alist) bound)
+                (bounded-darg-listp (strip-cdrs alist) bound)
                 (lookup-equal tree alist))
            (dargp-less-than (lookup-equal tree alist) bound))
   :hints (("Goal" :in-theory (e/d (lookup-equal) (dargp-less-than)))))
@@ -457,7 +457,7 @@
 (defund bounded-memo-alistp (alist bound)
   (declare (xargs :guard (natp bound)))
   (and (memo-alistp alist)
-       (all-dargp-less-than (strip-cdrs alist) bound)))
+       (bounded-darg-listp (strip-cdrs alist) bound)))
 
 (defthm bounded-memo-alistp-mono
   (implies (and (bounded-memo-alistp alist bound2)

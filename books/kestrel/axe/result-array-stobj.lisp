@@ -188,8 +188,7 @@
                                      arg-objectives ;;a list of objectives, or nil (meaning use '? for all)
                                      result-array-stobj)
   (declare (xargs ;:verify-guards nil ;;fixme need to say that the array entires are alists..
-            :guard (and (true-listp args)
-                        (all-dargp-less-than args (thearray-length result-array-stobj))
+            :guard (and (bounded-darg-listp args (thearray-length result-array-stobj))
                         (or (not arg-objectives)
                             (equal (len arg-objectives)
                                    (len args))))

@@ -43,12 +43,12 @@
           (cons replacement (fixup-args3 target replacement (cdr lst)))
         (cons item (fixup-args3 target replacement (cdr lst)))))))
 
-(defthm all-dargp-less-than-of-fixup-args3
-  (implies (and (all-dargp-less-than dargs n)
+(defthm bounded-darg-listp-of-fixup-args3
+  (implies (and (bounded-darg-listp dargs n)
                 (natp new-nodenum)
                 (force (implies (member-equal old-nodenum dargs)
                                 (< new-nodenum n))))
-           (all-dargp-less-than (fixup-args3 old-nodenum new-nodenum dargs) n))
+           (bounded-darg-listp (fixup-args3 old-nodenum new-nodenum dargs) n))
   :hints (("Goal" :in-theory (enable  fixup-args3))))
 
 (local (in-theory (enable pseudo-dag-arrayp))) ;todo
