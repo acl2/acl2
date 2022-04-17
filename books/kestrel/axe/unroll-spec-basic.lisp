@@ -25,7 +25,8 @@
 (include-book "dag-to-term-with-lets")
 (include-book "rules-in-rule-lists")
 (include-book "evaluator") ;; since this calls dag-val-with-axe-evaluator to embed the resulting dag in a function, introduces a skip-proofs
-(include-book "kestrel/utilities/doc" :dir :system)
+(include-book "kestrel/utilities/check-boolean" :dir :system)
+(include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
@@ -292,12 +293,6 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                 (value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
                 )
         state)))
-
-(defun check-boolean (val)
-  (declare (xargs :guard t))
-  (if (member-eq val '(t nil))
-      val
-    (er hard? 'check-boolean "Value is not boolean: ~x0." val)))
 
 (defmacrodoc unroll-spec-basic (&whole whole-form
                                        defconst-name ;; The name of the DAG constant to create

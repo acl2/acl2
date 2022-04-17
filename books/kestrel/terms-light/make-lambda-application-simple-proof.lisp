@@ -243,15 +243,15 @@
 (make-flag NO-NILS-IN-TERMP)
 
 (defthm-flag-no-nils-in-termp
-  (defthm theorem-for-no-nils-in-termp
+  (defthm no-nils-in-termp-of-free-vars-in-term
     (implies (no-nils-in-termp term)
              (no-nils-in-termsp (free-vars-in-term term)))
     :flag no-nils-in-termp)
-  (defthm theorem-for-no-nils-in-termsp
+  (defthm no-nils-in-termsp-of-free-vars-in-terms
     (implies (no-nils-in-termsp terms)
              (no-nils-in-termsp (free-vars-in-terms terms)))
     :flag no-nils-in-termsp)
-  :hints (("Goal" :expand (FREE-VARS-IN-TERMS TERMS)
+  :hints (("Goal" :expand (free-vars-in-terms terms)
            :in-theory (enable free-vars-in-term no-nils-in-termsp))))
 
 (defthm equal-of-cons-of-cdr-of-assoc-equal-and-assoc-equal-iff

@@ -3513,15 +3513,12 @@
   (declare (xargs :guard (and (dargp-less-than nodenum (len heap-dag))
                               (pseudo-dagp heap-dag))
                   :guard-hints (("Goal" :in-theory (e/d (CADR-BECOMES-NTH-OF-1
-                                                         top-nodenum-when-pseudo-dagp)
-                                                        ( ALL-<-OF-0-WHEN-NAT-LISTP
-                                                          DARGP
-                                                          dag-exprp-of-lookup-equal-when-pseudo-dagp
-                                                          DAG-EXPRP0))
-                                 :use (:instance dag-exprp-of-lookup-equal-when-pseudo-dagp
-                                                 (n nodenum)
-                                                 (dag heap-dag)
-                                                 )))
+                                                         top-nodenum-when-pseudo-dagp
+                                                         <-OF-+-OF-1-WHEN-NATPS)
+                                                        (ALL-<-OF-0-WHEN-NAT-LISTP
+                                                         DARGP
+                                                         ;dag-exprp-of-lookup-equal-when-pseudo-dagp
+                                                         DAG-EXPRP))))
                   :measure (nfix (+ 1 nodenum))))
   (if (quotep nodenum)
       (er hard? 'strip-set-field-calls "I am surprised to see a constant heap.")

@@ -52,7 +52,7 @@
 ;compute the context of nodenum coming in via the given parent (this is just the parent's context unless the parent is an ITE)
 ;ffixme handle parents that are boolands and boolors - careful! -- must order the nodes: for (booland a b) we can't both assume a for b and assume b for a..
 (defthm acl2-numberp-of-nth-of-dargs
-  (implies (and (dag-exprp0 expr)
+  (implies (and (dag-exprp expr)
                 (< n (len (dargs expr)))
                 (natp n)
                 (not (equal 'quote (car expr)))
@@ -581,14 +581,14 @@
   :hints (("Goal" :in-theory (e/d (all-dargp-less-than nth) (NTH-OF-CDR)))))
 
 (defthm not-complex-rationalp-of-nth-of-dargs
-  (implies (and (dag-exprp0 expr)
+  (implies (and (dag-exprp expr)
                 (< n (len (dargs expr)))
                 (natp n)
                 (not (equal 'quote (nth 0 expr))))
            (not (complex-rationalp (nth n (dargs expr)))))
   :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp
                                      not-<-of-0-and-nth-when-all-dargp
-                                     dag-exprp0))))
+                                     dag-exprp))))
 
 (defthm contextp-of-get-axe-disjunction-from-dag-item
   (implies (and (natp nodenum-or-quotep)

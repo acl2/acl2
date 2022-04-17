@@ -16,6 +16,8 @@
 
 ;; TODO: add more tests
 
+;; TODO: Add tests of simplify-dag-basic
+
 (include-book "rewriter-basic")
 (include-book "dag-to-term")
 (include-book "std/testing/assert-bang-stobj" :dir :system)
@@ -438,3 +440,5 @@
                           nil nil t (w state))
      (and (not erp)
           (equal (dag-to-term res) '(if (< x y) (if (< y z) 't blah) blah2))))))
+
+;;; test (DEF-SIMPLIFIED-DAG-BASIC *foo* '((2 if 1 0 '3) (1 . 't) (0 . x)))

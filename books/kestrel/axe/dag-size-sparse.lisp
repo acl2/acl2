@@ -162,7 +162,7 @@
                                  :do-not '(generalize eliminate-destructors)
                                  :in-theory (e/d ()
                                                  (consp-from-len-cheap
-                                                  dag-exprp0))))))
+                                                  dag-exprp))))))
   (if (or (endp worklist)
           ;; for termination:
           (not (and (mbt (array1p 'worklist-array worklist-array))
@@ -236,7 +236,7 @@
 ;;                                                      sum-list-tail ;consp-cdr
 ;;                                                      KEEP-ATOMS
 ;;                                                      MAXELEM
-;;                                                      dag-exprp0
+;;                                                      dag-exprp
 ;;                                                      TRUE-LISTP-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX))))))
 ;;   (if (or (not (natp steps-left))
 ;;           (equal 0 steps-left))

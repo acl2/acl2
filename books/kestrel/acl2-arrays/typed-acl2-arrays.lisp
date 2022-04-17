@@ -196,64 +196,64 @@
        ;; The main function
        ;;
 
-       ;; Checks that the values at indices from (num-valid-nodes)-1 down to 0 are
+       ;; Checks that the values at indices from (num-valid-indices)-1 down to 0 are
        ;; correct.
        ;; We could have this constrain the default value of the array, but I'm
        ;; not sure we need to (maybe if the array is to be expanded?).
-       (defund ,fn (array-name array num-valid-nodes ,@extra-vars)
+       (defund ,fn (array-name array num-valid-indices ,@extra-vars)
          ,(if extra-guards
               `(declare (xargs :guard (and ,@extra-guards)))
             '(declare (xargs :guard t)))
          (and (array1p array-name array)
-              (natp num-valid-nodes) ;allowing 0 lets us talk about empty arrays
-              (<= num-valid-nodes (alen1 array-name array))
-              (,aux-fn array-name array (+ -1 num-valid-nodes) ,@extra-vars)
+              (natp num-valid-indices) ;allowing 0 lets us talk about empty arrays
+              (<= num-valid-indices (alen1 array-name array))
+              (,aux-fn array-name array (+ -1 num-valid-indices) ,@extra-vars)
               (equal (default array-name array) ,default) ; needed to support expandable arrays
               ))
 
        (defthm ,(pack$ 'array1p-when- fn)
-         (implies (,fn array-name array num-valid-nodes ,@extra-vars)
+         (implies (,fn array-name array num-valid-indices ,@extra-vars)
                   (array1p array-name array))
          :hints (("Goal" :in-theory (enable ,fn))))
 
        (defthm ,(pack$ fn '-forward-to-array1p)
-         (implies (,fn array-name array num-valid-nodes ,@extra-vars)
+         (implies (,fn array-name array num-valid-indices ,@extra-vars)
                   (array1p array-name array))
          :rule-classes :forward-chaining
          :hints (("Goal" :in-theory (enable ,fn))))
 
        (defthm ,(pack$ fn '-forward-to-len-bound fn)
-         (implies (,fn array-name array num-valid-nodes ,@extra-vars)
-                  (<= num-valid-nodes (alen1 array-name array)))
+         (implies (,fn array-name array num-valid-indices ,@extra-vars)
+                  (<= num-valid-indices (alen1 array-name array)))
          :rule-classes :forward-chaining
          :hints (("Goal" :in-theory (enable ,fn))))
 
        (defthm ,(pack$ fn '-forward-to-len-bound-2 fn)
-         (implies (,fn array-name array num-valid-nodes ,@extra-vars)
+         (implies (,fn array-name array num-valid-indices ,@extra-vars)
                   (<= 0 (alen1 array-name array)))
          :rule-classes :forward-chaining
          :hints (("Goal" :in-theory (enable ,fn))))
 
        ;; todo: improve the name here:
        (defthm ,(pack$ 'type-of-aref1-when- fn)
-         (implies (and (,fn array-name array num-valid-nodes ,@extra-vars)
-                       (< index num-valid-nodes)
+         (implies (and (,fn array-name array num-valid-indices ,@extra-vars)
+                       (< index num-valid-indices)
                        (natp index))
                   (let ((val (aref1 array-name array index)))
                     ,pred))
          :hints (("Goal" :use (:instance ,(pack$ 'type-of-aref1-when- aux-fn)
-                                         (top-index (+ -1 num-valid-nodes)))
+                                         (top-index (+ -1 num-valid-indices)))
                   :in-theory (e/d (,fn) (,(pack$ 'type-of-aref1-when- aux-fn))))))
 
        ;; todo: improve the name here:
-       ;; Special case where num-valid-nodes = index+1
+       ;; Special case where num-valid-indices = index+1
        (defthm ,(pack$ 'type-of-aref1-when- fn '-special)
          (implies (and (,fn array-name array (+ 1 index) ,@extra-vars)
                        (natp index))
                   (let ((val (aref1 array-name array index)))
                     ,pred))
          :hints (("Goal" :use (:instance ,(pack$ 'type-of-aref1-when- fn)
-                                         (num-valid-nodes (+ 1 index)))
+                                         (num-valid-indices (+ 1 index)))
                   :in-theory (e/d () (,(pack$ 'type-of-aref1-when- fn))))))
 
        (defthm ,(pack$ fn '-monotone)
@@ -265,14 +265,14 @@
                   (,fn array-name array m ,@extra-vars))
          :hints (("Goal" :in-theory (enable ,fn))))
 
-       ;; The first NUM-VALID-NODES entries were all fine, and the value being written is fine,
-       ;; so the first NUM-VALID-NODES entries are still fine, regardless of index.
+       ;; The first NUM-VALID-INDICES entries were all fine, and the value being written is fine,
+       ;; so the first NUM-VALID-INDICES entries are still fine, regardless of index.
        (defthm ,(pack$ fn '-of-aset1)
-         (implies (and (,fn array-name array num-valid-nodes ,@extra-vars)
+         (implies (and (,fn array-name array num-valid-indices ,@extra-vars)
                        ,pred ;over index and val
                        (< index (alen1 array-name array))
                        (natp index))
-                  (,fn array-name (aset1 array-name array index val) num-valid-nodes ,@extra-vars))
+                  (,fn array-name (aset1 array-name array index val) num-valid-indices ,@extra-vars))
          :hints (("Goal" :in-theory (enable ,aux-fn ,fn))))
 
        ;; Special case for extending the range of ok indices.
@@ -287,12 +287,12 @@
        ;; Variant of the rule just above that matches better
        (defthm ,(pack$ fn '-of-aset1-at-end-gen)
          (implies (and (,fn array-name array index ,@extra-vars) ; values below index were fine
-                       (<= num-valid-nodes (+ 1 index))
+                       (<= num-valid-indices (+ 1 index))
                        ,pred ;over index and val
                        (< index (alen1 array-name array))
-                       (natp num-valid-nodes)
+                       (natp num-valid-indices)
                        (natp index))
-                  (,fn array-name (aset1 array-name array index val) num-valid-nodes ,@extra-vars))
+                  (,fn array-name (aset1 array-name array index val) num-valid-indices ,@extra-vars))
          :hints (("Goal" :use ,(pack$ fn '-of-aset1-at-end)
                   :in-theory (disable ,(pack$ fn '-of-aset1-at-end)))))
 

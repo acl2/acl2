@@ -74,7 +74,7 @@
 (defund concretize-entry-with-context (entry context-array)
   (declare (xargs :guard (and (consp entry) ; todo: need to check arities
                               (natp (car entry))
-                              (dag-exprp0 (cdr entry))
+                              (dag-exprp (cdr entry))
                               (context-arrayp 'context-array context-array (+ 1 (car entry))))
                   :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))))
   (let ((expr (cdr entry)))

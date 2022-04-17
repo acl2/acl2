@@ -894,7 +894,7 @@
                           ;;consp-from-len-cheap
                           default-car
                           <-of-nth-and-alen1 ;todo
-                          dag-exprp0
+                          dag-exprp
                           ;;list::nth-with-large-index
                           ;;list::nth-with-large-index-2
                           nat-listp

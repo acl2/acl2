@@ -44,7 +44,7 @@
                   :split-types t
                   :guard-debug t)
            (type (integer 0 *) nodenum))
-  (mbe :logic (and (dag-exprp0 expr)
+  (mbe :logic (and (dag-exprp expr)
                    (if (and (consp expr)
                             (not (eq 'quote (car expr))))
                        (all-dargp-less-than (dargs expr) nodenum)
@@ -66,7 +66,7 @@
            (equal (bounded-dag-exprp nodenum expr)
                   (symbolp expr)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp0))))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp))))
 
 (defthm bounded-dag-exprp-of-cons
   (equal (bounded-dag-exprp nodenum (cons fn args))
@@ -117,14 +117,14 @@
                 (not (symbolp expr)) ;or say (consp expr)
                 )
            (true-listp (dargs expr)))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp0 dargs))))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp dargs))))
 
 (defthm true-listp-of-dargs-better
   (implies (and (bounded-dag-exprp nodenum expr)
                 ;; (not (equal 'quote (car expr)))
                 )
            (true-listp (dargs expr)))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp0 dargs))))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp dargs))))
 
 (defthm bounded-dag-exprp-and-consp-forward-to-symbolp-of-car
   (implies (and (bounded-dag-exprp nodenum expr)
@@ -149,10 +149,10 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
-(defthm dag-exprp0-when-bounded-dag-exprp
+(defthm dag-exprp-when-bounded-dag-exprp
   (implies (bounded-dag-exprp nodenum expr) ;free var
-           (dag-exprp0 expr))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp0))))
+           (dag-exprp expr))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp))))
 
 (defthm bounded-dag-exprp-monotone
   (implies (and (bounded-dag-exprp nodenum2 expr) ;nodenum2 is a free var
@@ -359,7 +359,7 @@
                 )
            (not (< nodenum (+ 1 (largest-non-quotep (dargs expr))))))
   :hints (("Goal" :in-theory (e/d (bounded-dag-exprp
-                                   dag-exprp0
+                                   dag-exprp
                                    dargs-when-not-consp-cheap)
                                   (<-of-largest-non-quotep))
            :use (:instance <-of-largest-non-quotep (args (dargs expr))))))
@@ -370,7 +370,7 @@
            (equal (myquotep expr)
                   (equal 'quote (car expr))))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp
-                                     dag-exprp0))))
+                                     dag-exprp))))
 
 (defthm all-dargp-less-than-of-dargs-when-bounded-dag-exprp
   (implies (and (bounded-dag-exprp nodenum expr)
@@ -396,7 +396,7 @@
 ;;   (implies (bounded-dag-exprp nodenum expr)
 ;;            (equal (dargp expr)
 ;;                   (equal 'quote (car expr))))
-;;   :hints (("Goal" :in-theory (enable dargp dag-exprp0))))
+;;   :hints (("Goal" :in-theory (enable dargp dag-exprp))))
 
 (defthm bounded-dag-exprp-when-myquotep-cheap
   (implies (myquotep expr)
