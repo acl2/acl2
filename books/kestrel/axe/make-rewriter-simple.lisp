@@ -547,47 +547,42 @@
                    (type (unsigned-byte 60) count)
                    (type (integer 1 *) hyp-num) ;; restrict to a fixnum?
                    (type symbol rule-symbol))
-          (if (or (not (mbt (natp count)))
-                  (= 0 count))
-              (mv :count-exceeded nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                  node-replacement-array)
+          (if (or (not (mbt (natp count))) (= 0 count))
+              (mv :count-exceeded nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
             (if (endp assumption-arg-lists)
                 ;; failed to relieve the hyp:
                 (prog2$ (and (member-eq rule-symbol monitored-symbols)
                              (cw "(Failed to relieve free vars in hyp ~x0 of rule ~x1.)~%" hyp-num rule-symbol))
                         (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-              (b* ((arg-list (first assumption-arg-lists)) ;; args of this assumption
+              (b* ((arg-list (first assumption-arg-lists)) ;; args of the assumption are are currently checking for a match
                    (fail-or-extended-alist (unify-trees-with-dag-nodes hyp-args arg-list dag-array alist)))
                 (if (eq :fail fail-or-extended-alist)
-                    ;;this assumption didn't match:
+                    ;; this assumption didn't match, so proceed to the next assumption:
                     (,relieve-free-var-hyp-and-all-others-name (rest assumption-arg-lists)
                                                                hyp-args hyp-num other-hyps
                                                                alist rule-symbol
                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                                node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                                print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
-                  ;; the assumption matched, so try to relieve the rest of the hyps using the resulting extension of ALIST:
-                  (mv-let (erp other-hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                               node-replacement-array)
-                    (,relieve-rule-hyps-name other-hyps (+ 1 hyp-num)
-                                             fail-or-extended-alist ;ASSUMPTION bound some free vars
-                                             rule-symbol
-                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                                             node-replacement-array node-replacement-count rule-alist refined-assumption-alist print
-                                             interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
-                    (if erp
-                        (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                            node-replacement-array)
-                      (if other-hyps-relievedp
-                          (mv (erp-nil) t extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                        ;;this assumption matched, but we couldn't relieve the rest of the hyps:
-                        (,relieve-free-var-hyp-and-all-others-name (rest assumption-arg-lists)
-                                                                   hyp-args hyp-num other-hyps
-                                                                   alist ;the original alist
-                                                                   rule-symbol
-                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                                                                   node-replacement-array node-replacement-count rule-alist refined-assumption-alist
-                                                                   print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))))))))))
+                  ;; this assumption matched, so try to relieve the rest of the hyps using the resulting extension of ALIST:
+                  (b* (((mv erp other-hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                        (,relieve-rule-hyps-name other-hyps (+ 1 hyp-num)
+                                                 fail-or-extended-alist ; matching with the ASSUMPTION caused free vars to be bound here
+                                                 rule-symbol
+                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                 node-replacement-array node-replacement-count rule-alist refined-assumption-alist print
+                                                 interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+                       ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
+                    (if other-hyps-relievedp
+                        (mv (erp-nil) t extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                      ;; this assumption matched, but we couldn't relieve the rest of the hyps, so discard the extension of the alist and proceed to the next assumption:
+                      (,relieve-free-var-hyp-and-all-others-name (rest assumption-arg-lists)
+                                                                 hyp-args hyp-num other-hyps
+                                                                 alist ;the original alist
+                                                                 rule-symbol
+                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                 node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                 print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))))))))
 
         ;; ALIST is the substitution alist so far (it maps vars in the rule to nodenums and quoteps). If alist doesn't bind all the variables in the
         ;; HYP, we'll search for free variable matches in REFINED-ASSUMPTION-ALIST.
@@ -683,17 +678,19 @@
                                        (cw "(Failed to relieve axe-bind-free hyp: ~x0 for ~x1.)~%" hyp rule-symbol))
                                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))))
                     (if (eq :free-vars fn) ;can't be a work-hard since there are free vars
-                        (b* ((instantiated-hyp (,instantiate-hyp-free-vars-name (cdr hyp) ;strip the :free-vars
+                        (b* (;; Partially instantiate the hyp (the free vars will remain free):
+                             ;; TODO: Could we just do the matching wrt the alist, and skip this instantiation step?:
+                             (partially-instantiated-hyp (,instantiate-hyp-free-vars-name (cdr hyp) ;strip the :free-vars
                                                                                 alist interpreted-function-alist))
-                             ((when (eq 'quote (ffn-symb instantiated-hyp))) ;todo: this should not happen since there are free vars (unless perhaps we give special treatment to IFs)
+                             ((when (eq 'quote (ffn-symb partially-instantiated-hyp))) ;todo: this should not happen since there are free vars (unless perhaps we give special treatment to IFs)
                               (er hard? ',relieve-rule-hyps-name "ERROR: Instantiating a hyp with free vars produced a constant.")
                               (mv :error-instantiating nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-                          ;; Some free vars remain in the instantiated-hyp, so we search the REFINED-ASSUMPTION-ALIST for matches to bind them:
+                          ;; Some free vars remain in the partially-instantiated-hyp, so we search the REFINED-ASSUMPTION-ALIST for matches to bind them:
                           ;; If the NODE-REPLACEMENT-ARRAY ever contains more information than the REFINED-ASSUMPTION-ALIST, we might need to search it too.
                           ;; The refined-assumptions have been refined so that (equal (pred x) t) becomes (pred x) for better matching.
                           ;; TODO: Should we simplify the terms to which the free vars were bound (in case the assumptions are not simplified)?
-                          (,relieve-free-var-hyp-and-all-others-name (lookup-in-refined-assumption-alist (ffn-symb instantiated-hyp) refined-assumption-alist)
-                                                                     (fargs instantiated-hyp)
+                          (,relieve-free-var-hyp-and-all-others-name (lookup-in-refined-assumption-alist (ffn-symb partially-instantiated-hyp) refined-assumption-alist)
+                                                                     (fargs partially-instantiated-hyp)
                                                                      hyp-num
                                                                      (rest hyps)
                                                                      alist rule-symbol
