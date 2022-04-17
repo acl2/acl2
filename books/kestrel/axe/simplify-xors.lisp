@@ -42,6 +42,7 @@
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
@@ -138,9 +139,37 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable merge-sort-<))))
 
-(defthm all-dargp-less-than-of-merge-sort-<
-  (implies (all-dargp-less-than items bound)
-           (all-dargp-less-than (merge-sort-< items) bound)))
+(defthm bounded-darg-listp-of-mv-nth-0-of-split-list-fast-aux
+  (implies (and (bounded-darg-listp lst bound)
+                (bounded-darg-listp acc bound)
+                (<= (len tail) (len lst)))
+           (bounded-darg-listp (mv-nth 0 (split-list-fast-aux lst tail acc)) bound)))
+
+(defthm bounded-darg-listp-of-mv-nth-0-of-split-list-fast
+  (implies (bounded-darg-listp lst bound)
+           (bounded-darg-listp (mv-nth 0 (split-list-fast lst)) bound))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
+
+(defthm bounded-darg-listp-of-mv-nth-1-of-split-list-fast-aux
+  (implies (bounded-darg-listp lst bound)
+           (bounded-darg-listp (mv-nth 1 (split-list-fast-aux lst tail acc)) bound)))
+
+(defthm bounded-darg-listp-of-mv-nth-1-split-list-fast
+  (implies (bounded-darg-listp lst bound)
+           (bounded-darg-listp (mv-nth 1 (split-list-fast lst)) bound))
+  :hints (("Goal" :in-theory (e/d (split-list-fast) (SPLIT-LIST-FAST-AUX)))))
+
+(defthm bounded-darg-listp-of-merge-<
+  (implies (and (bounded-darg-listp l1 bound)
+                (bounded-darg-listp l2 bound)
+                (bounded-darg-listp acc bound))
+           (bounded-darg-listp (merge-< l1 l2 acc) bound))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp merge-<))))
+
+(defthm bounded-darg-listp-of-merge-sort-<
+  (implies (bounded-darg-listp items bound)
+           (bounded-darg-listp (merge-sort-< items) bound))
+  :hints (("Goal" :in-theory (enable merge-sort-<))))
 
 (defund decreasingp (items)
   (declare (xargs :guard (and (true-listp items)
@@ -305,14 +334,14 @@
 ;;   :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev))))
 
 ;; they actually can't be quoteps?
-(defthm all-dargp-less-than-of-mv-nth-0-of-translate-nodenums-for-xor-rev
+(defthm bounded-darg-listp-of-mv-nth-0-of-translate-nodenums-for-xor-rev
   (implies (and (all-natp nodenums)
                 (all-< nodenums dag-len)
-                (all-dargp-less-than nodenum-acc bound)
+                (bounded-darg-listp nodenum-acc bound)
                 (array1p 'translation-array translation-array)
                 (equal dag-len (alen1 'translation-array translation-array))
                 (bounded-translation-arrayp-aux (+ -1 dag-len) translation-array bound))
-           (all-dargp-less-than (mv-nth 0 (translate-nodenums-for-xor-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))
+           (bounded-darg-listp (mv-nth 0 (translate-nodenums-for-xor-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))
                                            bound))
   :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev))))
 
@@ -341,10 +370,10 @@
            (true-listp (remove-duplicate-pairs-and-reverse items acc)))
   :hints (("Goal" :in-theory (enable remove-duplicate-pairs-and-reverse))))
 
-(defthm all-dargp-less-than-of-remove-duplicate-pairs-and-reverse
-  (implies (and (all-dargp-less-than items lim)
-                (all-dargp-less-than acc lim))
-           (all-dargp-less-than (remove-duplicate-pairs-and-reverse items acc) lim))
+(defthm bounded-darg-listp-of-remove-duplicate-pairs-and-reverse
+  (implies (and (bounded-darg-listp items lim)
+                (bounded-darg-listp acc lim))
+           (bounded-darg-listp (remove-duplicate-pairs-and-reverse items acc) lim))
   :hints (("Goal" :in-theory (enable remove-duplicate-pairs-and-reverse))))
 
 ;;
@@ -414,7 +443,7 @@
                     (< nil bound))))
   :hints (("Goal" :in-theory (e/d (all-< nth) (nth-of-cdr)))))
 
-(local (in-theory (disable <-OF-NTH-WHEN-ALL-DARGP-LESS-THAN)))
+(local (in-theory (disable <-OF-NTH-WHEN-BOUNDED-DARG-LISTP)))
 
 (local (in-theory (enable CAR-BECOMES-NTH-OF-0)))
 
@@ -647,14 +676,14 @@
   (true-listp (bitxor-nest-leaves nodenum dag-array dag-len translation-array))
   :hints (("Goal" :in-theory (enable bitxor-nest-leaves))))
 
-(defthm all-dargp-less-than-of-bitxor-nest-leaves
+(defthm bounded-darg-listp-of-bitxor-nest-leaves
   (implies (and (natp nodenum)
                 (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)
                 (< nodenum dag-len)
                 (array1p 'translation-array translation-array)
                 (equal dag-len (alen1 'translation-array translation-array))
                 (bounded-translation-arrayp-aux (+ -1 dag-len) translation-array bound))
-           (all-dargp-less-than (bitxor-nest-leaves nodenum dag-array dag-len translation-array) bound))
+           (bounded-darg-listp (bitxor-nest-leaves nodenum dag-array dag-len translation-array) bound))
   :hints (("Goal" :in-theory (enable bitxor-nest-leaves))))
 
 ;; POSSIBLE BETTER ALGORITHM (linear in the size of the DAG but might perform worse for small nests):
@@ -728,8 +757,8 @@
 ;(local (in-theory (enable bounded-dag-parent-arrayp))) ;todo: have the dag builders use better guards
 
 
-(local (in-theory (enable ;not-cddr-when-all-dargp-less-than ;maybe enable for all axe stuff?
-                          ;<-OF-NTH-WHEN-ALL-DARGP-LESS-THAN ;make a cheap version with a free var
+(local (in-theory (enable ;not-cddr-when-bounded-darg-listp ;maybe enable for all axe stuff?
+                          ;<-OF-NTH-WHEN-BOUNDED-DARG-LISTP ;make a cheap version with a free var
                           )))
 
 ;; ;returns (mv new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist translation-array)
@@ -1038,14 +1067,14 @@
   (true-listp (bvxor-nest-leaves nodenum size dag-array dag-len translation-array))
   :hints (("Goal" :in-theory (enable bvxor-nest-leaves))))
 
-(defthm all-dargp-less-than-of-bvxor-nest-leaves
+(defthm bounded-darg-listp-of-bvxor-nest-leaves
   (implies (and (natp nodenum)
                 (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)
                 (< nodenum dag-len)
                 (array1p 'translation-array translation-array)
                 (equal (alen1 'translation-array translation-array) dag-len)
                 (bounded-translation-arrayp-aux (+ -1 dag-len) translation-array bound))
-           (all-dargp-less-than (bvxor-nest-leaves nodenum size dag-array dag-len translation-array) bound))
+           (bounded-darg-listp (bvxor-nest-leaves nodenum size dag-array dag-len translation-array) bound))
   :hints (("Goal" :in-theory (enable bvxor-nest-leaves))))
 
 (local (in-theory (disable myquotep)))

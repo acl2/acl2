@@ -17,7 +17,7 @@
 (include-book "kestrel/utilities/polarity" :dir :system)
 ;(include-book "all-dargp")
 ;(include-book "dargp-less-than")
-(include-book "all-dargp-less-than")
+(include-book "bounded-darg-listp")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
@@ -353,13 +353,14 @@
   :hints (("Goal" :in-theory (enable all-bounded-axe-treep))))
 
 (defthm all-bounded-axe-treep-when-all-dargp
-  (implies (all-dargp items)
+  (implies (and (all-dargp items)
+                (true-listp items))
            (equal (all-bounded-axe-treep items bound)
-                  (all-dargp-less-than items bound)))
+                  (bounded-darg-listp items bound)))
   :hints (("Goal" :expand ((bounded-axe-treep (car items) bound)
                            (all-bounded-axe-treep items bound))
            :induct t
-           :in-theory (enable all-bounded-axe-treep all-dargp-less-than))))
+           :in-theory (enable all-bounded-axe-treep bounded-darg-listp))))
 
 ;; Pseudo terms have no nodenums in them, so any bound works.
 (defthm-flag-axe-treep
@@ -463,7 +464,7 @@
   :hints (("Goal" :in-theory (enable all-bounded-axe-treep append))))
 
 (defthm bounded-axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
-  (implies (and (all-dargp-less-than (strip-cdrs alist) dag-len)
+  (implies (and (bounded-darg-listp (strip-cdrs alist) dag-len)
                 ;; (assoc-equal form alist)
                 )
            (bounded-axe-treep (cdr (assoc-equal form alist)) dag-len))

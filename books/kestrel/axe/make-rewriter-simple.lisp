@@ -113,7 +113,7 @@
 
 ;gen
 (defthm PSEUDO-DAG-ARRAYP-of-+-of-1-and-LARGEST-NON-QUOTEP-of-car
-  (implies (and (DARGP-LESS-THAN-LIST-LISTP ASSUMPTION-ARG-LISTS DAG-LEN)
+  (implies (and (BOUNDED-DARG-LIST-LISTP ASSUMPTION-ARG-LISTS DAG-LEN)
                 (consp ASSUMPTION-ARG-LISTS)
                 (PSEUDO-DAG-ARRAYP 'DAG-ARRAY DAG-ARRAY dag-len))
            (PSEUDO-DAG-ARRAYP
@@ -122,13 +122,13 @@
             (BINARY-+ '1
                       (LARGEST-NON-QUOTEP (CAR ASSUMPTION-ARG-LISTS))))))
 
-(defthmd true-list-of-car-when-DARGP-LESS-THAN-LIST-LISTP
-  (implies (and (DARGP-LESS-THAN-LIST-LISTP ASSUMPTION-ARG-LISTS DAG-LEN)
+(defthmd true-list-of-car-when-BOUNDED-DARG-LIST-LISTP
+  (implies (and (BOUNDED-DARG-LIST-LISTP ASSUMPTION-ARG-LISTS DAG-LEN)
                 (consp ASSUMPTION-ARG-LISTS))
            (TRUE-LISTP (CAR ASSUMPTION-ARG-LISTS))))
 
-(defthmd all-myquote-or-natp-of-car-when-dargp-less-than-list-listp
-  (implies (and (dargp-less-than-list-listp assumption-arg-lists dag-len)
+(defthmd all-myquote-or-natp-of-car-when-bounded-darg-list-listp
+  (implies (and (bounded-darg-list-listp assumption-arg-lists dag-len)
                 (consp assumption-arg-lists))
            (all-dargp (car assumption-arg-lists))))
 
@@ -446,6 +446,7 @@
        (local (include-book "kestrel/lists-light/nth" :dir :system))
        (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
        (local (include-book "kestrel/lists-light/last" :dir :system))
+       (local (include-book "kestrel/lists-light/take" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
        (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
@@ -518,13 +519,13 @@
                                                            node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                            print interpreted-function-alist known-booleans monitored-symbols count)
           (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                      (dargp-less-than-list-listp assumption-arg-lists dag-len)
+                                      (bounded-darg-list-listp assumption-arg-lists dag-len)
                                       (all-axe-treep hyp-args) ; todo replace this and the next one with axe-tree-listp?
                                       (true-listp hyp-args)
                                       (posp hyp-num)
                                       (axe-rule-hyp-listp other-hyps)
                                       (symbol-alistp alist)
-                                      (all-dargp-less-than (strip-cdrs alist) dag-len)
+                                      (bounded-darg-listp (strip-cdrs alist) dag-len)
                                       (symbolp rule-symbol)
                                       (maybe-bounded-memoizationp memoization dag-len)
                                       (info-worldp info)
@@ -598,7 +599,7 @@
                                       (axe-rule-hyp-listp hyps)
                                       (posp hyp-num)
                                       (symbol-alistp alist)
-                                      (all-dargp-less-than (strip-cdrs alist) dag-len)
+                                      (bounded-darg-listp (strip-cdrs alist) dag-len)
                                       (symbolp rule-symbol)
                                       (maybe-bounded-memoizationp memoization dag-len)
                                       (info-worldp info)
@@ -801,8 +802,7 @@
                                       (true-listp stored-rules) ; todo: combine this and the next one
                                       (all-stored-axe-rulep stored-rules)
                                       (rule-alistp rule-alist)
-                                      (all-dargp-less-than args-to-match dag-len) ;todo: combine with the next one
-                                      (true-listp args-to-match)
+                                      (bounded-darg-listp args-to-match dag-len) ;todo: combine with the next one
                                       (maybe-bounded-memoizationp memoization dag-len)
                                       (info-worldp info)
                                       (triesp tries)
@@ -1812,8 +1812,7 @@
           (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (symbolp fn)
                                       (not (equal 'quote fn))
-                                      (true-listp args)
-                                      (all-dargp-less-than args dag-len)
+                                      (bounded-darg-listp args dag-len)
                                       (trees-to-memoizep trees-equal-to-tree)
                                       (maybe-bounded-memoizationp memoization dag-len)
                                       (info-worldp info)
@@ -2453,8 +2452,8 @@
                         (rule-alistp rule-alist)
                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                         (symbol-alistp alist)
-                        (all-dargp-less-than (strip-cdrs alist) dag-len)
-                        (dargp-less-than-list-listp assumption-arg-lists dag-len))
+                        (bounded-darg-listp (strip-cdrs alist) dag-len)
+                        (bounded-darg-list-listp assumption-arg-lists dag-len))
                    (and (wf-dagp 'dag-array
                                  (mv-nth 3 ,call-of-relieve-free-var-hyp-and-all-others)
                                  (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others)
@@ -2466,7 +2465,7 @@
                         (maybe-bounded-memoizationp (mv-nth 8 ,call-of-relieve-free-var-hyp-and-all-others)
                                                     (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others))
                         (symbol-alistp (mv-nth 2 ,call-of-relieve-free-var-hyp-and-all-others))
-                        (all-dargp-less-than (strip-cdrs (mv-nth 2 ,call-of-relieve-free-var-hyp-and-all-others))
+                        (bounded-darg-listp (strip-cdrs (mv-nth 2 ,call-of-relieve-free-var-hyp-and-all-others))
                                              (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others))
                         (<= (alen1 'node-replacement-array node-replacement-array)
                             (alen1 'node-replacement-array (mv-nth 12 ,call-of-relieve-free-var-hyp-and-all-others)))
@@ -2485,7 +2484,7 @@
                         (rule-alistp rule-alist)
                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                         (symbol-alistp alist)
-                        (all-dargp-less-than (strip-cdrs alist) dag-len))
+                        (bounded-darg-listp (strip-cdrs alist) dag-len))
                    (and (wf-dagp 'dag-array
                                  (mv-nth 3 ,call-of-relieve-rule-hyps)
                                  (mv-nth 4 ,call-of-relieve-rule-hyps)
@@ -2497,7 +2496,7 @@
                         (maybe-bounded-memoizationp (mv-nth 8 ,call-of-relieve-rule-hyps)
                                                     (mv-nth 4 ,call-of-relieve-rule-hyps))
                         (symbol-alistp (mv-nth 2 ,call-of-relieve-rule-hyps))
-                        (all-dargp-less-than (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps))
+                        (bounded-darg-listp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps))
                                              (mv-nth 4 ,call-of-relieve-rule-hyps))
                         (<= (alen1 'node-replacement-array node-replacement-array)
                             (alen1 'node-replacement-array (mv-nth 12 ,call-of-relieve-rule-hyps)))
@@ -2508,7 +2507,7 @@
 
         (defthm ,(pack$ 'theorem-for-try-to-apply-rules- suffix)
           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                        (all-dargp-less-than args-to-match dag-len)
+                        (bounded-darg-listp args-to-match dag-len)
                         (not (mv-nth 0 ,call-of-try-to-apply-rules))
                         (maybe-bounded-memoizationp memoization dag-len)
                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
@@ -2555,7 +2554,7 @@
                                  (mv-nth 5 ,call-of-simplify-trees-and-add-to-dag)
                                  (mv-nth 6 ,call-of-simplify-trees-and-add-to-dag))
                         (true-listp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag))
-                        (all-dargp-less-than (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag)
+                        (bounded-darg-listp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag)
                                              (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag))
                         ;; implied by the above
                         (all-dargp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag))
@@ -2921,8 +2920,7 @@
           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                         (symbolp fn)
                         (not (equal 'quote fn))
-                        (true-listp args)
-                        (all-dargp-less-than args dag-len)
+                        (bounded-darg-listp args dag-len)
                         (not (mv-nth 0 ,call-of-simplify-fun-call-and-add-to-dag))
                         (maybe-bounded-memoizationp memoization dag-len)
                         (trees-to-memoizep trees-equal-to-tree)
@@ -3036,8 +3034,7 @@
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (symbolp fn)
                        (not (equal 'quote fn))
-                       (true-listp args)
-                       (all-dargp-less-than args dag-len)
+                       (bounded-darg-listp args dag-len)
                        (not (mv-nth 0 ,call-of-simplify-fun-call-and-add-to-dag))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
@@ -3055,8 +3052,7 @@
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (symbolp fn)
                        (not (equal 'quote fn))
-                       (true-listp args)
-                       (all-dargp-less-than args dag-len)
+                       (bounded-darg-listp args dag-len)
                        (not (mv-nth 0 ,call-of-simplify-fun-call-and-add-to-dag))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
@@ -3080,8 +3076,8 @@
                        (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (symbol-alistp alist)
-                       (all-dargp-less-than (strip-cdrs alist) dag-len)
-                       (dargp-less-than-list-listp assumption-arg-lists dag-len)
+                       (bounded-darg-listp (strip-cdrs alist) dag-len)
+                       (bounded-darg-list-listp assumption-arg-lists dag-len)
                        (<= x dag-len))
                   (<= x (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others)))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix))
@@ -3097,7 +3093,7 @@
                        (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (symbol-alistp alist)
-                       (all-dargp-less-than (strip-cdrs alist) dag-len)
+                       (bounded-darg-listp (strip-cdrs alist) dag-len)
                        (<= x dag-len))
                   (and
                    (<= x (mv-nth 4 ,call-of-relieve-rule-hyps))
@@ -3115,14 +3111,14 @@
                        (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (symbol-alistp alist)
-                       (all-dargp-less-than (strip-cdrs alist) dag-len))
+                       (bounded-darg-listp (strip-cdrs alist) dag-len))
                   (all-dargp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-rule-hyps- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-relieve-rule-hyps- suffix)))))
 
        (defthm ,(pack$ 'bound-theorem-for-try-to-apply-rules- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-dargp-less-than args-to-match dag-len)
+                       (bounded-darg-listp args-to-match dag-len)
                        (not (mv-nth 0 ,call-of-try-to-apply-rules))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
@@ -3137,7 +3133,7 @@
 
        (defthm ,(pack$ 'corollary-theorem-for-try-to-apply-rules- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-dargp-less-than args-to-match dag-len)
+                       (bounded-darg-listp args-to-match dag-len)
                        (not (mv-nth 0 ,call-of-try-to-apply-rules))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
@@ -3163,7 +3159,7 @@
          (implies (and (<= n (mv-nth 3 ,call-of-try-to-apply-rules))
                        (natp n)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-dargp-less-than args-to-match dag-len)
+                       (bounded-darg-listp args-to-match dag-len)
                        (not (mv-nth 0 ,call-of-try-to-apply-rules))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
@@ -3609,8 +3605,7 @@
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (symbolp fn)
                        (not (equal 'quote fn))
-                       (true-listp args)
-                       (all-dargp-less-than args dag-len)
+                       (bounded-darg-listp args dag-len)
                        (not (mv-nth 0 ,call-of-simplify-fun-call-and-add-to-dag))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
@@ -3634,8 +3629,8 @@
                        (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (symbol-alistp alist)
-                       (all-dargp-less-than (strip-cdrs alist) dag-len)
-                       (dargp-less-than-list-listp assumption-arg-lists dag-len)
+                       (bounded-darg-listp (strip-cdrs alist) dag-len)
+                       (bounded-darg-list-listp assumption-arg-lists dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 12 ,call-of-relieve-free-var-hyp-and-all-others))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix))
@@ -3651,7 +3646,7 @@
                        (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (symbol-alistp alist)
-                       (all-dargp-less-than (strip-cdrs alist) dag-len)
+                       (bounded-darg-listp (strip-cdrs alist) dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 12 ,call-of-relieve-rule-hyps))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-rule-hyps- suffix))
@@ -3659,7 +3654,7 @@
 
        (defthm ,(pack$ 'node-replacement-array-bound-theorem-for-try-to-apply-rules- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-dargp-less-than args-to-match dag-len)
+                       (bounded-darg-listp args-to-match dag-len)
                        (not (mv-nth 0 ,call-of-try-to-apply-rules))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
@@ -3903,8 +3898,8 @@
                          (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                          (symbol-alistp alist)
-                         (all-dargp-less-than (strip-cdrs alist) dag-len)
-                         (dargp-less-than-list-listp assumption-arg-lists dag-len))
+                         (bounded-darg-listp (strip-cdrs alist) dag-len)
+                         (bounded-darg-list-listp assumption-arg-lists dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 12 ,call-of-relieve-free-var-hyp-and-all-others)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix))
                     :in-theory (disable ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix)))))
@@ -3919,14 +3914,14 @@
                          (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                          (symbol-alistp alist)
-                         (all-dargp-less-than (strip-cdrs alist) dag-len))
+                         (bounded-darg-listp (strip-cdrs alist) dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 12 ,call-of-relieve-rule-hyps)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-rule-hyps- suffix))
                     :in-theory (disable ,(pack$ 'theorem-for-relieve-rule-hyps- suffix)))))
 
          (defthm ,(pack$ 'node-replacement-arrayp-of-try-to-apply-rules- suffix)
            (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-dargp-less-than args-to-match dag-len)
+                         (bounded-darg-listp args-to-match dag-len)
                          (not (mv-nth 0 ,call-of-try-to-apply-rules))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
@@ -4176,7 +4171,7 @@
     ;;          (trees-to-memoizep trees-equal-to-tree)
     ;;
     ;;          (alistp node-replacement-count)
-    ;;          (all-dargp-less-than (strip-cdrs node-replacement-count) dag-len)
+    ;;          (bounded-darg-listp (strip-cdrs node-replacement-count) dag-len)
     ;;          (rule-alistp rule-alist)
     ;;          (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
     ;;          )
@@ -4324,8 +4319,8 @@
                         (AXE-TREEP TREE)
                         (MYQUOTEP TREE)
                         (QUOTEP TREE))
-               :in-theory (e/d (true-list-of-car-when-DARGP-LESS-THAN-LIST-LISTP
-                                all-myquote-or-natp-of-car-when-dargp-less-than-list-listp
+               :in-theory (e/d (true-list-of-car-when-BOUNDED-DARG-LIST-LISTP
+                                all-myquote-or-natp-of-car-when-bounded-darg-list-listp
                                 ALL-MYQUOTEP-when-ALL-dargp
                                 axe-bind-free-result-okayp-rewrite
                                 AXE-RULE-HYPP

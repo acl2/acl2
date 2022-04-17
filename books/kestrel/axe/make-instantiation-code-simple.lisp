@@ -16,7 +16,7 @@
 ;; version of instantiate-hyp that uses it.
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
-(include-book "all-dargp-less-than")
+(include-book "bounded-darg-listp")
 (include-book "axe-trees")
 
 (defun make-instantiation-code-simple-fn (suffix evaluator-base-name)
@@ -131,13 +131,13 @@
        (,(pack$ 'defthm-flag- instantiate-hyp-name)
          (defthm ,(pack$ 'bounded-axe-treep-of-mv-nth-0-of- instantiate-hyp-name)
            (implies (and (pseudo-termp term)
-                         (all-dargp-less-than (strip-cdrs alist) dag-len))
+                         (bounded-darg-listp (strip-cdrs alist) dag-len))
                     (bounded-axe-treep (mv-nth 0 (,instantiate-hyp-name term alist interpreted-function-alist))
                                        dag-len))
            :flag ,instantiate-hyp-name)
          (defthm ,(pack$ 'all-bounded-axe-treep-of-mv-nth-1-of- instantiate-hyp-lst-name)
            (implies (and (pseudo-term-listp terms)
-                         (all-dargp-less-than (strip-cdrs alist) dag-len))
+                         (bounded-darg-listp (strip-cdrs alist) dag-len))
                     (all-bounded-axe-treep (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))
                                            dag-len))
            :flag ,instantiate-hyp-lst-name)

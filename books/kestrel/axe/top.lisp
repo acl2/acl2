@@ -32,6 +32,7 @@
 (include-book "axe-types")
 (include-book "basic-rules")
 (include-book "boolean-rules-axe")
+(include-book "bounded-darg-listp")
 (include-book "bounded-dag-exprs")
 (include-book "bounded-dag-parent-arrayp")
 (include-book "bv-array-rules-axe")

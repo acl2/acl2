@@ -111,8 +111,7 @@
  (defun node-trees-limited (depth dargs dag-array-name dag-array dag-len)
    (declare (xargs :guard (and (natp depth)
                                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                               (all-dargp-less-than dargs dag-len)
-                               (true-listp dargs))
+                               (bounded-darg-listp dargs dag-len))
                    :measure (make-ord 1 (+ 1 (nfix depth)) (+ 1 (len dargs)))))
    (if (endp dargs)
        nil

@@ -1001,8 +1001,7 @@
 ;; and worklist-extendedp indicates whether there were any such args
 (defun add-args-not-done (args done-nodes-array worklist worklist-extendedp)
   (declare (xargs :guard (and (array1p 'done-nodes-array done-nodes-array)
-                              (true-listp args)
-                              (all-dargp-less-than args (alen1 'done-nodes-array done-nodes-array)))))
+                              (bounded-darg-listp args (alen1 'done-nodes-array done-nodes-array)))))
   (if (endp args)
       (mv worklist worklist-extendedp)
     (let ((arg (first args)))
@@ -1018,8 +1017,7 @@
 ;does similar functionality exist elsewhere (array names might differ)?
 (defun get-vals-of-args (args test-case-array-name test-case-array)
   (declare (xargs :guard (and (array1p test-case-array-name test-case-array)
-                              (true-listp args)
-                              (all-dargp-less-than args (alen1 test-case-array-name test-case-array)))))
+                              (bounded-darg-listp args (alen1 test-case-array-name test-case-array)))))
   (if (endp args)
       nil
     (let ((arg (first args)))

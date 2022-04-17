@@ -100,7 +100,7 @@
                     (er hard? 'crunch-dag-array-aux "Error crunching DAG.")
                     (mv dag-array dag-len translation-array))
                    ;; TODO: Remove this check (it should never happen):
-                   ((when (not (all-dargp-less-than new-args next-open-spot)))
+                   ((when (not (bounded-darg-listp new-args next-open-spot)))
                     (er hard? 'crunch-dag-array-aux "Bad fixed up args crunching DAG.")
                     (mv dag-array dag-len translation-array))
                    (new-expr (cons fn new-args)))

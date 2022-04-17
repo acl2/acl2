@@ -26,8 +26,8 @@
 
 ;; TODO: Define translation-arrayp and use it instead of translation-arrayp-aux.
 
-(defthm not-<-of-+-of--1-and-nth-when-all-dargp-less-than
-  (implies (and (all-dargp-less-than args bound)
+(defthm not-<-of-+-of--1-and-nth-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp args bound)
                 (natp n)
                 (< n (len args))
                 (not (consp (nth n args)))
@@ -35,7 +35,7 @@
                 (integerp bound))
            (not (< (+ -1 bound)
                    (nth n args))))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than (:i nth)))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp (:i nth)))))
 
 ;dup
 (defthmd not-<-of-one-less-and-nth
@@ -48,14 +48,14 @@
   :hints (("Goal" :in-theory (e/d (all-< nth) (nth-of-cdr)))))
 
 ;move
-(defthm all-dargp-less-than-when-all-dargp-less-than-of-cdr-cheap
-  (implies (all-dargp-less-than (cdr items) bound)
-           (equal (all-dargp-less-than items bound)
+(defthm bounded-darg-listp-when-bounded-darg-listp-of-cdr-cheap
+  (implies (bounded-darg-listp (cdr items) bound)
+           (equal (bounded-darg-listp items bound)
                   (if (not (consp items))
-                      t
+                      (null items)
                     (dargp-less-than (car items) bound))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 ;; Checks that, for all indices from top-nodenum-to-check down to 0, the array
 ;; maps the index to either a quotep, a nodenum, or nil.  Allowing nil makes
@@ -324,9 +324,8 @@
 ;; if any of them doesn't translate to anything.
 ;; TODO: Consider using cons-with-hint here.
 (defund translate-args (args translation-array)
-  (declare (xargs :guard (and (true-listp args)
-                              (array1p 'translation-array translation-array)
-                              (all-dargp-less-than args (alen1 'translation-array translation-array))
+  (declare (xargs :guard (and (array1p 'translation-array translation-array)
+                              (bounded-darg-listp args (alen1 'translation-array translation-array))
                               (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array))
                   :guard-hints (("Goal" :in-theory (enable))) ;todo: make a fw-chaining rule for the dims
                   ))
@@ -342,18 +341,18 @@
 
 (defthm all-dargp-of-translate-args
   (implies (and (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
-                (all-dargp-less-than args (alen1 'translation-array translation-array))
+                (bounded-darg-listp args (alen1 'translation-array translation-array))
                 (array1p 'translation-array translation-array))
            (all-dargp (translate-args args translation-array)))
   :hints (("Goal" :in-theory (e/d (translate-args) (dargp)))))
 
 (local (in-theory (enable not-<-of-one-less-and-nth)))
 
-(defthm all-dargp-less-than-of-translate-args
+(defthm bounded-darg-listp-of-translate-args
   (implies (and (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound)
-                (all-dargp-less-than args (alen1 'translation-array translation-array))
+                (bounded-darg-listp args (alen1 'translation-array translation-array))
                 (array1p 'translation-array translation-array))
-           (all-dargp-less-than (translate-args args translation-array) bound))
+           (bounded-darg-listp (translate-args args translation-array) bound))
   :hints (("Goal" :in-theory (e/d (translate-args CAR-BECOMES-NTH-OF-0)
                                   (dargp-less-than)))))
 
@@ -366,9 +365,8 @@
 ;; TODO: Strengthen guard and get rid of the error check and the erp return value.
 ;; We could use cons-with-hint here instead of passing around changep, but the caller looks at changep.
 (defund translate-args-with-changep (args translation-array)
-  (declare (xargs :guard (and (true-listp args)
-                              (array1p 'translation-array translation-array)
-                              (all-dargp-less-than args (alen1 'translation-array translation-array))
+  (declare (xargs :guard (and (array1p 'translation-array translation-array)
+                              (bounded-darg-listp args (alen1 'translation-array translation-array))
                               (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array))))
   (if (endp args)
       (mv (erp-nil) nil nil)
@@ -406,7 +404,7 @@
 (defthm all-dargp-of-mv-nth-1-of-translate-args-with-changep
   (implies (and (not (mv-nth 0 (translate-args-with-changep args translation-array)))
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
-                (all-dargp-less-than args (alen1 'translation-array translation-array))
+                (bounded-darg-listp args (alen1 'translation-array translation-array))
                 (array1p 'translation-array translation-array))
            (all-dargp (mv-nth 1 (translate-args-with-changep args translation-array))))
   :hints (("Goal" :in-theory (e/d (translate-args-with-changep car-becomes-nth-of-0) (dargp)))))
@@ -416,19 +414,18 @@
            (true-listp (mv-nth 1 (translate-args-with-changep args translation-array))))
   :hints (("Goal" :in-theory (e/d (translate-args-with-changep car-becomes-nth-of-0) (dargp)))))
 
-(defthm all-dargp-less-than-of-mv-nth-1-of-translate-args-with-changep
+(defthm bounded-darg-listp-of-mv-nth-1-of-translate-args-with-changep
   (implies (and (not (mv-nth 0 (translate-args-with-changep args translation-array)))
                 (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound)
-                (all-dargp-less-than args (alen1 'translation-array translation-array))
-                (array1p 'translation-array translation-array)
-                (true-listp args))
-           (all-dargp-less-than (mv-nth 1 (translate-args-with-changep args translation-array)) bound))
-  :hints (("SubGoal *1/8" :do-not '(generalize eliminate-destructors)
+                (bounded-darg-listp args (alen1 'translation-array translation-array))
+                (array1p 'translation-array translation-array))
+           (bounded-darg-listp (mv-nth 1 (translate-args-with-changep args translation-array)) bound))
+  :hints (("SubGoal *1/6" :do-not '(generalize eliminate-destructors)
            :cases ((consp (NTH 0 ARGS)))
            :use (:instance DARGP-LESS-THAN-OF-AREF1-WHEN-BOUNDED-TRANSLATION-ARRAYP-AUX
                            (n (NTH 0 ARGS)))
            :in-theory (e/d (translate-args-with-changep car-becomes-nth-of-0
-                                                        all-dargp-less-than)
+                                                        bounded-darg-listp)
                            (dargp-less-than-of-aref1-when-bounded-translation-arrayp-aux
                             dargp)))
           ("Goal" :do-not '(generalize eliminate-destructors)
@@ -442,9 +439,8 @@
 
 ;; This version allows an arg to not translate to anything (meaning that it is unchanged).
 (defund maybe-translate-args (args translation-array)
-  (declare (xargs :guard (and (true-listp args)
-                              (array1p 'translation-array translation-array)
-                              (all-dargp-less-than args (alen1 'translation-array translation-array))
+  (declare (xargs :guard (and (array1p 'translation-array translation-array)
+                              (bounded-darg-listp args (alen1 'translation-array translation-array))
                               (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array))
                   :guard-hints (("Goal" :in-theory (enable))) ;todo: make a fw-chaining rule for the dims
                   ))
@@ -463,17 +459,17 @@
 
 (defthm all-dargp-of-maybe-translate-args
   (implies (and (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
-                (all-dargp-less-than args (alen1 'translation-array translation-array))
+                (bounded-darg-listp args (alen1 'translation-array translation-array))
                 (array1p 'translation-array translation-array))
            (all-dargp (maybe-translate-args args translation-array)))
   :hints (("Goal" :in-theory (e/d (maybe-translate-args) (dargp)))))
 
-(defthm all-dargp-less-than-of-maybe-translate-args
+(defthm bounded-darg-listp-of-maybe-translate-args
   (implies (and (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound)
-                (all-dargp-less-than args (alen1 'translation-array translation-array))
-                (all-dargp-less-than args bound)
+                (bounded-darg-listp args (alen1 'translation-array translation-array))
+                (bounded-darg-listp args bound)
                 (array1p 'translation-array translation-array))
-           (all-dargp-less-than (maybe-translate-args args translation-array) bound))
+           (bounded-darg-listp (maybe-translate-args args translation-array) bound))
   :hints (("Goal" :in-theory (e/d (maybe-translate-args CAR-BECOMES-NTH-OF-0
                                                         EQUAL-OF-QUOTE-AND-NTH-0-OF-NTH-WHEN-ALL-DARGP)
                                   (dargp-less-than)))))

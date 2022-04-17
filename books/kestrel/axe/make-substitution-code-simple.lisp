@@ -16,7 +16,7 @@
 ;; version of sublis-var-and-eval that uses it.
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
-(include-book "all-dargp-less-than")
+(include-book "bounded-darg-listp")
 (include-book "axe-trees")
 
 (defun make-substitution-code-simple-fn (suffix evaluator-base-name)
@@ -140,12 +140,12 @@
 
        (,(pack$ 'defthm-flag- sublis-var-and-eval-name)
          (defthm ,(pack$ 'bounded-axe-treep-of- sublis-var-and-eval-name)
-           (implies (and (all-dargp-less-than (strip-cdrs alist) dag-len)
+           (implies (and (bounded-darg-listp (strip-cdrs alist) dag-len)
                          (pseudo-termp term))
                     (bounded-axe-treep (,sublis-var-and-eval-name alist term interpreted-function-alist) dag-len))
            :flag ,sublis-var-and-eval-name)
          (defthm ,(pack$ 'all-bounded-axe-treep-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
-           (implies (and (all-dargp-less-than (strip-cdrs alist) dag-len)
+           (implies (and (bounded-darg-listp (strip-cdrs alist) dag-len)
                          (pseudo-term-listp terms))
                     (all-bounded-axe-treep (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist)) dag-len))
            :flag ,sublis-var-and-eval-lst-name)

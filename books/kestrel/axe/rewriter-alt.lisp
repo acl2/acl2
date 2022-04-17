@@ -155,7 +155,7 @@
   (declare (xargs :guard (and ;(array1p 'result-array result-array)
                           (true-listp args)
                           (true-listp arg-objectives)
-                          (all-dargp-less-than
+                          (bounded-darg-listp
                            args ; (alen1 'result-array result-array)
                            (len (thearray-length result-array-stobj)) ;2147483646
                            ))
@@ -180,8 +180,8 @@
                               result-array-stobj)))))
 
 (local (in-theory (disable use-all-<-for-car
-                           all-dargp-less-than-when-<-of-largest-non-quotep
-                           ;;all-dargp-less-than-when-all-consp
+                           bounded-darg-listp-when-<-of-largest-non-quotep
+                           ;;bounded-darg-listp-when-all-consp
                            )))
 
 ;drop some of this stuff?:
@@ -190,7 +190,7 @@
 (set-case-split-limitations '(10 10))
 
 (local (in-theory (disable  use-all-consp-for-car default-+-2 default-cdr
-                           quote-lemma-for-all-dargp-less-than-gen-alt)))
+                           quote-lemma-for-bounded-darg-listp-gen-alt)))
 
 (local (in-theory (disable symbol-alistp))) ;don't induct on this
 

@@ -108,10 +108,10 @@
   :hints (("Goal" :in-theory (enable get-unexamined-nodenum-args keep-atoms))))
 
 (defthm all-<=-of-keep-atoms
-  (implies (and (all-dargp-less-than args (+ 1 nodenum))
+  (implies (and (bounded-darg-listp args (+ 1 nodenum))
                 (natp nodenum))
            (all-<= (keep-atoms args) nodenum))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than keep-atoms))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp keep-atoms))))
 
 (defthm all-<=-of-keep-atoms-of-dargs
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -152,7 +152,7 @@
                             all-<=-of-keep-atoms-of-dargs
                             all-<=-of-keep-atoms
                             all-<-of-keep-atoms-of-dargs-when-bounded-dag-exprp
-                            ;;all-dargp-less-than-of-args-when-bounded-dag-exprp
+                            ;;bounded-darg-listp-of-args-when-bounded-dag-exprp
                             )))))
 ;dup
 (defthm all-<=-when-all-<

@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "all-dargp-less-than")
+(include-book "bounded-darg-listp")
 
 ;;;
 ;;; no-atoms
@@ -40,15 +40,17 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
   :hints (("Goal" :in-theory (enable no-atoms))))
 
-(defthmd all-dargp-less-than-when-no-atoms
+(defthmd bounded-darg-listp-when-no-atoms
   (implies (no-atoms items)
-           (equal (all-dargp-less-than items bound)
-                  (all-myquotep items)))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than all-dargp no-atoms))))
+           (equal (bounded-darg-listp items bound)
+                  (and (all-myquotep items)
+                       (true-listp items))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp all-dargp no-atoms))))
 
-(defthm all-dargp-less-than-when-no-atoms-cheap
+(defthm bounded-darg-listp-when-no-atoms-cheap
   (implies (no-atoms items)
-           (equal (all-dargp-less-than items bound)
-                  (all-myquotep items)))
+           (equal (bounded-darg-listp items bound)
+                  (and (all-myquotep items)
+                       (true-listp items))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than all-dargp no-atoms))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp all-dargp no-atoms))))

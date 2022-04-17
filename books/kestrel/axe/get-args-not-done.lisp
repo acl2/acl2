@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "all-dargp-less-than")
+(include-book "bounded-darg-listp")
 (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
@@ -26,8 +26,7 @@
 ;fixme something like this already exists? extend-...
 (defund get-args-not-done (args result-array-name result-array acc untagged-foundp)
   (declare (xargs :guard (and (array1p result-array-name result-array)
-                              (true-listp args)
-                              (all-dargp-less-than args (alen1 result-array-name result-array)))))
+                              (bounded-darg-listp args (alen1 result-array-name result-array)))))
   (if (endp args)
       (if untagged-foundp
           acc
@@ -50,7 +49,7 @@
   :hints (("Goal" :in-theory (e/d (get-args-not-done) (natp)))))
 
 (defthm all-<-of-get-args-not-done
-  (implies (and (all-dargp-less-than args bound)
+  (implies (and (bounded-darg-listp args bound)
                 (all-< acc bound))
            (all-< (get-args-not-done args result-array-name result-array acc untagged-foundp)
                   bound))
