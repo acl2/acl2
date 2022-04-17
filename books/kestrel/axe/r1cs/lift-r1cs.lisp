@@ -16,7 +16,7 @@
 
 (include-book "lift-r1cs-rules")
 (include-book "lift-r1cs-rule-lists")
-(include-book "kestrel/utilities/doc" :dir :system)
+(include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/crypto/r1cs/sparse/rule-lists" :dir :system)
 (include-book "kestrel/crypto/r1cs/sparse/rules-axe" :dir :system)
 (include-book "kestrel/crypto/r1cs/sparse/rules" :dir :system)
