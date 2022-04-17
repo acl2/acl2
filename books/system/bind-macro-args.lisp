@@ -149,7 +149,7 @@
    (chk-length-and-keys actuals form wrld)
    (let ((tl (assoc-keyword :allow-other-keys actuals)))
      (er-progn-cmp
-      (cond ((assoc-keyword :allow-other-keys (cdr tl))
+      (cond ((assoc-keyword :allow-other-keys (cddr tl))
              (er-cmp *macro-expansion-ctx*
                      "ACL2 prohibits multiple :allow-other-keys because ~
                       implementations differ significantly concerning which ~
