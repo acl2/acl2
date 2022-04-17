@@ -43,6 +43,7 @@
 (include-book "length")
 (include-book "resize-list")
 (include-book "make-list-ac")
+(include-book "list-sets")
 
 ;; Books about non-built-in functions:
 (include-book "equiv-def")
