@@ -22,7 +22,7 @@
 (include-book "kestrel/lists-light/perm-def" :dir :system)
 (include-book "kestrel/lists-light/perm" :dir :system) ;for the fact that perm is an equiv
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
-(local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
+(local (include-book "kestrel/lists-light/list-sets" :dir :system))
 
 ;(local (in-theory (disable all-vars)))
 
@@ -468,15 +468,6 @@
 
 (defcong perm equal (bound-vars-suitable-for-hypsp bound-vars hyps) 1
   :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypsp))))
-
-;move
-(defthm not-intersection-equal-of-set-difference-equal-arg1
-  (not (intersection-equal (set-difference-equal x y) y)))
-
-;move
-(defthm not-intersection-equal-of-set-difference-equal-arg2
-  (not (intersection-equal y (set-difference-equal x y)))
-  :hints (("Goal" :in-theory (enable intersection-equal-commutative-iff))))
 
 (defthm bound-vars-suitable-for-hypsp-when-free-vars
   (implies (and (equal :free-vars (car (car hyps)))
