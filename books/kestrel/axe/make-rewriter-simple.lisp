@@ -632,7 +632,7 @@
                            (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
                 ;; todo: consider using CASE here:
                 (if (eq :axe-syntaxp fn)
-                    (let* ((syntaxp-expr (cdr hyp)) ;; strip off the AXE-SYNTAXP
+                    (let* ((syntaxp-expr (cdr hyp)) ;; strip off the :axe-syntaxp
                            (result (and (all-vars-in-term-bound-in-alistp syntaxp-expr alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
                                         (,eval-axe-syntaxp-expr-fn syntaxp-expr alist dag-array) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
                                         )))
@@ -655,7 +655,7 @@
                       ;; To evaluate the axe-bind-free hyp, we use alist, which binds vars to their nodenums or quoteps.
                       ;;The soundness of Axe should not depend on what an axe-bind-free function does; thus we cannot pass alist to such a function and trust it to faithfully extend it.  Nor can we trust it to extend the dag without changing any existing nodes. TODO: What if the axe-bind-free function gives back a result that is not even well-formed?
                       ;;TODO: It might be nice to be able to pass in the assumptions to the axe-bind-free-function? e.g., for finding usbp facts.
-                      (let* ((bind-free-expr (cadr hyp)) ;; strip off the AXE-BIND-FREE
+                      (let* ((bind-free-expr (cadr hyp)) ;; strip off the :axe-bind-free
                              (result (and (all-vars-in-terms-bound-in-alistp (fargs bind-free-expr) alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
                                           (,eval-axe-bind-free-function-application-fn (ffn-symb bind-free-expr) (fargs bind-free-expr) alist dag-array) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
                                           )))

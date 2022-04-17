@@ -1,7 +1,7 @@
 ; Tests of make-axe-syntaxp-evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -109,7 +109,7 @@
            ;; removed), but we know that it takes dag-array as the final param,
            ;; so we pass it separately:
            (SHOULD-REVERSE-EQUALITY
-            ;; unquote constants, lookup vars:
+            ;; lookup vars:
             (IF (CONSP ARG0) ARG0 (LOOKUP-EQ ARG0 ALIST))
             (IF (CONSP ARG1) ARG1 (LOOKUP-EQ ARG1 ALIST))
             ;; this one takes the dag-array too, which we pass around separately:
