@@ -1068,6 +1068,7 @@
     compustatep-of-add-var
     compustatep-of-update-var
     compustatep-of-update-array
+    compustatep-of-update-struct
     compustatep-when-compustate-resultp-and-not-errorp
     compustate-resultp-of-write-var
     heap-fix-when-heapp
