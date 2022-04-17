@@ -56,7 +56,7 @@
                            )))
 
 (local (in-theory (enable posp
-                          true-listp-of-cdr-when-dag-exprp0-and-quotep
+                          true-listp-of-cdr-when-dag-exprp-and-quotep
                           ceiling-in-terms-of-floor
                           TRUE-LISTP-OF-CDR
                           nth-of-cdr

@@ -214,7 +214,7 @@
     (xdoc::p
      "The order of the C structure types and functions in the translation unit
       is the same as the order of the corresponding targets
-      in the list @('(t1 ... tp') passed to ATC.")
+      in the list @('(t1 ... tp)') passed to ATC.")
 
     (xdoc::p
      "Each target function @('fn') must be in logic mode and guard-verified.

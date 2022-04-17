@@ -49,7 +49,7 @@
 ;(local (in-theory (disable car-becomes-nth-of-0)))
 
 (local (in-theory (disable NAT-LISTP
-                           DAG-EXPRP0
+                           DAG-EXPRP
                            ;;LIST::LEN-WHEN-AT-MOST-1
                            all-natp-when-not-consp
                            all-<-when-not-consp
@@ -966,7 +966,7 @@
   (implies (integerp accumulated-constant)
            (integerp (mv-nth 1 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))
   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (pseudo-dag-arrayp
-                                                           DAG-EXPRP0)))))
+                                                           DAG-EXPRP)))))
 
 (defthm all-<=-of-mv-nth-0-of-bvxor-nest-leaves-aux-new
   (implies (and (all-natp pending-list)
@@ -1832,7 +1832,7 @@
 
 ;uses car instead of nth to check for a quotep
 (defthm integerp-of-nth-of-dargs-alt
-  (implies (and (dag-exprp0 expr)
+  (implies (and (dag-exprp expr)
                 (< n (len (dargs expr)))
                 (natp n)
                 (not (equal 'quote (car expr))))

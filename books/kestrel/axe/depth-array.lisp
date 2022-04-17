@@ -54,7 +54,7 @@
                                  :use (:instance TYPE-OF-AREF1-WHEN-DEPTH-ARRAYP
                                                  (array-name DEPTH-ARRAY-NAME)
                                                  (array DEPTH-ARRAY)
-                                                 (num-valid-nodes DEPTH-ARRAY-len)
+                                                 (num-valid-indices DEPTH-ARRAY-len)
                                                  (index (CAR ITEMS)))
                                  :in-theory (e/d (DEPTH-ARRAYP) (TYPE-OF-AREF1-WHEN-DEPTH-ARRAYP))))))
   (if (endp items)
@@ -117,7 +117,7 @@
                                  :use (:instance TYPE-OF-AREF1-WHEN-DEPTH-ARRAYP
                                                  (array-name DEPTH-ARRAY-NAME)
                                                  (array DEPTH-ARRAY)
-                                                 (num-valid-nodes (+ 1 n))
+                                                 (num-valid-indices (+ 1 n))
                                                  (index n))
                                  :in-theory (disable TYPE-OF-AREF1-WHEN-DEPTH-ARRAYP)))))
   (if (not (natp n))

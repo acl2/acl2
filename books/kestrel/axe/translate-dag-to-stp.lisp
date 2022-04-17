@@ -966,7 +966,7 @@
                   :guard-hints (("Goal" :in-theory (e/d (get-type-of-arg
                                                          car-becomes-nth-of-0
                                                          BOUNDED-DAG-EXPRP
-                                                         dag-exprp0
+                                                         dag-exprp
                                                          NATP-OF-+-OF-1)
                                                         (DARGP
                                                          MYQUOTEP
@@ -1799,7 +1799,7 @@
                   :guard-hints (("Goal" :in-theory (enable <-of-nth-when-all-<
                                                            car-becomes-nth-of-0
                                                            integer-listp-when-nat-listp
-                                                           not-cddr-when-dag-exprp0-and-quotep)))))
+                                                           not-cddr-when-dag-exprp-and-quotep)))))
   (if (endp nodenums-to-translate)
       (mv acc constant-array-info opened-paren-count)
     (let* ((nodenum (first nodenums-to-translate))

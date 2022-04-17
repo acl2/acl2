@@ -38,7 +38,7 @@
 
 (include-book "lifter-utilities2")
 (include-book "kestrel/typed-lists-light/map-strip-cars" :dir :system)
-(include-book "kestrel/utilities/doc" :dir :system)
+(include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "unroll-java-code") ;for unroll-java-code-rules
 (include-book "../dag-to-term-with-lets")

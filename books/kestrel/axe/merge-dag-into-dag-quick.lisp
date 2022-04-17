@@ -16,7 +16,8 @@
 (include-book "dags")
 (include-book "make-dag-indices")
 (include-book "merge-nodes-into-dag-array")
-(include-book "consecutivep2")
+(include-book "consecutivep")
+(local (include-book "consecutivep2"))
 (local (include-book "kestrel/alists-light/strip-cars2" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -30,7 +31,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
-(local (in-theory (enable symbolp-of-car-when-dag-exprp0
+(local (in-theory (enable symbolp-of-car-when-dag-exprp
                           car-of-car-when-pseudo-dagp-cheap)))
 
 (local

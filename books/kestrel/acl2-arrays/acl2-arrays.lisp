@@ -795,22 +795,22 @@
            (consp (dimensions dag-array-name dag-array)))
   :hints (("Goal" :in-theory (enable array1p-rewrite2))))
 
-;requires that the arrays must be big enough for max-nodenum to be a valid index
+;requires that the arrays must be big enough for max-index to be a valid index
 ;when copying a whole array, consider calling compress1 for speed?
-(defun copy-array-vals (max-nodenum from-array-name from-array to-array-name to-array)
-  (declare (xargs :measure (nfix (+ 1 max-nodenum))
-                  :guard (and (rationalp max-nodenum)
+(defun copy-array-vals (max-index from-array-name from-array to-array-name to-array)
+  (declare (xargs :measure (nfix (+ 1 max-index))
+                  :guard (and (rationalp max-index)
                               (array1p from-array-name from-array)
                               (array1p to-array-name to-array)
-                              (< max-nodenum (alen1 from-array-name from-array))
-                              (< max-nodenum (alen1 to-array-name to-array)))))
-  (if (not (natp max-nodenum))
+                              (< max-index (alen1 from-array-name from-array))
+                              (< max-index (alen1 to-array-name to-array)))))
+  (if (not (natp max-index))
       to-array
-    (copy-array-vals (+ -1 max-nodenum)
+    (copy-array-vals (+ -1 max-index)
                      from-array-name
                      from-array
                      to-array-name
-                     (aset1 to-array-name to-array max-nodenum (aref1 from-array-name from-array max-nodenum)))))
+                     (aset1 to-array-name to-array max-index (aref1 from-array-name from-array max-index)))))
 
 ;new stuff:
 

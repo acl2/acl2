@@ -102,11 +102,11 @@
            (bounded-dag-exprp nodenum (cdr (car dag))))
   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
-(defthm dag-exprp0-of-cdr-of-car-when-weak-dagp-aux
+(defthm dag-exprp-of-cdr-of-car-when-weak-dagp-aux
   (implies (and (weak-dagp-aux dag)
                 (consp dag)
                 )
-           (dag-exprp0 (cdr (car dag))))
+           (dag-exprp (cdr (car dag))))
   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
 (defthm symbolp-of-cdar-when-weak-dagp-aux-cheap
@@ -149,7 +149,7 @@
 (defthm true-listp-of-dargs-of-lookup-equal-when-weak-dagp-aux-cheap
   (implies (weak-dagp-aux dag)
            (true-listp (dargs (lookup-equal nodenum dag))))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp0 dargs))))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp dargs))))
 
 (defthm all-dargp-less-than-of-dargs-of-lookup-equal
   (implies (and (weak-dagp-aux dag)
@@ -164,12 +164,12 @@
                            (LOOKUP-EQUAL NODENUM DAG)
                            (LOOKUP-EQUAL NODENUM (CDR DAG)))
            :in-theory (enable bounded-dag-exprp
-                              dag-exprp0))))
+                              dag-exprp))))
 
-(defthm dag-exprp0-of-lookup-equal-when-weak-dagp-aux
+(defthm dag-exprp-of-lookup-equal-when-weak-dagp-aux
   (implies (and (weak-dagp-aux dag)
                 (lookup-equal n dag))
-           (dag-exprp0 (lookup-equal n dag)))
+           (dag-exprp (lookup-equal n dag)))
   :hints (("Goal" :in-theory (enable weak-dagp-aux lookup-equal))))
 
 (defthm natp-of-maxelem-of-strip-cars-when-rev-dagp
@@ -259,10 +259,10 @@
            (all-dargp-less-than (dargs (lookup-equal nodenum dag)) nodenum2))
   :hints (("Goal" :in-theory (enable weak-dagp))))
 
-(defthm dag-exprp0-of-lookup-equal-when-weak-dagp
+(defthm dag-exprp-of-lookup-equal-when-weak-dagp
   (implies (and (weak-dagp dag)
                 (lookup-equal n dag))
-           (dag-exprp0 (lookup-equal n dag)))
+           (dag-exprp (lookup-equal n dag)))
   :hints (("Goal" :in-theory (enable weak-dagp))))
 
 ;;
@@ -307,7 +307,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
 
-(defthm dag-exprp-of-lookup-equal-when-pseudo-dagp-aux
+(defthm bounded-dag-exprp-of-lookup-equal-when-pseudo-dagp-aux
   (implies (and (pseudo-dagp-aux dag current-nodenum)
                 (<= n current-nodenum)
                 (natp n)
@@ -375,12 +375,21 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
-(defthm dag-exprp-of-lookup-equal-when-pseudo-dagp
+(defthm bounded-dag-exprp-of-lookup-equal-when-pseudo-dagp
   (implies (and (pseudo-dagp dag)
                 (<= n (top-nodenum dag))
                 (natp n))
            (bounded-dag-exprp n (lookup-equal n dag)))
   :hints (("Goal" :in-theory (e/d (PSEUDO-DAGP) (bounded-dag-exprp)))))
+
+(defthm bounded-dag-exprp-of-lookup-equal-when-pseudo-dagp-gen
+  (implies (and (<= n bound)
+                (pseudo-dagp dag)
+                (<= n (top-nodenum dag))
+                (natp n))
+           (bounded-dag-exprp bound (lookup-equal n dag)))
+  :hints (("Goal" :use bounded-dag-exprp-of-lookup-equal-when-pseudo-dagp
+           :in-theory (disable bounded-dag-exprp-of-lookup-equal-when-pseudo-dagp))))
 
 (defthmd natp-of-car-of-nth-when-pseudo-dagp-aux
   (implies (and (pseudo-dagp-aux dag curr)
@@ -576,7 +585,7 @@
 ;(second component of an entry), rather than a given key
 (defund find-node-for-expr2 (expr dag)
   (declare (xargs :guard (and (weak-dagp-aux dag)
-                              (dag-exprp0 expr))
+                              (dag-exprp expr))
                   :guard-hints (("Goal" :in-theory (enable largest-non-quotep)))))
   (if (or (variablep expr)
           (fquotep expr))
@@ -622,7 +631,7 @@
 ;fixme allow this to return a constant instead of a nodenum? or perhaps this is never called with expr being a constant. perhaps split this depending on whether we are adding a var or a function call
 (defund add-to-dag (expr dag)
   (declare (xargs :guard (and (weak-dagp-aux dag)
-                              (dag-exprp0 expr))
+                              (dag-exprp expr))
                   :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))))
   (let* ((node-if-present (find-node-for-expr2 ;find-node-for-expr
                            expr dag)))
@@ -643,7 +652,7 @@
   (implies (and (weak-dagp-aux dag)
                 (bounded-dag-exprp (+ 1 (top-nodenum dag)) expr))
            (weak-dagp-aux (mv-nth 1 (add-to-dag expr dag))))
-  :hints (("Goal" :in-theory (enable add-to-dag acons (:d weak-dagp-aux) BOUNDED-DAG-EXPRP DAG-EXPRP0))))
+  :hints (("Goal" :in-theory (enable add-to-dag acons (:d weak-dagp-aux) BOUNDED-DAG-EXPRP DAG-EXPRP))))
 
 (defthm pseudo-dagp-aux-of-mv-nth-1-of-add-to-dag
   (implies (and (pseudo-dagp dag)
@@ -719,7 +728,7 @@
   (implies (and (symbol-listp acc)
                 (weak-dagp dag))
            (symbol-listp (dag-vars-aux dag acc)))
-  :hints (("Goal" :in-theory (enable weak-dagp dag-exprp0))))
+  :hints (("Goal" :in-theory (enable weak-dagp dag-exprp))))
 
 ;; The result is not necessarily sorted
 (defund dag-vars (dag)
@@ -752,8 +761,8 @@
   (declare (xargs :guard (and (true-listp dag)
                               (weak-dagp-aux dag)
                               (symbol-listp acc))
-                  :guard-hints (("Goal" :in-theory (enable dag-exprp0
-                                                           symbolp-of-car-when-dag-exprp0)))))
+                  :guard-hints (("Goal" :in-theory (enable dag-exprp
+                                                           symbolp-of-car-when-dag-exprp)))))
   (if (endp dag)
       acc
     (let* ((entry (car dag))
@@ -767,7 +776,7 @@
   (implies (and (symbol-listp acc)
                 (weak-dagp dag))
            (symbol-listp (dag-fns-aux dag acc)))
-  :hints (("Goal" :in-theory (enable weak-dagp dag-exprp0))))
+  :hints (("Goal" :in-theory (enable weak-dagp dag-exprp))))
 
 (defund dag-fns (dag-or-quotep)
   (declare (xargs :guard (or (quotep dag-or-quotep)
@@ -905,7 +914,7 @@
            :in-theory (e/d (PSEUDO-TERMP
                             ;;PSEUDO-DAGP
                             DARGP-LESS-THAN
-                            dag-exprp0)
+                            dag-exprp)
                            (DARGP
                             TOP-NODENUM
                             ;MYQUOTEP
@@ -933,7 +942,7 @@
            :use ((:instance compose-term-and-dag-aux-return-type (term (car terms)))
                  (:instance compose-term-and-dag-aux-lst-return-type (terms (cdr term))))
            :in-theory (e/d (pseudo-termp pseudo-dagp-rewrite
-                                         dag-exprp0)
+                                         dag-exprp)
                            (compose-term-and-dag-aux-lst-return-type
                             compose-term-and-dag-aux-return-type
                             true-listp symbol-listp
@@ -1155,7 +1164,7 @@
 ;kill
 ;i guess this is a weakend obligation for checking that an arg is a quoted thing?
 ;; (defthm <-of-len-of-nth-of-dargs-and-3
-;;   (implies (and (dag-exprp0 expr)
+;;   (implies (and (dag-exprp expr)
 ;;                 (< n (len (dargs expr)))
 ;;                 (natp n)
 ;;                 (not (equal 'quote (car expr)))
@@ -1166,7 +1175,7 @@
 
 ;kill
 ;; (defthm not-<-of-len-of-nth-of-dargs-and-2
-;;   (implies (and (dag-exprp0 expr)
+;;   (implies (and (dag-exprp expr)
 ;;                 (< n (len (dargs expr)))
 ;;                 (natp n)
 ;;                 (not (equal 'quote (car expr)))
@@ -1178,7 +1187,7 @@
 
 ;kill
 ;; (defthm <-of-1-and-len-of-nth-of-dargs
-;;   (implies (and (dag-exprp0 expr)
+;;   (implies (and (dag-exprp expr)
 ;;                 (< n (len (dargs expr)))
 ;;                 (natp n)
 ;;                 (not (equal 'quote (car expr)))
@@ -1254,13 +1263,21 @@
            (ASSOC-EQUAL N DAG-LST))
   :hints (("Goal" :in-theory (enable PSEUDO-DAGP))))
 
-(defthm dag-exprp0-of-lookup-equal-when-pseudo-dagp
+(defthm dag-exprp-of-lookup-equal-when-pseudo-dagp-aux
+  (implies (and (pseudo-dagp-aux dag current-nodenum)
+                (<= n current-nodenum)
+                (natp n)
+                (integerp current-nodenum))
+           (dag-exprp (lookup-equal n dag)))
+  :hints (("Goal" :in-theory (e/d (pseudo-dagp-aux LOOKUP-EQUAL assoc-equal)
+                                  (dag-exprp)))))
+
+(defthm dag-exprp-of-lookup-equal-when-pseudo-dagp
   (implies (and (pseudo-dagp dag)
                 (<= n (top-nodenum dag))
                 (natp n))
-           (dag-exprp0 (lookup-equal n dag)))
-  :hints (("Goal" :use (:instance dag-exprp-of-lookup-equal-when-pseudo-dagp)
-           :in-theory (disable dag-exprp-of-lookup-equal-when-pseudo-dagp))))
+           (dag-exprp (lookup-equal n dag)))
+  :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
 (defthm not-<-of-plus1-of-largest-non-quotep-when-all-dargp-less-than
   (implies (and (all-dargp-less-than nodenum-or-quotep-or-lst bound)
@@ -1291,7 +1308,7 @@
                                (pseudo-termp term))
                    :guard-hints (("Goal" :expand ((PSEUDO-DAGP-AUX DAG NODENUM-OR-QUOTEP))
                                   :use (:instance dag-exprp-of-lookup-equal-when-pseudo-dagp (n NODENUM-OR-QUOTEP))
-                                  :in-theory (e/d (all-dargp-less-than dag-exprp0)
+                                  :in-theory (e/d (all-dargp-less-than dag-exprp)
                                                   (len true-listp dag-exprp-of-lookup-equal-when-pseudo-dagp))
                                   :do-not '(generalize eliminate-destructors)
                                   ))
@@ -1597,9 +1614,9 @@
            (consp (car dag)))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
-(defthm dag-exprp0-of-cdr-of-car-when-weak-dagp
+(defthm dag-exprp-of-cdr-of-car-when-weak-dagp
   (implies (weak-dagp dag)
-           (dag-exprp0 (cdr (car dag))))
+           (dag-exprp (cdr (car dag))))
   :hints (("Goal" :in-theory (enable weak-dagp))))
 
 (defthm pseudo-dagp-forward-to-consp-of-car

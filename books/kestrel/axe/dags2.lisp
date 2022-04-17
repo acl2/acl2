@@ -93,9 +93,9 @@
 
 ;; Returns the renumbered expr
 (defund renumber-dag-expr (expr renumbering)
-  (declare (xargs :guard (and (dag-exprp0 expr)
+  (declare (xargs :guard (and (dag-exprp expr)
                               (renumberingp renumbering))
-                  :guard-hints (("Goal" :in-theory (enable DAG-EXPRP0)))
+                  :guard-hints (("Goal" :in-theory (enable DAG-EXPRP)))
                   ))
   (if (variablep expr)
       expr
@@ -106,11 +106,11 @@
              (args (renumber-dag-expr-args args renumbering)))
         (cons fn args)))))
 
-(defthm dag-exprp0-of-renumber-dag-expr
-  (implies (and (dag-exprp0 expr)
+(defthm dag-exprp-of-renumber-dag-expr
+  (implies (and (dag-exprp expr)
                 (renumberingp renumbering))
-           (dag-exprp0 (renumber-dag-expr expr renumbering)))
-  :hints (("Goal" :in-theory (enable renumber-dag-expr dag-exprp0))))
+           (dag-exprp (renumber-dag-expr expr renumbering)))
+  :hints (("Goal" :in-theory (enable renumber-dag-expr dag-exprp))))
 
 (in-theory (disable WEAK-DAGP-AUX RENUMBERINGP))
 
@@ -140,7 +140,7 @@
   :hints (("Goal" :expand ((weak-dagp-aux dag)
                            (weak-dagp-aux (cons (cons nodenum expr)
                                                 dag)))
-           :in-theory (enable acons bounded-dag-exprp dag-exprp0))))
+           :in-theory (enable acons bounded-dag-exprp dag-exprp))))
 
 (defthm integerp-of-+-of-1-and-car-of-car-when-weak-dagp-aux
   (implies (weak-dagp-aux dag)
@@ -172,7 +172,7 @@
                 (bounded-dag-exprp n expr))
            (equal (consp expr)
                   (not (symbolp expr))))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp DAG-EXPRP0))))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp DAG-EXPRP))))
 
 (defun binds-all-nats-up-to (n alist)
   (declare (xargs :guard (and (or (natp n)
@@ -380,20 +380,20 @@
                 (<= -1 nodenum3)
                 (natp nodenum))
            (bounded-dag-exprp nodenum (renumber-dag-expr expr renumbering)))
-  :hints (("Goal" :in-theory (enable renumber-dag-expr dag-exprp0 bounded-dag-exprp))))
+  :hints (("Goal" :in-theory (enable renumber-dag-expr dag-exprp bounded-dag-exprp))))
 
 (defthm bounded-dag-exprp-when-not-consp
   (implies (not (consp x))
            (equal (bounded-dag-exprp nodenum x)
                   (symbolp x)))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp DAG-EXPRP0))))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp DAG-EXPRP))))
 
 (defthm bounded-dag-exprp-when-quotep
   (implies (eq 'quote (car x))
            (equal (bounded-dag-exprp nodenum x)
                   (and (consp (cdr x))
                        (null (cddr x)))))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp DAG-EXPRP0))))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp DAG-EXPRP))))
 
 (defthm dag-expr-of-caar-and-cdar-when-weak-dagp-aux
   (implies (and (weak-dagp-aux dag)
@@ -412,7 +412,7 @@
   (implies (bounded-dag-exprp 0 expr)
            (equal (renumber-dag-expr expr renumbering)
                   expr))
-  :hints (("Goal" :in-theory (enable renumber-dag-expr bounded-dag-exprp dag-exprp0))))
+  :hints (("Goal" :in-theory (enable renumber-dag-expr bounded-dag-exprp dag-exprp))))
 
 ;; Returns (mv dag renumbering)
 ;; The renumbering maps nodenums in REV-DAG-TO-MERGE to nodenums in the MAIN-DAG.

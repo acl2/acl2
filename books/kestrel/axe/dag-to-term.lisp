@@ -89,14 +89,14 @@
                   (all-dargp-less-than nodenum-or-quoteps (top-nodenum dag)))
              (pseudo-term-listp (dag-to-term-aux-lst nodenum-or-quoteps dag)))
     :flag dag-to-term-aux-lst)
-  :hints (("subgoal *1/2" :use (:instance dag-exprp0-of-lookup-equal-when-pseudo-dagp
+  :hints (("subgoal *1/2" :use (:instance dag-exprp-of-lookup-equal-when-pseudo-dagp
                                           (n nodenum-or-quotep)
                                           )
-           :in-theory (disable dag-exprp0-of-lookup-equal-when-pseudo-dagp
-                               dag-exprp0-of-lookup-equal-when-weak-dagp-aux
-                               dag-exprp0-of-lookup-equal-when-weak-dagp
+           :in-theory (disable dag-exprp-of-lookup-equal-when-pseudo-dagp
+                               dag-exprp-of-lookup-equal-when-weak-dagp-aux
+                               dag-exprp-of-lookup-equal-when-weak-dagp
                                dag-exprp-of-lookup-equal-when-pseudo-dagp))
-          ("Goal" :in-theory (e/d (symbolp-when-dag-exprp0) (weak-dagp-aux
+          ("Goal" :in-theory (e/d (symbolp-when-dag-exprp) (weak-dagp-aux
                                                              bounded-dag-exprp
                                                              ;;myquotep
                                                              ;;quotep

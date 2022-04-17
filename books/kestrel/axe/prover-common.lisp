@@ -236,7 +236,7 @@
                       (<= (+ 1 max-nodenum)
                           (alen1 'renaming-array renaming-array))
                       (bounded-renaming-entriesp (+ -1 nodenum) 'renaming-array renaming-array dag-len))
-          :guard-hints (("Goal" :in-theory (e/d (not-cddr-when-dag-exprp0-and-quotep
+          :guard-hints (("Goal" :in-theory (e/d (not-cddr-when-dag-exprp-and-quotep
                                                  ;renaming-arrayp ;todo
                                                  )
                                                 (pseudo-dag-arrayp))))))

@@ -29,7 +29,7 @@
 ;(local (in-theory (disable list::nth-with-large-index-2))) ;for speed
 
 (local (in-theory (enable ;NOT-CDDR-OF-NTH-WHEN-ALL-DARGP
-;                   not-cddr-when-dag-exprp0-and-quotep
+;                   not-cddr-when-dag-exprp-and-quotep
                    )))
 
 ;(local (in-theory (disable myquotep))) ;todo

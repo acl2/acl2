@@ -136,18 +136,17 @@
                        bound-vars-suitable-for-hypp
                        axe-rule-hypp))))
 
-
 ;; Shows that the alist is still good after we extend it
 (defthm alist-suitable-for-hypsp-of-append-and-cdr-when-free-vars
   (implies (and (eq :free-vars (ffn-symb (first hyps)))
                 (alist-suitable-for-hypsp alist hyps)
                 (axe-rule-hyp-listp hyps)
                 (symbol-alistp alist)
+                ;; result binds exactly the remaining free vars in the hyp:
                 (perm (strip-cars result)
                       (set-difference-equal (free-vars-in-term (cdr (car hyps)))
-                                            (strip-cars alist)))
-                )
-           (alist-suitable-for-hypsp (append result alist)
+                                            (strip-cars alist))))
+           (alist-suitable-for-hypsp (append result alist) ; can call append because the var sets are disjoint
                                      (cdr hyps)))
   :hints (("Goal" :expand ((bound-vars-suitable-for-hypsp (strip-cars alist)
                                                           hyps)
@@ -222,19 +221,21 @@
 ;;; alist-suitable-for-hyp-tree-and-hysp
 ;;;
 
-;; Checks whether the keys of ALIST are suitable upon reaching HYPS and
-;; attempting to relieve them.
+;; Checks whether ALIST and HYPS are suitable after having instantiated HYP
+;; with ALIST (so we are now at the point of having to find matches to bind its
+;; remaining free vars), and having HYPS as the list of hyps to be relieved
+;; subsequently.
 (defund alist-suitable-for-hyp-tree-and-hypsp (alist
-                                               hyp ;an axe-tree, partially instantiated
+                                               hyp ;an axe-tree, partially instantiated, so all vars from alist have been replaced
                                                hyps)
   (declare (xargs :guard (and (symbol-alistp alist)
                               (axe-treep hyp)
                               (axe-rule-hyp-listp hyps))
                   :guard-hints (("Goal" :in-theory (enable SYMBOL-ALISTP)))))
-  (and ;; The alist doesn't bind any vars in the hyp:
+  (and ;; The alist doesn't bind any vars that remain in the hyp:
    (not (intersection-eq (strip-cars alist) (axe-tree-vars hyp)))
    ;; After we bind all the vars in the hyp, the alist will be suitable for the remaining hyps:
-   (bound-vars-suitable-for-hypsp (append (axe-tree-vars hyp)
+   (bound-vars-suitable-for-hypsp (append (axe-tree-vars hyp) ; can just call append since the sets of vars are disjoint
                                           (strip-cars alist))
                                   hyps)))
 
