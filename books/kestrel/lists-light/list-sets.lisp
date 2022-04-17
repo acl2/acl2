@@ -20,3 +20,9 @@
 (defthm not-intersection-equal-of-set-difference-equal-arg2
   (not (intersection-equal y (set-difference-equal x y)))
   :hints (("Goal" :in-theory (enable intersection-equal-commutative-iff))))
+
+(defthm intersection-equal-of-union-equal-iff
+  (iff (intersection-equal x (union-equal y z))
+       (or (intersection-equal x y)
+           (intersection-equal x z)))
+  :hints (("Goal" :in-theory (enable union-equal))))
