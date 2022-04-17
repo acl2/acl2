@@ -91,3 +91,9 @@
            (equal (axe-tree-vars tree)
                   nil))
   :hints (("Goal" :in-theory (enable axe-tree-vars))))
+
+(defthm axe-tree-vars-when-symbolp
+  (implies (symbolp tree)
+           (equal (axe-tree-vars tree)
+                  (list tree)))
+  :hints (("Goal" :in-theory (enable axe-tree-vars))))
