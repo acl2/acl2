@@ -32,7 +32,7 @@
 ;items are nodenums and quoteps
 (defund find-shortest-parent-lst (current-shortest-lst items dag-parent-array)
   (declare (xargs :guard (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
-                              (all-dargp-less-than items (alen1 'dag-parent-array dag-parent-array))
+                              (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))
                               (true-listp items)
                               (true-listp current-shortest-lst))))
   (if (endp items)
@@ -68,12 +68,12 @@
             ;; (true-listp items)
             (bounded-dag-parent-entriesp n 'dag-parent-array dag-parent-array limit)
             (all-< current-shortest-lst limit)
-            (all-dargp-less-than items (+ 1 n))
+            (bounded-darg-listp items (+ 1 n))
             ;;(all-dargp items)
             (integerp n))
            (all-< (find-shortest-parent-lst current-shortest-lst items dag-parent-array)
                   limit))
-  :hints (("Goal" :in-theory (enable find-shortest-parent-lst dag-parent-arrayp bound-lemma-for-car-when-all-dargp-less-than))))
+  :hints (("Goal" :in-theory (enable find-shortest-parent-lst dag-parent-arrayp bound-lemma-for-car-when-bounded-darg-listp))))
 
 ;;returns (mv first-atom rest)
 (defund first-atom (items)
@@ -86,18 +86,18 @@
           (mv item rest)
         (first-atom rest)))))
 
-(defthm all-dargp-less-than-of-mv-nth-1-of-first-atom
-  (implies (all-dargp-less-than args bound)
-           (all-dargp-less-than (mv-nth 1 (first-atom args)) bound))
+(defthm bounded-darg-listp-of-mv-nth-1-of-first-atom
+  (implies (bounded-darg-listp args bound)
+           (bounded-darg-listp (mv-nth 1 (first-atom args)) bound))
   :hints (("Goal" :in-theory (enable first-atom))))
 
 (defthm <-of-mv-nth-0-of-first-atom
-  (implies (and (all-dargp-less-than args bound)
+  (implies (and (bounded-darg-listp args bound)
                 (natp bound)
                 (not (all-consp args))
                 )
            (< (mv-nth 0 (first-atom args)) bound))
-  :hints (("Goal" :in-theory (enable first-atom ALL-DARGP-LESS-THAN all-consp))))
+  :hints (("Goal" :in-theory (enable first-atom BOUNDED-DARG-LISTP all-consp))))
 
 (defthm true-listp-of-mv-nth-1-of-first-atom
   (implies (true-listp args)
@@ -144,14 +144,15 @@
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable largest-non-quotep first-atom all-consp))))
 
-(defthm all-dargp-less-than-of-plus1-of-largest-non-quotep
+(defthm bounded-darg-listp-of-plus1-of-largest-non-quotep
  (implies (and (not (all-consp items))
-               (all-dargp items))
-          (all-dargp-less-than items (+ 1 (largest-non-quotep items))))
- :hints (("Goal" :in-theory (enable largest-non-quotep all-dargp-less-than all-consp))))
+               (all-dargp items)
+               (true-listp items))
+          (bounded-darg-listp items (+ 1 (largest-non-quotep items))))
+ :hints (("Goal" :in-theory (enable largest-non-quotep bounded-darg-listp all-consp))))
 
 ;rename
-(defthm all-dargp-less-than-lemma2
+(defthm bounded-darg-listp-lemma2
   (implies (and (not (all-consp items))
                 (all-dargp items))
            (not (< (largest-non-quotep items)
@@ -165,11 +166,12 @@
                   (all-consp items)))
   :hints (("Goal" :in-theory (enable all-consp))))
 
-(defthm all-dargp-less-than-lemma
+(defthm bounded-darg-listp-lemma
   (implies (and (not (all-consp items))
-                (all-dargp items))
-           (all-dargp-less-than (mv-nth 1 (first-atom items))
-                                           (+ 1 (largest-non-quotep items))))
+                (all-dargp items)
+                (true-listp items))
+           (bounded-darg-listp (mv-nth 1 (first-atom items))
+                               (+ 1 (largest-non-quotep items))))
   :hints (("Goal" :in-theory (enable largest-non-quotep first-atom all-consp))))
 
 ;;;
@@ -213,11 +215,11 @@
 (defund find-expr-using-parents (fn args dag-array dag-parent-array dag-len)
   (declare (xargs :guard (and (symbolp fn)
                               (not (equal 'quote fn))
-                              (true-listp args)
+
                               (not (all-consp args)) ;at least one child must be a nodenum so we can look up its parents
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
-                              (all-dargp-less-than args dag-len)
+                              (bounded-darg-listp args dag-len)
                               (equal (alen1 'dag-array dag-array)
                                      (alen1 'dag-parent-array dag-parent-array)))
                   :guard-hints (("Goal" :use (:instance all-<-of-find-shortest-parent-lst
@@ -288,7 +290,7 @@
 (defthm <-of-find-expr-using-parents
   (implies (and (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                 (not (all-consp args))
-                (all-dargp-less-than args (alen1 'dag-array dag-array))
+                (bounded-darg-listp args (alen1 'dag-array dag-array))
                 (natp dag-len)
                 (equal (alen1 'dag-array dag-array)
                        (alen1 'dag-parent-array dag-parent-array))
@@ -337,8 +339,8 @@
   (declare (xargs :guard (and (true-listp items)
                               (natp nodenum)
                               (dag-parent-arrayp 'dag-parent-array dag-parent-array)
-                              (all-dargp-less-than items nodenum)
-                              (all-dargp-less-than items (alen1 'dag-parent-array dag-parent-array)))))
+                              (bounded-darg-listp items nodenum)
+                              (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array)))))
   (if (endp items)
       dag-parent-array
     (let ((item (first items)))
@@ -352,7 +354,7 @@
         (add-to-parents-of-atoms (rest items) nodenum dag-parent-array)))))
 
 (defthm array1p-of-add-to-parents-of-atoms
-  (implies (and (all-dargp-less-than items (alen1 'dag-parent-array dag-parent-array))
+  (implies (and (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))
                 ;(all-dargp items)
                 (natp nodenum)
                 ;(<= nodenum top-nodenum-to-check)
@@ -361,7 +363,7 @@
   :hints (("Goal" :in-theory (enable dag-parent-arrayp add-to-parents-of-atoms integer-listp))))
 
 (defthm default-of-add-to-parents-of-atoms
-  (implies (and (all-dargp-less-than items (alen1 'dag-parent-array dag-parent-array))
+  (implies (and (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))
                 ;(all-dargp items)
                 (natp nodenum)
                 ;(<= nodenum top-nodenum-to-check)
@@ -377,8 +379,8 @@
   :hints (("Goal" :in-theory (enable add-to-parents-of-atoms integer-listp))))
 
 (defthm all-dag-parent-entriesp-of-add-to-parents-of-atoms
-  (implies (and (all-dargp-less-than items nodenum)
-                (all-dargp-less-than items (alen1 'dag-parent-array dag-parent-array))
+  (implies (and (bounded-darg-listp items nodenum)
+                (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))
                 (natp nodenum)
                 (integerp n)
                 (array1p 'dag-parent-array dag-parent-array)
@@ -388,12 +390,12 @@
            (all-dag-parent-entriesp n 'dag-parent-array (add-to-parents-of-atoms items nodenum dag-parent-array)))
   :hints (("Subgoal *1/6" :cases ((< N (CAR ITEMS))))
           ("Goal" :in-theory (enable add-to-parents-of-atoms integer-listp
-                                     <-of-car-when-all-dargp-less-than
-                                     not-<-of-car-when-all-dargp-less-than))))
+                                     <-of-car-when-bounded-darg-listp
+                                     not-<-of-car-when-bounded-darg-listp))))
 
 (defthm dag-parent-arrayp-of-add-to-parents-of-atoms
-  (implies (and (all-dargp-less-than items nodenum)
-                (all-dargp-less-than items (alen1 'dag-parent-array dag-parent-array))
+  (implies (and (bounded-darg-listp items nodenum)
+                (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))
                 (natp nodenum)
                 ;(< nodenum (alen1 'dag-parent-array dag-parent-array))
                 (dag-parent-arrayp 'dag-parent-array dag-parent-array))
@@ -404,7 +406,7 @@
   (implies (and (natp n)
                 (natp nodenum)
                 (array1p 'dag-parent-array dag-parent-array)
-                (all-dargp-less-than items (alen1 'dag-parent-array dag-parent-array))
+                (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))
                 (< n (alen1 'dag-parent-array dag-parent-array))
                 (< nodenum limit)
                 (all-< (aref1 'dag-parent-array dag-parent-array n) limit))
@@ -418,6 +420,6 @@
                 (natp limit)
                 (array1p 'dag-parent-array dag-parent-array)
                 (< n (alen1 'dag-parent-array dag-parent-array))
-                (all-dargp-less-than items (alen1 'dag-parent-array dag-parent-array)))
+                (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array)))
            (bounded-dag-parent-entriesp n 'dag-parent-array (add-to-parents-of-atoms items nodenum dag-parent-array) limit))
   :hints (("Goal" :in-theory (enable bounded-dag-parent-entriesp))))

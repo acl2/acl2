@@ -173,7 +173,7 @@
 (defund tag-nodenums-with-name (items tag-array-name array)
   (declare (xargs :guard (and (array1p tag-array-name array)
                               (true-listp items)
-                              (all-dargp-less-than items (alen1 tag-array-name array)))))
+                              (bounded-darg-listp items (alen1 tag-array-name array)))))
   (if (endp items)
       array
     (let ((item (first items)))
@@ -182,14 +182,14 @@
         (tag-nodenums-with-name (cdr items) tag-array-name (aset1 tag-array-name array item t))))))
 
 (defthm alen1-of-tag-nodenums-with-name
-  (implies (all-dargp-less-than items (alen1 tag-array-name array))
+  (implies (bounded-darg-listp items (alen1 tag-array-name array))
            (equal (alen1 tag-array-name (tag-nodenums-with-name items tag-array-name array))
                   (alen1 tag-array-name array)))
   :hints (("Goal" :in-theory (enable tag-nodenums-with-name))))
 
 (defthm array1p-of-tag-nodenums-with-name
   (implies (and (array1p tag-array-name array)
-                (all-dargp-less-than items (alen1 tag-array-name array)))
+                (bounded-darg-listp items (alen1 tag-array-name array)))
            (array1p tag-array-name (tag-nodenums-with-name items tag-array-name array)))
   :hints (("Goal" :in-theory (enable tag-nodenums-with-name))))
 
@@ -199,7 +199,7 @@
                 (array1p tag-array-name tag-array)
                 (natp nodenum)
                 (< nodenum (alen1 tag-array-name tag-array))
-                (all-dargp-less-than items (alen1 tag-array-name tag-array)))
+                (bounded-darg-listp items (alen1 tag-array-name tag-array)))
            (aref1 tag-array-name (tag-nodenums-with-name items tag-array-name tag-array) nodenum))
   :hints (("Goal" :in-theory (enable tag-nodenums-with-name))))
 
@@ -239,7 +239,7 @@
 ;; tags don't become unset
 (defthm all-taggedp-with-name-of-tag-nodenums-with-name-when-all-taggedp-with-name
   (implies (and (all-taggedp-with-name nodenums tag-array-name tag-array)
-                (all-dargp-less-than nodenums2 (alen1 tag-array-name tag-array))
+                (bounded-darg-listp nodenums2 (alen1 tag-array-name tag-array))
                 (all-natp nodenums)
                 (all-< nodenums (alen1 tag-array-name tag-array))
                 (array1p tag-array-name tag-array))

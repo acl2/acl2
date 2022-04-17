@@ -21,12 +21,13 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(defthm all-dargp-less-than-when-singleton-cheap
-  (implies (equal 1  (len dargs))
-           (equal (all-dargp-less-than dargs bound)
-                  (dargp-less-than (first dargs) bound)))
+(defthm bounded-darg-listp-when-singleton-cheap
+  (implies (equal 1 (len dargs))
+           (equal (bounded-darg-listp dargs bound)
+                  (and (dargp-less-than (first dargs) bound)
+                       (null (cdr dargs)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 
 ;; KEEP IN SYNC WITH ADD-BVXOR-NEST-TO-DAG-ARRAY-AUX
@@ -39,7 +40,7 @@
                               (natp core-nodenum)
                               (< core-nodenum dag-len)
                               (true-listp rev-leaves)
-                              (all-dargp-less-than rev-leaves dag-len))
+                              (bounded-darg-listp rev-leaves dag-len))
                   :split-types t
                   :guard-hints (("Goal" :in-theory (e/d (NOT-CDDR-OF-NTH-WHEN-ALL-DARGP)
                                                         (DARGP
@@ -66,7 +67,7 @@
   :hyps ((true-listp rev-leaves)
          (natp core-nodenum)
          (< core-nodenum dag-len)
-         (all-dargp-less-than rev-leaves dag-len)))
+         (bounded-darg-listp rev-leaves dag-len)))
 
 ;drop some hyps?
 (defthm dargp-of-mv-nth-1-of-add-bitxor-nest-to-dag-array-aux
@@ -74,7 +75,7 @@
                 (< core-nodenum dag-len)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
 ;                (true-listp rev-leaves)
-                (all-dargp-less-than rev-leaves dag-len)
+                (bounded-darg-listp rev-leaves dag-len)
                 (not (mv-nth 0 (add-bitxor-nest-to-dag-array-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
            (dargp (mv-nth 1 (add-bitxor-nest-to-dag-array-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
   :hints (("Goal" :in-theory (enable add-bitxor-nest-to-dag-array-aux))))
@@ -84,7 +85,7 @@
                 (< core-nodenum dag-len)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
 ;                (true-listp rev-leaves)
-                (all-dargp-less-than rev-leaves dag-len)
+                (bounded-darg-listp rev-leaves dag-len)
                 (not (mv-nth 0 (add-bitxor-nest-to-dag-array-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
            (dargp-less-than (mv-nth 1 (add-bitxor-nest-to-dag-array-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
                                        (mv-nth 3 (add-bitxor-nest-to-dag-array-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
@@ -97,7 +98,7 @@
   (declare (type (integer 0 2147483646) dag-len)
            (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               (true-listp rev-leaves)
-                              (all-dargp-less-than rev-leaves dag-len))
+                              (bounded-darg-listp rev-leaves dag-len))
                   :split-types t
                   :guard-hints (("Goal" :in-theory (e/d (NOT-CDDR-OF-NTH-WHEN-ALL-DARGP)
                                                         (DARGP
@@ -137,18 +138,18 @@
   :dag-array-name dag-array-name
   :dag-parent-array-name dag-parent-array-name
   :hyps ((true-listp rev-leaves)
-         (all-dargp-less-than rev-leaves dag-len)))
+         (bounded-darg-listp rev-leaves dag-len)))
 
 (defthm dargp-of-mv-nth-1-of-add-bitxor-nest-to-dag-array
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                (all-dargp-less-than rev-leaves dag-len)
+                (bounded-darg-listp rev-leaves dag-len)
                 (not (mv-nth 0 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
            (dargp (mv-nth 1 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
   :hints (("Goal" :in-theory (e/d (add-bitxor-nest-to-dag-array) (dargp)))))
 
 (defthm dargp-less-than-of-mv-nth-1-of-add-bitxor-nest-to-dag-array
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                (all-dargp-less-than rev-leaves dag-len)
+                (bounded-darg-listp rev-leaves dag-len)
                 (not (mv-nth 0 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
            (dargp-less-than (mv-nth 1 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
                                        (mv-nth 3 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))

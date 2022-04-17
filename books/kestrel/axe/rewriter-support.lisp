@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "axe-trees")
-(include-book "all-dargp-less-than")
+(include-book "bounded-darg-listp")
 (include-book "bounded-dag-exprs")
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -54,17 +54,17 @@
              (all-dargp items1)
            (all-dargp items2))))
 
-(defthm all-dargp-less-than-of-if
-  (equal (all-dargp-less-than (if test items1 items2) bound)
+(defthm bounded-darg-listp-of-if
+  (equal (bounded-darg-listp (if test items1 items2) bound)
          (if test
-             (all-dargp-less-than items1 bound)
-           (all-dargp-less-than items2 bound))))
+             (bounded-darg-listp items1 bound)
+           (bounded-darg-listp items2 bound))))
 
-(defthm all-axe-treep-when-all-dargp-less-than
-  (implies (all-dargp-less-than args dag-len) ;dag-len is a free var
+(defthm all-axe-treep-when-bounded-darg-listp
+  (implies (bounded-darg-listp args dag-len) ;dag-len is a free var
            (all-axe-treep args))
   :hints (("Goal" :in-theory (enable all-axe-treep
-                                     all-dargp-less-than
+                                     bounded-darg-listp
                                      axe-treep
                                      dargp-less-than))))
 

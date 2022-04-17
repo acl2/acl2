@@ -300,8 +300,7 @@
 ;; Similar to get-args-not-done and especially to get-unexamined-nodenum-args.
 (defund extend-with-not-done-args (args result-array-name result-array acc)
   (declare (xargs :guard (and (array1p result-array-name result-array)
-                              (true-listp args)
-                              (all-dargp-less-than args (alen1 result-array-name result-array)))))
+                              (bounded-darg-listp args (alen1 result-array-name result-array)))))
   (if (endp args)
       acc
     (let* ((arg (first args)))
@@ -320,7 +319,7 @@
 
 (defthm all-<-of-extend-with-not-done-args
   (implies (and (all-< acc bound)
-                (all-dargp-less-than args bound))
+                (bounded-darg-listp args bound))
            (all-< (extend-with-not-done-args args result-array-name result-array acc) bound))
   :hints (("Goal" :in-theory (enable extend-with-not-done-args))))
 

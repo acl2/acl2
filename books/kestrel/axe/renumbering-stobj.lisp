@@ -400,10 +400,10 @@
                     (dargp (car dargs)))
            :do-not '(generalize eliminate-destructors))))
 
-(defthm all-dargp-less-than-of-renumber-dargs-with-stobj
+(defthm bounded-darg-listp-of-renumber-dargs-with-stobj
   (implies (and (bounded-good-renumbering-stobj (largest-non-quotep dargs) bound renumbering-stobj)
                 (all-dargp dargs))
-           (all-dargp-less-than (renumber-dargs-with-stobj dargs renumbering-stobj) bound))
+           (bounded-darg-listp (renumber-dargs-with-stobj dargs renumbering-stobj) bound))
   :hints (("Goal" :in-theory (enable renumber-dargs-with-stobj all-dargp largest-non-quotep)
            :expand ((all-dargp dargs)
                     (dargp (car dargs)))
