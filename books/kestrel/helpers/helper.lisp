@@ -513,7 +513,7 @@
                  (e/d (,@names-to-enable) ;; todo: mention macro-aliases instead when possible?
                       ;; Try to avoid obvious theory-invariant violations (does not handle all
                       ;; theory-invariants, just those defined using incompatible):
-                      (,@(incompatible-runes-lst names-to-enable (w state) nil)))
+                      (,@(incompatible-runes-lst names-to-enable (w state))))
                  :do-not-induct t ; since we don't look at the non-top-checkpoints below anyway (the checkpoints exposed by the enabling may be proved by induction, of course)
                  )))
        (- (cw " ")) ; indent prove$+ output
