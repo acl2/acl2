@@ -4559,7 +4559,7 @@
                        relpath frame))
   :hints
   (("goal"
-    :in-theory (e/d (dist-names names-at fat32-filename-list-prefixp-alt)
+    :in-theory (e/d (dist-names names-at)
                     ((:rewrite remove-when-absent)
                      (:rewrite abs-fs-p-correctness-1)
                      (:rewrite prefixp-of-append-arg1)
@@ -4627,19 +4627,21 @@
                                      prefixp intersectp-equal))))
 
 (defthm
-  abs-separate-of-frame->frame-of-collapse-this-lemma-16
+  abs-separate-of-frame->frame-of-collapse-this-lemma-11
   (implies
-   (and (consp (assoc-equal x frame))
-        (dist-names dir relpath frame)
+   (and (dist-names dir relpath frame)
         (prefixp (frame-val->path (cdr (assoc-equal x frame)))
                  (fat32-filename-list-fix relpath)))
-   (not (intersectp-equal
-         (names-at dir nil)
-         (names-at
-          (frame-val->dir (cdr (assoc-equal x frame)))
-          (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
-                  relpath)))))
-  :hints (("goal" :in-theory (enable dist-names names-at len-of-fat32-filename-list-fix))))
+   (not
+    (intersectp-equal
+     (names-at dir nil)
+     (names-at (frame-val->dir (cdr (assoc-equal x frame)))
+               (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
+                       relpath)))))
+  :hints
+  (("goal"
+    :in-theory (e/d (dist-names names-at len-of-fat32-filename-list-fix)
+                    (collapse-hifat-place-file-lemma-113)))))
 
 ;; The :with hint doesn't work, because of hiding.
 (defthm

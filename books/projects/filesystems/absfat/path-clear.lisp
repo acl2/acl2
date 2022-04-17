@@ -107,8 +107,7 @@
                                      path)))))))
   :hints (("goal" :in-theory (enable path-clear put-assoc-equal
                                      remove-assoc-equal assoc-equal
-                                     strip-cars no-duplicatesp-equal frame-p
-                                     fat32-filename-list-prefixp-alt))))
+                                     strip-cars no-duplicatesp-equal frame-p))))
 
 (defthm
   1st-complete-under-path-when-path-clear-of-prefix
@@ -121,7 +120,8 @@
   (("goal" :in-theory (e/d (frame-p path-clear
                                     1st-complete-under-path names-at
                                     fat32-filename-list-prefixp-alt list-equiv)
-                           (prefixp-when-equal-lengths len-when-prefixp)))))
+                           (prefixp-when-equal-lengths len-when-prefixp
+                                                       collapse-hifat-place-file-lemma-113)))))
 
 ;; I suspect this might be useful later.
 (defthm partial-collapse-when-path-clear-of-prefix
@@ -385,36 +385,36 @@
    (prefixp (frame-val->path (cdr (assoc-equal (abs-find-file-src frame path)
                                                frame)))
             (fat32-filename-list-fix path)))
-  :hints (("goal" :in-theory (enable abs-find-file abs-find-file-src
-                                     fat32-filename-list-prefixp-alt)))
+  :hints (("goal" :in-theory (enable abs-find-file abs-find-file-src)))
   :rule-classes
   (:rewrite
    (:rewrite
     :corollary
     (implies
-     (and (no-duplicatesp-equal (strip-cars frame))
-          (atom (frame-val->path (cdr (assoc-equal 0 frame))))
-          (fat32-filename-list-equiv
-           (frame-val->path (cdr (assoc-equal (abs-find-file-src frame path)
-                                              frame)))
-           (frame-val->path (cdr (assoc-equal (abs-find-file-src frame path)
-                                              other-frame))))
-          (fat32-filename-list-prefixp path other-path))
+     (and
+      (no-duplicatesp-equal (strip-cars frame))
+      (atom (frame-val->path (cdr (assoc-equal 0 frame))))
+      (fat32-filename-list-equiv
+       (frame-val->path (cdr (assoc-equal (abs-find-file-src frame path)
+                                          frame)))
+       (frame-val->path (cdr (assoc-equal (abs-find-file-src frame path)
+                                          other-frame))))
+      (fat32-filename-list-prefixp path other-path))
      (fat32-filename-list-prefixp
       (frame-val->path (cdr (assoc-equal (abs-find-file-src frame path)
                                          other-frame)))
-      other-path))
-    :hints (("goal" :in-theory (enable fat32-filename-list-prefixp-alt))))
+      other-path)))
    (:linear
     :corollary
     (implies
-     (and (no-duplicatesp-equal (strip-cars frame))
-          (atom (frame-val->path (cdr (assoc-equal 0 frame))))
-          (fat32-filename-list-equiv
-           (frame-val->path (cdr (assoc-equal (abs-find-file-src frame path)
-                                              frame)))
-           (frame-val->path (cdr (assoc-equal (abs-find-file-src frame path)
-                                              other-frame)))))
+     (and
+      (no-duplicatesp-equal (strip-cars frame))
+      (atom (frame-val->path (cdr (assoc-equal 0 frame))))
+      (fat32-filename-list-equiv
+       (frame-val->path (cdr (assoc-equal (abs-find-file-src frame path)
+                                          frame)))
+       (frame-val->path (cdr (assoc-equal (abs-find-file-src frame path)
+                                          other-frame)))))
      (<=
       (len (frame-val->path (cdr (assoc-equal (abs-find-file-src frame path)
                                               other-frame))))
@@ -539,7 +539,8 @@
       (:rewrite abs-file-alist-p-correctness-1)
       (:definition len)
       (:rewrite abs-find-file-correctness-lemma-16)
-      (:rewrite abs-find-file-correctness-lemma-26)))
+      (:rewrite abs-find-file-correctness-lemma-26)
+      collapse-hifat-place-file-lemma-113))
     :induct (collapse frame))
    ("subgoal *1/6"
     :use
@@ -1281,7 +1282,8 @@
             (:rewrite abs-fs-p-when-hifat-no-dups-p)
             (:rewrite abs-file-alist-p-correctness-1)
             (:definition len)
-            (:rewrite abs-find-file-correctness-lemma-16)))
+            (:rewrite abs-find-file-correctness-lemma-16)
+            collapse-hifat-place-file-lemma-113))
       :induct (collapse frame)))))
 
 (defthm
@@ -1748,7 +1750,7 @@
         ((:rewrite abs-find-file-correctness-2)))
        :use ((:instance abs-find-file-src-correctness-2
                         (frame (partial-collapse frame path)))
-             (:instance abs-find-file-correctness-1-lemma-36
+             (:instance abs-find-file-correctness-lemma-19
                         (x (car indices))
                         (frame (partial-collapse frame path)))
              (:instance (:rewrite abs-find-file-correctness-2)
@@ -1846,11 +1848,12 @@
      :induct (path-clear-alt path
                              (frame->frame (partial-collapse frame path))
                              indices)
-     :in-theory (e/d
-                 ((:linear
-                   path-clear-partial-collapse-when-zp-src-lemma-6)
-                  subsetp-equal path-clear-alt)
-                 (prefixp-when-prefixp len-when-prefixp))))))
+     :do-not-induct t
+     :in-theory
+     (e/d ((:linear path-clear-partial-collapse-when-zp-src-lemma-6)
+           subsetp-equal path-clear-alt)
+          (prefixp-when-prefixp len-when-prefixp
+                                collapse-hifat-place-file-lemma-113))))))
 
 (defthm
   path-clear-partial-collapse-when-zp-src
@@ -2012,9 +2015,11 @@
                     indices))
    :hints
    (("goal"
-     :in-theory (enable path-clear-alt
-                        subsetp-equal member-equal
-                        (:linear path-clear-partial-collapse-when-zp-src-lemma-6))
+     :in-theory
+     (e/d (path-clear-alt
+           subsetp-equal member-equal
+           (:linear path-clear-partial-collapse-when-zp-src-lemma-6))
+          (collapse-hifat-place-file-lemma-113))
      :do-not-induct t
      :induct (path-clear-alt path
                              (frame->frame (partial-collapse frame path))
@@ -2114,7 +2119,8 @@
   :hints
   (("goal"
     :in-theory (e/d (path-clear list-equiv)
-                    (len-when-prefixp (:rewrite prefixp-when-equal-lengths))))))
+                    (len-when-prefixp (:rewrite prefixp-when-equal-lengths)
+                                      collapse-hifat-place-file-lemma-113)))))
 
 (defthm
   path-clear-partial-collapse-lemma-1
@@ -2257,7 +2263,7 @@
     :use ((:instance (:rewrite path-clear-partial-collapse-when-zp-src-lemma-15)
                      (path path)
                      (fs (frame->root (partial-collapse frame path))))
-          (:instance abs-find-file-correctness-1-lemma-36
+          (:instance abs-find-file-correctness-lemma-19
                      (x (abs-find-file-src (partial-collapse frame path)
                                            path)))
           (:instance (:rewrite abs-find-file-src-correctness-1)

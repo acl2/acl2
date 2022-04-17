@@ -1894,7 +1894,7 @@
     (equal (mv-nth 1
                    (abs-find-file-helper (frame->root frame2)
                                          path))
-           2)
+           *enoent*)
     (prefixp
      (fat32-filename-list-fix path)
      (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame1))
@@ -1907,8 +1907,7 @@
                                         (frame->frame frame1)))))))
   :hints
   (("goal"
-    :in-theory (e/d (abs-find-file-helper dirname
-                                          fat32-filename-list-prefixp-alt)
+    :in-theory (e/d (abs-find-file-helper dirname)
                     ((:rewrite collapse-hifat-place-file-lemma-6)))
     :use
     (:instance
@@ -1973,8 +1972,7 @@
                0)))
   :hints
   (("goal"
-    :in-theory (e/d (abs-find-file-helper dirname
-                                          fat32-filename-list-prefixp-alt))
+    :in-theory (e/d (abs-find-file-helper dirname))
     :expand ((abs-place-file-helper (frame->root frame1)
                                     path file)
              (abs-place-file-helper (frame->root frame2)
@@ -3596,7 +3594,8 @@
            :in-theory (enable abs-find-file-helper)))
   :rule-classes :forward-chaining)
 
-(defthm abs-find-file-after-abs-mkdir-lemma-5
+(defthm
+  abs-find-file-after-abs-mkdir-lemma-5
   (implies (and (frame-p frame)
                 (atom (assoc-equal 0 frame))
                 (equal (1st-complete-under-path frame path1)
@@ -3604,7 +3603,8 @@
                 (prefixp path1 path2))
            (equal (1st-complete-under-path frame path2)
                   0))
-  :hints (("goal" :in-theory (enable 1st-complete-under-path))))
+  :hints (("goal" :in-theory (e/d (1st-complete-under-path)
+                                  (collapse-hifat-place-file-lemma-113)))))
 
 (defthmd
   abs-find-file-after-abs-mkdir-lemma-6
@@ -3951,9 +3951,11 @@
     (remove-assoc-equal (abs-find-file-src (partial-collapse frame path)
                                            path)
                         (frame->frame (partial-collapse frame path)))))
-  :hints (("goal" :in-theory (disable path-clear-partial-collapse-when-not-zp-src)
-           :use path-clear-partial-collapse-when-not-zp-src
-           :do-not-induct t)))
+  :hints
+  (("goal" :in-theory (disable path-clear-partial-collapse-when-not-zp-src
+                               collapse-hifat-place-file-lemma-113)
+    :use path-clear-partial-collapse-when-not-zp-src
+    :do-not-induct t)))
 
 (defthm
   collapse-hifat-place-file-lemma-2
@@ -10977,8 +10979,7 @@
      (equal (names-at (frame-val->dir (cdr (assoc-equal x frame)))
                       x-path)
             nil))
-    :hints (("goal" :in-theory (enable path-clear strip-cars names-at
-                                       fat32-filename-list-prefixp-alt))))
+    :hints (("goal" :in-theory (enable path-clear strip-cars names-at))))
 
   (defthm
     collapse-hifat-place-file-lemma-42
@@ -11396,8 +11397,7 @@
        (names-at (frame-val->dir (cdr (assoc-equal x frame)))
                  (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
                          path)))))
-    :hints (("goal" :in-theory (enable path-clear assoc-equal
-                                       fat32-filename-list-prefixp-alt))))
+    :hints (("goal" :in-theory (enable path-clear assoc-equal))))
 
   (local
    (defun
@@ -11839,8 +11839,7 @@
                     (fat32-filename-list-equiv
                      path
                      (frame-val->path (cdr (assoc-equal x frame))))))
-    :hints (("goal" :in-theory (enable path-clear assoc-equal
-                                       fat32-filename-list-prefixp-alt))))
+    :hints (("goal" :in-theory (enable path-clear assoc-equal))))
 
   (defthm
     collapse-hifat-place-file-lemma-61
@@ -11852,8 +11851,7 @@
                     (fat32-filename-list-equiv
                      path
                      (frame-val->path (cdr (assoc-equal x frame))))))
-    :hints (("goal" :in-theory (enable path-clear assoc-equal
-                                       fat32-filename-list-prefixp-alt))))
+    :hints (("goal" :in-theory (enable path-clear assoc-equal))))
 
   (defthm
     collapse-hifat-place-file-lemma-62
@@ -11869,8 +11867,7 @@
        (names-at (frame-val->dir (cdr (assoc-equal x frame)))
                  (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
                          path)))))
-    :hints (("goal" :in-theory (enable path-clear assoc-equal
-                                       fat32-filename-list-prefixp-alt)))
+    :hints (("goal" :in-theory (enable path-clear assoc-equal)))
     :rule-classes
     ((:rewrite
       :corollary
@@ -11885,9 +11882,8 @@
          x-path
          (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
                  path)))
-       (not
-        (consp
-         (names-at (frame-val->dir (cdr (assoc-equal x frame))) x-path)))))))
+       (not (consp (names-at (frame-val->dir (cdr (assoc-equal x frame)))
+                             x-path)))))))
 
   ;; Move later
   (defthm collapse-hifat-place-file-lemma-63
@@ -11985,7 +11981,8 @@
             (:rewrite abs-find-file-correctness-lemma-9)
             (:rewrite abs-find-file-correctness-2)
             (:rewrite abs-find-file-helper-of-collapse-1
-                      . 2))))))
+                      . 2)
+            collapse-hifat-place-file-lemma-113)))))
 
   (defthm collapse-hifat-place-file-lemma-70
     (equal (mv-nth 1
