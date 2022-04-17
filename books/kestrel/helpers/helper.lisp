@@ -21,6 +21,7 @@
 (include-book "kestrel/utilities/ld-history" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
+(include-book "kestrel/utilities/theory-invariants" :dir :system)
 (include-book "kestrel/terms-light/function-call-subterms" :dir :system)
 (include-book "kestrel/terms-light/non-trivial-formals" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
@@ -435,17 +436,22 @@
        (benefit (open-problem->benefit prob))
        (technique (open-problem->technique prob)) ; (:induct <term>)
        (old-techniques (open-problem->old-techniques prob))
+       (induct-term (farg1 technique))
+       (induct-fn (ffn-symb induct-term))
        ;; We'll use the induction scheme specified by the technique:
-       (hints `(("Goal" :induct ,(farg1 technique) ;; todo: mention macro-aliases instead when possible?
-                 :in-theory (enable                ;(:i ,(farg1 technique))
-                             ;; todo: mention macro-aliases instead when possible?
-                             ,(ffn-symb (farg1 technique)) ; induction and definition rules (usually want both)
-                             ))))
+       (hints `(("Goal" :induct ,induct-term ;; todo: mention macro-aliases instead when possible?
+                 :in-theory (e/d ( ;; todo: mention macro-aliases instead when possible?
+                                  ,induct-fn ; induction and definition rules (usually want both)
+                                  )
+                                 ;; Try to avoid obvious theory-invariant violations (does not handle all
+                                 ;; theory-invariants, just those defined using incompatible):
+                                 (,@(incompatible-runes `(:definition ,induct-fn) (w state))
+                                  )))))
        (- (cw " ")) ; indent prove$+ output
        ((mv erp provedp failure-info state)
         (prove$+ formula
                  :hints hints
-                 :step-limit 10000 ;todo
+                 :step-limit step-limit
                  ;; todo: :otf-flg?
                  ))
        ((when erp) (mv erp nil nil nil nil nil name-map state))
@@ -502,14 +508,19 @@
        (benefit (open-problem->benefit prob))
        (technique (open-problem->technique prob)) ; (:enable ....)
        (old-techniques (open-problem->old-techniques prob))
-       (hints `(("Goal" :in-theory (enable ,@(fargs technique)) ;; todo: mention macro-aliases instead when possible?
+       (names-to-enable (fargs technique))
+       (hints `(("Goal" :in-theory
+                 (e/d (,@names-to-enable) ;; todo: mention macro-aliases instead when possible?
+                      ;; Try to avoid obvious theory-invariant violations (does not handle all
+                      ;; theory-invariants, just those defined using incompatible):
+                      (,@(incompatible-runes-lst names-to-enable (w state) nil)))
                  :do-not-induct t ; since we don't look at the non-top-checkpoints below anyway (the checkpoints exposed by the enabling may be proved by induction, of course)
                  )))
        (- (cw " ")) ; indent prove$+ output
        ((mv erp provedp failure-info state)
         (prove$+ formula
                  :hints hints
-                 :step-limit 10000 ;todo
+                 :step-limit step-limit
                  ;; todo: :otf-flg?
                  ))
        ((when erp) (mv erp nil nil nil nil nil name-map state))
@@ -605,6 +616,7 @@
        (name (open-problem->name prob))
        (formula (open-problem->formula prob))
        (- (cw "(Attacking ~x0 by~% ~x1.~%" name technique))
+       (- (cw " (Step limit is ~x0.)~%" step-limit))
        (- (cw " (Formula: ~x0.)~%" (untranslate-lst formula t (w state)))))
     (mv-let (erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state)
       (case (car technique)
@@ -637,6 +649,7 @@
                (symbolp (ffn-symb subterm))
                (not (eq 'quote (ffn-symb subterm)))
                (recursivep (ffn-symb subterm) nil wrld)
+               (= 1 (len (fn-recursive-partners (ffn-symb subterm) wrld))) ; ensures singly recursive (todo: add support for mutual recursion)
                (symbol-listp (fargs subterm)) ; must be a call on all vars (todo: relax?)
                )
           (let ((technique `(:induct ,subterm)))
