@@ -1,4 +1,4 @@
-; C Library
+; Number Theory Library
 ;
 ; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
