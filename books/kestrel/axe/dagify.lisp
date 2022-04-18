@@ -714,8 +714,7 @@
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                      interpreted-function-alist)
    (declare (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                               (axe-tree-listp trees)
-                               (all-bounded-axe-treep trees dag-len)
+                               (bounded-axe-tree-listp trees dag-len)
                                (symbol-alistp var-replacement-alist)
                                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                                ;;(<= (+ (len vars) dag-len) 2147483645)
@@ -886,8 +885,7 @@
                                   var-replacement-alist
                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                   interpreted-function-alist)))
-                  (axe-tree-listp trees)
-                  (all-bounded-axe-treep trees dag-len)
+                  (bounded-axe-tree-listp trees dag-len)
                   (symbol-alistp var-replacement-alist)
                   (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
 ;                  (interpreted-function-alistp interpreted-function-alist)
@@ -970,8 +968,7 @@
 (defthm merge-trees-into-dag-array-return-type-2
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
-                (axe-tree-listp trees)
-                (all-bounded-axe-treep trees dag-len)
+                (bounded-axe-tree-listp trees dag-len)
                 (not (mv-nth 0 (merge-trees-into-dag-array trees var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
                 (symbol-alistp var-replacement-alist)
                 (interpreted-function-alistp interpreted-function-alist))

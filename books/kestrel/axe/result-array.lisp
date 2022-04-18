@@ -226,10 +226,10 @@
            :in-theory (e/d (;lookup-args-in-result-array ;gross
                             ) (dargp-of-lookup-arg-in-result-array)))))
 
-(defthm all-bounded-axe-treep-of-lookup-args-in-result-array
+(defthm bounded-axe-tree-listp-of-lookup-args-in-result-array
   (implies (and (result-arrayp result-array-name result-array bound)
                 (bounded-darg-listp args (alen1 result-array-name result-array)) ;new
                 ;(all-dargp args)
                 )
-           (all-bounded-axe-treep (lookup-args-in-result-array args result-array-name result-array) bound))
+           (bounded-axe-tree-listp (lookup-args-in-result-array args result-array-name result-array) bound))
   :hints (("Goal" :in-theory (enable LOOKUP-ARGS-IN-RESULT-ARRAY))))

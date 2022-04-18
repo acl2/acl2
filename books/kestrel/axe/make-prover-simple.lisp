@@ -106,21 +106,6 @@
          (take (len x) y))
   :hints (("Goal" :in-theory (enable (:i len)))))
 
-(defthmd len-of-lambda-formals-when-axe-treep
-  (implies (and (axe-treep tree)
-                (consp (car tree)) ;it's a lambda
-                )
-           (equal (len (car (cdr (car tree))))
-                  (len (fargs tree))))
-  :hints (("Goal" :in-theory (enable axe-treep))))
-
-(defthmd pseudo-termp-of-lambda-body-when-axe-treep
-  (implies (and (axe-treep tree)
-                (consp (car tree)) ;it's a lambda
-                )
-           (pseudo-termp (car (cdr (cdr (car tree))))))
-  :hints (("Goal" :in-theory (enable axe-treep))))
-
 (defthmd <-of--1-when-natp
   (implies (natp x)
            (not (< x -1))))
@@ -292,6 +277,8 @@
     (:FORWARD-CHAINING ARRAY1P-FORWARD)
     (:FORWARD-CHAINING ARRAY1P-FORWARD-TO-<=-OF-ALEN1)
     (:FORWARD-CHAINING AXE-RULE-HYP-LISTP-FORWARD-TO-TRUE-LISTP)
+    (:FORWARD-CHAINING axe-tree-listp-forward-to-true-listp)
+    (:forward-chaining bounded-axe-tree-listp-forward-to-axe-tree-listp)
     (:FORWARD-CHAINING BOUNDED-DAG-CONSTANT-ALISTP-FORWARD-TO-DAG-CONSTANT-ALISTP)
     (:FORWARD-CHAINING BOUNDED-DAG-PARENT-ARRAYP-FORWARD-TO-BOUNDED-DAG-PARENT-ARRAYP)
     (:FORWARD-CHAINING BOUNDED-DAG-VARIABLE-ALISTP-FORWARD-TO-DAG-VARIABLE-ALISTP)
@@ -333,11 +320,12 @@
     (:REWRITE ALL-<-TRANSITIVE-FREE-2)
     (:REWRITE AXE-TREE-LISTP-OF-CDR)
     (:REWRITE AXE-TREE-LISTP-OF-CDR-2)
-    (:REWRITE ALL-BOUNDED-AXE-TREEP-MONO)
-    (:REWRITE ALL-BOUNDED-AXE-TREEP-OF-CDR)
-    (:REWRITE ALL-BOUNDED-AXE-TREEP-OF-CDR-2)
-    (:REWRITE ALL-BOUNDED-AXE-TREEP-OF-CONS)
-    (:REWRITE ALL-BOUNDED-AXE-TREEP-WHEN-PSEUDO-TERM-LISTP)
+    (:REWRITE BOUNDED-AXE-TREE-LISTP-MONO)
+    (:REWRITE BOUNDED-AXE-TREE-LISTP-OF-CDR)
+    (:REWRITE BOUNDED-AXE-TREE-LISTP-OF-CDR-2)
+    (:REWRITE BOUNDED-AXE-TREE-LISTP-OF-CONS)
+    (:REWRITE BOUNDED-AXE-TREE-LISTP-WHEN-PSEUDO-TERM-LISTP)
+    (:rewrite bounded-darg-listp-when-not-consp)
     (:REWRITE BOUNDED-DARG-LISTP-MONOTONE)
     (:REWRITE BOUNDED-DARG-LISTP-OF-APPEND)
     (:REWRITE BOUNDED-DARG-LISTP-OF-CONS)
@@ -358,6 +346,7 @@
     (:REWRITE AXE-RULE-HYPP-WHEN-SIMPLE)
     (:REWRITE AXE-RULE-HYPP-WHEN-free-vars)
     (:REWRITE AXE-TREEP-OF-CAR)
+    (:rewrite axe-treep-of-car-when-bounded-axe-tree-listp)
     (:REWRITE AXE-TREEP-OF-CONS-STRONG)
     ;; (:REWRITE AXE-TREEP-OF-SUBLIS-VAR-AND-EVAL-BASIC)
     ;; (:REWRITE AXE-TREEP-OF-REPLACE-NODENUM-USING-ASSUMPTIONS-FOR-AXE-PROVER)
@@ -433,7 +422,7 @@
     (:TYPE-PRESCRIPTION ALISTP)
     (:TYPE-PRESCRIPTION ALL-<)
     (:TYPE-PRESCRIPTION AXE-TREE-LISTP)
-    (:TYPE-PRESCRIPTION ALL-BOUNDED-AXE-TREEP)
+    (:TYPE-PRESCRIPTION BOUNDED-AXE-TREE-LISTP)
     (:TYPE-PRESCRIPTION ALL-CONSP)
     (:TYPE-PRESCRIPTION BOUNDED-DARG-LISTP)
     (:TYPE-PRESCRIPTION ALL-STORED-AXE-RULEP)
@@ -1930,13 +1919,12 @@
                                       equiv-alist print info tries interpreted-function-alist monitored-symbols
                                       embedded-dag-depth case-designator prover-depth
                                       options count)
-          (declare (xargs :guard (and (axe-tree-listp trees)
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       ;; TODO: Consider using nil for the equivs in any case where we can't do better that equal (no entry in the equiv-alist, or even when the remaining args of the call don't need to be treated specially):
                                       (or (eq :equal equivs) ;means use 'equal for all the equivs
                                           (and (equiv-listp equivs)
                                                (equal (len equivs) (len trees))))
-                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                      (all-bounded-axe-treep trees dag-len)
+                                      (bounded-axe-tree-listp trees dag-len)
                                       (rule-alistp rule-alist)
                                       (nat-listp nodenums-to-assume-false)
                                       (all-< nodenums-to-assume-false dag-len)
@@ -2282,12 +2270,11 @@
                                     (triesp tries)))))
            :FLAG ,SIMPLIFY-TREE-name)
          (DEFTHM ,(pack$ SIMPLIFY-TREES-name '-return-type)
-           (IMPLIES (and (axe-tree-listp trees)
+           (IMPLIES (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (or (eq :equal equivs) ;means use 'equal for all the equivs
                              (and (equiv-listp equivs)
                                   (equal (len equivs) (len trees))))
-                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-bounded-axe-treep trees dag-len)
+                         (bounded-axe-tree-listp trees dag-len)
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
@@ -2598,12 +2585,11 @@
                                   (,(pack$ simplify-tree-name '-return-type))))))
 
        (defthm ,(pack$ simplify-trees-name '-return-type-corollary)
-           (implies (and (axe-tree-listp trees)
-                         (or (eq :equal equivs) ;means use 'equal for all the equivs
+           (implies (and (or (eq :equal equivs) ;means use 'equal for all the equivs
                              (and (equiv-listp equivs)
                                   (equal (len equivs) (len trees))))
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-bounded-axe-treep trees dag-len)
+                         (bounded-axe-tree-listp trees dag-len)
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
@@ -2632,13 +2618,11 @@
                     :in-theory (e/d (all-myquotep-when-all-dargp) (,(pack$ simplify-trees-name '-return-type))))))
 
        (defthm ,(pack$ simplify-trees-name '-return-type-corollary-linear)
-         (implies (and (true-listp trees)
-                       (axe-tree-listp trees)
-                       (or (eq :equal equivs) ;means use 'equal for all the equivs
+         (implies (and (or (eq :equal equivs) ;means use 'equal for all the equivs
                            (and (equiv-listp equivs)
                                 (equal (len equivs) (len trees))))
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-bounded-axe-treep trees dag-len)
+                       (bounded-axe-tree-listp trees dag-len)
                        (rule-alistp rule-alist)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)

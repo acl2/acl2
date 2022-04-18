@@ -263,7 +263,7 @@
          (and (bounded-axe-treep x bound)
               (bounded-axe-treep y bound)))
   :hints (("Goal" :in-theory (enable bounded-axe-treep
-                                     ALL-BOUNDED-AXE-TREEP))))
+                                     BOUNDED-AXE-TREE-LISTP))))
 
 (defthm axe-treep-of-make-cons-nest
   (equal (axe-treep (make-cons-nest items))
@@ -273,9 +273,9 @@
 
 (defthm bounded-axe-treep-of-make-cons-nest
   (equal (bounded-axe-treep (make-cons-nest items) bound)
-         (all-bounded-axe-treep items bound))
+         (bounded-axe-tree-listp (true-list-fix items) bound))
   :hints (("Goal" :in-theory (e/d (make-cons-nest
-                                   all-bounded-axe-treep)
+                                   bounded-axe-tree-listp)
                                   (bounded-axe-treep)))))
 
 ;because the var names are symbols
@@ -284,9 +284,9 @@
   :hints (("Goal" :in-theory (enable make-var-names-aux))))
 
 ;because the var names are symbols
-(defthm all-bounded-axe-treep-of-make-var-names-aux
-  (all-bounded-axe-treep (make-var-names-aux base-symbol startnum endnum) bound)
-  :hints (("Goal" :in-theory (enable all-bounded-axe-treep make-var-names-aux))))
+(defthm bounded-axe-tree-listp-of-make-var-names-aux
+  (bounded-axe-tree-listp (make-var-names-aux base-symbol startnum endnum) bound)
+  :hints (("Goal" :in-theory (enable bounded-axe-tree-listp make-var-names-aux))))
 
 ;move
 (defthm subsetp-equal-of-intersection-equal

@@ -144,10 +144,10 @@
                          (pseudo-termp term))
                     (bounded-axe-treep (,sublis-var-and-eval-name alist term interpreted-function-alist) dag-len))
            :flag ,sublis-var-and-eval-name)
-         (defthm ,(pack$ 'all-bounded-axe-treep-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
+         (defthm ,(pack$ 'bounded-axe-tree-listp-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
            (implies (and (bounded-darg-listp (strip-cdrs alist) dag-len)
                          (pseudo-term-listp terms))
-                    (all-bounded-axe-treep (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist)) dag-len))
+                    (bounded-axe-tree-listp (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist)) dag-len))
            :flag ,sublis-var-and-eval-lst-name)
          :hints (("Goal" :in-theory (e/d (,sublis-var-and-eval-name
                                           ,sublis-var-and-eval-lst-name

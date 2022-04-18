@@ -243,7 +243,7 @@
                 (all-dag-function-call-exprp exprs)
                 (all-bounded-dag-exprp bound exprs))
            (bounded-refined-assumption-alistp (extend-refined-assumption-alist exprs refined-assumption-alist) bound))
-  :hints (("Goal" :expand (;; (all-bounded-axe-treep exprs bound)
+  :hints (("Goal" :expand (;; (bounded-axe-tree-listp exprs bound)
                            ;; (bounded-axe-treep (car exprs) bound)
                            (all-dag-function-call-exprp exprs))
            :in-theory (enable bounded-refined-assumption-alistp extend-refined-assumption-alist
