@@ -72,7 +72,7 @@
    (declare (xargs :guard (and (pseudo-term-listp terms)
                                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                                (and (true-listp nodenums-or-quoteps)
-                                    (all-dargp-less-than nodenums-or-quoteps dag-len))
+                                    (bounded-darg-listp nodenums-or-quoteps dag-len))
                                (symbol-alistp alist))
                    :verify-guards nil ;done below
                    ))
@@ -171,7 +171,7 @@
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (true-listp nodenums-or-quoteps)
-                              (all-dargp-less-than nodenums-or-quoteps dag-len))
+                              (bounded-darg-listp nodenums-or-quoteps dag-len))
                   :guard-hints (("Goal" :use (:instance <-of-largest-non-quotep
                                                         (args nodenums-or-quoteps)
                                                         (nodenum dag-len))

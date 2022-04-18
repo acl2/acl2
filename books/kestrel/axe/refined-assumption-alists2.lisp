@@ -98,9 +98,9 @@
                                      BOUNDED-DAG-EXPRP)
            :expand ((possibly-negated-nodenumsp possibly-negated-nodenums)
                     (DARGS (CAR POSSIBLY-NEGATED-NODENUMS))
-                    (ALL-DARGP-LESS-THAN (CDR (CAR POSSIBLY-NEGATED-NODENUMS))
+                    (BOUNDED-DARG-LISTP (CDR (CAR POSSIBLY-NEGATED-NODENUMS))
                                          DAG-LEN)
-                    (ALL-DARGP-LESS-THAN (CDDR (CAR POSSIBLY-NEGATED-NODENUMS))
+                    (BOUNDED-DARG-LISTP (CDDR (CAR POSSIBLY-NEGATED-NODENUMS))
                                          DAG-LEN)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

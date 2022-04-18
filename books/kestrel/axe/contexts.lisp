@@ -47,7 +47,7 @@
                 )
            (equal (acl2-numberp (nth n args))
                   (not (consp (nth n args)))))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than nth) (NTH-OF-CDR)))))
+  :hints (("Goal" :in-theory (e/d (bounded-darg-listp nth) (NTH-OF-CDR)))))
 
 ;compute the context of nodenum coming in via the given parent (this is just the parent's context unless the parent is an ITE)
 ;ffixme handle parents that are boolands and boolors - careful! -- must order the nodes: for (booland a b) we can't both assume a for b and assume b for a..
@@ -578,7 +578,7 @@
                 ;(< n (len args))
                 )
            (not (complex-rationalp (nth n args))))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than nth) (NTH-OF-CDR)))))
+  :hints (("Goal" :in-theory (e/d (bounded-darg-listp nth) (NTH-OF-CDR)))))
 
 (defthm not-complex-rationalp-of-nth-of-dargs
   (implies (and (dag-exprp expr)

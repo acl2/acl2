@@ -722,9 +722,9 @@
 ;;            :in-theory (e/d ( ;pseudo-dag-arrayp-aux nth
 ;;                             )
 ;;                            (nth-of-cdr
-;;                             all-dargp-less-than-of-dargs-of-aref1
+;;                             bounded-darg-listp-of-dargs-of-aref1
 ;;                             bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-helper
-;;                             quote-lemma-for-all-dargp-less-than-gen-alt
+;;                             quote-lemma-for-bounded-darg-listp-gen-alt
 ;;                             bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux)))))
 
 ;; (defthm consp-of-nth-of-aref1-weaken
@@ -749,9 +749,9 @@
 ;;                             )
 ;;                            (nth-of-cdr
 ;;                             NONNEG-OF-NTH-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX
-;;                             ALL-DARGP-LESS-THAN-OF-DARGS-OF-AREF1
+;;                             BOUNDED-DARG-LISTP-OF-DARGS-OF-AREF1
 ;;                             BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX-HELPER
-;;                             QUOTE-LEMMA-FOR-ALL-DARGP-LESS-THAN-GEN-ALT
+;;                             QUOTE-LEMMA-FOR-BOUNDED-DARG-LISTP-GEN-ALT
 ;;                             BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX)))))
 
 (defun bool-fix-constant (x)
@@ -1008,7 +1008,7 @@
 (defund get-axe-disjunction-from-dag-items (nodenums-or-quoteps dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (true-listp nodenums-or-quoteps)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (all-dargp-less-than nodenums-or-quoteps dag-len)
+                              (bounded-darg-listp nodenums-or-quoteps dag-len)
                               )
                   :verify-guards nil ;done below
                   ))
@@ -1067,7 +1067,7 @@
            :in-theory (disable axe-conjunctionp-of-get-axe-conjunction-from-dag-item))))
 
 (defthm axe-disjunctionp-of-get-axe-disjunction-from-dag-items
-  (implies (and (all-dargp-less-than nodenum-or-quoteps dag-len)
+  (implies (and (bounded-darg-listp nodenum-or-quoteps dag-len)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
            (axe-disjunctionp (get-axe-disjunction-from-dag-items nodenum-or-quoteps dag-array-name dag-array dag-len)))
   :hints (("Goal" :in-theory (enable get-axe-disjunction-from-dag-item ;AXE-DISJUNCTIONP
@@ -1084,7 +1084,7 @@
   :hints (("Goal" :in-theory (enable consp-of-cdr-when-axe-disjunctionp-lemma))))
 
 (defthm bounded-axe-disjunctionp-of-get-axe-disjunction-from-dag-items
-  (implies (and (all-dargp-less-than disjuncts dag-len)
+  (implies (and (bounded-darg-listp disjuncts dag-len)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
            (bounded-axe-disjunctionp (get-axe-disjunction-from-dag-items disjuncts dag-array-name dag-array dag-len)
                                      dag-len))

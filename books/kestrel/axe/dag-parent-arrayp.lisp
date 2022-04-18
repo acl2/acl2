@@ -45,12 +45,14 @@
 
 (local (in-theory (enable symbolp-of-car-when-dag-exprp)))
 
-(defthmd all-dargp-less-than-when-<-of-largest-non-quotep
+;move
+(defthmd bounded-darg-listp-when-<-of-largest-non-quotep
   (implies (and (< (largest-non-quotep items) bound)
 ;                (not (all-consp items))
-                (all-dargp items))
-           (all-dargp-less-than items bound))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than all-dargp
+                (all-dargp items)
+                (true-listp items))
+           (bounded-darg-listp items bound))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp all-dargp
                                      ;;all-consp
                                      largest-non-quotep))))
 

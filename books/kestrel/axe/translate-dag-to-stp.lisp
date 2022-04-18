@@ -549,10 +549,10 @@
 ;;       (and (natp (car lst))
 ;;            (all-natp (cdr lst)))))
 
-;; (defthm nodenum-or-consp-list-when-all-dargp-less-than
-;;   (implies (all-dargp-less-than items nodenum)
+;; (defthm nodenum-or-consp-list-when-bounded-darg-listp
+;;   (implies (bounded-darg-listp items nodenum)
 ;;            (nodenum-or-consp-list items))
-;;   :hints (("Goal" :in-theory (enable all-dargp-less-than nodenum-or-consp-list))))
+;;   :hints (("Goal" :in-theory (enable bounded-darg-listp nodenum-or-consp-list))))
 
 
 ;; ;slow?
@@ -903,7 +903,7 @@
 ;; Returns (mv translated-expr-string constant-array-info).
 ;; (defun translate-dag-expr-bvplus (args dag-array-name dag-array constant-array-info cut-nodenum-type-alist)
 ;;   (declare (xargs :guard (and (array1p dag-array-name dag-array) ;;TODO: Instead, use pseudo-dag-arrayp.
-;;                               (all-dargp-less-than args (alen1 dag-array-name dag-array))
+;;                               (bounded-darg-listp args (alen1 dag-array-name dag-array))
 ;;                               (alistp cut-nodenum-type-alist)
 ;;                               (symbolp dag-array-name)
 ;;                               (equal 3 (len args))

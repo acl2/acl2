@@ -36,6 +36,7 @@
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
@@ -56,7 +57,7 @@
   :hints (("Goal" :in-theory (enable alistp))))
 
 (defthm dargp-less-than-of-cdr-of-assoc-equal
-  (implies (and (all-dargp-less-than (strip-cdrs alist) bound)
+  (implies (and (bounded-darg-listp (strip-cdrs alist) bound)
                 (assoc-equal term alist))
            (dargp-less-than (cdr (assoc-equal term alist))
                                        bound))
@@ -151,7 +152,7 @@
            (true-listp (dargs (lookup-equal nodenum dag))))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp dargs))))
 
-(defthm all-dargp-less-than-of-dargs-of-lookup-equal
+(defthm bounded-darg-listp-of-dargs-of-lookup-equal
   (implies (and (weak-dagp-aux dag)
                 (natp nodenum)
                 (natp nodenum2)
@@ -159,7 +160,7 @@
                 (consp (lookup-equal nodenum dag))
                 (not (equal (car (lookup-equal nodenum dag))
                             'quote)))
-           (all-dargp-less-than (dargs (lookup-equal nodenum dag)) nodenum2))
+           (bounded-darg-listp (dargs (lookup-equal nodenum dag)) nodenum2))
   :hints (("Goal" :expand ((ASSOC-EQUAL NODENUM DAG)
                            (LOOKUP-EQUAL NODENUM DAG)
                            (LOOKUP-EQUAL NODENUM (CDR DAG)))
@@ -248,7 +249,7 @@
            (true-listp (dargs (lookup-equal nodenum dag))))
   :hints (("Goal" :in-theory (enable weak-dagp))))
 
-(defthm all-dargp-less-than-of-dargs-of-lookup-equal-when-weak-dagp
+(defthm bounded-darg-listp-of-dargs-of-lookup-equal-when-weak-dagp
   (implies (and (weak-dagp dag)
                 (natp nodenum)
                 (natp nodenum2)
@@ -256,7 +257,7 @@
                 (consp (lookup-equal nodenum dag))
                 (not (equal (car (lookup-equal nodenum dag))
                             'quote)))
-           (all-dargp-less-than (dargs (lookup-equal nodenum dag)) nodenum2))
+           (bounded-darg-listp (dargs (lookup-equal nodenum dag)) nodenum2))
   :hints (("Goal" :in-theory (enable weak-dagp))))
 
 (defthm dag-exprp-of-lookup-equal-when-weak-dagp
@@ -801,7 +802,7 @@
    (declare (xargs :guard (and (pseudo-termp term)
                                (symbol-alistp var-replacement-alist)
                                (pseudo-dagp dag)
-                               (all-dargp-less-than (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag))))
+                               (bounded-darg-listp (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag))))
                    :verify-guards nil ;done below
                    ))
    (if (variablep term)
@@ -831,7 +832,7 @@
    (declare (xargs :guard (and (pseudo-term-listp terms)
                                (symbol-alistp var-replacement-alist)
                                (pseudo-dagp dag)
-                               (all-dargp-less-than (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag))))))
+                               (bounded-darg-listp (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag))))))
    (if (endp terms)
        (mv nil dag)
      (mv-let (car-nodenum dag)
@@ -889,7 +890,7 @@
   (defthm compose-term-and-dag-aux-return-type
     (implies (and (pseudo-dagp dag)
                   (pseudo-termp term)
-                  (all-dargp-less-than (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag)))
+                  (bounded-darg-listp (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag)))
                   )
              (and (pseudo-dagp (mv-nth 1 (compose-term-and-dag-aux term var-replacement-alist dag)))
                   ;;(dargp (mv-nth 0 (compose-term-and-dag-aux term var-replacement-alist dag)))
@@ -901,11 +902,11 @@
   (defthm compose-term-and-dag-aux-lst-return-type
     (implies (and (pseudo-dagp dag)
                   (pseudo-term-listp terms)
-                  (all-dargp-less-than (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag)))
+                  (bounded-darg-listp (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag)))
                   )
              (and (pseudo-dagp (mv-nth 1 (compose-term-and-dag-aux-lst terms var-replacement-alist dag)))
                   ;;(all-dargp (mv-nth 0 (compose-term-and-dag-aux-lst terms var-replacement-alist dag)))
-                  (ALL-DARGP-LESS-THAN (mv-nth 0 (compose-term-and-dag-aux-lst terms var-replacement-alist dag))
+                  (BOUNDED-DARG-LISTP (mv-nth 0 (compose-term-and-dag-aux-lst terms var-replacement-alist dag))
                                                   (BINARY-+ '1 (TOP-NODENUM (mv-nth 1 (compose-term-and-dag-aux-lst terms var-replacement-alist dag)))))
                   (<= (top-nodenum dag)
                       (top-nodenum (mv-nth 1 (compose-term-and-dag-aux-lst terms var-replacement-alist dag))))))
@@ -924,7 +925,7 @@
 (defthm pseudo-dagp-aux-of-mv-nth-1-of-compose-term-and-dag-aux-lst
   (implies (and (pseudo-dagp dag)
                 (pseudo-term-listp terms)
-                (all-dargp-less-than (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag)))
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag)))
                 )
            (pseudo-dagp-aux (mv-nth 1 (compose-term-and-dag-aux-lst terms var-replacement-alist dag))
                             (top-nodenum(mv-nth 1 (compose-term-and-dag-aux-lst terms var-replacement-alist dag)))))
@@ -1279,8 +1280,8 @@
            (dag-exprp (lookup-equal n dag)))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
-(defthm not-<-of-plus1-of-largest-non-quotep-when-all-dargp-less-than
-  (implies (and (all-dargp-less-than nodenum-or-quotep-or-lst bound)
+(defthm not-<-of-plus1-of-largest-non-quotep-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp nodenum-or-quotep-or-lst bound)
                 (natp bound))
            (not (< bound (+ 1 (largest-non-quotep nodenum-or-quotep-or-lst)))))
   :hints (("Goal" :in-theory (enable largest-non-quotep))))
@@ -1308,7 +1309,7 @@
                                (pseudo-termp term))
                    :guard-hints (("Goal" :expand ((PSEUDO-DAGP-AUX DAG NODENUM-OR-QUOTEP))
                                   :use (:instance dag-exprp-of-lookup-equal-when-pseudo-dagp (n NODENUM-OR-QUOTEP))
-                                  :in-theory (e/d (all-dargp-less-than dag-exprp)
+                                  :in-theory (e/d (bounded-darg-listp dag-exprp)
                                                   (len true-listp dag-exprp-of-lookup-equal-when-pseudo-dagp))
                                   :do-not '(generalize eliminate-destructors)
                                   ))
@@ -1330,7 +1331,7 @@
 
  (defun dag-equal-terms-at-nodes (dag terms nodenums-and-quoteps)
    (declare (xargs :guard (and (pseudo-dagp dag)
-                               (all-dargp-less-than nodenums-and-quoteps (+ 1 (top-nodenum dag)))
+                               (bounded-darg-listp nodenums-and-quoteps (+ 1 (top-nodenum dag)))
                                (true-listp nodenums-and-quoteps)
                                (pseudo-term-listp terms)
                                (equal (len terms) (len nodenums-and-quoteps)))
@@ -1365,13 +1366,13 @@
                   (+ -1 (len dag))))
   :hints (("Goal" :in-theory (enable pseudo-dagp pseudo-dagp-aux))))
 
-(defthm dargp-less-than-of-nth-when-all-dargp-less-than-gen
-  (implies (and (all-dargp-less-than vals bound)
+(defthm dargp-less-than-of-nth-when-bounded-darg-listp-gen
+  (implies (and (bounded-darg-listp vals bound)
                 (natp n)
                 (< n (len vals)))
            (dargp-less-than (nth n vals) bound))
   :hints
-  (("Goal" :in-theory (enable all-dargp-less-than))))
+  (("Goal" :in-theory (enable bounded-darg-listp))))
 
 (defthm dargp-less-than-when-myquotep-cheap
   (implies (myquotep item)
@@ -1409,26 +1410,26 @@
            (pseudo-dagp-aux dag (car (car dag))))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
 
-;; can introduce all-dargp-less-than out of nowhere, so kept disabled
-(defthmd not-<-of-nth-when-all-dargp-less-than-gen
-  (implies (and (all-dargp-less-than vals bound)
+;; can introduce bounded-darg-listp out of nowhere, so kept disabled
+(defthmd not-<-of-nth-when-bounded-darg-listp-gen
+  (implies (and (bounded-darg-listp vals bound)
                 (natp n)
                 (< n (len vals))
                 ;; (not (consp val))
                 (natp bound))
            (not (< bound (nth n vals))))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than nth))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp nth))))
 
-(defthm not-<-of-nth-when-all-dargp-less-than-gen-constant
+(defthm not-<-of-nth-when-bounded-darg-listp-gen-constant
   (implies (and (syntaxp (quotep k))
                 (<= k 0)
-                (all-dargp-less-than vals bound)
+                (bounded-darg-listp vals bound)
                 ;; (natp n)
                 ;; (< n (len vals))
                 ;; (not (consp val))
                 )
            (not (< (nth n vals) k)))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than dargp-less-than nth))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than nth))))
 
 ;; move these?
 
@@ -1444,48 +1445,49 @@
   (and (consp item)
        (posp (unquote item))))
 
-(defthm not-<-of-+-1-of-nth-when-all-dargp-less-than
-  (implies (and (all-dargp-less-than items dag-len)
+(defthm not-<-of-+-1-of-nth-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp items dag-len)
                 (natp n)
                 (< n (len items))
                 (natp dag-len)
                 (not (consp (nth n items))))
            (not (< dag-len (+ 1 (nth n items)))))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than nth))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp nth))))
 
-(defthm all-dargp-less-than-when-all-<
+(defthm bounded-darg-listp-when-all-<
   (implies (and (all-< items bound)
                 (all-natp items))
-           (all-dargp-less-than items bound))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than all-< all-natp))))
+           (equal (bounded-darg-listp items bound)
+                  (true-listp items)))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp all-< all-natp))))
 
-(defthm all-dargp-less-than-of-dargs-when-<-simple
+(defthm bounded-darg-listp-of-dargs-when-<-simple
   (implies (and (bounded-dag-exprp limit expr)
                 (consp expr)
                 (not (equal 'quote (car expr)))
                 )
-           (all-dargp-less-than (dargs expr) limit))
+           (bounded-darg-listp (dargs expr) limit))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
 ;drop?
-(defthmd all-dargp-less-than-of-dargs-when-<
+(defthmd bounded-darg-listp-of-dargs-when-<
   (implies (and (< nodenum limit)
                 (bounded-dag-exprp nodenum expr)
                 (consp expr)
                 (not (equal 'quote (car expr)))
                 )
-           (all-dargp-less-than (dargs expr) limit))
+           (bounded-darg-listp (dargs expr) limit))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
 ;; use consp as our normal form
-(defthm len-of-nth-when-all-dargp-less-than
-  (implies (and (all-dargp-less-than items bound)
+(defthm len-of-nth-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp items bound)
                 (< (nfix n) (len items)))
            (equal (len (nth n items))
                   (if (consp (nth n items))
                       2
                     0)))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than nth))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp nth))))
 
 (defthm len-of-nth-when-all-dargp
   (implies (and (all-dargp items)
@@ -1496,12 +1498,12 @@
                     0)))
   :hints (("Goal" :in-theory (enable all-dargp nth))))
 
-;; (defthm <-of-car-when-all-dargp-less-than
-;;   (implies (and (all-dargp-less-than items bound)
+;; (defthm <-of-car-when-bounded-darg-listp
+;;   (implies (and (bounded-darg-listp items bound)
 ;;                 (not (consp (car items)))
 ;;                 (consp items))
 ;;            (< (car items) bound))
-;;   :hints (("Goal" :in-theory (enable all-dargp-less-than))))
+;;   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 (defthm bounded-natp-alistp-when-pseudo-dagp
   (implies (pseudo-dagp dag-lst)
@@ -1548,17 +1550,18 @@
            :in-theory (disable dargp-of-cdr-of-assoc-equal
                                dargp-when-equal-of-quote-and-car-cheap))))
 
-(defthm <=-of-largest-non-quotep-when-all-dargp-less-than
-  (implies (and (all-dargp-less-than items (+ 1 bound))
+(defthm <=-of-largest-non-quotep-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp items (+ 1 bound))
                 (natp bound))
            (<= (largest-non-quotep items) bound))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than
+  :hints (("Goal" :in-theory (enable bounded-darg-listp
                                      largest-non-quotep))))
 
-(defthm all-dargp-less-than-of-+-of-1-and-largest-non-quotep
-  (implies (all-dargp dargs)
-           (all-dargp-less-than dargs (+ 1 (largest-non-quotep dargs))))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than largest-non-quotep))))
+(defthm bounded-darg-listp-of-+-of-1-and-largest-non-quotep
+  (implies (and (all-dargp dargs)
+                (true-listp dargs))
+           (bounded-darg-listp dargs (+ 1 (largest-non-quotep dargs))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp largest-non-quotep))))
 
 (defthm <-of-largest-non-quotep-of-dargs-when-dag-exprp
   (implies (and (bounded-dag-exprp (+ 1 n) expr)
@@ -1586,7 +1589,7 @@
                 )
            (not (< n (largest-non-quotep (dargs expr)))))
   :hints (("Goal" :cases ((< n 0))
-           :in-theory (enable bounded-dag-exprp all-dargp-less-than-when-non-positive))))
+           :in-theory (enable bounded-dag-exprp bounded-darg-listp-when-non-positive))))
 
 ;todo: limit?
 ;move
@@ -1793,21 +1796,21 @@
            :expand (bounded-dag-exprp 0 expr)
            :in-theory (disable <-of-largest-non-quotep-of-dargs-when-dag-exprp))))
 
-(defthm dargp-of-lookup-equal-when-all-dargp-less-than-of-strip-cdrs
-  (implies (and (all-dargp-less-than (strip-cdrs alist) dag-len)
+(defthm dargp-of-lookup-equal-when-bounded-darg-listp-of-strip-cdrs
+  (implies (and (bounded-darg-listp (strip-cdrs alist) dag-len)
                 (lookup-equal var alist))
            (dargp (lookup-equal var alist)))
   :hints (("Goal" :induct t
-           :in-theory (e/d (all-dargp-less-than lookup-equal strip-cdrs
+           :in-theory (e/d (bounded-darg-listp lookup-equal strip-cdrs
                                                            dargp-less-than)
                            (myquotep)))))
 
-(defthmd <-of-lookup-equal-when-all-dargp-less-than-of-strip-cdrs
-  (implies (and (all-dargp-less-than (strip-cdrs alist) dag-len)
+(defthmd <-of-lookup-equal-when-bounded-darg-listp-of-strip-cdrs
+  (implies (and (bounded-darg-listp (strip-cdrs alist) dag-len)
                 (lookup-equal var alist)
                 (not (consp (lookup-equal var alist))))
            (< (lookup-equal var alist) dag-len))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than lookup-equal strip-cdrs)
+  :hints (("Goal" :in-theory (e/d (bounded-darg-listp lookup-equal strip-cdrs)
                                   (myquotep)))))
 
 

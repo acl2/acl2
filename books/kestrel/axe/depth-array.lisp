@@ -48,8 +48,7 @@
   (declare (xargs :guard (and (natp new-depth)
                               (natp depth-array-len)
                               (depth-arrayp depth-array-name depth-array depth-array-len)
-                              (all-dargp-less-than items depth-array-len)
-                              (true-listp items))
+                              (bounded-darg-listp items depth-array-len))
                   :guard-hints (("Goal"
                                  :use (:instance TYPE-OF-AREF1-WHEN-DEPTH-ARRAYP
                                                  (array-name DEPTH-ARRAY-NAME)
@@ -76,8 +75,7 @@
                  (natp depth-array-len2)
                  (<= depth-array-len depth-array-len2)
                  (depth-arrayp depth-array-name depth-array depth-array-len)
-                 (all-dargp-less-than items depth-array-len)
-                 (true-listp items))
+                 (bounded-darg-listp items depth-array-len))
             (depth-arrayp depth-array-name (set-depths-of-nodenums-if-lower depth-array-name new-depth items depth-array depth-array-len2) depth-array-len))
   :hints (("Goal" :in-theory (enable  set-depths-of-nodenums-if-lower))))
 
@@ -85,8 +83,7 @@
   (implies  (and (natp new-depth)
                  (natp depth-array-len)
                  (depth-arrayp depth-array-name depth-array depth-array-len)
-                 (all-dargp-less-than items depth-array-len)
-                 (true-listp items))
+                 (bounded-darg-listp items depth-array-len))
             (equal (alen1 depth-array-name (set-depths-of-nodenums-if-lower depth-array-name new-depth items depth-array depth-array-len))
                    (alen1 depth-array-name depth-array)))
   :hints (("Goal" :in-theory (enable set-depths-of-nodenums-if-lower))))

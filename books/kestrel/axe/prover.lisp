@@ -106,7 +106,7 @@
 ;TODO: possible optimization: mark variables that occur only once in the rule and don't bother making pairs for them in the alist until we know there is a structural match
 ;TODO: possible optimization: mark each occurence of a vars in the lhs according to whether it is the first occurence of that var (don't bother to lookup in alist) or a later occurrence (check the alist but don't ever need to bind the var because it will already be bound)
 
-(local (in-theory (enable natp-of-car-when-all-dargp-less-than-gen)))
+(local (in-theory (enable natp-of-car-when-bounded-darg-listp-gen)))
 
 (local (in-theory (disable SYMBOL-ALISTP))) ;move
 (local (in-theory (disable dag-function-call-exprp-redef
@@ -464,7 +464,7 @@
                                (true-listp stored-rules)
                                (all-stored-axe-rulep stored-rules)
                                (rule-alistp rule-alist)
-                               (all-dargp-less-than args-to-match dag-len)
+                               (bounded-darg-listp args-to-match dag-len)
                                (nat-listp nodenums-to-assume-false)
                                (all-< nodenums-to-assume-false dag-len)
                                (symbol-alistp equiv-alist) ;strengthen?
@@ -1696,7 +1696,7 @@
                                           prover-depth options count state)
    (declare (xargs :stobjs state
                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                               (all-dargp-less-than literal-nodenums-or-quoteps dag-len)
+                               (bounded-darg-listp literal-nodenums-or-quoteps dag-len)
                                (all-rule-alistp rule-alists)
                                (interpreted-function-alistp interpreted-function-alist)
                                (info-worldp info)

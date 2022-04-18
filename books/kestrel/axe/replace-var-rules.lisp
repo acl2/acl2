@@ -12,7 +12,7 @@
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (include-book "axe-trees")
-(include-book "all-dargp-less-than")
+(include-book "bounded-darg-listp")
 
 (defthm dargp-of-maybe-replace-var
   (implies (and (all-dargp (strip-cdrs alist))
@@ -22,7 +22,7 @@
   :hints (("Goal" :in-theory (enable maybe-replace-var))))
 
 (defthm dargp-less-than-of-maybe-replace-var
-  (implies (and (all-dargp-less-than (strip-cdrs alist) bound)
+  (implies (and (bounded-darg-listp (strip-cdrs alist) bound)
                 (symbolp term)
                 (not (equal term (maybe-replace-var term alist))))
            (dargp-less-than (maybe-replace-var term alist) bound))
@@ -44,7 +44,7 @@
            :in-theory (disable dargp-of-maybe-replace-var))))
 
 (defthm bounded-axe-treep-of-maybe-replace-var
-  (implies (and (all-dargp-less-than (strip-cdrs alist) bound)
+  (implies (and (bounded-darg-listp (strip-cdrs alist) bound)
                 (symbolp term))
            (bounded-axe-treep (maybe-replace-var term alist) bound))
   :hints (("Goal" :use dargp-less-than-of-maybe-replace-var

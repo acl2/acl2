@@ -152,13 +152,13 @@
              (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)))
   :hints (("Goal" :in-theory (enable make-terms-into-dag-array-simple))))
 
-(defthm all-dargp-less-than-of-mv-nth-1-of-make-terms-into-dag-array-simple
+(defthm bounded-darg-listp-of-mv-nth-1-of-make-terms-into-dag-array-simple
   (implies (and (pseudo-term-listp terms)
                 (symbolp dag-array-name)
                 (symbolp dag-parent-array-name)
                 (not (mv-nth 0 (make-terms-into-dag-array-simple terms dag-array-name dag-parent-array-name ))))
-           (all-dargp-less-than (mv-nth 1 (make-terms-into-dag-array-simple terms dag-array-name dag-parent-array-name ))
-                                (mv-nth 3 (make-terms-into-dag-array-simple terms dag-array-name dag-parent-array-name ))))
+           (bounded-darg-listp (mv-nth 1 (make-terms-into-dag-array-simple terms dag-array-name dag-parent-array-name ))
+                               (mv-nth 3 (make-terms-into-dag-array-simple terms dag-array-name dag-parent-array-name ))))
   :hints (("Goal" :in-theory (enable make-terms-into-dag-array-simple))))
 
 (defthm true-listp-of-mv-nth-1-of-make-terms-into-dag-array-simple

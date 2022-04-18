@@ -39,14 +39,6 @@
            :in-theory (e/d (all-dargp lookup-equal strip-cdrs)
                            (myquotep)))))
 
-(defthm dargp-less-than-of-car-when-all-dargp-less-than
-  (implies (all-dargp-less-than items bound)
-           (equal (dargp-less-than (car items) bound)
-                  (consp items)))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than))))
-
-
-
 ;doesn't support lambdas
 ;fixme could use a single RV if we used :fail (which is not an alist) to signal failure?
 (mutual-recursion
@@ -176,7 +168,7 @@
     (implies (and ;; (all-axe-treep tree-lst)
               ;; (natp dag-len)
               ;; (true-listp tree-lst)
-              ;; (all-dargp-less-than nodenum-or-quotep-lst dag-len)
+              ;; (bounded-darg-listp nodenum-or-quotep-lst dag-len)
               ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
               ;; (symbol-alistp alist)
               ;; (equal (len tree-lst)
@@ -206,7 +198,7 @@
     (implies (and ;; (all-axe-treep tree-lst)
               ;; (natp dag-len)
               ;; (true-listp tree-lst)
-              ;; (all-dargp-less-than nodenum-or-quotep-lst dag-len)
+              ;; (bounded-darg-listp nodenum-or-quotep-lst dag-len)
               ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
               ;; (symbol-alistp alist)
               ;; (equal (len tree-lst)
@@ -237,7 +229,7 @@
     (implies (and (all-axe-treep tree-lst)
                   ;; (natp dag-len)
                   ;; (true-listp tree-lst)
-                  ;; (all-dargp-less-than nodenum-or-quotep-lst dag-len)
+                  ;; (bounded-darg-listp nodenum-or-quotep-lst dag-len)
                   ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                   (symbol-alistp alist)
                   (not (equal :fail (unify-trees-with-dag-nodes tree-lst nodenum-or-quotep-lst dag-array alist))))
@@ -277,7 +269,7 @@
                   ;; (true-listp tree-lst)
                   ;(all-dargp nodenum-or-quotep-lst)
                   (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                  (all-dargp-less-than nodenum-or-quotep-lst dag-len)
+                  (bounded-darg-listp nodenum-or-quotep-lst dag-len)
                   (symbol-alistp alist)
                   )
              (perm (strip-cars (unify-trees-with-dag-nodes tree-lst nodenum-or-quotep-lst dag-array alist))
@@ -312,27 +304,27 @@
   :hints (("Goal" :in-theory (enable unify-trees-with-dag-nodes unify-tree-with-dag-node))))
 
 (defthm-flag-unify-tree-with-dag-node
-  (defthm all-dargp-less-than-of-strip-cdrs-of-unify-tree-with-dag-node
+  (defthm bounded-darg-listp-of-strip-cdrs-of-unify-tree-with-dag-node
     (implies (and (axe-treep tree)
                   (if (natp nodenum-or-quotep)
                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))
                     t)
                   (integerp dag-len)
                   (dargp-less-than nodenum-or-quotep dag-len)
-                  (all-dargp-less-than (strip-cdrs alist) dag-len)
+                  (bounded-darg-listp (strip-cdrs alist) dag-len)
                   (not (equal :fail (unify-tree-with-dag-node tree nodenum-or-quotep dag-array alist))))
-             (all-dargp-less-than (strip-cdrs (unify-tree-with-dag-node tree nodenum-or-quotep dag-array alist))
+             (bounded-darg-listp (strip-cdrs (unify-tree-with-dag-node tree nodenum-or-quotep dag-array alist))
                                              dag-len))
     :flag unify-tree-with-dag-node)
-  (defthm all-dargp-less-than-of-strip-cdrs-of-unify-trees-with-dag-nodes
+  (defthm bounded-darg-listp-of-strip-cdrs-of-unify-trees-with-dag-nodes
     (implies (and (all-axe-treep tree-lst)
                   (true-listp tree-lst)
-                  (all-dargp-less-than nodenum-or-quotep-lst dag-len)
+                  (bounded-darg-listp nodenum-or-quotep-lst dag-len)
                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep nodenum-or-quotep-lst)))
                   (integerp dag-len)
-                  (all-dargp-less-than (strip-cdrs alist) dag-len)
+                  (bounded-darg-listp (strip-cdrs alist) dag-len)
                   (not (equal :fail (unify-trees-with-dag-nodes tree-lst nodenum-or-quotep-lst dag-array alist))))
-             (all-dargp-less-than (strip-cdrs (unify-trees-with-dag-nodes tree-lst nodenum-or-quotep-lst dag-array alist))
+             (bounded-darg-listp (strip-cdrs (unify-trees-with-dag-nodes tree-lst nodenum-or-quotep-lst dag-array alist))
                                              dag-len))
     :flag unify-trees-with-dag-nodes)
   :hints (("Goal" :in-theory (enable unify-trees-with-dag-nodes unify-tree-with-dag-node))))

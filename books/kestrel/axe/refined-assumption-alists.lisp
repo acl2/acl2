@@ -87,72 +87,59 @@
 ;;; bounded refined-assumption-alists
 ;;;
 
-(defun dargp-less-than-listp (items dag-len)
-  (declare (xargs :guard (natp dag-len)))
-  (if (atom items)
-      (null items)
-    (and (dargp-less-than (first items) dag-len)
-         (dargp-less-than-listp (rest items) dag-len))))
-
-(defthm dargp-less-than-listp-rewrite
-  (equal (dargp-less-than-listp items bound)
-         (and (all-dargp-less-than items bound)
-              (true-listp items)))
-  :hints (("Goal" :in-theory (enable dargp-less-than-listp))))
-
-(defthm dargp-listp-when-dargp-less-than-listp
-  (implies (dargp-less-than-listp items dag-len)
+(defthm dargp-listp-when-bounded-darg-listp
+  (implies (bounded-darg-listp items dag-len)
            (dargp-listp items)))
 
-(defund dargp-less-than-list-listp (items dag-len)
+(defund bounded-darg-list-listp (items dag-len)
   (declare (xargs :guard (natp dag-len)))
   (if (atom items)
       (null items)
-    (and (dargp-less-than-listp (first items) dag-len)
-         (dargp-less-than-list-listp (rest items) dag-len))))
+    (and (bounded-darg-listp (first items) dag-len)
+         (bounded-darg-list-listp (rest items) dag-len))))
 
-;; (defthm dargp-less-than-list-listp-rewrite
-;;   (equal (dargp-less-than-list-listp items bound)
-;;          (and (all-all-dargp-less-than items bound)
+;; (defthm bounded-darg-list-listp-rewrite
+;;   (equal (bounded-darg-list-listp items bound)
+;;          (and (all-bounded-darg-listp items bound)
 ;;               (true-listp items)))
-;;   :hints (("Goal" :in-theory (enable dargp-less-than-listp))))
+;;   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
-(defthm dargp-less-than-list-listp-forward-to-true-listp
-  (implies (dargp-less-than-list-listp items dag-len)
+(defthm bounded-darg-list-listp-forward-to-true-listp
+  (implies (bounded-darg-list-listp items dag-len)
            (true-listp items))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable dargp-less-than-list-listp))))
+  :hints (("Goal" :in-theory (enable bounded-darg-list-listp))))
 
-(defthm dargp-less-than-list-listp-of-nil
-  (dargp-less-than-list-listp nil dag-len)
-  :hints (("Goal" :in-theory (enable dargp-less-than-list-listp))))
+(defthm bounded-darg-list-listp-of-nil
+  (bounded-darg-list-listp nil dag-len)
+  :hints (("Goal" :in-theory (enable bounded-darg-list-listp))))
 
-(defthm dargp-less-than-list-listp-of-cons
-  (equal (dargp-less-than-list-listp (cons a x) dag-len)
-         (and (dargp-less-than-listp a dag-len)
-              (dargp-less-than-list-listp x dag-len)))
-  :hints (("Goal" :in-theory (enable dargp-less-than-list-listp))))
+(defthm bounded-darg-list-listp-of-cons
+  (equal (bounded-darg-list-listp (cons a x) dag-len)
+         (and (bounded-darg-listp a dag-len)
+              (bounded-darg-list-listp x dag-len)))
+  :hints (("Goal" :in-theory (enable bounded-darg-list-listp))))
 
-(defthm dargp-less-than-list-listp-monotone
-  (implies (and (dargp-less-than-list-listp alist bound2)
+(defthm bounded-darg-list-listp-monotone
+  (implies (and (bounded-darg-list-listp alist bound2)
                 (<= bound2 bound))
-           (dargp-less-than-list-listp alist bound))
-  :hints (("Goal" :in-theory (enable dargp-less-than-list-listp))))
+           (bounded-darg-list-listp alist bound))
+  :hints (("Goal" :in-theory (enable bounded-darg-list-listp))))
 
-(defthm all-dargp-less-than-of-car
-  (implies (dargp-less-than-list-listp items dag-len)
-           (all-dargp-less-than (car items) dag-len))
-  :hints (("Goal" :in-theory (enable dargp-less-than-list-listp))))
+(defthm bounded-darg-listp-of-car
+  (implies (bounded-darg-list-listp items dag-len)
+           (bounded-darg-listp (car items) dag-len))
+  :hints (("Goal" :in-theory (enable bounded-darg-list-listp))))
 
-(defthm dargp-less-than-list-listp-of-cdr
-  (implies (dargp-less-than-list-listp items dag-len)
-           (dargp-less-than-list-listp (cdr items) dag-len))
-  :hints (("Goal" :in-theory (enable dargp-less-than-list-listp))))
+(defthm bounded-darg-list-listp-of-cdr
+  (implies (bounded-darg-list-listp items dag-len)
+           (bounded-darg-list-listp (cdr items) dag-len))
+  :hints (("Goal" :in-theory (enable bounded-darg-list-listp))))
 
-(defthm dargp-list-listp-when-dargp-less-than-list-listp
-  (implies (dargp-less-than-list-listp items bound)
+(defthm dargp-list-listp-when-bounded-darg-list-listp
+  (implies (bounded-darg-list-listp items bound)
            (dargp-list-listp items))
-  :hints (("Goal" :in-theory (enable dargp-less-than-list-listp))))
+  :hints (("Goal" :in-theory (enable bounded-darg-list-listp))))
 
 ;;;
 ;;; bounded-refined-assumption-alistp
@@ -165,7 +152,7 @@
     (let ((entry (car alist)))
       (and (consp entry)
            (symbolp (car entry)) ;; should lambdas be allowed?
-           (dargp-less-than-list-listp (cdr entry) dag-len)
+           (bounded-darg-list-listp (cdr entry) dag-len)
            (bounded-refined-assumption-alistp (cdr alist) dag-len)))))
 
 (defthm refined-assumption-alistp-when-bounded-refined-assumption-alistp
@@ -186,9 +173,9 @@
            (bounded-refined-assumption-alistp (uniquify-alist-eq-aux alist acc) bound))
   :hints (("Goal" :in-theory (enable bounded-refined-assumption-alistp uniquify-alist-eq-aux))))
 
-(defthm dargp-less-than-list-listp-of-lookup-equal-when-bounded-refined-assumption-alistp
+(defthm bounded-darg-list-listp-of-lookup-equal-when-bounded-refined-assumption-alistp
   (implies (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-           (dargp-less-than-list-listp (lookup-equal fn refined-assumption-alist)
+           (bounded-darg-list-listp (lookup-equal fn refined-assumption-alist)
                                                   dag-len))
   :hints (("Goal" :in-theory (enable bounded-refined-assumption-alistp lookup-equal assoc-equal))))
 
@@ -367,9 +354,9 @@
            (all-dargp-listp (lookup-in-refined-assumption-alist fn refined-assumption-alist)))
   :hints (("Goal" :in-theory (enable lookup-in-refined-assumption-alist))))
 
-(defthm dargp-less-than-list-listp-of-lookup-in-refined-assumption-alist
+(defthm bounded-darg-list-listp-of-lookup-in-refined-assumption-alist
   (implies (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-           (dargp-less-than-list-listp (lookup-in-refined-assumption-alist fn refined-assumption-alist)
+           (bounded-darg-list-listp (lookup-in-refined-assumption-alist fn refined-assumption-alist)
                                        dag-len))
   :hints (("Goal" :in-theory (enable lookup-in-refined-assumption-alist))))
 

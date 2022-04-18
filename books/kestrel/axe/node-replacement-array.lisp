@@ -67,9 +67,9 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable strip-cars max-key))))
 
-(defthm all-dargp-less-than-of-strip-cdrs-of-cdr
-  (implies (all-dargp-less-than (strip-cdrs alist) bound)
-           (all-dargp-less-than (strip-cdrs (cdr alist)) bound)))
+(defthm bounded-darg-listp-of-strip-cdrs-of-cdr
+  (implies (bounded-darg-listp (strip-cdrs alist) bound)
+           (bounded-darg-listp (strip-cdrs (cdr alist)) bound)))
 
 (defthm not-node-replacement-alistp
   (implies (and (not (integerp (cdr (assoc-equal index alist))))
