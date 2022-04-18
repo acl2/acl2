@@ -2153,6 +2153,9 @@
                     (t 3))))
          (t 0))))
 
+(defconst *newline-string*
+  (string #\Newline))
+
 (defun flsz1 (x print-base print-radix j maximum state eviscp)
 
 ; Actually, maximum should be of type (signed-byte 29).
@@ -2163,7 +2166,9 @@
    (cond ((> j maximum) j)
          ((atom x) (flsz-atom x print-base print-radix j state))
          ((evisceratedp eviscp x)
-          (+f j (the-half-fixnum! (length (cdr x)) 'flsz)))
+          (let ((p (search *newline-string* (cdr x) :from-end t)))
+            (cond (p (1+ maximum)) ; pretending width is exceeded
+                  (t (+f j (the-half-fixnum! (length (cdr x)) 'flsz))))))
          ((atom (cdr x))
           (cond ((null (cdr x))
                  (flsz1 (car x) print-base print-radix (+f 2 j) maximum state
@@ -8389,9 +8394,6 @@
 )
 
 ; Print-object$ etc.
-
-(defconst *newline-string*
-  (string #\Newline))
 
 (defun comment-string-p1 (s i end)
 
