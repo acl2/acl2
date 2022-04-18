@@ -574,11 +574,11 @@
                        ',members))
            :hooks (:fix)
            ///
-           (defrule ,not-errorp-when-struct-tag-p
+           (defruled ,not-errorp-when-struct-tag-p
              (implies (,struct-tag-p x)
                       (not (errorp x)))
              :enable (errorp ,struct-tag-p structp))
-           (defrule ,structp-when-struct-tag-p
+           (defruled ,structp-when-struct-tag-p
              (implies (,struct-tag-p x)
                       (structp x))
              :in-theory '(,struct-tag-p))
