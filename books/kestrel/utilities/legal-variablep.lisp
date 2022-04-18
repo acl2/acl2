@@ -102,20 +102,6 @@
                 (symbolp sym))
            (not (equal sym2 (intern-in-package-of-symbol str sym)))))
 
-;; both cases
-(defthm symbol-package-name-of-intern-in-package-of-symbol
-  (implies (and (stringp x)
-                (symbolp y))
-           (equal (symbol-package-name (intern-in-package-of-symbol x y))
-                  (if (member-symbol-name
-                       x
-                       (pkg-imports (symbol-package-name y)))
-                      (symbol-package-name (car (member-symbol-name
-                                                 x
-                                                 (pkg-imports (symbol-package-name y)))))
-                    (symbol-package-name y))))
-  :hints (("Goal" :in-theory (enable intern-in-package-of-symbol-is-identity))))
-
 (defund map-symbol-package-name (syms)
   (declare (xargs :guard (symbol-listp syms)))
   (if (endp syms)
