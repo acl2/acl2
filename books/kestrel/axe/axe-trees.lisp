@@ -39,7 +39,7 @@
                 (true-listp (fargs tree)))
          ;; the application of a function symbol or lambda to args that are axe trees:
          ;; TODO: Can we require the lambda to be closed?
-         (and (all-axe-treep (fargs tree))
+         (and (axe-tree-listp (fargs tree))
               (true-listp (fargs tree))
               (or (symbolp fn)
                   (and (true-listp fn)
@@ -50,21 +50,21 @@
                        (pseudo-termp (caddr fn))
                        (equal (len (cadr fn))
                               (len (fargs tree))))))))))
- (defun all-axe-treep (trees)
+ (defun axe-tree-listp (trees)
    (declare (xargs :guard t))
    (if (atom trees)
-       t
+       (null trees)
      (and (axe-treep (first trees))
-          (all-axe-treep (rest trees))))))
+          (axe-tree-listp (rest trees))))))
 
 (make-flag axe-treep)
 
-(defthm all-axe-treep-of-append
-  (equal (all-axe-treep (append x y))
-         (and (all-axe-treep x)
-              (all-axe-treep y)))
+(defthm axe-tree-listp-of-append
+  (equal (axe-tree-listp (append x y))
+         (and (axe-tree-listp (true-list-fix x))
+              (axe-tree-listp y)))
   :hints (("Goal" :induct (append x y)
-           :in-theory (enable all-axe-treep append))))
+           :in-theory (enable axe-tree-listp append))))
 
 (defthm axe-treep-when-symbolp-cheap
   (implies (symbolp tree)
@@ -78,10 +78,10 @@
     (implies (pseudo-termp tree)
              (axe-treep tree))
     :flag axe-treep)
-  (defthm all-axe-treep-when-pseudo-term-listp
+  (defthm axe-tree-listp-when-pseudo-term-listp
     (implies (pseudo-term-listp trees)
-             (all-axe-treep trees))
-    :flag all-axe-treep))
+             (axe-tree-listp trees))
+    :flag axe-tree-listp))
 
 ;; dargps are axe-trees.
 (defthm-flag-axe-treep
@@ -89,31 +89,43 @@
     (implies (dargp tree)
              (axe-treep tree))
     :flag axe-treep)
-  (defthm all-axe-treep-when-all-dargp
+  (defthm axe-tree-listp-when-all-dargp
     (implies (all-dargp trees)
-             (all-axe-treep trees))
-    :flag all-axe-treep))
+             (equal (axe-tree-listp trees)
+                    (true-listp trees)))
+    :flag axe-tree-listp))
+
+(defthm axe-tree-listp-of-cons
+  (equal (axe-tree-listp (cons tree trees))
+         (and (axe-treep tree)
+              (axe-tree-listp trees)))
+  :hints (("Goal" :in-theory (enable axe-tree-listp))))
+
+(defthm axe-tree-listp-forward-to-true-listp
+  (implies (axe-tree-listp trees)
+           (true-listp trees))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable axe-tree-listp))))
 
 (defthm axe-treep-of-cons
   (implies (and (symbolp fn)
                 (not (equal 'quote fn)))
            (equal (axe-treep (cons fn args))
-                  (and (all-axe-treep args)
-                       (true-listp args))))
+                  (axe-tree-listp args)))
   :hints (("Goal" :in-theory (enable axe-treep))))
 
-(defthm all-axe-treep-of-cdr
+(defthm axe-tree-listp-of-cdr
   (implies (and (axe-treep tree)
                 (consp tree)
                 (not (equal 'quote (car tree))))
-           (all-axe-treep (cdr tree))))
+           (axe-tree-listp (cdr tree))))
 
-(defthm all-axe-treep-of-cdr-2
-  (implies (all-axe-treep trees)
-           (all-axe-treep (cdr trees))))
+(defthm axe-tree-listp-of-cdr-2
+  (implies (axe-tree-listp trees)
+           (axe-tree-listp (cdr trees))))
 
 (defthm axe-treep-of-car
-  (implies (and (all-axe-treep trees)
+  (implies (and (axe-tree-listp trees)
                 ;; (consp trees)
                 )
            (axe-treep (car trees))))
@@ -209,11 +221,11 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
 (defthm axe-treep-of-nth
-  (implies (and (all-axe-treep trees)
+  (implies (and (axe-tree-listp trees)
                 ;; (consp trees)
                 )
            (axe-treep (nth n trees)))
-  :hints (("Goal" :in-theory (enable all-axe-treep nth))))
+  :hints (("Goal" :in-theory (enable axe-tree-listp nth))))
 
 (defthm true-listp-of-nth-1-of-nth-0-when-axe-treep
   (implies (and ;(bounded-axe-treep tree bound2) ;free var
@@ -237,7 +249,7 @@
          (if (equal 'quote fn)
              (and (= 1 (len args))
                   (true-listp args))
-           (and (all-axe-treep args)
+           (and (axe-tree-listp args)
                 (true-listp args)
                 (or (symbolp fn)
                     (and (true-listp fn)
@@ -269,7 +281,7 @@
 (defthmd axe-treep-when-consp-of-car
   (implies (consp (car tree))
            (equal (axe-treep tree)
-                  (and (all-axe-treep (fargs tree))
+                  (and (axe-tree-listp (fargs tree))
                        (true-listp (fargs tree))
                        (true-listp (car tree))
                        (equal (len (car tree)) 3)
@@ -285,6 +297,7 @@
 (mutual-recursion
  ;; Check that all nodenums in TREE are less than BOUND.
  ;; TODO: Perhaps rename to is-bounded-axe-treep.
+ ;; TODO: Change this to imply axe-treep, so we don't have to say both.
  (defund bounded-axe-treep (tree bound)
    (declare (xargs :guard (and (axe-treep tree)
                                (integerp bound))))
@@ -299,7 +312,7 @@
          ))))
 
  (defund all-bounded-axe-treep (trees bound)
-   (declare (xargs :guard (and (all-axe-treep trees)
+   (declare (xargs :guard (and (axe-tree-listp trees)
                                (integerp bound))))
    (if (atom trees)
        t
@@ -371,7 +384,7 @@
   (defthm all-bounded-axe-treep-when-pseudo-term-listp
     (implies (pseudo-term-listp trees)
              (all-bounded-axe-treep trees bound))
-    :flag all-axe-treep)
+    :flag axe-tree-listp)
   :hints (("Goal" :in-theory (enable bounded-axe-treep
                                      all-bounded-axe-treep))))
 
@@ -385,9 +398,9 @@
   (defthm all-bounded-axe-treep-mono
     (implies (and (all-bounded-axe-treep trees bound2)
                   (<= bound2 bound)
-                  (all-axe-treep trees))
+                  (axe-tree-listp trees))
              (all-bounded-axe-treep trees bound))
-    :flag all-axe-treep)
+    :flag axe-tree-listp)
   :hints (("Goal" :in-theory (enable bounded-axe-treep
                                      all-bounded-axe-treep))))
 
@@ -448,7 +461,7 @@
 
 (defthm bounded-axe-treep-of-nth-gen
   (implies (and (all-bounded-axe-treep args bound2)
-                (all-axe-treep args)
+                (axe-tree-listp args)
                 (<= bound2 bound)
                 ;;(< n (len args))
                 )

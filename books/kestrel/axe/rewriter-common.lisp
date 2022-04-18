@@ -66,10 +66,10 @@
          (true-listp lst))
   :hints (("Goal" :in-theory (enable cons-if-not-equal-car))))
 
-(defthm all-axe-treep-of-cons-if-not-equal-car
-  (equal (all-axe-treep (cons-if-not-equal-car item lst))
+(defthm axe-tree-listp-of-cons-if-not-equal-car
+  (equal (axe-tree-listp (cons-if-not-equal-car item lst))
          (and (axe-treep item)
-              (all-axe-treep lst)))
+              (axe-tree-listp lst)))
   :hints (("Goal" :in-theory (enable CONS-IF-NOT-EQUAL-CAR))))
 
 (defthm all-consp-of-cons-if-not-equal-car
@@ -89,12 +89,11 @@
 
 (defthm alist-suitable-for-hypsp-of-alist-suitable-for-hypsp-of-car
   (implies (and (alist-suitable-for-hyp-args-and-hypsp alist hyp-args other-hyps)
-                (all-dargp-less-than (strip-cdrs alist) dag-len)
+                (bounded-darg-listp (strip-cdrs alist) dag-len)
                 (symbol-alistp alist)
                 (axe-rule-hyp-listp other-hyps)
-                (true-listp hyp-args)
-                (all-axe-treep hyp-args)
-                (dargp-less-than-list-listp assumption-arg-lists dag-len)
+                (axe-tree-listp hyp-args)
+                (bounded-darg-list-listp assumption-arg-lists dag-len)
                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (consp assumption-arg-lists)
                 (not (equal :fail (unify-trees-with-dag-nodes hyp-args (car assumption-arg-lists) dag-array alist))))

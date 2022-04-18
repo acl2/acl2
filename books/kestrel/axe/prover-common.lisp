@@ -1578,10 +1578,10 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
 
-(defthm all-axe-treep-of-wrap-all
-  (equal (all-axe-treep (wrap-all 'not atoms))
-         (all-axe-treep atoms))
-  :hints (("Goal" :in-theory (enable all-axe-treep wrap-all))))
+(defthm axe-tree-listp-of-wrap-all
+  (equal (axe-tree-listp (wrap-all 'not atoms))
+         (axe-tree-listp (true-list-fix atoms)))
+  :hints (("Goal" :in-theory (enable axe-tree-listp wrap-all))))
 
 (defund prover-resultp (result)
   (declare (xargs :guard t))

@@ -1017,8 +1017,7 @@
                                                          embedded-dag-depth case-designator work-hard-when-instructedp prover-depth
                                                          options count state)
    (declare (xargs :stobjs state
-                   :guard (and (true-listp tree-lst)
-                               (all-axe-treep tree-lst)
+                   :guard (and (axe-tree-listp tree-lst)
                                (symbol-listp equiv-lst)
                                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                (rule-alistp rule-alist)

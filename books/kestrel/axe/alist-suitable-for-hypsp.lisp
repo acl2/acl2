@@ -302,8 +302,7 @@
                                                hyp-args ; axe-trees, partially instantiated, so all vars from alist have been replaced
                                                hyps)
   (declare (xargs :guard (and (symbol-alistp alist)
-                              (all-axe-treep hyp-args)
-                              (true-listp hyp-args)
+                              (axe-tree-listp hyp-args)
                               (axe-rule-hyp-listp hyps))
                   :guard-hints (("Goal" :in-theory (enable symbol-alistp)))))
   (and ;; The alist doesn't bind any vars that remain in the partially-instantiated hyp's args:
@@ -318,8 +317,7 @@
                 (bounded-darg-listp arg-list dag-len)
                 (not (equal :fail (unify-trees-with-dag-nodes hyp-args arg-list dag-array alist)))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-axe-treep hyp-args)
-                (true-listp hyp-args)
+                (axe-tree-listp hyp-args)
                 (symbol-alistp alist))
            (alist-suitable-for-hypsp (unify-trees-with-dag-nodes hyp-args arg-list dag-array alist)
                                      hyps))
@@ -330,8 +328,7 @@
 ;;   (implies (and (alist-suitable-for-hypsp alist hyps)
 ;;                 (equal :free-vars (ffn-symb (car hyps)))
 ;;                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-;;                 (all-axe-treep hyp-args)
-;;                 (true-listp hyp-args)
+;;                 (axe-tree-listp hyp-args)
 ;;                 (symbol-alistp alist)
 ;;                 ;; (no-duplicatesp-equal (strip-cars alist)) ;gen?
 ;;                 ;;(not (intersection-equal (strip-cars alist) (axe-tree-vars hyp)))

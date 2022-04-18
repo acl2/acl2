@@ -133,10 +133,10 @@
                         (all-dargp (strip-cdrs alist)))
                    (axe-treep (,instantiate-hyp-name term alist interpreted-function-alist)))
           :flag ,instantiate-hyp-name)
-        (defthm ,(pack$ 'all-axe-treep-of-mv-nth-1-of- instantiate-hyp-lst-name)
+        (defthm ,(pack$ 'axe-tree-listp-of-mv-nth-1-of- instantiate-hyp-lst-name)
           (implies (and (pseudo-term-listp terms)
                         (all-dargp (strip-cdrs alist)))
-                   (all-axe-treep (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))))
+                   (axe-tree-listp (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))))
           :flag ,instantiate-hyp-lst-name)
         :hints (("Goal" :in-theory (enable ,instantiate-hyp-name ,instantiate-hyp-lst-name))))
 
@@ -199,7 +199,7 @@
        ;;            (not (equal 'quote (car (,instantiate-hyp-name term alist interpreted-function-alist)))))
        ;;   :hints (("Goal" :expand ((,instantiate-hyp-name term alist interpreted-function-alist)))))
 
-       (defthm ,(pack$ 'all-axe-treep-of-cdr-of- instantiate-hyp-name)
+       (defthm ,(pack$ 'axe-tree-listp-of-cdr-of- instantiate-hyp-name)
          (implies (and (pseudo-termp term)
                        (all-dargp (strip-cdrs alist))
                        (consp term) ;guarantees that the result is a consp
@@ -207,7 +207,7 @@
                        ;; ;; free vars remain in the term:
                        ;; (mv-nth 1 (,instantiate-hyp-name term alist interpreted-function-alist))
                        )
-                  (all-axe-treep (cdr (,instantiate-hyp-name term alist interpreted-function-alist))))
+                  (axe-tree-listp (cdr (,instantiate-hyp-name term alist interpreted-function-alist))))
          :hints (("Goal" :use ,(pack$ 'axe-treep-of- instantiate-hyp-name)
                   :in-theory (disable ,(pack$ 'axe-treep-of- instantiate-hyp-name)))))
 
@@ -267,7 +267,7 @@
 
        (defthm ,(pack$ 'alist-suitable-for-hyp-args-and-hypsp-after- instantiate-hyp-name)
          (implies (and (alist-suitable-for-hypsp alist hyps)
-                       (all-dargp-less-than (strip-cdrs alist) dag-len)
+                       (bounded-darg-listp (strip-cdrs alist) dag-len)
                        (symbol-alistp alist)
                        (equal :free-vars (car (car hyps)))
                        (consp (cdr (car hyps)))

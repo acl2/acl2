@@ -87,8 +87,7 @@
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                            interpreted-function-alist)
    (declare (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                               (true-listp trees)
-                               (all-axe-treep trees)
+                               (axe-tree-listp trees)
                                (all-bounded-axe-treep trees dag-len)
                                (symbol-alistp var-replacement-alist)
                                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
@@ -130,8 +129,7 @@
     :flag merge-tree-into-dag-array-basic)
   (defthm merge-trees-into-dag-array-basic-return-type
     (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                  (true-listp trees)
-                  (all-axe-treep trees)
+                  (axe-tree-listp trees)
                   (all-bounded-axe-treep trees dag-len)
                   (symbol-alistp var-replacement-alist)
                   (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)

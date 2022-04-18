@@ -60,19 +60,13 @@
              (bounded-darg-listp items1 bound)
            (bounded-darg-listp items2 bound))))
 
-(defthm all-axe-treep-when-bounded-darg-listp
+(defthm axe-tree-listp-when-bounded-darg-listp
   (implies (bounded-darg-listp args dag-len) ;dag-len is a free var
-           (all-axe-treep args))
-  :hints (("Goal" :in-theory (enable all-axe-treep
+           (axe-tree-listp args))
+  :hints (("Goal" :in-theory (enable axe-tree-listp
                                      bounded-darg-listp
                                      axe-treep
                                      dargp-less-than))))
-
-(defthm all-axe-treep-of-cons
-  (equal (all-axe-treep (cons tree trees))
-         (and (axe-treep tree)
-              (all-axe-treep trees)))
-  :hints (("Goal" :in-theory (enable all-axe-treep))))
 
 ;(local (in-theory (disable CONSP-FROM-LEN-CHEAP)))
 

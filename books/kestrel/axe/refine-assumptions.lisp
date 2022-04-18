@@ -213,16 +213,16 @@
   :hints (("Goal" :expand (pseudo-termp (car assumptions))
            :in-theory (enable pseudo-termp add-refined-assumptions-to-dag-array symbol-listp))))
 
-;; (defthm all-axe-treep-of-mv-nth-1-of-add-refined-assumptions-to-dag-array
+;; (defthm axe-tree-listp-of-mv-nth-1-of-add-refined-assumptions-to-dag-array
 ;;   (implies (and (pseudo-term-listp assumptions)
 ;;                 (all-consp assumptions)                 ;todo: what if quoted?
 ;;                 (symbol-listp (map-ffn-symb assumptions)) ;strengthen?
 ;;                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
 ;;                 ;;no error:
 ;;                 (not (mv-nth 0 (add-refined-assumptions-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc)))
-;;                 (all-axe-treep acc)
+;;                 (axe-tree-listp acc)
 ;;                 )
-;;            (all-axe-treep (mv-nth 1 (add-refined-assumptions-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc))))
+;;            (axe-tree-listp (mv-nth 1 (add-refined-assumptions-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc))))
 ;;   :hints (("Goal" :expand (pseudo-termp (car assumptions))
 ;;            :in-theory (enable pseudo-termp add-refined-assumptions-to-dag-array symbol-listp))))
 

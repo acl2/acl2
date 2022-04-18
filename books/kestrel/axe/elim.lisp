@@ -267,7 +267,7 @@
 
 (defthm axe-treep-of-make-cons-nest
   (equal (axe-treep (make-cons-nest items))
-         (all-axe-treep items))
+         (axe-tree-listp (true-list-fix items)))
   :hints (("Goal" :in-theory (e/d (make-cons-nest)
                                   (axe-treep)))))
 
@@ -279,8 +279,8 @@
                                   (bounded-axe-treep)))))
 
 ;because the var names are symbols
-(defthm all-axe-treep-of-make-var-names-aux
-  (all-axe-treep (make-var-names-aux base-symbol startnum endnum))
+(defthm axe-tree-listp-of-make-var-names-aux
+  (axe-tree-listp (make-var-names-aux base-symbol startnum endnum))
   :hints (("Goal" :in-theory (enable make-var-names-aux))))
 
 ;because the var names are symbols

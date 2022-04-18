@@ -94,10 +94,10 @@
          (and (symbol-listp (strip-cars doublets))
               (pseudo-term-listp (strip-cadrs doublets)))))
 
-(defthm all-axe-treep-of-keep-atoms-when-contextp
+(defthm axe-tree-listp-of-keep-atoms-when-contextp
   (implies (and (contextp x)
                 (not (equal :false x)))
-           (all-axe-treep (keep-atoms x)))
+           (axe-tree-listp (keep-atoms x)))
   :hints (("Goal" :in-theory (enable keep-atoms contextp))))
 
 ;move
@@ -227,7 +227,7 @@
     (:CONGRUENCE IFF-IMPLIES-EQUAL-NOT)
     ;; (:CONGRUENCE PERM-IMPLIES-EQUAL-BOUNDED-DARG-LISTP-1)
     (:DEFINITION =)
-    (:DEFINITION ALL-AXE-TREEP)
+    (:DEFINITION AXE-TREE-LISTP)
     ;;(:DEFINITION AXE-RULE-HYP-LISTP)
     (:DEFINITION ENDP)
     (:DEFINITION EQ)
@@ -250,7 +250,7 @@
     (:EXECUTABLE-COUNTERPART =)
     (:EXECUTABLE-COUNTERPART ACL2-NUMBERP)
     (:EXECUTABLE-COUNTERPART ALL-<)
-    (:EXECUTABLE-COUNTERPART ALL-AXE-TREEP)
+    (:EXECUTABLE-COUNTERPART AXE-TREE-LISTP)
     (:EXECUTABLE-COUNTERPART ALL-NATP)
     (:EXECUTABLE-COUNTERPART ALL-STORED-AXE-RULEP)
     (:EXECUTABLE-COUNTERPART ASSOC-KEYWORD)
@@ -331,8 +331,8 @@
     (:REWRITE ALL-<-TRANSITIVE)
     (:REWRITE ALL-<-TRANSITIVE-FREE)
     (:REWRITE ALL-<-TRANSITIVE-FREE-2)
-    (:REWRITE ALL-AXE-TREEP-OF-CDR)
-    (:REWRITE ALL-AXE-TREEP-OF-CDR-2)
+    (:REWRITE AXE-TREE-LISTP-OF-CDR)
+    (:REWRITE AXE-TREE-LISTP-OF-CDR-2)
     (:REWRITE ALL-BOUNDED-AXE-TREEP-MONO)
     (:REWRITE ALL-BOUNDED-AXE-TREEP-OF-CDR)
     (:REWRITE ALL-BOUNDED-AXE-TREEP-OF-CDR-2)
@@ -432,7 +432,7 @@
     (:TYPE-PRESCRIPTION ALEN1-TYPE)
     (:TYPE-PRESCRIPTION ALISTP)
     (:TYPE-PRESCRIPTION ALL-<)
-    (:TYPE-PRESCRIPTION ALL-AXE-TREEP)
+    (:TYPE-PRESCRIPTION AXE-TREE-LISTP)
     (:TYPE-PRESCRIPTION ALL-BOUNDED-AXE-TREEP)
     (:TYPE-PRESCRIPTION ALL-CONSP)
     (:TYPE-PRESCRIPTION BOUNDED-DARG-LISTP)
@@ -899,7 +899,7 @@
                           ;;list::nth-with-large-index-2
                           nat-listp
                           rational-listp
-                          ;;ALL-AXE-TREEP ;try
+                          ;;AXE-TREE-LISTP ;try
                           (:FORWARD-CHAINING ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP)
                           (:FORWARD-CHAINING INTEGER-LISTP-FORWARD-TO-RATIONAL-LISTP)
                           (:FORWARD-CHAINING NAT-LISTP-FORWARD-TO-INTEGER-LISTP)
@@ -1930,8 +1930,7 @@
                                       equiv-alist print info tries interpreted-function-alist monitored-symbols
                                       embedded-dag-depth case-designator prover-depth
                                       options count)
-          (declare (xargs :guard (and (true-listp trees)
-                                      (all-axe-treep trees)
+          (declare (xargs :guard (and (axe-tree-listp trees)
                                       ;; TODO: Consider using nil for the equivs in any case where we can't do better that equal (no entry in the equiv-alist, or even when the remaining args of the call don't need to be treated specially):
                                       (or (eq :equal equivs) ;means use 'equal for all the equivs
                                           (and (equiv-listp equivs)
@@ -2283,8 +2282,7 @@
                                     (triesp tries)))))
            :FLAG ,SIMPLIFY-TREE-name)
          (DEFTHM ,(pack$ SIMPLIFY-TREES-name '-return-type)
-           (IMPLIES (and (true-listp trees)
-                         (all-axe-treep trees)
+           (IMPLIES (and (axe-tree-listp trees)
                          (or (eq :equal equivs) ;means use 'equal for all the equivs
                              (and (equiv-listp equivs)
                                   (equal (len equivs) (len trees))))
@@ -2383,17 +2381,17 @@
                                ;; ,(pack$ 'bounded-axe-treep-of-mv-nth-0-of- instantiate-hyp-name)
                                ;; ,(pack$ 'consp-of-mv-nth-0-of- instantiate-hyp-name)
                                ;; ,(pack$ 'not-equal-of-quote-and-car-of-mv-nth-0-of- instantiate-hyp-name)
-                               ;; ,(pack$ 'all-axe-treep-of-cdr-of-mv-nth-0-of- instantiate-hyp-name)
+                               ;; ,(pack$ 'axe-tree-listp-of-cdr-of-mv-nth-0-of- instantiate-hyp-name)
                                ;; rules about the free-vars verion:
                                ,(pack$ 'axe-treep-of- instantiate-hyp-free-vars-name)
                                ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-free-vars-name)
                                ,(pack$ 'consp-of- instantiate-hyp-free-vars-name)
-                               ,(pack$ 'all-axe-treep-of-cdr-of- instantiate-hyp-free-vars-name)
+                               ,(pack$ 'axe-tree-listp-of-cdr-of- instantiate-hyp-free-vars-name)
                                ;; rules about the no-free-vars verion:
                                ,(pack$ 'axe-treep-of- instantiate-hyp-no-free-vars-name)
                                ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-no-free-vars-name)
                                ,(pack$ 'consp-of- instantiate-hyp-no-free-vars-name)
-                               ,(pack$ 'all-axe-treep-of-cdr-of- instantiate-hyp-no-free-vars-name)
+                               ,(pack$ 'axe-tree-listp-of-cdr-of- instantiate-hyp-no-free-vars-name)
                                ,@*make-prover-simple-rules*
                                alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep
                                alist-suitable-for-hypsp-when-axe-sytaxp-car
@@ -2600,8 +2598,7 @@
                                   (,(pack$ simplify-tree-name '-return-type))))))
 
        (defthm ,(pack$ simplify-trees-name '-return-type-corollary)
-           (implies (and (true-listp trees)
-                         (all-axe-treep trees)
+           (implies (and (axe-tree-listp trees)
                          (or (eq :equal equivs) ;means use 'equal for all the equivs
                              (and (equiv-listp equivs)
                                   (equal (len equivs) (len trees))))
@@ -2636,7 +2633,7 @@
 
        (defthm ,(pack$ simplify-trees-name '-return-type-corollary-linear)
          (implies (and (true-listp trees)
-                       (all-axe-treep trees)
+                       (axe-tree-listp trees)
                        (or (eq :equal equivs) ;means use 'equal for all the equivs
                            (and (equiv-listp equivs)
                                 (equal (len equivs) (len trees))))
@@ -2712,12 +2709,12 @@
                                ,(pack$ 'axe-treep-of- instantiate-hyp-free-vars-name)
                                ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-free-vars-name)
                                ,(pack$ 'consp-of- instantiate-hyp-free-vars-name)
-                               ,(pack$ 'all-axe-treep-of-cdr-of- instantiate-hyp-free-vars-name)
+                               ,(pack$ 'axe-tree-listp-of-cdr-of- instantiate-hyp-free-vars-name)
                                ;; rules about the no-free-vars verion:
                                ,(pack$ 'axe-treep-of- instantiate-hyp-no-free-vars-name)
                                ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-no-free-vars-name)
                                ,(pack$ 'consp-of- instantiate-hyp-no-free-vars-name)
-                               ,(pack$ 'all-axe-treep-of-cdr-of- instantiate-hyp-no-free-vars-name)
+                               ,(pack$ 'axe-tree-listp-of-cdr-of- instantiate-hyp-no-free-vars-name)
                                (:e booleanp)
                                (:e expt)
                                (:e eqlablep)
