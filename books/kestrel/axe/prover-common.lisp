@@ -1020,7 +1020,7 @@
 ;; (defun lookup-non-quoteps (array-name array indices)
 ;;   (declare (xargs :guard (and (array1p array-name array)
 ;;                               (true-listp indices)
-;;                               (all-dargp-less-than indices (alen1 array-name array)))))
+;;                               (bounded-darg-listp indices (alen1 array-name array)))))
 ;;   (if (endp indices)
 ;;       nil
 ;;     (let ((index (car indices)))

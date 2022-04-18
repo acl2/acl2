@@ -208,23 +208,6 @@
         ;;nothing to strip:
         nil))))
 
-;move
-(defthm integerp-of-nth-when-all-dargp-less-than
-  (implies (and (all-dargp-less-than args bound)
-                (not (consp (nth n args)))
-                (natp n)
-                (< n (len args)))
-           (integerp (nth n args)))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than nth) (NTH-OF-CDR)))))
-
-(defthm integerp-of-nth-when-all-dargp-less-than-special
-  (implies (and (all-dargp-less-than (cdr expr) bound)
-                (not (consp (nth n expr)))
-                (posp n)
-                (< n (len expr)))
-           (integerp (nth n expr)))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than nth) (NTH-OF-CDR)))))
-
 (defthm natp-of-strip-invisible-fns
   (implies (and (bounded-dag-exprp nodenum expr)
                 (strip-invisible-fns fn expr))

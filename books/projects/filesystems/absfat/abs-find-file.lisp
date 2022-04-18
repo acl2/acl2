@@ -966,8 +966,7 @@
                                 path)
           (abs-find-file-helper (frame->root frame)
                                 path)))
-  :hints (("goal" :in-theory (e/d (collapse dist-names collapse-this
-                                            fat32-filename-list-prefixp-alt)
+  :hints (("goal" :in-theory (e/d (collapse dist-names collapse-this)
                                   (abs-find-file-helper-of-collapse-lemma-6))
            :induct (collapse frame)))
   :rule-classes
@@ -1121,7 +1120,8 @@
     :do-not-induct t
     :in-theory (e/d (abs-find-file-helper abs-addrs-of-ctx-app-lemma-2
                                           len-of-fat32-filename-list-fix)
-                    (abs-find-file-helper-of-collapse-lemma-2))
+                    (abs-find-file-helper-of-collapse-lemma-2
+                     collapse-hifat-place-file-lemma-113))
     :use
     ((:instance
       abs-find-file-helper-of-collapse-lemma-2
@@ -1573,7 +1573,6 @@
   abs-find-file-correctness-1-lemma-19
   (implies
    (and
-    (fat32-filename-list-p path)
     (equal
      (mv-nth
       1
@@ -1690,8 +1689,7 @@
                                                          frame)))
                        frame))))
        (frame-val->path (cdr (assoc-equal (1st-complete frame)
-                                          frame))))))
-    :in-theory (enable fat32-filename-list-prefixp-alt))))
+                                          frame)))))))))
 
 (defthm
   abs-find-file-correctness-1-lemma-57
@@ -2203,7 +2201,8 @@
       (:rewrite abs-find-file-correctness-1-lemma-6)
       (:congruence
        fat32-filename-list-equiv-implies-fat32-filename-list-equiv-take-2)
-      intersectp-member))
+      intersectp-member
+      collapse-hifat-place-file-lemma-113))
     :use
     ((:instance abs-separate-of-frame->frame-of-collapse-this-lemma-3
                 (x (1st-complete frame))
@@ -2482,7 +2481,7 @@
   ;; Important - states that when we have the collapse property, we can't have
   ;; any frame other than the root with stuff in it if the root has stuff in it.
   (defthmd
-    abs-find-file-correctness-1-lemma-36
+    abs-find-file-correctness-lemma-19
     (implies
      (and (no-duplicatesp-equal (strip-cars (frame->frame frame)))
           (frame-p (frame->frame frame))
@@ -2506,7 +2505,7 @@
       (mv (abs-file-fix nil) *enoent*)))
     :hints (("goal" :induct (induction-scheme frame path x)
              :in-theory
-             (enable collapse len-of-fat32-filename-list-fix)))))
+             (e/d (collapse len-of-fat32-filename-list-fix) (collapse-hifat-place-file-lemma-113))))))
 
 (local
  (defthm
@@ -2619,7 +2618,7 @@
     :do-not-induct t
     :use
     ((:instance
-      (:rewrite abs-find-file-correctness-1-lemma-36)
+      (:rewrite abs-find-file-correctness-lemma-19)
       (frame
        (frame-with-root
         (ctx-app root
@@ -2683,7 +2682,7 @@
                      ((:type-prescription 1st-complete-correctness-1)))
      :use
      ((:instance
-       (:rewrite abs-find-file-correctness-1-lemma-36)
+       (:rewrite abs-find-file-correctness-lemma-19)
        (frame
         (collapse-this frame (1st-complete (frame->frame frame))))
        (x y))
@@ -2742,7 +2741,7 @@
      :in-theory (enable collapse)
      :use
      ((:instance
-       (:rewrite abs-find-file-correctness-1-lemma-36)
+       (:rewrite abs-find-file-correctness-lemma-19)
        (frame
         (frame-with-root
          (ctx-app
@@ -2948,20 +2947,6 @@
         x y))
       (t (mv frame x y)))))
 
-  (local
-   (in-theory (e/d (collapse len-of-fat32-filename-list-fix)
-                   ((:rewrite abs-addrs-when-m1-file-alist-p)
-                    (:rewrite
-                     abs-find-file-of-put-assoc-lemma-7 . 1)
-                    (:rewrite prefixp-when-equal-lengths)
-                    (:rewrite abs-find-file-of-remove-assoc-1)
-                    (:rewrite nthcdr-when->=-n-len-l)
-                    (:rewrite prefixp-one-way-or-another . 1)
-                    (:definition remove-equal)
-                    (:rewrite abs-file-alist-p-correctness-1)
-                    (:rewrite remove-when-absent)
-                    (:definition member-equal)))))
-
   ;; The induction scheme and subgoals were a drag, but this is important
   ;; because it helps reason about two different variables in a frame.
   (defthmd
@@ -2998,7 +2983,20 @@
         (len (frame-val->path (cdr (assoc-equal y (frame->frame frame)))))
         path))
       (mv (abs-file-fix nil) *enoent*)))
-    :hints (("goal" :induct (induction-scheme frame x y)))))
+    :hints (("goal" :induct (induction-scheme frame x y)
+             :in-theory (e/d (collapse len-of-fat32-filename-list-fix)
+                             ((:rewrite abs-addrs-when-m1-file-alist-p)
+                              (:rewrite
+                               abs-find-file-of-put-assoc-lemma-7 . 1)
+                              (:rewrite prefixp-when-equal-lengths)
+                              (:rewrite abs-find-file-of-remove-assoc-1)
+                              (:rewrite nthcdr-when->=-n-len-l)
+                              (:rewrite prefixp-one-way-or-another . 1)
+                              (:definition remove-equal)
+                              (:rewrite abs-file-alist-p-correctness-1)
+                              (:rewrite remove-when-absent)
+                              (:definition member-equal)
+                              collapse-hifat-place-file-lemma-113))))))
 
 (local
  (defthmd
@@ -3644,7 +3642,7 @@
    (("goal" :induct (abs-find-file-alt (frame->frame frame)
                                        indices path)
      :in-theory (enable abs-find-file-alt))
-    ("subgoal *1/2''" :use (:instance abs-find-file-correctness-1-lemma-36
+    ("subgoal *1/2''" :use (:instance abs-find-file-correctness-lemma-19
                                       (x (car indices)))))))
 
 (defthm
@@ -3815,16 +3813,14 @@
                                    path))
      (abs-find-file (remove-assoc-equal name frame)
                     path))))
-  :hints
-  (("goal" :do-not-induct t
-    :in-theory
-    (e/d (fat32-filename-list-prefixp-alt remove-assoc-of-put-assoc)
-         (abs-find-file-of-put-assoc))
-    :use ((:instance abs-find-file-correctness-1-lemma-48
-                     (x name)
-                     (frame (put-assoc-equal name val frame))
-                     (root root))
-          abs-find-file-of-put-assoc))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (e/d (remove-assoc-of-put-assoc)
+                           (abs-find-file-of-put-assoc))
+           :use ((:instance abs-find-file-correctness-1-lemma-48
+                            (x name)
+                            (frame (put-assoc-equal name val frame))
+                            (root root))
+                 abs-find-file-of-put-assoc))))
 
 ;; Seriously, let's not mess around with the structure of this proof - it's
 ;; actually a good thing for redundant computation to be avoided.
@@ -3836,7 +3832,8 @@
     (e/d
      (abs-find-file collapse
                     abs-complete-when-atom-abs-addrs
-                    len-of-fat32-filename-list-fix)
+                    len-of-fat32-filename-list-fix
+                    fat32-filename-list-prefixp-alt)
      ((:definition remove-equal)
       (:definition assoc-equal)
       (:definition member-equal)
@@ -3861,11 +3858,12 @@
       (:definition put-assoc-equal)
       (:rewrite abs-no-dups-p-of-cdr)
       (:rewrite remove-assoc-when-absent-1)
-      (:REWRITE ASSOC-AFTER-PUT-ASSOC)
-      (:REWRITE ABS-FIND-FILE-CORRECTNESS-1-LEMMA-45)
-      (:REWRITE ABS-FIND-FILE-OF-FRAME->FRAME-1)
-      (:REWRITE ABS-COMPLETE-WHEN-M1-FILE-ALIST-P)
-      (:REWRITE TRUE-LISTP-OF-PUT-ASSOC)))))
+      (:rewrite assoc-after-put-assoc)
+      (:rewrite abs-find-file-correctness-1-lemma-45)
+      (:rewrite abs-find-file-of-frame->frame-1)
+      (:rewrite abs-complete-when-m1-file-alist-p)
+      (:rewrite true-listp-of-put-assoc)
+      collapse-hifat-place-file-lemma-113))))
 
   ;; It's important to note that these hypotheses are not the same as
   ;; good-frame-p, because they do not stipulate that
@@ -3897,12 +3895,11 @@
                                   (hifat-find-file (mv-nth 0 (collapse frame))
                                                    path))))))
     :hints
-    (("goal" :induct (collapse frame) :do-not-induct t
-      :in-theory (enable fat32-filename-list-prefixp-alt))
+    (("goal" :induct (collapse frame) :do-not-induct t)
      (if (not stable-under-simplificationp)
          nil
        '(:in-theory
-         (e/d (collapse-this fat32-filename-list-prefixp-alt)
+         (e/d (collapse-this)
               ((:rewrite abs-find-file-correctness-1-lemma-43)))
          :do-not-induct t
          :expand

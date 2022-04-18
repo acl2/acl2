@@ -86,13 +86,13 @@
   :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false car-becomes-nth-of-0 NATP-OF-+-OF-1)
                                   (natp)))))
 
-(defthm all-dargp-less-than-of-strip-cdrs-of-match-hyp-with-nodenum-to-assume-false
+(defthm bounded-darg-listp-of-strip-cdrs-of-match-hyp-with-nodenum-to-assume-false
   (implies (and (axe-treep hyp)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp nodenum-to-assume-false)
                 (< nodenum-to-assume-false dag-len)
                 (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
-           (all-dargp-less-than (strip-cdrs (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)) dag-len))
+           (bounded-darg-listp (strip-cdrs (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)) dag-len))
   :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false car-becomes-nth-of-0 NATP-OF-+-OF-1)
                                   (natp)))))
 

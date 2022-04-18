@@ -179,14 +179,14 @@
 (defthm-flag-sublis-var-and-eval
   (defthm bounded-axe-treep-of-sublis-var-and-eval
     (implies (and ;(eq 'quote (car (sublis-var-and-eval alist form interpreted-function-alist)))
-                  (all-dargp-less-than (strip-cdrs alist) dag-len)
+                  (bounded-darg-listp (strip-cdrs alist) dag-len)
                   (pseudo-termp form)
                   )
              (bounded-axe-treep (sublis-var-and-eval alist form interpreted-function-alist) dag-len))
     :flag sublis-var-and-eval)
   (defthm all-bounded-axe-treep-of-mv-nth-1-of-sublis-var-and-eval-lst
     (implies (and ;(mv-nth 0 (sublis-var-and-eval-lst alist l interpreted-function-alist))
-                  (all-dargp-less-than (strip-cdrs alist) dag-len)
+                  (bounded-darg-listp (strip-cdrs alist) dag-len)
                   (pseudo-term-listp l))
              (all-bounded-axe-treep (mv-nth 1 (sublis-var-and-eval-lst alist l interpreted-function-alist)) dag-len))
     :flag sublis-var-and-eval-lst)

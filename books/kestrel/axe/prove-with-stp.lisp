@@ -84,7 +84,7 @@
 (defund unify-tree-with-any-dag-node-no-wrap (tree nodenums-or-quoteps dag-array dag-len alist-acc)
   (declare (xargs :guard (and (axe-treep tree)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (all-dargp-less-than nodenums-or-quoteps dag-len)
+                              (bounded-darg-listp nodenums-or-quoteps dag-len)
                               (symbol-alistp alist-acc))))
   (if (atom nodenums-or-quoteps)
       (mv nil nil nil)
@@ -100,7 +100,7 @@
 
 (defthm all-dargp-of-strip-cdrs-of-unify-tree-with-any-dag-node-no-wrap
   (implies (and (axe-treep tree)
-                (all-dargp-less-than nodenums-or-quoteps dag-len)
+                (bounded-darg-listp nodenums-or-quoteps dag-len)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-dargp (strip-cdrs alist-acc))
                 (symbol-alistp alist-acc))
@@ -110,7 +110,7 @@
 
 (defthm unify-tree-with-any-dag-node-no-wrap-binds-all
   (implies (and (axe-treep tree)
-                (all-dargp-less-than nodenums-or-quoteps dag-len)
+                (bounded-darg-listp nodenums-or-quoteps dag-len)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-dargp (strip-cdrs alist-acc))
                 (symbol-alistp alist-acc)
@@ -121,7 +121,7 @@
 (defthm assoc-equal-of-strip-cars-of-unify-tree-with-any-dag-node-no-wrap-binds-all
   (implies (and (member-equal var (axe-tree-vars tree))
                 (axe-treep tree)
-                (all-dargp-less-than nodenums-or-quoteps dag-len)
+                (bounded-darg-listp nodenums-or-quoteps dag-len)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-dargp (strip-cdrs alist-acc))
                 (symbol-alistp alist-acc)
@@ -1088,8 +1088,7 @@
 (defund can-always-translate-expr-to-stp (fn args dag-array-name dag-array dag-len known-nodenum-type-alist print)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp fn)
-                              (true-listp args)
-                              (all-dargp-less-than args dag-len)
+                              (bounded-darg-listp args dag-len)
                               (nodenum-type-alistp known-nodenum-type-alist)))
            (ignore dag-len))
   (case fn
@@ -1340,7 +1339,7 @@
                               (symbol-alistp var-type-alist)
                               (string-treep extra-asserts))
                   :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp car-becomes-nth-of-0
-                                                           not-<-of-nth-when-all-dargp-less-than-gen)))))
+                                                           not-<-of-nth-when-bounded-darg-listp-gen)))))
   (make-string-tree (and (eq 'bvmult (ffn-symb expr))
                          (= 3 (len (dargs expr)))
                          (quoted-posp (darg1 expr))
@@ -1617,9 +1616,10 @@
                            )))
 
 (defthmd all-<-when-all-dargp
-  (implies (all-dargp x)
+  (implies (and (all-dargp x)
+                (true-listp x))
            (equal (all-< (keep-atoms x) bound)
-                  (all-dargp-less-than x bound)))
+                  (bounded-darg-listp x bound)))
   :hints (("Goal" :in-theory (enable keep-atoms))))
 
 (local (in-theory (enable all-<-when-all-dargp)))
@@ -2246,8 +2246,7 @@
                                     state)
   (declare (xargs :stobjs state
                   :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (all-dargp-less-than disjuncts dag-len)
-                              (true-listp disjuncts)
+                              (bounded-darg-listp disjuncts dag-len)
                               (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                               (equal (alen1 'dag-parent-array dag-parent-array)
                                      (alen1 'dag-array dag-array))

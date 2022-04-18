@@ -13,28 +13,15 @@
 (in-package "ACL2")
 
 (include-book "dag-exprs")
-(include-book "all-dargp-less-than")
+(include-book "bounded-darg-listp")
+(include-book "bounded-darg-listp")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
 ;;;
 ;;; bounded-dag-exprp
 ;;;
 
-(defund bounded-darg-listp (dargs bound)
-  (declare (xargs :guard (natp bound)
-                  :split-types t)
-           (type (integer 0 *) bound))
-  (if (atom dargs)
-      (null dargs)
-    (let ((darg (first dargs)))
-      (and (dargp-less-than darg bound)
-           (bounded-darg-listp (rest dargs) bound)))))
 
-(defthm bounded-darg-listp-redef
-  (equal (bounded-darg-listp dargs bound)
-         (and (all-dargp-less-than dargs bound)
-              (true-listp dargs)))
-  :hints (("Goal" :in-theory (enable bounded-darg-listp all-dargp-less-than))))
 
 ;; Check that EXPR is a suitable DAG expr for node NODENUM.  That is, EXPR must
 ;; be a dag-expr and all nodenums it mentions must be less than NODENUM.
@@ -47,7 +34,7 @@
   (mbe :logic (and (dag-exprp expr)
                    (if (and (consp expr)
                             (not (eq 'quote (car expr))))
-                       (all-dargp-less-than (dargs expr) nodenum)
+                       (bounded-darg-listp (dargs expr) nodenum)
                      t))
        :exec (if (atom expr)
                  (symbolp expr)
@@ -75,23 +62,23 @@
                   (equal nil (cdr args)))
            (and (symbolp fn)
                 (true-listp args)
-                (all-dargp-less-than args nodenum))))
+                (bounded-darg-listp args nodenum))))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
-(defthm all-dargp-less-than-when-bounded-dag-exprp
+(defthm bounded-darg-listp-when-bounded-dag-exprp
   (implies (and (bounded-dag-exprp nodenum expr)
                 ;; (consp expr)
                 (not (eq 'quote (car expr))))
-           (all-dargp-less-than (dargs expr) nodenum))
+           (bounded-darg-listp (dargs expr) nodenum))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp
                                      dargs-when-not-consp-cheap))))
 
-(defthm all-dargp-less-than-when-bounded-dag-exprp-gen
+(defthm bounded-darg-listp-when-bounded-dag-exprp-gen
   (implies (and (bounded-dag-exprp free expr)
                 ;; (consp expr)
                 (not (eq 'quote (car expr)))
                 (<= free nodenum))
-           (all-dargp-less-than (dargs expr) nodenum))
+           (bounded-darg-listp (dargs expr) nodenum))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
 (defthm bounded-dag-exprp-and-consp-forward-to-true-listp-of-dargs
@@ -168,16 +155,17 @@
                 (not (consp (nth n (dargs expr)))) ;rules out a quotep
                 )
            (< (nth n (dargs expr)) nodenum))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp <-OF-NTH-WHEN-ALL-DARGP-LESS-THAN))))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp <-OF-NTH-WHEN-BOUNDED-DARG-LISTP))))
 
 (defthm symbolp-of-car-when-bounded-dag-exprp
   (implies (bounded-dag-exprp nodenum expr) ;nodenum is a free var
            (symbolp (car expr)))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
-(defthm all-dargp-less-than-of-0
-  (equal (all-dargp-less-than items 0)
-         (all-myquotep items))
+(defthm bounded-darg-listp-of-0
+  (equal (bounded-darg-listp items 0)
+         (and (all-myquotep items)
+              (true-listp items)))
   :hints (("Goal" :in-theory (enable all-myquotep))))
 
 (defthm bounded-dag-exprp-when-symbolp-cheap
@@ -187,12 +175,12 @@
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
 ;not tight?
-(defthmd bound-lemma-for-car-when-all-dargp-less-than
-  (implies (and (all-dargp-less-than items n)
+(defthmd bound-lemma-for-car-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp items n)
                 (consp items)
                 (not (consp (car items))))
            (not (< n (car items))))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 ;;;
 ;;; largest-non-quotep
@@ -276,22 +264,22 @@
   :hints (("Goal" :in-theory (enable largest-non-quotep))))
 
 (defthm <-of-largest-non-quotep
-  (implies (and (all-dargp-less-than args nodenum)
+  (implies (and (bounded-darg-listp args nodenum)
     ;(natp nodenum)
                 (<= 0 NODENUM)
                 )
            (< (largest-non-quotep args)
               nodenum))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable largest-non-quotep all-dargp-less-than))))
+  :hints (("Goal" :in-theory (enable largest-non-quotep bounded-darg-listp))))
 
 ;this weaker version is needed to match right
 (defthm <=-of-largest-non-quotep
-  (implies (and (all-dargp-less-than args nodenum)
+  (implies (and (bounded-darg-listp args nodenum)
                 (natp nodenum))
            (<= (largest-non-quotep args)
                nodenum))
-  :hints (("Goal" :in-theory (enable largest-non-quotep all-dargp-less-than))))
+  :hints (("Goal" :in-theory (enable largest-non-quotep bounded-darg-listp))))
 
 (defthm largest-non-quotep-when-all-myquotep-cheap
   (implies (all-myquotep items)
@@ -307,45 +295,40 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable largest-non-quotep))))
 
-(defthm <-of-1-and-len-of-nth-when-all-dargp-less-than
-  (implies (and (all-dargp-less-than args bound)
+(defthm <-of-1-and-len-of-nth-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp args bound)
                 (natp n)
                 (< n (len args)))
            (equal (< 1 (len (nth n args)))
                   (consp (nth n args))))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than dargp-less-than nth) ()))))
+  :hints (("Goal" :in-theory (e/d (bounded-darg-listp dargp-less-than nth) ()))))
 
-(defthm natp-of-nth-when-all-dargp-less-than-gen
-  (implies (and (all-dargp-less-than vals bound)
+(defthm natp-of-nth-when-bounded-darg-listp-gen
+  (implies (and (bounded-darg-listp vals bound)
                 (natp n)
                 (< n (len vals)))
            (equal (natp (nth n vals))
                   (not (consp (nth n vals)))))
   :hints
-  (("Goal" :in-theory (enable all-dargp-less-than))))
+  (("Goal" :in-theory (enable bounded-darg-listp))))
 
 ;true whether it's a quotep or nodenum
-(defthmd not-cddr-when-all-dargp-less-than
-  (implies (and (all-dargp-less-than items bound)
+(defthmd not-cddr-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp items bound)
          ;       (consp item)
                 (member-equal item items))
            (not (cddr item)))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
-(defthm not-cddr-of-nth-when-all-dargp-less-than
-  (implies (and (all-dargp-less-than args bound) ;bound is a free var
+(defthm not-cddr-of-nth-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp args bound) ;bound is a free var
                 (natp n)
                 (< n (len args)))
            (not (cddr (nth n args))))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
-(defthm all-dargp-less-than-of-reverse-list
-  (equal (all-dargp-less-than (reverse-list items) bound)
-         (all-dargp-less-than items bound))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than reverse-list))))
-
-(defthm dargp-of-nth-when-all-dargp-less-than
-  (implies (and (all-dargp-less-than args bound)
+(defthm dargp-of-nth-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp args bound)
                 (< n (len args))
                 (natp n))
            (dargp (nth n args)))
@@ -372,11 +355,11 @@
   :hints (("Goal" :in-theory (enable bounded-dag-exprp
                                      dag-exprp))))
 
-(defthm all-dargp-less-than-of-dargs-when-bounded-dag-exprp
+(defthm bounded-darg-listp-of-dargs-when-bounded-dag-exprp
   (implies (and (bounded-dag-exprp nodenum expr)
                 ;; (consp expr)
                 (not (equal 'quote (car expr))))
-           (all-dargp-less-than (dargs expr) nodenum))
+           (bounded-darg-listp (dargs expr) nodenum))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp
                                      dargs-when-not-consp-cheap))))
 

@@ -95,7 +95,7 @@
         (handle-constant-disjuncts (rest disjuncts) (cons disjunct acc))))))
 
 (defthm all-<-of-mv-nth-1-of-handle-constant-disjuncts
-  (implies (and (all-dargp-less-than disjuncts bound)
+  (implies (and (bounded-darg-listp disjuncts bound)
                 (all-< acc bound))
            (all-< (mv-nth 1 (handle-constant-disjuncts disjuncts acc)) bound))
   :hints (("Goal" :in-theory (enable handle-constant-disjuncts))))

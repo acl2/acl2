@@ -1,6 +1,6 @@
 ; Top file for number theory library
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "primep-def")
-
+(include-book "primep-def-doc")
+(include-book "prime")
 (include-book "divides")
 (include-book "primes")
 (include-book "mod")

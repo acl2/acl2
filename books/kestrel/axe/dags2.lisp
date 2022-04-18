@@ -349,19 +349,19 @@
                   (not (integerp (cdr (assoc-equal arg renumbering))))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
-(defthm all-dargp-less-than-of-renumber-dag-expr-args
-  (implies (and (all-dargp-less-than args nodenum2)
+(defthm bounded-darg-listp-of-renumber-dag-expr-args
+  (implies (and (bounded-darg-listp args nodenum2)
                 (natp nodenum2)
                 (natp nodenum)
                 (maps-everything-to-quote-or-nodenum-less-than renumbering nodenum)
                 (binds-all-nats-up-to (+ -1 nodenum2) renumbering)
                 (renumberingp renumbering))
-           (all-dargp-less-than (renumber-dag-expr-args args renumbering) nodenum))
+           (bounded-darg-listp (renumber-dag-expr-args args renumbering) nodenum))
   :hints (("Goal" :induct (renumber-dag-expr-args args renumbering)
            :in-theory (enable renumber-dag-expr renumber-dag-expr-arg bounded-dag-exprp dargp-less-than))))
 
 (defthm all-dargp-of-renumber-dag-expr-args
-  (implies (and (all-dargp-less-than args nodenum2)
+  (implies (and (bounded-darg-listp args nodenum2)
                 (natp nodenum2)
                 (natp nodenum)
                 (maps-everything-to-quote-or-nodenum-less-than renumbering nodenum)
@@ -401,12 +401,11 @@
            (BOUNDED-DAG-EXPRP (CAR (CAR dag)) (CDR (CAR dag))))
   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
-(defthm RENUMBER-DAG-EXPR-ARGS-when-ALL-DARGP-LESS-THAN-of-0
-  (implies (and (ALL-DARGP-LESS-THAN args 0)
-                (true-listp args))
+(defthm RENUMBER-DAG-EXPR-ARGS-when-BOUNDED-DARG-LISTP-of-0
+  (implies (BOUNDED-DARG-LISTP args 0)
            (equal (RENUMBER-DAG-EXPR-ARGS args RENUMBERING)
                   args))
-  :hints (("Goal" :in-theory (enable ALL-DARGP-LESS-THAN RENUMBER-DAG-EXPR-ARG))))
+  :hints (("Goal" :in-theory (enable BOUNDED-DARG-LISTP RENUMBER-DAG-EXPR-ARG))))
 
 (defthm renumber-dag-expr-when-bounded-dag-exprp-of-0
   (implies (bounded-dag-exprp 0 expr)

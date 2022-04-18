@@ -13,7 +13,7 @@
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "kestrel/booleans/bool-fix" :dir :system)
 (include-book "dags")
-(include-book "all-dargp-less-than")
+(include-book "bounded-darg-listp")
 (include-book "equivs")
 
 ;; Currently, an assumption always indicates that a node is equal to a
@@ -231,15 +231,14 @@
                                                                  print)))
   :hints (("Goal" :in-theory (e/d (maybe-replace-args-using-assumption-array) (dargp)))))
 
-(defthm all-dargp-less-than-of-maybe-replace-args-using-assumption-array
-  (implies (and (all-dargp-less-than args bound)
-                ;(true-listp args)
+(defthm bounded-darg-listp-of-maybe-replace-args-using-assumption-array
+  (implies (and (bounded-darg-listp args bound)
                 ;(equiv-listp equivs)
                 ;(equal (len args) (len equivs))
                 (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
-           (all-dargp-less-than (maybe-replace-args-using-assumption-array args
+           (bounded-darg-listp (maybe-replace-args-using-assumption-array args
                                                                            equivs
                                                                            assumption-array
                                                                            assumption-array-num-valid-nodes

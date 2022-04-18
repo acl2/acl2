@@ -35,7 +35,7 @@
                               (natp core-nodenum)
                               (< core-nodenum dag-len)
                               (true-listp rev-leaves)
-                              (all-dargp-less-than rev-leaves dag-len))
+                              (bounded-darg-listp rev-leaves dag-len))
                   :split-types t
                   :guard-hints (("Goal" :in-theory (e/d (not-cddr-of-nth-when-all-dargp
                                                          dargp-when-myquotep
@@ -67,7 +67,7 @@
   :hyps ((true-listp rev-leaves)
          (natp core-nodenum)
          (< core-nodenum dag-len)
-         (all-dargp-less-than rev-leaves dag-len)
+         (bounded-darg-listp rev-leaves dag-len)
          (myquotep quoted-size)))
 
 ;drop some hyps?
@@ -77,7 +77,7 @@
                 (< core-nodenum dag-len)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 ;; (true-listp rev-leaves)
-                (all-dargp-less-than rev-leaves dag-len)
+                (bounded-darg-listp rev-leaves dag-len)
                 (not (mv-nth 0 (add-bvxor-nest-to-dag-array-aux rev-leaves quoted-size core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
            (dargp (mv-nth 1 (add-bvxor-nest-to-dag-array-aux rev-leaves quoted-size core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
   :hints (("Goal" :in-theory (enable add-bvxor-nest-to-dag-array-aux))))
@@ -88,7 +88,7 @@
                 (< core-nodenum dag-len)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 ;; (true-listp rev-leaves)
-                (all-dargp-less-than rev-leaves dag-len)
+                (bounded-darg-listp rev-leaves dag-len)
                 (not (mv-nth 0 (add-bvxor-nest-to-dag-array-aux rev-leaves quoted-size core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
            (dargp-less-than (mv-nth 1 (add-bvxor-nest-to-dag-array-aux rev-leaves quoted-size core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
                                        (mv-nth 3 (add-bvxor-nest-to-dag-array-aux rev-leaves quoted-size core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
@@ -105,7 +105,7 @@
                               (myquotep quoted-size)
                               (natp size)
                               (true-listp rev-leaves)
-                              (all-dargp-less-than rev-leaves dag-len))
+                              (bounded-darg-listp rev-leaves dag-len))
                   :split-types t
                   :guard-hints (("Goal" :in-theory (e/d (not-cddr-of-nth-when-all-dargp
                                                          dargp-less-than-when-myquotep
@@ -155,13 +155,13 @@
   :dag-array-name dag-array-name
   :dag-parent-array-name dag-parent-array-name
   :hyps ((true-listp rev-leaves)
-         (all-dargp-less-than rev-leaves dag-len)
+         (bounded-darg-listp rev-leaves dag-len)
          (myquotep quoted-size)))
 
 (defthm dargp-of-mv-nth-1-of-add-bvxor-nest-to-dag-array
   (implies (and (myquotep quoted-size)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                (all-dargp-less-than rev-leaves dag-len)
+                (bounded-darg-listp rev-leaves dag-len)
                 (not (mv-nth 0 (add-bvxor-nest-to-dag-array rev-leaves size quoted-size dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
            (dargp (mv-nth 1 (add-bvxor-nest-to-dag-array rev-leaves size quoted-size dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
   :hints (("Goal" :in-theory (e/d (add-bvxor-nest-to-dag-array) (dargp)))))
@@ -169,7 +169,7 @@
 (defthm dargp-less-than-of-mv-nth-1-of-add-bvxor-nest-to-dag-array
   (implies (and (myquotep quoted-size)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                (all-dargp-less-than rev-leaves dag-len)
+                (bounded-darg-listp rev-leaves dag-len)
                 (not (mv-nth 0 (add-bvxor-nest-to-dag-array rev-leaves size quoted-size dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
            (dargp-less-than (mv-nth 1 (add-bvxor-nest-to-dag-array rev-leaves size quoted-size dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
                                        (mv-nth 3 (add-bvxor-nest-to-dag-array rev-leaves size quoted-size dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
