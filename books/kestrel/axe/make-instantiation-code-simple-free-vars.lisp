@@ -19,6 +19,7 @@
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (include-book "all-dargp-less-than")
 (include-book "axe-tree-vars")
+(include-book "alist-suitable-for-hypsp")
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/lambda-free-termp" :dir :system)
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
@@ -45,6 +46,7 @@
     `(encapsulate ()
        (local (include-book "kestrel/lists-light/len" :dir :system))
        (local (include-book "kestrel/lists-light/cons" :dir :system))
+       (local (include-book "kestrel/lists-light/list-sets" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 
@@ -227,7 +229,7 @@
                           (set-difference-equal (free-vars-in-term term)
                                                 (strip-cars alist))))
           :flag ,instantiate-hyp-name)
-        (defthm ,(pack$ 'all-axe-tree-vars-of-mv-nth-1-of- instantiate-hyp-lst-name)
+        (defthm ,(pack$ 'axe-tree-vars-lst-of-mv-nth-1-of- instantiate-hyp-lst-name)
           (implies (and (pseudo-term-listp terms)
                         (all-dargp (strip-cdrs alist))
                         (alistp alist))
@@ -239,7 +241,55 @@
                  :in-theory (enable ,instantiate-hyp-name
                                            ,instantiate-hyp-lst-name
                                            assoc-equal-iff-member-equal-of-strip-cars
-                                           axe-tree-vars)))))))
+                                           axe-tree-vars))))
+
+       ;; ;; All the vars in the alist get replaced when we instantiate
+       ;; (defthm ,(pack$ 'not-intersection-equal-of-strip-cars-and-axe-tree-vars-of- instantiate-hyp-name)
+       ;;   (implies (and (all-dargp (strip-cdrs alist))
+       ;;                 (symbol-alistp alist)
+       ;;                 (pseudo-termp term))
+       ;;            (not (intersection-equal (strip-cars alist)
+       ;;                              (axe-tree-vars (,instantiate-hyp-name term alist interpreted-function-alist)))))
+       ;;   :hints (("Goal" :in-theory (enable axe-tree-vars))))
+
+       (defthm ,(pack$ 'axe-tree-vars-lst-of-cdr-of- instantiate-hyp-name)
+         (implies (and (consp (,instantiate-hyp-name TERM ALIST INTERPRETED-FUNCTION-ALIST))
+                       (not (equal 'quote (car (,instantiate-hyp-name term alist interpreted-function-alist))))
+                       (all-dargp (strip-cdrs alist))
+                       (symbol-alistp alist)
+                       (pseudo-termp term))
+                  (equal (axe-tree-vars-lst (cdr (,instantiate-hyp-name term alist interpreted-function-alist)))
+                         (set-difference-equal (free-vars-in-term term)
+                                               (strip-cars alist))))
+         :hints (("Goal" :use (:instance ,(pack$ 'axe-tree-vars-of- instantiate-hyp-name))
+                  :in-theory (e/d (axe-tree-vars)
+                                  ( ,(pack$ 'axe-tree-vars-of- instantiate-hyp-name))))))
+
+       (defthm ,(pack$ 'alist-suitable-for-hyp-args-and-hypsp-after- instantiate-hyp-name)
+         (implies (and (alist-suitable-for-hypsp alist hyps)
+                       (all-dargp-less-than (strip-cdrs alist) dag-len)
+                       (symbol-alistp alist)
+                       (equal :free-vars (car (car hyps)))
+                       (consp (cdr (car hyps)))
+                       (not (equal 'quote (cadr (car hyps))))
+                       (pseudo-termp (cdr (car hyps)))
+                       (lambda-free-termp (cdr (car hyps)))
+                       (axe-rule-hyp-listp (cdr hyps))
+                       (consp hyps)
+                       (not (equal 'quote (car (,instantiate-hyp-name (cdr (car hyps)) alist interpreted-function-alist)))))
+                  (alist-suitable-for-hyp-args-and-hypsp alist
+                                                         (cdr (,instantiate-hyp-name (cdr (car hyps)) alist interpreted-function-alist))
+                                                         (cdr hyps)))
+         :hints (("Goal" :expand (bound-vars-suitable-for-hypsp (strip-cars alist)
+                                                                hyps)
+                  :in-theory (enable alist-suitable-for-hyp-args-and-hypsp
+                                     alist-suitable-for-hypsp
+                                     bound-vars-suitable-for-hypsp
+                                     bound-vars-suitable-for-hypp
+                                     bound-vars-after-hyp))))
+
+
+       )))
 
 (defmacro make-instantiation-code-simple-free-vars (suffix
                                                     evaluator-base-name)

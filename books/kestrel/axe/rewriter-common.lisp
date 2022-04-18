@@ -19,9 +19,11 @@
 (include-book "unify-term-and-dag-fast")
 (include-book "alist-suitable-for-hypsp")
 (include-book "dags") ;drop
+(include-book "refined-assumption-alists")
 (local (include-book "unify-term-and-dag-fast-correct"))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
+(local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (disable quotep)))
@@ -82,3 +84,21 @@
            (alist-suitable-for-hypsp (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule) args-to-match dag-array dag-len)
                                      (stored-rule-hyps stored-rule)))
   :hints (("Goal" :in-theory (enable alist-suitable-for-hypsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm alist-suitable-for-hypsp-of-alist-suitable-for-hypsp-of-car
+  (implies (and (alist-suitable-for-hyp-args-and-hypsp alist hyp-args other-hyps)
+                (all-dargp-less-than (strip-cdrs alist) dag-len)
+                (symbol-alistp alist)
+                (axe-rule-hyp-listp other-hyps)
+                (true-listp hyp-args)
+                (all-axe-treep hyp-args)
+                (dargp-less-than-list-listp assumption-arg-lists dag-len)
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (consp assumption-arg-lists)
+                (not (equal :fail (unify-trees-with-dag-nodes hyp-args (car assumption-arg-lists) dag-array alist))))
+           (alist-suitable-for-hypsp (unify-trees-with-dag-nodes hyp-args (car assumption-arg-lists) dag-array alist)
+                                     other-hyps))
+  :hints (("Goal" :in-theory (enable alist-suitable-for-hyp-args-and-hypsp
+                                     alist-suitable-for-hypsp))))
