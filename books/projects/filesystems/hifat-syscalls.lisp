@@ -70,8 +70,7 @@
     :rule-classes
     ((:rewrite
       :corollary
-      (fat32-filename-list-prefixp (dirname path) path)
-      :hints (("Goal" :in-theory (enable fat32-filename-list-prefixp-alt))))
+      (fat32-filename-list-prefixp (dirname path) path))
      :rewrite)))
 
 (defund basename (path)

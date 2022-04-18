@@ -73,6 +73,10 @@
                 (keyword-value-listp keyword-value-list))
            (keywordp (car (assoc-keyword key keyword-value-list)))))
 
+(defthm keyword-value-listp-of-assoc-keyword
+  (implies (keyword-value-listp keyword-value-list)
+           (keyword-value-listp (assoc-keyword key keyword-value-list))))
+
 (defthm keyword-listp-of-append
   (equal (keyword-listp (append x y))
          (and (keyword-listp (true-list-fix x))

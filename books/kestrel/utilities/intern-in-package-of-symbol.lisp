@@ -1,6 +1,6 @@
 ; A lightweight book about intern-in-package-of-symbol
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -79,3 +79,18 @@
   :hints (("Goal" :use (:instance equal-of-intern-in-package-of-symbol (sym2 sym) (sym nil))
            :cases ((symbolp sym))
            :in-theory (e/d (intern-in-package-of-symbol-is-identity) (equal-of-intern-in-package-of-symbol)))))
+
+(defthm symbol-package-name-of-intern-in-package-of-symbol
+  (equal (symbol-package-name (intern-in-package-of-symbol str sym))
+         (if (and (symbolp sym)
+                  (stringp str))
+             (if (member-symbol-name str (pkg-imports (symbol-package-name sym)))
+                 (symbol-package-name (car (member-symbol-name str (pkg-imports (symbol-package-name sym)))))
+               (symbol-package-name sym))
+           "COMMON-LISP")))
+
+(defthm keywordp-of-intern-in-package-of-symbol-when-keywordp
+  (implies (keywordp sym)
+           (equal (keywordp (intern-in-package-of-symbol str sym))
+                  (stringp str)))
+  :hints (("Goal" :in-theory (enable keywordp member-equal))))

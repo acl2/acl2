@@ -907,7 +907,8 @@
      :hints
      (("goal" :in-theory (e/d (list-equiv absfat-equiv)
                               ((:rewrite prefixp-when-equal-lengths)
-                               len-when-prefixp))
+                               len-when-prefixp
+                               collapse-hifat-place-file-lemma-113))
        :use ((:instance (:rewrite prefixp-when-equal-lengths)
                         (y (fat32-filename-list-fix z-path))
                         (x (fat32-filename-list-fix y-path)))
@@ -2413,7 +2414,8 @@
       nil))
     :hints
     (("goal"
-      :in-theory (e/d (take-of-nthcdr list-equiv))
+      :in-theory (e/d (take-of-nthcdr list-equiv)
+                      (collapse-hifat-place-file-lemma-113))
       :use
       (:instance
        (:rewrite ctx-app-list-when-set-equiv-lemma-2)
@@ -2575,9 +2577,10 @@
                (frame-val->path (cdr (assoc-equal (car l)
                                                   (frame->frame frame))))))))
     :hints
-    (("goal" :do-not-induct t
+    (("goal"
+      :do-not-induct t
       :in-theory (e/d (take-of-nthcdr list-equiv)
-                      ())
+                      (collapse-hifat-place-file-lemma-113))
       :use
       (:instance
        (:rewrite lemma-2)
@@ -2673,7 +2676,7 @@
     (("goal"
       :in-theory
       (e/d (fat32-filename-list-equiv$inline fat32-filename-list-prefixp-alt)
-           ((:rewrite names-at-of-ctx-app)))
+           ((:rewrite names-at-of-ctx-app) collapse-hifat-place-file-lemma-113))
       :use
       (:instance
        (:rewrite names-at-of-ctx-app)
@@ -2756,7 +2759,8 @@
             (:rewrite nat-listp-if-fat32-masked-entry-list-p)
             (:linear position-when-member)
             (:linear position-equal-ac-when-member)
-            (:rewrite ctx-app-list-when-set-equiv-lemma-7)))))))
+            (:rewrite ctx-app-list-when-set-equiv-lemma-7)
+            collapse-hifat-place-file-lemma-113))))))
 
 (encapsulate
   ()
@@ -6497,7 +6501,8 @@
                          (chain-leading-to-complete frame x acc seq)))
       (prefixp (frame-val->path (cdr (assoc-equal x (frame->frame frame))))
                (frame-val->path (cdr (assoc-equal y (frame->frame frame))))))
-     :hints (("goal" :induct (chain-leading-to-complete frame x acc seq)))))
+     :hints (("goal" :induct (chain-leading-to-complete frame x acc seq)
+              :in-theory (disable collapse-hifat-place-file-lemma-113)))))
 
   (local
    (defthm
@@ -8089,7 +8094,7 @@
     (("goal"
       :in-theory
       (e/d (fat32-filename-list-prefixp-alt fat32-filename-list-equiv)
-           (prefixp-nthcdr-nthcdr))
+           (prefixp-nthcdr-nthcdr collapse-hifat-place-file-lemma-113))
       :use
       ((:instance
         prefixp-nthcdr-nthcdr
