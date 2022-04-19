@@ -150,6 +150,7 @@
            (< (+ -1 (/ i j)) (floor i j)))
   :hints (("Goal" :in-theory (e/d (floor) (<-OF-*-OF-/-ARG1)))))
 
+;; The distance that the floor is below the quotient is less than 1.
 (defthm my-floor-lower-bound-linear
   (implies (and (rationalp i)
                 (rationalp j)
@@ -1006,28 +1007,119 @@
 
 (defthm floor-bound-arg1-linear
   (implies (and (<= 0 i)
-                ;; The only bad values of j are in in interval (0,1).
+                ;; The only bad values of j are in interval (0,1).
                 (or (integerp j)
                     (<= 1 j)
                     (<= j 0))
                 (rationalp i))
            (<= (floor i j) i))
   :rule-classes ((:linear :trigger-terms ((floor i j))))
-  :hints (("Goal" :cases ((< j 0))))
-  )
+  :hints (("Goal" :cases ((< j 0)))))
 
-;todo
+(defthm <=-of-floor-same-when-negative-integer
+  (implies (and (<= i 0) ; this case
+                (integerp i) ; this case
+                (rationalp i)
+                (rationalp j)
+                ;; j is not in (0,1):
+                (or ;(integerp j) ; could drop
+                    (<= 1 j)
+                    (<= j 0)))
+           (<= i (floor i j)))
+  :hints (("Goal" :use (:instance <=-of---of-nonnegative-integer-quotient-of---of-numerator-and-denominator-same
+                                  (x (/ i j)))
+           :in-theory (disable <=-of---of-nonnegative-integer-quotient-of---of-numerator-and-denominator-same
+                               <-*-/-left-commuted
+                               <-*-/-right
+                               <-of-*-of-/-arg1-arg1
+                               <-of-*-of-/-arg2-arg2
+                               <-of-*-of-/-arg2
+                               <-of-*-of-/-arg1-alt))))
+
+;; The floor brings i closer to 0 (or leaves it unchanged).
+(defthm <=-of-floor-same-when-negative-integer-2
+  (implies (and (<= i 0)     ; this case
+                (integerp i) ; this case
+                (integerp j) ; this case
+                )
+           (<= i (floor i j))))
+
+;; (defthm <=-of-quoitient-and-floor-when-negative-integer
+;;   (implies (and (<= i 0)     ; this case
+;;                 (integerp i) ; this case
+;;                 (rationalp i)
+;;                 (rationalp j)
+;;                 ;; j is not in (0,1):
+;;                 (or ;(integerp j) ; could drop
+;;                  (<= 1 j)
+;;                  ;;(<= j 0)
+;;                  ))
+;;            (<= (* i (/ j)) (floor i j)))
+;;   :hints (("Goal" :use (:instance <=-of---of-nonnegative-integer-quotient-of---of-numerator-and-denominator-same
+;;                                   (x (/ i j)))
+;;            :in-theory (e/d (floor) (<=-of---of-nonnegative-integer-quotient-of---of-numerator-and-denominator-same
+;;                                     <-*-/-left-commuted
+;;                                     <-*-/-right
+;;                                     <-of-*-of-/-arg1-arg1
+;;                                     <-of-*-of-/-arg2-arg2
+;;                                     <-of-*-of-/-arg2
+;;                                     <-of-*-of-/-arg1-alt)))))
+
+;; (defthm <=-of-floor-same-when-negative-integer-2
+;;   (implies (and (<= i -1) ; this case
+;; ;                (integerp i) ; this case
+;;                 (rationalp i)
+;;                 (rationalp j)
+;;                 ;; j is not in (0,1):
+;;                 (or ;(integerp j) ; could drop
+;;                     (< 1 j)
+;;                     (<= j 0)))
+;;            (<= i (floor i j)))
+;;   :hints (("Goal" :use (:instance <=-of---of-nonnegative-integer-quotient-of---of-numerator-and-denominator-same
+;;                                   (x (/ i j)))
+;;            :cases ((equal i 0)
+;;                    (equal i -1)
+;;                    (< i -1))
+;;            :in-theory (disable <=-of---of-nonnegative-integer-quotient-of---of-numerator-and-denominator-same
+;;                                <-*-/-left-commuted
+;;                                <-*-/-right
+;;                                <-of-*-of-/-arg1-arg1
+;;                                <-of-*-of-/-arg2-arg2
+;;                                <-of-*-of-/-arg2
+;;                                <-of-*-of-/-arg1-alt))))
+
+
+;;   :rule-classes ((:linear :trigger-terms ((floor i j))))
+;;   :hints (("Goal" :use ((:instance FLOOR-OF---ARG1 (i (- i)))
+;;                         (:instance my-floor-lower-bound (i (- i))))
+;;            :cases ((< i 0))
+;;            :in-theory (disable FLOOR-OF---ARG1
+;;                                floor-minus
+;;                                my-floor-lower-bound
+;;                                my-floor-lower-bound-alt))))
+
 ;; (defthm floor-bound-arg1-linear-negative
 ;;   (implies (and (rationalp i)
 ;;                 (<= i 0) ; this case
+;;                 (<= 1 j) ;todo
 ;;                 ;; The only bad values of j are in in interval (0,1).
 ;;                 (or (integerp j)
 ;;                     (<= 1 j)
 ;;                     (<= j 0)))
 ;;            (<= i (floor i j)))
 ;;   :rule-classes ((:linear :trigger-terms ((floor i j))))
-;;   :hints (("Goal" :cases ((< j 0))
-;;            :use (:instance my-floor-lower-bound)
+;;   :hints (("Goal" :use ((:instance FLOOR-OF---ARG1 (i (- i)))
+;;                         (:instance my-floor-lower-bound (i (- i))))
+;;            :cases ((< j 0))
+;;            :in-theory (disable FLOOR-OF---ARG1
+;;                                floor-minus
+;;                                my-floor-lower-bound
+;;                                my-floor-lower-bound-alt))))
+
+
+
+;;   :hints (("Goal"
+;; ;           :use (:instance my-floor-lower-bound)
 ;;            :in-theory (disable my-floor-lower-bound
 ;;                                my-floor-lower-bound-alt))))
 
