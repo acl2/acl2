@@ -616,7 +616,7 @@
 (define atc-string-taginfo-alist-to-not-error-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
-  :short "Project the non-error theroems out of a tag information alist."
+  :short "Project the non-error theorems out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
        (thm (defstruct-info->not-error-thm (atc-tag-info->defstruct info)))
@@ -628,11 +628,35 @@
 (define atc-string-taginfo-alist-to-structp-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
-  :short "Project the @(tsee structp) theroems out of a tag information alist."
+  :short "Project the @(tsee structp) theorems out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
        (thm (defstruct-info->structp-thm (atc-tag-info->defstruct info)))
        (thms (atc-string-taginfo-alist-to-structp-thms (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-string-taginfo-alist-to-tag-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the tag theorems out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->tag-thm (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-tag-thms (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-string-taginfo-alist-to-members-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the member theorems out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->tag-thm (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-tag-thms (cdr prec-tags))))
     (cons thm thms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4741,6 +4765,8 @@
        (type-prescriptions-struct-readers
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
+       (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
+       (members-thms (atc-string-taginfo-alist-to-members-thms prec-tags))
        (exec-memberp-thms
         (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (hints `(("Goal"
@@ -4752,6 +4778,8 @@
                                ,fn
                                ,@result-thms
                                ,@struct-return-thms
+                               ,@tag-thms
+                               ,@members-thms
                                ,@exec-memberp-thms
                                ,@type-prescriptions-called
                                ,@type-prescriptions-struct-readers
