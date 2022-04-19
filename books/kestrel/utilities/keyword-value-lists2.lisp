@@ -30,7 +30,8 @@
 (defthm consp-of-cdr-of-assoc-keyword
   (implies (and (assoc-keyword key keyword-value-list)
                 (keyword-value-listp keyword-value-list))
-           (consp (cdr (assoc-keyword key keyword-value-list)))))
+           (consp (cdr (assoc-keyword key keyword-value-list))))
+  :hints (("Goal" :in-theory (enable keyword-value-listp))))
 
 ;; TODO: Compare to remove-keyword
 (defun clear-key-in-keyword-value-list (key keyword-value-list)
@@ -46,7 +47,8 @@
 
 (defthm keyword-value-listp-of-clear-key-in-keyword-value-list
   (implies (keyword-value-listp lst)
-           (keyword-value-listp (clear-key-in-keyword-value-list key lst))))
+           (keyword-value-listp (clear-key-in-keyword-value-list key lst)))
+  :hints (("Goal" :in-theory (enable keyword-value-listp))))
 
 ;; Extract the keys of a keyword-value-list
 (defun keyword-value-list-keys (k)
@@ -61,7 +63,8 @@
 (defthm keywordp-of-car-of-assoc-keyword
   (implies (and (assoc-keyword key keyword-value-list)
                 (keyword-value-listp keyword-value-list))
-           (keywordp (car (assoc-keyword key keyword-value-list)))))
+           (keywordp (car (assoc-keyword key keyword-value-list))))
+  :hints (("Goal" :in-theory (enable keyword-value-listp))))
 
 (defthm keyword-listp-of-append
   (equal (keyword-listp (append x y))
@@ -76,7 +79,13 @@
 
 (defthm keyword-listp-of-keyword-value-list-keys
   (implies (keyword-value-listp l)
-           (keyword-listp (keyword-value-list-keys l))))
+           (keyword-listp (keyword-value-list-keys l)))
+  :hints (("Goal" :in-theory (enable keyword-value-listp))))
+
+(defthm symbol-listp-of-keyword-value-list-keys
+  (implies (keyword-value-listp l)
+           (symbol-listp (keyword-value-list-keys l)))
+  :hints (("Goal" :in-theory (enable keyword-value-listp))))
 
 (defthm keyword-listp-of-remove-duplicates-equal
   (equal (keyword-listp (remove-duplicates-equal x))

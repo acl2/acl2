@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+(in-theory (disable keyword-value-listp))
+
 ;todo: strengthen (if the length of x is even)
 (defthm keyword-value-listp-of-append
   (implies (and (keyword-value-listp x)
@@ -18,13 +20,24 @@
            (keyword-value-listp (append x y)))
   :hints (("Goal" :in-theory (enable keyword-value-listp append))))
 
-;todo: strengthen
 (defthm keyword-value-listp-of-cons-of-cons
-  (implies (keyword-value-listp keyword-value-list)
-           (equal (keyword-value-listp (cons k (cons v keyword-value-list)))
-                  (keywordp k)))
+  (equal (keyword-value-listp (cons k (cons v keyword-value-list)))
+         (and (keywordp k)
+              (keyword-value-listp keyword-value-list)))
   :hints (("Goal" :in-theory (enable keyword-value-listp))))
 
 (defthm keyword-value-listp-of-assoc-keyword
   (implies (keyword-value-listp keyword-value-list)
-           (keyword-value-listp (assoc-keyword key keyword-value-list))))
+           (keyword-value-listp (assoc-keyword key keyword-value-list)))
+  :hints (("Goal" :in-theory (enable keyword-value-listp))))
+
+(defthm keyword-value-listp-of-cddr
+  (implies (keyword-value-listp keyword-value-list)
+           (keyword-value-listp (cddr keyword-value-list)))
+  :hints (("Goal" :in-theory (enable keyword-value-listp))))
+
+(defthm keywordp-of-car-when-keyword-value-listp
+  (implies (keyword-value-listp keyword-value-list)
+           (equal (keywordp (car keyword-value-list))
+                  (consp keyword-value-list)))
+  :hints (("Goal" :in-theory (enable keyword-value-listp))))
