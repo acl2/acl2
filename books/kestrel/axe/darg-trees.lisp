@@ -25,7 +25,7 @@
 
 ;; Darg-trees are like pseudo-terms but with integers (nodenums in some DAG) at
 ;; the leaves instead of variable.  Constants can also appear at the leaves.
-;; See also bounded-darg-treep.
+;; TODO: Also make bounded-darg-treep.
 (mutual-recursion
  (defun darg-treep (tree)
    (declare (xargs :guard t))
@@ -122,9 +122,9 @@
     (implies (darg-treep tree)
              (axe-treep tree))
     :flag darg-treep)
-  (defthm all-axe-treep-when-darg-tree-listp
+  (defthm axe-tree-listp-when-darg-tree-listp
     (implies (darg-tree-listp trees)
-             (all-axe-treep trees))
+             (axe-tree-listp trees))
     :flag darg-tree-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

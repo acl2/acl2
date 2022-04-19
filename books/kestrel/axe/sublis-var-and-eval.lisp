@@ -167,11 +167,11 @@
                   )
              (axe-treep (sublis-var-and-eval alist form interpreted-function-alist)))
     :flag sublis-var-and-eval)
-  (defthm all-axe-treep-of-mv-nth-1-of-sublis-var-and-eval-lst
+  (defthm axe-tree-listp-of-mv-nth-1-of-sublis-var-and-eval-lst
     (implies (and ;(mv-nth 0 (sublis-var-and-eval-lst alist l interpreted-function-alist))
                   (all-dargp (strip-cdrs alist))
                   (pseudo-term-listp l))
-             (all-axe-treep (mv-nth 1 (sublis-var-and-eval-lst alist l interpreted-function-alist))))
+             (axe-tree-listp (mv-nth 1 (sublis-var-and-eval-lst alist l interpreted-function-alist))))
     :flag sublis-var-and-eval-lst)
   :hints (("Goal" :in-theory (e/d (axe-treep sublis-var-and-eval sublis-var-and-eval-lst)
                                   (myquotep MYQUOTEP-OF-SUBLIS-VAR-AND-EVAL)))))
@@ -184,11 +184,11 @@
                   )
              (bounded-axe-treep (sublis-var-and-eval alist form interpreted-function-alist) dag-len))
     :flag sublis-var-and-eval)
-  (defthm all-bounded-axe-treep-of-mv-nth-1-of-sublis-var-and-eval-lst
+  (defthm bounded-axe-tree-listp-of-mv-nth-1-of-sublis-var-and-eval-lst
     (implies (and ;(mv-nth 0 (sublis-var-and-eval-lst alist l interpreted-function-alist))
                   (bounded-darg-listp (strip-cdrs alist) dag-len)
                   (pseudo-term-listp l))
-             (all-bounded-axe-treep (mv-nth 1 (sublis-var-and-eval-lst alist l interpreted-function-alist)) dag-len))
+             (bounded-axe-tree-listp (mv-nth 1 (sublis-var-and-eval-lst alist l interpreted-function-alist)) dag-len))
     :flag sublis-var-and-eval-lst)
   :hints (("Goal" :in-theory (e/d (sublis-var-and-eval
                                    sublis-var-and-eval-lst

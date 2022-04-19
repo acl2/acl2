@@ -92,8 +92,7 @@
  ;; Returns :fail (meaning failure to match), or an extension of alist with (compatible) bindings for the free vars.
  ;; The guard would be simpler if we could pass in dag-len, but we don't want to pass that around.
  (defund unify-trees-with-dag-nodes (tree-lst nodenum-or-quotep-lst dag-array alist)
-   (declare (xargs :guard (and (all-axe-treep tree-lst)
-                               (true-listp tree-lst)
+   (declare (xargs :guard (and (axe-tree-listp tree-lst)
                                (all-dargp nodenum-or-quotep-lst)
                                (true-listp nodenum-or-quotep-lst)
                                (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep nodenum-or-quotep-lst)))
@@ -165,9 +164,8 @@
              (member-equal x (strip-cars (unify-tree-with-dag-node tree nodenum-or-quotep dag-array alist))))
     :flag unify-tree-with-dag-node)
   (defthm unify-trees-with-dag-nodes-mono
-    (implies (and ;; (all-axe-treep tree-lst)
+    (implies (and ;; (axe-tree-listp tree-lst)
               ;; (natp dag-len)
-              ;; (true-listp tree-lst)
               ;; (bounded-darg-listp nodenum-or-quotep-lst dag-len)
               ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
               ;; (symbol-alistp alist)
@@ -195,9 +193,8 @@
              (subsetp-equal x (strip-cars (unify-tree-with-dag-node tree nodenum-or-quotep dag-array alist))))
     :flag unify-tree-with-dag-node)
   (defthm unify-trees-with-dag-nodes-mono2
-    (implies (and ;; (all-axe-treep tree-lst)
+    (implies (and ;; (axe-tree-listp tree-lst)
               ;; (natp dag-len)
-              ;; (true-listp tree-lst)
               ;; (bounded-darg-listp nodenum-or-quotep-lst dag-len)
               ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
               ;; (symbol-alistp alist)
@@ -226,9 +223,8 @@
                             (strip-cars (unify-tree-with-dag-node tree nodenum-or-quotep dag-array alist))))
     :flag unify-tree-with-dag-node)
   (defthm unify-trees-with-dag-nodes-binds-all-vars
-    (implies (and (all-axe-treep tree-lst)
+    (implies (and (axe-tree-listp tree-lst)
                   ;; (natp dag-len)
-                  ;; (true-listp tree-lst)
                   ;; (bounded-darg-listp nodenum-or-quotep-lst dag-len)
                   ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                   (symbol-alistp alist)
@@ -264,9 +260,8 @@
     :flag unify-tree-with-dag-node)
   (defthm strip-cars-of-unify-trees-with-dag-nodes-perm
     (implies (and (not (equal :fail (unify-trees-with-dag-nodes tree-lst nodenum-or-quotep-lst dag-array alist)))
-                  (all-axe-treep tree-lst)
+                  (axe-tree-listp tree-lst)
                   ;; (natp dag-len)
-                  ;; (true-listp tree-lst)
                   ;(all-dargp nodenum-or-quotep-lst)
                   (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                   (bounded-darg-listp nodenum-or-quotep-lst dag-len)
@@ -293,8 +288,7 @@
              (all-dargp (strip-cdrs (unify-tree-with-dag-node tree nodenum-or-quotep dag-array alist))))
     :flag unify-tree-with-dag-node)
   (defthm all-dargp-of-strip-cdrs-of-unify-trees-with-dag-nodes
-    (implies (and (all-axe-treep tree-lst)
-                  (true-listp tree-lst)
+    (implies (and (axe-tree-listp tree-lst)
                   (all-dargp nodenum-or-quotep-lst)
                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep nodenum-or-quotep-lst)))
                   (all-dargp (strip-cdrs alist))
@@ -317,8 +311,7 @@
                                              dag-len))
     :flag unify-tree-with-dag-node)
   (defthm bounded-darg-listp-of-strip-cdrs-of-unify-trees-with-dag-nodes
-    (implies (and (all-axe-treep tree-lst)
-                  (true-listp tree-lst)
+    (implies (and (axe-tree-listp tree-lst)
                   (bounded-darg-listp nodenum-or-quotep-lst dag-len)
                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep nodenum-or-quotep-lst)))
                   (integerp dag-len)

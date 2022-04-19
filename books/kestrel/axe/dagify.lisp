@@ -42,7 +42,7 @@
 (local (in-theory (disable member-equal
                            subsetp-equal
                            ;; axe-treep
-                           all-axe-treep
+                           axe-tree-listp
                            ;; for speed:
                            largest-non-quotep-bound
                            largest-non-quotep-bound-alt
@@ -116,7 +116,7 @@
                           <-of-lookup-equal-when-bounded-darg-listp-of-strip-cdrs)))
 
 (local (in-theory (disable consp-from-len-cheap
-                           all-axe-treep-when-pseudo-term-listp
+                           axe-tree-listp-when-pseudo-term-listp
                            ;;list::nth-with-large-index-2
                            ;cdr-non-nil
                            ;nth1-when-not-cdr
@@ -714,9 +714,7 @@
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                      interpreted-function-alist)
    (declare (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                               (true-listp trees)
-                               (all-axe-treep trees)
-                               (all-bounded-axe-treep trees dag-len)
+                               (bounded-axe-tree-listp trees dag-len)
                                (symbol-alistp var-replacement-alist)
                                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                                ;;(<= (+ (len vars) dag-len) 2147483645)
@@ -887,9 +885,7 @@
                                   var-replacement-alist
                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                   interpreted-function-alist)))
-                  (true-listp trees)
-                  (all-axe-treep trees)
-                  (all-bounded-axe-treep trees dag-len)
+                  (bounded-axe-tree-listp trees dag-len)
                   (symbol-alistp var-replacement-alist)
                   (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
 ;                  (interpreted-function-alistp interpreted-function-alist)
@@ -972,9 +968,7 @@
 (defthm merge-trees-into-dag-array-return-type-2
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
-                (all-axe-treep trees)
-                (true-listp trees)
-                (all-bounded-axe-treep trees dag-len)
+                (bounded-axe-tree-listp trees dag-len)
                 (not (mv-nth 0 (merge-trees-into-dag-array trees var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
                 (symbol-alistp var-replacement-alist)
                 (interpreted-function-alistp interpreted-function-alist))
@@ -1065,7 +1059,7 @@
                                     <-of-nth-when-bounded-darg-listp
                                     true-listp-of-nth-1-of-nth-0-when-axe-treep
                                     consp-when-true-listp-iff)
-                                   (all-axe-treep
+                                   (axe-tree-listp
                                     axe-treep
                                     myquotep
                                     natp
@@ -1716,7 +1710,6 @@
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                     interpreted-function-alist)
    (declare (xargs :guard (and (pseudo-term-listp terms)
-                               (true-listp terms)
                                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                                (symbol-alistp var-replacement-alist)
                                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)

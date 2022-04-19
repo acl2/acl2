@@ -117,3 +117,18 @@
                 (member-equal a y))
            (intersection-equal x y))
   :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(local
+ (defun intersection-equal-induct (x y)
+   (if (endp x)
+       (endp y)
+       (and (member-equal (first x) y)
+            (intersection-equal-induct (rest x)
+                                       (remove1-equal (first x) y))))))
+
+(defthm intersection-equal-symmetric-iff
+  (iff (intersection-equal x y)
+       (intersection-equal y x))
+  :hints (("Goal" :induct (intersection-equal-induct x y)
+           :expand (intersection-equal y x)
+           :in-theory (enable intersection-equal intersection-equal-induct))))

@@ -85,9 +85,7 @@
                        (equal (len (cadr fn))
                               (len args))))
               (not (equal 'quote fn))
-              (all-axe-treep args)
-              (all-bounded-axe-treep args 2147483646)
-              (true-listp args)))
+              (bounded-axe-tree-listp args 2147483646)))
   :hints (("Goal" :in-theory (enable tree-to-memoizep))))
 
 (defthmd axe-treep-when-tree-to-memoizep
@@ -197,8 +195,7 @@
        (sum-of-nodenums-aux-lst (fargs tree) acc))))
 
  (defun sum-of-nodenums-aux-lst (trees acc)
-   (declare (xargs :guard (and (all-axe-treep trees)
-                               (all-bounded-axe-treep trees 2147483646)
+   (declare (xargs :guard (and (bounded-axe-tree-listp trees 2147483646)
                                (natp acc)
                                (< acc *memoization-size*))
                    :verify-guards nil ;done below
@@ -212,7 +209,7 @@
 ;; (defthm-flag-sum-of-nodenums-aux
 ;;   (defthm integerp-of-sum-of-nodenums-aux-lst
 ;;     (implies (and (integerp acc)
-;;                   (all-axe-treep trees))
+;;                   (axe-tree-listp trees))
 ;;              (integerp (sum-of-nodenums-aux-lst trees acc)))
 ;;     :flag sum-of-nodenums-aux-lst)
 ;;   (defthm integerp-of-sum-of-nodenums-aux
@@ -224,7 +221,7 @@
 (defthm-flag-sum-of-nodenums-aux
   (defthm natp-of-sum-of-nodenums-aux-lst
     (implies (and (natp acc)
-                  (all-axe-treep trees))
+                  (axe-tree-listp trees))
              (natp (sum-of-nodenums-aux-lst trees acc)))
     :flag sum-of-nodenums-aux-lst)
   (defthm natp-of-sum-of-nodenums-aux
@@ -237,17 +234,19 @@
   (defthm <=-of-sum-of-nodenums-aux-lst
     (implies (and (natp acc)
                   (<= ACC 1048575)
-                  (all-axe-treep trees))
+                  (axe-tree-listp trees))
              (<= (sum-of-nodenums-aux-lst trees acc) 1048575))
+    :rule-classes (:rewrite :linear)
     :flag sum-of-nodenums-aux-lst)
   (defthm <=-of-sum-of-nodenums-aux
     (implies (and (natp acc)
                   (<= ACC 1048575)
                   (axe-treep tree))
              (<= (sum-of-nodenums-aux tree acc) 1048575))
+    :rule-classes (:rewrite :linear)
     :flag sum-of-nodenums-aux))
 
-(verify-guards sum-of-nodenums-aux :hints (("Goal" :in-theory (e/d (all-axe-treep all-bounded-axe-treep) (natp)))))
+(verify-guards sum-of-nodenums-aux :hints (("Goal" :in-theory (e/d (axe-tree-listp bounded-axe-tree-listp) (natp)))))
 
 
 

@@ -17,10 +17,21 @@
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/list-sets" :dir :system))
+(local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 
 (local (in-theory (disable symbol-alistp append)))
+
+;move
+;; (thm
+;;  (implies (not (intersection-equal x y))
+;;           (perm (union-equal x y)
+;;                 (append x y))))
+
+(local (in-theory (disable intersection-equal strip-cars)))
 
 ;move
 (defthm memberp-of-car-and-strip-cars
@@ -30,11 +41,12 @@
                                      memberp))))
 
 ;move
-(defthm strip-cars-of-remove1-equal-perm
+(local
+ (defthm strip-cars-of-remove1-equal-perm
   (implies (memberp a x)
            (perm (strip-cars (remove1-equal a x))
                  (remove1-equal (car a) (strip-cars x))))
-  :hints (("Goal" :in-theory (enable remove1-equal strip-cars memberp))))
+  :hints (("Goal" :in-theory (enable remove1-equal strip-cars memberp)))))
 
 ;move
 (defcong perm perm (strip-cars x) 1
@@ -218,7 +230,7 @@
                        bound-vars-after-hyp))))
 
 ;;;
-;;; alist-suitable-for-hyp-tree-and-hysp
+;;; alist-suitable-for-hyp-tree-and-hypsp
 ;;;
 
 ;; Checks whether ALIST and HYPS are suitable after having instantiated HYP
@@ -231,7 +243,8 @@
   (declare (xargs :guard (and (symbol-alistp alist)
                               (axe-treep hyp)
                               (axe-rule-hyp-listp hyps))
-                  :guard-hints (("Goal" :in-theory (enable SYMBOL-ALISTP)))))
+                  :guard-hints (("Goal" :in-theory (enable ;SYMBOL-ALISTP
+                                                           STRIP-CARS-OF-CDR)))))
   (and ;; The alist doesn't bind any vars that remain in the hyp:
    (not (intersection-eq (strip-cars alist) (axe-tree-vars hyp)))
    ;; After we bind all the vars in the hyp, the alist will be suitable for the remaining hyps:
@@ -276,3 +289,58 @@
            :in-theory (e/d (alist-suitable-for-hypsp
                             alist-suitable-for-hyp-tree-and-hypsp)
                            (bound-vars-suitable-for-hypsp-when-free-vars-2)))))
+
+;;;
+;;; alist-suitable-for-hyp-args-and-hypsp
+;;;
+
+;; Checks whether ALIST and HYPS are suitable after having instantiated a hyp
+;; with ALIST and getting its args, HYP-ARGS (so we are now at the point of
+;; having to find matches to bind the hyp's remaining free vars), and having
+;; HYPS as the list of hyps to be relieved subsequently.
+(defund alist-suitable-for-hyp-args-and-hypsp (alist
+                                               hyp-args ; axe-trees, partially instantiated, so all vars from alist have been replaced
+                                               hyps)
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (axe-tree-listp hyp-args)
+                              (axe-rule-hyp-listp hyps))
+                  :guard-hints (("Goal" :in-theory (enable symbol-alistp)))))
+  (and ;; The alist doesn't bind any vars that remain in the partially-instantiated hyp's args:
+   (not (intersection-eq (strip-cars alist) (axe-tree-vars-lst hyp-args)))
+   ;; After we bind all the vars in the hyp-args, the alist will be suitable for the remaining hyps:
+   (bound-vars-suitable-for-hypsp (append (axe-tree-vars-lst hyp-args) ; can just call append since the sets of vars are disjoint
+                                          (strip-cars alist))
+                                  hyps)))
+
+(defthm alist-suitable-for-hypsp-after-matching-2
+  (implies (and (alist-suitable-for-hyp-args-and-hypsp alist hyp-args hyps)
+                (bounded-darg-listp arg-list dag-len)
+                (not (equal :fail (unify-trees-with-dag-nodes hyp-args arg-list dag-array alist)))
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (axe-tree-listp hyp-args)
+                (symbol-alistp alist))
+           (alist-suitable-for-hypsp (unify-trees-with-dag-nodes hyp-args arg-list dag-array alist)
+                                     hyps))
+  :hints (("Goal" :in-theory (enable alist-suitable-for-hypsp
+                                     alist-suitable-for-hyp-args-and-hypsp))))
+
+;; (defthm alist-suitable-for-hyp-args-and-hypsp-after-instantiating
+;;   (implies (and (alist-suitable-for-hypsp alist hyps)
+;;                 (equal :free-vars (ffn-symb (car hyps)))
+;;                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+;;                 (axe-tree-listp hyp-args)
+;;                 (symbol-alistp alist)
+;;                 ;; (no-duplicatesp-equal (strip-cars alist)) ;gen?
+;;                 ;;(not (intersection-equal (strip-cars alist) (axe-tree-vars hyp)))
+;;                 (equal (axe-tree-vars hyp)
+;;                        (set-difference-equal (free-vars-in-term (cdr (car hyps)))
+;;                                              (strip-cars alist))))
+;;            (alist-suitable-for-hyp-args-and-hypsp alist
+;;                                                   hyp ;instantiated
+;;                                                   (cdr hyps)))
+;;   :hints (("Goal"
+;;            :use (:instance bound-vars-suitable-for-hypsp-when-free-vars-2
+;;                            (bound-vars (STRIP-CARS ALIST)))
+;;            :in-theory (e/d (alist-suitable-for-hypsp
+;;                             alist-suitable-for-hyp-args-and-hypsp)
+;;                            (bound-vars-suitable-for-hypsp-when-free-vars-2)))))

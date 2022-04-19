@@ -270,7 +270,6 @@
                  (declare (ignorable args arg1))
                  ,(make-axe-syntaxp-evaluator-cases 2 max-arity arity-alist eval-axe-syntaxp-function-application-fn wrld))))))
 
-       ;; todo: also make a version that takes the dag-array, or perhaps always pass it?
        (defund ,eval-axe-syntaxp-expr-fn (expr alist dag-array)
          (declare (xargs :guard (and (pseudo-termp expr)
                                      (axe-syntaxp-exprp expr)

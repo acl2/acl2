@@ -23,6 +23,7 @@
 (include-book "std/lists/list-defuns" :dir :system) ;for flatten
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/untranslated-terms/add-conjunct-to-uterm" :dir :system)
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 ;; Recognize the "arguments" of an xargs declare (a list of alternating keys
 ;; and values). TODO: Add checks for the values supplied for the various kinds
@@ -224,7 +225,8 @@
   (implies (and ;; (keyword-listp keys)
                 (keyword-value-listp keyword-value-list1)
                 (keyword-value-listp keyword-value-list2))
-           (keyword-value-listp (combine-xargs-for-keys keys keyword-value-list1 keyword-value-list2))))
+           (keyword-value-listp (combine-xargs-for-keys keys keyword-value-list1 keyword-value-list2)))
+  :hints (("Goal" :in-theory (enable keyword-value-listp))))
 
 (defun combine-keyword-value-lists-for-xargs (keyword-value-list1 keyword-value-list2)
   (declare (xargs :guard (and (keyword-value-listp keyword-value-list1)
