@@ -17592,6 +17592,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; simply to print the characters of the string.
 
              (write-string x stream))
+            ((characterp x) ; faster write as for strings; see comment above
+             (write-char x stream)
+             (when (eql x #\Newline)
+               (force-output stream)))
             (t
              (with-print-controls
 
@@ -17612,8 +17616,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     (t (princ x stream)))
               #-acl2-print-number-base-16-upcase-digits
               (princ x stream))))
-           (cond ((eql x #\Newline)
-                  (force-output stream)))
            (return-from princ$ *the-live-state*))))
   (let ((entry (cdr (assoc-eq channel (open-output-channels state-state)))))
     (update-open-output-channels
