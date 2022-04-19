@@ -16,12 +16,39 @@
 (include-book "keyword-value-listp")
 (include-book "lookup-keyword")
 
-;strengthen?
 (defthm consp-of-cdr-of-assoc-keyword
-  (implies (and (assoc-keyword key keyword-value-list)
-                (keyword-value-listp keyword-value-list))
-           (consp (cdr (assoc-keyword key keyword-value-list))))
+  (implies (keyword-value-listp keyword-value-list)
+           (iff (consp (cdr (assoc-keyword key keyword-value-list)))
+                (assoc-keyword key keyword-value-list)))
   :hints (("Goal" :in-theory (enable keyword-value-listp))))
+
+(defthm keywordp-of-car-of-assoc-keyword
+  (implies (keyword-value-listp keyword-value-list)
+           (iff (keywordp (car (assoc-keyword key keyword-value-list)))
+                (assoc-keyword key keyword-value-list)))
+  :hints (("Goal" :in-theory (enable keyword-value-listp))))
+
+;;;;;;;;;;
+
+;(in-theory (disable keywordp))
+
+(defthm keyword-listp-of-append
+  (equal (keyword-listp (append x y))
+         (and (keyword-listp (true-list-fix x))
+              (keyword-listp y)))
+  :hints (("Goal" :in-theory (enable TRUE-LIST-FIX))))
+
+(defthm keyword-listp-of-true-list-fix
+  (implies (keyword-listp x)
+           (keyword-listp (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable true-list-fix))))
+
+(defthm keyword-listp-of-remove-duplicates-equal
+  (equal (keyword-listp (remove-duplicates-equal x))
+         (keyword-listp (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable remove-duplicates-equal true-list-fix))))
+
+;;;;;;;;;;
 
 ;; TODO: Compare to remove-keyword
 (defun clear-key-in-keyword-value-list (key keyword-value-list)
@@ -40,6 +67,8 @@
            (keyword-value-listp (clear-key-in-keyword-value-list key lst)))
   :hints (("Goal" :in-theory (enable keyword-value-listp))))
 
+;;;;;;;;;;
+
 ;; Extract the keys of a keyword-value-list
 (defun keyword-value-list-keys (k)
   (declare (xargs :guard (keyword-value-listp k)))
@@ -47,25 +76,6 @@
       nil
     (cons (car k)
           (keyword-value-list-keys (cddr k)))))
-
-(in-theory (disable keywordp))
-
-(defthm keywordp-of-car-of-assoc-keyword
-  (implies (and (assoc-keyword key keyword-value-list)
-                (keyword-value-listp keyword-value-list))
-           (keywordp (car (assoc-keyword key keyword-value-list))))
-  :hints (("Goal" :in-theory (enable keyword-value-listp))))
-
-(defthm keyword-listp-of-append
-  (equal (keyword-listp (append x y))
-         (and (keyword-listp (true-list-fix x))
-              (keyword-listp y)))
-  :hints (("Goal" :in-theory (enable TRUE-LIST-FIX))))
-
-(defthm keyword-listp-of-true-list-fix
-  (implies (keyword-listp x)
-           (keyword-listp (true-list-fix x)))
-  :hints (("Goal" :in-theory (enable true-list-fix))))
 
 (defthm keyword-listp-of-keyword-value-list-keys
   (implies (keyword-value-listp l)
@@ -76,8 +86,3 @@
   (implies (keyword-value-listp l)
            (symbol-listp (keyword-value-list-keys l)))
   :hints (("Goal" :in-theory (enable keyword-value-listp))))
-
-(defthm keyword-listp-of-remove-duplicates-equal
-  (equal (keyword-listp (remove-duplicates-equal x))
-         (keyword-listp (true-list-fix x)))
-  :hints (("Goal" :in-theory (enable remove-duplicates-equal true-list-fix))))
