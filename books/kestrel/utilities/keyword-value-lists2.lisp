@@ -14,17 +14,7 @@
 ;; STATUS: In-progress
 
 (include-book "keyword-value-listp")
-
-(defun lookup-keyword (keyword l)
-  (declare (xargs :guard (keyword-value-listp l)))
-  (cadr (assoc-keyword keyword l)))
-
-;ensures that the keyword is present
-(defun lookup-keyword-safe (keyword l)
-  (let ((res (assoc-keyword keyword l)))
-    (if (not res)
-        (er hard? 'lookup-keyword-safe "The keyword ~x0 is not present in the alist ~x1." keyword l)
-      (cadr res))))
+(include-book "lookup-keyword")
 
 ;strengthen?
 (defthm consp-of-cdr-of-assoc-keyword
