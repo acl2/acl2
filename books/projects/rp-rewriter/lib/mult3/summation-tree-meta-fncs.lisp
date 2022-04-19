@@ -2595,7 +2595,7 @@
 
 (define create-s-instance ((pp rp-termp)
                            (c rp-termp))
-  :inline t
+  ;;:inline t
   :returns (mv (s-res-lst rp-term-listp
                           :hyp (and (rp-termp pp)
                                     (rp-termp c)))
@@ -2625,7 +2625,10 @@
                 (quotep c)
                 (consp (cdr pp))
                 (consp (cdr c)))
-           (mv nil (list `',(s 0 (unquote pp) (unquote c))) nil))
+           (b* ((res `',(s 0 (unquote pp) (unquote c))))
+             (if (equal res ''0)
+                 (mv nil nil nil)
+               (mv nil (list res) nil))))
           ((and (all-quoted-list pp)
                 (all-quoted-list c))
            (mv nil
@@ -4434,16 +4437,7 @@
             (new-sum-merge-aux-add-negated-coughed to-be-coughed-c-lst
                                                    abs-term-w/-sc
                                                    negated))
-           (pp-lst (pp-sum-merge-aux coughed-pp-lst pp-lst))
-
-           #|(- (or (and (not (ordered-s/c-p-lst-main (list-to-lst s)))
-                       (acl2::raise "bad 1 s ~p0 ~%" s))
-                  (and (not (ordered-s/c-p-lst-main pp-lst))
-                       (acl2::raise "bad 1 pp-lst ~p0 ~%" pp-lst))
-                  (and (not (ordered-s/c-p-lst-main c-lst))
-                       (acl2::raise "bad 1 c-lst ~p0 ~%" c-lst))
-                  (and (not (ordered-s/c-p-lst-main to-be-coughed-c-lst))
-                       (acl2::raise "bad 1 to-be-coughed-c-lst ~p0 ~%" to-be-coughed-c-lst))))|#)
+           (pp-lst (pp-sum-merge-aux coughed-pp-lst pp-lst)))
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
      ((single-s-p abs-term)
       (b* ((s (s-sum-merge s (create-list-instance
@@ -4780,11 +4774,13 @@
                                           :clean-args (clean-pp-args-cond nil c-lst)))
        #| (pp-lst-before-clean pp-lst)||#
        (c-lst (s-fix-pp-args-aux c-lst))
+
        (pp-lst (if (clean-pp-args-cond nil c-lst)
                    (s-fix-pp-args-aux pp-lst)
                  pp-lst))
        (pp (create-list-instance pp-lst))
        (c (create-list-instance c-lst))
+
        ((mv res-s-lst res-pp-lst res-c-lst) (create-s-instance pp c)))
     (create-s-c-res-instance res-s-lst res-pp-lst res-c-lst t)))
 
@@ -4816,7 +4812,7 @@
         (if (c-of-s-fix-mode)
             (mv nil nil)
           (c-fix-arg-aux arg-s-lst t)))
-
+       
        ((mv coughed-pp-lst arg-pp-lst)
         (c-fix-arg-aux-with-cond arg-pp-lst t (clean-pp-args-cond arg-s-lst arg-c-lst)))
 
@@ -4825,6 +4821,7 @@
         (c-pattern3-reduce  arg-s-lst arg-pp-lst arg-c-lst
                             coughed-s-lst coughed-pp-lst to-be-coughed-c-lst))
 
+       
        ((mv merged-s-lst merged-pp-lst merged-c-lst)
         (create-c-instance arg-s-lst arg-pp-lst arg-c-lst))
 

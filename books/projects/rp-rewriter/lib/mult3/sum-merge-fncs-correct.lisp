@@ -539,6 +539,17 @@
                              (rp-evlt-of-rp-equal
                               rp-equal))))))
 
+(local
+ (defthm when-ex-from-rp-is-0
+   (implies (EQUAL (EX-FROM-RP x) ''0)
+            (equal (rp-evlt x a) 0))
+   :hints (("Goal"
+            :do-not-induct t
+            :use ((:instance rp-evlt-of-ex-from-rp
+                             (term x)))
+            :in-theory (e/d ()
+                            (rp-evlt-of-ex-from-rp))))))
+
 (progn
   (defthm pp-sum-merge-aux-correct
     (implies (and (rp-evl-meta-extract-global-facts :state state)
