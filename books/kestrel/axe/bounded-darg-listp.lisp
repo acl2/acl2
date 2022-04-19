@@ -194,3 +194,56 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp
                                      all-myquotep))))
+
+(defthm bounded-darg-listp-of-0
+  (equal (bounded-darg-listp items 0)
+         (and (all-myquotep items)
+              (true-listp items)))
+  :hints (("Goal" :in-theory (enable all-myquotep))))
+
+;not tight?
+(defthmd bound-lemma-for-car-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp items n)
+                (consp items)
+                (not (consp (car items))))
+           (not (< n (car items))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
+
+(defthm <-of-1-and-len-of-nth-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp args bound)
+                (natp n)
+                (< n (len args)))
+           (equal (< 1 (len (nth n args)))
+                  (consp (nth n args))))
+  :hints (("Goal" :in-theory (e/d (bounded-darg-listp dargp-less-than nth) ()))))
+
+(defthm natp-of-nth-when-bounded-darg-listp-gen
+  (implies (and (bounded-darg-listp vals bound)
+                (natp n)
+                (< n (len vals)))
+           (equal (natp (nth n vals))
+                  (not (consp (nth n vals)))))
+  :hints
+  (("Goal" :in-theory (enable bounded-darg-listp))))
+
+;true whether it's a quotep or nodenum
+(defthmd not-cddr-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp items bound)
+         ;       (consp item)
+                (member-equal item items))
+           (not (cddr item)))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
+
+(defthm not-cddr-of-nth-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp args bound) ;bound is a free var
+                (natp n)
+                (< n (len args)))
+           (not (cddr (nth n args))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
+
+(defthm dargp-of-nth-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp args bound)
+                (< n (len args))
+                (natp n))
+           (dargp (nth n args)))
+  :hints (("Goal" :in-theory (e/d (all-dargp) ()))))

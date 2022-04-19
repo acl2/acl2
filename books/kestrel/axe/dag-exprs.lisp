@@ -233,6 +233,25 @@
                   (not (consp (nth n (dargs expr))))))
   :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp))))
 
+;uses car instead of nth to check for a quotep
+(defthm integerp-of-nth-of-dargs-alt
+  (implies (and (dag-exprp expr)
+                (< n (len (dargs expr)))
+                (natp n)
+                (not (equal 'quote (car expr))))
+           (equal (integerp (nth n (dargs expr)))
+                  (not (consp (nth n (dargs expr))))))
+  :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp))))
+
+(defthm acl2-numberp-of-nth-of-dargs
+  (implies (and (dag-exprp expr)
+                (< n (len (dargs expr)))
+                (natp n)
+                (not (equal 'quote (car expr))))
+           (equal (acl2-numberp (nth n (dargs expr)))
+                  (not (consp (nth n (dargs expr))))))
+  :hints (("Goal" :in-theory (enable acl2-numberp-of-nth-when-all-dargp))))
+
 (defthm not-<-of-0-and-nth-of-dargs
   (implies (and (dag-exprp expr)
                 (< n (len (dargs expr)))

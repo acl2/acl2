@@ -100,6 +100,7 @@
 (include-book "keep-atoms")
 (include-book "known-booleans")
 (include-book "known-predicates")
+(include-book "largest-non-quotep")
 (include-book "leaves-of-normalized-bvxor-nest")
 (include-book "lenconsmeta")
 (include-book "list-rules-axe")
