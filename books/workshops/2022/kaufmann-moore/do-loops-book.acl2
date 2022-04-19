@@ -1,0 +1,8 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "do-loops")
+
+; Help dependency scanner.
+#||
+(depends-on "do-loops-input.lsp")
+(depends-on "do-loops-log.txt")
+||#
