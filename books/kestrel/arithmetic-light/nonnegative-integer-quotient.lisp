@@ -13,6 +13,8 @@
 
 (local (include-book "times"))
 (local (include-book "plus"))
+(local (include-book "numerator"))
+(local (include-book "denominator"))
 
 (in-theory (disable nonnegative-integer-quotient))
 
@@ -207,3 +209,16 @@
            (equal (nonnegative-integer-quotient i j)
                   0))
   :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
+
+(defthm <=-of-nonnegative-integer-quotient-of-numerator-and-denominator-same
+  (implies (<= 0 x)
+           (<= (nonnegative-integer-quotient (numerator x) (denominator x))
+               x))
+  :hints (("Goal" :cases ((rationalp x)))))
+
+(defthm <=-of---of-nonnegative-integer-quotient-of---of-numerator-and-denominator-same
+  (implies (<= x 0)
+           (<= x (- (nonnegative-integer-quotient (- (numerator x)) (denominator x)))))
+  :hints (("Goal" :use (:instance <=-of-nonnegative-integer-quotient-of-numerator-and-denominator-same
+                                  (x (- x)))
+           :in-theory (disable <=-of-nonnegative-integer-quotient-of-numerator-and-denominator-same))))
