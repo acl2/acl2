@@ -500,3 +500,18 @@
                                       associativity-of-*)
            :use ((:instance inverse-of-* (x k2))
                  (:instance associativity-of-* (x k2) (y (/ k2)) (z x))))))
+
+(defthm <-of-of-*-same-arg1
+  (implies (and (rationalp i)
+                (rationalp j))
+           (equal (< i (- (* i j)))
+                  (if (< i 0)
+                      (< -1 j)
+                    (if (equal 0 i)
+                        nil
+                      (< j -1)))))
+  :hints (("Goal" :use (:instance acl2::<-of-*-and-*-cancel-gen
+                                  (y i)
+                                  (x1 1)
+                                  (x2 (- j)))
+           :in-theory (disable acl2::<-of-*-and-*-cancel-gen))))
