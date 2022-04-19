@@ -13,6 +13,8 @@
 
 ;; STATUS: In-progress
 
+(include-book "keyword-value-listp")
+
 (defun lookup-keyword (keyword l)
   (declare (xargs :guard (keyword-value-listp l)))
   (cadr (assoc-keyword keyword l)))
@@ -24,19 +26,13 @@
         (er hard? 'lookup-keyword-safe "The keyword ~x0 is not present in the alist ~x1." keyword l)
       (cadr res))))
 
-;todo: strengthen (if the length of x is even)
-(defthm keyword-value-listp-of-append
-  (implies (and (keyword-value-listp x)
-                (keyword-value-listp y))
-           (keyword-value-listp (append x y)))
-  :hints (("Goal" :in-theory (enable keyword-value-listp append))))
-
 ;strengthen?
 (defthm consp-of-cdr-of-assoc-keyword
   (implies (and (assoc-keyword key keyword-value-list)
                 (keyword-value-listp keyword-value-list))
            (consp (cdr (assoc-keyword key keyword-value-list)))))
 
+;; TODO: Compare to remove-keyword
 (defun clear-key-in-keyword-value-list (key keyword-value-list)
   (declare (xargs :guard (and (keywordp key)
                               (keyword-value-listp keyword-value-list))))
@@ -60,22 +56,12 @@
     (cons (car k)
           (keyword-value-list-keys (cddr k)))))
 
-(defthm keyword-value-listp-of-cons-of-cons
-  (implies (keyword-value-listp keyword-value-list)
-           (equal (keyword-value-listp (cons k (cons v keyword-value-list)))
-                  (keywordp k)))
-  :hints (("Goal" :in-theory (enable keyword-value-listp))))
-
 (in-theory (disable keywordp))
 
 (defthm keywordp-of-car-of-assoc-keyword
   (implies (and (assoc-keyword key keyword-value-list)
                 (keyword-value-listp keyword-value-list))
            (keywordp (car (assoc-keyword key keyword-value-list)))))
-
-(defthm keyword-value-listp-of-assoc-keyword
-  (implies (keyword-value-listp keyword-value-list)
-           (keyword-value-listp (assoc-keyword key keyword-value-list))))
 
 (defthm keyword-listp-of-append
   (equal (keyword-listp (append x y))
