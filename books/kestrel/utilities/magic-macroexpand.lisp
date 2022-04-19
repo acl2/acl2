@@ -96,54 +96,42 @@
                               (pseudo-termp (fgetprop (car x) 'guard *t*
                                                       wrld)))))
   (er-let*-cmp
-   ((erp/alist (magic-ev-fncall 'bind-macro-args ; not guard-verified
-                                (list (macro-args (car x) wrld)
-                                      x wrld state-vars)
-                                state
-                                t    ; hard-error-returns-nilp
-                                nil  ; aokp
-                                )))
-   (let* ((expected-true (true-listp erp/alist))
-          (erp (if expected-true
-                   (car erp/alist)
-                 t))
-          (alist (and expected-true (cadr erp/alist))))
-     (cond
-      (erp (er-cmp ctx
-                   "Error when attempting to bind macro args in ~
-                    macroexpansion for the form:~|~x0."
-                   x))
-      ((not (symbol-alistp alist)) ; impossible
-       (er-cmp ctx
-               "Impossible case in magic-macroexpand1 (not a symbol-alistp)."))
-      (t
-       (mv-let (erp guard-val)
-         (magic-ev (getpropc (car x) 'guard *t* wrld)
-                   alist
-                   state
-                   nil ; hard-error-returns-nilp
-                   nil ; aokp
-                   )
-         (cond
-          (erp (er-cmp ctx
-                       "In the attempt to macroexpand the form ~x0 evaluation ~
+   ((alist
+; The ec-call wrapper below could probably be eliminated if we add to the
+; :guard above to reflect the guard on bind-macro-args.
+     (ec-call (bind-macro-args (macro-args (car x) wrld) x wrld state-vars))))
+   (cond
+    ((not (symbol-alistp alist)) ; impossible
+     (er-cmp ctx
+             "Impossible case in magic-macroexpand1 (not a symbol-alistp)."))
+    (t
+     (mv-let (erp guard-val)
+       (magic-ev (getpropc (car x) 'guard *t* wrld)
+                 alist
+                 state
+                 nil   ; hard-error-returns-nilp
+                 nil   ; aokp
+                 )
+       (cond
+        (erp (er-cmp ctx
+                     "In the attempt to macroexpand the form ~x0 evaluation ~
                         of the guard for ~x2 caused the following ~
                         error:~|~%~@1"
-                       x
-                       guard-val
-                       (car x)))
-          ((null guard-val)
-           (magic-macro-guard-er-msg x ctx wrld))
-          (t (mv-let (erp expansion)
-               (magic-ev-safe macro-body alist state nil nil)
-               (cond (erp
-                      (er-cmp ctx
-                              "In the attempt to macroexpand the form ~x0, ~
+                     x
+                     guard-val
+                     (car x)))
+        ((null guard-val)
+         (magic-macro-guard-er-msg x ctx wrld))
+        (t (mv-let (erp expansion)
+             (magic-ev-safe macro-body alist state nil nil)
+             (cond (erp
+                    (er-cmp ctx
+                            "In the attempt to macroexpand the form ~x0, ~
                                evaluation of the macro body caused the ~
                                following error:~|~%~@1"
-                              x
-                              expansion))
-                     (t (value-cmp expansion))))))))))))
+                            x
+                            expansion))
+                   (t (value-cmp expansion)))))))))))
 
 (defun magic-macroexpand-rec (form ctx wrld state bound)
 

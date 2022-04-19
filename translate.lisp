@@ -10885,6 +10885,9 @@
                               (symbol-alistp
                                (table-alist 'duplicate-keys-action-table
                                             wrld))
+                              (standard-string-alistp
+                               (table-alist 'inhibit-warnings-table
+                                            wrld))
                               (weak-state-vars-p state-vars))))
   (cond ((endp args)
          (cond ((or (null actuals) allow-flg)
@@ -10958,7 +10961,14 @@
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
+                              (symbolp (car form))
                               (plist-worldp wrld)
+                              (symbol-alistp
+                               (table-alist 'duplicate-keys-action-table
+                                            wrld))
+                              (standard-string-alistp
+                               (table-alist 'inhibit-warnings-table
+                                            wrld))
                               (weak-state-vars-p state-vars))))
   (er-progn-cmp
    (chk-length-and-keys actuals form wrld)
@@ -10981,7 +10991,14 @@
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
+                              (symbolp (car form))
                               (plist-worldp wrld)
+                              (symbol-alistp
+                               (table-alist 'duplicate-keys-action-table
+                                            wrld))
+                              (standard-string-alistp
+                               (table-alist 'inhibit-warnings-table
+                                            wrld))
                               (weak-state-vars-p state-vars))))
   (cond
    ((endp args) (value-cmp alist))
@@ -10998,7 +11015,14 @@
                               (true-listp actuals)
                               (symbol-alistp alist)
                               (true-listp form)
+                              (symbolp (car form))
                               (plist-worldp wrld)
+                              (symbol-alistp
+                               (table-alist 'duplicate-keys-action-table
+                                            wrld))
+                              (standard-string-alistp
+                               (table-alist 'inhibit-warnings-table
+                                            wrld))
                               (weak-state-vars-p state-vars))))
   (cond ((endp args)
          (cond ((null actuals)
@@ -11037,9 +11061,17 @@
 (defun bind-macro-args1 (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
                               (macro-arglist1p args)
+                              (true-listp actuals)
                               (true-listp form)
+                              (symbolp (car form))
                               (symbol-alistp alist)
                               (plist-worldp wrld)
+                              (symbol-alistp
+                               (table-alist 'duplicate-keys-action-table
+                                            wrld))
+                              (standard-string-alistp
+                               (table-alist 'inhibit-warnings-table
+                                            wrld))
                               (weak-state-vars-p state-vars))))
   (cond ((endp args)
          (cond ((null actuals)
@@ -11069,7 +11101,14 @@
 (defun bind-macro-args (args form wrld state-vars)
   (declare (xargs :guard (and (macro-args-structurep args)
                               (true-listp form)
+                              (symbolp (car form))
                               (plist-worldp wrld)
+                              (symbol-alistp
+                               (table-alist 'duplicate-keys-action-table
+                                            wrld))
+                              (standard-string-alistp
+                               (table-alist 'inhibit-warnings-table
+                                            wrld))
                               (weak-state-vars-p state-vars))))
   (cond ((and (consp args)
               (eq (car args) '&whole))

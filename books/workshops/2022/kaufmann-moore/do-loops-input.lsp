@@ -9,9 +9,9 @@
 (loop$ with sum = 0 with lst = '(1 2 3 4) do
        (if (consp lst)
            (let ((sq (* (car lst) (car lst))))
-             (progn (setq sum (+ sq sum)) ; sum := (+ sq sum)
+             (progn (setq sum (+ sq sum))  ; sum := (+ sq sum)
                     (setq lst (cdr lst)))) ; lst := (cdr lst)
-                    (return sum)))
+         (return sum)))
 
 ;;;;;
 
