@@ -57,6 +57,10 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable intersection-equal))))
 
+(defthm consp-of-intersection-equal-iff
+  (iff (consp (intersection-equal x y))
+       (intersection-equal x y)))
+
 (defthm intersection-equal-when-not-consp-arg2-cheap
   (implies (not (consp y))
            (equal (intersection-equal x y)
