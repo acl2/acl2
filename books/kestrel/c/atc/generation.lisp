@@ -5652,6 +5652,7 @@
                                        (loop-test exprp)
                                        (test-term pseudo-termp)
                                        (fn-thms symbol-symbol-alistp)
+                                       (prec-tags atc-string-taginfo-alistp)
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
@@ -5685,11 +5686,18 @@
        (concl `(equal (exec-test (exec-expr-pure ',loop-test ,compst-var))
                       ,test-term))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
+       (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
+       (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
+       (struct-reader-return-thms
+        (atc-string-taginfo-alist-to-reader-return-thms prec-tags))
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
-                             '(not))
+                             '(not
+                               ,@not-error-thms
+                               ,@structp-thms
+                               ,@struct-reader-return-thms))
                  :use ((:instance (:guard-theorem ,fn)
                         :extra-bindings-ok ,@instantiation))
                  :expand :lambdas)))
@@ -5757,6 +5765,7 @@
                                        (test-term pseudo-termp)
                                        (body-term pseudo-termp)
                                        (prec-fns atc-symbol-fninfo-alistp)
+                                       (prec-tags atc-string-taginfo-alistp)
                                        (prog-const symbolp)
                                        (fn-thms symbol-symbol-alistp)
                                        (limit pseudo-termp)
@@ -5813,21 +5822,45 @@
                         (mv nil ,final-compst))))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
+       (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
+       (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
+       (struct-reader-return-thms
+        (atc-string-taginfo-alist-to-reader-return-thms prec-tags))
+       (struct-writer-return-thms
+        (atc-string-taginfo-alist-to-writer-return-thms prec-tags))
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
         (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns called-fns))
-       (type-prescriptions
+       (type-prescriptions-called
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
+       (type-prescriptions-struct-readers
+        (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
+               collect `(:t ,reader)))
+       (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
+       (members-thms (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (exec-memberp-thms
+        (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
+       (exec-asg-memberp-thms
+        (atc-string-taginfo-alist-to-exec-asg-memberp-thms prec-tags))
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
-                             '(not
-                               ,@type-prescriptions
+                             '(,@not-error-thms
+                               ,@structp-thms
+                               not
+                               ,@struct-reader-return-thms
+                               ,@struct-writer-return-thms
+                               ,@tag-thms
+                               ,@members-thms
+                               ,@exec-memberp-thms
+                               ,@exec-asg-memberp-thms
+                               ,@type-prescriptions-called
+                               ,@type-prescriptions-struct-readers
                                ,@result-thms
                                ,@correct-thms
                                ,@measure-thms))
@@ -5851,6 +5884,7 @@
                                   (loop-test exprp)
                                   (loop-body stmtp)
                                   (prec-fns atc-symbol-fninfo-alistp)
+                                  (prec-tags atc-string-taginfo-alistp)
                                   (prog-const symbolp)
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-result-thm symbolp)
@@ -5962,16 +5996,31 @@
        (formula-lemma `(b* (,@formals-bindings) (implies ,hyps ,concl-lemma)))
        (formula-thm `(b* (,@formals-bindings) (implies ,hyps ,concl-thm)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
+       (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
+       (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (result-thms (cons fn-result-thm result-thms))
+       (struct-reader-return-thms
+        (atc-string-taginfo-alist-to-reader-return-thms prec-tags))
+       (struct-writer-return-thms
+        (atc-string-taginfo-alist-to-writer-return-thms prec-tags))
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
         (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns called-fns))
-       (type-prescriptions
+       (type-prescriptions-called
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
+       (type-prescriptions-struct-readers
+        (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
+               collect `(:t ,reader)))
+       (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
+       (members-thms (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (exec-memberp-thms
+        (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
+       (exec-asg-memberp-thms
+        (atc-string-taginfo-alist-to-exec-asg-memberp-thms prec-tags))
        (lemma-hints `(("Goal"
                        :do-not-induct t
                        :in-theory (append
@@ -6001,9 +6050,18 @@
                                    *atc-compound-recognizer-rules*
                                    *value-disjoint-rules*
                                    *array-disjoint-rules*
-                                   '(not
+                                   '(,@not-error-thms
+                                     ,@structp-thms
+                                     not
                                      ,exec-stmt-while-for-fn
-                                     ,@type-prescriptions
+                                     ,@struct-reader-return-thms
+                                     ,@struct-writer-return-thms
+                                     ,@tag-thms
+                                     ,@members-thms
+                                     ,@exec-memberp-thms
+                                     ,@exec-asg-memberp-thms
+                                     ,@type-prescriptions-called
+                                     ,@type-prescriptions-struct-readers
                                      ,@result-thms
                                      ,@correct-thms
                                      ,@measure-thms
@@ -6164,6 +6222,7 @@
                                                  loop-test
                                                  test-term
                                                  fn-thms
+                                                 prec-tags
                                                  names-to-avoid
                                                  wrld))
                  ((mv body-local-events
@@ -6176,6 +6235,7 @@
                                                  test-term
                                                  body-term
                                                  prec-fns
+                                                 prec-tags
                                                  prog-const
                                                  fn-thms
                                                  body-limit
@@ -6192,6 +6252,7 @@
                                             loop-test
                                             loop-body
                                             prec-fns
+                                            prec-tags
                                             prog-const
                                             fn-thms
                                             fn-result-thm
