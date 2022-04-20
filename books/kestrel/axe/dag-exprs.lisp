@@ -1,7 +1,7 @@
 ; Expressions that can appear in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,6 +13,12 @@
 (in-package "ACL2")
 
 (include-book "all-dargp")
+
+;move
+;compromise.  we leave car but turn cadr etc into nth.
+(defthmd cadr-becomes-nth-of-1
+  (equal (cadr x)
+         (nth 1 x)))
 
 ;;;
 ;;; dag-function-call-exprp
@@ -63,6 +69,25 @@
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable dargs))))
 
+;; In general, we need car-becomes-nth-of-0 to turn all things like this into nth.
+(defthm car-of-dargs-becomes-nth-0-of-dargs
+  (equal (car (dargs expr))
+         (nth 0 (dargs expr)))
+  :hints (("Goal" :in-theory (enable nth))))
+
+(defthm cadr-of-dargs-becomes-nth-1-of-dargs
+  (equal (cadr (dargs expr))
+         (nth 1 (dargs expr)))
+  :hints (("Goal" :expand (nth 1 (dargs expr))
+           :in-theory (enable nth))))
+
+(defthm caddr-of-dargs-becomes-nth-1-of-dargs
+  (equal (caddr (dargs expr))
+         (nth 2 (dargs expr)))
+  :hints (("Goal" :expand ((nth 1 (cdr (dargs expr)))
+                           (nth 2 (dargs expr)))
+           :in-theory (enable nth))))
+
 (defun-inline darg1 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 1 (len (dargs x)))))) (first (dargs x)))
 (defun-inline darg2 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 2 (len (dargs x)))))) (second (dargs x)))
 (defun-inline darg3 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 3 (len (dargs x)))))) (third (dargs x)))
@@ -95,7 +120,6 @@
               (all-dargp args)
               (true-listp args)))
   :hints (("Goal" :in-theory (enable dag-function-call-exprp-redef))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -302,12 +326,6 @@
            (true-listp (cdr expr)))
   :hints (("Goal" :in-theory (enable dag-exprp))))
 
-;move
-;compromise.  we leave car but turn cadr etc into nth.
-(defthmd cadr-becomes-nth-of-1
-  (equal (cadr x)
-         (nth 1 x)))
-
 (defthmd not-cddr-when-dag-exprp-and-quotep
   (implies (and (dag-exprp expr)
                 (equal 'quote (car expr)))
@@ -359,25 +377,6 @@
                   (myquotep expr)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable dag-exprp))))
-
-;; In general, we need car-becomes-nth-of-0 to turn all things like this into nth.
-(defthm car-of-dargs-becomes-nth-0-of-dargs
-  (equal (car (dargs expr))
-         (nth 0 (dargs expr)))
-  :hints (("Goal" :in-theory (enable nth))))
-
-(defthm cadr-of-dargs-becomes-nth-1-of-dargs
-  (equal (cadr (dargs expr))
-         (nth 1 (dargs expr)))
-  :hints (("Goal" :expand (nth 1 (dargs expr))
-           :in-theory (enable nth))))
-
-(defthm caddr-of-dargs-becomes-nth-1-of-dargs
-  (equal (caddr (dargs expr))
-         (nth 2 (dargs expr)))
-  :hints (("Goal" :expand ((nth 1 (cdr (dargs expr)))
-                           (nth 2 (dargs expr)))
-           :in-theory (enable nth))))
 
 ;; use (equal 'quote (car ...)) as the normal form
 ;; enable?
