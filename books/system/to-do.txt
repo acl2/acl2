@@ -403,26 +403,6 @@ variable has been treated like an ordinary variable.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
-{{Verify guards for bind-macro-args.}}
-
-See file books/system/bind-macro-args.lisp, which makes a start at
-this guard verification.
-
-If/when I know that this book is modified to guard-verify the function
-bind-macro-args, then I'll do the usual "installation" of that
-function in the ACL2 sources.
-
-Optionally:
-
-It would be cool if someone wants to try that "installation" process.
-When I do it, I just read the comment in (defconst
-*system-verify-guards-alist* ...) in source file
-boot-strap-pass-2.lisp.  But I see that :doc
-verify-guards-for-system-functions might be the more appropriate place
-to start if you want to do that.
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
 {{Add two missing "Non-rec" warnings.}}
 
 There are two cases where "Non-rec" warnings fail to be printed, but

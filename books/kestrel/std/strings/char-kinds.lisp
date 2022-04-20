@@ -11,6 +11,17 @@
 (in-package "STR")
 
 (include-book "letter-chars")
+(include-book "letter-digit-chars")
+(include-book "letter-digit-dash-chars")
+(include-book "letter-digit-uscore-chars")
+(include-book "letter-digit-uscore-dollar-chars")
+(include-book "letter-uscore-dollar-chars")
+(include-book "nondigit-chars")
+(include-book "printable-chars")
+(include-book "ucletter-chars")
+(include-book "lcletter-chars")
+(include-book "ucletter-digit-chars")
+(include-book "lcletter-digit-chars")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
