@@ -245,31 +245,31 @@
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
 ;;;
-;;; all-bounded-dag-exprp
+;;; bounded-dag-expr-listp
 ;;;
 
-(defund all-bounded-dag-exprp (nodenum exprs)
+(defund bounded-dag-expr-listp (nodenum exprs)
   (declare (type (integer 0 *) nodenum))
   (if (atom exprs)
-      t
+      (null exprs)
     (and (bounded-dag-exprp nodenum (first exprs))
-         (all-bounded-dag-exprp nodenum (rest exprs)))))
+         (bounded-dag-expr-listp nodenum (rest exprs)))))
 
-(defthm all-bounded-dag-exprp-of-cons
-  (equal (all-bounded-dag-exprp nodenum (cons expr exprs))
+(defthm bounded-dag-expr-listp-of-cons
+  (equal (bounded-dag-expr-listp nodenum (cons expr exprs))
          (and (bounded-dag-exprp nodenum expr)
-              (all-bounded-dag-exprp nodenum exprs)))
-  :hints (("Goal" :in-theory (enable all-bounded-dag-exprp))))
+              (bounded-dag-expr-listp nodenum exprs)))
+  :hints (("Goal" :in-theory (enable bounded-dag-expr-listp))))
 
-(defthm all-bounded-dag-exprp-of-nil
-  (all-bounded-dag-exprp nodenum nil)
-  :hints (("Goal" :in-theory (enable all-bounded-dag-exprp))))
+(defthm bounded-dag-expr-listp-of-nil
+  (bounded-dag-expr-listp nodenum nil)
+  :hints (("Goal" :in-theory (enable bounded-dag-expr-listp))))
 
-(defthm all-bounded-dag-exprp-monotone
-  (implies (and (all-bounded-dag-exprp nodenum2 exprs)
+(defthm bounded-dag-expr-listp-monotone
+  (implies (and (bounded-dag-expr-listp nodenum2 exprs)
                 (<= nodenum2 nodenum)
                 ;(integerp nodenum)
                 ;(integerp nodenum2)
                 )
-           (all-bounded-dag-exprp nodenum exprs))
-  :hints (("Goal" :in-theory (enable all-bounded-dag-exprp))))
+           (bounded-dag-expr-listp nodenum exprs))
+  :hints (("Goal" :in-theory (enable bounded-dag-expr-listp))))

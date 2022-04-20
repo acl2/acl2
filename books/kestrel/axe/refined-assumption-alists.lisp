@@ -241,7 +241,7 @@
 (defthm bounded-refined-assumption-alistp-of-extend-refined-assumption-alist
   (implies (and (bounded-refined-assumption-alistp refined-assumption-alist bound)
                 (all-dag-function-call-exprp exprs)
-                (all-bounded-dag-exprp bound exprs))
+                (bounded-dag-expr-listp bound exprs))
            (bounded-refined-assumption-alistp (extend-refined-assumption-alist exprs refined-assumption-alist) bound))
   :hints (("Goal" :expand (;; (bounded-axe-tree-listp exprs bound)
                            ;; (bounded-axe-treep (car exprs) bound)
@@ -265,7 +265,7 @@
 
 (defthm bounded-refined-assumption-alistp-of-make-refined-assumption-alist
   (implies (and (all-dag-function-call-exprp exprs)
-                (all-bounded-dag-exprp bound exprs))
+                (bounded-dag-expr-listp bound exprs))
            (bounded-refined-assumption-alistp (make-refined-assumption-alist exprs) bound))
   :hints (("Goal" :in-theory (enable make-refined-assumption-alist
                                      bounded-refined-assumption-alistp))))

@@ -82,12 +82,12 @@
                                      DAG-FUNCTION-CALL-EXPRS-FROM-POSSIBLY-NEGATED-NODENUMS)
            :expand ((possibly-negated-nodenumsp possibly-negated-nodenums)))))
 
-(defthm all-bounded-dag-exprp-of-dag-function-call-exprs-from-possibly-negated-nodenums
+(defthm bounded-dag-expr-listp-of-dag-function-call-exprs-from-possibly-negated-nodenums
   (implies (and (possibly-negated-nodenumsp possibly-negated-nodenums)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-< (strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
                        dag-len))
-           (all-bounded-dag-exprp dag-len
+           (bounded-dag-expr-listp dag-len
                                   (dag-function-call-exprs-from-possibly-negated-nodenums
                                    possibly-negated-nodenums
                                    dag-array dag-len)))
