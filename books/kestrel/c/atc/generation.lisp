@@ -673,8 +673,8 @@
   :short "Project the member theorems out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
-       (thm (defstruct-info->tag-thm (atc-tag-info->defstruct info)))
-       (thms (atc-string-taginfo-alist-to-tag-thms (cdr prec-tags))))
+       (thm (defstruct-info->members-thm (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-members-thms (cdr prec-tags))))
     (cons thm thms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6293,7 +6293,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This relies on @('readers') be in the same order as @('members')."))
+    "This relies on @('readers') to be in the same order as @('members')."))
   (b* (((when (endp members)) (mv nil nil names-to-avoid))
        ((mv events thm names-to-avoid)
         (atc-gen-tag-exec-memberp-thm tag
@@ -6313,6 +6313,187 @@
                                        (cdr readers)
                                        names-to-avoid
                                        wrld)))
+    (mv (append events more-events)
+        (cons thm thms)
+        names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-tag-exec-asg-memberp-thm ((recognizer symbolp)
+                                          (fixer-recognizer-thm symbolp)
+                                          (not-error-thm symbolp)
+                                          (member member-infop)
+                                          (writer symbolp)
+                                          (writer-return-thm symbolp)
+                                          (names-to-avoid symbol-listp)
+                                          (wrld plist-worldp))
+  :returns (mv (local-events "A @(tsee pseudo-event-form-lisp).")
+               (exec-asg-memberp-thm "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate a theorem to rewrite @(tsee exec-expr-asg)
+          with a @(':memberp') left expression
+          to a structure writer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This class of theorems are the structure counterpart of
+     the ones that rewrite @(tsee exec-expr-asg)
+     that have @(':arrsub') left expressions
+     to array writers,
+     generated in @(see atc-exec-expr-asg-arrsub-rules-generation)."))
+  (b* ((memname (member-info->name member))
+       (memtype (member-info->type member))
+       (thm-name (pack 'exec-expr-asg-memberp-when-
+                       recognizer
+                       '-and-
+                       (ident->name memname)))
+       ((mv thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
+       (typep (atc-type-to-recognizer memtype wrld))
+       ((unless typep)
+        (raise "Internal error: unsupported member type ~x0." memtype)
+        (mv nil nil nil))
+       (formula
+        `(implies (and (syntaxp (quotep e))
+                       (equal (expr-kind e) :binary)
+                       (equal (binop-kind (expr-binary->op e)) :asg)
+                       (equal left (expr-binary->arg1 e))
+                       (equal right (expr-binary->arg2 e))
+                       (equal (expr-kind left) :memberp)
+                       (equal target (expr-memberp->target left))
+                       (equal member (expr-memberp->name left))
+                       (equal (expr-kind target) :ident)
+                       (equal member (ident ,(ident->name memname)))
+                       (not (zp limit))
+                       (equal val+compst1
+                              (exec-expr-call-or-pure right
+                                                      compst
+                                                      fenv
+                                                      (1- limit)))
+                       (equal val (mv-nth 0 val+compst1))
+                       (equal compst1 (mv-nth 1 val+compst1))
+                       (,typep val)
+                       (equal ptr (read-var (expr-ident->get target) compst1))
+                       (pointerp ptr)
+                       (not (pointer-nullp ptr))
+                       (equal struct
+                              (read-struct (pointer->address ptr) compst1))
+                       (equal (pointer->reftype ptr)
+                              (type-struct (struct->tag struct)))
+                       (,recognizer struct))
+                  (equal (exec-expr-asg e compst fenv limit)
+                         (write-struct (pointer->address ptr)
+                                       (,writer val struct)
+                                       compst1))))
+       (hints `(("Goal"
+                 :in-theory
+                 '(exec-expr-asg
+                   not-errorp-when-valuep-rewrite
+                   valuep-when-pointerp
+                   valuep-when-ucharp
+                   valuep-when-scharp
+                   valuep-when-ushortp
+                   valuep-when-sshortp
+                   valuep-when-uintp
+                   valuep-when-sintp
+                   valuep-when-ulongp
+                   valuep-when-slongp
+                   valuep-when-ullongp
+                   valuep-when-sllongp
+                   consp-when-ucharp
+                   consp-when-scharp
+                   consp-when-ushortp
+                   consp-when-sshortp
+                   consp-when-uintp
+                   consp-when-sintp
+                   consp-when-ulongp
+                   consp-when-slongp
+                   consp-when-ullongp
+                   consp-when-sllongp
+                   uchar-fix-when-ucharp
+                   schar-fix-when-scharp
+                   ushort-fix-when-ushortp
+                   sshort-fix-when-sshortp
+                   uint-fix-when-uintp
+                   sint-fix-when-sintp
+                   ulong-fix-when-ulongp
+                   slong-fix-when-slongp
+                   ullong-fix-when-ullongp
+                   sllong-fix-when-sllongp
+                   ,writer
+                   ,not-error-thm
+                   ,fixer-recognizer-thm)
+                 :use
+                 (:instance ,writer-return-thm
+                  (val (b* ((right (expr-binary->arg2 e))
+                            (val+compst1 (exec-expr-call-or-pure right
+                                                                 compst
+                                                                 fenv
+                                                                 (1- limit)))
+                            (val (mv-nth 0 val+compst1)))
+                         val))
+                  (struct (b* ((left (expr-binary->arg1 e))
+                               (right (expr-binary->arg2 e))
+                               (val+compst1 (exec-expr-call-or-pure right
+                                                                    compst
+                                                                    fenv
+                                                                    (1- limit)))
+                               (compst1 (mv-nth 1 val+compst1))
+                               (target (expr-memberp->target left))
+                               (ptr (read-var (c::expr-ident->get target)
+                                              compst1))
+                               (struct (read-struct (pointer->address ptr)
+                                                    compst1)))
+                            struct))))))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (mv (list event) thm-name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-tag-exec-asg-memberp-thms ((recognizer symbolp)
+                                           (fixer-recognizer-thm symbolp)
+                                           (not-error-thm symbolp)
+                                           (members member-info-listp)
+                                           (writers symbol-listp)
+                                           (writer-return-thms symbol-listp)
+                                           (names-to-avoid symbol-listp)
+                                           (wrld plist-worldp))
+  :returns (mv (local-events "A @(tsee pseudo-event-form-lisp).")
+               (exec-asg-memberp-thms "A @(tsee symbol-listp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate the theorems to rewrite @(tsee exec-expr-asg)
+          with a @(':memberp') left expression
+          to a structure writer,
+          for all the members of a structure type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This relies on @('writers') and @('writer-return-thms')
+     to be in the same order as @('members')."))
+  (b* (((when (endp members)) (mv nil nil names-to-avoid))
+       ((mv events thm names-to-avoid)
+        (atc-gen-tag-exec-asg-memberp-thm recognizer
+                                          fixer-recognizer-thm
+                                          not-error-thm
+                                          (car members)
+                                          (car writers)
+                                          (car writer-return-thms)
+                                          names-to-avoid
+                                          wrld))
+       ((mv more-events thms names-to-avoid)
+        (atc-gen-tag-exec-asg-memberp-thms recognizer
+                                           fixer-recognizer-thm
+                                           not-error-thm
+                                           (cdr members)
+                                           (cdr writers)
+                                           (cdr writer-return-thms)
+                                           names-to-avoid
+                                           wrld)))
     (mv (append events more-events)
         (cons thm thms)
         names-to-avoid)))
@@ -6374,8 +6555,10 @@
        (fixer-recognizer-thm (defstruct-info->fixer-recognizer-thm info))
        (not-error-thm (defstruct-info->not-error-thm info))
        (readers (defstruct-info->readers info))
+       (writers (defstruct-info->writers info))
+       (writer-return-thms (defstruct-info->writer-return-thms info))
        (struct-declons (atc-gen-struct-declon-list meminfos))
-       ((mv thm-events thm-names names-to-avoid)
+       ((mv read-thm-events read-thm-names names-to-avoid)
         (if proofs
             (atc-gen-tag-exec-memberp-thms tag-ident
                                            recognizer
@@ -6386,8 +6569,21 @@
                                            names-to-avoid
                                            (w state))
           (mv nil nil names-to-avoid)))
+       ((mv write-thm-events & names-to-avoid)
+        (if proofs
+            (atc-gen-tag-exec-asg-memberp-thms recognizer
+                                               fixer-recognizer-thm
+                                               not-error-thm
+                                               meminfos
+                                               writers
+                                               writer-return-thms
+                                               names-to-avoid
+                                               (w state))
+          (mv nil nil names-to-avoid)))
+       (thm-events (append read-thm-events write-thm-events))
+       ;; (thm-names (append read-thm-names write-thm-names))
        (info (make-atc-tag-info :defstruct info
-                                :exec-memberp-thms thm-names))
+                                :exec-memberp-thms read-thm-names))
        (prec-tags (acons tag info prec-tags)))
     (acl2::value
      (list (make-tag-declon-struct :tag tag-ident
