@@ -1,7 +1,7 @@
 ; Utilities about keyword-value-lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,20 +15,6 @@
 
 (include-book "keyword-value-listp")
 (include-book "lookup-keyword")
-
-(defthm consp-of-cdr-of-assoc-keyword
-  (implies (keyword-value-listp keyword-value-list)
-           (iff (consp (cdr (assoc-keyword key keyword-value-list)))
-                (assoc-keyword key keyword-value-list)))
-  :hints (("Goal" :in-theory (enable keyword-value-listp))))
-
-(defthm keywordp-of-car-of-assoc-keyword
-  (implies (keyword-value-listp keyword-value-list)
-           (iff (keywordp (car (assoc-keyword key keyword-value-list)))
-                (assoc-keyword key keyword-value-list)))
-  :hints (("Goal" :in-theory (enable keyword-value-listp))))
-
-;;;;;;;;;;
 
 ;(in-theory (disable keywordp))
 
