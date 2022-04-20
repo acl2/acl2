@@ -14,7 +14,6 @@
 (include-book "add-bitxor-nest-to-dag-array")
 (include-book "add-bvxor-nest-to-dag-array")
 (include-book "alist-suitable-for-hypsp")
-(include-book "all-dargp-less-than")
 (include-book "all-dargp")
 (include-book "arrays-of-alists")
 (include-book "assumption-array")
