@@ -190,6 +190,8 @@
   :rule-classes ((:linear :trigger-terms ((* j (floor i j)))))
   :hints (("Goal" :by my-floor-lower-bound-alt)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthmd my-floor-upper-bound ;floor-upper-bound is a theorem in rtl
   (implies (and (rationalp i)
                 (rationalp j))
@@ -206,26 +208,29 @@
   :hints (("Goal" :by my-floor-upper-bound)))
 
 (defthm *-of-floor-upper-bound-linear
-  (implies (and (rationalp i)
-                (rationalp j)
-                (< 0 j))
+  (implies (and (< 0 j)
+                (rationalp i)
+                (rationalp j))
            (<= (* j (floor i j)) i))
-  :rule-classes (:linear)
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable floor))))
 
-;; In this version, we have multiplied through by j.
-(defthmd my-floor-upper-bound-alt
-  (implies (and (rationalp i)
-                (rationalp j)
-                (< 0 j))
+;todo: compare to *-of-floor-upper-bound-linear
+(defthm floor-upper-bound-alt-linear
+  (implies (and (<= 0 i)
+                (rationalp i)
+                (<= 0 j)
+                (rationalp j))
            (<= (* j (floor i j)) i))
-  :hints (("Goal" :use ((:instance my-floor-upper-bound)
-                        (:instance <-of-*-and-*-cancel
-                                   (x2 (floor i j))
-                                   (x1 (* i (/ j)))
-                                   (y j)))
-           :in-theory (disable my-floor-upper-bound
-                               <-of-*-and-*-cancel))))
+  :rule-classes :linear
+  :hints (("Goal" :cases ((equal j 0)))))
+
+;; In this version, we have multiplied through by j.
+(defthmd *-of-floor-upper-bound
+  (implies (and (< 0 j)
+                (rationalp i)
+                (rationalp j))
+           (<= (* j (floor i j)) i)))
 
 (defthm floor-upper-bound-strict
   (implies (and (not (integerp (/ i j)))
@@ -524,10 +529,10 @@
   :hints (("Goal" :use (:instance <-*-/-left (x (+ (* k y) (* k2 y) x)))
            :in-theory (disable <-*-/-left))))
 
-(defthmd floor-equal-split
-  (equal (equal (floor x y) (floor z y))
-         (and (not (< (floor x y) (floor z y)))
-              (not (> (floor x y) (floor z y))))))
+;; (defthmd floor-equal-split
+;;   (equal (equal (floor x y) (floor z y))
+;;          (and (not (< (floor x y) (floor z y)))
+;;               (not (> (floor x y) (floor z y))))))
 
 ;gen?
 (defthm floor-bound-lemma
@@ -561,30 +566,30 @@
                     (+ 1 (floor n y)))))
   :hints (("Goal" :in-theory (enable floor-of-sum))))
 
-;gen
-(defthm floor-bound
-  (implies (natp x)
-           (<= (floor x 2) (/ x 2))))
+;; ;gen
+;; (defthm floor-bound
+;;   (implies (natp x)
+;;            (<= (floor x 2) (/ x 2))))
 
 
-;gen floor-bound!
-(defthm floor-bound-negative
-  (implies (and (<= x 0)
-                (integerp x))
-           (<= (floor x 2) (/ x 2)))
-  :hints (("Goal" :in-theory (enable floor))))
+;; ;gen floor-bound!
+;; (defthm floor-bound-negative
+;;   (implies (and (<= x 0)
+;;                 (integerp x))
+;;            (<= (floor x 2) (/ x 2)))
+;;   :hints (("Goal" :in-theory (enable floor))))
 
-;gen
-;get rid of the other..
-(defthm floor-bound-better
-  (implies (integerp x)
-           (<= (floor x 2) (/ x 2))))
+;; ;gen
+;; ;get rid of the other..
+;; (defthm floor-bound-better
+;;   (implies (integerp x)
+;;            (<= (floor x 2) (/ x 2))))
 
-;drop?
-(defthm floor-bound-better-linear
-  (implies (integerp x)
-           (<= (floor x 2) (/ x 2)))
-  :rule-classes ((:linear :trigger-terms ((floor x 2)))))
+;; ;drop?
+;; (defthm floor-bound-better-linear
+;;   (implies (integerp x)
+;;            (<= (floor x 2) (/ x 2)))
+;;   :rule-classes ((:linear :trigger-terms ((floor x 2)))))
 
 (defthm floor-of-times-1/2
   (equal (floor (* 1/2 a) 1)
@@ -614,11 +619,13 @@
            :cases ((equal i 0)))))
 
 (defthm floor-of-minus-and-minus
-  (implies (and (rationalp x)
-                (rationalp y)
-                (not (equal 0 y)))
-           (equal (floor (- x) (- y))
-                  (floor x y))))
+  (implies (and (rationalp i)
+                (rationalp j)
+                ;(not (equal 0 j))
+                )
+           (equal (floor (- i) (- j))
+                  (floor i j)))
+  :hints (("Goal" :in-theory (disable floor-minus))))
 
 (defthm floor-when-<
   (implies (and (< i j)
@@ -629,15 +636,7 @@
                   0))
   :hints (("Goal" :cases ((rationalp i)))))
 
-;todo: compare to *-of-floor-upper-bound-linear
-(defthm floor-upper-bound-alt-linear
-  (implies (and (<= 0 i)
-                (rationalp i)
-                (<= 0 j)
-                (rationalp j))
-           (<= (* j (floor i j)) i))
-  :rule-classes ((:linear))
-  :hints (("Goal" :in-theory (enable mod))))
+
 
 (defthm <-of-floor-and-0-when-negative-and-positive-type
   (implies (and (< i 0)
@@ -752,10 +751,10 @@
                 (rationalp k)
                 (<= (+ 1 k) (floor x j)))
            (<= (+ j (* j k)) x))
-  :hints (("Goal" :use ((:instance my-floor-upper-bound-alt (i x))
+  :hints (("Goal" :use ((:instance *-of-floor-upper-bound (i x))
                         (:instance <-*-left-cancel (x (floor x j)) (y (+ 1 k)) (z j)))
            :in-theory (disable <-*-left-cancel
-                               my-floor-upper-bound-alt))))
+                               *-of-floor-upper-bound))))
 ;move or drop
 (defthmd <-bound-hack
   (implies (and (< x y)

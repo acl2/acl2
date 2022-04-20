@@ -8836,7 +8836,7 @@
                                       my-FLOOR-LOWER-BOUND-ALT
                                       MY-FLOOR-UPPER-BOUND
                                       FLOOR-BOUND-LEMMA3
-                                      my-FLOOR-UPPER-BOUND-ALT
+                                      *-of-floor-upper-bound
                                       <-*-/-LEFT)
           :use (:instance MY-FLOOR-UPPER-BOUND (i 31) (j j)))))
 
@@ -8854,7 +8854,7 @@
                                       my-FLOOR-LOWER-BOUND-ALT
                                       MY-FLOOR-UPPER-BOUND
                                       FLOOR-BOUND-LEMMA3
-                                      my-FLOOR-UPPER-BOUND-ALT
+                                      *-of-floor-upper-bound
 ;                                     <-*-/-LEFT
 ;                                    <-*-/-LEFT-COMMUTED
 ;                                   <-*-/-RIGHT-COMMUTED
@@ -9340,7 +9340,7 @@
                                <-of-mod-same
                                floor-upper-bound-alt-linear
                                floor-bound-lemma3
-                               my-floor-upper-bound-alt
+                               *-of-floor-upper-bound
                                mod-of-expt-of-2-constant-version))))
 
 ;gen
@@ -9363,7 +9363,7 @@
                                FLOOR-BOUND-LEMMA2
                                my-floor-upper-bound
                                FLOOR-BOUND-LEMMA3
-                               my-FLOOR-UPPER-BOUND-ALT))))
+                               *-of-floor-upper-bound))))
 
 (defthm <-of-+-of-*-of-slice-sha1
   (implies (and (unsigned-byte-p 31 x)
@@ -11742,7 +11742,7 @@
   :hints (("Goal"
            :use ((:instance my-floor-upper-bound (i x) (j 4))
                  (:instance my-floor-lower-bound (i x) (j 4)))
-           :in-theory (e/d (unsigned-byte-p) (FLOOR-BOUND-LEMMA2 FLOOR-BOUND-LEMMA3 MY-FLOOR-LOWER-BOUND-ALT my-FLOOR-upper-BOUND-ALT)))))
+           :in-theory (e/d (unsigned-byte-p) (FLOOR-BOUND-LEMMA2 FLOOR-BOUND-LEMMA3 MY-FLOOR-LOWER-BOUND-ALT *-of-floor-upper-bound)))))
 
 (defthm bvlt-of-bvplus-of-bvcat-of-slice-sha1
   (implies (unsigned-byte-p 32 x) ;gen
@@ -11755,8 +11755,7 @@
                            (FLOOR-BOUND-LEMMA2
                             FLOOR-BOUND-LEMMA3
                             MY-FLOOR-LOWER-BOUND-ALT
-                            my-FLOOR-upper-BOUND-ALT
-
+                            *-of-floor-upper-bound
                             anti-slice)))))
 
 (defthm bvlt-of-bvmult-6-5-20
