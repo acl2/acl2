@@ -152,12 +152,7 @@
      (xdoc::p
       "While it is obviously recommended to generate proofs,
        setting this to @('nil') may be useful
-       in case proof generation is (temporarily) broken.")
-     (xdoc::p
-      "Currently this should be set to @('nil')
-       when generating code with C structures,
-       because proof generation support for C structures
-       is still in progress."))
+       in case proof generation is (temporarily) broken."))
 
     (xdoc::desc
      "@(':const-name') &mdash; default @(':auto')"
