@@ -15,7 +15,8 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "macro-args")
 (include-book "strings") ; for n-string-append and newline-string
-(include-book "kestrel/utilities/keyword-value-lists2" :dir :system) ;for lookup-keyword
+(include-book "kestrel/utilities/lookup-keyword" :dir :system)
+(include-book "kestrel/utilities/keyword-value-lists2" :dir :system) ; for keyword-value-list-keys
 (include-book "kestrel/strings-light/downcase" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 
