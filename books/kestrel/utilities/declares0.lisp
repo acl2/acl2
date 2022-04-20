@@ -21,7 +21,6 @@
 (include-book "keyword-value-lists2") ; for keyword-value-list-keys
 (include-book "conjunctions")
 (include-book "std/lists/list-defuns" :dir :system) ;for flatten
-(include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/untranslated-terms/add-conjunct-to-uterm" :dir :system)
 (local (include-book "assoc-keyword"))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -896,9 +895,8 @@
                               (all-declarep declares))))
   (if (atom declares)
       (mv nil nil)
-    (b* ((declare (first declares))
-         ((mv foundp val) (get-xarg-from-declare xarg declare))
-         )
+    (mv-let (foundp val)
+      (get-xarg-from-declare xarg (first declares))
       (if foundp
           (mv foundp val)
         (get-xarg-from-declares xarg (rest declares))))))
