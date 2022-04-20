@@ -16,8 +16,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (str::defcharset letter
-  (and (standard-char-p x)
-       (alpha-char-p x))
+  (b* ((code (char-code x)))
+    (or (and (<= (char-code #\A) code)
+             (<= code (char-code #\Z)))
+        (and (<= (char-code #\a) code)
+             (<= code (char-code #\z)))))
   :parents (character-kinds)
   :short "Recognize ASCII letters."
   :long

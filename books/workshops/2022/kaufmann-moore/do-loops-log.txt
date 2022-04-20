@@ -1,0 +1,348 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(LOOP$ FOR I IN '(1 2 3 4) SUM (* I I))
+30
+ACL2 !>>(LOOP$ WITH SUM = 0 WITH LST = '(1 2 3 4)
+               DO
+               (IF (CONSP LST)
+                   (LET ((SQ (* (CAR LST) (CAR LST))))
+                        (PROGN (SETQ SUM (+ SQ SUM))
+                               (SETQ LST (CDR LST))))
+                   (RETURN SUM)))
+30
+ACL2 !>>(INCLUDE-BOOK "projects/apply/top"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "projects/apply/top" ...)
+Rules: NIL
+ "[books]/projects/apply/top.lisp"
+ACL2 !>>(DEFSTOBJ ST FLD)
+
+Summary
+Form:  ( DEFSTOBJ ST ...)
+Rules: NIL
+ ST
+ACL2 !>>(DEFWARRANT FLD)
+
+
+FLD is now warranted by APPLY$-WARRANT-FLD, with badge 
+(APPLY$-BADGE 1 1 . T).
+
+ T
+ACL2 !>>(DEFWARRANT UPDATE-FLD)
+
+
+UPDATE-FLD is now warranted by APPLY$-WARRANT-UPDATE-FLD, with badge
+(APPLY$-BADGE 2 1 . T).
+
+ T
+ACL2 !>>(LOOP$
+         WITH SUM = 0 WITH LST = '(1 2 3 4)
+         DO :VALUES (NIL ST)
+         (IF
+          (CONSP LST)
+          (LET ((SQ (* (CAR LST) (CAR LST))))
+               (PROGN (MV-SETQ (SUM ST)
+                               (LET ((ST (UPDATE-FLD (CONS SQ (FLD ST)) ST)))
+                                    (MV (+ SQ SUM) ST)))
+                      (SETQ LST (CDR LST))))
+          (RETURN (MV SUM ST))))
+(30 <st>)
+ACL2 !>>(FLD ST)
+(16 9 4 1)
+ACL2 !>>(LOOP$ WITH SUM =
+               0 WITH I = 1 DO :MEASURE (NFIX (- 5 I))
+               (IF (<= I 4)
+                   (LET ((SQ (* I I)))
+                        (PROGN (SETQ SUM (+ SQ SUM))
+                               (SETQ I (1+ I))))
+                   (LOOP-FINISH))
+               FINALLY (RETURN SUM))
+30
+ACL2 !>>(DEFUN F (N)
+               (DECLARE (XARGS :GUARD (NATP N)))
+               (LOOP$ WITH SUM OF-TYPE INTEGER
+                      = 0 WITH I = N DO :GUARD (NATP I)
+                      (IF (ZP I)
+                          (RETURN SUM)
+                          (LET ((SQ (* I I)))
+                               (PROGN (SETQ SUM (+ SQ SUM))
+                                      (SETQ I (1- I)))))))
+
+Since F is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of F.
+
+Computing the guard conjecture for F....
+
+The non-trivial part of the guard conjecture for F, given the :compound-
+recognizer rules NATP-COMPOUND-RECOGNIZER and ZP-COMPOUND-RECOGNIZER,
+the :executable-counterparts of APPLY$-GUARD and CONS, primitive type
+reasoning and the :type-prescription rules ASSOC-EQ-SAFE and 
+NONNEGATIVE-PRODUCT, is
+
+Goal
+(AND
+ (LET
+  ((TRIPLE
+    (TRUE-LIST-FIX
+     (APPLY$
+      (LAMBDA$
+       (ALIST)
+       (DECLARE
+            (XARGS :GUARD (AND (ALISTP ALIST)
+                               (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+                               (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                   :SPLIT-TYPES T))
+       (LET
+        ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+         (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+        (IF
+         (ZP I)
+         (LIST :RETURN
+               SUM (LIST (CONS 'SUM SUM) (CONS 'I I)))
+         (LET*
+          ((SQ (* I I)) (SUM (+ SQ SUM)))
+          (PROG2$
+             (CHECK-DCL-GUARDIAN (INTEGERP SUM)
+                                 '(SETQ SUM (THE INTEGER (BINARY-+ SQ SUM))))
+             (LIST NIL NIL
+                   (LET ((I (+ -1 I)))
+                        (LIST (CONS 'SUM SUM)
+                              (CONS 'I I)))))))))
+      (LIST ALIST)))))
+  (LET ((EXIT-FLG (CAR TRIPLE))
+        (NEW-ALIST (CADDR TRIPLE)))
+       (IMPLIES (AND (AND (ALISTP ALIST)
+                          (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+                          (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                     (EQUAL EXIT-FLG :LOOP-FINISH))
+                (AND (ALISTP NEW-ALIST)
+                     (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM NEW-ALIST)))))))
+ (LET
+  ((TRIPLE
+    (TRUE-LIST-FIX
+     (APPLY$
+      (LAMBDA$
+       (ALIST)
+       (DECLARE
+            (XARGS :GUARD (AND (ALISTP ALIST)
+                               (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+                               (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                   :SPLIT-TYPES T))
+       (LET
+        ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+         (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+        (IF
+         (ZP I)
+         (LIST :RETURN
+               SUM (LIST (CONS 'SUM SUM) (CONS 'I I)))
+         (LET*
+          ((SQ (* I I)) (SUM (+ SQ SUM)))
+          (PROG2$
+             (CHECK-DCL-GUARDIAN (INTEGERP SUM)
+                                 '(SETQ SUM (THE INTEGER (BINARY-+ SQ SUM))))
+             (LIST NIL NIL
+                   (LET ((I (+ -1 I)))
+                        (LIST (CONS 'SUM SUM)
+                              (CONS 'I I)))))))))
+      (LIST ALIST)))))
+  (LET ((EXIT-FLG (CAR TRIPLE))
+        (NEW-ALIST (CADDR TRIPLE)))
+       (IMPLIES (AND (AND (ALISTP ALIST)
+                          (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+                          (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                     (EQUAL EXIT-FLG NIL))
+                (AND (ALISTP NEW-ALIST)
+                     (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM NEW-ALIST)))
+                     (NATP (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST)))))))
+ (LET
+  ((TRIPLE
+    (TRUE-LIST-FIX
+     (APPLY$
+      (LAMBDA$
+       (ALIST)
+       (DECLARE
+            (XARGS :GUARD (AND (ALISTP ALIST)
+                               (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+                               (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                   :SPLIT-TYPES T))
+       (LET
+        ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+         (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+        (IF
+         (ZP I)
+         (LIST :RETURN
+               SUM (LIST (CONS 'SUM SUM) (CONS 'I I)))
+         (LET*
+          ((SQ (* I I)) (SUM (+ SQ SUM)))
+          (PROG2$
+             (CHECK-DCL-GUARDIAN (INTEGERP SUM)
+                                 '(SETQ SUM (THE INTEGER (BINARY-+ SQ SUM))))
+             (LIST NIL NIL
+                   (LET ((I (+ -1 I)))
+                        (LIST (CONS 'SUM SUM)
+                              (CONS 'I I)))))))))
+      (LIST ALIST)))))
+  (LET
+   ((EXIT-FLG (CAR TRIPLE))
+    (NEW-ALIST (CADDR TRIPLE)))
+   (IMPLIES
+    (AND (AND (ALISTP ALIST)
+              (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+              (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+         (EQUAL EXIT-FLG NIL))
+    (L<
+     (LEX-FIX
+      (APPLY$
+       (LAMBDA$
+          (ALIST)
+          (DECLARE
+               (XARGS :GUARD (AND (ALISTP ALIST)
+                                  (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+                                  (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                      :SPLIT-TYPES T))
+          (LET ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+                (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+               (ACL2-COUNT I)))
+       (LIST NEW-ALIST)))
+     (LEX-FIX
+      (APPLY$
+       (LAMBDA$
+          (ALIST)
+          (DECLARE
+               (XARGS :GUARD (AND (ALISTP ALIST)
+                                  (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+                                  (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                      :SPLIT-TYPES T))
+          (LET ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+                (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+               (ACL2-COUNT I)))
+       (LIST ALIST)))))))
+ (IMPLIES (NATP N)
+          (AND (ALISTP (LIST '(SUM . 0) (CONS 'I N)))
+               (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM
+                                             (LIST '(SUM . 0) (CONS 'I N)))))
+               (NATP (CDR (ASSOC-EQ-SAFE 'I
+                                         (LIST '(SUM . 0) (CONS 'I N)))))))).
+Subgoal 4
+
+Splitter note (see :DOC splitter) for Subgoal 4 (3 subgoals).
+  if-intro: ((:DEFINITION EV$-LIST-DEF)
+             (:DEFINITION NOT)
+             (:META APPLY$-PRIM-META-FN-CORRECT)
+             (:REWRITE EV$-OPENER)
+             (:REWRITE ZP-OPEN))
+
+Subgoal 4.3
+Subgoal 4.2
+Subgoal 4.1
+Subgoal 3
+
+Splitter note (see :DOC splitter) for Subgoal 3 (3 subgoals).
+  if-intro: ((:DEFINITION EV$-LIST-DEF)
+             (:DEFINITION NOT)
+             (:META APPLY$-PRIM-META-FN-CORRECT)
+             (:REWRITE EV$-OPENER)
+             (:REWRITE ZP-OPEN))
+
+Subgoal 3.3
+Subgoal 3.2
+Subgoal 3.1
+Subgoal 2
+
+Splitter note (see :DOC splitter) for Subgoal 2 (3 subgoals).
+  if-intro: ((:DEFINITION EV$-LIST-DEF)
+             (:DEFINITION NOT)
+             (:META APPLY$-PRIM-META-FN-CORRECT)
+             (:REWRITE EV$-OPENER)
+             (:REWRITE ZP-OPEN))
+
+Subgoal 2.3
+Subgoal 2.2
+Subgoal 2.2'
+Subgoal 2.1
+Subgoal 1
+
+Q.E.D.
+
+That completes the proof of the guard theorem for F.  F is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ACL2-COUNT)
+        (:DEFINITION ALISTP)
+        (:DEFINITION ASSOC-EQ-SAFE)
+        (:DEFINITION ASSOC-EQUAL)
+        (:DEFINITION CHECK-DCL-GUARDIAN)
+        (:DEFINITION EV$-LIST-DEF)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION SUITABLY-TAMEP-LISTP)
+        (:DEFINITION SYNP)
+        (:DEFINITION TAMEP)
+        (:DEFINITION TRUE-LIST-FIX)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALISTP)
+        (:EXECUTABLE-COUNTERPART APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART APPLY$-PRIMP)
+        (:EXECUTABLE-COUNTERPART BADGE-PRIM)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART LAMBDA-OBJECT-BODY)
+        (:EXECUTABLE-COUNTERPART LAMBDA-OBJECT-FORMALS)
+        (:EXECUTABLE-COUNTERPART LAMBDA-OBJECT-SHAPEP)
+        (:EXECUTABLE-COUNTERPART LENGTH)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART SYMBOL-LISTP)
+        (:EXECUTABLE-COUNTERPART SYMBOLP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:META APPLY$-PRIM-META-FN-CORRECT)
+        (:REWRITE APPLY$-PRIMITIVE)
+        (:REWRITE APPLY$-PRIMP-BADGE)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE EV$-CDR)
+        (:REWRITE EV$-CONS)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE ZP-OPEN)
+        (:TYPE-PRESCRIPTION ASSOC-EQ-SAFE)
+        (:TYPE-PRESCRIPTION NONNEGATIVE-PRODUCT))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION EV$-LIST-DEF)
+             (:DEFINITION NOT)
+             (:META APPLY$-PRIM-META-FN-CORRECT)
+             (:REWRITE EV$-OPENER)
+             (:REWRITE ZP-OPEN))
+ F
+ACL2 !>>(F 4)
+30
+ACL2 !>>Bye.
