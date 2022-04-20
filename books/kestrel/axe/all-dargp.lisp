@@ -178,3 +178,8 @@
                 (assoc-equal var alist))
            (dargp (cdr (assoc-equal var alist))))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
+
+(defthm all-dargp-of-reverse-list
+  (equal (all-dargp (reverse-list x))
+         (all-dargp x))
+  :hints (("Goal" :in-theory (enable all-dargp reverse-list))))

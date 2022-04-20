@@ -139,12 +139,38 @@
            (integerp (car (car dag))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
 
+(defthmd natp-of-car-of-car-when-weak-dagp-aux
+  (implies (and (weak-dagp-aux dag)
+                (consp dag))
+           (natp (car (car dag))))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+;; (defthm dargp-of-cdr-of-car-when-weak-dagp-aux
+;;   (implies (and (weak-dagp-aux dag)
+;;                 (consp dag))
+;;            (dargp (cdr (car dag))))
+;;   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
 (defthm integerp-of-car-of-car-of-last-when-weak-dagp-aux-cheap
   (implies (and (weak-dagp-aux dag)
                 (consp dag))
            (integerp (car (car (last dag)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+(defthmd acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
+  (implies (and (weak-dagp-aux rev-dag)
+                (consp rev-dag))
+           (acl2-numberp (car (car (last rev-dag)))))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+(defthmd consp-of-car-of-last-when-weak-dagp-aux
+  (implies (and (weak-dagp-aux rev-dag)
+                (consp rev-dag))
+           (consp (car (last rev-dag))))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+
 
 ;even holds for bad nodenums or nodenums of vars, since the cdr will return nil
 (defthm true-listp-of-dargs-of-lookup-equal-when-weak-dagp-aux-cheap

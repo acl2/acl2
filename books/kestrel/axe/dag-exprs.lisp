@@ -384,3 +384,8 @@
   (implies (dag-exprp expr)
            (equal (myquotep expr)
                   (equal 'quote (car expr)))))
+
+(defthmd consp-of-cdr-when-dag-exprp-and-quote
+  (implies (and (dag-exprp expr)
+                (equal 'quote (car expr)))
+           (consp (cdr expr))))
