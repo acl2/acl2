@@ -17,6 +17,7 @@
 (include-book "tools/nld" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/world" :dir :system)
+(include-book "kestrel/utilities/conjunctions" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,7 +135,7 @@
   (let ((name (toplevel-name top)))
     (toplevel-case top
       :type (make-outcome-type-success :message name)
-      :types (make-outcome-type-success :message name)                   
+      :types (make-outcome-type-success :message name)
       :function (make-outcome-function-success :message name)
       :functions (make-outcome-function-success :message name)
       :specification (make-outcome-specification-success :message name)
