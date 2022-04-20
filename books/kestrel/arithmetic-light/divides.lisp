@@ -394,3 +394,19 @@
   :hints (("Goal" :use (:instance <-*-LEFT-CANCEL
                                   (z (/ x k))
                                   (y k) (x (/ x))))))
+
+(defthm <=-of-*-of-/-when-both-negative-linear
+  (implies (and (< i 0)
+                (<= j -1)
+                (rationalp i)
+                (rationalp j))
+           (<= (* i (/ j)) (- i)))
+  :rule-classes :linear)
+
+(defthm <=-of-*-of-/-when-negative-and-positive-linear
+  (implies (and (<= 0 i)
+                (<= j -1)
+                (rationalp i)
+                (rationalp j))
+           (<= (- i) (* i (/ j))))
+  :rule-classes :linear)
