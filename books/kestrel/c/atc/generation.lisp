@@ -575,16 +575,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-string-taginfo-alist-to-return-thms
+(define atc-string-taginfo-alist-to-reader-return-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
   :short "Project the return type theorems
-          for structure readers and writers
+          for structure readers
           out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
-       (thms (defstruct-info->return-thms (atc-tag-info->defstruct info)))
-       (more-thms (atc-string-taginfo-alist-to-return-thms (cdr prec-tags))))
+       (thms
+        (defstruct-info->reader-return-thms (atc-tag-info->defstruct info)))
+       (more-thms
+        (atc-string-taginfo-alist-to-reader-return-thms (cdr prec-tags))))
+    (append thms more-thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-string-taginfo-alist-to-writer-return-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the return type theorems
+          for structure writers
+          out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thms
+        (defstruct-info->writer-return-thms (atc-tag-info->defstruct info)))
+       (more-thms
+        (atc-string-taginfo-alist-to-writer-return-thms (cdr prec-tags))))
     (append thms more-thms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4133,7 +4151,8 @@
                   *atc-array-read-return-rewrite-rules*
                   *atc-array-write-return-rewrite-rules*
                   *atc-array-length-write-rules*
-                  ',(atc-string-taginfo-alist-to-return-thms prec-tags)
+                  ',(atc-string-taginfo-alist-to-reader-return-thms prec-tags)
+                  ',(atc-string-taginfo-alist-to-writer-return-thms prec-tags)
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-result-thms
                        prec-fns (all-fnnames (ubody+ fn wrld)))
@@ -4753,8 +4772,10 @@
        (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
-       (struct-return-thms
-        (atc-string-taginfo-alist-to-return-thms prec-tags))
+       (struct-reader-return-thms
+        (atc-string-taginfo-alist-to-reader-return-thms prec-tags))
+       (struct-writer-return-thms
+        (atc-string-taginfo-alist-to-writer-return-thms prec-tags))
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
@@ -4777,7 +4798,8 @@
                                not
                                ,fn
                                ,@result-thms
-                               ,@struct-return-thms
+                               ,@struct-reader-return-thms
+                               ,@struct-writer-return-thms
                                ,@tag-thms
                                ,@members-thms
                                ,@exec-memberp-thms
