@@ -6552,7 +6552,7 @@
                                            (writer-return-thms symbol-listp)
                                            (names-to-avoid symbol-listp)
                                            (wrld plist-worldp))
-  :returns (mv (local-events "A @(tsee pseudo-event-form-lisp).")
+  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
                (exec-asg-memberp-thms "A @(tsee symbol-listp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
