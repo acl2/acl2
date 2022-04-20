@@ -54,6 +54,8 @@
 
 (include-book "cons-listp-dollar")
 
+(include-book "append-all")
+
 ;; Stuff about lists of alists:
 (include-book "all-alistp")
 (include-book "map-strip-cars")
