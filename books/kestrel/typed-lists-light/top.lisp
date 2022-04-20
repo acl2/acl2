@@ -19,6 +19,7 @@
 (include-book "string-listp")
 (include-book "symbol-listp")
 (include-book "symbol-listp2")
+(include-book "keyword-listp")
 
 (include-book "character-list-listp")
 
