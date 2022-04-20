@@ -384,7 +384,7 @@
                                    )))))
 
 ;; in this one, the bit is not negated
-(defthmd add-of-bvxor-of-add-of-of-mul-of-constant
+(defthmd add-of-bvxor-of-add-of-mul-of-constant
   (implies (and (syntaxp (and (quotep k)
                               (quotep n)))
                 (equal k (expt 2 n))
