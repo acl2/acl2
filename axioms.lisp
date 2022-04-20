@@ -22520,7 +22520,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (table inhibit-warnings-table nil nil
        :guard
-       (stringp key))
+       (standard-string-p key))
 
 #+acl2-loop-only
 (defmacro set-inhibit-warnings! (&rest lst)
