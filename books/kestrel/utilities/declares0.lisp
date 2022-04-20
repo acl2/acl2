@@ -18,12 +18,15 @@
 ;; Note that a function can have multiple DECLAREs, each possibly containing an
 ;; XARGS (or several), etc.
 
-(include-book "keyword-value-lists2")
+(include-book "keyword-value-lists2") ; for keyword-value-list-keys
 (include-book "conjunctions")
 (include-book "std/lists/list-defuns" :dir :system) ;for flatten
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/untranslated-terms/add-conjunct-to-uterm" :dir :system)
+(local (include-book "assoc-keyword"))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+
+(local (in-theory (disable keywordp)))
 
 ;; Recognize the "arguments" of an xargs declare (a list of alternating keys
 ;; and values). TODO: Add checks for the values supplied for the various kinds
@@ -199,7 +202,8 @@
 (defun combine-xargs-for-keys (keys keyword-value-list1 keyword-value-list2)
   (declare (xargs :guard (and (keyword-listp keys)
                               (keyword-value-listp keyword-value-list1)
-                              (keyword-value-listp keyword-value-list2))))
+                              (keyword-value-listp keyword-value-list2))
+                  :guard-hints (("Goal" :in-theory (enable symbolp-when-assoc-keyword)))))
   (if (endp keys)
       nil
     (let* ((key (first keys))
