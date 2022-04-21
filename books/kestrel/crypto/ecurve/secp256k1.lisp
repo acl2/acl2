@@ -516,4 +516,17 @@ h = 01
     (implies (and (pointp point)
                   (point-in-pxp-p point (secp256k1-field-prime)))
              (point-in-pxp-p (secp256k1-negate point) (secp256k1-field-prime)))
+    :hints (("Goal" :in-theory (enable secp256k1-negate))))
+
+  (defthm point-on-weierstrass-elliptic-curve-p-of-secp256k1-negate
+    (implies (and (pointp point)
+                  (point-in-pxp-p point (secp256k1-field-prime))
+                  (point-on-weierstrass-elliptic-curve-p point
+                                                         (secp256k1-field-prime)
+                                                         (secp256k1-a)
+                                                         (secp256k1-b)))
+             (point-on-weierstrass-elliptic-curve-p (secp256k1-negate point)
+                                                    (secp256k1-field-prime)
+                                                    (secp256k1-a)
+                                                    (secp256k1-b)))
     :hints (("Goal" :in-theory (enable secp256k1-negate)))))
