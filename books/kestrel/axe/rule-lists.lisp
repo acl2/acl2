@@ -308,7 +308,7 @@
      sbvlt-transitive-3-a
      sbvlt-transitive-3-b
      sbvlt-transitive-another-cheap ;    sbvlt-transitive-another ;;trying to remove this Mon Feb  1 17:00:34 2016
-     sbvdiv-of-sbvdiv-arg2-combine-constants
+
 
      bvif-of-equal-1-0                       ;Mon Apr 25 14:56:14 2016
      bvif-of-equal-0-1                       ;Mon Apr 25 14:56:14 2016
@@ -318,29 +318,42 @@
      bvplus-bvminus-same
      bvplus-bvminus-same-arg2
 
-     bvxor-of-0-arg2
-     bvxor-of-0-arg3
+     bvplus-of-0
+
      bvand-of-0-arg2
-     bvand-of-0-arg3
+     bvand-of-0-arg3 ; could drop if commute constants forward
      bvor-of-0-arg2
-     bvor-of-0-arg3 ;drop some of these if we commute constants
+     bvor-of-0-arg3 ; could drop if commute constants forward
+     bvxor-of-0-arg2
+     bvxor-of-0-arg3 ; could drop if commute constants forward
 
+     bitand-of-0-arg1
+     bitand-of-0-arg2 ; could drop if commute constants forward
+     bitand-of-1-arg1
+     bitand-of-1-arg2 ; could drop if commute constants forward
      bitor-of-0-arg1
-     bitor-of-0-arg2
+     bitor-of-0-arg2 ; could drop if commute constants forward
      bitor-of-1-arg2
-     bitor-of-1-arg1
+     bitor-of-1-arg1 ; could drop if commute constants forward
+     bitxor-of-0-arg1
+     bitxor-of-0-arg2 ;drop if we always commute
+     ;; bitxor-of-1-becomes-bitnot-arg2 ; best to keep the bitxor since we have special handling for bitxor nests
+     ;; bitxor-of-1-becomes-bitnot-arg1 ; best to keep the bitxor since we have special handling for bitxor nests
 
-     bvxor-same
-     bvxor-same-2
      bvand-same
      bvand-same-2
      bvor-same
      bvor-same-2
-     bitxor-same  ;add more or drop the bit ops
-     bitxor-same-2 ;new
+     bvxor-same
+     bvxor-same-2
+     bitand-same
+     bitand-same-2
+     bitor-same
+     bitor-same-2
+     bitxor-same
+     bitxor-same-2
 
-     bvplus-of-0
-
+     bvnot-of-bvnot
      bitnot-of-bitnot
 
      bvand-of-myif-arg1
@@ -357,13 +370,18 @@
 
      getbit-identity-free ;Sun Mar 13 03:18:26 2011
 
-     ;;fixme more like this?
-     bvxor-combine-constants
-     bvor-combine-constants
+     ;; TODO: More like this?
      bvand-combine-constants
+     bvor-combine-constants
+     bvxor-combine-constants
+     bitand-combine-constants
+     bitor-combine-constants
+     bitxor-combine-constants
      bvplus-combine-constants
      bvmult-combine-constants
-     bitxor-combine-constants
+     bvdiv-of-bvdiv-arg2-combine-constants
+     sbvdiv-of-sbvdiv-arg2-combine-constants
+     bvcat-combine-constants
 
      bvshl-of-0-arg1
      bvshl-of-0-arg2
@@ -401,22 +419,25 @@
      mod-becomes-bvmod-better-free-and-bind-free
      mod-becomes-bvmod-better-bind-free-and-free
 
-     ;;fixme more like this?
-     bvcat-when-lowsize-is-0 ;newly moved here
-     bvcat-when-highsize-is-0
      bvcat-of-0 ;trying... for when the highval is 0
 
+     ;; TODO: more like this?
+     ;; TODO: Replace these with of-0-arg1 rules, which may fail faster (no need
+     ;; to relieve a hyp).  Or might a negative size actually arise?
      bvxor-when-size-is-not-positive
      bvor-when-size-is-not-positive
      bvand-when-size-is-not-positive
+     bvnot-when-size-is-not-positive
      bvplus-when-size-is-not-positive
      bvmult-when-size-is-not-positive
      bvminus-when-size-is-not-positive
-     bvnot-when-size-is-not-positive
+     bvuminus-when-size-is-not-positive
      bvmod-when-size-is-not-positive
      bvdiv-when-size-is-not-positive
-     bvif-of-0-arg1
-     bvlt-when-not-posp
+     bvif-when-size-is-not-positive ;bvif-of-0-arg1
+     bvlt-when-not-posp-arg1
+     bvcat-when-lowsize-is-0 ;newly moved here
+     bvcat-when-highsize-is-0
 
      not-equal-constant-when-unsigned-byte-p ;Fri Dec 17 01:47:42 2010
      ;;not-equal-constant-when-unsigned-byte-p-alt ;not needed since we commute constants forward?
@@ -444,15 +465,21 @@
      bvchop-of-bvashr
      bvchop-of-bvif
 
-;fixme add all other rules like this!:
+     ;; TODO: add all other rules like this!:
      bvif-of-bvchop-arg3 ;mon feb 28 12:18:59 2011
      bvif-of-bvchop-arg4 ;mon feb 28 12:19:01 2011
+     bvand-of-bvchop-1
+     bvand-of-bvchop-2
      bvor-of-bvchop-arg2 ;newly added: are other similar rules missing?
      bvor-of-bvchop-arg3
      bvxor-of-bvchop-1
      bvxor-of-bvchop-2
-     bvand-of-bvchop-1
-     bvand-of-bvchop-2
+     bitand-of-bvchop-arg1
+     bitand-of-bvchop-arg2
+     bitor-of-bvchop-arg1
+     bitor-of-bvchop-arg2
+     bitxor-of-bvchop-arg1
+     bitxor-of-bvchop-arg2
      bvplus-of-bvchop-arg1 ;gen?
      bvplus-of-bvchop-arg2 ;gen?
      bvminus-of-bvchop-arg2
@@ -461,6 +488,11 @@
      bvuminus-of-bvchop-arg2
      bvcat-of-bvchop-high
      bvcat-of-bvchop-low
+
+     bitxor-of-getbit-arg1
+     bitxor-of-getbit-arg2
+     bitor-of-getbit-arg1
+     bitor-of-getbit-arg2
 
      bvlt-self
      bvlt-of-bvmod-false
@@ -484,7 +516,7 @@
      equal-of-bvif-constants
      equal-of-bvif-constants2
      bvif-of-not
-     bvnot-of-bvnot
+
 
 ;    bvlt-of-0-arg2 ;fixme use polarity?
      bvlt-of-0-arg3
@@ -598,18 +630,8 @@
 ;           bitand-of-slice-arg2
 ;            bitand-of-bvcat-arg1
 ;           bitand-of-bvcat-arg2
-     bitand-of-0-arg1
-     bitand-of-0-arg2
-     bitand-of-1-arg1
-     bitand-of-1-arg2
 ;            bitxor-of-slice-arg1 done by trim rule and slice-becomes-getbit
 ;            bitxor-of-slice-arg2 done by trim rule and slice-becomes-getbit
-     bitxor-of-0-arg1
-     bitxor-of-0-arg2 ;drop if we always commute
-     bitxor-of-getbit-arg1
-     bitxor-of-getbit-arg2
-     bitor-of-getbit-arg1
-     bitor-of-getbit-arg2
 ;these may have caused big problems:
      ;;                 bitxor-of-bitnot-arg2
      ;;                 bitxor-of-bitnot-arg1
@@ -617,8 +639,6 @@
 ;           bitxor-of-bvor-arg2 ;done by trim rules
 ;            bitxor-of-bvchop-arg1 ;done by trim rules and BVCHOP-1-BECOMES-GETBIT
 ;           bitxor-of-bvchop-arg2 ;done by trim rules and BVCHOP-1-BECOMES-GETBIT
-;                bitxor-of-1-becomes-bitnot-arg2
-;               bitxor-of-1-becomes-bitnot-arg1
      getbit-test-is-self ;make a myif version?
      getbit-too-high-is-0-bind-free
      ;; high-getbit-of-getbit-is-0 handled by getbit-too-high-is-0-bind-free
