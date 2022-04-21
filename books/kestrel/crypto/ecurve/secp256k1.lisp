@@ -506,15 +506,14 @@ h = 01
                                 (point-in-pxp-p point (secp256k1-field-prime)))
                     :guard-hints (("Goal" :in-theory (enable fep)))))
     (curve-negate point (secp256k1-field-prime)))
-  )
 
-(defthm pointp-of-secp256k1-negate
-  (implies (pointp point)
-           (pointp (secp256k1-negate point)))
-  :hints (("Goal" :in-theory (enable secp256k1-negate))))
+  (defthm pointp-of-secp256k1-negate
+    (implies (pointp point)
+             (pointp (secp256k1-negate point)))
+    :hints (("Goal" :in-theory (enable secp256k1-negate))))
 
-(defthm point-in-pxp-p-of-secp256k1-negate
-  (implies (and (pointp point)
-                (point-in-pxp-p point (secp256k1-field-prime)))
-           (point-in-pxp-p (secp256k1-negate point) (secp256k1-field-prime)))
-  :hints (("Goal" :in-theory (enable secp256k1-negate))))
+  (defthm point-in-pxp-p-of-secp256k1-negate
+    (implies (and (pointp point)
+                  (point-in-pxp-p point (secp256k1-field-prime)))
+             (point-in-pxp-p (secp256k1-negate point) (secp256k1-field-prime)))
+    :hints (("Goal" :in-theory (enable secp256k1-negate)))))
