@@ -21,8 +21,10 @@
 ;(include-book "equality-assumptions")
 (include-book "refined-assumption-alists")
 (include-book "result-array-stobj")
+(include-book "equivalent-dags")
 (include-book "prover")
-(include-book "simplify-xors") ; for merge-and-remove-dups
+(include-book "add-bvxor-nest-to-dag-array")
+(include-book "merge-and-remove-dups")
 (include-book "leaves-of-normalized-bvxor-nest")
 (include-book "if-rules")
 (include-book "defconst-computed2") ;not strictly needed
@@ -777,7 +779,7 @@
                                                                   (accumulated-constant (bvxor bvxor-width arg2-constant arg3-constant))
                                                                   ;; Build the new nest:
                                                                   ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                                                                   (add-bvxor-nest-to-dag-array-with-name ;; TODO: handle the constant separately
+                                                                   (add-bvxor-nest-to-dag-array ;; TODO: handle the constant separately
                                                                     ;;add-bvxor-nest-to-dag-array takes the list of items in *increasing* (reverse) order:
                                                                     (if (eql 0 accumulated-constant)
                                                                         (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it
@@ -785,7 +787,7 @@
                                                                                  (list (enquote accumulated-constant))))
                                                                     bvxor-width
                                                                     (enquote bvxor-width)
-                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array))
+                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                                                                   ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)))
                                                                (if (consp new-nodenum-or-quotep) ;the bvxor nest became a constant (perhaps duplicate leaves cancelled each other)
                                                                    (let ((result-array-stobj (set-result nodenum rewrite-objective new-nodenum-or-quotep result-array-stobj)))
