@@ -11,8 +11,8 @@
 (in-package "ACL2")
 
 ;; Supporting utilities:
-(include-book "add-bitxor-nest-to-dag-array")
-(include-book "add-bvxor-nest-to-dag-array")
+(include-book "add-bitxor-nest-to-dag-array-with-name")
+(include-book "add-bvxor-nest-to-dag-array-with-name")
 (include-book "alist-suitable-for-hypsp")
 (include-book "all-dargp")
 (include-book "arrays-of-alists")

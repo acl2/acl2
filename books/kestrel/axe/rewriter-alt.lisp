@@ -22,7 +22,7 @@
 (include-book "refined-assumption-alists")
 (include-book "result-array-stobj")
 (include-book "prover")
-(include-book "simplify-xors")
+(include-book "simplify-xors") ; for merge-and-remove-dups
 (include-book "leaves-of-normalized-bvxor-nest")
 (include-book "if-rules")
 (include-book "defconst-computed2") ;not strictly needed
@@ -777,7 +777,7 @@
                                                                   (accumulated-constant (bvxor bvxor-width arg2-constant arg3-constant))
                                                                   ;; Build the new nest:
                                                                   ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                                                                   (add-bvxor-nest-to-dag-array ;; TODO: handle the constant separately
+                                                                   (add-bvxor-nest-to-dag-array-with-name ;; TODO: handle the constant separately
                                                                     ;;add-bvxor-nest-to-dag-array takes the list of items in *increasing* (reverse) order:
                                                                     (if (eql 0 accumulated-constant)
                                                                         (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it

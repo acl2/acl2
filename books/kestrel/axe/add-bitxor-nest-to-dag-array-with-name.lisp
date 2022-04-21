@@ -30,11 +30,11 @@
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 
-;; KEEP IN SYNC WITH ADD-BVXOR-NEST-TO-DAG-ARRAY-AUX
+;; KEEP IN SYNC WITH ADD-BVXOR-NEST-TO-DAG-ARRAY-WITH-NAME-AUX
 ;; Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-(defund add-bitxor-nest-to-dag-array-aux (rev-leaves ;reversed from the order we want them in (since we must build the nest from the bottom up)
-                                          core-nodenum
-                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
+(defund add-bitxor-nest-to-dag-array-with-name-aux (rev-leaves ;reversed from the order we want them in (since we must build the nest from the bottom up)
+                                                    core-nodenum
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
   (declare (type (integer 0 2147483646) dag-len)
            (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               (natp core-nodenum)
@@ -55,12 +55,12 @@
                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
       (if erp
           (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-        (add-bitxor-nest-to-dag-array-aux (rest rev-leaves)
-                                          core-nodenum
-                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))))
+        (add-bitxor-nest-to-dag-array-with-name-aux (rest rev-leaves)
+                                                    core-nodenum
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))))
 
 (def-dag-builder-theorems
-  (add-bitxor-nest-to-dag-array-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
+  (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
   (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   :dag-array-name dag-array-name
   :dag-parent-array-name dag-parent-array-name
@@ -70,31 +70,31 @@
          (bounded-darg-listp rev-leaves dag-len)))
 
 ;drop some hyps?
-(defthm dargp-of-mv-nth-1-of-add-bitxor-nest-to-dag-array-aux
+(defthm dargp-of-mv-nth-1-of-add-bitxor-nest-to-dag-array-with-name-aux
   (implies (and (natp core-nodenum)
                 (< core-nodenum dag-len)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
 ;                (true-listp rev-leaves)
                 (bounded-darg-listp rev-leaves dag-len)
-                (not (mv-nth 0 (add-bitxor-nest-to-dag-array-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-           (dargp (mv-nth 1 (add-bitxor-nest-to-dag-array-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable add-bitxor-nest-to-dag-array-aux))))
+                (not (mv-nth 0 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+           (dargp (mv-nth 1 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+  :hints (("Goal" :in-theory (enable add-bitxor-nest-to-dag-array-with-name-aux))))
 
-(defthm dargp-less-than-of-mv-nth-1-of-add-bitxor-nest-to-dag-array-aux
+(defthm dargp-less-than-of-mv-nth-1-of-add-bitxor-nest-to-dag-array-with-name-aux
   (implies (and (natp core-nodenum)
                 (< core-nodenum dag-len)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
 ;                (true-listp rev-leaves)
                 (bounded-darg-listp rev-leaves dag-len)
-                (not (mv-nth 0 (add-bitxor-nest-to-dag-array-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-           (dargp-less-than (mv-nth 1 (add-bitxor-nest-to-dag-array-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
-                                       (mv-nth 3 (add-bitxor-nest-to-dag-array-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable add-bitxor-nest-to-dag-array-aux))))
+                (not (mv-nth 0 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+           (dargp-less-than (mv-nth 1 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
+                                       (mv-nth 3 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+  :hints (("Goal" :in-theory (enable add-bitxor-nest-to-dag-array-with-name-aux))))
 
-;; KEEP IN SYNC WITH ADD-BITXOR-NEST-TO-DAG-ARRAY
+;; KEEP IN SYNC WITH ADD-BVXOR-NEST-TO-DAG-ARRAY-WITH-NAME
 ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-(defund add-bitxor-nest-to-dag-array (rev-leaves ;reversed from the order we want them in (since we must build the nest from the bottom up); may have 0 or just 1 element
-                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
+(defund add-bitxor-nest-to-dag-array-with-name (rev-leaves ;reversed from the order we want them in (since we must build the nest from the bottom up); may have 0 or just 1 element
+                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
   (declare (type (integer 0 2147483646) dag-len)
            (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               (true-listp rev-leaves)
@@ -127,12 +127,12 @@
                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
         (if erp
             (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-          (add-bitxor-nest-to-dag-array-aux (rest (rest rev-leaves))
-                                            core-nodenum
-                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))))
+          (add-bitxor-nest-to-dag-array-with-name-aux (rest (rest rev-leaves))
+                                                      core-nodenum
+                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))))
 
 (def-dag-builder-theorems
-  (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
+  (add-bitxor-nest-to-dag-array-with-name rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
   (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   :recursivep nil
   :dag-array-name dag-array-name
@@ -140,17 +140,17 @@
   :hyps ((true-listp rev-leaves)
          (bounded-darg-listp rev-leaves dag-len)))
 
-(defthm dargp-of-mv-nth-1-of-add-bitxor-nest-to-dag-array
+(defthm dargp-of-mv-nth-1-of-add-bitxor-nest-to-dag-array-with-name
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (bounded-darg-listp rev-leaves dag-len)
-                (not (mv-nth 0 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-           (dargp (mv-nth 1 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (e/d (add-bitxor-nest-to-dag-array) (dargp)))))
+                (not (mv-nth 0 (add-bitxor-nest-to-dag-array-with-name rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+           (dargp (mv-nth 1 (add-bitxor-nest-to-dag-array-with-name rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+  :hints (("Goal" :in-theory (e/d (add-bitxor-nest-to-dag-array-with-name) (dargp)))))
 
-(defthm dargp-less-than-of-mv-nth-1-of-add-bitxor-nest-to-dag-array
+(defthm dargp-less-than-of-mv-nth-1-of-add-bitxor-nest-to-dag-array-with-name
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (bounded-darg-listp rev-leaves dag-len)
-                (not (mv-nth 0 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-           (dargp-less-than (mv-nth 1 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
-                                       (mv-nth 3 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (e/d (add-bitxor-nest-to-dag-array) (dargp-less-than)))))
+                (not (mv-nth 0 (add-bitxor-nest-to-dag-array-with-name rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+           (dargp-less-than (mv-nth 1 (add-bitxor-nest-to-dag-array-with-name rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
+                                       (mv-nth 3 (add-bitxor-nest-to-dag-array-with-name rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+  :hints (("Goal" :in-theory (e/d (add-bitxor-nest-to-dag-array-with-name) (dargp-less-than)))))
