@@ -25,12 +25,12 @@
 
 ;; KEEP IN SYNC WITH ADD-BITXOR-NEST-TO-DAG-ARRAY-WITH-NAME-AUX
 ;; Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+;; The "-with-name" suffix indicates that this function takes the dag-array-name and dag-parent-array-name.
 (defund add-bvxor-nest-to-dag-array-with-name-aux (rev-leaves ;reversed from the order we want them in (since we must build the nest from the bottom up)
                                                    quoted-size
                                                    core-nodenum
                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
-  (declare (type (integer 0 2147483646) dag-len)
-           (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+  (declare (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               (myquotep quoted-size)
                               (natp core-nodenum)
                               (< core-nodenum dag-len)
@@ -40,13 +40,8 @@
                   :guard-hints (("Goal" :in-theory (e/d (not-cddr-of-nth-when-all-dargp
                                                          dargp-when-myquotep
                                                          dargp-less-than-when-myquotep)
-                                                        (dargp
-                                                         myquotep
-;DARGP-LESS-THAN
-                                                         natp
-;CAR-BECOMES-NTH-OF-0
-;PSEUDO-DAG-ARRAYP
-                                                         ))))))
+                                                        (dargp myquotep natp)))))
+           (type (integer 0 2147483646) dag-len))
   (if (endp rev-leaves)
       (mv (erp-nil) core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (mv-let (erp core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -96,12 +91,12 @@
 
 ;; KEEP IN SYNC WITH ADD-BITXOR-NEST-TO-DAG-ARRAY-WITH-NAME
 ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+;; The "-with-name" suffix indicates that this function takes the dag-array-name and dag-parent-array-name.
 (defund add-bvxor-nest-to-dag-array-with-name (rev-leaves ;reversed from the order we want them in (since we must build the nest from the bottom up); may have 0 or just 1 element, due to duplicates being removed
                                                size       ;unquoted
                                                quoted-size
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
-  (declare (type (integer 0 2147483646) dag-len)
-           (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+  (declare (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               (myquotep quoted-size)
                               (natp size)
                               (true-listp rev-leaves)
@@ -115,7 +110,8 @@
                                                          myquotep
                                                          natp
                                                          car-becomes-nth-of-0
-                                                         pseudo-dag-arrayp))))))
+                                                         pseudo-dag-arrayp)))))
+           (type (integer 0 2147483646) dag-len))
   (if (endp rev-leaves)
       ;; special case: no leaves:
       (mv (erp-nil)

@@ -32,11 +32,11 @@
 
 ;; KEEP IN SYNC WITH ADD-BVXOR-NEST-TO-DAG-ARRAY-WITH-NAME-AUX
 ;; Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+;; The "-with-name" suffix indicates that this function takes the dag-array-name and dag-parent-array-name.
 (defund add-bitxor-nest-to-dag-array-with-name-aux (rev-leaves ;reversed from the order we want them in (since we must build the nest from the bottom up)
                                                     core-nodenum
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
-  (declare (type (integer 0 2147483646) dag-len)
-           (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+  (declare (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               (natp core-nodenum)
                               (< core-nodenum dag-len)
                               (true-listp rev-leaves)
@@ -47,7 +47,8 @@
                                                          DARGP-LESS-THAN
                                                          natp
                                                          CAR-BECOMES-NTH-OF-0
-                                                         PSEUDO-DAG-ARRAYP))))))
+                                                         PSEUDO-DAG-ARRAYP)))))
+           (type (integer 0 2147483646) dag-len))
   (if (endp rev-leaves)
       (mv (erp-nil) core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (mv-let (erp core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -93,10 +94,10 @@
 
 ;; KEEP IN SYNC WITH ADD-BVXOR-NEST-TO-DAG-ARRAY-WITH-NAME
 ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+;; The "-with-name" suffix indicates that this function takes the dag-array-name and dag-parent-array-name.
 (defund add-bitxor-nest-to-dag-array-with-name (rev-leaves ;reversed from the order we want them in (since we must build the nest from the bottom up); may have 0 or just 1 element
                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
-  (declare (type (integer 0 2147483646) dag-len)
-           (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+  (declare (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               (true-listp rev-leaves)
                               (bounded-darg-listp rev-leaves dag-len))
                   :split-types t
@@ -105,7 +106,8 @@
                                                          DARGP-LESS-THAN
                                                          natp
                                                          CAR-BECOMES-NTH-OF-0
-                                                         PSEUDO-DAG-ARRAYP))))))
+                                                         PSEUDO-DAG-ARRAYP)))))
+           (type (integer 0 2147483646) dag-len))
   (if (endp rev-leaves)
       ;; no leaves:
       (mv (erp-nil)
