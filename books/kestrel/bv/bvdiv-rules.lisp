@@ -32,43 +32,6 @@
                     (not (bvlt size x y)))))
   :hints (("Goal" :in-theory (enable bvdiv bvlt))))
 
-;todo: proof is by induction on expt
-(defthmd bvdiv-of-bvdiv-arg2
-  (implies (and ;;(integerp y1)
-            ;;(integerp y2)
-            ;;(unsigned-byte-p size y1)
-            ;;(unsigned-byte-p size y2)
-            )
-           (equal (bvdiv size (bvdiv size x y1) y2)
-                  (if (unsigned-byte-p size (* (bvchop size y1) (bvchop size y2)))
-                      (bvdiv size
-                             x
-                             (* (bvchop size y1) (bvchop size y2)))
-                    0)))
-  :hints (("Goal" :in-theory (e/d (bvdiv
-                                   bvchop-of-*-when-unsigned-byte-p-of-*-of-bvchop-and-bvchop
-                                   UNSIGNED-BYTE-P)
-                                  ( ;BVCHOP-IDENTITY
-                                   ;;todo: clean these up:
-                                   bvchop-times-cancel-better-alt
-                                   bvchop-times-cancel-better
-                                   bvchop-of-*-of-bvchop-arg2
-                                   bvchop-of-*-of-bvchop)))))
-
-;gen?
-(defthm bvdiv-of-bvdiv-arg2-combine-constants
-  (implies (syntaxp (and (quotep size)
-                         (quotep y1)
-                         (quotep y2)))
-           (equal (bvdiv size (bvdiv size x y1) y2)
-                  (if (unsigned-byte-p size (* (bvchop size y1) (bvchop size y2))) ; get computed
-                      (bvdiv size
-                             x
-                             (* (bvchop size y1) (bvchop size y2)) ; get computed
-                             )
-                    0)))
-  :hints (("Goal" :in-theory (enable bvdiv-of-bvdiv-arg2))))
-
 ;; x div k1 < k2 becomes x < k1*k2 (usually)
 ;todo: let the sizes differ
 (defthm bvlt-of-bvdiv-constants

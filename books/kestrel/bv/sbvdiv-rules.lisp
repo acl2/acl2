@@ -126,7 +126,7 @@
                                    ;MOD-BOUNDED-BY-MODULUS
                                    my-FLOOR-upper-BOUND
                                    ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                                   floor-bound
+                                   ;floor-bound
                                    ;anti-slice
                                    ;MOD-TYPE ;does this overlap with mod-bounded-by-modulus?
                                    )))))
@@ -146,8 +146,8 @@
                     (:with logext (LOGEXT size X))
                     (:with logext (LOGEXT size y)))
            :use (:instance floor-of-minus-and-minus
-                           (x (+ (expt 2 (+ -1 size)) (- (BVCHOP (+ -1 size) X))))
-                           (y (+ (expt 2 (+ -1 size)) (- (BVCHOP (+ -1 size) y)))))
+                           (i (+ (expt 2 (+ -1 size)) (- (BVCHOP (+ -1 size) X))))
+                           (j (+ (expt 2 (+ -1 size)) (- (BVCHOP (+ -1 size) y)))))
            :in-theory (e/d (sbvdiv bvdiv logapp bvuminus bvminus sbvlt
                                    bvchop-reduce-when-top-bit-known
                                    truncate-becomes-floor-gen)
@@ -160,7 +160,8 @@
                              ;<-Y-*-Y-X
                              my-FLOOR-upper-BOUND
                              ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                             floor-bound)))))
+                             ;;floor-bound
+                             )))))
 
 (DEFTHMd BVCHOP-OF-MINUS-lemma
   (EQUAL (BVCHOP SIZE (+ (- x) y))
@@ -228,7 +229,8 @@
                            (BVCHOP-UPPER-BOUND
                             floor-of-minus-and-minus
                             BVCAT-OF-GETBIT-AND-X-ADJACENT
-                            floor-bound)))))
+                            ;;floor-bound
+                            )))))
 
 (defthmd sbvdiv-when-y-negative
   (implies (and (integerp x)
@@ -251,7 +253,8 @@
                              FLOOR-MINUS-ARG1
                              BVCAT-OF-GETBIT-AND-X-ADJACENT
                              my-FLOOR-upper-BOUND
-                             floor-bound)))))
+                             ;;floor-bound
+                             )))))
 
 ;can we tighten any of the sizes?
 (defthm sbvdiv-rewrite
@@ -326,9 +329,9 @@
 
 ;gen!
 (defthm sbvdiv-of-sbvdiv-arg2-combine-constants
-  (implies (and (syntaxp (and (quotep size)
-                              (quotep y1)
-                              (quotep y2)))
+  (implies (and (syntaxp (and (quotep y1)
+                              (quotep y2)
+                              (quotep size)))
                 (unsigned-byte-p (+ -1 size) x) ;todo: drop
                 ;; all get computed:
                 (natp size)

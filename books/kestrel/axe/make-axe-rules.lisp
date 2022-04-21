@@ -1517,7 +1517,7 @@
         (er hard? 'make-axe-rules! "Error making Axe rules.")
       axe-rules)))
 
-(defthm axe-rule-listp-of-of-make-axe-rules!
+(defthm axe-rule-listp-of-make-axe-rules!
   (implies (symbol-listp rule-names)
            (axe-rule-listp (make-axe-rules! rule-names wrld)))
   :hints (("Goal" :in-theory (enable make-axe-rules!))))

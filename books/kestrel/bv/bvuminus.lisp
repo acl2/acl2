@@ -47,6 +47,12 @@
                   0))
   :hints (("Goal" :in-theory (enable bvuminus))))
 
+(defthm bvuminus-when-size-is-not-positive
+  (implies (<= size 0)
+           (equal (bvuminus size x)
+                  0))
+  :hints (("Goal" :in-theory (enable bvuminus))))
+
 (defthm bvuminus-equal-constant
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
