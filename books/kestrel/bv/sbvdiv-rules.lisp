@@ -329,9 +329,9 @@
 
 ;gen!
 (defthm sbvdiv-of-sbvdiv-arg2-combine-constants
-  (implies (and (syntaxp (and (quotep size)
-                              (quotep y1)
-                              (quotep y2)))
+  (implies (and (syntaxp (and (quotep y1)
+                              (quotep y2)
+                              (quotep size)))
                 (unsigned-byte-p (+ -1 size) x) ;todo: drop
                 ;; all get computed:
                 (natp size)

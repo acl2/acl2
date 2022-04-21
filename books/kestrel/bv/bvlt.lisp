@@ -433,7 +433,7 @@
                             )))))
 
 ;rename
-(defthm bvlt-when-not-posp
+(defthm bvlt-when-not-posp-arg1
   (implies (not (posp size))
            (not (bvlt size x y)))
   :hints (("Goal"
