@@ -129,5 +129,4 @@
         |return3|
         |write_x_to_point2D|
         |write_y_to_point2D|
-        :output-file "structs.c"
-        :proofs nil)
+        :output-file "structs.c")

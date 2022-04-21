@@ -125,15 +125,22 @@
     (xdoc::li
      "The fixer of the structures.")
     (xdoc::li
-     "The readers of (the members of) the structures.")
+     "The readers of (the members of) the structures,
+      in the same order as the members.")
     (xdoc::li
-     "The writers of (the members of) the structures.")
+     "The writers of (the members of) the structures,
+      in the same order as the members.")
     (xdoc::li
      "The name of the theorem that rewrites away the fixer
       when the recognizer holds.")
     (xdoc::li
      "A list of the names of the return type theorems
-      for all the member readers and writers.")
+      for all the member readers,
+      in the same order as the members.")
+    (xdoc::li
+     "A list of the names of the return type theorems
+      for all the member writers,
+      in the same order as the members.")
     (xdoc::li
      "The name of a theorem asserting that
       if something is a structure of this type
@@ -158,7 +165,8 @@
    (readers symbol-listp)
    (writers symbol-listp)
    (fixer-recognizer-thm symbolp)
-   (return-thms symbol-listp)
+   (reader-return-thms symbol-listp)
+   (writer-return-thms symbol-listp)
    (not-error-thm symbolp)
    (structp-thm symbolp)
    (tag-thm symbolp)
@@ -681,7 +689,7 @@
                               (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
                (reader symbolp)
-               (return-thm symbolp))
+               (reader-return-thm symbolp))
   :short "Generate the reader for a member of
           the structures defined by the @(tsee defstruct)."
   :long
@@ -734,7 +742,7 @@
                                (wrld plist-worldp))
   :returns (mv (events pseudo-event-form-listp)
                (readers symbol-listp)
-               (return-thms symbol-listp))
+               (reader-return-thms symbol-listp))
   :short "Generate the readers for the members of
           the structures defined by the @(tsee defstruct)."
   :long
@@ -769,7 +777,7 @@
                               (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
                (writer symbolp)
-               (return-thm symbolp))
+               (writer-return-thm symbolp))
   :short "Generate the writer for a member of
           the structures defined by the @(tsee defstruct)."
   :long
@@ -827,7 +835,7 @@
                                (wrld plist-worldp))
   :returns (mv (events pseudo-event-form-listp)
                (writers symbol-listp)
-               (return-thms symbol-listp))
+               (writer-return-thms symbol-listp))
   :short "Generate the writers for the members of
           the structures defined by the @(tsee defstruct)."
   :long
@@ -890,7 +898,6 @@
        ((mv writer-events writer-names writer-return-thms)
         (defstruct-gen-writers
           struct-tag struct-tag-p struct-tag-fix members members wrld))
-       (return-thms (append reader-return-thms writer-return-thms))
        (info (make-defstruct-info :tag tag-ident
                                   :members members
                                   :recognizer struct-tag-p
@@ -898,7 +905,8 @@
                                   :readers reader-names
                                   :writers writer-names
                                   :fixer-recognizer-thm fixer-recognizer-thm
-                                  :return-thms return-thms
+                                  :reader-return-thms reader-return-thms
+                                  :writer-return-thms writer-return-thms
                                   :not-error-thm not-errorp-when-struct-tag-p
                                   :structp-thm structp-when-struct-tag-p
                                   :tag-thm struct->tag-when-struct-tag-p
