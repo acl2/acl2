@@ -45,8 +45,8 @@
            :in-theory (disable bitxor-commutative))))
 
 (defthmd bitxor-combine-constants
-  (implies (syntaxp (and (quotep x)
-                         (quotep y)))
+  (implies (syntaxp (and (quotep y) ;put this hyp first to fail faster
+                         (quotep x)))
            (equal (bitxor x (bitxor y z))
                   (bitxor (bitxor x y) z))))
 
@@ -96,11 +96,13 @@
            (unsigned-byte-p size (bitxor x y)))
   :hints (("Goal" :in-theory (enable bitxor))))
 
+;todo: rename to have 0 in the name
 (defthm bitxor-of-getbit-arg2
   (equal (bitxor y (getbit 0 x))
          (bitxor y x))
   :hints (("Goal" :in-theory (enable bitxor))))
 
+;todo: rename to have 0 in the name
 (defthm bitxor-of-getbit-arg1
   (equal (bitxor (getbit 0 x) y)
          (bitxor x y))
@@ -273,16 +275,14 @@
                   (bitxor x y))))
 
 (defthm bitxor-of-bvchop-arg1
-  (implies (and (<= 1 n)
-                (natp n))
-           (equal (bitxor (bvchop n x) y)
+  (implies (posp size)
+           (equal (bitxor (bvchop size x) y)
                   (bitxor x y)))
   :hints (("Goal" :in-theory (e/d (bitxor) (bvxor-1-becomes-bitxor)))))
 
 (defthm bitxor-of-bvchop-arg2
-  (implies (and (<= 1 n)
-                (natp n))
-           (equal (bitxor y (bvchop n x))
+  (implies (posp size)
+           (equal (bitxor y (bvchop size x))
                   (bitxor y x)))
   :hints (("Goal" :use (:instance bitxor-of-bvchop-arg1)
            :in-theory (disable bitxor-of-bvchop-arg1))))

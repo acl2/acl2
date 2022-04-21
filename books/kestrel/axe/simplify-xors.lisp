@@ -1858,23 +1858,10 @@
 
 ;; (skip- proofs (verify-guards add-term-to-dag))
 
-
-;uses car instead of nth to check for a quotep
-(defthm integerp-of-nth-of-dargs-alt
-  (implies (and (dag-exprp expr)
-                (< n (len (dargs expr)))
-                (natp n)
-                (not (equal 'quote (car expr))))
-           (equal (integerp (nth n (dargs expr)))
-                  (not (consp (nth n (dargs expr))))))
-  :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp))))
-
 ;; we prefer nth of dargs
 (defthmd car-of-dargs
   (equal (car (dargs expr))
          (nth 0 (dargs expr))))
-
-
 
 ;move
 (DEFTHM rationalp-OF-NTH-WHEN-ALL-INTEGERP

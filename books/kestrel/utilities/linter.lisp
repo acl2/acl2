@@ -80,6 +80,7 @@
 (include-book "my-get-event")
 (include-book "defining-forms")
 (include-book "world")
+(include-book "conjunctions")
 (include-book "conjuncts-and-disjuncts2") ;todo: use the simpler version?
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)

@@ -44,7 +44,7 @@
           ("Goal"
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (integer-length EXPT-OF-+)
-                           (floor-bound
+                           (;floor-bound
                             ;;COLLECT-CONSTANTS-TIMES-EQUAL ;bozo looped
                             )))))
 

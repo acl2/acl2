@@ -50,21 +50,16 @@
 (local (include-book "kestrel/lists-light/remove1-equal" :dir :system))
 (local (include-book "kestrel/lists-light/perm" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 ;move
+;dup
 (local
- (defthm symbol-listp-of-set-difference-equal
+ (defthm pseudo-term-listp-when-symbol-listp-cheap
   (implies (symbol-listp x)
-           (symbol-listp (set-difference-equal x y)))))
-
-;move
-;disable?
-;make a cheap version
-(local
- (defthm symbolp-of-car-when-symbol-listp
-   (implies (symbol-listp x)
-            (symbolp (car x)))))
-
+           (pseudo-term-listp x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp symbol-listp)))))
 
 ; x is a list - allow non-true-lists?
 ;what should the guards be?
@@ -447,14 +442,6 @@
 ;;                   t)))
 
 ;;; end variant that is true-listp
-
-;move
-;dup
-(defthm pseudo-term-listp-when-symbol-listp-cheap
-  (implies (symbol-listp x)
-           (pseudo-term-listp x))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
 
 ;it is an error to have no list formals - check for that?
 (defun defforall-fn (forall-fn-name all-formals term fixed declares guard guard-hints true-listp verbose)

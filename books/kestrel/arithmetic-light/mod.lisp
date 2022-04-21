@@ -49,7 +49,7 @@
            (<= 0 (mod x y)))
   :rule-classes :type-prescription
   :hints (("Goal" :cases ((equal 0 y))
-           :in-theory (enable mod my-floor-upper-bound-alt))))
+           :in-theory (enable mod *-of-floor-upper-bound))))
 
 (defthm nonneg-of-mod-type-2
   (implies (and ;(<= 0 x)
@@ -59,7 +59,7 @@
            (<= 0 (mod x y)))
   :rule-classes :type-prescription
   :hints (("Goal" :cases ((equal 0 y))
-           :in-theory (enable mod my-floor-upper-bound-alt))))
+           :in-theory (enable mod *-of-floor-upper-bound))))
 
 (defthm mod-of-0-arg1
   (equal (mod 0 y)

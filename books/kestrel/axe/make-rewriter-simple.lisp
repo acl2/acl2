@@ -99,12 +99,7 @@
         (list trees count)
       (simplify-trees-and-add-to-dag-induct (rest trees) (+ -1 count)))))
 
-(defthm all-dargp-of-reverse-list
-  (equal (all-dargp (reverse-list x))
-         (all-dargp x))
-  :hints (("Goal" :in-theory (enable all-dargp))))
-
-;needed for proofs of the generated functions
+;; used in generated proofs, to be kept disabled
 (defthmd symbol-listp-of-append-disabled
   (equal (symbol-listp (append x y))
          (and (symbol-listp (true-list-fix x))
@@ -112,41 +107,29 @@
   :hints (("Goal" :in-theory (enable append symbol-listp true-list-fix))))
 
 ;gen
-(defthm PSEUDO-DAG-ARRAYP-of-+-of-1-and-LARGEST-NON-QUOTEP-of-car
-  (implies (and (BOUNDED-DARG-LIST-LISTP ASSUMPTION-ARG-LISTS DAG-LEN)
-                (consp ASSUMPTION-ARG-LISTS)
-                (PSEUDO-DAG-ARRAYP 'DAG-ARRAY DAG-ARRAY dag-len))
-           (PSEUDO-DAG-ARRAYP
-            'DAG-ARRAY
-            DAG-ARRAY
-            (BINARY-+ '1
-                      (LARGEST-NON-QUOTEP (CAR ASSUMPTION-ARG-LISTS))))))
-
-(defthmd true-list-of-car-when-BOUNDED-DARG-LIST-LISTP
-  (implies (and (BOUNDED-DARG-LIST-LISTP ASSUMPTION-ARG-LISTS DAG-LEN)
-                (consp ASSUMPTION-ARG-LISTS))
-           (TRUE-LISTP (CAR ASSUMPTION-ARG-LISTS))))
-
-(defthmd all-myquote-or-natp-of-car-when-bounded-darg-list-listp
+(defthm pseudo-dag-arrayp-of-+-of-1-and-largest-non-quotep-of-car
   (implies (and (bounded-darg-list-listp assumption-arg-lists dag-len)
-                (consp assumption-arg-lists))
-           (all-dargp (car assumption-arg-lists))))
+                (consp assumption-arg-lists)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+           (pseudo-dag-arrayp 'dag-array dag-array (binary-+ '1 (largest-non-quotep (car assumption-arg-lists))))))
 
-;used in proofs, give a better name?
-(defthmd symbolp-when-member-equal
+;; used in generated proofs, to be kept disabled
+(defthmd symbolp-when-member-equal-disabled
   (implies (and (member-equal x free)
                 (symbol-listp free))
            (symbolp x))
   :hints (("Goal" :in-theory (enable symbol-listp member-equal))))
 
-(defthmd not-equal-when-member-equal
+;; used in generated proofs, to be kept disabled
+(defthmd not-equal-when-member-equal-disabled
   (implies (and (syntaxp (quotep y))
                 (member-equal x vals)
                 (syntaxp (quotep vals))
                 (not (member-equal y vals)))
            (not (equal x y))))
 
-(defthmd not-equal-when-member-equal-alt
+;; used in generated proofs, to be kept disabled
+(defthmd not-equal-when-member-equal-alt-disabled
   (implies (and (syntaxp (quotep y))
                 (member-equal x vals)
                 (syntaxp (quotep vals))
@@ -162,70 +145,44 @@
   (equal (if (consp alist) x (< (max-key alist z) y))
          (if (consp alist) x (< z y))))
 
-;; since we may have rules about natp
-(defthmd integerp-when-natp
+;; used in generated proofs, to be kept disabled
+(defthmd integerp-when-natp-disabled
   (implies (natp x)
            (integerp x)))
 
-(defthmd strip-cars-of-append-for-make-rewriter-simple
+;; used in generated proofs, to be kept disabled
+(defthmd strip-cars-of-append-disabled
   (equal (strip-cars (append x y))
          (append (strip-cars x)
                  (strip-cars y)))
   :hints (("Goal" :in-theory (enable strip-cars))))
 
-(defthmd pseudo-termp-of-car-when-pseudo-term-listp-cheap-for-make-rewriter-simple
+;; used in generated proofs, to be kept disabled
+(defthmd pseudo-termp-of-car-when-pseudo-term-listp-cheap-disabled
   (implies (pseudo-term-listp terms)
            (pseudo-termp (car terms)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))
 
-(defthmd pseudo-term-listp-of-cdr-when-pseudo-term-listp-cheap-for-make-rewriter-simple
+;; used in generated proofs, to be kept disabled
+(defthmd pseudo-term-listp-of-cdr-when-pseudo-term-listp-cheap-disabled
   (implies (pseudo-term-listp terms)
            (pseudo-term-listp (cdr terms)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))
-
-;todo: move some of these?
-
-(defthmd acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
-  (implies (and (weak-dagp-aux rev-dag)
-                (consp rev-dag))
-           (acl2-numberp (car (car (last rev-dag)))))
-  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
-
-(defthmd natp-of-car-of-car-when-weak-dagp-aux
-  (implies (and (weak-dagp-aux dag)
-                (consp dag))
-           (natp (car (car dag))))
-  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
-
-(defthmd consp-of-car-of-last-when-weak-dagp-aux
-  (implies (and (weak-dagp-aux rev-dag)
-                (consp rev-dag))
-           (consp (car (last rev-dag))))
-  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
-
-;; (defthm dargp-of-cdr-of-car-when-weak-dagp-aux
-;;   (implies (and (weak-dagp-aux dag)
-;;                 (consp dag))
-;;            (dargp (cdr (car dag))))
-;;   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
 (defthmd axe-treep-when-dag-exprp
   (implies (dag-exprp expr)
            (axe-treep expr))
   :hints (("Goal" :in-theory (enable axe-treep dag-exprp))))
 
-(defthmd consp-of-cdr-when-dag-exprp-and-quote
-  (implies (and (dag-exprp expr)
-                (equal 'quote (car expr)))
-           (consp (cdr expr))))
-
-(defthmd not-<-of-0-when-natp
+;; used in generated proofs, to be kept disabled
+(defthmd not-<-of-0-when-natp-disabled
   (implies (natp x)
            (not (< x 0))))
 
-(defthmd natp-of-+-of--1-when-natp
+;; used in generated proofs, to be kept disabled
+(defthmd natp-of-+-of--1-when-natp-disabled
   (implies (natp x)
            (equal (natp (+ -1 x))
                   (< 0 x))))
@@ -481,9 +438,9 @@
                           ;;dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-alistp
                           ;;myquotep-of-cdr-of-assoc-equal-when-node-replacement-alistp
                           ;;natp-of-cdr-of-assoc-equal-when-node-replacement-alistp
-                          strip-cars-of-append-for-make-rewriter-simple
-                          pseudo-termp-of-car-when-pseudo-term-listp-cheap-for-make-rewriter-simple
-                          pseudo-term-listp-of-cdr-when-pseudo-term-listp-cheap-for-make-rewriter-simple
+                          strip-cars-of-append-disabled
+                          pseudo-termp-of-car-when-pseudo-term-listp-cheap-disabled
+                          pseudo-term-listp-of-cdr-when-pseudo-term-listp-cheap-disabled
                           ;;consp-to-len-bound-for-make-rewriter-simple
                           ;;len-of-cdr-better-for-make-rewriter-simple
                           myquotep-when-dag-exprp-and-quote)))
@@ -2948,9 +2905,9 @@
                                   axe-bind-free-result-okayp-rewrite
                                   symbol-alistp-when-alistp
                                   true-listp-of-cdr
-                                  symbolp-when-member-equal
-                                  not-equal-when-member-equal
-                                  not-equal-when-member-equal-alt
+                                  symbolp-when-member-equal-disabled
+                                  not-equal-when-member-equal-disabled
+                                  not-equal-when-member-equal-alt-disabled
                                   <=-transitive-1
                                   <=-transitive-2
                                   symbol-listp-of-append-disabled)
@@ -4302,7 +4259,7 @@
                         (MYQUOTEP TREE)
                         (QUOTEP TREE))
                :in-theory (e/d (true-list-of-car-when-BOUNDED-DARG-LIST-LISTP
-                                all-myquote-or-natp-of-car-when-bounded-darg-list-listp
+                                all-dargp-of-car-when-bounded-darg-list-listp
                                 ALL-MYQUOTEP-when-ALL-dargp
                                 axe-bind-free-result-okayp-rewrite
                                 AXE-RULE-HYPP
@@ -4322,9 +4279,9 @@
                                 memoizationp-when-maybe-memoizationp
                                 tree-to-memoizep ;todo
                                 <=-transitive-1  ;drop?
-                                symbolp-when-member-equal
-                                NOT-EQUAL-WHEN-MEMBER-EQUAL-ALT
-                                NOT-EQUAL-WHEN-MEMBER-EQUAL
+                                symbolp-when-member-equal-disabled
+                                NOT-EQUAL-WHEN-MEMBER-EQUAL-ALT-disabled
+                                NOT-EQUAL-WHEN-MEMBER-EQUAL-disabled
                                 pseudo-termp-of-lambda-body-when-axe-treep
                                 true-listp-of-lambda-formals-when-axe-treep
                                 symbol-listp-of-lambda-formals-when-axe-treep
@@ -4465,7 +4422,7 @@
                                        max-key-hack
                                        max-key-hack-2
                                        <-OF-+-OF-1-WHEN-INTEGERS
-                                       integerp-when-natp
+                                       integerp-when-natp-disabled
                                        <-of-if-arg2-axe)
                                       (natp)))))
 
@@ -5030,9 +4987,9 @@
                                   (symbol-listp known-booleans)
                                   (symbol-listp monitored-symbols))
                       :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
-                                     :in-theory (e/d (not-<-of-0-when-natp
+                                     :in-theory (e/d (not-<-of-0-when-natp-disabled
                                                       acl2-numberp-when-natp
-                                                      natp-of-+-of--1-when-natp
+                                                      natp-of-+-of--1-when-natp-disabled
                                                       ;; natp-when-dargp ; too strong?
                                                       <-of-+-of-1-when-integers
                                                       natp-of-+-of-1

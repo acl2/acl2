@@ -318,6 +318,8 @@
            :in-theory (disable bvcat-upper-bound-linear))))
 
 ;was disabled (why?)
+;; This does change the width of the BV.
+;; TODO: Rename bvcat-of-0-arg2
 (defthm bvcat-of-0
   (equal (bvcat highsize 0 lowsize lowval)
          (bvchop lowsize lowval))
@@ -909,17 +911,6 @@
                                     )
                                    (slice-becomes-getbit)))))
 
-;compare to others
-(defthm bvcat-combine-constants-old
-  (implies (and (syntaxp (and (quotep lowval)
-                              (quotep lowval2)))
-                (equal totalsize (+ lowsize2 highsize))
-                (natp lowsize)
-                (natp lowsize2)
-                (natp highsize))
-           (equal (bvcat totalsize (bvcat highsize highval lowsize2 lowval2) lowsize lowval)
-                  (bvcat highsize highval (+ lowsize lowsize2) (bvcat lowsize2 lowval2 lowsize lowval)))))
-
 ;finally the full lemma!
 (defthm slice-of-bvcat-hack-gen
   (implies (and (<= lowsize highbit)
@@ -934,6 +925,19 @@
                              (slice (min (- highbit lowsize) (+ -1 highsize)) 0 x) (- lowsize lowbit)
                              (slice (+ -1 lowsize) lowbit y))
                     (slice (- highbit lowsize) (- lowbit lowsize) (bvchop highsize x))))))
+
+
+;compare to others
+;; LHS is not associated to match our normal form
+(defthm bvcat-combine-constants-old
+  (implies (and (syntaxp (and (quotep lowval)
+                              (quotep lowval2)))
+                (equal totalsize (+ lowsize2 highsize))
+                (natp lowsize)
+                (natp lowsize2)
+                (natp highsize))
+           (equal (bvcat totalsize (bvcat highsize highval lowsize2 lowval2) lowsize lowval)
+                  (bvcat highsize highval (+ lowsize lowsize2) (bvcat lowsize2 lowval2 lowsize lowval)))))
 
 (defthm bvcat-combine-constants
   (implies (and (syntaxp (and (quotep highval)
@@ -1498,3 +1502,29 @@
            (equal (bvcat 1 1 lowsize 0)
                   (expt 2 lowsize)))
   :hints (("Goal" :in-theory (enable bvcat logapp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvcat-of-if-arg1
+  (equal (bvcat (if test highsize1 highsize2) highval lowsize lowval)
+         (if test
+             (bvcat highsize1 highval lowsize lowval)
+           (bvcat highsize2 highval lowsize lowval))))
+
+(defthmd bvcat-of-if-arg2
+  (equal (bvcat higsize (if test highval1 highval2) lowsize lowval)
+         (if test
+             (bvcat higsize highval1 lowsize lowval)
+           (bvcat higsize highval2 lowsize lowval))))
+
+(defthmd bvcat-of-if2-arg3
+  (equal (bvcat highsize highval (if test lowsize1 lowsize2) lowval)
+         (if test
+             (bvcat highsize highval lowsize1 lowval)
+           (bvcat highsize highval lowsize2 lowval))))
+
+(defthmd bvcat-of-if-arg4
+  (equal (bvcat higsize highval lowsize (if test lowval1 lowval2))
+         (if test
+             (bvcat higsize highval lowsize lowval1)
+           (bvcat higsize highval lowsize lowval2))))
