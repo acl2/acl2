@@ -251,20 +251,20 @@
                            (pseudo-termp (car assumptions)))
            :in-theory (enable add-refined-assumptions-to-dag-array))))
 
-(defthm all-bounded-dag-exprp-of-add-refined-assumptions-to-dag-array
+(defthm bounded-dag-expr-listp-of-add-refined-assumptions-to-dag-array
   (implies (and (pseudo-term-listp assumptions)
                 (all-consp assumptions)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 ;; no error:
                 (not (mv-nth 0 (add-refined-assumptions-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc)))
                 ;(all-dag-exprp acc)
-                (all-bounded-dag-exprp dag-len acc)
+                (bounded-dag-expr-listp dag-len acc)
                 (symbol-listp (map-ffn-symb assumptions))
                 )
            (mv-let (erp refined-assumption-exprs dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (add-refined-assumptions-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc)
              (declare (ignore erp dag-array dag-parent-array dag-constant-alist dag-variable-alist))
-             (all-bounded-dag-exprp dag-len refined-assumption-exprs)))
+             (bounded-dag-expr-listp dag-len refined-assumption-exprs)))
   :hints (("Goal" :expand (;(pseudo-term-listp assumptions)
                            (pseudo-termp (car assumptions))
                            )
