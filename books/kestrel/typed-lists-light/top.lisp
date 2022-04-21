@@ -20,6 +20,7 @@
 (include-book "symbol-listp")
 (include-book "symbol-listp2")
 (include-book "keyword-listp")
+(include-book "true-list-listp")
 
 (include-book "character-list-listp")
 
@@ -54,6 +55,8 @@
 (include-book "all-greater")
 
 (include-book "cons-listp-dollar")
+
+(include-book "append-all")
 
 ;; Stuff about lists of alists:
 (include-book "all-alistp")

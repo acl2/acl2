@@ -29,6 +29,7 @@
 (include-book "kestrel/terms-light/replace-term-with-term" :dir :system)
 (include-book "kestrel/terms-light/count-occurrences-in-term" :dir :system)
 (include-book "kestrel/lists-light/true-list-fix" :dir :system)
+(include-book "kestrel/typed-lists-light/append-all" :dir :system)
 (include-book "std/util/defaggregate" :dir :system) ; reduce?
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
@@ -66,13 +67,6 @@
       (if (fn-definedp fn wrld)
           (cons fn (filter-defined-fns (rest fns) wrld))
         (filter-defined-fns (rest fns) wrld)))))
-
-;dup?
-(defun append-all (xs)
-  (declare (xargs :guard (true-list-listp xs)))
-  (if (endp xs)
-      nil
-    (append (first xs) (append-all (rest xs)))))
 
 ;dup?
 ;; Looks up all the KEYS in the ALIST, returning a list of the results (or nils, for absent keys).

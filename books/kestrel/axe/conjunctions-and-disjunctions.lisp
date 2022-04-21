@@ -1,7 +1,7 @@
 ; Conjunctions and disjunctions in Axe
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -33,6 +33,12 @@
                    )))
 
 ;(local (in-theory (disable myquotep))) ;todo
+
+(local
+ (defthm arith-hack-cheap
+  (implies (< x y)
+           (not (< y x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))))
 
 ; an item of the form <nodenum> or (not <nodenum>).
 (defund possibly-negated-nodenump (item)
@@ -869,11 +875,6 @@
 ;;                                       (NTH 3
 ;;                                            (AREF1 DAG-ARRAY-NAME
 ;;                                                   DAG-ARRAY NODENUM-OR-QUOTEP)))
-
-(defthm arith-hack-cheap
-  (implies (< x y)
-           (not (< y x)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
 ;slow!
 (defthm-flag-get-axe-disjunction-from-dag-item
