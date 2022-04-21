@@ -1228,18 +1228,6 @@
              (slice low high1 val)
            (slice low high2 val))))
 
-(defthm bvcat-of-if
-  (equal (bvcat (if test highindex1 highindex2) highval lowindex lowval)
-         (if test
-             (bvcat highindex1 highval lowindex lowval)
-           (bvcat highindex2 highval lowindex lowval))))
-
-(defthm bvcat-of-if2
-  (equal (bvcat highindex highval (if test lowindex1 lowindex2) lowval)
-         (if test
-             (bvcat highindex highval lowindex1 lowval)
-           (bvcat highindex highval lowindex2 lowval))))
-
 (defthm myif-of-getbit-becomes-bvif-arg1
   (implies (unsigned-byte-p 1 y)
            (equal (myif test (getbit n x) y)
@@ -1359,7 +1347,8 @@
                         (:instance bvchop-of-both-sides (x (bvor 32 (bvshl 32 x amt) (bvshr 32 x amt2)))
                                    (y (leftrotate32 amt x))))
            :in-theory (disable
-                       bvcat-of-if slice-of-if bvcat-equal-rewrite bvcat-equal-rewrite-alt bvshl-rewrite-with-bvchop
+                       ;bvcat-of-if
+                       slice-of-if bvcat-equal-rewrite bvcat-equal-rewrite-alt bvshl-rewrite-with-bvchop
                        bvor-of-bvshl-and-bvshr-becomes-leftrotate32))))
 
 (defthm bvor-of-bvshr-and-bvshl-becomes-leftrotate32

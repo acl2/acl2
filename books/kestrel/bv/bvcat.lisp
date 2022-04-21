@@ -1498,3 +1498,29 @@
            (equal (bvcat 1 1 lowsize 0)
                   (expt 2 lowsize)))
   :hints (("Goal" :in-theory (enable bvcat logapp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvcat-of-if-arg1
+  (equal (bvcat (if test highsize1 highsize2) highval lowsize lowval)
+         (if test
+             (bvcat highsize1 highval lowsize lowval)
+           (bvcat highsize2 highval lowsize lowval))))
+
+(defthmd bvcat-of-if-arg2
+  (equal (bvcat higsize (if test highval1 highval2) lowsize lowval)
+         (if test
+             (bvcat higsize highval1 lowsize lowval)
+           (bvcat higsize highval2 lowsize lowval))))
+
+(defthmd bvcat-of-if2-arg3
+  (equal (bvcat highsize highval (if test lowsize1 lowsize2) lowval)
+         (if test
+             (bvcat highsize highval lowsize1 lowval)
+           (bvcat highsize highval lowsize2 lowval))))
+
+(defthmd bvcat-of-if-arg4
+  (equal (bvcat higsize highval lowsize (if test lowval1 lowval2))
+         (if test
+             (bvcat higsize highval lowsize lowval1)
+           (bvcat higsize highval lowsize lowval2))))

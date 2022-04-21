@@ -101,7 +101,9 @@
                   (getbit 0 (nth (+ count -1 (- n)) bvs))))
   :hints (("Goal" ;:induct (packbv-induct count n bvs)
            :do-not '(generalize eliminate-destructors)
-           :in-theory (enable packbv nth zp))))
+           :in-theory (e/d (packbv nth zp GETBIT-TOO-HIGH)
+                           (;BVCAT-OF-IF-ARG2
+                            )))))
 
 (defthm bvchop-of-packbv-helper
   (implies (and (<= n count)
@@ -137,7 +139,9 @@
            (equal (logtail (* 8 n) (packbv len 8 vals))
                   (packbv (- len n) 8 (butlast vals n))))
   :hints (("Goal" :induct (packbv len 8 vals)
-           :in-theory (enable packbv bvchop-of-logtail-becomes-slice))))
+           :in-theory (e/d (packbv bvchop-of-logtail-becomes-slice)
+                           (;bvcat-of-if-arg2
+                            )))))
 
 (defthm logtail-8-of-packbv
   (implies (equal len (len vals))
@@ -163,7 +167,8 @@
 (defthm getbit-of-packbv-too-high
   (equal (getbit num (packbv num 1 items))
          0)
-  :hints (("Goal" :in-theory (enable packbv))))
+  :hints (("Goal" :in-theory (e/d (packbv) (;bvcat-of-if-arg2
+                                            )))))
 
 (defthm packbv-of-repeat-of-0
   (equal (packbv num 1 (repeat num 0))
