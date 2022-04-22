@@ -7505,9 +7505,10 @@
                                    logtail-becomes-slice-bind-free
                                    bvchop-of-logtail-becomes-slice)))))
 
+;; todo: make a "both" rule
 (defthm slice-of-bvsx
   (implies (and (< low old-size) ;this case (there must be at least one bit to sign-extend?)
-                (< high new-size)
+                ;(< high new-size)
                 (<= old-size new-size)
                 (<= low high)
                 (natp high)
@@ -7515,7 +7516,9 @@
                 (posp old-size)
                 (natp new-size))
            (equal (slice high low (bvsx new-size old-size x))
-                  (bvsx (+ 1 high (- low)) (- old-size low) (slice high low x))))
+                  (bvsx (+ (min new-size (+ 1 high)) (- low))
+                        (- old-size low)
+                        (slice high low x))))
   :hints (("Goal" :in-theory (enable bvsx BVCAT-OF-0 natp))))
 
 (defthm bvsx-too-high
@@ -7550,7 +7553,7 @@
 
 (defthm slice-of-bvsx-high
   (implies (and (<= old-size low) ;this case
-                (< high new-size)
+                ;(< high new-size)
                 (<= old-size new-size)
                 (<= low high)
                 (natp high)
@@ -7558,7 +7561,8 @@
                 (posp old-size)
                 (natp new-size))
            (equal (slice high low (bvsx new-size old-size x))
-                  (repeatbit (+ 1 high (- low))
+                  (repeatbit (+ (min (+ 1 high) new-size)
+                                (- low))
                              (getbit (+ -1 old-size) x))))
   :hints (("Goal" :in-theory (enable bvsx bvcat-of-0 natp))))
 
@@ -7995,3 +7999,15 @@
                                   (n size)
                                   (m (+ -1 size)))
            :in-theory (enable bvcat logapp))))
+
+(defthm bvcat-of-slice-of-bvsx-same
+  (implies (and (equal highsize-1 (+ -1 highsize))
+                (<= highsize highsize+)
+                (< lowsize highsize)
+                (natp highsize+)
+                (posp lowsize)
+                (natp highsize))
+           (equal  (bvcat highsize+ (slice highsize-1 lowsize (bvsx highsize lowsize x)) lowsize x)
+                   (bvsx highsize lowsize x)))
+  :hints (("Goal" :in-theory (disable acl2::bvcat-tighten-upper-size ;todo: forcing of usbp of repeatbit
+                                      ))))
