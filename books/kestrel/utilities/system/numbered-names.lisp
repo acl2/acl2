@@ -1,6 +1,6 @@
 ; System Utilities -- Numbered Names
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,9 +10,9 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/std/strings/nondigit-chars" :dir :system)
 (include-book "kestrel/std/system/fresh-namep" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
-(include-book "kestrel/utilities/strings/nondigit-chars" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "system/kestrel" :dir :system)
@@ -110,7 +110,7 @@
    Check whether @('x') consists of one or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (nondigit-charlist-p (explode x))
+       (str::nondigit-charlist-p (explode x))
        (not (equal x ""))))
 
 (table numbered-name-index-start nil nil
@@ -171,7 +171,7 @@
    Check whether @('x') consists of zero or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (nondigit-charlist-p (explode x))))
+       (str::nondigit-charlist-p (explode x))))
 
 (table numbered-name-index-end nil nil
   :guard (and (equal key 'end) ; one key => singleton table
@@ -231,7 +231,7 @@
    Check whether @('x') consists of one or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (nondigit-charlist-p (explode x))
+       (str::nondigit-charlist-p (explode x))
        (not (equal x ""))))
 
 (table numbered-name-index-wildcard nil nil
