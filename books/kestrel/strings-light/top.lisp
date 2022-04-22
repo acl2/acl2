@@ -17,3 +17,5 @@
 (include-book "split-string")
 (include-book "split-string-repeatedly")
 (include-book "reverse")
+(include-book "parse-binary-digits")
+(include-book "parse-decimal-digits")
