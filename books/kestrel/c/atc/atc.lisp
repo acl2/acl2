@@ -100,6 +100,10 @@
    to their C types.
    The keys are unique and in the same order as the formal parameters."
 
+  "@('affect') is a list of symbols consisting of
+   the variables of array or structure type affected by
+   one of the functions in @('t1'), ..., @('tp')."
+
   xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

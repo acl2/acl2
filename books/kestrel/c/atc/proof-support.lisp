@@ -150,7 +150,7 @@
     ullong-dec-const
     ullong-oct-const
     ullong-hex-const
-    type-of-value))
+    type-of-value-alt-def))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
