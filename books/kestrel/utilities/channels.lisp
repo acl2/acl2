@@ -1,6 +1,6 @@
 ; A lightweight book about i/o channels
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -135,6 +135,11 @@
            (unsigned-byte-listp 8 vals))
   :hints (("Goal" :in-theory (enable typed-io-listp unsigned-byte-listp))))
 
+(defthmd character-listp-when-typed-io-listp-of-character
+  (implies (typed-io-listp vals :character)
+           (character-listp vals))
+  :hints (("Goal" :in-theory (enable typed-io-listp character-listp))))
+
 (defthm nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
   (implies (and (open-channel-listp channels)
                 (equal (cadr (cadr (assoc-equal channel channels))) :byte))
@@ -150,6 +155,14 @@
   :hints (("Goal" :in-theory (enable open-channel-listp
                                      open-channel1
                                      unsigned-byte-listp-when-typed-io-listp-of-byte))))
+
+(defthm character-listp-of-cddr-of-assoc-equal-when-open-channel-listp
+  (implies (and (open-channel-listp channels)
+                (equal (cadr (cadr (assoc-equal channel channels))) :character))
+           (character-listp (cddr (assoc-equal channel channels))))
+  :hints (("Goal" :in-theory (enable open-channel-listp
+                                     open-channel1
+                                     character-listp-when-typed-io-listp-of-character))))
 
 (defthm open-channel-listp-of-cons
   (equal (open-channel-listp (cons ch chs))

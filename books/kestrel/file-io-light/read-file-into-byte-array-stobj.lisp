@@ -1,4 +1,4 @@
-; A lightweight function to read a file's bytes into a stobj array
+; A lightweight function to read a file's bytes into a stobj array of bytes
 ;
 ; Copyright (C) 2021 Kestrel Institute
 ;

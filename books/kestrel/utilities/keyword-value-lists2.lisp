@@ -18,24 +18,6 @@
 
 ;(in-theory (disable keywordp))
 
-(defthm keyword-listp-of-append
-  (equal (keyword-listp (append x y))
-         (and (keyword-listp (true-list-fix x))
-              (keyword-listp y)))
-  :hints (("Goal" :in-theory (enable TRUE-LIST-FIX))))
-
-(defthm keyword-listp-of-true-list-fix
-  (implies (keyword-listp x)
-           (keyword-listp (true-list-fix x)))
-  :hints (("Goal" :in-theory (enable true-list-fix))))
-
-(defthm keyword-listp-of-remove-duplicates-equal
-  (equal (keyword-listp (remove-duplicates-equal x))
-         (keyword-listp (true-list-fix x)))
-  :hints (("Goal" :in-theory (enable remove-duplicates-equal true-list-fix))))
-
-;;;;;;;;;;
-
 ;; TODO: Compare to remove-keyword
 (defun clear-key-in-keyword-value-list (key keyword-value-list)
   (declare (xargs :guard (and (keywordp key)
