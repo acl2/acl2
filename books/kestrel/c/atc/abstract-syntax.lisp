@@ -869,7 +869,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only model function declarators consisting of [C:6.7.6.3]
+    "For now we only model function declarators [C:6.7.6.3]
      consisting of an identifier as the direct declarator
      and a (parenthesized) list of parameter declarations."))
   ((name ident)
