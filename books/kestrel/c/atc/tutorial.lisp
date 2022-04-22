@@ -191,11 +191,11 @@
    (xdoc::li
     "The generated C code satisfies
      the compile-time constraints prescribed by [C].
-     In other words, the C code is compiled by a compliant compiler.
+     In other words, the C code is compilable by compliant compilers.
      This is expressed via a "
     (xdoc::seetopic "atc-static-semantics"
                     "formal static semantics of C")
-    " that we are developing.")
+    ".")
    (xdoc::li
     "The generated C code is functionally equivalent
      to the ACL2 code that represents it.
@@ -203,7 +203,7 @@
      This is expressed via a "
     (xdoc::seetopic "atc-dynamic-semantics"
                     "formal dynamic semantics of C")
-    " that we are developing.")))
+    ".")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
