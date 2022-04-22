@@ -86,7 +86,8 @@
                   (symbol-listp (strip-cars x))))
   :hints (("Goal" :in-theory (enable symbol-alistp))))
 
-(defthm len-when-axe-treep-and-consp-of-car
+;; Keep disabled since it introduces axe-tree out of nowhere.
+(defthmd len-when-axe-treep-and-consp-of-car
   (implies (and (axe-treep tree)
                 (consp (car tree)))
            (equal (len (car tree))

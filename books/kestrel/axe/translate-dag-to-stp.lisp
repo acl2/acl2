@@ -59,7 +59,7 @@
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/file-io-light/write-strings-to-file-bang" :dir :system) ;; todo reduce, just used to clear a file
 (include-book "kestrel/file-io-light/read-file-into-character-list" :dir :system)
-(in-theory (disable revappend-removal)) ;caused problems (though this may be a better approach to adopt someday)
+;(in-theory (disable revappend-removal)) ;caused problems (though this may be a better approach to adopt someday)
 (include-book "kestrel/bv/defs" :dir :system) ;todo: make sure this book includes the definitions of all functions it translates.
 (include-book "kestrel/bv/getbit-def" :dir :system)
 (include-book "call-axe-script")
@@ -1938,7 +1938,7 @@
   :hints (("Goal" :in-theory (enable make-stp-type-declarations))))
 
 ;; Returns a string-tree.
-(defun make-stp-range-assertions (nodenum-type-alist)
+(defund make-stp-range-assertions (nodenum-type-alist)
   (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist) ;;TODO: This also allows :range types but axe-typep doesn't allow range types?
                   :guard-hints (("Goal" :expand (nodenum-type-alistp nodenum-type-alist)
                                  :in-theory (e/d (axe-typep empty-typep list-typep most-general-typep)
@@ -1980,7 +1980,7 @@
 
 ;; Returns a string-tree.
 ;make tail rec?
-(defun make-type-declarations-for-array-constants (constant-array-info)
+(defund make-type-declarations-for-array-constants (constant-array-info)
   (declare (xargs :guard (constant-array-infop constant-array-info)
                   :guard-hints (("Goal" :in-theory (enable constant-array-infop)))))
   (if (endp constant-array-info)
@@ -2009,7 +2009,7 @@
 
 ; Returns a string-tree.
 ;fixme this used to generate too many asserts (which could contradict each other!) if the data is longer than would be expected for the index...  now it counts up to element-count
-(defun make-value-assertions-for-array-constant (array-data array-name elemnum element-count index-size element-size acc)
+(defund make-value-assertions-for-array-constant (array-data array-name elemnum element-count index-size element-size acc)
   (declare (xargs :guard (and (natp elemnum)
                               (natp index-size)
                               (posp element-size)
@@ -2047,7 +2047,7 @@
   :hints (("Goal" :in-theory (enable make-value-assertions-for-array-constant))))
 
 ;; Returns a string-tree.
-(defun make-value-assertions-for-array-constants (constant-array-info acc)
+(defund make-value-assertions-for-array-constants (constant-array-info acc)
   (declare (xargs :guard (constant-array-infop constant-array-info)
                   :guard-hints (("Goal" :in-theory (enable constant-array-infop)))))
   (if (endp constant-array-info)
@@ -2193,7 +2193,9 @@
 ;(- (and print counterexamplep (cw "~%Counterexample:~%~S0" (coerce counterexamplep-chars 'string))))
                      (parsed-counterexample (parse-counterexample counterexamplep-chars nil))
 ;(- (and print counterexamplep (cw "~%Parsed counterexample:~%~x0~%" parsed-counterexample)))
-                     )
+                     ((when (eq :error parsed-counterexample))
+                      (er hard? 'call-stp-on-file "!! ERROR parsing counterexample.")
+                      (mv *error* state)))
                   (mv (if counterexamplep
                           `(,*counterexample* ,parsed-counterexample)
                         *invalid*)
