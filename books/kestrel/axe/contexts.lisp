@@ -40,27 +40,8 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable maxelem))))
 
-(defthmd acl2-numberp-of-nth-when-all-dargp
-  (implies (and (all-dargp args)
-                (natp n)
-                (< n (len args))
-                )
-           (equal (acl2-numberp (nth n args))
-                  (not (consp (nth n args)))))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than nth) (NTH-OF-CDR)))))
-
 ;compute the context of nodenum coming in via the given parent (this is just the parent's context unless the parent is an ITE)
 ;ffixme handle parents that are boolands and boolors - careful! -- must order the nodes: for (booland a b) we can't both assume a for b and assume b for a..
-(defthm acl2-numberp-of-nth-of-dargs
-  (implies (and (dag-exprp0 expr)
-                (< n (len (dargs expr)))
-                (natp n)
-                (not (equal 'quote (car expr)))
-;               (not (consp (nth n (aref1 dag-array-name dag-array nodenum)))) ;rules out a quotep
-                )
-           (equal (acl2-numberp (nth n (dargs expr)))
-                  (not (consp (nth n (dargs expr))))))
-  :hints (("Goal" :in-theory (enable acl2-numberp-of-nth-when-all-dargp))))
 
 ;for speed:
 (local (in-theory (disable nth-when-<=-len-cheap
@@ -572,23 +553,24 @@
 ;;   :hints (("Goal" :use (:instance CONSP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM)
 ;;            :in-theory (disable CONSP-OF-GET-AXE-CONJUNCTION-FROM-DAG-ITEM))))
 
-(defthm not-complex-rationalp-of-nth-when-all-dargp
-  (implies (and (all-dargp args)
-                ;(natp n)
-                ;(< n (len args))
-                )
-           (not (complex-rationalp (nth n args))))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than nth) (NTH-OF-CDR)))))
+;; (defthmd not-complex-rationalp-of-nth-when-all-dargp
+;;   (implies (and (all-dargp args)
+;;                 ;(natp n)
+;;                 ;(< n (len args))
+;;                 )
+;;            (not (complex-rationalp (nth n args))))
+;;   :hints (("Goal" :in-theory (e/d (bounded-darg-listp nth) (NTH-OF-CDR)))))
 
-(defthm not-complex-rationalp-of-nth-of-dargs
-  (implies (and (dag-exprp0 expr)
-                (< n (len (dargs expr)))
-                (natp n)
-                (not (equal 'quote (nth 0 expr))))
-           (not (complex-rationalp (nth n (dargs expr)))))
-  :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp
-                                     not-<-of-0-and-nth-when-all-dargp
-                                     dag-exprp0))))
+;; ;drop?
+;; (defthmd not-complex-rationalp-of-nth-of-dargs
+;;   (implies (and (dag-exprp expr)
+;;                 (< n (len (dargs expr)))
+;;                 (natp n)
+;;                 (not (equal 'quote (nth 0 expr))))
+;;            (not (complex-rationalp (nth n (dargs expr)))))
+;;   :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp
+;;                                      not-<-of-0-and-nth-when-all-dargp
+;;                                      dag-exprp))))
 
 (defthm contextp-of-get-axe-disjunction-from-dag-item
   (implies (and (natp nodenum-or-quotep)

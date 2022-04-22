@@ -959,7 +959,7 @@
           (t (value t)))))
 
 #-acl2-loop-only
-(defun-one-output ppr? (x raw-x col channel state)
+(defun-one-output ppr? (x raw-x stobjs-out col channel state)
   (cond
    ((and (raw-mode-p state)
          (bad-lisp-objectp x))
@@ -967,7 +967,32 @@
         (error "Attempted to print LD results to other than *standard-co*!"))
     (format t "[Note:  Printing non-ACL2 result.]")
     (terpri)
-    (prin1 raw-x)
+    (cond ((and (cdr stobjs-out)
+                (true-listp x)
+                (true-listp raw-x)
+                (let ((len (length stobjs-out)))
+                  (and (= (length x) len)
+                       (= (length raw-x) len))))
+
+; We eviscerate each bad-lisp-objectp in x-raw that is not already eviscerated
+; in the corresponding position of x.
+
+           (princ "(")
+           (loop for y in x
+                 as y-raw in raw-x
+                 as i from 1
+                 with col+1 = (1+ col)
+                 do
+                 (progn (when (not (= i 1))
+                          (fms "~t0" (list (cons #\0 col+1))
+                               channel state nil))
+                        (cond ((and (not (and (consp y)
+                                              (evisceratedp t y)))
+                                    (bad-lisp-objectp y-raw))
+                               (prin1 y-raw))
+                              (t (ppr y col channel state t)))))
+           (princ ")"))
+          (t (prin1 raw-x)))
     state)
    (t
     (ppr x col channel state t))))
@@ -1057,7 +1082,8 @@
                    (get-output-stream-from-channel output-channel)
                    t)
                   *the-live-state*)
-                 (t (ppr? evg (cadr valx) col output-channel state))))
+                 (t (ppr? evg (cadr valx) stobjs-out col output-channel
+                          state))))
               #+acl2-loop-only
               (ppr (cadr eviscerated-valx)
                    (if (stringp (f-get-global 'triple-print-prefix state))
@@ -1079,7 +1105,8 @@
                  (get-output-stream-from-channel output-channel)
                  t)
                 *the-live-state*)
-               (t (ppr? eviscerated-valx valx 0 output-channel state)))
+               (t (ppr? eviscerated-valx valx stobjs-out 0 output-channel
+                        state)))
               #+acl2-loop-only
               (ppr eviscerated-valx 0 output-channel state t)
               (newline output-channel state))))))))))

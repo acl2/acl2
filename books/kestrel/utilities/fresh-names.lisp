@@ -14,6 +14,7 @@
 ;; STATUS: IN-PROGRESS
 
 (include-book "pack")
+(local (include-book "coerce"))
 (local (include-book "intern-in-package-of-symbol"))
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
@@ -86,6 +87,12 @@
   :hints (("Goal" :use (:instance not-member-equal-of-fresh-symbol-aux-same)
            :in-theory (disable not-member-equal-of-fresh-symbol-aux-same))))
 
+;todo: gen
+(defthm fresh-symbol-aux-of-x-not-nil
+  (fresh-symbol-aux 'x current-num syms-to-avoid)
+  :hints (("Goal" :in-theory (enable fresh-symbol-aux
+                                     BINARY-PACK))))
+
 ;;;
 ;;; fresh-symbol
 ;;;
@@ -94,6 +101,7 @@
 ;; tries adding numeric suffixes, starting with 1, until a symbol not in
 ;; SYMS-TO-AVOID is found.
 ;; Example: (fresh-symbol 'x '(x x1 x2 x3 x5)) = x4
+;; TODO: Perhaps disallow creating nil here?
 (defund fresh-symbol (desired-sym syms-to-avoid)
   (declare (xargs :guard (and (symbolp desired-sym)
                               (symbol-listp syms-to-avoid))))
@@ -105,6 +113,12 @@
   (implies (natp current-num)
            (not (member-equal (fresh-symbol desired-sym syms-to-avoid)
                               syms-to-avoid)))
+  :hints (("Goal" :in-theory (enable fresh-symbol))))
+
+;todo: gen
+(defthm fresh-symbol-of-x-not-nil
+  (fresh-symbol 'x syms-to-avoid)
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable fresh-symbol))))
 
 ;; ;type-prescription already knows this?

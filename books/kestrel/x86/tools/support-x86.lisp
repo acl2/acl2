@@ -35,6 +35,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
+(local (include-book "kestrel/bv/getbit2" :dir :system))
 
 (in-theory (disable GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)) ;for speed
 
@@ -807,6 +808,12 @@
                   (acl2::bvchop 8 val)))
   :hints (("Goal" :in-theory (enable memi))))
 
+;; Since 0 and 1 are the only BVs less than 2
+(defthmd <-of-bvchop-and-2
+  (equal (< (ACL2::BVCHOP size x) 2)
+         (or (equal (ACL2::BVCHOP size x) 0)
+             (equal (ACL2::BVCHOP size x) 1))))
+
 ;; the normal definition splits with an if!
 ;; well, this one has an if too, but it's perhaps less bad since the shift amount will often be constant
 ;;maybe improve bvashr
@@ -976,11 +983,15 @@
            (MV RESULT OUTPUT-RFLAGS
                UNDEFINED-FLAGS)))
   :otf-flg t
-  :hints (("Goal" :in-theory (e/d (acl2::bvsx SAR-SPEC-32 ACL2::BVSHR
-                                              ;;ACL2::LOGEXT-CASES
-                                              acl2::bvchop-of-logtail-becomes-slice
-                                              )
+  :hints (("Goal" :in-theory (e/d (;acl2::bvsx
+                                   SAR-SPEC-32 ACL2::BVSHR
+                                   ;;ACL2::LOGEXT-CASES
+                                   acl2::bvchop-of-logtail-becomes-slice
+                                   <-of-bvchop-and-2
+                                   acl2::slice-alt-def
+                                   )
                                   ( ;ACL2::BVCAT-EQUAL-REWRITE ACL2::BVCAT-EQUAL-REWRITE-ALT
+                                   acl2::BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE
                                    )))))
 
 ;move

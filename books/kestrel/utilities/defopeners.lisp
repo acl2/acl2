@@ -53,11 +53,19 @@
 (local (include-book "state"))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (local (in-theory (disable mv-nth
                            w
                            true-listp
                            PLIST-WORLDP)))
+
+(defthmd symbol-listp-of-strip-cadrs-when-defthm-form-listp
+  (implies (defthm-form-listp forms)
+           (symbol-listp (strip-cadrs forms)))
+  :hints (("Goal" :in-theory (enable defthm-form-listp defthm-formp))))
+
+(local (in-theory (enable symbol-listp-of-strip-cadrs-when-defthm-form-listp)))
 
 ;; end of library stuff
 
@@ -198,7 +206,7 @@
 ;;                  (lambda-body (third (ffn-symb term)))
 ;;                  (lambda-actuals (fargs term)))
 ;;              (union-eq (vars-in-term-lst lambda-actuals)
-;;                        ;;fixme is this always nil, since lambda have to be complete?:
+;;                        ;;fixme is this always nil, since lambda have to be closed?:
 ;;                        (set-difference-eq (vars-in-term lambda-body)
 ;;                                           lambda-formals)
 ;;                        ))
@@ -660,9 +668,17 @@
                     (value-triple ',(append base-theorem-names unroll-theorem-names)))
             (append base-theorem-names unroll-theorem-names))))))
 
+(defthm true-listp-of-mv-nth-1-of-make-unroll-and-base-theorems
+  (true-listp (mv-nth 1 (make-unroll-and-base-theorems fn all-fns-in-nest hyps disable suffix verbose wrld)))
+  :hints (("Goal" :in-theory (enable make-unroll-and-base-theorems))))
+
+(defthm symbol-listp-of-mv-nth-1-of-make-unroll-and-base-theorems
+  (symbol-listp (mv-nth 1 (make-unroll-and-base-theorems fn all-fns-in-nest hyps disable suffix verbose wrld)))
+  :hints (("Goal" :in-theory (enable make-unroll-and-base-theorems))))
+
 ;TODO: If fn is non-recursive, just make a single rule...    or should it be an error to call defopeners?
 
-;for non-mut-rec.  Returns an event.
+;; Returns an event.
 ;; KEEP IN SYNC WITH DEFOPENERS-NAMES-FN.
 (defun defopeners-fn (fn hyps disable suffix verbose state)
   (declare (xargs :guard (and (symbolp fn)
@@ -670,10 +686,15 @@
                               (true-listp hyps)
                               (symbolp suffix))
                   :stobjs state))
-  (mv-let (event names)
-    (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose (w state))
-    (declare (ignore names))
-    event))
+  ;; Would like to call get-clique instead of fn-recursive-partners, but it's
+  ;; in :program mode (but see kestrel-acl2/community/verify-termination.lisp):
+  (let ((clique (if (fn-mutually-recursivep fn state)
+                    (fn-recursive-partners fn (w state))
+                  (list fn))))
+    (mv-let (event names)
+      (make-unroll-and-base-theorems fn clique hyps disable suffix verbose (w state))
+      (declare (ignore names))
+      event)))
 
 ;hyps should be a list of terms over the formals of the function (can include syntaxp, etc.)
 ;; KEEP IN SYNC WITH DEFOPENERS-NAMES.
@@ -695,10 +716,13 @@
                               (true-listp hyps)
                               (symbolp suffix))
                   :stobjs state))
-  (mv-let (event names)
-    (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose (w state))
-    (declare (ignore event))
-    names))
+  (let ((clique (if (fn-mutually-recursivep fn state)
+                    (fn-recursive-partners fn (w state))
+                  (list fn))))
+    (mv-let (event names)
+      (make-unroll-and-base-theorems fn clique hyps disable suffix verbose (w state))
+      (declare (ignore event))
+      names)))
 
 ;; Returns the list of theorem names that defopeners would introduce.
 ;; KEEP IN SYNC WITH DEFOPENERS.
@@ -734,3 +758,32 @@
                                  (suffix 'nil) ;nil or a symbol to add to the unroll and base rule names)
                                  )
   `(make-event (defopeners-mut-rec-fn ',fn ',hyps ',disable ',suffix ',verbose state)))
+
+;; Returns (mv events rule-names).
+;; TODO: Change this and related fns to take wrld instead of state?
+(defun opener-rules-for-fns (fns disable suffix events-acc rule-names-acc state)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (booleanp disable)
+                              (symbolp suffix)
+                              (true-listp events-acc)
+                              (symbol-listp rule-names-acc)
+                              ;;(plist-worldp wrld)
+                              )
+                  :stobjs state))
+  (if (endp fns)
+      (mv (reverse events-acc) (reverse rule-names-acc))
+    (let ((fn (first fns)))
+      (if (eq 'quote fn)
+          (prog2$ (er hard? 'opener-rules-for-fns "One of the fns give is QUOTE.")
+                  (mv nil nil))
+        (if (recursivep fn nil (w state))
+            (opener-rules-for-fns (rest fns)
+                                  disable suffix
+                                  (cons `(defopeners ,fn :disable ,disable :suffix ,suffix) events-acc)
+                                  (append (defopeners-names-fn fn nil disable suffix nil state) rule-names-acc)
+                                  state)
+          (opener-rules-for-fns (rest fns)
+                                disable suffix
+                                events-acc ; no event, just include fn's name (representing its definition rule), in rule-names-acc
+                                (cons fn rule-names-acc)
+                                state))))))

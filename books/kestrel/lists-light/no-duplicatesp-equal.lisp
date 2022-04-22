@@ -105,3 +105,14 @@
   (equal (no-duplicatesp-equal (reverse x))
          (no-duplicatesp-equal x))
   :hints (("Goal" :in-theory (enable no-duplicatesp-equal))))
+
+;; BTW, it's not enough for y to be duplicate-free.  Consider (intersection-equal '(1 1) '(1)) = '(1 1).
+(defthm no-duplicatesp-equal-of-intersection-equal
+  (implies (no-duplicatesp-equal x)
+           (no-duplicatesp-equal (intersection-equal x y)))
+  :hints (("Goal" :in-theory (enable intersection-equal no-duplicatesp-equal))))
+
+(defthm no-duplicatesp-equal-of-remove-equal
+  (implies (no-duplicatesp-equal l)
+           (no-duplicatesp-equal (remove-equal x l)))
+  :hints (("Goal" :in-theory (enable no-duplicatesp-equal remove-equal))))

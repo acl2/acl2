@@ -132,3 +132,18 @@
   (equal (getbit 1 (bvnot 1 x))
          0)
   :hints (("Goal" :in-theory (enable bvnot))))
+
+;; bvnot of value that is all 1s
+(defthm bvnot-of-+-of-1-and-expt-same
+  (equal (bvnot size (+ -1 (expt 2 size)))
+         0)
+  :hints (("Goal" :in-theory (enable bvnot lognot))))
+
+(defthm bvnot-of--
+  (implies (and (posp size)
+                (integerp x))
+           (equal (bvnot size (- x))
+                  (if (equal (bvchop size x) 0)
+                      (+ -1 (expt 2 size))
+                    (+ (bvchop size x) -1))))
+  :hints (("Goal" :in-theory (enable bvnot lognot bvchop MOD-SUM-CASES))))

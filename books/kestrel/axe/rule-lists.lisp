@@ -1,7 +1,7 @@
 ; Lists of rule names (general purpose)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -193,10 +193,10 @@
     integerp-of-bvchop natp-of-bvchop
     integerp-of-slice natp-of-slice
     integerp-of-getbit natp-of-getbit
-    integerp-of-leftrotate32 natp-of-leftrotate32
     integerp-of-leftrotate natp-of-leftrotate
-    integerp-of-rightrotate32 natp-of-rightrotate32 ;drop if we are getting rid of right-rotate
+    integerp-of-leftrotate32 natp-of-leftrotate32
     integerp-of-rightrotate natp-of-rightrotate ;drop if we are getting rid of right-rotate
+    integerp-of-rightrotate32 natp-of-rightrotate32 ;drop if we are getting rid of right-rotate
     ;how do we handle these?
     integerp-of-bvshl natp-of-bvshl
     integerp-of-bvshr natp-of-bvshr
@@ -225,12 +225,34 @@
     bvcat-normalize-constant-arg4
     bvplus-trim-leading-constant))
 
+(defun leftrotate-intro-rules ()
+  (declare (xargs :guard t))
+  '(;;todo: think about these rules (why so many?):
+    ;; TODO: These can't fire if we are expanding the shift ops, which we usually are
+    ;; TTODO: handle other idioms (bvxor, bvplus, and a version with shift ops expanded)
+    bvor-of-bvshl-and-bvshr-becomes-leftrotate
+    bvor-of-bvshr-and-bvshl-becomes-leftrotate
+    bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen
+    bvor-of-bvshr-and-bvshl-becomes-leftrotate32-gen
+    bvor-of-bvshl-and-bvshr       ;; introduces leftrotate
+    bvor-of-bvshr-and-bvshl       ;; introduces leftrotate
+    bvor-of-bvshl-and-bvshr-alt   ;; introduces leftrotate
+    bvor-of-bvshr-and-bvshl-alt   ;; introduces leftrotate
+    bvor-of-bvshl-and-bvashr      ;; introduces leftrotate
+    bvor-of-bvashr-and-bvshl      ;; introduces leftrotate
+    bvor-of-bvshl-and-bvashr-alt  ;; introduces leftrotate
+    bvor-of-bvashr-and-bvshl-alt  ;; introduces leftrotate
+    bvcat-of-slice-becomes-leftrotate ;; todo: loops with defn?
+    bvcat-of-getbit-becomes-leftrotate ;; todo: loops with defn?
+    ))
+
 ;;includes rules from bv-rules-axe.lisp (bad?) and axerulescore.lisp and dagrulesmore.lisp and dagrules.lisp
 (defun core-rules-bv ()
   (declare (xargs :guard t))
   (append
+   (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
    (safe-trim-rules) ;in case trimming is disabled
-   '(    ;; our normal form is to let these open up to calls to bvlt and sbvlt:
+   '(;; our normal form is to let these open up to calls to bvlt and sbvlt:
      bvle ;Thu Jan 19 16:35:59 2017
      bvge ;Thu Jan 19 16:35:59 2017
      bvgt ;Thu Jan 19 16:35:59 2017
@@ -238,14 +260,25 @@
      sbvge ;Thu Jan 19 16:35:59 2017
      sbvgt ;Thu Jan 19 16:35:59 2017
 
-     ;; Handling rotates:
-     leftrotate32-of-0-arg1
-     leftrotate32-of-0-arg2
+     ;; Handling rotates: ; todo: compare to the rules below for leftrotate32
+     rightrotate-becomes-leftrotate ;turn rightrotate into leftrotate
      leftrotate-of-0-arg2
      leftrotate-of-0-arg3
+     equal-of-leftrotate-and-leftrotate
+     getbit-of-leftrotate-simple
+     bitand-of-leftrotate-arg1-trim
+     bitand-of-leftrotate-arg2-trim
+     bitor-of-leftrotate-arg1-trim
+     bitor-of-leftrotate-arg2-trim
+     bitxor-of-leftrotate-arg1-trim
+     bitxor-of-leftrotate-arg2-trim
+
+     ;; Handling rotates (32 bit):
+     rightrotate32-becomes-leftrotate32-gen ;turn rightrotate32 into leftrotate32
+     getbit-of-leftrotate32-simple
+     leftrotate32-of-0-arg1
+     leftrotate32-of-0-arg2
      leftrotate32-of-bvchop-arg2
-     rightrotate-becomes-leftrotate ;turn rightrotate into leftrotate
-     rightrotate32-becomes-leftrotate32-gen
      ;; rightrotate32-trim-amt-dag ;move to trim rules? or drop since we go to leftrotate32
      ;;i don't think we want these any more (trying without them):
      ;;opening rotates (by constant amounts) in sha1 caused problems with trimming the same term to lots of different sizes
@@ -256,29 +289,11 @@
      leftrotate32-of-bvchop-5            ;new ;gen!
      leftrotate32-of-leftrotate32
      leftrotate-becomes-leftrotate32 ;go to leftrotate32 when possible (since the STP translation supports it)
+     ;;leftrotate-becomes-leftrotate64
      equal-of-leftrotate32-and-leftrotate32
-     equal-of-leftrotate-and-leftrotate
      equal-of-constant-and-leftrotate32
-     getbit-of-leftrotate-simple
-     bitand-of-leftrotate-arg1-trim
-     bitand-of-leftrotate-arg2-trim
-     bitxor-of-leftrotate-arg1-trim
-     bitxor-of-leftrotate-arg2-trim
-
-     ;;todo: think about these rules (why so many?):
-;ffixme handle other idioms..
-     bvor-of-bvshl-and-bvshr-becomes-leftrotate
-     bvor-of-bvshr-and-bvshl-becomes-leftrotate
-     bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen
-     bvor-of-bvshr-and-bvshl-becomes-leftrotate32-gen
-     bvor-of-bvshl-and-bvshr              ;; introduces leftrotate
-     bvor-of-bvshr-and-bvshl              ;; introduces leftrotate
-     bvor-of-bvshl-and-bvshr-alt          ;; introduces leftrotate
-     bvor-of-bvshr-and-bvshl-alt          ;; introduces leftrotate
-     bvor-of-bvshl-and-bvashr    ;; introduces leftrotate
-     bvor-of-bvashr-and-bvshl    ;; introduces leftrotate
-     bvor-of-bvshl-and-bvashr-alt ;; introduces leftrotate
-     bvor-of-bvashr-and-bvshl-alt ;; introduces leftrotate
+     getbit-of-leftrotate32-high
+     slice-of-leftrotate32-high
 
      not-sbvlt-when-sbvlt-rev-cheap-2
      equal-of-constant-when-sbvlt ; rename
@@ -293,39 +308,60 @@
      sbvlt-transitive-3-a
      sbvlt-transitive-3-b
      sbvlt-transitive-another-cheap ;    sbvlt-transitive-another ;;trying to remove this Mon Feb  1 17:00:34 2016
-     sbvdiv-of-sbvdiv-arg2-combine-constants
+
 
      bvif-of-equal-1-0                       ;Mon Apr 25 14:56:14 2016
      bvif-of-equal-0-1                       ;Mon Apr 25 14:56:14 2016
      equal-of-constant-and-bitxor-of-constant ;Sun Apr 24 19:42:42 2016
-     BVMINUS-SAME                             ;Tue Dec 15 12:03:12 2015
 
-     bvxor-of-0-arg2
-     bvxor-of-0-arg3
+     bvminus-same                             ;tue dec 15 12:03:12 2015
+     bvplus-bvminus-same
+     bvplus-bvminus-same-arg2
+
+     bvplus-of-0
+
      bvand-of-0-arg2
-     bvand-of-0-arg3
+     bvand-of-0-arg3 ; could drop if commute constants forward
      bvor-of-0-arg2
-     bvor-of-0-arg3 ;drop some of these if we commute constants
+     bvor-of-0-arg3 ; could drop if commute constants forward
+     bvxor-of-0-arg2
+     bvxor-of-0-arg3 ; could drop if commute constants forward
 
-     bvxor-same
-     bvxor-same-2
+     bitand-of-0-arg1
+     bitand-of-0-arg2 ; could drop if commute constants forward
+     bitand-of-1-arg1
+     bitand-of-1-arg2 ; could drop if commute constants forward
+     bitor-of-0-arg1
+     bitor-of-0-arg2 ; could drop if commute constants forward
+     bitor-of-1-arg2
+     bitor-of-1-arg1 ; could drop if commute constants forward
+     bitxor-of-0-arg1
+     bitxor-of-0-arg2 ;drop if we always commute
+     ;; bitxor-of-1-becomes-bitnot-arg2 ; best to keep the bitxor since we have special handling for bitxor nests
+     ;; bitxor-of-1-becomes-bitnot-arg1 ; best to keep the bitxor since we have special handling for bitxor nests
+
      bvand-same
      bvand-same-2
      bvor-same
      bvor-same-2
-     bitxor-same  ;add more or drop the bit ops
-     bitxor-same-2 ;new
+     bvxor-same
+     bvxor-same-2
+     bitand-same
+     bitand-same-2
+     bitor-same
+     bitor-same-2
+     bitxor-same
+     bitxor-same-2
 
-     bvplus-of-0
-
+     bvnot-of-bvnot
      bitnot-of-bitnot
 
-     bvand-of-myif-arg2
      bvand-of-myif-arg1
-     bitxor-of-myif-arg1
-     bitxor-of-myif-arg2
+     bvand-of-myif-arg2
      bvxor-of-myif-1
      bvxor-of-myif-2
+     bitxor-of-myif-arg1
+     bitxor-of-myif-arg2
 
      equal-of-bvchop-and-constant-when-bvlt-constant-1
      equal-of-bvchop-and-constant-when-bvlt-constant-2
@@ -334,13 +370,18 @@
 
      getbit-identity-free ;Sun Mar 13 03:18:26 2011
 
-     ;;fixme more like this?
-     bvxor-combine-constants
-     bvor-combine-constants
+     ;; TODO: More like this?
      bvand-combine-constants
+     bvor-combine-constants
+     bvxor-combine-constants
+     bitand-combine-constants
+     bitor-combine-constants
+     bitxor-combine-constants
      bvplus-combine-constants
      bvmult-combine-constants
-     bitxor-combine-constants
+     bvdiv-of-bvdiv-arg2-combine-constants
+     sbvdiv-of-sbvdiv-arg2-combine-constants
+     bvcat-combine-constants
 
      bvshl-of-0-arg1
      bvshl-of-0-arg2
@@ -358,6 +399,8 @@
      bitxor-of-unary-minus-arg2
      bvcat-of-unary-minus-low
      bvcat-of-unary-minus-high
+     bvcat-of-ifix-arg2
+     bvcat-of-ifix-arg4
 
      bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
      getbit-too-high-cheap-free
@@ -376,22 +419,25 @@
      mod-becomes-bvmod-better-free-and-bind-free
      mod-becomes-bvmod-better-bind-free-and-free
 
+     bvcat-of-0 ;trying... for when the highval is 0
 
-     ;;fixme more like this?
-     bvcat-when-lowsize-is-0 ;newly moved here
-     bvcat-when-highsize-is-0
+     ;; TODO: more like this?
+     ;; TODO: Replace these with of-0-arg1 rules, which may fail faster (no need
+     ;; to relieve a hyp).  Or might a negative size actually arise?
      bvxor-when-size-is-not-positive
      bvor-when-size-is-not-positive
      bvand-when-size-is-not-positive
+     bvnot-when-size-is-not-positive
      bvplus-when-size-is-not-positive
      bvmult-when-size-is-not-positive
      bvminus-when-size-is-not-positive
-     bvnot-when-size-is-not-positive
+     bvuminus-when-size-is-not-positive
      bvmod-when-size-is-not-positive
      bvdiv-when-size-is-not-positive
-     bvif-of-0-arg1
-     bvlt-when-not-posp
-
+     bvif-when-size-is-not-positive ;bvif-of-0-arg1
+     bvlt-when-not-posp-arg1
+     bvcat-when-lowsize-is-0 ;newly moved here
+     bvcat-when-highsize-is-0
 
      not-equal-constant-when-unsigned-byte-p ;Fri Dec 17 01:47:42 2010
      ;;not-equal-constant-when-unsigned-byte-p-alt ;not needed since we commute constants forward?
@@ -419,15 +465,21 @@
      bvchop-of-bvashr
      bvchop-of-bvif
 
-;fixme add all other rules like this!:
+     ;; TODO: add all other rules like this!:
      bvif-of-bvchop-arg3 ;mon feb 28 12:18:59 2011
      bvif-of-bvchop-arg4 ;mon feb 28 12:19:01 2011
+     bvand-of-bvchop-1
+     bvand-of-bvchop-2
      bvor-of-bvchop-arg2 ;newly added: are other similar rules missing?
      bvor-of-bvchop-arg3
      bvxor-of-bvchop-1
      bvxor-of-bvchop-2
-     bvand-of-bvchop-1
-     bvand-of-bvchop-2
+     bitand-of-bvchop-arg1
+     bitand-of-bvchop-arg2
+     bitor-of-bvchop-arg1
+     bitor-of-bvchop-arg2
+     bitxor-of-bvchop-arg1
+     bitxor-of-bvchop-arg2
      bvplus-of-bvchop-arg1 ;gen?
      bvplus-of-bvchop-arg2 ;gen?
      bvminus-of-bvchop-arg2
@@ -436,6 +488,11 @@
      bvuminus-of-bvchop-arg2
      bvcat-of-bvchop-high
      bvcat-of-bvchop-low
+
+     bitxor-of-getbit-arg1
+     bitxor-of-getbit-arg2
+     bitor-of-getbit-arg1
+     bitor-of-getbit-arg2
 
      bvlt-self
      bvlt-of-bvmod-false
@@ -459,7 +516,7 @@
      equal-of-bvif-constants
      equal-of-bvif-constants2
      bvif-of-not
-     bvnot-of-bvnot
+
 
 ;    bvlt-of-0-arg2 ;fixme use polarity?
      bvlt-of-0-arg3
@@ -478,8 +535,8 @@
 
      ;; BVCHOP-OF-BVPLUS  ;do we want to do this, or does it replicate the bvplus term at many different sizes?
      ;; bvchop-of-bvminus2 ;see bvchop-identity-axe
-     bvchop-of-bvminus ;don't we get rid of bvminus?
-     bvchop-of-bvuminus
+     ;bvchop-of-bvminus ;don't we get rid of bvminus?
+     ;bvchop-of-bvuminus
 
 ;trying without...
      ;; bvchop-of-bvmult2 ; just a special case of bvchop-identity
@@ -573,18 +630,8 @@
 ;           bitand-of-slice-arg2
 ;            bitand-of-bvcat-arg1
 ;           bitand-of-bvcat-arg2
-     bitand-of-0-arg1
-     bitand-of-0-arg2
-     bitand-of-1-arg1
-     bitand-of-1-arg2
 ;            bitxor-of-slice-arg1 done by trim rule and slice-becomes-getbit
 ;            bitxor-of-slice-arg2 done by trim rule and slice-becomes-getbit
-     bitxor-of-0-arg1
-     bitxor-of-0-arg2 ;drop if we always commute
-     bitxor-of-getbit-arg1
-     bitxor-of-getbit-arg2
-     bitor-of-getbit-arg1
-     bitor-of-getbit-arg2
 ;these may have caused big problems:
      ;;                 bitxor-of-bitnot-arg2
      ;;                 bitxor-of-bitnot-arg1
@@ -592,8 +639,6 @@
 ;           bitxor-of-bvor-arg2 ;done by trim rules
 ;            bitxor-of-bvchop-arg1 ;done by trim rules and BVCHOP-1-BECOMES-GETBIT
 ;           bitxor-of-bvchop-arg2 ;done by trim rules and BVCHOP-1-BECOMES-GETBIT
-;                bitxor-of-1-becomes-bitnot-arg2
-;               bitxor-of-1-becomes-bitnot-arg1
      getbit-test-is-self ;make a myif version?
      getbit-too-high-is-0-bind-free
      ;; high-getbit-of-getbit-is-0 handled by getbit-too-high-is-0-bind-free
@@ -634,7 +679,189 @@
 
      myif-of-sbvlt-of-0-and-not-sbvlt-of-0 ;; useful for the JVM's LCMP instruction
      myif-of-sbvlt-of-0-and-equal-of-0
-     booland-of-not-sbvlt-and-not-equal)))
+     booland-of-not-sbvlt-and-not-equal
+
+     ;; Rules to get rid of shift ops:
+     bvshl-rewrite-with-bvchop-for-constant-shift-amount ;introduces bvcat ; todo: replace with the definition of bvshl?
+     bvshr-rewrite-for-constant-shift-amount ; introduces slice
+     bvashr-rewrite-for-constant-shift-amount ;new, introduces bvsx
+
+     bvplus-of-bvuminus-same
+     bvplus-of-bvuminus-same-alt
+     bvplus-of-bvuminus-same-2
+     bvplus-of-bvuminus-same-2-alt)))
+
+;todo combine this with core-rules-bv
+;some of these are not bv rules?
+(defun more-rules-bv-misc ()
+  (declare (xargs :guard t))
+  '(bitnot-becomes-bitxor-with-1 ; todo: which way should we go here?
+
+    <-of-bvif-constants-false
+    <-of-bvif-constants-true
+
+;    bvxor-all-ones ;do we want this? ;trying without...
+
+;    bvxor-commutative-axe ;hope this is okay
+
+    bvif-of-getbit-arg1
+    bvif-of-getbit-arg2
+    bvminus-becomes-bvplus-of-bvuminus ;trying...
+
+    bvminus-bound-2
+    slice-of-logtail
+
+    bound-when-usb2 ;uses the dag assumptions - huh? (expensive?)
+
+    bvplus-disjoint-ones-arg1-gen-better
+    bvplus-disjoint-ones-arg2-gen-better
+    bvplus-disjoint-ones-2-alt
+    bvplus-disjoint-ones-2
+
+    bvand-with-small-arg1
+    bvand-with-small-arg2
+
+    myif-becomes-bvif ;bozo kill special case rules for this
+    myif-becomes-bvif-2
+    myif-becomes-bvif-3
+
+;    bvminus-of-bvplus-tighten ;now done by trim rules
+
+    ;;these are the ident rules:
+;bvchop-of-bitand
+;bvchop-of-bitor
+;bvchop-of-bitxor
+
+    ;;outdated trim rules:
+    ;;     bitxor-of-bvif-arg2
+    ;;     bitxor-of-bvif-arg1
+
+    ;;these must be on if we have rules like bitxor-trim-arg2-dag-all on (those other rules can add a bvchop-0 to trim arithmetic op, and the bvchop-0 turns into a getbit)
+    getbit-0-of-bvmult
+    getbit-0-of-bvminus   ;better rhs?
+    getbit-0-of-bvplus ;think about whether to push the getbits..
+
+    bvcat-of-getbit-arg2
+    bvcat-of-getbit-arg4
+
+    myif-x-x-t-not-nil
+
+    bvcat-equal-rewrite-constant ;seemed to cause problems for aes?
+
+;all-signed-byte-p-of-myif-strong ;slow?
+;    make-frame-of-bvif-around-pc
+;    myif-nil-becomes-and ;looped
+
+    bvcat-of-bitxor-trim-high-size ;rename
+    bvmult-1-becomes-bitand
+    bvplus-1-becomes-bitxor
+;    bvplus-disjoint-ones-32-24-8 ;trying
+
+    ;; leftrotate32-cases
+    leftrotate32alt ;this is what we rewrite to if we want to expand stuff
+;    bvplus-of-bvminus
+;    unsigned-byte-p-of-bvminus-gen-better
+    bvchop-upper-bound-3-constant-version
+    slice-bound-3-constant-version ;bozo make a dag version
+
+    myif-of-getbit-becomes-bvif-arg2
+    myif-of-getbit-becomes-bvif-arg1
+
+    myif-of-bvxor-becomes-bvif-arg1
+    myif-of-bvxor-becomes-bvif-arg2
+
+    myif-of-myif-test
+
+    bvcat-associative ;trying...
+
+    ;;well this didn't work, since other instances of g of g (ones which didn't correspond to get-field) got turned into get-fields:
+    ;;    get-field-reassemble ;reintroduces get-field (will loop with :definition get-field)
+; so we restrict it to the cases in which we break the get-field/set-field abstraction:
+;bozo make sure i have the complete set:
+
+    bvif-1-equal-0-y-bitxor-1-x-x
+    bvif-1-equal-0-y-x-bitxor-1-x
+    bvif-1-equal-1-y-x-bitxor-1-x
+    bvif-1-equal-1-y-bitxor-1-x-x
+
+    bvif-equal-0-usb1-2
+    bvif-equal-0-usb1
+
+    myif-of-bvif-becomes-bvif-arg2
+    myif-of-bvif-becomes-bvif-arg1
+    myif-of-bvcat-becomes-bvif-arg1
+    myif-of-bvcat-becomes-bvif-arg2
+    bvif-of-myif-t-nil
+
+    ;; bitor (what else?  trim args?):
+
+    bvor-1-becomes-bitor
+
+    getbit-of-bvif-too-high
+;    unsigned-byte-p-of-bvif-gen
+    signed-byte-p-of-bvif
+;    inst-length-of-myif
+;    index-into-program-of-bvif ;or should we enable index-into-program?
+    lookup-of-bvif
+
+    myif-of-constants-becomes-bvif
+
+    ;; myif-when-not-nil ;expensive! replaced 1/12/09
+
+    if-becomes-myif ;can ifs ever arise from simulation?  probably?
+    ;;     BVAND-TRIM-CONSTANT-3
+    ;;     BVAND-TRIM-CONSTANT-2
+
+    bitand-of-getbit-arg1
+    bitand-of-getbit-arg2
+
+    len-of-getbit-list
+    all-unsigned-byte-p-of-getbit-list
+
+    logtail-of-bvchop-becomes-slice ;drop?
+
+    equal-bvcat-0-left
+    equal-bvcat-0-right
+
+    slice-of-myif-consant-branches
+    bvcat-bound-hack-2
+;                          bvor-1-bound-2
+    natp-of-repeatbit
+    integerp-of-repeatbit
+
+    bvcat-0-<-hack
+    repeatbit-equal-0-rewrite-1
+    repeatbit-equal-0-rewrite-2
+
+    <-bvchop-31-x-64
+    <-bvchop-32-x-64
+
+    bvor-bound-64-hack
+    bvcat-bound-hack-1
+    natp-of-myif2  ; slow?  limit?
+;    BVOR-6--64-HACK2
+    <-of-myif-arg1 ;bad?
+;    bvxor-bound-3
+;    bvor-bound-3
+
+;    getbit-of-bvxor-too-high ;see identity rule
+;   getbit-of-bvor-too-high ;see identity rule
+;  getbit-of-bvand-too-high ;see identity rule
+
+;bbbozo
+;    getbit-of-bvxor-when-other-bit-is-0-arg2 ;put a limit on these?
+;   getbit-of-bvxor-when-other-bit-is-0-arg1
+;  getbit-of-bvor-when-other-bit-is-0-arg2
+; getbit-of-bvor-when-other-bit-is-0-arg1
+
+    bvchop-of-myif
+;;;    unsigned-byte-p-of-bvchop-of-logext-7-32-8 ;bozo
+    ;; unSIGNED-BYTE-P-OF-MYIF-strong ;slow?
+    ;; BVCHOP-IDENTITY ;trying  - restrict to vars? ;trying without this since we have the dag one - what about vars? other terms?
+;newest is without this:    getbit-identity ;restrict to vars? trying.. try without this, since we have the dag version?  or limit?
+    unsigned-byte-p-of-bvor2
+    unsigned-byte-p-of-bvor3))
+
 
 (defun update-nth2-rules ()
   (declare (xargs :guard t))
@@ -651,7 +878,20 @@
 
 (defun list-rules ()
   (declare (xargs :guard t))
-  '(len-update-nth ;pretty aggressive
+  '(;; rules about take:
+    take-of-0 ;take-when-zp-n ;sun feb 20 00:29:56 2011
+    take-of-append
+    len-of-take
+    consp-of-take
+    take-of-cons
+    true-listp-of-take
+    take-does-nothing ; introduces true-list-fix
+    ;; rules about cdr:
+    true-listp-of-cdr
+    cdr-cons
+    ;; mixed rules:
+    true-listp-of-cons
+    len-update-nth ;pretty aggressive
     true-listp-of-update-nth-2
     nthcdr-of-nil
     nth-of-take-gen2 ;quite aggressive
@@ -679,13 +919,11 @@
     len-of-true-list-fix
     atom ;thu mar  4 22:01:54 2010
     endp ;fri dec 24 16:32:13 2010
-    take-of-0 ;take-when-zp-n ;sun feb 20 00:29:56 2011
     consp-of-cons ;also elsewhere
     true-list-fix-when-true-listp
     true-listp-of-repeat
     len-of-repeat  ;since initializing an array calls repeat
     car-cons
-    cdr-cons
     len-of-cons
     nth-of-cons-constant-version
     integerp-of-len
@@ -694,80 +932,78 @@
     nthcdr-of-append-gen
     firstn-of-append ;todo: do we prefer firstn or take?  are rules about both needed?
     firstn-becomes-take-gen
-    take-of-append
     consp-of-reverse-list
     nth-of-reverse-list ;sat dec  4 13:20:17 2010
-    len-of-take
-    consp-of-take
     reverse-list-of-cons
     car-of-reverse-list ;sun feb  6 11:15:00 2011
     cdr-of-reverse-list ;sun feb  6 11:15:00 2011
     len-of-reverse-list ;sun feb  6 11:15:00 2011
-    take-of-cons
     len-of-append
     nth-of-append ;may be bad if we can't resolve the if test?
     len-of-firstn ;sun feb  6 11:16:17 2011
     equal-cons-nil-1
     equal-cons-nil-2))
 
-(defun list-rules-etc ()
+;; TODO: Move some of these into list-rules.
+(defun list-rules2 ()
   (declare (xargs :guard t))
-  '(finalcdr-iff
-    ;;consp-of-finalcdr ;wed sep 22 17:46:19 2010
-    nth-of-firstn ;sun sep  5 23:11:14 2010
-    cons-equal-rewrite-constant-version ;sun sep  5 05:09:23 2010
-    nthcdr-of-nthcdr ;sun sep  5 05:01:31 2010
-    consp-of-firstn ;fri sep  3 04:06:54 2010
-    ;;list::nthcdr-of-len-or-more ;make a cheap version?
-    subrange-out-of-order
-    equal-of-subrange-opener ;not in the usual rule set
-    cons-nth-0-equal-self
-    nth-of-subrange ;-gen
-    append-of-firstn-and-subrange
-    subrange-of-cdr
-    equal-of-take-and-firstn
-    firstn-when-<=-of-len
-    nth-of-take-2
-    append-of-firstn-and-cons-when-nth
-    append-of-firstn-of-cons-of-nth
-    len-of-firstn
-    true-listp-of-true-list-fix2
-    cons-nth-onto-subrange-alt
-    len-of-true-list-fix
-    len-of-take
-    equal-subrange-nthcdr-rewrite
-    true-listp-of-firstn
-    true-listp-of-take
-    cdr-of-nthcdr
-    consp-of-nthcdr
-    ;firstn-of-cdr-becomes-subrange ; drop?
-    append-of-take-and-cons-when-nth ;could be expensive
-    append-subrange-subrange-adjacent-alt
-    equal-of-append-arg1
-    cons-of-nth-and-nth-plus-1
-    len-of-nthcdr
-    nthcdr-of-cdr-combine
-    nth-of-nthcdr
-    subrange-of-0
-    append-of-take-and-subrange-alt
-    equal-of-cons
-    cdr-iff
-    nth-of-cons-constant-version
-    car-becomes-nth-of-0
-    append-of-nil-arg2
-    true-list-fix-when-true-listp ;also in list-rules
-    true-listp-of-cdr
-    take-does-nothing
-    nth-of-cdr
-    consp-of-cdr
-    len-of-cdr
-    nthcdr-iff
-    +-combine-constants
-    <-of-+-arg2-when-negative-constant
-    nth-append-1
-    nth-append-2
-    len-of-subrange
-    true-listp-of-subrange))
+  (append (list-rules)
+          '(finalcdr-iff
+            ;;consp-of-finalcdr ;wed sep 22 17:46:19 2010
+            nth-of-firstn               ;sun sep  5 23:11:14 2010
+            cons-equal-rewrite-constant-version ;sun sep  5 05:09:23 2010
+            nthcdr-of-nthcdr                    ;sun sep  5 05:01:31 2010
+            consp-of-firstn                     ;fri sep  3 04:06:54 2010
+            ;;list::nthcdr-of-len-or-more ;make a cheap version?
+            subrange-out-of-order
+            equal-of-subrange-opener ;not in the usual rule set
+            cons-nth-0-equal-self
+            nth-of-subrange ;-gen
+            append-of-firstn-and-subrange
+            subrange-of-cdr
+            equal-of-take-and-firstn
+            firstn-when-<=-of-len
+            nth-of-take-2
+            append-of-firstn-and-cons-when-nth
+            append-of-firstn-of-cons-of-nth
+            cons-nth-onto-subrange-alt
+            equal-subrange-nthcdr-rewrite
+            true-listp-of-firstn
+            consp-of-nthcdr
+;firstn-of-cdr-becomes-subrange ; drop?
+            append-of-take-and-cons-when-nth ;could be expensive
+            append-subrange-subrange-adjacent-alt
+            equal-of-append-arg1
+            cons-of-nth-and-nth-plus-1
+            len-of-nthcdr
+            nth-of-nthcdr
+            subrange-of-0
+            append-of-take-and-subrange-alt
+            equal-of-cons
+            cdr-iff
+            car-becomes-nth-of-0
+            nth-of-cdr
+            consp-of-cdr
+            len-of-cdr
+            nthcdr-iff
+            +-combine-constants
+            <-of-+-arg2-when-negative-constant
+            nth-append-1
+            nth-append-2
+            len-of-subrange
+            true-listp-of-subrange)))
+
+;; These are ACL2 runes, not legal axe rules names.
+(defun list-rules2-executable-counterparts ()
+  (declare (xargs :guard t))
+  '((:executable-counterpart zp)
+    (:executable-counterpart min)
+    (:executable-counterpart max)
+    (:executable-counterpart <)
+    (:executable-counterpart len)
+    (:executable-counterpart binary-+)
+    (:executable-counterpart nfix)
+    (:executable-counterpart natp)))
 
 ;; TODO: Rename
 ;these are just list rules?
@@ -799,7 +1035,6 @@
     len-of-subrange
     true-listp-of-subrange
 
-    take-does-nothing
     union-equal-of-nil-arg1
     union-equal-of-nil-arg2
 
@@ -816,13 +1051,8 @@
 (defun core-rules-non-bv ()
   (declare (xargs :guard t))
   '(all-unsigned-byte-p-of-update-nth
-
     bvchop-8-bvnth-8 ;gen
-
     bvchop-of-logtail-becomes-slice
-    bvshl-rewrite-with-bvchop-for-constant-shift-amount ;replace with the definition of bvshl?
-    bvshr-rewrite-for-constant-shift-amount
-    bvashr-rewrite-for-constant-shift-amount ;new
 
 ;            bvminus-of-bvcat-irrel-arg1
 ;           bvminus-of-bvcat-irrel-arg2
@@ -871,10 +1101,10 @@
     unsigned-byte-p-of-sbvdiv
     unsigned-byte-p-of-bvsx
     unsigned-byte-p-of-repeatbit
-    unsigned-byte-p-of-leftrotate32
     unsigned-byte-p-of-leftrotate ;gen
-    unsigned-byte-p-of-rightrotate32 ;gen
+    unsigned-byte-p-of-leftrotate32
     unsigned-byte-p-of-rightrotate ;gen
+    unsigned-byte-p-of-rightrotate32 ;gen
     unsigned-byte-p-of-bv-array-read-gen ;todo name
     ))
 
@@ -904,11 +1134,11 @@
     unsigned-byte-p-forced-of-sbvrem
     unsigned-byte-p-forced-of-sbvdiv
     unsigned-byte-p-forced-of-bvsx
+    unsigned-byte-p-forced-of-leftrotate32
+    unsigned-byte-p-forced-of-rightrotate32
     ;todo: repeatbit
-    ;todo leftrotate32
-    ;todo leftrotate
-    ;todo rightrotate32?
-    ;todo rightrotate?
+    ;;todo leftrotate
+    ;;todo rightrotate?
     unsigned-byte-p-forced-of-bv-array-read
     ))
 
@@ -1019,101 +1249,109 @@
 ;;           (misc-rules2 state) ;fixme yuck
 ;;           ))
 
+(defun bv-array-rules-simple ()
+  (declare (xargs :guard t))
+  '(bv-array-read-of-bv-array-write-same ;bv-array-read-of-bv-array-write-same-work-hard
+    bv-array-read-of-bv-array-write-diff-safe-gen ;added the -gen ;thu mar 25 04:05:19 2010
+    BV-ARRAY-WRITE-OF-BVCHOP-ARG3
+    BV-ARRAY-WRITE-OF-BVCHOP-ARG4
+    ))
+
 (defun bv-array-rules ()
   (declare (xargs :guard t))
-  '(bv-array-write-of-bvxor              ;use a trim rule?
-    bv-array-read-of-bv-array-write-same ;bv-array-read-of-bv-array-write-same-work-hard
-    bv-array-read-of-bv-array-write-diff-safe-gen ;added the -gen ;thu mar 25 04:05:19 2010
-    len-of-bv-array-write                         ;a bv-list rule
-    all-unsigned-byte-p-of-bv-array-write
-    true-listp-of-bv-array-write
+  (append
+   (bv-array-rules-simple)
+   '(bv-array-write-of-bvxor             ;use a trim rule?
+     len-of-bv-array-write                         ;a bv-list rule
+     all-unsigned-byte-p-of-bv-array-write
+     true-listp-of-bv-array-write
 ;bitxor-of-bv-array-read-and-bv-array-read-constant-arrays-alt
 ;bitxor-of-bv-array-read-and-bv-array-read-constant-arrays
-    bvxor-list-base   ;move
-    bvxor-list-unroll ;move
-    bv-array-read-when-element-size-is-0
-    bv-array-read-of-bv-array-write-too-narrow-cheap ;new
-    bv-array-read-of-append-arrays
-    bv-array-clear-1-0
-    bv-array-clear-of-bv-array-clear-same
-    consp-of-bv-array-write ;moved here
-    equal-of-bv-array-write-of-1-constant-version
+     bvxor-list-base  ;move
+     bvxor-list-unroll ;move
+     bv-array-read-when-element-size-is-0
+     bv-array-read-of-bv-array-write-too-narrow-cheap ;new
+     bv-array-read-of-append-arrays
+     bv-array-clear-1-0
+     bv-array-clear-of-bv-array-clear-same
+     consp-of-bv-array-write ;moved here
+     equal-of-bv-array-write-of-1-constant-version
 
-    bv-array-read-of-bvchop
-    bv-array-read-of-logext-64-32 ;bozo
-    bv-array-read-of-cons-base
-    bv-array-read-of-cons
-    ;; bv-array-read-of-myif ;bozo seems expensive!  restrict to cases when it will help? seemed necessary for proving that array accesses are in bounds
-    bv-array-read-of-subrange-better ;added -better fri dec 24 17:14:55 2010
-    bv-array-read-of-upddate-subrange-128
-    bv-array-write-of-bv-array-write-tighten
+     bv-array-read-of-bvchop
+     bv-array-read-of-logext-64-32 ;bozo
+     bv-array-read-of-cons-base
+     bv-array-read-of-cons
+     ;; bv-array-read-of-myif ;bozo seems expensive!  restrict to cases when it will help? seemed necessary for proving that array accesses are in bounds
+     bv-array-read-of-subrange-better ;added -better fri dec 24 17:14:55 2010
+     bv-array-read-of-upddate-subrange-128
+     bv-array-write-of-bv-array-write-tighten
 
-    bv-array-read-shorten-data ;expensive?  needed for triple-des? add a cheaper version?
-    bv-array-read-of-bv-array-write-shorten ;this is need since bv-array-read-shorten-data has been restricted to constant data (why does the lsh of this rule arise?)
-    bv-array-read-of-bv-array-write-tighten-better
-    bv-array-read-of-getbit-list
-    bv-array-read-numeric-bound
-    bv-array-read-non-negative
-    bv-array-read-when-data-isnt-an-all-unsigned-byte-p
-    bv-array-write-when-data-isnt-an-all-unsigned-byte-p
-    getbit-of-bv-array-read-too-high
-    ;;getbit-of-bv-array-read-gen ; just blast the array read?
-    equal-of-bvchop-of-nth-and-bv-array-read
-    equal-of-bvchop-of-nth-and-bv-array-read-alt
-    equal-of-nth-and-bv-array-read
-    equal-of-nth-and-bv-array-read-alt
-    bv-array-read-trim-element-size ;might this be expensive?
-    bv-array-read-of-getbit-when-len-is-2
+     bv-array-read-shorten-data ;expensive?  needed for triple-des? add a cheaper version?
+     bv-array-read-of-bv-array-write-shorten ;this is need since bv-array-read-shorten-data has been restricted to constant data (why does the lsh of this rule arise?)
+     bv-array-read-of-bv-array-write-tighten-better
+     bv-array-read-of-getbit-list
+     bv-array-read-numeric-bound
+     bv-array-read-non-negative
+     bv-array-read-when-data-isnt-an-all-unsigned-byte-p
+     bv-array-write-when-data-isnt-an-all-unsigned-byte-p
+     getbit-of-bv-array-read-too-high
+     ;;getbit-of-bv-array-read-gen ; just blast the array read?
+     equal-of-bvchop-of-nth-and-bv-array-read
+     equal-of-bvchop-of-nth-and-bv-array-read-alt
+     equal-of-nth-and-bv-array-read
+     equal-of-nth-and-bv-array-read-alt
+     bv-array-read-trim-element-size ;might this be expensive?
+     bv-array-read-of-getbit-when-len-is-2
 ;    nth-of-bv-array-write-becomes-bv-array-read ;for some reason an nth appears in aeslight? why? ;trying without this
-    bv-array-write-of-bvchop-list-tighten
-    bv-array-read-of-bvchop-list-tighten
+     bv-array-write-of-bvchop-list-tighten
+     bv-array-read-of-bvchop-list-tighten
 
-    firstn-of-bv-array-write
-    bv-array-read-of-bvchop-list
-    cons-of-bv-array-write
+     firstn-of-bv-array-write
+     bv-array-read-of-bvchop-list
+     cons-of-bv-array-write
 ;    cons-becomes-bv-array-write-gen ;bozo, don't do this right away... ;removed, since now the jvm model has bv-array-write already
-    cons-of-bv-array-write-gen
+     cons-of-bv-array-write-gen
 
-    ;; myif-of-bv-array-write-arg1-safe
-    ;; myif-of-bv-array-write-arg2-safe
-    bv-array-read-of-bv-array-write-tighten2
-    myif-of-bv-array-read-becomes-bvif-arg1
-    myif-of-bv-array-read-becomes-bvif-arg2
-    bv-array-read-of-myif ;slows things down a lot... go to bvif..
-    equal-of-bvchop-of-car-and-bv-array-read
-    equal-of-bvchop-of-nth-and-bv-array-read-strong
-    equal-of-bvchop-of-nth-and-bv-array-read-alt-strong
-    nthcdr-of-bv-array-write
-    take-of-bv-array-write-better ;fri jan 15 21:26:25 2010
-    all-unsigned-byte-p-of-bv-array-write-gen-2
+     ;; myif-of-bv-array-write-arg1-safe
+     ;; myif-of-bv-array-write-arg2-safe
+     bv-array-read-of-bv-array-write-tighten2
+     myif-of-bv-array-read-becomes-bvif-arg1
+     myif-of-bv-array-read-becomes-bvif-arg2
+     bv-array-read-of-myif ;slows things down a lot... go to bvif..
+     equal-of-bvchop-of-car-and-bv-array-read
+     equal-of-bvchop-of-nth-and-bv-array-read-strong
+     equal-of-bvchop-of-nth-and-bv-array-read-alt-strong
+     nthcdr-of-bv-array-write
+     take-of-bv-array-write-better ;fri jan 15 21:26:25 2010
+     all-unsigned-byte-p-of-bv-array-write-gen-2
 ;    all-signed-byte-p-of-bv-array-write ;yuck?
-    myif-of-bv-array-write-arg1-safe
-    myif-of-bv-array-write-arg2-safe
-    bv-array-write-trim-value-all ;not a bv rule?
+     myif-of-bv-array-write-arg1-safe
+     myif-of-bv-array-write-arg2-safe
+     bv-array-write-trim-value-all ;not a bv rule?
 
 ;only do this when we can tell syntactically that the write does nothing?
 ;    bv-array-write-does-nothing ;caused problems for des-encrypt-sun - why? actually it seemed to help for that! ;bbozo think about how to make this cheap enough...
-    bv-array-write-does-nothing-cheap
-    bv-array-write-of-bvcat-reduce
-    bv-array-write-of-bv-array-write-diff-constant-indices ;faster when the sizes are the same
-    bv-array-write-of-bv-array-write-diff-constant-indices-gen ;added the gen sun jan  9 19:19:17 2011
-    bv-array-write-of-bv-array-write-same-index
-    getbit-list-of-bv-array-write
-    ;; bv-array-write-tighten-when-quotep-data ;trying without this, since it led to a size mismatch between nested bv-array-writes
-    nth2-of-bv-array-write
-    ;; ;is this stuff only used to get rid of logext-list?
-    ;; push-bvchop-list-of-bv-array-write
-    ;; push-bvchop-list-of-push-bvchop-list
-    ;; push-bvchop-list-of-myif ;could this be really expensive? maybe memoization helps?
-    ;; push-bvchop-list-of-logext-list
+     bv-array-write-does-nothing-cheap
+     bv-array-write-of-bvcat-reduce
+     bv-array-write-of-bv-array-write-diff-constant-indices ;faster when the sizes are the same
+     bv-array-write-of-bv-array-write-diff-constant-indices-gen ;added the gen sun jan  9 19:19:17 2011
+     bv-array-write-of-bv-array-write-same-index
+     getbit-list-of-bv-array-write
+     ;; bv-array-write-tighten-when-quotep-data ;trying without this, since it led to a size mismatch between nested bv-array-writes
+     nth2-of-bv-array-write
+     ;; ;is this stuff only used to get rid of logext-list?
+     ;; push-bvchop-list-of-bv-array-write
+     ;; push-bvchop-list-of-push-bvchop-list
+     ;; push-bvchop-list-of-myif ;could this be really expensive? maybe memoization helps?
+     ;; push-bvchop-list-of-logext-list
 
-    all-integerp-of-bv-array-write
+     all-integerp-of-bv-array-write
 
-    bv-array-write-of-bv-array-write-tighten2
-    bv-array-write-of-bvif-tighten
+     bv-array-write-of-bv-array-write-tighten2
+     bv-array-write-of-bvif-tighten
 
-    equal-of-nil-and-bv-array-write
-    equal-of-bv-array-write-and-nil))
+     equal-of-nil-and-bv-array-write
+     equal-of-bv-array-write-and-nil)))
 
 (defun bit-blast-rules-basic ()
   (declare (xargs :guard t))
@@ -1128,6 +1366,7 @@
     bvif-blast
     bv-array-read-blast ;new! ;i'm not sure i like this?!
     leftrotate ; exposes bvcat
+    ;;leftrotate32 ;todo: try
     ))
 
 ;fixme rename?
@@ -1202,8 +1441,10 @@
     bvmult-trim-arg2-dag-all  ;seemed to need this for rc6 decrypt
     ;; bvmult-trim-arg1-dag
     ;; bvmult-trim-arg2-dag
+    ;; todo: why are the minus rules here if the plus rule isn't?
     bvminus-trim-arg1-dag ;this is an all rule..
     bvminus-trim-arg2-dag ;this is an all rule (others in this list may be too)
+    bvuminus-trim-dag-all
     bvnot-trim-dag-all
     bvxor-trim-arg1-dag
     bvxor-trim-arg2-dag
@@ -1270,7 +1511,9 @@
   (declare (xargs :guard t))
   '(list-to-bv-array
     list-to-bv-array-aux-base
-    list-to-bv-array-aux-unroll))
+    list-to-bv-array-aux-unroll
+    list-to-byte-array ; wrapper for list-to-bv-array
+    ))
 
 (defun byte-array-to-bit-array-rules ()
   (declare (xargs :guard t))
@@ -1312,207 +1555,12 @@
     array-reduction-1-0
     array-reduction-when-all-same-improved2))
 
-;todo combine this with core-rules-bv
-;some of these are not bv rules?
-(defun more-rules-bv-misc ()
-  (declare (xargs :guard t))
-  (append (array-reduction-rules)
-  '(
-    bitnot-becomes-bitxor-with-1
-
-    <-of-bvif-constants-false
-    <-of-bvif-constants-true
-
-;    bvxor-all-ones ;do we want this? ;trying without...
-
-;    bvxor-commutative-dag ;hope this is okay
-
-    bvif-of-getbit-arg1
-    bvif-of-getbit-arg2
-    bvminus-becomes-bvplus-of-bvuminus ;trying...
-
-    bvplus-of-bvuminus-same
-    bvplus-of-bvuminus-same-alt
-    bvplus-of-bvuminus-same-2
-    bvplus-of-bvuminus-same-2-alt
-
-    bvminus-bound-2
-    slice-of-logtail
-
-    bound-when-usb2 ;uses the dag assumptions - huh? (expensive?)
-
-    bvplus-disjoint-ones-arg1-gen-better
-    bvplus-disjoint-ones-arg2-gen-better
-    bvplus-disjoint-ones-2-alt
-    bvplus-disjoint-ones-2
-
-    bvand-with-small-arg1
-    bvand-with-small-arg2
-
-    myif-becomes-bvif ;bozo kill special case rules for this
-    myif-becomes-bvif-2
-    myif-becomes-bvif-3
-
-
-    bvplus-bvminus-same
-    bvplus-bvminus-same-arg2
-
-;    bvminus-of-bvplus-tighten ;now done by trim rules
-
-    ;;these are the ident rules:
-;bvchop-of-bitand
-;bvchop-of-bitor
-;bvchop-of-bitxor
-
-    ;;outdated trim rules:
-    ;;     bitxor-of-bvif-arg2
-    ;;     bitxor-of-bvif-arg1
-
-    ;;these must be on if we have rules like bitxor-trim-arg2-dag-all on (those other rules can add a bvchop-0 to trim arithmetic op, and the bvchop-0 turns into a getbit)
-    getbit-0-of-bvmult
-    bit-0-of-bvminus ;better rhs?  rename?
-    getbit-0-of-bvplus ;think about whether to push the getbits..
-
-    bvcat-of-getbit-arg2
-    bvcat-of-getbit-arg4
-    bvcat-of-ifix-arg2
-    bvcat-of-ifix-arg4
-
-    myif-x-x-t-not-nil
-
-    bvcat-equal-rewrite-constant  ;seemed to cause problems for aes?
-
-;all-signed-byte-p-of-myif-strong ;slow?
-;    make-frame-of-bvif-around-pc
-;    myif-nil-becomes-and ;looped
-
-
-    bvcat-of-bitxor-trim-high-size ;rename
-    bvmult-1-becomes-bitand
-    bvplus-1-becomes-bitxor
-;    bvplus-disjoint-ones-32-24-8 ;trying
-
-    ;; leftrotate32-cases
-    leftrotate32alt ;this is what we rewrite to if we want to expand stuff
-;    bvplus-of-bvminus
-;    unsigned-byte-p-of-bvminus-gen-better
-    bvchop-upper-bound-3-constant-version
-    slice-bound-3-constant-version ;bozo make a dag version
-
-    myif-of-getbit-becomes-bvif-arg2
-    myif-of-getbit-becomes-bvif-arg1
-
-    myif-of-bvxor-becomes-bvif-arg1
-    myif-of-bvxor-becomes-bvif-arg2
-
-    bvcat-of-0 ;trying...
-
-    myif-of-myif-test
-
-    bvcat-associative ;trying...
-
-    ;;well this didn't work, since other instances of g of g (ones which didn't correspond to get-field) got turned into get-fields:
-    ;;    get-field-reassemble ;reintroduces get-field (will loop with :definition get-field)
-; so we restrict it to the cases in which we break the get-field/set-field abstraction:
-;bozo make sure i have the complete set:
-
-    bvif-1-equal-0-y-bitxor-1-x-x
-    bvif-1-equal-0-y-x-bitxor-1-x
-    bvif-1-equal-1-y-x-bitxor-1-x
-    bvif-1-equal-1-y-bitxor-1-x-x
-
-    bvif-equal-0-usb1-2
-    bvif-equal-0-usb1
-
-    myif-of-bvif-becomes-bvif-arg2
-    myif-of-bvif-becomes-bvif-arg1
-    myif-of-bvcat-becomes-bvif-arg1
-    myif-of-bvcat-becomes-bvif-arg2
-    bvif-of-myif-t-nil
-
-    ;; bitor (what else?  trim args?):
-
-    bitor-of-1-arg2
-    bitor-of-1-arg1
-    bitor-of-0-arg1
-    bitor-of-0-arg2
-    bvor-1-becomes-bitor
-
-    getbit-of-bvif-too-high
-;    unsigned-byte-p-of-bvif-gen
-    signed-byte-p-of-bvif
-;    inst-length-of-myif
-;    index-into-program-of-bvif ;or should we enable index-into-program?
-    lookup-of-bvif
-
-    myif-of-constants-becomes-bvif
-
-;; myif-when-not-nil ;expensive! replaced 1/12/09
-
-    if-becomes-myif ;can ifs ever arise from simulation?  probably?
-    ;;     BVAND-TRIM-CONSTANT-3
-    ;;     BVAND-TRIM-CONSTANT-2
-
-    bitand-of-getbit-arg1
-    bitand-of-getbit-arg2
-
-    len-of-getbit-list
-    all-unsigned-byte-p-of-getbit-list
-
-    logtail-of-bvchop-becomes-slice ;drop?
-
-    equal-bvcat-0-left
-    equal-bvcat-0-right
-
-    slice-of-myif-consant-branches
-    bvcat-bound-hack-2
-;                          bvor-1-bound-2
-    natp-of-repeatbit
-    integerp-of-repeatbit
-
-    bvcat-0-<-hack
-    repeatbit-equal-0-rewrite-1
-    repeatbit-equal-0-rewrite-2
-
-    <-bvchop-31-x-64
-    <-bvchop-32-x-64
-
-    bvor-bound-64-hack
-    bvcat-bound-hack-1
-    natp-of-myif2 ; slow?  limit?
-;    BVOR-6--64-HACK2
-    <-of-myif-arg1 ;bad?
-;    bvxor-bound-3
-;    bvor-bound-3
-
-;    getbit-of-bvxor-too-high ;see identity rule
-;   getbit-of-bvor-too-high ;see identity rule
-;  getbit-of-bvand-too-high ;see identity rule
-
-;bbbozo
-;    getbit-of-bvxor-when-other-bit-is-0-arg2 ;put a limit on these?
-;   getbit-of-bvxor-when-other-bit-is-0-arg1
-;  getbit-of-bvor-when-other-bit-is-0-arg2
-; getbit-of-bvor-when-other-bit-is-0-arg1
-
-    bvchop-of-myif
-;;;    unsigned-byte-p-of-bvchop-of-logext-7-32-8 ;bozo
-    ;; unSIGNED-BYTE-P-OF-MYIF-strong ;slow?
-    ;; BVCHOP-IDENTITY ;trying  - restrict to vars? ;trying without this since we have the dag one - what about vars? other terms?
-;newest is without this:    getbit-identity ;restrict to vars? trying.. try without this, since we have the dag version?  or limit?
-    unsigned-byte-p-of-bvor2
-    unsigned-byte-p-of-bvor3)))
-
 ; despite the name, this also includes bv-array-rules and list rules!
-;bozo get rid of logext rules, etc. from this
+;todo: get rid of logext rules, etc. from this
 (defun amazing-rules-bv ()
   (declare (xargs :guard t))
   (append ;; todo: a lot of cruft in here:
-          '(
-            ;;leftrotate-becomes-leftrotate64
-
-
-            bvand-of-constant-tighten-dag-version
+          '(bvand-of-constant-tighten-dag-version
 
             max-constants-lemma ;bozo more like this?
             myif-not-myif-same  ;bozo more like this?
@@ -1523,15 +1571,14 @@
             leftrotate32-trim-amt-all ;move to trim rules?
 
             ;;bvplus rules:
-            bvplus-commutative-dag
-            bvplus-commutative-2-dag ;seemed to fire a lot?! in rc4 example
+            bvplus-commutative-axe
+            bvplus-commutative-2-axe ;seemed to fire a lot?! in rc4 example
             bvplus-associative
 
-            bvuminus-trim-dag-all
             bvuminus-1
             bvuminus-of-bvplus
 
-            bvand-commutative-dag
+            bvand-commutative-axe
 ;    bvxor-smaller-term-becomes-cat-arg1 ;yuck? Sat Jan 22 01:06:43 2011
 ;   bvxor-smaller-term-becomes-cat-arg2 ;yuck? Sat Jan 22 01:06:45 2011
 
@@ -1539,7 +1586,7 @@
 
             bvmult-of-2-gen
 ;trying these:
-            bitand-commutative-dag
+            bitand-commutative-axe
 
             bitnot-of-getbit-0 ;bozo more like this
             bvnot-1-becomes-bitnot-better
@@ -1616,8 +1663,8 @@
           (list-to-bv-array-rules) ;move to parents?
           ;;(yet-more-rules-jvm) ;TTODO: Drop this.  It includes JVM rules..  dropping this broke des-encrypt
           (yet-more-rules-non-jvm)
-          (more-rules-bv-misc)
-          ))
+          (array-reduction-rules)
+          (more-rules-bv-misc)))
 
 ;; ;rules to simplify applications of dag-val2-no-array (when rewriting a term with an embedded dag)
 ;; ;currently there seem to be lots of crashes when doing this, due to guard violations in eval-fn
@@ -1678,8 +1725,8 @@
 ;;   '(bitxor-associative
 ;;     bitxor-combine-constants
 ;;     bitxor-same-2 ;add bitxor-same?
-;;     bitxor-commutative-2-dag
-;;     bitxor-commutative-dag))
+;;     bitxor-commutative-2-axe
+;;     bitxor-commutative-axe))
 
 ;used for sha1 and md5?: ;fixme deprecate?
 ;also called by axe-rules.
@@ -1937,8 +1984,8 @@
 ;                               bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:16:05 2010
      <-becomes-bvlt-alt-dag
      assoc-equal-of-cons
-     bvplus-commutative-dag
-     bvplus-commutative-2-dag
+     bvplus-commutative-axe
+     bvplus-commutative-2-axe
 
      all-unsigned-byte-p-of-cdr
      true-listp-of-cdr
@@ -2154,7 +2201,7 @@
 ;     bvlt-when-unsigned-byte-p-better-non-constant ;wed sep  1 00:22:15 2010 problem?
      bvlt-of-bvplus-and-bvplus-cancel-1-1
      getbit-of-bvplus-of-bvuminus-when-bvle
-     bvplus-commutative-2-sizes-differ2-dag
+     bvplus-commutative-2-sizes-differ2-axe
      bvlt-of-max-when-both-narrow
      ;;           bvlt-of-bvuminus ;trying without this 01/10
      bvplus-of-bvuminus-same-3-2
@@ -2389,7 +2436,7 @@
     nth-of-cons-constant-version
     mv-nth-of-cons-alt))
 
-(defun anti-blast-rules ()
+(defun reassemble-bv-rules ()
   (declare (xargs :guard t))
   '(bvcat-of-slice-and-slice-adjacent
     bvcat-of-slice-and-getbit-adjacent
@@ -2397,14 +2444,19 @@
     bvcat-of-getbit-and-getbit-adjacent
     bvcat-of-slice-and-x-adjacent
     bvcat-of-getbit-and-x-adjacent
-
+    ;; versions with 3 BVs:
     bvcat-of-slice-and-slice-adjacent-2
     bvcat-of-slice-and-getbit-adjacent-2
     bvcat-of-getbit-and-slice-adjacent-2
     bvcat-of-getbit-and-getbit-adjacent-2
+    bvcat-of-slice-and-x-adjacent-2
+    bvcat-of-getbit-and-x-adjacent-2))
 
-    bvcat-of-getbit-and-x-adjacent-2
-    bvcat-of-slice-and-x-adjacent-2))
+;reprecate?
+(defun anti-blast-rules ()
+  (declare (xargs :guard t))
+  (reassemble-bv-rules))
+
 
 (defun strengthening-rules ()
   (declare (xargs :guard t))
@@ -2624,8 +2676,6 @@
 ;; ;                                         bvplus-of-bvcat-0-arg2-better
 ;; ;                                        bvplus-of-bvcat-0-arg1-better
 
-;; ;;;    bit-0-of-bvminus
-
 ;;     ;; bvplus-when-low-bits-are-zero ;yuck?! ;this rules caused a big slowdown!
 ;;     bvplus-of-bvcat-0-arg2 ;hmm...
 ;;     bvplus-of-bvcat-0-arg1 ;hmm...
@@ -2646,18 +2696,6 @@
 ;; ;;     bvplus-trim-arg1-all
 ;; ;;     bvplus-trim-arg2-all ;sometime this trims a whole huge nest...
 ;;     ))
-
-;; These are not legal axe-runes
-(defun list-rules-etc-executable-counterparts ()
-  (declare (xargs :guard t))
-  '((:executable-counterpart zp)
-    (:executable-counterpart min)
-    (:executable-counterpart max)
-    (:executable-counterpart <)
-    (:executable-counterpart len)
-    (:executable-counterpart binary-+)
-    (:executable-counterpart nfix)
-    (:executable-counterpart natp)))
 
 ;todo: use this more?
 (defun phased-bv-axe-rule-sets (state) ;bozo redo the state stuff here

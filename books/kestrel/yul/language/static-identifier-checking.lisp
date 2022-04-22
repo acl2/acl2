@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,7 +12,8 @@
 
 (include-book "abstract-syntax")
 
-(include-book "kestrel/utilities/strings/char-kinds" :dir :system)
+(include-book "kestrel/std/strings/letter-uscore-dollar-chars" :dir :system)
+(include-book "kestrel/std/strings/letter-digit-uscore-dollar-chars" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -54,8 +55,8 @@
      but for now we state them as part of the static semantics."))
   (b* ((chars (str::explode (identifier->get iden))))
     (if (and (consp chars)
-             (acl2::alpha/uscore/dollar-char-p (car chars))
-             (acl2::alpha/digit/uscore/dollar-charlist-p (cdr chars)))
+             (str::letter/uscore/dollar-char-p (car chars))
+             (str::letter/digit/uscore/dollar-charlist-p (cdr chars)))
         nil
       (err (list :bad-identifier (identifier-fix iden)))))
   :hooks (:fix))

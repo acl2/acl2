@@ -100,10 +100,10 @@
                   (all-dargp (strip-cdrs alist)))
              (axe-treep (mv-nth 0 (instantiate-hyp form alist free-vars-flg interpreted-function-alist))))
     :flag instantiate-hyp)
-  (defthm all-axe-treep-of-mv-nth-1-of-instantiate-hyp2
+  (defthm axe-tree-listp-of-mv-nth-1-of-instantiate-hyp2
     (implies (and (pseudo-term-listp l)
                   (all-dargp (strip-cdrs alist)))
-             (all-axe-treep (mv-nth 1 (instantiate-hyp-lst l alist free-vars-flg
+             (axe-tree-listp (mv-nth 1 (instantiate-hyp-lst l alist free-vars-flg
                                                                    interpreted-function-alist))))
     :flag instantiate-hyp-lst)
   :hints (("Goal" :in-theory (enable instantiate-hyp instantiate-hyp-lst))))

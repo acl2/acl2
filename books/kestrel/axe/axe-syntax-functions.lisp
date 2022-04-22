@@ -25,7 +25,7 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(defund axe-quotep (item)
+(defund-inline axe-quotep (item)
   (declare (xargs :guard (dargp item)))
   (consp item) ;; means that it is a quotep, not a nodenum
   )
@@ -190,7 +190,7 @@
 ;either returns a new term or nil if nothing was stripped -ffixme just return the same term if nothing was stripped?
 ;BOZO this should not return a quoted constant
 (defund strip-invisible-fns (fn expr)
-  (declare (xargs :guard (dag-exprp0 expr)
+  (declare (xargs :guard (dag-exprp expr)
                   :guard-hints (("Goal" :in-theory (enable LOOKUP-EQUAL-OF-CONS)))))
   (if (or (symbolp expr) ;was atom, which was wrong for vars
           (quotep expr))
@@ -207,23 +207,6 @@
               arg))
         ;;nothing to strip:
         nil))))
-
-;move
-(defthm integerp-of-nth-when-all-dargp-less-than
-  (implies (and (all-dargp-less-than args bound)
-                (not (consp (nth n args)))
-                (natp n)
-                (< n (len args)))
-           (integerp (nth n args)))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than nth) (NTH-OF-CDR)))))
-
-(defthm integerp-of-nth-when-all-dargp-less-than-special
-  (implies (and (all-dargp-less-than (cdr expr) bound)
-                (not (consp (nth n expr)))
-                (posp n)
-                (< n (len expr)))
-           (integerp (nth n expr)))
-  :hints (("Goal" :in-theory (e/d (all-dargp-less-than nth) (NTH-OF-CDR)))))
 
 (defthm natp-of-strip-invisible-fns
   (implies (and (bounded-dag-exprp nodenum expr)
@@ -392,7 +375,7 @@
                           not-cddr-of-nth-when-all-dargp
                           consp-of-cdr-of-nth-when-all-dargp
                           equal-of-quote-and-nth-0-of-nth-when-all-dargp
-                          symbolp-of-nth-0-when-dag-exprp0
+                          symbolp-of-nth-0-when-dag-exprp
                           )))
 
 ;returns the number of branches

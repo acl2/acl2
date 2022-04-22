@@ -209,13 +209,13 @@
          nil)
   :hints (("Goal" :in-theory (enable lookup-args-in-result-array))))
 
-(defthm all-axe-treep-of-lookup-args-in-result-array
+(defthm axe-tree-listp-of-lookup-args-in-result-array
   (implies (and (result-arrayp result-array-name result-array bound)
-                (all-dargp-less-than args (alen1 result-array-name result-array)) ;new
+                (bounded-darg-listp args (alen1 result-array-name result-array)) ;new
                 ;(all-dargp args)
                 )
            ;; works because nil is an axe-tree but it would be better not to rely on that
-           (all-axe-treep (lookup-args-in-result-array args result-array-name result-array)))
+           (axe-tree-listp (lookup-args-in-result-array args result-array-name result-array)))
   :hints (("Goal" :in-theory (enable axe-treep lookup-args-in-result-array))
           ("subgoal *1/3"
            :expand (lookup-args-in-result-array args result-array-name result-array)
@@ -226,10 +226,10 @@
            :in-theory (e/d (;lookup-args-in-result-array ;gross
                             ) (dargp-of-lookup-arg-in-result-array)))))
 
-(defthm all-bounded-axe-treep-of-lookup-args-in-result-array
+(defthm bounded-axe-tree-listp-of-lookup-args-in-result-array
   (implies (and (result-arrayp result-array-name result-array bound)
-                (all-dargp-less-than args (alen1 result-array-name result-array)) ;new
+                (bounded-darg-listp args (alen1 result-array-name result-array)) ;new
                 ;(all-dargp args)
                 )
-           (all-bounded-axe-treep (lookup-args-in-result-array args result-array-name result-array) bound))
+           (bounded-axe-tree-listp (lookup-args-in-result-array args result-array-name result-array) bound))
   :hints (("Goal" :in-theory (enable LOOKUP-ARGS-IN-RESULT-ARRAY))))

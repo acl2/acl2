@@ -12,10 +12,10 @@
 
 (in-package "ACL2")
 
-;; This one depends on dag-size2.lisp
+;; This one depends on dag-size-sparse.lisp
 
 (include-book "dag-array-printing")
-(include-book "dag-size2")
+(include-book "dag-size-sparse")
 
 ;; Print the term represented by NODENUM-OR-QUOTEP in the DAG, as a term if it
 ;; won't be too big, otherwise as the relevant nodes from the DAG.

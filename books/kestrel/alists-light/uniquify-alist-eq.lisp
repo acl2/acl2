@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/alists-light/acons" :dir :system))
+(local (include-book "acons"))
 
 ;; See also the deshadow function from the alist books.
 ;the first binding for each key is the one kept

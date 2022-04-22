@@ -15,6 +15,7 @@
 (include-book "floats")
 (include-book "descriptors")
 (include-book "method-descriptors")
+(include-book "method-indicators")
 (include-book "fields")
 (include-book "instructions")
 (include-book "methods")

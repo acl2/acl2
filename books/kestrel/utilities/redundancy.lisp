@@ -1,7 +1,7 @@
 ; Utilities dealing with redundant events
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,10 +14,10 @@
 (include-book "pack")
 
 ;WHOLE-FORM is a call of the command, e.g, (prove-equivalence ...)
-(defun command-is-redundantp (whole-form state)
-  (declare (xargs :stobjs state
-                  :guard (and (consp whole-form)
-                              (symbolp (car whole-form)))))
+(defund command-is-redundantp (whole-form state)
+  (declare (xargs :guard (and (consp whole-form)
+                              (symbolp (car whole-form)))
+                  :stobjs state))
   (let* ((command-name (car whole-form))
          (table-name (pack$ command-name "-TABLE"))
          (table-alist (table-alist table-name (w state))))

@@ -1045,7 +1045,16 @@
 ;;                 (class-tablep class-table))
 ;;            (not (bound-in-class-tablep class-name class-table))))
 
-;; The global-class-table maps class names to class-infops.
+;;;
+;;; The global-class-table
+;;;
+
+;; The global-class-table maps class names to class-infops.  Here "table" means
+;; an ACL2 table and does not refer to a class-table structure, which is a record.
+;; To register a class in the global-class-table, do:
+;; (table global-class-table <class-name> <class-info-constant-name>)
+
+;; Returns the global-class-table as an alist.
 (defund acl2::global-class-alist (state)
   (declare (xargs :stobjs (state)))
   (table-alist 'acl2::global-class-table (w state)))

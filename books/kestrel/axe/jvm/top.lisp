@@ -30,6 +30,10 @@
 
 (include-book "rewriter-jvm") ; newest JVM-aware rewriter
 
+;; Utilities:
+(include-book "output-indicators")
+(include-book "nice-output-indicators")
+
 ;; JVM lifters:
 (include-book "lifter-utilities")
 (include-book "lifter-utilities2")

@@ -16,10 +16,10 @@
 
 ;; TODO: Use counterexamples returned by STP to avoid later calls that will fail.
 
-;(include-book "rewriter")
 (include-book "rewriter-basic") ;because we call simplify-term-basic
 (include-book "prove-with-stp")
-(include-book "dagify") ; todo: brings in skip-proofs, try something simpler
+(include-book "make-term-into-dag-simple")
+(include-book "interpreted-function-alists")
 (include-book "dag-size-fast")
 (include-book "kestrel/utilities/subtermp" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -114,7 +114,8 @@
                              interpreted-function-alist
                              monitored-rules
                              nil ; memoizep
-                             nil ; count-hitsp
+                             nil ; count-hits
+                             nil ; print
                              (w state)))
        ((when erp) (mv erp nil state))
        ((when (quotep simplified-dag-or-quotep))
@@ -176,7 +177,7 @@
  ;; to TERM. Tries to rewrite each myif test using context from all overarching
  ;; tests (and any given assumptions).
 ;TODO: Add an IFF flag and, if set, turn (if x t nil) into x and (if x nil t) into (not x)
- (defun prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+ (defund prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
    (declare (xargs :stobjs (state)
                    :guard (and (pseudo-termp term)
                                (pseudo-term-listp assumptions)
@@ -364,7 +365,7 @@
  ;; Returns (mv erp result-terms state) where, if ERP is nil, then the
  ;; RESULT-TERMS are equal to their corresponding TERMS, given the ASSUMPTIONS
  ;; and EQUALITY-ASSUMPTIONS.
- (defun prune-terms-aux (terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+ (defund prune-terms-aux (terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
    (declare (xargs :stobjs (state)
                    :guard (and (pseudo-term-listp terms)
                                (pseudo-term-listp assumptions)
@@ -419,7 +420,8 @@
              (pseudo-term-listp (mv-nth 1  (prune-terms-aux terms assumptions equality-assumptions
                                                         rule-alist interpreted-function-alist
                                                         monitored-rules call-stp state))))
-  :flag prune-terms-aux))
+    :flag prune-terms-aux)
+  :hints (("Goal" :in-theory (enable prune-term-aux prune-terms-aux))))
 
 (verify-guards prune-term-aux)
 
@@ -519,9 +521,9 @@
 
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
 ;; term size. Returns (mv erp result-dag state).
-(defun prune-dag-with-rule-alist-new (dag-lst assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-  (declare (xargs :guard (and (or (pseudo-dagp dag-lst)
-                                  ;; (QUOTEP DAG-lst) ; possible?
+(defund prune-dag-with-rule-alist-new (dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+  (declare (xargs :guard (and (or (pseudo-dagp dag)
+                                  ;; (QUOTEP dag) ; possible?
                                   )
                               (pseudo-term-listp assumptions)
                               (rule-alistp rule-alist)
@@ -530,11 +532,11 @@
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp)))
                   :stobjs state))
-  (b* ((term (dag-to-term dag-lst)) ; can explode!
+  (b* ((term (dag-to-term dag)) ; can explode!
        ((mv erp term state)
         (prune-term-new term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
        ((when erp) (mv erp nil state))
-       ((mv erp dag) (dagify-term2 term)) ; todo: try make-term-into-dag-simple here
+       ((mv erp dag) (make-term-into-dag-simple term))
        ((when erp) (mv erp nil state)))
     (mv (erp-nil) dag state)))
 
@@ -557,7 +559,7 @@
 
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
 ;; term size. Returns (mv erp result-dag state).
-(defun prune-dag-new (dag-lst assumptions rules interpreted-fns monitored-rules call-stp state)
+(defund prune-dag-new (dag-lst assumptions rules interpreted-fns monitored-rules call-stp state)
   (declare (xargs :guard (and (pseudo-dagp dag-lst)
                               (pseudo-term-listp assumptions)
                               (symbol-listp rules)
@@ -610,7 +612,7 @@
 
 ;;Returns (mv erp result-dag state).  Pruning turns the DAG into a term and
 ;;then tries to resolve IF tests via rewriting and perhaps by calls to STP.
-(defun maybe-prune-dag-new (prune-branches ; t, nil, or a limit on the size
+(defund maybe-prune-dag-new (prune-branches ; t, nil, or a limit on the size
                             dag-lst assumptions rules interpreted-fns monitored-rules call-stp state)
   (declare (xargs :guard (and (or (eq nil prune-branches)
                                   (eq t prune-branches)

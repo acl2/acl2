@@ -1,7 +1,7 @@
 ; An if-then-else function over bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -101,6 +101,12 @@
            (equal (bvif size test x y)
                   (bvchop size y)))
   :rule-classes nil)
+
+(defthm bvif-when-size-is-not-positive
+  (implies (<= size 0)
+           (equal (bvif size test thenpart elsepart)
+                  0))
+  :hints (("Goal" :in-theory (enable bvif))))
 
 (defthm bvif-of-0-arg1
   (equal (bvif 0 test thenpart elsepart)
@@ -279,21 +285,25 @@
   :hints (("Goal" :in-theory (enable bvif myif))))
 
 ;bozo copy all myif rules for bvif...
+;drop?
 (defthm bvif-same-tests-and-vals
   (equal (bvif size test y (bvif size test x y))
          (bvchop size y))
   :hints (("Goal" :in-theory (enable myif bvif))))
 
+;drop?
 (defthm bvif-same-tests-and-vals2
   (equal (bvif size test (bvif size test x y) y)
          (bvif size test x y))
   :hints (("Goal" :in-theory (enable myif bvif))))
 
+;rename
 (defthm bvif-same-tests
   (equal (bvif size test y (bvif size test x z))
          (bvif size test y z))
   :hints (("Goal" :in-theory (enable myif bvif))))
 
+;rename
 (defthm bvif-same-tests2
   (equal (bvif size test (bvif size test x z) y)
          (bvif size test x y))

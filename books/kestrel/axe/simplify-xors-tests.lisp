@@ -21,7 +21,7 @@
 ;; Returns (list constant non-constant-terms-in-nest)
 (defun bitxor-nest-leaves-of-term (term)
   (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-    (make-term-into-dag-array-basic term 'test-dag-array 'test-dag-parent-array nil ;interpreted-function-alist
+    (make-term-into-dag-array-basic term 'simplify-xors-old-array 'test-dag-parent-array nil ;interpreted-function-alist
                               )
     (declare (ignore dag-parent-array dag-constant-alist dag-variable-alist))
     (if erp
@@ -30,8 +30,8 @@
       (if (consp nodenum-or-quotep) ;test for quotep
           (list (unquote nodenum-or-quotep) nil)
         (mv-let (acc acc-constant)
-          (bitxor-nest-leaves-aux (list nodenum-or-quotep) 'test-dag-array dag-array dag-len nil 0)
-          (list acc-constant (dag-to-term-aux-lst-array 'test-dag-array dag-array acc)))))))
+          (bitxor-nest-leaves-aux (list nodenum-or-quotep) dag-array dag-len nil 0)
+          (list acc-constant (dag-to-term-aux-lst-array 'simplify-xors-old-array dag-array acc)))))))
 
 (assert-equal (bitxor-nest-leaves-of-term '(bitxor x y))
               '(0 (x y)))

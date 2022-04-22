@@ -102,7 +102,7 @@
   :hints (("Goal" :use (:instance type-of-aref1-when-eval-arrayp
                                   (array-name eval-array-name)
                                   (array eval-array)
-                                  (num-valid-nodes array-len))
+                                  (num-valid-indices array-len))
            :in-theory (disable type-of-aref1-when-eval-arrayp))))
 
 ;extends the worklist with any args not done

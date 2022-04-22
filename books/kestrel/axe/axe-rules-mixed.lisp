@@ -26,7 +26,7 @@
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;drop?
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system)) ; for EXPT-BOUND-LINEAR-2
 
-(defthmd bvplus-commutative-2-sizes-differ2-dag
+(defthmd bvplus-commutative-2-sizes-differ2-axe
   (implies (and (axe-syntaxp (should-commute-args-dag 'bvplus x y dag-array)) ;gen?
                 (equal (+ 1 smallsize) bigsize) ;relax somehow?
                 (natp smallsize)

@@ -65,12 +65,14 @@
          0)
   :hints (("Goal" :in-theory (enable bvxor))))
 
+;; Do not remove: helps justify the correctness of some operations done by Axe.
 (defthm bvxor-of-0-arg2
   (equal (bvxor size 0 y)
          (bvchop size y))
   :hints (("Goal" :in-theory (enable bvxor))))
 
-;in case we don't have commutativity - drop, since we'll always commute constants to the front?
+;; Do not remove: helps justify the correctness of some operations done by Axe.
+;in case we don't have commutativity - disable, since we'll always commute constants to the front?
 (defthm bvxor-of-0-arg3
   (equal (bvxor size x 0)
          (bvchop size x))

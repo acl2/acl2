@@ -43,7 +43,7 @@
 ;(include-book "elim")
 (include-book "kestrel/booleans/boolor" :dir :system) ;since this book knows about boolor
 (include-book "kestrel/booleans/booland" :dir :system) ;since this book knows about booland
-(include-book "dag-size2")
+(include-book "dag-size-sparse")
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -236,7 +236,7 @@
                       (<= (+ 1 max-nodenum)
                           (alen1 'renaming-array renaming-array))
                       (bounded-renaming-entriesp (+ -1 nodenum) 'renaming-array renaming-array dag-len))
-          :guard-hints (("Goal" :in-theory (e/d (not-cddr-when-dag-exprp0-and-quotep
+          :guard-hints (("Goal" :in-theory (e/d (not-cddr-when-dag-exprp-and-quotep
                                                  ;renaming-arrayp ;todo
                                                  )
                                                 (pseudo-dag-arrayp))))))
@@ -259,7 +259,7 @@
                                     (aset1 'renaming-array renaming-array nodenum expr))
           ;;regular function call:
           (let* ((args (dargs expr))
-                 (args (rename-args args 'renaming-array renaming-array)))
+                 (args (rename-dargs args 'renaming-array renaming-array)))
             (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
               (add-function-call-expr-to-dag-array (ffn-symb expr) args dag-array dag-len dag-parent-array dag-constant-alist)
               (if erp
@@ -1020,7 +1020,7 @@
 ;; (defun lookup-non-quoteps (array-name array indices)
 ;;   (declare (xargs :guard (and (array1p array-name array)
 ;;                               (true-listp indices)
-;;                               (all-dargp-less-than indices (alen1 array-name array)))))
+;;                               (bounded-darg-listp indices (alen1 array-name array)))))
 ;;   (if (endp indices)
 ;;       nil
 ;;     (let ((index (car indices)))
@@ -1578,10 +1578,10 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
 
-(defthm all-axe-treep-of-wrap-all
-  (equal (all-axe-treep (wrap-all 'not atoms))
-         (all-axe-treep atoms))
-  :hints (("Goal" :in-theory (enable all-axe-treep wrap-all))))
+(defthm axe-tree-listp-of-wrap-all
+  (equal (axe-tree-listp (wrap-all 'not atoms))
+         (axe-tree-listp (true-list-fix atoms)))
+  :hints (("Goal" :in-theory (enable axe-tree-listp wrap-all))))
 
 (defund prover-resultp (result)
   (declare (xargs :guard t))

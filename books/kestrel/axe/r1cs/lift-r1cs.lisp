@@ -16,7 +16,7 @@
 
 (include-book "lift-r1cs-rules")
 (include-book "lift-r1cs-rule-lists")
-(include-book "kestrel/utilities/doc" :dir :system)
+(include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/crypto/r1cs/sparse/rule-lists" :dir :system)
 (include-book "kestrel/crypto/r1cs/sparse/rules-axe" :dir :system)
 (include-book "kestrel/crypto/r1cs/sparse/rules" :dir :system)
@@ -78,7 +78,7 @@
                      package
                      extra-rules remove-rules rules
                      monitor memoizep
-                     count-hitsp
+                     count-hits
                      print
                      whole-form state)
   (declare (xargs :guard (and (symbolp name-of-defconst)
@@ -94,7 +94,7 @@
                               (or (eq :auto rules) (symbol-listp rules))
                               (symbol-listp monitor)
                               (booleanp memoizep)
-                              (booleanp count-hitsp))
+                              (booleanp count-hits))
                   :mode :program
                   :stobjs state))
   (b* ( ;; (vars (r1cs->vars r1cs))
@@ -143,7 +143,7 @@
                                                                     (w state))
                              monitor
                              memoizep
-                             count-hitsp
+                             count-hits
                              ;; nil                             ;simplify-xorsp
                              print
                              whole-form
@@ -163,7 +163,7 @@
                                      (remove-rules 'nil)
                                      (monitor 'nil)
                                      (memoizep 'nil) ;; memoization can slow down R1CS lifting a lot, due to many terms with the same single nodenum (the valuation?) being put into the same memo slot
-                                     (count-hitsp 'nil)
+                                     (count-hits 'nil)
                                      (print 'nil))
   `(acl2::make-event-quiet (lift-r1cs-fn ',name-of-defconst
                                          ,vars
@@ -175,7 +175,7 @@
                                          ,rules
                                          ,monitor
                                          ,memoizep
-                                         ,count-hitsp
+                                         ,count-hits
                                          ,print
                                          ',whole-form
                                          state))
@@ -192,6 +192,6 @@
          (remove-rules "Rules to be removed from the default rule set used for lifting.  A form that evaluates to a list of symbols.  May be non-@('nil') only when @('rules') is @(':auto').")
          (monitor "Rules to monitor during rewriting.  A form that evaluates to a list of symbols")
          (memoizep "Whether to perform memoization during rewriting.  A boolean.  This may actually slow down the lifting process.")
-         (count-hitsp "Whether to count rule hits during rewriting (may cause rewriting to be somewhat slower).  A boolean.")
+         (count-hits "Whether to count rule hits during rewriting (may cause rewriting to be somewhat slower).  A boolean.")
          (print "Axe print argument") ;todo: document
          ))

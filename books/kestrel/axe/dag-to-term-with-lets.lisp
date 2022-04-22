@@ -48,10 +48,10 @@
   :hints (("Goal" :use (:instance <-of-largest-non-quotep-of-dargs (expr (aref1 dag-array-name dag-array nodenum))))))
 
 (defun supporters-of-args (items supporters-array acc)
-  (declare (xargs :guard (and (true-listp items)
-                              (all-dargp items)
+  (declare (xargs :guard (and (all-dargp items)
+                              (true-listp items)
                               (supporters-arrayp 'supporters-array supporters-array (+ 1 (largest-non-quotep items)))
-                              (all-dargp-less-than items (alen1 'supporters-array supporters-array)) ; a bit redundant
+                              (bounded-darg-listp items (alen1 'supporters-array supporters-array)) ; a bit redundant
                               (true-listp acc))
                   :guard-hints (("Goal" :in-theory (enable true-listp-when-nat-listp-rewrite
                                                            eqlable-listp-when-nat-listp)))))
@@ -75,7 +75,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 
 (defthm all-<=-of-supporters-of-args
-  (implies (and (all-dargp-less-than args n)
+  (implies (and (bounded-darg-listp args n)
                 (supporters-arrayp 'supporters-array supporters-array (+ 1 (largest-non-quotep args)))
                 (all-<= acc n))
            (all-<= (supporters-of-args args supporters-array acc)
@@ -84,10 +84,11 @@
                                            (array-name 'supporters-array)
                                            (array supporters-array)
                                            (index (CAR ARGS))
-                                           (num-valid-nodes (+ 1 (LARGEST-NON-QUOTEP ARGS)))
+                                           (num-valid-indices (+ 1 (LARGEST-NON-QUOTEP ARGS)))
                                            ))
-           :in-theory (e/d (<-of-car-when-all-dargp-less-than)
-                           (TYPE-OF-AREF1-WHEN-SUPPORTERS-ARRAYP)))))
+           :in-theory (e/d (<-of-car-when-bounded-darg-listp)
+                           (TYPE-OF-AREF1-WHEN-SUPPORTERS-ARRAYP
+                            TYPE-OF-AREF1-WHEN-SUPPORTERS-ARRAYP-special)))))
 
 
 ;; Fill in the supporters for nodes N through MAX-NODENUM.
@@ -256,7 +257,7 @@
   (declare (xargs :guard (and (true-listp items)
                               (all-dargp items)
                               (supporters-arrayp 'supporters-array supporters-array (+ 1 (largest-non-quotep items)))
-                              (all-dargp-less-than items (alen1 'supporters-array supporters-array)) ; a bit redundant
+                              (bounded-darg-listp items (alen1 'supporters-array supporters-array)) ; a bit redundant
                               (natp target-nodenum))
                   :guard-hints (("Goal" :in-theory (enable TRUE-LISTP-WHEN-NAT-LISTP-rewrite)))
                   ))
@@ -274,7 +275,7 @@
            (all-natp (nodenums-supported-by-target items target-nodenum supporters-array))))
 
 (defthm all-<-of-nodenums-supported-by-target
-  (implies (all-dargp-less-than items bound)
+  (implies (bounded-darg-listp items bound)
            (all-< (nodenums-supported-by-target items target-nodenum supporters-array) bound)))
 
 (defthmd not-<-of-0-of-car-when-all-natp
@@ -439,8 +440,7 @@
 ;; quoted constants through unchanged.
 (defun terms-for-nodenums (args term-array-name term-array array-len)
   (declare (xargs :guard (and (term-arrayp term-array-name term-array array-len)
-                              (true-listp args)
-                              (all-dargp-less-than args (alen1 term-array-name term-array)))))
+                              (bounded-darg-listp args (alen1 term-array-name term-array)))))
   (if (endp args)
       nil
     (let* ((arg (first args)))

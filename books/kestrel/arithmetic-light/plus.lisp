@@ -187,3 +187,9 @@
   (implies (syntaxp (quotep x))
            (equal (+ y x)
                   (+ x y))))
+
+;; Could this be too expensive?
+(defthm natp-of-+-when-natp-and-natp
+  (implies (and (natp x)
+                (natp y))
+           (natp (+ x y))))

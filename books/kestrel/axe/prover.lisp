@@ -1,7 +1,7 @@
 ; The Axe Prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -68,7 +68,7 @@
                            ;consp-from-len-cheap
                            default-car
                            <-of-nth-and-alen1 ;todo
-                           dag-exprp0
+                           dag-exprp
                            ;;list::nth-with-large-index
                            ;;list::nth-with-large-index-2
                            nat-listp
@@ -106,7 +106,7 @@
 ;TODO: possible optimization: mark variables that occur only once in the rule and don't bother making pairs for them in the alist until we know there is a structural match
 ;TODO: possible optimization: mark each occurence of a vars in the lhs according to whether it is the first occurence of that var (don't bother to lookup in alist) or a later occurrence (check the alist but don't ever need to bind the var because it will already be bound)
 
-(local (in-theory (enable natp-of-car-when-all-dargp-less-than-gen)))
+(local (in-theory (enable natp-of-car-when-bounded-darg-listp-gen)))
 
 (local (in-theory (disable SYMBOL-ALISTP))) ;move
 (local (in-theory (disable dag-function-call-exprp-redef
@@ -368,7 +368,7 @@
                                       equiv-alist rule-alist nodenums-to-assume-false print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator work-hard-when-instructedp prover-depth options (+ -1 count) state))
                            ;;hyp rewrote to *nil* :
                            (progn$
-                            (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
+                            (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
                             (and (member-eq rule-symbol monitored-symbols)
                                  (cw "(Failed to relieve hyp ~x3 for ~x0.~% Reason: Rewrote to nil.~%Alist: ~x1.~%Assumptions (to assume false):~%~x2~%DAG:~x4)~%"
                                      rule-symbol
@@ -380,7 +380,7 @@
                             (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
                        ;;hyp didn't rewrite to a constant:
                        (prog2$
-                        (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
+                        (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
                         (if (and work-hardp work-hard-when-instructedp)
 
                             ;;fffixme is it no longer necessary to save the dag-array?
@@ -394,7 +394,7 @@
                                  ;; (cw "Literal nodenums:")
                                  ;; (print-list-on-one-line literal-nodenums)
                                  (- (cw "Literals:~%"))
-                                 (- (if (member-eq print '(t :verbose :verbose2))
+                                 (- (if (member-eq print '(t :verbose :verbose!))
                                         (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
                                       (cw ":elided")))
                                  ;;ffixme print the assumptions
@@ -464,7 +464,7 @@
                                (true-listp stored-rules)
                                (all-stored-axe-rulep stored-rules)
                                (rule-alistp rule-alist)
-                               (all-dargp-less-than args-to-match dag-len)
+                               (bounded-darg-listp args-to-match dag-len)
                                (nat-listp nodenums-to-assume-false)
                                (all-< nodenums-to-assume-false dag-len)
                                (symbol-alistp equiv-alist) ;strengthen?
@@ -496,7 +496,7 @@
            (try-to-apply-rules-for-axe-prover (rest stored-rules) rule-alist args-to-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenums-to-assume-false
                                               equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator work-hard-when-instructedp prover-depth options (+ -1 count) state)
          ;; The rule matched. now try to relieve its hyps:
-         (b* ((- (and (eq print :verbose) ;:verbose2?
+         (b* ((- (and (eq print :verbose) ;:verbose!?
                       (cw "(Trying: ~x0. Alist: ~x1~%"
                           (stored-rule-symbol stored-rule)
                           (reverse alist-or-fail) ;nicer to read if reversed
@@ -518,7 +518,7 @@
            (if hyps-relievedp
                ;; instantiate the RHS:
                (let ((rhs (sublis-var-and-eval alist (stored-rule-rhs stored-rule) interpreted-function-alist))) ;fixme what if there are free vars in the rhs?
-                 (prog2$ (and (member-eq print '(:verbose2 :verbose))
+                 (prog2$ (and (member-eq print '(:verbose! :verbose))
                               (cw "Rewriting with ~x0. RHS: ~x1.)~%"
                                   (stored-rule-symbol stored-rule)
                                   rhs))
@@ -612,7 +612,7 @@
              ;;first fixup the call to be about nodenums in the main dag:
              (let* ((fn (ffn-symb expr))
                     (args (dargs expr))
-                    (args (rename-args args renaming-array-name renaming-array2))
+                    (args (rename-dargs args renaming-array-name renaming-array2))
                     (expr (cons fn args)))
                ;;then simplify it:
                (mv-let (erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
@@ -1017,8 +1017,7 @@
                                                          embedded-dag-depth case-designator work-hard-when-instructedp prover-depth
                                                          options count state)
    (declare (xargs :stobjs state
-                   :guard (and (true-listp tree-lst)
-                               (all-axe-treep tree-lst)
+                   :guard (and (axe-tree-listp tree-lst)
                                (symbol-listp equiv-lst)
                                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                (rule-alistp rule-alist)
@@ -1267,7 +1266,7 @@
             (type (unsigned-byte 59) count))
    (b* (((when (zp-fast count))
          (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
-        (- (and (or (eq :verbose print) (eq :verbose2 print))
+        (- (and (or (eq :verbose print) (eq :verbose! print))
                 (cw "(Rewriting literal ~x0.~%" nodenum)))
         (result-array-name (pack$ 'result-array- prover-depth))
         ((mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
@@ -1281,7 +1280,7 @@
                                        *equiv-alist* ;do we need to pass this around?
                                        interpreted-function-alist print info tries monitored-symbols case-designator work-hard-when-instructedp prover-depth options (+ -1 count) state))
         ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
-        (- (and (or (eq :verbose print) (eq :verbose2 print))
+        (- (and (or (eq :verbose print) (eq :verbose! print))
                 (cw "Done rewriting literal ~x0.)~%" nodenum))))
      (mv (erp-nil)
          (aref1 result-array-name result-array nodenum)
@@ -1578,7 +1577,7 @@
  ;;               ;; (print-array2 'dag-array dag-array dag-len)
  ;;               (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
  ;;               (let* ( ;;fixme or we could use a worklist starting with literal-nodenums..
- ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
+ ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes-with-name literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
  ;;                                                                                 (+ 1 (maxelem literal-nodenums))))
  ;;                      (rec-fn-nodenums (filter-rec-fn-nodes2 (+ -1 dag-len) 'dag-array dag-array 'tag-array-for-prove-clause-miter tag-array-for-prove-clause-miter state))
  ;;                      (rec-fn-nodenums (merge-sort-< rec-fn-nodenums)) ;handle this better (drop it or call reverse?)
@@ -1696,7 +1695,7 @@
                                           prover-depth options count state)
    (declare (xargs :stobjs state
                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                               (all-dargp-less-than literal-nodenums-or-quoteps dag-len)
+                               (bounded-darg-listp literal-nodenums-or-quoteps dag-len)
                                (all-rule-alistp rule-alists)
                                (interpreted-function-alistp interpreted-function-alist)
                                (info-worldp info)
@@ -1777,11 +1776,11 @@
                                                     (not max-conflicts) ;fffixme hack to print more on interesting goals
                                                     (eq t print)  ;new
                                                     (eq :verbose print)  ;new
-                                                    (eq :verbose2 print) ;new
+                                                    (eq :verbose! print) ;new
                                                     ))))
                                (progn$ (cw "(Couldn't find a node to split on.  Failed to prove case ~s0~%" case-designator)
                                        (and printp
-                                            (or (eq t print) (eq :verbose print) (eq :verbose2 print))
+                                            (or (eq t print) (eq :verbose print) (eq :verbose! print))
 
 ;print-max-conflicts-goalp ;fixme rename this, because now we are printing a failure that didn't time out.. fixme may print many failures b/f the 1st max-conflicts
 
@@ -1792,7 +1791,7 @@
                             (cw "Splitting on node ~x0:~%" nodenum)
                             ;;todo: elide this if too big:
                             (print-dag-only-supporters 'dag-array dag-array nodenum)
-                            (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
+                            (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
                                  (progn$ (cw "Literals:~%")
                                          (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
 ;(cw "parent array:~%")
@@ -1814,7 +1813,7 @@
                                  ;;  ;fixme consider making this not destructive:
                                  ;;  (replace-nodenum-with-t-in-boolean-contexts nodenum dag-array dag-parent-array) ;this leaves the subtree at nodenum itself unchanged
                                  (- (cw "(True Case: ~s0~%" case-1-designator))
-                                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
+                                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
                                          (prog2$ (cw "Literals:~%")
                                                  (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array))))
                                  ;;add the negation of nodenum to the dag:
@@ -1978,7 +1977,7 @@
              ((when erp) (mv erp :failed state))
              ;;just print the message in the subroutine and don't case split here?
              (- (and print (cw "(~x0 tries.)~%" tries)))
-             (- (and print (print-hit-counts print info (rules-from-rule-alists rule-alists)))))
+             (- (and print (maybe-print-hit-counts print info))))
           (if (eq :proved result)
               (prog2$ (cw "proved ~s0 with dag prover~%" case-name)
                       (mv (erp-nil) :proved state))
@@ -2027,7 +2026,7 @@
                                       (+ -1 (expt 2 59)) ;max fixnum?
                                       state))
        ((when erp) (mv erp nil state))
-       (- (and print (print-hit-counts print info (rules-from-rule-alists rule-alists))))
+       (- (and print (maybe-print-hit-counts print info)))
        (- (and print (cw "Total tries: ~x0.~%" tries))))
     (if (eq :proved result)
         (prog2$ (cw "Proved the theorem.)~%")
@@ -2143,7 +2142,7 @@
                                           (+ -1 (expt 2 59)) ;max fixnum?
                                           state))
        ((when erp) (mv erp nil state))
-       (- (and print (print-hit-counts print info (rules-from-rule-alists rule-alists))))
+       (- (and print (maybe-print-hit-counts print info)))
        (- (and print (cw "Total tries: ~x0.~%" tries))))
     (if (eq :proved result)
         (prog2$ (cw "Proved the theorem.)~%")

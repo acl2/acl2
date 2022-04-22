@@ -68,7 +68,7 @@
   (b* (((iconst ic) ic)
        (error (error (list :iconst-out-of-range (iconst-fix ic)))))
     (if ic.unsignedp
-        (iconst-tysuffix-case
+        (iconst-length-case
          ic.type
          :none (cond ((uint-integerp ic.value) (uint ic.value))
                      ((ulong-integerp ic.value) (ulong ic.value))
@@ -79,7 +79,7 @@
                      (t error))
          :llong (cond ((ullong-integerp ic.value) (ullong ic.value))
                       (t error)))
-      (iconst-tysuffix-case
+      (iconst-length-case
        ic.type
        :none (if (iconst-base-case ic.base :dec)
                  (cond ((sint-integerp ic.value) (sint ic.value))

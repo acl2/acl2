@@ -1,7 +1,7 @@
 ; Operations on interpreted-function-alists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,10 +15,11 @@
 (include-book "interpreted-function-alistp")
 (include-book "kestrel/utilities/remove-guard-holders" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system) ; for get-fns-in-term
+(include-book "kestrel/utilities/supporting-functions" :dir :system)
 
 ; this does not take pains to add subfunctions called by fn
 ;todo: call fn-formals?
-(defun add-to-interpreted-function-alist (fn alist wrld)
+(defund add-to-interpreted-function-alist (fn alist wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (symbol-alistp alist)
                               (plist-worldp wrld))))
@@ -59,42 +60,47 @@
 (defthm interpreted-function-alistp-of-add-to-interpreted-function-alist
   (implies (and (interpreted-function-alistp alist)
                 (symbolp fn))
-           (interpreted-function-alistp (add-to-interpreted-function-alist fn alist wrld))))
+           (interpreted-function-alistp (add-to-interpreted-function-alist fn alist wrld)))
+  :hints (("Goal" :in-theory (enable add-to-interpreted-function-alist))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns an extension of acc
 ;this checks that fns aren't already present with different definitions
 ; this does not take pains to add subfunctions called by any of the fns
-(defun add-fns-to-interpreted-function-alist (fns acc wrld)
+(defund add-fns-to-interpreted-function-alist (fns acc wrld)
   (declare (xargs :guard (and (symbol-listp fns)
-                              (symbol-alistp acc)
+                              (interpreted-function-alistp acc)
                               (plist-worldp wrld))))
   (if (endp fns)
       acc
     (let* ((fn (car fns)))
       (add-fns-to-interpreted-function-alist (cdr fns)
-                                        (add-to-interpreted-function-alist fn acc wrld)
-                                        wrld))))
+                                             (add-to-interpreted-function-alist fn acc wrld)
+                                             wrld))))
 
 (defthm interpreted-function-alistp-of-add-fns-to-interpreted-function-alist
-  (implies (and (interpreted-function-alistp alist)
+  (implies (and (interpreted-function-alistp acc)
                 (symbol-listp fns))
-           (interpreted-function-alistp (add-fns-to-interpreted-function-alist fns alist wrld))))
+           (interpreted-function-alistp (add-fns-to-interpreted-function-alist fns acc wrld)))
+  :hints (("Goal" :in-theory (enable add-fns-to-interpreted-function-alist))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Create an interpreted-function-alist for FNS, a list of function names, by
 ;; getting their formals and bodies from WRLD.  TODO: Make a variant that also
 ;; adds all necessary supporting functions.
-(defun make-interpreted-function-alist (fns wrld)
+(defund make-interpreted-function-alist (fns wrld)
   (declare (xargs :guard (and (symbol-listp fns)
                               (plist-worldp wrld))))
   (add-fns-to-interpreted-function-alist fns nil wrld))
 
 (defthm interpreted-function-alistp-of-make-interpreted-function-alist
   (implies (symbol-listp fns)
-           (interpreted-function-alistp (make-interpreted-function-alist fns wrld))))
+           (interpreted-function-alistp (make-interpreted-function-alist fns wrld)))
+  :hints (("Goal" :in-theory (enable make-interpreted-function-alist))))
 
-;;;
-;;; interpreted-function-alist-completep
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks that there are no missing functions in the interpreted-function-alist
 ;; (functions called by other functions in the alist, which will cause
@@ -123,4 +129,14 @@
                                             (append (strip-cars alist)
                                                     built-in-fns)))
 
-;; TODO: Add a function make-complete-interpreted-function-alist.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Make an interpreted-function-alist capable of interpreting all of the FNS
+;; (thus, including their subfunctions).
+(defund make-complete-interpreted-function-alist (fns wrld)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (plist-worldp wrld))))
+  (mv-let (defined-fns undefined-fns stopper-fns)
+    (fns-supporting-fns fns nil wrld)
+    (declare (ignore undefined-fns stopper-fns))
+    (make-interpreted-function-alist defined-fns wrld)))

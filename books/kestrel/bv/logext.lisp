@@ -670,3 +670,20 @@
                                    bvchop-1-becomes-getbit slice-becomes-getbit
                                                            ;bvplus-recollapse
                                                            bvchop-of-logtail)))))
+
+(defthm bvchop-subst-constant-from-logext
+  (implies (and (syntaxp (not (quotep x)))
+                (equal (logext free x) k)
+                (syntaxp (quotep k))
+                (<= size free)
+                (posp size)
+                (integerp free)
+                )
+           (equal (bvchop size x)
+                  (bvchop size k)))
+  :hints (("Goal"
+           :cases ((equal size (+ -1 free))
+                   (< size (+ -1 free)))
+           :in-theory (e/d (logext logtail-of-bvchop)
+                           ( slice  BVCHOP-OF-LOGTAIL
+                                    )))))

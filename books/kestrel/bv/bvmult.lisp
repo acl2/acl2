@@ -115,8 +115,8 @@
                  (:instance bvmult-associative (x y) (y x))))))
 
 (defthm bvmult-combine-constants
-  (implies (syntaxp (and (quotep x)
-                         (quotep y)
+  (implies (syntaxp (and (quotep y) ;I put this one first to fail fast
+                         (quotep x)
                          (quotep size)))
            (equal (bvmult size x (bvmult size y z))
                   (bvmult size (bvmult size x y) z))))

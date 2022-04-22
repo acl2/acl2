@@ -129,7 +129,7 @@
                      (let ((formals (farg1 (ffn-symb term)))
                            (body (farg2 (ffn-symb term))))
                        `(lambda ,formals
-                          ;;since lambda formals are often bound to themselves (because the lambdas are complete) - we remove such self-bound vars from the list of formals here (they can't shadow anything)
+                          ;;since lambda formals are often bound to themselves (because the lambdas are closed) - we remove such self-bound vars from the list of formals here (they can't shadow anything)
                           ,(replace-in-term body (drop-pairs-that-mention-vars alist (vars-not-bound-to-themselves formals (fargs term)))))) ;must remove any pairs that are interfered with by the lambda vars...
                    ;;not a lambda:
                    (ffn-symb term))

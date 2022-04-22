@@ -31,7 +31,7 @@
          nil
        (axe-tree-vars-lst (fargs tree)))))
  (defund axe-tree-vars-lst (trees)
-   (declare (xargs :guard (all-axe-treep trees)))
+   (declare (xargs :guard (axe-tree-listp trees)))
    (if (atom trees)
        nil
      (union-eq (axe-tree-vars (first trees))
@@ -45,7 +45,7 @@
              (symbol-listp (axe-tree-vars tree)))
     :flag axe-tree-vars)
   (defthm symbol-listp-of-axe-tree-vars-lst
-    (implies (all-axe-treep trees)
+    (implies (axe-tree-listp trees)
              (symbol-listp (axe-tree-vars-lst trees)))
     :flag axe-tree-vars-lst)
   :hints (("Goal" :in-theory (enable axe-tree-vars
@@ -59,7 +59,7 @@
              (no-duplicatesp (axe-tree-vars tree)))
     :flag axe-tree-vars)
   (defthm no-duplicatesp-of-axe-tree-vars-lst
-    (implies (all-axe-treep trees)
+    (implies (axe-tree-listp trees)
              (no-duplicatesp (axe-tree-vars-lst trees)))
     :flag axe-tree-vars-lst)
   :hints (("Goal" :in-theory (enable axe-tree-vars
@@ -90,4 +90,10 @@
   (implies (dargp tree)
            (equal (axe-tree-vars tree)
                   nil))
+  :hints (("Goal" :in-theory (enable axe-tree-vars))))
+
+(defthm axe-tree-vars-when-symbolp
+  (implies (symbolp tree)
+           (equal (axe-tree-vars tree)
+                  (list tree)))
   :hints (("Goal" :in-theory (enable axe-tree-vars))))

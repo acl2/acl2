@@ -23,8 +23,7 @@
 
 ;a BV type is now an positive integer representing the width (maybe 0 is allowed too?)
 ;may change
-;inline?
-(defun make-bv-type (width)
+(defun-inline make-bv-type (width)
   (declare (xargs :guard t))
   width)
 
@@ -39,8 +38,7 @@
   :hints (("Goal" :in-theory (enable make-bv-type))))
 
 ;may change
-;inline?
-(defun bv-type-width (type)
+(defun-inline bv-type-width (type)
   (declare (xargs :guard t))
   type)
 

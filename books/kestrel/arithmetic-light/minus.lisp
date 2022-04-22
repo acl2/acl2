@@ -47,6 +47,13 @@
                   (< (- k) x)))
   :hints (("Goal" :cases ((< (- x) k)))))
 
+(defthm <-of-constant-and-minus
+  (implies (syntaxp (quotep k))
+           (equal (< k (- x))
+                  (< x (- k))))
+  :rule-classes ((:rewrite :loop-stopper nil))
+  :hints (("Goal" :cases ((< k (- x))))))
+
 (defthm equal-of-minus-self
   (equal (equal x (- x))
          (equal x 0)))

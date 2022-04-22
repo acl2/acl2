@@ -15,6 +15,8 @@
 (local (include-book "numerator"))
 (local (include-book "times"))
 (local (include-book "plus"))
+(local (include-book "divides"))
+(local (include-book "times-and-divides"))
 
 (in-theory (disable truncate))
 
@@ -186,3 +188,31 @@
   :hints (("Goal" :use (:instance nonnegative-integer-quotient-of-numerator-and-denominator (x (- x)))
            :in-theory (e/d (truncate)
                            (nonnegative-integer-quotient-of-numerator-and-denominator)))))
+
+;; (thm
+;;  (implies (and (< i 0)
+;;                (<= 1 j)
+;;                (integerp i)
+;;                (integerp j)
+;;                )
+;;           (<= (/ i j) (floor i j)))
+;;  :hints (("Goal" :cases ((equal j 1)))))
+
+(defthm signed-byte-p-of-truncate
+  (implies (and (signed-byte-p size i)
+                (posp size)
+                (integerp j))
+           (equal (signed-byte-p size (truncate i j))
+                  (not (and (equal (- (expt 2 (+ -1 size))) i) ; one bad case
+                            (equal -1 j)))))
+  :hints (("Goal" :cases ((and (< i 0) (< j 0))
+                          (and (<= 0 i) (< j 0))
+                          (and (< i 0) (= 0 j))
+                          (and (< i 0) (< 0 j))
+                          (and (<= 0 i) (< 0 j)))
+           :in-theory (e/d (acl2::truncate-becomes-floor-gen
+                            signed-byte-p
+                            floor-when-integerp-of-quotient
+                            acl2::*-of-floor-of-same-when-multiple)
+                           (<-of-*-of-/-arg2
+                            <-of-*-of-/-arg1)))))

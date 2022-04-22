@@ -19,21 +19,28 @@
 
 (include-book "rewriter-basic")
 (include-book "rule-lists")
+(include-book "choose-rules")
 (include-book "dag-to-term")
 (include-book "dag-size-fast") ; for dag-or-quotep-size-less-thanp
 (include-book "dag-to-term-with-lets")
 (include-book "rules-in-rule-lists")
 (include-book "evaluator") ;; since this calls dag-val-with-axe-evaluator to embed the resulting dag in a function, introduces a skip-proofs
+(include-book "kestrel/utilities/check-boolean" :dir :system)
+(include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system) ;drop?
+(include-book "kestrel/utilities/supporting-functions" :dir :system)
+(include-book "kestrel/utilities/submit-events" :dir :system)
+(include-book "dag-info")
 
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
 
 (defun unroll-spec-basic-rules ()
   (append (base-rules)
           (amazing-rules-bv)
+          (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
           (list-rules)
           ;; (introduce-bv-array-rules)
           ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
@@ -41,19 +48,51 @@
 
 (ensure-rules-known (unroll-spec-basic-rules))
 
-;; TODO: Add more options, such as :print and :print-interval, to pass through to simp-term
+;dup
+(defconst *bv-and-array-fns-we-can-translate*
+  '(equal getbit bvchop ;$inline
+          slice
+          bvcat
+          bvplus bvuminus bvminus bvmult
+          bitor bitand bitxor bitnot
+          bvor bvand bvxor bvnot
+          bvsx bv-array-read bv-array-write bvif
+          leftrotate32
+          boolor booland ;boolxor
+          not
+          bvlt                       ;new
+          sbvlt                      ;new
+          ))
+
+(defund filter-function-names (rule-names wrld)
+  (declare (xargs :guard (and (symbol-listp rule-names)
+                              (plist-worldp wrld))))
+  (if (endp rule-names)
+      nil
+    (let ((rule-name (first rule-names)))
+      (if (function-symbolp rule-name wrld)
+          (cons rule-name
+                (filter-function-names (rest rule-names) wrld))
+        (filter-function-names (rest rule-names) wrld)))))
+
+(defthm symbol-listp-of-filter-function-names
+  (implies (symbol-listp rule-names)
+           (symbol-listp (filter-function-names rule-names wrld)))
+  :hints (("Goal" :in-theory (enable filter-function-names))))
+
+;; TODO: Add more options, such as :print-interval, to pass through to simp-term
 ;; Returns (mv erp event state)
 (defun unroll-spec-basic-fn (defconst-name ;should begin and end with *
                               term
-                              extra-rules
-                              remove-rules
                               rules
                               ;;rule-alists
+                              extra-rules
+                              remove-rules
                               assumptions
                               interpreted-function-alist
                               monitor
                               memoizep
-                              count-hitsp
+                              count-hits
                               ;; simplify-xorsp ;todo
                               produce-function
                               disable-function
@@ -63,27 +102,29 @@
                               print
                               whole-form
                               state)
-  (declare (xargs :stobjs state
-                  :mode :program ;; because this calls translate (todo: factor that out)
-                  :guard (and (symbolp defconst-name)
+  (declare (xargs :guard (and (symbolp defconst-name)
                               ;; (pseudo-termp term) ;; really an untranlated term
+                              (or (eq :standard rules)
+                                  (eq :auto rules)
+                                  (symbol-listp rules))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              (symbol-listp rules)
                               ;; (pseudo-term-listp assumptions) ;; untranslated terms
-                              (interpreted-function-alistp interpreted-function-alist) ;todo: extract from the terms and rules?
+                              (or (eq :auto interpreted-function-alist)
+                                  (interpreted-function-alistp interpreted-function-alist))
                               (symbol-listp monitor)
                               (booleanp memoizep)
-                              (booleanp count-hitsp)
+                              (booleanp count-hits)
                               ;; (booleanp simplify-xorsp) ;todo: strengthen
                               (booleanp produce-function)
                               (booleanp disable-function)
                               (member-eq function-type '(:term :lets :embedded-dag :auto))
                               (or (symbol-listp function-params)
                                   (eq :auto function-params))
-                              (booleanp produce-theorem)))
-           (ignore print) ;todo
-           )
+                              (booleanp produce-theorem))
+                  :stobjs state
+                  :mode :program ;; because this calls translate (todo: factor that out)
+                  ))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
        ((when (and (not produce-function)
@@ -94,24 +135,76 @@
                    disable-function))
         (er hard? 'unroll-spec-basic-fn ":disable-function should not be true if :produce-function is nil.")
         (mv (erp-t) nil state))
-       ((when (and rules extra-rules))
-        (er hard? 'unroll-spec-basic-fn ":rules and :extra-rules should not both be given.")
-        (mv (erp-t) nil state))
-       ((when (and rules remove-rules))
-        (er hard? 'unroll-spec-basic-fn ":rules and :remove-rules should not both be given.")
-        (mv (erp-t) nil state))
+       (- (cw "~%(Unrolling spec:~%"))
        (term (translate-term term 'unroll-spec-basic-fn (w state)))
        (assumptions (translate-terms assumptions 'unroll-spec-basic-fn (w state)))
+       ;; Compute the base set of rules (from which to add and remove) and also
+       ;; any opener events:
+       ((mv pre-events base-rules)
+        (if (eq rules :standard)
+            (mv nil (unroll-spec-basic-rules))
+          (if (eq rules :auto)
+              (b* (((mv defined-supporting-fns
+                        & ;undefined-fns
+                        & ;stopper-fns-encountered
+                        )
+                    (fns-supporting-term term
+                                         ;; Don't open these functions:
+                                         (append '(leftrotate ; don't open leftrotate
+                                                   nth update-nth len true-listp nthcdr firstn take
+                                                   list-to-bv-array
+                                                   ifix nfix
+                                                   floor mod
+                                                   )
+                                                 *bv-and-array-fns-we-can-translate*)
+                                         (w state)))
+                   ((mv events rule-names)
+                    (opener-rules-for-fns defined-supporting-fns t '-for-unroll-spec-basic nil nil state))
+                   (- (cw "Will use the following ~x0 additional rules: ~X12~%" (len rule-names) rule-names nil))
+                   ;; todo: name this rule set?:  what else should go in it
+                   ;; try to use unroll-spec-basic-rules here
+                   (rule-names (append '(;consp-of-cons  ; about primitives ; todo: when else might be needed?
+                                         ;car-cons
+                                         ;cdr-cons
+                                         )
+                                       (bv-array-rules-simple)
+                                       (list-to-bv-array-rules)
+                                       (type-rules) ; give us type facts about bv ops
+                                       (set-difference-eq (core-rules-bv)
+                                                          ;; these are kind of like trim rules, and can make the result worse:
+                                                          '(;BVCHOP-OF-BVPLUS
+                                                            BVCHOP-OF-bvuminus
+                                                            ))
+                                       (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
+                                       (unsigned-byte-p-forced-rules)
+                                       rule-names)))
+                ;; todo: this doesn't include any standard rules -- should it?  they could loop with the openers (e.g., nth-of-cdr)
+                (mv events rule-names))
+            ;; rules is an explicit list of rules:
+            (mv nil rules))))
+       ;; Add the :extra-rules and remove the :remove-rules:
+       (rules (union-equal extra-rules base-rules))
+       (rules (set-difference-equal rules remove-rules))
+       ;; Submit any needed defopener rules:
+       (state (submit-events-quiet pre-events state))
+       ;; Make the rule-alist:
        ((mv erp rule-alist)
-        (make-rule-alist
-         ;; Either use the user-supplied rules or the usual rules
-         ;; plus any user-supplied extra rules:
-         (or rules
-             (set-difference-eq (append (unroll-spec-basic-rules)
-                                        extra-rules)
-                                remove-rules))
-         (w state)))
+        (make-rule-alist rules (w state)))
        ((when erp) (mv erp nil state))
+       ;; Create the interpreted-function-alist:
+       (interpreted-function-alist
+        (if (eq :auto interpreted-function-alist)
+            ;; Since we're expanding these functions, we might as well also evaluate them
+            ;; todo: also add recursive functions that we are unrolling?
+            ;; todo: also add functions that may be introduced by rules?
+            (make-complete-interpreted-function-alist
+             (set-difference-eq (filter-function-names rules (w state))
+                                ;; we can already evaluate these:
+                                *axe-evaluator-basic-fns-and-aliases*)
+             (w state))
+          ;; The user supplied one, so use it:
+          interpreted-function-alist))
+       ;; Call the rewriter:
        ((mv erp dag)
         (simplify-term-basic term
                              assumptions
@@ -119,11 +212,10 @@
                              interpreted-function-alist
                              monitor
                              memoizep
-                             count-hitsp
+                             count-hits
+                             print
                              (w state)
-                             ;; :assumptions assumptions
                              ;; :simplify-xorsp simplify-xorsp
-                             ;; :print print
                              ))
        ((when erp)
         (mv erp nil state))
@@ -185,7 +277,11 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
        (items-created (append (list defconst-name)
                               (if produce-function (list function-name) nil)
                               (if produce-theorem (list theorem-name) nil)))
-       (defun-variant (if disable-function 'defund 'defun)))
+       (defun-variant (if disable-function 'defund 'defun))
+       (- (cw "Unrolling finished.~%"))
+       ;; (- (cw "Info on unrolled spec DAG:~%"))
+       ((mv & & state) (dag-info-fn-aux dag defconst-name nil state))
+       (- (cw ")~%")))
     (mv (erp-nil)
         ;; If dag is a quoted constant, then it gets doubly quoted here.  This
         ;; makes sense: You unquote this thing and either get a DAG or a quoted
@@ -193,74 +289,80 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         `(progn (defconst ,defconst-name ',dag)
                 ,@(and produce-function `((,defun-variant ,function-name ,function-params ,function-body)))
                 ,@(and produce-theorem (list theorem))
-                (table unroll-spec-basic-table ',whole-form ':fake)
+                (with-output :off :all (table unroll-spec-basic-table ',whole-form ':fake))
                 (value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
                 )
         state)))
 
-;TODO: Automate even more by unrolling all functions down to the BV and array ops?
-(defmacro unroll-spec-basic (&whole whole-form
-                                    defconst-name ;; The name of the DAG constant to create
-                                    term          ;; The term to simplify
-                                    &key
-                                    (extra-rules 'nil) ; to add to the usual set of rules
-                                    (remove-rules 'nil) ; to remove from to the usual set of rules
-                                    (rules 'nil) ;to completely replace the usual set of rules (TODO: default should be auto?)
-                                    ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
-                                    (assumptions 'nil)
-                                    (interpreted-function-alist 'nil)
-                                    (monitor 'nil)
-                                    (memoizep 't)
-                                    (count-hitsp 'nil)
-                                    ;; (simplify-xorsp 't)
-                                    (produce-function 'nil)
-                                    (disable-function 'nil) ;todo: consider making 't the default
-                                    (function-type ':auto)
-                                    (function-params ':auto)
-                                    (produce-theorem 'nil)
-                                    (print 'nil))
-  `(make-event-quiet (unroll-spec-basic-fn ',defconst-name
-                                           ,term
-                                           ,extra-rules
-                                           ,remove-rules
-                                           ,rules
-                                           ;; ,rule-alists
-                                           ,assumptions
-                                           ,interpreted-function-alist
-                                           ,monitor
-                                           ,memoizep
-                                           ,count-hitsp
-                                           ;; ,simplify-xorsp
-                                           ,produce-function
-                                           ,disable-function
-                                           ,function-type
-                                           ,function-params
-                                           ,produce-theorem
-                                           ,print
-                                           ',whole-form
-                                           state)))
-
-;; (defxdoc unroll-spec-basic
-;;   :parents (axe)
-;;   :short "Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
-;;   :long "<h3>General Form:</h3>
-;; @({
-;;      (unroll-spec-basic
-;;         defconst-name        ;; The name of the DAG defconst to create
-;;         term                 ;; The term to simplify
-;;         [:rules]             ;; If non-nil, rules to use to completely replace the usual set of rules
-;;         [:extra-rules]       ;; Rules to add to the usual set of rules, Default: nil
-;;         [:remove-rules]      ;; Rules to remove from the usual set of rules, Default: nil
-;;         [:assumptions]       ;; Assumptions to use when unrolling, Default: nil
-;;         [:monitor]           ;; List of symbols to monitor, Default: nil
-;;         [:interpreted-function-alist]           ;; Definitions of non-built-in functions to evaluate; Default: nil
-;;         [:memoizep]           ;; Whether to memoize during rewriting, Default: nil
-;;         [:count-hitsp]           ;; Whether to count rule hits rewriting, Default: nil
-;;         [:produce-function]           ;; Whether to produce a function (in addition to a defconst), Default: nil
-;;         [:disable-function]           ;; Whether to disable the produced function, Default: nil
-;;         [:function-type]           ;; How to create a function for the DAG (:term, :embedded-dag, :lets, or :auto), Default:: auto
-;;         [:function-params]           ;; The param to use for the produced function (specifies their order)
-;;         [:produce-theorem]           ;; Whether to create a theorem stating that the dag is equal to the orignal term (using skip-proofs).
-;;         [:print]           ;; How much to print
-;;         )
-;; })")
+(defmacrodoc unroll-spec-basic (&whole whole-form
+                                       defconst-name ;; The name of the DAG constant to create
+                                       term          ;; The term to simplify
+                                       &key
+                                       ;; Options that affect the meaning of the result:
+                                       (assumptions 'nil)
+                                       (interpreted-function-alist ':auto) ;; todo: instead, pass in extra-interpreted-fns?  and bring in their subfunctions too...
+                                       ;; Options that affect how the rewriting goes:
+                                       (rules ':standard) ;to completely replace the usual set of rules
+                                       ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
+                                       (extra-rules 'nil) ; to add to the usual set of rules
+                                       (remove-rules 'nil) ; to remove from to the usual set of rules
+                                       ;; (simplify-xorsp 't)
+                                       ;; Options that affect performance:
+                                       (memoizep 't)
+                                       ;; Options for debugging:
+                                       (monitor 'nil)
+                                       (count-hits 'nil)
+                                       (print 'nil)
+                                       ;; Options that affect what is produced:
+                                       (produce-function 'nil)
+                                       (disable-function 'nil) ;todo: consider making 't the default
+                                       (function-type ':auto)
+                                       (function-params ':auto)
+                                       (produce-theorem 'nil)
+                                       (local 't)
+                                       )
+  (let ((form `(make-event-quiet (unroll-spec-basic-fn ',defconst-name
+                                                       ,term
+                                                       ,rules
+                                                       ;; ,rule-alists
+                                                       ,extra-rules
+                                                       ,remove-rules
+                                                       ,assumptions
+                                                       ,interpreted-function-alist
+                                                       ,monitor
+                                                       ,memoizep
+                                                       ,count-hits
+                                                       ;; ,simplify-xorsp
+                                                       ,produce-function
+                                                       ,disable-function
+                                                       ,function-type
+                                                       ,function-params
+                                                       ,produce-theorem
+                                                       ,print
+                                                       ',whole-form
+                                                       state))))
+    (if (check-boolean local)
+        (list 'local form)
+      form))
+  :parents (axe) ; or can we consider this a lifter?
+  :short "Open functions and unroll recursion in a spec."
+  :args ((defconst-name
+           "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
+         (term "The term to simplify.")
+         (assumptions "Assumptions to use when unrolling")
+         (interpreted-function-alist "Definitions of non-built-in functions to evaluate, or :auto.")
+         (rules "The basic set of rules to use (a list of symbols), or :standard (meaning to use the standard set), or :auto (meaning to try to open functions until only supported Axe operations [on bit-vectors, booleans, arrays, etc.] remain).")
+         (extra-rules "Rules to add to the base set of rules.")
+         (remove-rules "Rules to remove from the base set of rules.")
+         (memoizep "Whether to memoize during rewriting.")
+         (monitor "Rules to monitor, a list of symbols.")
+         (count-hits "Whether to count rule hits rewriting")
+         (print "How much to print, a print-level")
+         (produce-function "Whether to produce a function (in addition to a defconst).")
+         (disable-function "Whether to disable the produced function.")
+         (function-type "How to create a function for the DAG (:term, :embedded-dag, :lets, or :auto).")
+         (function-params "The param to use for the produced function (specifies their order).")
+         (produce-theorem "Whether to create a theorem stating that the dag is equal to the orignal term (using skip-proofs).")
+         (local "Whether to make the result of @('unroll-spec-basic') local to the enclosing book (or @('encapsulate')).  This prevents a large DAG from being stored in the @(tsee certificate) of the book, but it means that the result of @('unroll-spec-basic') is not accessible from other books.  Usually, the default value of @('t') is appropriate, because the book that calls @('unroll-spec-basic') is not included by other books."))
+  :description ("Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
+                "To decide which rewrite rules to use, the tool starts with either the @(':rules') if supplied, or a basic default set of rules, @('unroll-spec-basic-rules').  Then the @(':extra-rules') are added and then @(':remove-rules') are removed."))

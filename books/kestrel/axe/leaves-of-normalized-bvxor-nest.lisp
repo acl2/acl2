@@ -1,7 +1,7 @@
 ; Extract leaves from a nest of BVXORs in a DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,6 +16,10 @@
 (include-book "kestrel/utilities/forms" :dir :system) ;for call-of
 (include-book "kestrel/bv/bvxor" :dir :system) ; since this tool knows about bvxor
 (local (include-book "kestrel/lists-light/nth" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/cdr" :dir :system))
+
+(local (in-theory (enable consp-of-cdr)))
 
 ;; Justifies how constants are handled below:
 (thm
@@ -38,7 +42,7 @@
 ;; of the top-level BVXOR).
 ;;
 ;; 3. has leaf nodes (nodes that are not BVXORs of the given size) that appear
-;; in descending order or nodenum as we explore the nest from the top.
+;; in descending order of nodenum as we explore the nest from the top.
 
 ;; Extend NODENUMS-ACC with the bvxor leaves of NODENUM, which should point to
 ;; a normalized BVXOR nest with no constant first argument.  There will be no
@@ -46,24 +50,23 @@
 ;; caller handles a possible constant at the front.  Returns the list of
 ;; nodenums of the leaves in the nest (in increasing order by nodenum -- the
 ;; reverse of the order in which they appear in the nest).
-(defund leaves-of-normalized-bvxor-nest-aux (nodenum ;if this points to bvxor nest, that nest is known to be normalized
+(defund leaves-of-normalized-bvxor-nest-aux (nodenum ;if this points to a bvxor nest, that nest is known to be normalized
                                              size    ;not quoted
                                              dag-array-name dag-array dag-len
                                              nodenums-acc)
-  (declare (xargs :measure (nfix (+ 1 nodenum))
-                  :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (natp nodenum)
-                              (< nodenum dag-len)
-                              (natp size))
-                  :guard-hints (("Goal" :in-theory (e/d (nth-of-cdr cadr-becomes-nth-of-1
-                                                                    pseudo-dag-arrayp ;todo
-                                                                    )
+  (declare (xargs :guard (and (natp nodenum)
+                              (natp size)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (< nodenum dag-len))
+                  :measure (nfix (+ 1 nodenum))
+                  :guard-hints (("Goal" :in-theory (e/d (nth-of-cdr
+                                                         cadr-becomes-nth-of-1)
                                                         (car-becomes-nth-of-0))))))
   (if (not (mbt (natp nodenum)))
       nodenums-acc
     (let* ((expr (aref1 dag-array-name dag-array nodenum)))
       (if (and (call-of 'bvxor expr)
-               (= 3 (len (dargs expr)))
+               (consp (cdr (cdr (dargs expr))))
                (let ((size-arg (darg1 expr)))
                  (and (consp size-arg) ;the size argument must be a quotep
                       (eql size (unquote size-arg))))
@@ -85,9 +88,7 @@
                                (dargp-less-than nodenum-or-quotep dag-len)
                                (natp size))
                   :guard-hints (("Goal" :in-theory (e/d (nth-of-cdr cadr-becomes-nth-of-1)
-                                                        (car-becomes-nth-of-0
-                                                         pseudo-dag-arrayp ;todo
-                                                         ))))))
+                                                        (car-becomes-nth-of-0))))))
   (if (consp nodenum-or-quotep) ;checks for quotep
       (mv (bvchop size (ifix (unquote nodenum-or-quotep))) ;FIXME: the ifix was needed for acl2 5.0;  we had a call to :fake here.
           nil)

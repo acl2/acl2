@@ -16,7 +16,7 @@
 
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
-(include-book "all-dargp-less-than")
+(include-book "bounded-darg-listp")
 
 ;; A node-replacement-alist maps nodenums to things (nodenums or quoteps) to
 ;; which they are known to be equal.  The mapping is represented by a list of
@@ -26,7 +26,7 @@
   (and (alistp pairs)
        (all-natp (strip-cars pairs))
        (all-< (strip-cars pairs) dag-len)
-       (all-dargp-less-than (strip-cdrs pairs) dag-len)))
+       (bounded-darg-listp (strip-cdrs pairs) dag-len)))
 
 (defthm node-replacement-alistp-of-nil
   (node-replacement-alistp nil dag-len)

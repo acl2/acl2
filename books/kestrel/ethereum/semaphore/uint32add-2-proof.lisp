@@ -280,7 +280,7 @@
                  acl2::bvxor-1-becomes-bitxor
                  acl2::bitxor-of-bvcat-irrel-arg1
                  acl2::bitxor-of-bvcat-irrel-arg2
-                 acl2::bitxor-commutative-increasing-dag
+                 acl2::bitxor-commutative-increasing-axe
 
                  ;; now that we have substituted for the bits, recreate the bvcats:
                  ACL2::BVCAT-OF-SLICE-AND-SLICE-ADJACENT
@@ -291,6 +291,6 @@
                  ACL2::BVCAT-OF-slice-AND-X-ADJACENT
                  ACL2::BVCAT-OF-GETBIT-AND-X-ADJACENT-2
                  ACL2::BVCAT-OF-slice-AND-X-ADJACENT-2
-                 ACL2::BVPLUS-COMMUTATIVE-DAG
+                 acl2::bvplus-commutative-axe
                  )
                ))

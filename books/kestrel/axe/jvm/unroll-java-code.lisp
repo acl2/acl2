@@ -22,11 +22,15 @@
 ;; information and others not have it?).
 
 (include-book "unroll-java-code-common")
+(include-book "output-indicators")
+(include-book "nice-output-indicators")
 (include-book "kestrel/utilities/redundancy" :dir :system)
-(include-book "kestrel/utilities/doc" :dir :system)
+(include-book "kestrel/utilities/defmacrodoc" :dir :system)
+(include-book "kestrel/utilities/check-boolean" :dir :system)
 ;(include-book "../dag-size-fast")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
-(include-book "../prune") ;brings in the rewriter
+(include-book "../prune") ;brings in rewriter-basic
+(include-book "../dag-info")
 
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))
 
@@ -35,6 +39,24 @@
 
 (defttag invariant-risk)
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
+
+;; Returns a boolean
+(defun dag-ok-after-symbolic-execution (dag assumptions error-on-incomplete-runsp wrld)
+  (declare (xargs :mode :program)) ; because this calls untranslate
+  (let ((dag-fns (dag-fns dag)))
+    (if (or (member-eq 'run-until-return-from-stack-height dag-fns) ;todo: pass in a set of functions to look for?
+            (member-eq 'jvm::run-n-steps dag-fns)
+            (member-eq 'jvm::do-inst dag-fns)
+            (member-eq 'jvm::error-state dag-fns))
+        (progn$ (if (dag-or-quotep-size-less-thanp dag 10000)
+                    (progn$ (cw "(Result Term:~%")
+                            (cw "~X01" (untranslate (dag-to-term dag) nil wrld) nil)
+                            (cw ")~%"))
+                  (cw "(Result DAG: ~x0)~%" dag))
+                (cw "(Assumptions were: ~x0)~%" assumptions)
+                (and error-on-incomplete-runsp
+                     (hard-error 'unroll-java-code-fn "ERROR: Symbolic simulation did not seem to finish (see DAG and assumptions above)." nil)))
+      t)))
 
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
@@ -48,14 +70,13 @@
                        assumptions
                        simplify-xorsp
                        rules-to-monitor
-                       ;use-internal-contextsp
+                       ;;use-internal-contextsp
                        print
                        print-interval
                        memoizep
                        total-steps
                        state)
-  (declare (xargs :stobjs (state)
-                  :guard (and (natp steps-left)
+  (declare (xargs :guard (and (natp steps-left)
                               (step-incrementp step-increment)
                               (true-listp rule-alists)
                               (all-rule-alistp rule-alists)
@@ -67,6 +88,7 @@
                               (natp total-steps)
                               (booleanp simplify-xorsp))
                   :mode :program ;; because we call simp-dag-fn and untranslate
+                  :stobjs (state)
                   ))
   (if (zp steps-left)
       (mv (erp-nil) dag state)
@@ -115,7 +137,7 @@
                                      (cw "~X01)" dag nil)))))))
               (repeatedly-run dag
                               (- steps-left steps-for-this-iteration)
-                              step-increment rule-alists assumptions simplify-xorsp rules-to-monitor; use-internal-contextsp
+                              step-increment rule-alists assumptions simplify-xorsp rules-to-monitor ; use-internal-contextsp
                               print
                               print-interval
                               memoizep
@@ -127,8 +149,9 @@
 
 ;; Returns (mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state).
 ;; This uses all classes currently in the global-class-table.
+;; Why does this return the dag-fns?
 (defun unroll-java-code-fn-aux (method-designator-string
-                                output-indicator
+                                maybe-nice-output-indicator
                                 array-length-alist
                                 extra-rules  ;to add to default set
                                 remove-rules ;to remove from default set
@@ -149,11 +172,11 @@
                                 branches
                                 param-names ; may be :auto
                                 chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
-                                error-on-incomplete-runsp ;whether to throw a hard error
+                                error-on-incomplete-runsp ;whether to throw a hard error (may be nil if further pruning can be done in the caller)
                                 state)
-  (declare (xargs :stobjs (state)
-                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
-                  :guard (and (or (eq :all classes-to-assume-initialized)
+  (declare (xargs :guard (and (or (eq :auto maybe-nice-output-indicator)
+                                  (nice-output-indicatorp maybe-nice-output-indicator))
+                              (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
@@ -173,7 +196,9 @@
                               (booleanp chunkedp)
                               (booleanp error-on-incomplete-runsp)
                               (booleanp simplify-xorsp))
-                  :verify-guards nil))
+                  :stobjs (state)
+                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
+                  ))
   (b* ((method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string)) ;todo: should this be called a descriptor?
@@ -199,14 +224,22 @@
             nil nil nil nil
             state))
        (method-info (lookup-equal method-id method-info-alist))
+       (param-slot-to-name-alist (make-param-slot-to-name-alist method-info param-names))
+       (parameter-names (strip-cdrs param-slot-to-name-alist)) ; the actual names used
        (class-table-term (make-class-table-term-compact class-alist 'initial-class-table))
        (locals-term 'locals)
        (initial-heap-term 'initial-heap)
        (initial-intern-table-term 'initial-intern-table)
        (user-assumptions (translate-terms user-assumptions 'unroll-java-code-fn (w state))) ;throws an error on bad input
+       ;; TODO: Not quite right.  Need to allow the byte- or bit-blasted array var names (todo: what about clashes between those and the other param names?):
+       ;; (assumption-vars (free-vars-in-terms user-assumptions))
+       ;; (allowed-assumption-vars (append parameter-names
+       ;;                                  '(locals initial-heap initial-static-field-map and initial-intern-table)))
+       ;; ((when (not (subsetp-eq assumption-vars allowed-assumption-vars)))
+       ;;  (er hard? 'unroll-java-code-fn-aux "Disallowed variables in assumptions, ~x0.  The only allowed vars are ~x1." user-assumptions allowed-assumption-vars)
+       ;;  (mv :bad-assumption-vars nil nil nil nil nil state))
        (user-assumptions (desugar-calls-of-contents-in-terms user-assumptions initial-heap-term))
-       (param-slot-to-name-alist (make-param-slot-to-name-alist method-info param-names))
-       (parameter-names (strip-cdrs param-slot-to-name-alist)) ; the actual names used
+       ;; todo: have this return all the var names creates for array components/bits:
        (parameter-assumptions (parameter-assumptions method-info array-length-alist locals-term initial-heap-term
                                                      vars-for-array-elements
                                                      param-slot-to-name-alist
@@ -263,10 +296,11 @@
                        (enquote classes-to-assume-initialized)
                        'initial-intern-table)))
        (return-type (lookup-eq :return-type method-info))
+       (parameter-types (lookup-eq :parameter-types method-info))
        ;; Handle an output-indicator of :auto:
-       (output-indicator (if (eq :auto output-indicator)
+       (output-indicator (if (eq :auto maybe-nice-output-indicator)
                              (resolve-auto-output-indicator return-type)
-                           output-indicator))
+                           (desugar-nice-output-indicatorp maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
        (term-to-run-with-output-extractor (wrap-term-with-output-extractor output-indicator ;return-type
                                                                            locals-term term-to-run class-alist))
        (symbolic-execution-rules (if (eq :auto steps)
@@ -279,7 +313,7 @@
                                    ))
        ((mv erp default-rule-alist)
         (make-rule-alist (append (unroll-java-code-rules)
-                                                       symbolic-execution-rules)
+                                 symbolic-execution-rules)
                          (w state)))
        ((when erp) (mv erp nil nil nil nil nil state))
        (rule-alists (or rule-alists ;use user-supplied rule-alists, if any
@@ -330,28 +364,18 @@
                                            state)
           (mv nil dag state)))
        ((when erp) (mv erp nil nil nil nil nil state))
-       (dag-fns (dag-fns dag)))
-    (if (or (member-eq 'run-until-return-from-stack-height dag-fns)
-            (member-eq 'jvm::run-n-steps dag-fns)
-            (member-eq 'jvm::do-inst dag-fns))
-        (progn$ (if (dag-or-quotep-size-less-thanp dag 10000)
-                    (progn$ (cw "(Result Term:~%")
-                            (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil)
-                            (cw ")~%"))
-                  (cw "(Result DAG: ~x0)~%" dag))
-                (cw "(Assumptions were: ~x0)~%" all-assumptions)
-                (and error-on-incomplete-runsp
-                     (hard-error 'unroll-java-code-fn "ERROR: Symbolic simulation did not seem to finish (see DAG and assumptions above)." nil))
-                (mv (if error-on-incomplete-runsp
-                        (erp-t)
-                      (erp-nil))
-                    dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state))
-      (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state))))
+       ;; Check whether symbolic execution failed:
+       (dag-okp (dag-ok-after-symbolic-execution dag all-assumptions error-on-incomplete-runsp (w state))))
+    (mv (if (and (not dag-okp)
+                 error-on-incomplete-runsp)
+            (erp-t)
+          (erp-nil))
+        dag all-assumptions term-to-run-with-output-extractor (dag-fns dag) parameter-names state)))
 
 ;; Returns (mv erp event state).
 (defun unroll-java-code-fn (defconst-name
-                             method-designator-string
-                             output-indicator
+                             method-indicator
+                             maybe-nice-output-indicator
                              array-length-alist
                              extra-rules ;to add to default set
                              remove-rules ;to remove from default set
@@ -376,9 +400,10 @@
                              chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
                              whole-form
                              state)
-  (declare (xargs :stobjs (state)
-                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
-                  :guard (and (or (eq :all classes-to-assume-initialized)
+  (declare (xargs :guard (and (or (eq :auto maybe-nice-output-indicator)
+                                  (nice-output-indicatorp maybe-nice-output-indicator))
+                              (jvm::method-indicatorp method-indicator)
+                              (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
@@ -400,7 +425,9 @@
                                   (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
                               (booleanp simplify-xorsp))
-                  :verify-guards nil))
+                  :stobjs (state)
+                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
+                  ))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
        ;; check the name that will be defined:
@@ -410,8 +437,12 @@
        ((when (and produce-theorem (not produce-function)))
         (er hard? 'unroll-java-code-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
+       ;; Adds the descriptor if omitted and unambiguous:
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
+       ;; Printed even if print is nil (seems ok):
+       (- (cw "(Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
-        (unroll-java-code-fn-aux method-designator-string output-indicator array-length-alist
+        (unroll-java-code-fn-aux method-designator-string maybe-nice-output-indicator array-length-alist
                                  extra-rules ;to add to default set
                                  remove-rules ;to remove from default set
                                  rule-alists
@@ -459,9 +490,13 @@
                                                   (,function-name ,@dag-vars)))))))))
        (items-created (append (list defconst-name)
                               (if produce-function (list function-name) nil)
-                              (if produce-theorem (list theorem-name) nil))))
+                              (if produce-theorem (list theorem-name) nil)))
+       (- (cw "Unrolling finished.~%"))
+       ;; (- (cw "Info on unrolled DAG:~%"))
+       ((mv & & state) (dag-info-fn-aux dag defconst-name nil state)) ; maybe suppress with print arg?
+       (- (cw ")~%")))
     (mv (erp-nil)
-        (extend-progn (extend-progn event `(table unroll-java-code-table ',whole-form ',event))
+        (extend-progn (extend-progn event `(with-output :off :all (table unroll-java-code-table ',whole-form ',event)))
                       `(value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
                       )
         state)))
@@ -477,97 +512,109 @@
 ;; TODO: Have this also return a theorem.
 (defmacrodoc unroll-java-code (&whole whole-form
                                       defconst-name
-                                      method-designator-string
+                                      method-indicator
                                       &key
-                                      (output ':auto)
-                                      (array-length-alist 'nil)
-                                      (extra-rules 'nil) ; to add to the usual set of rules
-                                      (remove-rules 'nil)
-                                      (monitor 'nil) ;rules to monitor
-                                      (rule-alists 'nil) ;to completely replace the usual sets of rules
+                                      ;; Options affecting what is proved:
                                       (assumptions 'nil) ;TODO: What variables are these over? 'locals'?  well, at least the params of the function
-                                      (simplify-xors 't)
+                                      (array-length-alist 'nil)
                                       (classes-to-assume-initialized ''("java.lang.Object" "java.lang.System")) ;TODO; Try making :all the default
                                       (ignore-exceptions 'nil)
                                       (ignore-errors 'nil)
                                       (vars-for-array-elements 't) ;whether to introduce vars for individual array elements
-                                      (print 'nil)
-                                      (print-interval 'nil)
-                                      (memoizep 't)
+                                      (param-names ':auto)
+                                      (output ':auto)
+                                      (steps ':auto) ; todo: can this ever be less than the whole run, other than to debug a failed run?
+                                      ;; Options affecting how the lifting goes:
+                                      (rule-alists 'nil) ;to completely replace the usual sets of rules
+                                      (extra-rules 'nil) ; to add to the usual set of rules
+                                      (remove-rules 'nil)
+                                      (simplify-xors 't)
                                       (prune-branches 'nil) ;todo: make t the default
                                       (call-stp 'nil)
-                                      (steps ':auto)
+                                      ;; Options affecting performance:
+                                      (memoizep 't)
                                       (branches ':smart) ;; either :smart (try to merge at join points) or :split (split the execution and don't re-merge)
-                                      (param-names ':auto)
                                       (chunkedp 'nil)
+                                      ;; Options for debugging:
+                                      (monitor 'nil) ;rules to monitor
+                                      (print 'nil)
+                                      (print-interval 'nil)
+                                      ;; Options to produce extra events:
                                       (produce-theorem 'nil)
-                                      (produce-function 'nil))
-  (let ((form `(unroll-java-code-fn ',defconst-name
-                                    ',method-designator-string
-                                    ',output
-                                    ,array-length-alist
-                                    ,extra-rules
-                                    ,remove-rules
-                                    ,rule-alists
-                                    ,monitor
-                                    ,assumptions
-                                    ',simplify-xors
-                                    ,classes-to-assume-initialized
-                                    ,ignore-exceptions
-                                    ,ignore-errors
-                                    ,print
-                                    ,print-interval
-                                    ,memoizep
-                                    ,vars-for-array-elements
-                                    ',prune-branches
-                                    ',call-stp
-                                    ',produce-theorem
-                                    ',steps
-                                    ',branches
-                                    ',param-names
-                                    ',produce-function
-                                    ',chunkedp
-                                    ;; end of normal args
-                                    ',whole-form
-                                    state)))
-    (if print
-        `(make-event ,form)
-      `(with-output
-         :off :all
-         :on error
-         :gag-mode nil (make-event ,form))))
-  :parents (lifter)
-  :short "Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
+                                      (produce-function 'nil)
+                                      (local 't))
+  (let* ((form `(unroll-java-code-fn ',defconst-name
+                                     ',method-indicator
+                                     ',output
+                                     ,array-length-alist
+                                     ,extra-rules
+                                     ,remove-rules
+                                     ,rule-alists
+                                     ,monitor
+                                     ,assumptions
+                                     ',simplify-xors
+                                     ,classes-to-assume-initialized
+                                     ,ignore-exceptions
+                                     ,ignore-errors
+                                     ,print
+                                     ,print-interval
+                                     ,memoizep
+                                     ,vars-for-array-elements
+                                     ',prune-branches
+                                     ',call-stp
+                                     ',produce-theorem
+                                     ',steps
+                                     ',branches
+                                     ',param-names
+                                     ',produce-function
+                                     ',chunkedp
+                                     ;; end of normal args
+                                     ',whole-form
+                                     state))
+         (form (if print
+                   `(make-event ,form)
+                 `(with-output ; todo: suppress the output from processing the events even if :print is t?
+                    :off :all
+                    :on (comment error)
+                    :gag-mode nil
+                    (make-event ,form))))
+         (form (if (check-boolean local)
+                   (list 'local form)
+                 form)))
+    form)
+  :parents (lifters)
+  :short "Lift a Java method to create a DAG, unrolling loops as needed."
   :args ((defconst-name
-           "The name of the constant to create.  This constant will represent the computation in DAG form.  A function is also created (it's name is obtained by stripping the stars from the defconst name).")
-         (method-designator-string
-          "The method designator of the Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").")
-         (output                  "An indication of which state component to extract")
+           "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
+         (method-indicator
+          "The Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").  The descriptor (input and output type) can be omitted if only one method in the given class has the given name.")
+         (assumptions             "Terms to assume true when unrolling.  These assumptions can mention the method's parameter names (symbols), the byte-variables and/or bit-variables in the contents of array parameters, and the special variables @('locals'), @('initial-heap'), @('initial-static-field-map'), and @('initial-intern-table').")
          (array-length-alist      "An alist pairing array parameter names (symbols) with their lengths.")
-         (assumptions             "Terms to assume true when unrolling")
-         (simplify-xors           "Whether to normalize xor nests (t or nil)")
          (classes-to-assume-initialized "Classes to assume the JVM has already initialized (or :all)")
          (ignore-exceptions       "Whether to assume exceptions do not happen (e.g., out-of-bounds array accesses)")
          (ignore-errors           "Whether to assume JVM errors do not happen")
+         (rule-alists             "If non-nil, rule-alists to use (these completely replace the usual rule sets)")
          (extra-rules             "Rules to add to the usual set of rules")
          (remove-rules            "Rules to remove from the usual set of rules")
-         (monitor                 "Rules to monitor (to help debug failures)")
-         (rule-alists             "If non-nil, rule-alists to use (these completely replace the usual rule sets)")
-         (print                   "How much to print (t or nil of :brief, etc.; default nil)")
          (vars-for-array-elements "whether to introduce vars for individual array elements (nil, t, or :bits)")
+         (param-names "Names to use for the parameters (e.g., if no debugging information is available), or :auto.")
+         (output                  "An indication of which state component to extract")
+         (steps "A number of steps to run, or :auto, meaning run until the method returns. (Consider using :output :all when using :steps, especially if the computation may not complete after that many steps.)")
+         (simplify-xors           "Whether to normalize xor nests (t or nil)")
          (prune-branches          "whether to aggressively prune unreachable branches in the result")
          (call-stp                "whether to call STP when pruning (t, nil, or a number of conflicts before giving up)")
-         (print-interval "How often to print (number of nodes)")
-         (memoizep "Whether to memoize rewrites during unrolling (boolean, default t).")
-         (steps "A number of steps to run, or :auto, meaning run until the method returns. (Consider using :output :all when using :steps, especially if the computation may not complete after that many steps.)")
+         (memoizep "Whether to memoize rewrites during unrolling (a boolean).")
          (branches "How to handle branches in the execution. Either :smart (try to merge at join points) or :split (split the execution and don't re-merge).")
-         (param-names "Names to use for the parameters (e.g., if no debugging information is available), or :auto.")
-         (produce-theorem "Whether to produce a theorem about the result of the lifting (currently has to be trusted).")
-         (produce-function "Whether to produce a defun in addition to a DAG (default t).")
          (chunkedp "whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code)")
-         )
-  :description "<p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>"
-  )
+         (monitor                 "Rules to monitor (to help debug failures)")
+         (print                   "How much to print (t or nil or :brief, etc.)")
+         (print-interval "How often to print (number of nodes)")
+         (produce-theorem "Whether to produce a theorem about the result of the lifting (currently has to be trusted).")
+         (produce-function "Whether to produce a defun in addition to a DAG, a boolean.")
+         (local "Whether to make the result of @('unroll-java-code') local to the enclosing book (or @('encapsulate')).  This prevents a large DAG from being stored in the @(tsee certificate) of the book, but it means that the result of @('unroll-java-code') is not accessible from other books.  Usually, the default value of @('t') is appropriate, because the book that calls @('unroll-java-code') is not included by other books."))
+  :description ("Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
+                "This event creates a @(see defconst) whose name is @('defconst-name')."
+                "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))
 
 ;; Ensure all the rules needed by the unroller are included:
 (assert-event (ensure-all-theoremsp (unroll-java-code-rules) (w state)))

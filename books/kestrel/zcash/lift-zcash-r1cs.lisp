@@ -23,7 +23,7 @@
                                     (remove-rules 'nil)
                                     (monitor 'nil)
                                     (memoizep 'nil)
-                                    (count-hitsp 'nil)
+                                    (count-hits 'nil)
                                     (print 'nil))
   `(r1cs::lift-r1cs ,name-of-defconst
                     ,vars
@@ -36,7 +36,7 @@
                     :remove-rules ,remove-rules
                     :monitor ,monitor
                     :memoizep ,memoizep
-                    :count-hitsp ,count-hitsp
+                    :count-hits ,count-hits
                     :print ,print)
   :parents (zcash r1cs::lift-r1cs r1cs::r1cs-verification-with-axe)
   :short "A tool to lift a zcash R1CS"
@@ -49,6 +49,6 @@
          (remove-rules "Rules to be removed from the default rule set used for lifting.  A form that evaluates to a list of symbols.  May be non-@('nil') only when @('rules') is @(':auto').")
          (monitor "Rules to monitor during rewriting.  A form that evaluates to a list of symbols")
          (memoizep "Whether to perform memoization during rewriting.  A boolean.  This may actually slow down the lifting process.")
-         (count-hitsp "Whether to count rule hits during rewriting (may cause rewriting to be somewhat slower).  A boolean.")
+         (count-hits "Whether to count rule hits during rewriting (may cause rewriting to be somewhat slower).  A boolean.")
          (print "Axe print argument") ;todo: document
          ))

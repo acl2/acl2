@@ -420,6 +420,7 @@
            (call-stackp (cdr entry))
            (thread-tablep-aux (rest x))))))
 
+;; The thread-table is an alist mapping thread-designators to call-stacks.
 (defund thread-tablep (x)
   (declare (xargs :guard t))
   (and (alistp x)
@@ -765,105 +766,113 @@
     (cons (first args)
           (extract-keywords (rest (rest args))))))
 
+;; Build a term representing the modification of state-term S, where TH is a
+;; term representing the thread whose data is being modified (if any).
 (defmacro modify (th s &rest args)
   (declare (xargs :guard (and (keyword-value-listp args)
-                              (acl2::subsetp-eq
-                               (extract-keywords args)
-                               '(:call-stack :pc :locals :stack :heap :intern-table
-                                             ;; :method-info
-                                             :locked-object :thread-table
-                                             :heapref-table :monitor-table
-                                             :initialized-classes :static-field-map
-                                             ;; :class-table
-                                             )))))
-  (list 'make-state
-        ;; the thread table:
-        (cond
-         ((or (suppliedp :call-stack args)
-              (suppliedp :pc args)
-              (suppliedp :locals args)
-              (suppliedp :stack args)
-              ;; (suppliedp :method-info args) ;do we need this?
-              (suppliedp :locked-object args)
-              ;; (suppliedp :sync-flag args)
-              ;; (suppliedp :cur-class-name args)
-              )
-          (list 'bind
-                th
-                (cond
-                 ((suppliedp :call-stack args)
-                  (actual :call-stack args))
-                 (t
-                  (list 'push-frame
-                        (list 'make-frame
-                              (if (suppliedp :pc args)
-                                  (actual :pc args)
-                                (list 'pc (list 'thread-top-frame th s)))
-                              (if (suppliedp :locals args)
-                                  (actual :locals args)
-                                (list 'locals (list 'thread-top-frame th s)))
-                              (if (suppliedp :stack args)
-                                  (actual :stack args)
-                                (list 'stack (list 'thread-top-frame th s)))
-                              (if (suppliedp :locked-object args)
-                                  (actual :locked-object args)
-                                (list 'locked-object (list 'thread-top-frame th s)))
-                              (if (suppliedp :method-info args)
-                                  (actual :method-info args)
-                                (list 'method-info (list 'thread-top-frame th s)))
-;(if (suppliedp :sync-flag args)
-;   (actual :sync-flag args)
-;                                      (list 'sync-flag (list 'thread-top-frame th s))
-;)
-                              ;; (if (suppliedp :cur-class-name args)
-                              ;;     (list 's :class-name (actual :cur-class-name args)
-                              ;;           (list 'method-designator
-                              ;;                 (list 'thread-top-frame th s)))
-                              (list 'method-designator
-                                    (list 'thread-top-frame th s))
-;                                      )
-                              )
-                        (list 'pop-frame (list 'call-stack th s)))))
-                (list 'thread-table s)))
-         ((suppliedp :thread-table args)
-          (actual :thread-table args))
-         (t (list 'thread-table s)))
+                              (let ((keywords (extract-keywords args)))
+                                (and (acl2::subsetp-eq
+                                      keywords
+                                      ;; all the allowed keywords:
+                                      '( ;; components of a frame:
+                                        :pc
+                                        :locals
+                                        :stack
+                                        ;; :locked-object
+                                        ;; :method-info
+                                        ;; :method-designator
+                                        :call-stack ; replace the whole call-stack
+                                        :thread-table ; replace the whole thread-table (used in another file)
+                                        ;; other top-level state components:
+                                        :heap
+                                        ;; :class-table
+                                        :heapref-table
+                                        :monitor-table
+                                        :static-field-map
+                                        :initialized-classes ; todo, elsewhere called initialized-class-names
+                                        :intern-table))
+                                     ;; Can't both replace the entire call-stack and part of the top-frame:
+                                     (not (and (member-eq :call-stack keywords)
+                                               (intersection-eq keywords
+                                                                '(:pc :locals :stack :locked-object))))
+                                     ;; Can't both replace the entire thread-table and part of the top-frame:
+                                     (not (and (member-eq :thread-table keywords)
+                                               (intersection-eq keywords
+                                                                '(:pc :locals :stack :locked-object))))'
+                                     ;; Can't both replace the entire thread-table and call-stack:
+                                     (not (and (member-eq :thread-table keywords)
+                                               (member-eq :call-stack keywords))))))))
+  `(make-state
+    ;; the thread table:
+    ,(if (suppliedp :thread-table args)
+         (actual :thread-table args) ; replacing the entire thread-table
+       (if (suppliedp :call-stack args)
+           ;; replacing the entire call stack for thread TH:
+           `(bind ,th ,(actual :call-stack args) (thread-table ,s))
+         (if (or (suppliedp :pc args)
+                 (suppliedp :locals args)
+                 (suppliedp :stack args)
+                 ;; (suppliedp :locked-object args)
+                 (suppliedp :call-stack args)
+                 ;; (suppliedp :method-info args) ;do we need this?
+                 ;; (suppliedp :sync-flag args)
+                 ;; (suppliedp :cur-class-name args)
+                 )
+             ;; replacing info in the top-frame of the call-stack for thread TH:
+             `(bind ,th (push-frame
+                         (make-frame
+                          ,(if (suppliedp :pc args)
+                               (actual :pc args)
+                             `(pc (thread-top-frame ,th ,s)))
+                          ,(if (suppliedp :locals args)
+                               (actual :locals args)
+                             `(locals (thread-top-frame ,th ,s)))
+                          ,(if (suppliedp :stack args)
+                               (actual :stack args)
+                             `(stack (thread-top-frame ,th ,s)))
+                          (locked-object (thread-top-frame ,th ,s))
+                          (method-info (thread-top-frame ,th ,s))
+                          (method-designator (thread-top-frame ,th ,s)))
+                         (pop-frame (call-stack ,th ,s)))
+                    (thread-table ,s))
+           ;; no change to the thread table:
+           `(thread-table ,s))))
 
-        ;; the heap:
-        (if (suppliedp :heap args)
-            (actual :heap args)
-          (list 'heap s))
+    ;; the heap:
+    ,(if (suppliedp :heap args)
+         (actual :heap args)
+       `(heap ,s))
 
-        ;; ;;the class-table (rarely used):
-        ;; (if (suppliedp :class-table args)
-        ;;     (actual :class-table args)
-        ;;   (list 'class-table s))
-        (list 'class-table s)
+    ;; ;;the class-table (rarely used):
+    ;; (if (suppliedp :class-table args)
+    ;;     (actual :class-table args)
+    ;;   (list 'class-table s))
+    (class-table ,s)
 
-        ;; the heapref-table:
-        (if (suppliedp :heapref-table args)
-            (actual :heapref-table args)
-          (list 'heapref-table s))
+    ;; the heapref-table:
+    ,(if (suppliedp :heapref-table args)
+         (actual :heapref-table args)
+       `(heapref-table ,s))
 
-        ;;the monitor-table:
-        (if (suppliedp :monitor-table args)
-            (actual :monitor-table args)
-          (list 'monitor-table s))
+    ;;the monitor-table:
+    ,(if (suppliedp :monitor-table args)
+         (actual :monitor-table args)
+       `(monitor-table ,s))
 
-        ;; the static-field-map:
-        (if (suppliedp :static-field-map args)
-            (actual :static-field-map args)
-          (list 'static-field-map s))
+    ;; the static-field-map:
+    ,(if (suppliedp :static-field-map args)
+         (actual :static-field-map args)
+       `(static-field-map ,s))
 
-        ;; the initialized-classes:
-        (if (suppliedp :initialized-classes args)
-            (actual :initialized-classes args)
-          (list 'initialized-classes s))
+    ;; the initialized-classes:
+    ,(if (suppliedp :initialized-classes args)
+         (actual :initialized-classes args)
+       `(initialized-classes ,s))
 
-        ;; the intern-table:
-        (if (suppliedp :intern-table args)
-            (actual :intern-table args)
-          (list 'intern-table s))))
+    ;; the intern-table:
+    ,(if (suppliedp :intern-table args)
+         (actual :intern-table args)
+       `(intern-table ,s))))
 
 (defun call-stack-non-emptyp (th s)
   (declare (xargs :guard (and (thread-designatorp th)

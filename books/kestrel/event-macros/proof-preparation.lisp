@@ -1,6 +1,6 @@
 ; Event Macros Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -32,7 +32,7 @@
      may not be met if the carefully architected hints are ``sabotaged''
      by things like default hints or special treatment of built-in functions
      (e.g. functions that get expanded
-     even if their definition is disabled.
+     even if their definition is disabled).
      Thus, an event macro should generate, prior to the proofs in question,
      events that eliminate these possible saboteurs.
      These are preparatory events for the proofs.")
@@ -52,14 +52,29 @@
 (defmacro+ evmac-prepare-proofs ()
   :short "Events to prepare proof generation."
   :long
-  (xdoc::topstring-p
-   "We disable the default and override hints;
-    these are implicitly local events.
-    We also add an explicitly local event to prevent @(tsee mv-nth)
-    from being expanded,
-    which is accomplished via a system attachment.")
+  (xdoc::topstring
+   (xdoc::p
+    "We disable the "
+    (xdoc::seetopic "default-hints" "default hints")
+    " and "
+    (xdoc::seetopic "override-hints" "override hints")
+    "; these are implicitly local events.")
+   (xdoc::p
+    "We add an explicitly local event
+     to prevent @(tsee mv-nth) from being expanded,
+     which is accomplished via a system attachment.")
+   (xdoc::p
+    "We add an implicitly local event to set the "
+    (xdoc::seetopic "induction-depth-limit" "induction depth limit")
+    " to 1.
+     This lets generated proofs by inductions work
+     in case @(':induct') hints are not generated.
+     It also prevents nested inductions from working,
+     which arguably should not be used in generated proofs
+     (or even in manual proofs)."))
   '(progn
      (set-default-hints nil)
      (set-override-hints nil)
      (local
-      (defattach-system simplifiable-mv-nth-p constant-nil-function-arity-0))))
+      (defattach-system simplifiable-mv-nth-p constant-nil-function-arity-0))
+     (set-induction-depth-limit 1)))

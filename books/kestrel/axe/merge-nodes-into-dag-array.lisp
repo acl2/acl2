@@ -50,7 +50,7 @@
                               (consecutivep (strip-cars rev-dag-lst)))
                   :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
                                  :expand (weak-dagp-aux rev-dag-lst)
-                                 :in-theory (e/d (car-of-cadr-when-consecutivep-of-strip-cars strip-cars dag-exprp0)
+                                 :in-theory (e/d (car-of-cadr-when-consecutivep-of-strip-cars strip-cars dag-exprp)
                                                  ())))))
   (if (endp rev-dag-lst)
       (mv (erp-nil) renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -74,7 +74,7 @@
                                           (aset1 'renaming-array renaming-array nodenum expr))
             ;;else, it's a regular function call:
             (let* ((args (dargs expr))
-                   (renamed-args (rename-args args 'renaming-array renaming-array)))
+                   (renamed-args (rename-dargs args 'renaming-array renaming-array)))
               (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
                 (add-function-call-expr-to-dag-array fn renamed-args dag-array dag-len dag-parent-array dag-constant-alist)
                 (if erp
@@ -105,7 +105,7 @@
                             ;wf-dagp
                             caar-of-cdr-when-consecutivep-of-strip-cars
                             strip-cars
-                            dag-exprp0)
+                            dag-exprp)
                            (LEN-WHEN-PSEUDO-DAGP-AUX ;looped
                             pseudo-dag-arrayp)))))
 
@@ -271,6 +271,6 @@
            :in-theory (e/d (MERGE-NODES-INTO-DAG-ARRAY ;caar-of-cdr-when-PSEUDO-DAGP-AUX
                             caar-of-cdr-when-consecutivep-of-strip-cars
                             strip-cars
-                            dag-exprp0)
+                            dag-exprp)
                            (LEN-WHEN-PSEUDO-DAGP-AUX ;looped
                             pseudo-dag-arrayp)))))

@@ -113,18 +113,6 @@
              (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline tp)
              (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline ep))))
 
-(defthm acl2::bvcat-of-if-arg2
-  (equal (acl2::bvcat higsize (if test highval1 highval2) lowsize lowval)
-         (if test
-             (acl2::bvcat higsize highval1 lowsize lowval)
-           (acl2::bvcat higsize highval2 lowsize lowval))))
-
-(defthm acl2::bvcat-of-if-arg4
-  (equal (acl2::bvcat higsize highval lowsize (if test lowval1 lowval2))
-         (if test
-             (acl2::bvcat higsize highval lowsize lowval1)
-           (acl2::bvcat higsize highval lowsize lowval2))))
-
 ;;todo: need to get the standard 32-bit assumptions gathered up:
 
 ;; TODO: reads like this (READ 4 4214784 X86) should now be resolvable?

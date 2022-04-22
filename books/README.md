@@ -57,12 +57,11 @@ which includes the [ACL2 system][ACL2] and the [community
 books][community books], from [the releases page][releases] on GitHub.
 
 Alternatively you can obtain a copy of the latest release using
-[`git`][git].  Do the following, after changing `/path/to/somewhere/` to
-some suitable path where the directory `/path/to/somewhere/acl2/` does
-not already exist.
+[`git`][git].  For example, do the following in a fresh directory
+(note the "." at the end).
 
 ```
-git clone -b 8.4 git://github.com/acl2-devel/acl2-devel.git /path/to/somewhere/acl2/
+git clone -b 8.4 https://github.com/acl2-devel/acl2-devel .
 ```
 
 The new directory `/path/to/somewhere/acl2/` will now contain a copy of
@@ -79,10 +78,11 @@ executable and certify books in your new directory.
 #### Experimental Development Version
 
 To check out the latest development version of the repository using
-`git`, do the following:
+`git`, you can (for example) do the following in a fresh directory
+(note the "." at the end):
 
 ```
-git clone git://github.com/acl2/acl2.git
+git clone https://github.com/acl2/acl2 .
 ```
 
 ### Contributing

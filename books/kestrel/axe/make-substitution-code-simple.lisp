@@ -1,7 +1,7 @@
 ; A tool to generate substution code that calls a given evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,7 +16,7 @@
 ;; version of sublis-var-and-eval that uses it.
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
-(include-book "all-dargp-less-than")
+(include-book "bounded-darg-listp")
 (include-book "axe-trees")
 
 (defun make-substitution-code-simple-fn (suffix evaluator-base-name)
@@ -35,11 +35,12 @@
         ;; Returns a new term.
         (defund ,sublis-var-and-eval-name (alist ;maps vars to nodenums/quoteps
                                               term interpreted-function-alist)
-          (declare (xargs :verify-guards nil ;done below
-                          :guard (and (symbol-alistp alist)
+          (declare (xargs :guard (and (symbol-alistp alist)
                                       (all-dargp (strip-cdrs alist))
                                       (pseudo-termp term)
-                                      (interpreted-function-alistp interpreted-function-alist))))
+                                      (interpreted-function-alistp interpreted-function-alist))
+                          :verify-guards nil ;done below
+                          ))
           (cond ((variablep term)
                  (maybe-replace-var term alist))
                 ((fquotep term) term)
@@ -77,12 +78,10 @@
 
         ;; Returns (mv ground-termp args).
         (defund ,sublis-var-and-eval-lst-name (alist terms interpreted-function-alist)
-          (declare (xargs
-                    :verify-guards nil
-                    :guard (and (symbol-alistp alist)
-                                (all-dargp (strip-cdrs alist)) ;gen?  really just need that things whose cars are 'quote are myquoteps
-                                (pseudo-term-listp terms)
-                                (interpreted-function-alistp interpreted-function-alist))))
+          (declare (xargs :guard (and (symbol-alistp alist)
+                                      (all-dargp (strip-cdrs alist)) ;gen?  really just need that things whose cars are 'quote are myquoteps
+                                      (pseudo-term-listp terms)
+                                      (interpreted-function-alistp interpreted-function-alist))))
           (if (atom terms)
               (mv t nil)
             (let ((new-car (,sublis-var-and-eval-name alist (first terms) interpreted-function-alist)))
@@ -127,32 +126,28 @@
 
        (,(pack$ 'defthm-flag- sublis-var-and-eval-name)
          (defthm ,(pack$ 'axe-treep-of- sublis-var-and-eval-name)
-           (implies (and ;(eq 'quote (car (,sublis-var-and-eval-name alist term interpreted-function-alist)))
-                     (all-dargp (strip-cdrs alist))
-                     (pseudo-termp term))
+           (implies (and (all-dargp (strip-cdrs alist))
+                         (pseudo-termp term))
                     (axe-treep (,sublis-var-and-eval-name alist term interpreted-function-alist)))
            :flag ,sublis-var-and-eval-name)
-         (defthm ,(pack$ 'all-axe-treep-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
-           (implies (and ;(mv-nth 0 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))
-                     (all-dargp (strip-cdrs alist))
-                     (pseudo-term-listp terms))
-                    (all-axe-treep (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))))
+         (defthm ,(pack$ 'axe-tree-listp-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
+           (implies (and (all-dargp (strip-cdrs alist))
+                         (pseudo-term-listp terms))
+                    (axe-tree-listp (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))))
            :flag ,sublis-var-and-eval-lst-name)
          :hints (("Goal" :in-theory (e/d (,sublis-var-and-eval-name ,sublis-var-and-eval-lst-name)
                                          (myquotep ,(pack$ 'myquotep-of- sublis-var-and-eval-name) axe-treep)))))
 
        (,(pack$ 'defthm-flag- sublis-var-and-eval-name)
          (defthm ,(pack$ 'bounded-axe-treep-of- sublis-var-and-eval-name)
-           (implies (and ;(eq 'quote (car (,sublis-var-and-eval-name alist term interpreted-function-alist)))
-                     (all-dargp-less-than (strip-cdrs alist) dag-len)
-                     (pseudo-termp term))
+           (implies (and (bounded-darg-listp (strip-cdrs alist) dag-len)
+                         (pseudo-termp term))
                     (bounded-axe-treep (,sublis-var-and-eval-name alist term interpreted-function-alist) dag-len))
            :flag ,sublis-var-and-eval-name)
-         (defthm ,(pack$ 'all-bounded-axe-treep-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
-           (implies (and ;(mv-nth 0 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))
-                     (all-dargp-less-than (strip-cdrs alist) dag-len)
-                     (pseudo-term-listp terms))
-                    (all-bounded-axe-treep (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist)) dag-len))
+         (defthm ,(pack$ 'bounded-axe-tree-listp-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
+           (implies (and (bounded-darg-listp (strip-cdrs alist) dag-len)
+                         (pseudo-term-listp terms))
+                    (bounded-axe-tree-listp (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist)) dag-len))
            :flag ,sublis-var-and-eval-lst-name)
          :hints (("Goal" :in-theory (e/d (,sublis-var-and-eval-name
                                           ,sublis-var-and-eval-lst-name
@@ -163,7 +158,10 @@
                                          (myquotep ,(pack$ 'myquotep-of- sublis-var-and-eval-name)
                                                    bounded-axe-treep
                                                    natp))))))))
-(defmacro make-substitution-code-simple (suffix
-                                         evaluator-base-name)
+
+;; Makes "substitute and eval" functions for the evaluator with the given
+;; evaluator-base-name.  Uses SUFFIX when creating the names of the new
+;; functions.
+(defmacro make-substitution-code-simple (suffix evaluator-base-name)
   (make-substitution-code-simple-fn suffix
                                     evaluator-base-name))

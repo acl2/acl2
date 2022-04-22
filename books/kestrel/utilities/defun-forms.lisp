@@ -15,6 +15,7 @@
 (include-book "declares0")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/butlast" :dir :system))
+(local (include-book "kestrel/utilities/assoc-keyword" :dir :system))
 
 ;; (defthm symbol-listp-of-butlast
 ;;   (implies (and (SYMBOL-LISTP X)

@@ -43,8 +43,10 @@
 (include-book "kestrel/jvm/control-flow" :dir :system)
 (include-book "kestrel/jvm/load-class" :dir :system)
 (include-book "rule-lists-jvm")
+(include-book "output-indicators")
 (include-book "rules-in-rule-lists-jvm") ;include less?  but some of these rules are now used during decompilation?
 (include-book "lifter-utilities")
+(include-book "kestrel/jvm/method-indicators" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
 (include-book "lifter-utilities3")
@@ -622,6 +624,7 @@
 (defun lifter-rules ()
   (append
    (first-loop-top-rules)
+   (leftrotate-intro-rules) ;; try to recognize rotation idioms when lifting (todo: or include in first-loop-top-rules?)
    (sbvlt-rules)
    (type-rules2)
    '(acl2-numberp-of-logext
@@ -855,7 +858,7 @@
                 (if erp
                     (mv erp nil)
                   (mv (erp-nil)
-                      (drop-non-supporters-array 'dag-array dag-array
+                      (drop-non-supporters-array-with-name 'dag-array dag-array
                                                  (aref1 'translation-array translation-array top-nodenum)
                                                  nil))))))))))
   ;; ;call simplify-dag or something (like a quick version)?
@@ -2632,7 +2635,7 @@
            :assumptions assumptions ;hope this is okay
            :monitor monitored-symbols
            :simplify-xorsp nil
-           :print nil ;print ;:verbose2 ;todo reduce printing
+           :print nil ;print ;:verbose! ;todo reduce printing
            :remove-duplicate-rulesp nil
            :check-inputs nil))
          ((when erp) (mv erp nil state)))
@@ -2711,7 +2714,7 @@
                     :assumptions assumptions ;hope this is okay
                     :monitor monitored-symbols
                     :simplify-xorsp nil
-                    :print print ;:verbose2 ;todo reduce printing
+                    :print print ;:verbose! ;todo reduce printing
                     :remove-duplicate-rulesp nil
                     :check-inputs nil))
          ((when erp) (mv erp nil state)))
@@ -3510,15 +3513,12 @@
   (declare (xargs :guard (and (dargp-less-than nodenum (len heap-dag))
                               (pseudo-dagp heap-dag))
                   :guard-hints (("Goal" :in-theory (e/d (CADR-BECOMES-NTH-OF-1
-                                                         top-nodenum-when-pseudo-dagp)
-                                                        ( ALL-<-OF-0-WHEN-NAT-LISTP
-                                                          DARGP
-                                                          dag-exprp-of-lookup-equal-when-pseudo-dagp
-                                                          DAG-EXPRP0))
-                                 :use (:instance dag-exprp-of-lookup-equal-when-pseudo-dagp
-                                                 (n nodenum)
-                                                 (dag heap-dag)
-                                                 )))
+                                                         top-nodenum-when-pseudo-dagp
+                                                         <-OF-+-OF-1-WHEN-NATPS)
+                                                        (ALL-<-OF-0-WHEN-NAT-LISTP
+                                                         DARGP
+                                                         ;dag-exprp-of-lookup-equal-when-pseudo-dagp
+                                                         DAG-EXPRP))))
                   :measure (nfix (+ 1 nodenum))))
   (if (quotep nodenum)
       (er hard? 'strip-set-field-calls "I am surprised to see a constant heap.")
@@ -4533,79 +4533,6 @@
                                       nil)))
                             (hard-error 'make-input-assumptions "Bad input-source-alist" nil)))))
       (append assumptions (make-input-assumptions (rest input-source-alist) state-term)))))
-
-(mutual-recursion
- ;;Return a term to wrap around a dag to extract the output.  The special symbol 'replace-me will be replaced with the DAG.
-;todo: compare to wrap-term-with-output-extractor in unroll-java-code
- (defund output-extraction-term-core (output-indicator initial-locals-term class-table-alist)
-   (declare (xargs :guard (and (output-indicatorp-aux output-indicator) ;:auto is handled in the wrapper
-                               (pseudo-termp initial-locals-term)
-                               (class-table-alistp class-table-alist))))
-   (if (eq :all output-indicator)
-       'replace-me
-   (if (eq :return-value output-indicator)
-       '(jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) replace-me)))
-     (if (eq :return-value-long output-indicator)
-         ;; Recall that a long takes 2 stack slots and is stored entirely in the lower slot
-         '(jvm::top-long (jvm::stack (jvm::thread-top-frame (th) replace-me)))
-       (if (eq :array-return-value output-indicator)
-           `(get-field (jvm::top-operand (jvm::stack (jvm::thread-top-frame (th) replace-me)))
-                       ',(array-contents-pair)
-                       (jvm::heap replace-me))
-         (if (eq (car output-indicator) :array-local) ;;this means "get the final value of the array that was initially pointed to by array local N.  TODO: This could be an abbreviation for a :field of a :local...
-             (let ((local-num (cadr output-indicator)))
-               `(get-field (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
-                           ',(array-contents-pair)
-                           (jvm::heap replace-me)))
-           (if (eq (car output-indicator) :field)
-               (let ((pair (farg1 output-indicator)))
-                 (if (not (field-pair-okayp pair class-table-alist))
-                     (er hard? 'output-extraction-term-core "Bad field: ~x0." pair)
-                   `(get-field ,(output-extraction-term-core (farg2 output-indicator) initial-locals-term class-table-alist)
-                               ',pair
-                               (jvm::heap replace-me))))
-             (if (eq (car output-indicator) :param-field)
-                 (let ((pair (farg1 output-indicator))
-                       (local-num (farg2 output-indicator)))
-                   (if (not (field-pair-okayp pair class-table-alist))
-                       (er hard? 'output-extraction-term-core "Bad field: ~x0." pair)
-                     `(GET-FIELD (jvm::nth-local ',local-num ,initial-locals-term) ;;NOTE: The local is in the initial state (s0), not the final state!
-                                 ',pair
-                                 (jvm::heap replace-me))))
-               (if (eq (car output-indicator) :tuple)
-                   (output-extraction-terms-core (fargs output-indicator)
-                                                 initial-locals-term class-table-alist)
-                 (er hard 'output-extraction-term-core "Unrecognized output-indicator"))))))))))
-
- (defund output-extraction-terms-core (output-indicators initial-locals-term class-table-alist)
-   (declare (xargs :guard (and (output-indicatorp-aux-lst output-indicators) ;:auto is handled in the wrapper
-                               (pseudo-termp initial-locals-term)
-                               (class-table-alistp class-table-alist))))
-   (if (endp output-indicators)
-       *nil*
-     `(cons ,(output-extraction-term-core (first output-indicators) initial-locals-term class-table-alist)
-            ,(output-extraction-terms-core (rest output-indicators) initial-locals-term class-table-alist)))))
-
-
-;;Return a term to wrap around a dag to extract the output.  The special symbol 'replace-me will be replaced with the DAG.
-;todo: compare to wrap-term-with-output-extractor in unroll-java-code
-(defun output-extraction-term (output-indicator
-                               initial-locals-term
-                               return-type ;used for :auto
-                               class-table-alist
-                               )
-  (declare (xargs ;:mode :program
-            :guard (and (output-indicatorp output-indicator)
-                        (pseudo-termp initial-locals-term)
-                        (or (eq :void return-type)
-                            (jvm::typep return-type))
-                        (class-table-alistp class-table-alist))))
-  (let ((output-indicator (if (eq :auto output-indicator)
-                              (resolve-auto-output-indicator return-type)
-                            output-indicator)))
-    (if (not output-indicator)
-        (er hard? 'output-extraction-term "Failed to resove output indicator.")
-      (output-extraction-term-core output-indicator initial-locals-term class-table-alist))))
 
 ; returns (mv erp result state)
 (defun extract-output-dag (output-indicator
@@ -6383,7 +6310,7 @@
 
 ;; The core function of the lifter
 ;Returns (mv erp event state)
-(defun lift-java-code-fn (method-designator-string
+(defun lift-java-code-fn (method-indicator
                           program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
                           param-names ; usually not used
                           array-length-alist
@@ -6420,6 +6347,7 @@
                           state)
   (declare (xargs :stobjs (state)
                   :guard (and ;;(pseudo-term-listp user-assumptions) ;now these can be untranslated terms, so we translate them below
+                          (jvm::method-indicatorp method-indicator)
                           (booleanp ignore-exceptions)
                           (booleanp ignore-errors)
                           (booleanp inline)
@@ -6459,6 +6387,8 @@
         (mv t (er hard 'lift-java-code "ERROR: Ill-formed guards!") state))
        ((when (not (postludesp postludes)))
         (mv t (er hard 'lift-java-code "ERROR: Ill-formed postludes!") state))
+       ;; Adds the descriptor if omitted and unambiguous:
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
        ;; Gather info about the main method to be lifted:
        (method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
@@ -6641,8 +6571,9 @@
 ;; NOTE: Keep this in sync with SHOW-LIFT-JAVA-CODE below.
 ;; TODO: Consider re-playing with :print t if the lift attempt fails.
 ;; TODO: Suppress more printing if :print is nil.
+;; todo: get doc from kestrel-acl2/axe/doc.lisp
 (defmacro lift-java-code (&whole whole-form
-                                 method-designator-string
+                                 method-indicator
                                  program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
                                  &key
                                  (param-names ':auto)
@@ -6678,11 +6609,11 @@
                                  (branches ':split) ;; either :smart (try to merge at join points) or :split (split the execution and don't re-merge) -- TODO: Switch the default to :smart
                                  (disable-loop-openers 'nil) ;todo: consider T
                                  )
-  (let ((form `(lift-java-code-fn ,method-designator-string
+  (let ((form `(lift-java-code-fn ,method-indicator
                                   ,program-name
                                   ',param-names
                                   ,array-length-alist
-                                  ,output
+                                  ',output
                                   ,assumptions
                                   ,classes-to-assume-initialized
                                   ,print
@@ -6743,7 +6674,7 @@
 ;; Lift a segment of code (not an entire method) into logic.
 ;Returns (mv erp event state)
 (defun lift-java-code-segment-fn (program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
-                                  method-designator-string
+                                  method-indicator
                                   start-pc
                                   segment-pcs ;is there a nicer way to specify the segment? ;this should contain start-pc
                                   input-source-alist ;todo: can we do away with this now (lift-java-code-fn doesn't have it)?
@@ -6770,7 +6701,8 @@
                                   whole-form
                                   state)
   (declare (xargs :stobjs (state)
-                  :guard (and (invariantsp invariants)
+                  :guard (and (jvm::method-indicatorp method-indicator)
+                              (invariantsp invariants)
                               (measuresp measures state)
                               (measure-hintsp measure-hints)
                               (loop-guardsp loop-guards)
@@ -6791,6 +6723,8 @@
         (prog2$ (hard-error 'lift-java-code-segment-fn "No input-source-alist supplied." nil) ;TODO: Remove this check and instead auto-generate it.
                 (mv t nil state)))
        (assumptions (translate-terms assumptions 'lift-java-code-segment-fn (w state))) ;throws an error on bad input
+       ;; Adds the descriptor if omitted and unambiguous:
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
        (method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string))
@@ -6889,10 +6823,10 @@
 ;; Keep this in sync with show-lift-java-code-segment below.
 (defmacro lift-java-code-segment (&whole whole-form
                                          program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
-                                         method-designator-string
+                                         method-indicator
                                          start-pc
                                          segment-pcs ;is there a nicer way to specify the segment (line numbers in the source)?
-                                         output-indicator ;an output-indicatorp (TODO: make this a keyword arg defaulting to :auto)
+                                         output-indicator ;an output-indicatorp (TODO: make this a keyword arg defaulting to :auto) ;todo: call this "output"
                                          &key
                                          (input-source-alist 'nil) ;an input-source-alistp
                                          (assumptions 'nil)
@@ -6918,11 +6852,11 @@
                                          ;TODO: Add postludes, extra-invars
                                          )
   `(make-event (lift-java-code-segment-fn ',program-name
-                                          ,method-designator-string
+                                          ,method-indicator
                                           ,start-pc
                                           ,segment-pcs ;is there a nicer way to specify the segment?
                                           ,input-source-alist
-                                          ,output-indicator
+                                          ,output-indicator ; todo: don't evaluate this?
                                           ,assumptions
                                           ,classes-to-assume-initialized
                                           ,print
@@ -6948,7 +6882,7 @@
 ;; Keep this in sync with lift-java-code-segment above.
 (defmacro show-lift-java-code-segment (&whole whole-form
                                               program-name
-                                              method-designator-string
+                                              method-indicator
                                               start-pc
                                               segment-pcs
                                               output-indicator ;an output-indicatorp
@@ -6975,7 +6909,7 @@
                                               (use-lets-in-terms 'nil)
                                               )
   `(lift-java-code-segment-fn ',program-name
-                              ,method-designator-string
+                              ,method-indicator
                               ,start-pc
                               ,segment-pcs ;is there a nicer way to specify the segment?
                               ,input-source-alist

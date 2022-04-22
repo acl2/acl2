@@ -20,11 +20,7 @@
 ;; translation-array.lisp.  The renaming-array may be appropriate for bottom-up
 ;; algorithms that touch every node.
 
-
-(defthm all-dargp-less-than-of-+-of-1-and-largest-non-quotep
-  (implies (all-dargp dargs)
-           (all-dargp-less-than dargs (+ 1 (largest-non-quotep dargs))))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than largest-non-quotep))))
+;; See a faster version of essentially the same concept as this book, see renumbering-stobj.lisp.
 
 ;; TODO: Can we define this using def-typed-acl2-array?
 
@@ -315,12 +311,11 @@
   :hints (("Goal" :in-theory (e/d (rename-darg) (dargp natp)))))
 
 ;;;
-;;; rename-args
+;;; rename-dargs
 ;;;
 
-;; Renames any of the ARGS that are nodenums according to the RENAMING-ARRAY.
-;todo: call this rename-dargs?
-(defund rename-args (dargs renaming-array-name renaming-array)
+;; Renames any of the DARGS that are nodenums according to the RENAMING-ARRAY.
+(defund rename-dargs (dargs renaming-array-name renaming-array)
   (declare (xargs :guard (and (all-dargp dargs)
                               (true-listp dargs)
                               (renaming-arrayp renaming-array-name renaming-array (+ 1 (largest-non-quotep dargs))))
@@ -329,13 +324,13 @@
   (if (endp dargs)
       nil
     (cons (rename-darg (first dargs) renaming-array-name renaming-array)
-          (rename-args (rest dargs) renaming-array-name renaming-array))))
+          (rename-dargs (rest dargs) renaming-array-name renaming-array))))
 
-(defthm all-dargp-of-rename-args
+(defthm all-dargp-of-rename-dargs
   (implies (and (renaming-arrayp renaming-array-name renaming-array (+ 1 (largest-non-quotep dargs)))
                 (all-dargp dargs))
-           (all-dargp (rename-args dargs renaming-array-name renaming-array)))
-  :hints (("Goal" :in-theory (e/d (rename-args all-dargp) (myquotep))
+           (all-dargp (rename-dargs dargs renaming-array-name renaming-array)))
+  :hints (("Goal" :in-theory (e/d (rename-dargs all-dargp) (myquotep))
            :expand (all-dargp dargs)
            :do-not '(generalize eliminate-destructors))))
 
@@ -474,14 +469,14 @@
                 (integerp n)
                 )
            (dargp-less-than (aref1 renaming-array-name renaming-array nodenum) limit))
-  :hints (("Goal" :in-theory (e/d (bound-lemma-for-car-when-all-dargp-less-than dargp-less-than) (myquotep)))))
+  :hints (("Goal" :in-theory (e/d (bound-lemma-for-car-when-bounded-darg-listp dargp-less-than) (myquotep)))))
 
 (defthm dargp-less-than-of-aref1-when-renaming-arrayp-aux
   (implies (and (renaming-arrayp-aux renaming-array-name renaming-array nodenum)
                 (bounded-renaming-entriesp nodenum renaming-array-name renaming-array limit)
                 (natp nodenum))
            (dargp-less-than (aref1 renaming-array-name renaming-array nodenum) limit))
-  :hints (("Goal" :in-theory (e/d (bound-lemma-for-car-when-all-dargp-less-than) (myquotep)))))
+  :hints (("Goal" :in-theory (e/d (bound-lemma-for-car-when-bounded-darg-listp) (myquotep)))))
 
 (defthm dargp-less-than-of-rename-darg
   (implies (and (if (consp darg)
@@ -493,15 +488,15 @@
                 (dargp darg))
            (dargp-less-than (rename-darg darg renaming-array-name renaming-array) limit))
   :hints (("Goal" :in-theory (e/d (renaming-arrayp
-                                   rename-darg bound-lemma-for-car-when-all-dargp-less-than) (myquotep)))))
+                                   rename-darg bound-lemma-for-car-when-bounded-darg-listp) (myquotep)))))
 
-(defthm all-dargp-less-than-of-rename-args
+(defthm bounded-darg-listp-of-rename-dargs
   (implies (and (renaming-arrayp renaming-array-name renaming-array (+ 1 (largest-non-quotep dargs)))
                 (bounded-renaming-entriesp (largest-non-quotep dargs) renaming-array-name renaming-array limit)
                 (all-dargp dargs))
-           (all-dargp-less-than (rename-args dargs renaming-array-name renaming-array) limit))
+           (bounded-darg-listp (rename-dargs dargs renaming-array-name renaming-array) limit))
   :hints (("Goal" :in-theory (e/d (;renaming-arrayp
-                                   rename-args bound-lemma-for-car-when-all-dargp-less-than) (myquotep)))))
+                                   rename-dargs bound-lemma-for-car-when-bounded-darg-listp) (myquotep)))))
 
 (defthm bounded-renaming-entriesp-of--1
   (bounded-renaming-entriesp -1 renaming-array-name renaming-array limit)
@@ -521,7 +516,7 @@
                 (< nodenum free)
                 (natp nodenum))
            (dargp-less-than (aref1 renaming-array-name renaming-array nodenum) limit))
-  :hints (("Goal" :in-theory (e/d (bound-lemma-for-car-when-all-dargp-less-than) (myquotep)))))
+  :hints (("Goal" :in-theory (e/d (bound-lemma-for-car-when-bounded-darg-listp) (myquotep)))))
 
 ;;;
 ;;; bounded-renaming-arrayp
@@ -546,13 +541,13 @@
          (renaming-arrayp array-name array 0))
   :hints (("Goal" :in-theory (enable bounded-renaming-arrayp))))
 
-(defthm all-dargp-less-than-of-rename-args-when-bounded-renaming-arrayp
+(defthm bounded-darg-listp-of-rename-dargs-when-bounded-renaming-arrayp
   (implies (and (bounded-renaming-arrayp renaming-array-name renaming-array (+ 1 (largest-non-quotep dargs)) limit)
-                ;(all-dargp-less-than args (+ 1 n))
+                ;(bounded-darg-listp args (+ 1 n))
 ;(integerp n)
                 (all-dargp dargs)
                 )
-           (all-dargp-less-than (rename-args dargs renaming-array-name renaming-array) limit))
+           (bounded-darg-listp (rename-dargs dargs renaming-array-name renaming-array) limit))
   :hints (("Goal" :in-theory (enable bounded-renaming-arrayp
                                      renaming-arrayp))))
 
@@ -599,7 +594,7 @@
                               (<= -1 highest-node-in-renaming)
                               (if (consp expr)
                                   (and ;(not (equal 'quote (car expr)))
-                                   (all-dargp-less-than (dargs expr) (+ 1 highest-node-in-renaming)))
+                                   (bounded-darg-listp (dargs expr) (+ 1 highest-node-in-renaming)))
                                 t)
                               (array1p 'renaming-array renaming-array)
                               (< highest-node-in-renaming (alen1 'renaming-array renaming-array))
@@ -611,4 +606,4 @@
       expr
     (let* ((fn (ffn-symb expr))
            (args (dargs expr)))
-      (cons fn (rename-args args 'renaming-array renaming-array)))))
+      (cons fn (rename-dargs args 'renaming-array renaming-array)))))

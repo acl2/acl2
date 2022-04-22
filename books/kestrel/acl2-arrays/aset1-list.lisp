@@ -30,16 +30,16 @@
                 value)))
 
 (defthm alen1-of-aset1-list
-  (implies (all-natp nodenums)
-           (equal (alen1 array-name (aset1-list array-name array nodenums value))
+  (implies (all-natp indices)
+           (equal (alen1 array-name (aset1-list array-name array indices value))
                   (alen1 array-name array)))
   :hints (("Goal" :in-theory (enable aset1-list))))
 
 (defthm array1p-of-aset1-list
-  (implies (and (all-natp nodenums)
-                (all-< nodenums (alen1 array-name array))
+  (implies (and (all-natp indices)
+                (all-< indices (alen1 array-name array))
                 (array1p array-name array))
-           (array1p array-name (aset1-list array-name array nodenums value)))
+           (array1p array-name (aset1-list array-name array indices value)))
   :hints (("Goal" :in-theory (enable aset1-list))))
 
 ;; ;; Not tail recursive but easier to reason about
@@ -61,18 +61,18 @@
 ;;            value)))
 
 ;; (defthm alen1-of-aset1-list-alt
-;;   (implies (and (all-natp nodenums)
-;;                 (all-< nodenums (alen1 array-name array))
+;;   (implies (and (all-natp indices)
+;;                 (all-< indices (alen1 array-name array))
 ;;                 (array1p array-name array))
-;;            (equal (alen1 array-name (aset1-list-alt array-name array nodenums value))
+;;            (equal (alen1 array-name (aset1-list-alt array-name array indices value))
 ;;                   (alen1 array-name array)))
 ;;   :hints (("Goal" :in-theory (enable aset1-list-alt))))
 
 ;; (defthm array1p-of-aset1-list-alt
-;;   (implies (and (all-natp nodenums)
-;;                 (all-< nodenums (alen1 array-name array))
+;;   (implies (and (all-natp indices)
+;;                 (all-< indices (alen1 array-name array))
 ;;                 (array1p array-name array))
-;;            (array1p array-name (aset1-list-alt array-name array nodenums value)))
+;;            (array1p array-name (aset1-list-alt array-name array indices value)))
 ;;   :hints (("Goal" :in-theory (enable aset1-list-alt))))
 
 ;; (defthm aref1-of-aset1-list-alt

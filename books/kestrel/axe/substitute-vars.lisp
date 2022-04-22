@@ -51,9 +51,10 @@
         (if (and (symbolp expr) ;must be a variable
                  (or (consp equated-thing) ; always safe to put in a constant
                      ;;helps prevent loops:
-                     ;; TODO: Consider using a version of supporters-of-node that uses a worklist instead of walking over every node <= to the node of interest. See vars-that-support-dag-node.
+                     ;; TODO: Consider using a version of supporters-of-node-with-name that uses a worklist instead of walking over every node <= to the node of interest. See vars-that-support-dag-node.
                      ;; Also, we really only need supporting vars, not all suporters
-                     (if (member nodenum-or-quotep (supporters-of-node equated-thing 'dag-array dag-array 'tag-array-for-supporters))
+                     ;; TODO: Call a specialized version of supporters-of-node-with-name (that takes no name):
+                     (if (member nodenum-or-quotep (supporters-of-node-with-name equated-thing 'dag-array dag-array 'tag-array-for-supporters))
                          (prog2$ (cw "Refusing to substitute for ~x0 because it is equated to something involving itself !!~%" expr) ;; todo: print the terms involved?
                                  nil)
                        t)))

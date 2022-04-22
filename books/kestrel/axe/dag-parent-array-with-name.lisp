@@ -21,7 +21,7 @@
 ;todo: put the name param earlier
 (defund find-shortest-parent-lst-with-name (current-shortest-lst items dag-parent-array dag-parent-array-name)
   (declare (xargs :guard (and (dag-parent-arrayp dag-parent-array-name dag-parent-array)
-                              (all-dargp-less-than items (alen1 dag-parent-array-name dag-parent-array))
+                              (bounded-darg-listp items (alen1 dag-parent-array-name dag-parent-array))
                               (true-listp items)
                               (true-listp current-shortest-lst))
                   :guard-hints (("Goal" :in-theory (enable dag-parent-arrayp)))))
@@ -57,7 +57,7 @@
 (defthm all-<-of-find-shortest-parent-lst-with-name
   (implies (and (all-< current-shortest-lst limit)
                 (bounded-dag-parent-entriesp n dag-parent-array-name dag-parent-array limit)
-                (all-dargp-less-than items (+ 1 n))
+                (bounded-darg-listp items (+ 1 n))
                 (integerp n))
            (all-< (find-shortest-parent-lst-with-name current-shortest-lst items dag-parent-array dag-parent-array-name)
                   limit))
@@ -124,7 +124,7 @@
                               (symbolp dag-parent-array-name)
                               (symbolp dag-array-name)
                               (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
-                              (all-dargp-less-than args dag-len)
+                              (bounded-darg-listp args dag-len)
                               (equal (alen1 dag-array-name dag-array)
                                      (alen1 dag-parent-array-name dag-parent-array))
                               (<= dag-len (alen1 dag-array-name dag-array)))
@@ -170,7 +170,7 @@
 (defthm <-of-find-expr-using-parents-with-name
   (implies (and (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
                 (not (all-consp args))
-                (all-dargp-less-than args (alen1 dag-array-name dag-array))
+                (bounded-darg-listp args (alen1 dag-array-name dag-array))
                 (natp dag-len)
                 (equal (alen1 dag-array-name dag-array)
                        (alen1 dag-parent-array-name dag-parent-array))
@@ -218,8 +218,8 @@
   (declare (xargs :guard (and (true-listp items)
                               (natp nodenum)
                               (dag-parent-arrayp dag-parent-array-name dag-parent-array)
-                              (all-dargp-less-than items nodenum)
-                              (all-dargp-less-than items (alen1 dag-parent-array-name dag-parent-array)))))
+                              (bounded-darg-listp items nodenum)
+                              (bounded-darg-listp items (alen1 dag-parent-array-name dag-parent-array)))))
   (if (endp items)
       dag-parent-array
     (let ((item (first items)))
@@ -241,7 +241,7 @@
   :hints (("Goal" :in-theory (enable all-consp add-to-parents-of-atoms-with-name))))
 
 (defthm array1p-of-add-to-parents-of-atoms-with-name
-  (implies (and (all-dargp-less-than items (alen1 dag-parent-array-name dag-parent-array))
+  (implies (and (bounded-darg-listp items (alen1 dag-parent-array-name dag-parent-array))
                 ;;(all-dargp items)
                 (natp nodenum)
                 ;;(<= nodenum top-nodenum-to-check)
@@ -250,7 +250,7 @@
   :hints (("Goal" :in-theory (enable dag-parent-arrayp add-to-parents-of-atoms-with-name integer-listp))))
 
 (defthm default-of-add-to-parents-of-atoms-with-name
-  (implies (and (all-dargp-less-than items (alen1 dag-parent-array-name dag-parent-array))
+  (implies (and (bounded-darg-listp items (alen1 dag-parent-array-name dag-parent-array))
                 ;(all-dargp items)
                 (natp nodenum)
                 ;(<= nodenum top-nodenum-to-check)
@@ -266,8 +266,8 @@
   :hints (("Goal" :in-theory (enable add-to-parents-of-atoms-with-name integer-listp))))
 
 (defthm all-dag-parent-entriesp-of-add-to-parents-of-atoms-with-name
-  (implies (and (all-dargp-less-than items nodenum)
-                (all-dargp-less-than items (alen1 dag-parent-array-name dag-parent-array))
+  (implies (and (bounded-darg-listp items nodenum)
+                (bounded-darg-listp items (alen1 dag-parent-array-name dag-parent-array))
                 (natp nodenum)
                 (integerp n)
                 (array1p dag-parent-array-name dag-parent-array)
@@ -277,12 +277,12 @@
            (all-dag-parent-entriesp n dag-parent-array-name (add-to-parents-of-atoms-with-name items nodenum dag-parent-array-name dag-parent-array)))
   :hints (("Subgoal *1/6" :cases ((< n (car items))))
           ("Goal" :in-theory (enable add-to-parents-of-atoms-with-name integer-listp
-                                     <-of-car-when-all-dargp-less-than
-                                     not-<-of-car-when-all-dargp-less-than))))
+                                     <-of-car-when-bounded-darg-listp
+                                     not-<-of-car-when-bounded-darg-listp))))
 
 (defthm dag-parent-arrayp-of-add-to-parents-of-atoms-with-name
-  (implies (and (all-dargp-less-than items nodenum)
-                (all-dargp-less-than items (alen1 dag-parent-array-name dag-parent-array))
+  (implies (and (bounded-darg-listp items nodenum)
+                (bounded-darg-listp items (alen1 dag-parent-array-name dag-parent-array))
                 ;(all-dargp items)
                 (natp nodenum)
                 ;;(<= nodenum top-nodenum-to-check)
@@ -295,7 +295,7 @@
   (implies (and (natp n)
                 (natp nodenum)
                 (array1p dag-parent-array-name dag-parent-array)
-                (all-dargp-less-than items (alen1 dag-parent-array-name dag-parent-array))
+                (bounded-darg-listp items (alen1 dag-parent-array-name dag-parent-array))
                 (< n (alen1 dag-parent-array-name dag-parent-array))
                 (< nodenum limit)
                 (all-< (aref1 dag-parent-array-name dag-parent-array n) limit))
@@ -309,7 +309,7 @@
                 (natp limit)
                 (array1p dag-parent-array-name dag-parent-array)
                 (< n (alen1 dag-parent-array-name dag-parent-array))
-                (all-dargp-less-than items (alen1 dag-parent-array-name dag-parent-array)))
+                (bounded-darg-listp items (alen1 dag-parent-array-name dag-parent-array)))
            (bounded-dag-parent-entriesp n dag-parent-array-name (add-to-parents-of-atoms-with-name items nodenum dag-parent-array-name dag-parent-array) limit))
   :hints (("Goal" :in-theory (enable bounded-dag-parent-entriesp))))
 

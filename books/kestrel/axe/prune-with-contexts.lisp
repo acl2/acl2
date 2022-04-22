@@ -149,7 +149,7 @@
                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                   renaming-array))
                      ;; Couldn't resolve test:
-                     (b* ((renamed-args (rename-args (dargs expr) 'renaming-array renaming-array))
+                     (b* ((renamed-args (rename-dargs (dargs expr) 'renaming-array renaming-array))
                           ((mv erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
                            (add-function-call-expr-to-dag-array fn renamed-args dag-array dag-len dag-parent-array dag-constant-alist))
                           ((when erp)
@@ -160,7 +160,7 @@
                                                 renaming-array)))))))
             ;; todo: add support for bvif? boolif? booland? boolor? not?
             (t ;; Normal function (nothing to resolve):
-             (b* ((renamed-args (rename-args (dargs expr) 'renaming-array renaming-array))
+             (b* ((renamed-args (rename-dargs (dargs expr) 'renaming-array renaming-array))
                   ((mv erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
                    (add-function-call-expr-to-dag-array fn renamed-args dag-array dag-len dag-parent-array dag-constant-alist))
                   ((when erp)
@@ -210,7 +210,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct (prune-with-contexts-aux old-nodenum old-dag-array old-dag-len context-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
            :in-theory (enable PRUNE-WITH-CONTEXTS-AUX
-                              ;;rename-args
+                              ;;rename-dargs
                               bounded-renaming-arrayp ;todo
                               ))))
 
@@ -232,7 +232,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct (prune-with-contexts-aux old-nodenum old-dag-array old-dag-len context-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
            :in-theory (enable PRUNE-WITH-CONTEXTS-AUX
-                              ;;rename-args
+                              ;;rename-dargs
                               bounded-renaming-arrayp ;todo
                               ))))
 
@@ -255,7 +255,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct (prune-with-contexts-aux old-nodenum old-dag-array old-dag-len context-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
            :in-theory (enable PRUNE-WITH-CONTEXTS-AUX
-                              ;;rename-args
+                              ;;rename-dargs
                               bounded-renaming-arrayp ;todo
                               ))))
 
@@ -338,7 +338,7 @@
         (mv (erp-nil)
             new-top-nodenum-or-quotep)
       (mv (erp-nil)
-          (drop-non-supporters-array 'dag-array dag-array new-top-nodenum-or-quotep nil)))))
+          (drop-non-supporters-array-with-name 'dag-array dag-array new-top-nodenum-or-quotep nil)))))
 
 ;; Pruning either returns a dag or a quoted constant
 (defthm pseudo-dagp-of-prune-with-contexts

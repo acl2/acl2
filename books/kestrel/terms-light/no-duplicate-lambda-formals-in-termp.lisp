@@ -1,6 +1,6 @@
 ; A simple utility to check that lambdas never have duplicate formals
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -48,10 +48,22 @@
            (no-duplicate-lambda-formals-in-termp (car terms)))
   :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp))))
 
+(defthm no-duplicate-lambda-formals-in-termp-of-append
+  (equal (no-duplicate-lambda-formals-in-termsp (append terms1 terms2))
+         (and (no-duplicate-lambda-formals-in-termsp terms1)
+              (no-duplicate-lambda-formals-in-termsp terms2)))
+  :hints (("Goal" :in-theory (enable append no-duplicate-lambda-formals-in-termsp))))
+
 (defthm no-duplicate-lambda-formals-in-termp-when-symbolp
   (implies (symbolp term)
            (no-duplicate-lambda-formals-in-termp term))
   :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termp))))
+
+(defthm no-duplicate-lambda-formals-in-termsp-when-symbol-listp
+  (implies (symbol-listp terms)
+           (no-duplicate-lambda-formals-in-termsp terms))
+  :hints (("Goal" :in-theory (enable symbol-listp
+                                     no-duplicate-lambda-formals-in-termsp))))
 
 (defthm no-duplicate-lambda-formals-in-termsp-of-when-no-duplicate-lambda-formals-in-termp
    (implies (and (no-duplicate-lambda-formals-in-termp term)
@@ -76,3 +88,21 @@
          (and (no-duplicate-lambda-formals-in-termp term)
               (no-duplicate-lambda-formals-in-termsp terms)))
   :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp))))
+
+(defthm no-duplicate-lambda-formals-in-termsp-of-set-difference-equal
+  (implies (no-duplicate-lambda-formals-in-termsp terms1)
+           (no-duplicate-lambda-formals-in-termsp (set-difference-equal terms1 terms2)))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+(defthm no-duplicate-lambda-formals-in-termsp-of-intersection-equal
+  (implies (or (no-duplicate-lambda-formals-in-termsp terms1)
+               (no-duplicate-lambda-formals-in-termsp terms2))
+           (no-duplicate-lambda-formals-in-termsp (intersection-equal terms1 terms2)))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(defthm no-duplicate-lambda-formals-in-termsp-of-union-equal
+  (equal (no-duplicate-lambda-formals-in-termsp (union-equal terms1 terms2))
+         (and (no-duplicate-lambda-formals-in-termsp terms1)
+              (no-duplicate-lambda-formals-in-termsp terms2)))
+  :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp
+                                     union-equal))))
