@@ -476,7 +476,7 @@ lemma is proved.</li>
 
 <li>@(':lemma-args') gives additional arguments to be passed to the form
 proving the initial lemma, which could be hints for a @('defthm') form or FGL
-keyword args for @('fgl::def-fgl-thm') or @('fgl::def-fgl-param-thm').
+keyword args for @('fgl::def-fgl-thm') or @('fgl::def-fgl-param-thm').</li>
 
 <li>@(':no-lemmas') says to skip the initial override theorem and monotonicity lemma
 and tries to prove the final theorem directly, with the hints given by the user.</li>
