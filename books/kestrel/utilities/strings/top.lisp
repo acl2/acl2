@@ -1,6 +1,6 @@
 ; String Utilities
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,6 @@
 (in-package "ACL2")
 
 (include-book "char-code-theorems")
-(include-book "char-kinds")
 (include-book "chars-codes")
 (include-book "chars-codes-fty")
 (include-book "hexchars")
@@ -34,5 +33,5 @@
   str::charlisteqv equal (chars=>nats x)
   1
   :hints
-  (("goal" :in-theory (enable chars=>nats fast-list-equiv)
+  (("Goal" :in-theory (enable chars=>nats fast-list-equiv)
     :induct (fast-list-equiv x x-equiv))))
