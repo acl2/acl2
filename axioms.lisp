@@ -17592,6 +17592,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; simply to print the characters of the string.
 
              (write-string x stream))
+            ((characterp x) ; faster write as for strings; see comment above
+             (write-char x stream)
+             (when (eql x #\Newline)
+               (force-output stream)))
             (t
              (with-print-controls
 
@@ -17612,8 +17616,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     (t (princ x stream)))
               #-acl2-print-number-base-16-upcase-digits
               (princ x stream))))
-           (cond ((eql x #\Newline)
-                  (force-output stream)))
            (return-from princ$ *the-live-state*))))
   (let ((entry (cdr (assoc-eq channel (open-output-channels state-state)))))
     (update-open-output-channels
@@ -22518,7 +22520,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (table inhibit-warnings-table nil nil
        :guard
-       (stringp key))
+       (standard-string-p key))
 
 #+acl2-loop-only
 (defmacro set-inhibit-warnings! (&rest lst)
@@ -22569,9 +22571,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
      :off (event summary)
      (progn (table inhibit-er-soft-table nil ',(pairlis$ lst nil) :clear)
             (value-triple ',lst))))
-
-(defmacro set-inhibit-er-soft (&rest lst)
-  `(local (set-inhibit-er-soft! ,@lst)))
 
 (defmacro set-inhibit-er-soft (&rest lst)
   `(local (set-inhibit-er-soft! ,@lst)))

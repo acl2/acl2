@@ -102,3 +102,98 @@
            (equal (leftrotate 32 (bvchop 5 amt) val)
                   (leftrotate 32 (ifix amt) val)))
   :hints (("Goal" :in-theory (enable bvchop))))
+
+(defthmd leftrotate32-open-when-constant-shift-amount
+  (implies (syntaxp (quotep amt))
+           (equal (leftrotate32 amt val)
+                  (let* ((amt (mod (nfix amt) 32) ;(bvchop 5 amt)
+                              ))
+                    (bvcat (- 32 amt)
+                           (slice (- 31 amt) 0 val)
+                           amt (slice 31 (+ 32 (- amt)) val)))))
+  :hints (("Goal" :expand (leftrotate32 amt val)
+           :in-theory (enable leftrotate))))
+
+(defthm slice-of-leftrotate32-high
+  (implies (and (<= amt low)
+                (<= low high)
+                (<= high 31)
+                (unsigned-byte-p 5 amt) ;drop
+                (natp high)
+                (natp low)
+                (natp amt))
+           (equal (slice high low (leftrotate32 amt x))
+                  (slice (- high amt) (- low amt) x)))
+  :hints (("Goal" :in-theory (e/d (leftrotate leftrotate32) ()))))
+
+(defthmd bvchop-of-leftrotate32-both
+  (implies (and (<= size 32)
+                (<= amount 32)
+                (natp size)
+                (natp amount))
+           (equal (bvchop size (leftrotate32 amount val))
+                  (if (< amount size)
+                      (bvcat (- size amount)
+                             val
+                             amount
+                             (SLICE (+ -1 32)
+                                    (+ (- AMOUNT) 32)
+                                    VAL) )
+                    (slice (+ -1 (- AMOUNT) SIZE 32)
+                           (+ (- AMOUNT) 32)
+                           val))))
+  :hints (("Goal" :in-theory (enable leftrotate32))))
+
+(defthm slice-of-leftrotate32
+  (implies (and (< highbit 32) ;otherwise we can tighten the slice
+                (<= lowbit highbit) ;otherwise we get 0?
+                (natp lowbit)
+                (natp highbit)
+                (natp amt))
+           (equal (slice highbit lowbit (leftrotate32 amt val))
+                  (if (< highbit (mod amt 32))
+                      (slice (+ highbit 32 (- (mod amt 32)))
+                             (+ lowbit 32 (- (mod amt 32)))
+                             val)
+                    (if (< lowbit (mod amt 32))
+                        (bvcat (+ highbit (- (mod amt 32)) 1)
+                               (slice (+ -1 32 (- (mod amt 32))) 0 val)
+                               (- (mod amt 32) lowbit)
+                               (slice (+ -1 32)
+                                      (+ lowbit 32 (- (mod amt 32)))
+                                      val))
+                      (slice (+ highbit (- (mod amt 32)))
+                             (+ lowbit (- (mod amt 32)))
+                             val)))))
+  :hints (("Goal" :in-theory (enable leftrotate32 natp))))
+
+(defthm equal-of-leftrotate32-and-leftrotate32
+  (equal (equal (leftrotate32 n x) (leftrotate32 n y))
+         (equal (bvchop 32 x) (bvchop 32 y)))
+  :hints (("Goal" :in-theory (enable leftrotate32))))
+
+(defthm getbit-of-leftrotate32-high
+  (implies (and (<= amt n) ;todo: other case! see rules for leftrotate
+                (<= n 31)
+                (unsigned-byte-p 5 amt)
+                (natp n)
+                (natp amt))
+           (equal (getbit n (leftrotate32 amt x))
+                  (getbit (- n amt) x)))
+  :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit
+                                            leftrotate32
+                                            slice-becomes-getbit)))))
+
+(defthmd getbit-of-leftrotate32-simple
+  (implies (and (syntaxp (and (quotep amt)
+                              (quotep n)))
+                (< amt 32) ; avoids mod in rhs
+                (natp n)
+                (natp amt))
+           (equal (getbit n (leftrotate32 amt x))
+                  (if (< n 32)
+                      (if (< n amt) ; this case
+                          (getbit (+ 32 (- amt) n) x)
+                        (getbit (- n amt) x))
+                    0)))
+  :hints (("Goal" :in-theory (enable leftrotate32))))

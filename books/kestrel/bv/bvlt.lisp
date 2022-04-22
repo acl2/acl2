@@ -433,7 +433,7 @@
                             )))))
 
 ;rename
-(defthm bvlt-when-not-posp
+(defthm bvlt-when-not-posp-arg1
   (implies (not (posp size))
            (not (bvlt size x y)))
   :hints (("Goal"
@@ -854,4 +854,9 @@
                 (integerp size)
                 (natp freesize))
            (not (bvlt size x y)))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+(defthm not-bvlt-of-expt-same-arg3
+  (implies (natp size)
+           (not (bvlt size x (expt 2 size))))
   :hints (("Goal" :in-theory (enable bvlt))))

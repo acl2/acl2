@@ -89,13 +89,13 @@
 ;move
 ;not a great linear rule due to the free var
 (defthm maxelem-of-keep-atoms-bound
-  (implies (and (all-dargp-less-than items n)
+  (implies (and (bounded-darg-listp items n)
                 (natp n)
                 (consp (keep-atoms items)) ;there must be at least one atom
                 )
            (< (maxelem (keep-atoms items)) n))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable all-dargp-less-than))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 ;;move
 ;;not a great linear rule due to the free var

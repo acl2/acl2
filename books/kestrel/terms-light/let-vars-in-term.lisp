@@ -13,7 +13,7 @@
 
 ;; We use the term "let var" to mean a variable bound in a lambda that is not
 ;; trivially bound (that is, that is not bound to itself).  Trivial bindings
-;; often arise because lambdas in ACL2 must be complete.
+;; often arise because lambdas in ACL2 must be closed.
 
 (include-book "non-trivial-formals")
 (include-book "tools/flag" :dir :system)

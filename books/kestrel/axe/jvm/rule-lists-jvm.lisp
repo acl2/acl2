@@ -1,7 +1,7 @@
 ; Lists of rule names (JVM-related)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1266,17 +1266,17 @@
   (declare (xargs :guard t))
   '(not-equal-of-nil-and-s))
 
-;deprecate
-(defun jvm-rules ()
-  (declare (xargs :guard t))
-  (append (map-rules)
-          (jvm-semantics-rules)
-          (jvm-simplification-rules)
-          (jvm-rules-list)
-          (jvm-rules-alist)
-          (list-rules) ;drop?
-          (bv-array-rules)
-          (jvm-rules-unfiled-misc)))
+;; ;deprecate
+;; (defun jvm-rules ()
+;;   (declare (xargs :guard t))
+;;   (append (map-rules)
+;;           (jvm-semantics-rules)
+;;           (jvm-simplification-rules)
+;;           (jvm-rules-list)
+;;           (jvm-rules-alist)
+;;           (list-rules) ;drop?
+;;           (bv-array-rules)
+;;           (jvm-rules-unfiled-misc)))
 
 ;; ;drop
 ;; (defun yet-more-rules-jvm ()
@@ -1297,6 +1297,7 @@
 ;;     ))
 
 ;; todo: rename
+;used by many axe examples
 (defun amazing-rules-spec-and-dag ()
   (declare (xargs :guard t))
   (append (amazing-rules-bv)
@@ -1351,6 +1352,7 @@
            (list-to-bv-array-rules)
            (map-rules)
            (yet-more-rules-non-jvm)
+           (array-reduction-rules)
            (more-rules-bv-misc)
            ;;(amazing-rules) ;this seemed slow - BBOZO why?? lots of bvchop 7 of larger values?
            '(nth-of-myif ;Sun Feb 27 01:58:14 2011
@@ -1410,6 +1412,7 @@
            (list-to-bv-array-rules) ;needed?
            (map-rules)
            (yet-more-rules-non-jvm)
+           (array-reduction-rules)
            (more-rules-bv-misc)
            ;;(amazing-rules) ;this seemed slow - BBOZO why?? lots of bvchop 7 of larger values?
            '(;fixme what other of the amazing rules do we need?
@@ -1504,7 +1507,7 @@
 ;;             IDENTITY
 ;;             )))
 
-;fixme get rid of this?
+;fixme get rid of this? used in lifter.
 ;todo: this contains some duplicates (other rule lists in this file may too)
 (defun rule-list-1001 ()
   (declare (xargs :guard t))
@@ -2011,8 +2014,8 @@
              ;;                                      bvand-of-bvxor-of-ones-same-alt
              ;;                                      bvand-of-bvand-of-bvxor-of-ones-same
              ;;                                      bvand-of-bvand-of-bvxor-of-ones-same-alt
-             ;;                                      BITXOR-COMMUTATIVE-2-INCREASING-DAG
-             ;;                                      BITXOR-COMMUTATIVE-INCREASING-DAG
+             ;;                                      BITXOR-COMMUTATIVE-2-INCREASING-AXE
+             ;;                                      BITXOR-COMMUTATIVE-INCREASING-AXE
 
              ;;                                      EQUAL-OF-CONSTANT-AND-BVXOR-OF-CONSTANT
              ;;                                      bvnot-becomes-bvxor
@@ -2020,8 +2023,8 @@
              ;;                                      BVCAT-EQUAL-REWRITE-ALT
 
 
-             ;;                                      BVXOR-COMMUTATIVE-DAG
-             ;;                                      BVXOR-COMMUTATIVE-2-DAG
+             ;;                                      BVXOR-COMMUTATIVE-AXE
+             ;;                                      BVXOR-COMMUTATIVE-2-AXE
              ;;                                      ;BVXOR-ASSOCIATIVE
              ;;                                      SLICE-OF-BVXOR
              ;;                                      EQUAL-OF-BITXOR-SAME
@@ -2130,15 +2133,14 @@
              subrange-when-end-is-negative
 
              consp-of-subrange
-             getbit-of-leftrotate32-high
+
 ;fffixme do these contradict what simplifying bitxors does?
-             ;;BITXOR-COMMUTATIVE-dag
-             ;; BITXOR-COMMUTATIVE-2-dag
+             ;;BITXOR-commutative-axe
+             ;; BITXOR-commutative-2-axe
 
              bvxor-of-bvcat     ;dangerous?
              bvxor-of-bvcat-alt ;dangerous?
 
-             slice-of-leftrotate32-high
              bvxor-cancel-lemma1-bvchop-version
              bvxor-cancel-lemma1-bvchop-version-alt
 
@@ -2289,11 +2291,11 @@
              bvand-of-bvand-of-bvnot-same-alt
 
              bvand-associative
-             bvand-commutative-2-dag
+             bvand-commutative-2-axe
 
              bvor-associative
-             bvor-commutative-2-dag
-             bvor-commutative-dag
+             bvor-commutative-2-axe
+             bvor-commutative-axe
 
              equal-of-bvor-and-bvxor
              equal-of-bvor-and-bvxor-alt
@@ -2452,8 +2454,8 @@
              equal-of-cons
 ;             bv-array-write-with-index-and-len-same ;mon jul 19 21:06:14 2010
 ;             bvxor-associative ;i can't believe this was missing!
-;             bvxor-commutative-dag
-;           bvxor-commutative-2-dag
+;             bvxor-commutative-axe
+;           bvxor-commutative-2-axe
              bv-array-read-trim-index
              bvlt-transitive-free2-back-constants
              bvlt-of-bvplus-constant-and-constant
@@ -2538,8 +2540,8 @@
      bvlt-of-bvif-arg2
      bvlt-of-bvif-arg3
      bvplus-commutative-2-sizes-differ ;after including dag prover rules
-     bvplus-commutative-dag    ;after including dag prover rules
-     bvplus-commutative-2-dag  ;after including dag prover rules
+     bvplus-commutative-axe    ;after including dag prover rules
+     bvplus-commutative-2-axe  ;after including dag prover rules
 ;     bvxor-all-ones            ;why? ;trying without
      )))
 
@@ -2572,8 +2574,8 @@
                                 (run-until-return-from-stack-height-rules-smart))
                         '(                ;;BVOR-WITH-SMALL-ARG2
                           getbit-of-bvxor ;new
-                          bvplus-commutative-dag
-                          bvplus-commutative-2-dag
+                          bvplus-commutative-axe
+                          bvplus-commutative-2-axe
                           bvplus-associative
                           bvuminus-of-bvplus ;can mess up the concat as shift and plus pattern
                           bvshr-rewrite-for-constant-shift-amount ;important for rotates?  could keep this but add rotate intro rules with slice instead of bvshr
@@ -2602,20 +2604,21 @@
   (declare (xargs :stobjs state
                   :guard (ilks-plist-worldp (w state))))
   (list (make-rule-alist! (phase-1-rules)
-                         (w state))
+                          (w state))
+        ;; here's what gets turned on here (BVPLUS-COMMUTATIVE-AXE BVPLUS-COMMUTATIVE-2-AXE BVPLUS-ASSOCIATIVE BVUMINUS-OF-BVPLUS GETBIT-OF-BVXOR BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT BVASHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT):
         (make-rule-alist! (set-difference-equal (append '( ;bvshl ;this makes things much bigger
-                                                         )
-                                                       (amazing-rules-spec-and-dag)
-                                                       (map-rules)
-                                                       (jvm-semantics-rules)
-                                                       (jvm-simplification-rules)
-                                                       (run-until-return-from-stack-height-rules-smart))
-                                               '( ;BVOR-WITH-SMALL-ARG2
-                                                 ;;GETBIT-OF-BVXOR
-                                                 ;;BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT
-                                                 ;;BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT
-                                                 ))
-                         (w state))))
+                                                          )
+                                                        (amazing-rules-spec-and-dag)
+                                                        (map-rules)
+                                                        (jvm-semantics-rules)
+                                                        (jvm-simplification-rules)
+                                                        (run-until-return-from-stack-height-rules-smart))
+                                                '( ;BVOR-WITH-SMALL-ARG2
+                                                  ;;GETBIT-OF-BVXOR
+                                                  ;;BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT
+                                                  ;;BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT
+                                                  ))
+                          (w state))))
 
 ;;
 ;; priorities

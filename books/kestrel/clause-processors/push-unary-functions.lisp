@@ -25,19 +25,13 @@
                            pairlis$
                            repeat)))
 
+(local (in-theory (enable symbolp-when-member-equal-and-symbol-listp)))
+
 (defthm assoc-equal-of-pairlis$-of-repeat
   (implies (member-equal key keys)
            (equal (assoc-equal key (pairlis$ keys (repeat (len keys) val)))
                   (cons key val)))
   :hints (("Goal" :in-theory (enable pairlis$ repeat assoc-equal))))
-
-;move
-(local
- (defthm symbolp-when-member-equal-and-symbol-listp
-   (implies (and (member-equal a l)
-                 (symbol-listp l))
-            (symbolp a))
-   :hints (("Goal" :in-theory (enable symbol-listp member-equal)))))
 
 ;; TODO: Handle additional calls of UNARY-FN in TERM?
 (defund apply-unary-fn-to-if-branches (unary-fn term)

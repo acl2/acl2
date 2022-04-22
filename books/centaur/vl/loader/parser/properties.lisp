@@ -1,5 +1,6 @@
 ; VL Verilog Toolkit
 ; Copyright (C) 2008-2014 Centaur Technology
+; Copyright (C) 2022 Intel Corp.
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group

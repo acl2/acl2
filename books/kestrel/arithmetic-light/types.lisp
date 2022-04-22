@@ -43,8 +43,16 @@
   (implies (natp x)
            (integerp x)))
 
+;; TODO: Uncomment, but that causes problems:
+;; (theory-invariant (incompatible (:rewrite integerp-when-natp)
+;;                                 (:definition natp)))
+
 ;;; These establish >=0
 
 (defthmd <=-of-0-when-0-natp
   (implies (natp x)
            (<= 0 x)))
+
+;; TODO: Uncomment, but that causes problems:
+;; (theory-invariant (incompatible (:rewrite <=-of-0-when-0-natp)
+;;                                 (:definition natp)))

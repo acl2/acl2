@@ -1,6 +1,6 @@
 ; A generic mergesort function and some proofs about it
 ;
-; Copyright (C) 2018-2020 Kestrel Institute
+; Copyright (C) 2018-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -43,38 +43,23 @@
           (remove1-equal nil y)))
   :hints (("Goal" :in-theory (enable append))))
 
-;dup
-(defthm len-of-cdr-better
-  (equal (len (cdr x))
-         (if (equal 0 (len x))
-             0
-           (+ -1 (len x)))))
-
-(in-theory (disable len))
-;add theory invar?
-
-;; (defthm my-memberp-of-append ;this must exist
-;;   (equal (list::memberp a (append x y))
-;;          (or (list::memberp a x)
-;;              (list::memberp a y))))
-
 ;move
 (defthm perm-of-append-of-mv-nth-0-of-split-list-fast-aux-and-mv-nth-1-of-split-list-fast-aux
   (implies (<= (len tail) (len lst))
            (perm (append (mv-nth 0 (split-list-fast-aux lst tail acc))
-                              (mv-nth 1 (split-list-fast-aux lst tail acc)))
+                         (mv-nth 1 (split-list-fast-aux lst tail acc)))
                  (append lst acc)))
 ;  :hints (("Goal" :expand ((APPEND ACC LST))))
-)
+  )
 
 (defthm perm-of-append-of-mv-nth-0-of-split-list-fast-and-mv-nth-1-of-split-list-fast
   (perm (append (mv-nth 0 (split-list-fast x))
-                     (mv-nth 1 (split-list-fast x)))
-             x)
+                (mv-nth 1 (split-list-fast x)))
+        x)
   :hints (("Goal" :in-theory (enable split-list-fast))))
 
 ;; A generic predicate with a guard of t.  Should we constrain this to be boolean?
-(encapsulate ( ((generic-predp *) => * :formals (x) :guard t))
+(encapsulate (((generic-predp *) => * :formals (x) :guard t))
   (local (defun generic-predp (x) x)))
 
 ;(defforall-simple generic-predp)
@@ -115,57 +100,6 @@
               (all-generic-predp y)))
   :hints (("Goal" :in-theory (enable all-generic-predp))))
 
-
-
-
-;; A generic comparision function with a guard that requires both arguments
-;; satisfy generic-predp.  Should we constrain this to be boolean?
-(encapsulate (((generic-comparison * *) => * :formals (x y) :guard (and (generic-predp x) (generic-predp y))))
-  (local (defun generic-comparison (x y) (list x y))))
-
-(defun merge-generic (l1 l2 acc)
-  (declare (xargs :measure (+ (len l1) (len l2))
-                  :hints
-                  (("Goal"
-                    :in-theory
-                    (union-theories '(o-p o-finp o< len-of-cdr-better
-                                          (:compound-recognizer natp-compound-recognizer)
-                                          (:type-prescription len)
-                                          consp-when-len-equal-constant
-                                          )
-                                    (theory 'minimal-theory))))
-                  :guard (and (all-generic-predp l1)
-                              (all-generic-predp l2)
-                              (true-listp acc))))
-  (cond ((atom l1) (revappend acc l2))
-        ((atom l2) (revappend acc l1))
-        ((generic-comparison (car l1) (car l2))
-         (merge-generic (cdr l1) l2 (cons (car l1) acc)))
-        (t (merge-generic l1 (cdr l2) (cons (car l2) acc)))))
-
-(defun merge-sort-generic (l)
-  (declare (xargs :measure (len l)
-                  :hints
-                  (("Goal"
-                    :in-theory
-                    (union-theories '(o-p o-finp o< len-of-cdr-better
-                                          (:compound-recognizer natp-compound-recognizer)
-                                          (:type-prescription len)
-                                          ;;consp-when-len-equal-constant
-                                          len-of-split-list-fast-bound2
-                                          len-of-split-list-fast-bound)
-                                    (theory 'minimal-theory))))
-                  :guard (and (true-listp l) (all-generic-predp l))
-                  :verify-guards nil ;done below
-                  ))
-  (if (atom (cdr l))
-      l
-      (mv-let (first-half second-half)
-        (split-list-fast l)
-        (merge-generic (merge-sort-generic first-half)
-                                  (merge-sort-generic second-half)
-                                  nil))))
-
 (defthm all-generic-predp-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (all-generic-predp lst)
                 (all-generic-predp acc)
@@ -191,6 +125,62 @@
            (all-generic-predp (mv-nth 1 (split-list-fast lst))))
   :hints (("Goal" :in-theory (enable split-list-fast))))
 
+;;;
+;;; generic-comparison
+;;;
+
+;; A generic comparision function with a guard that requires both arguments
+;; satisfy generic-predp.  Should we constrain this to be boolean?
+(encapsulate (((generic-comparison * *) => * :formals (x y) :guard (and (generic-predp x) (generic-predp y))))
+  (local (defun generic-comparison (x y) (list x y))))
+
+;; The function to merge 2 sorted lists
+(defun merge-generic (l1 l2 acc)
+  (declare (xargs :measure (+ (len l1) (len l2))
+                  :hints
+                  (("Goal"
+                    :in-theory
+                    (union-theories '(o-p o-finp o< len-of-cdr
+                                          (:compound-recognizer natp-compound-recognizer)
+                                          (:type-prescription len)
+                                          consp-when-len-equal-constant
+                                          )
+                                    (theory 'minimal-theory))))
+                  :guard (and (all-generic-predp l1)
+                              (all-generic-predp l2)
+                              (true-listp acc))))
+  (cond ((atom l1) (revappend acc l2))
+        ((atom l2) (revappend acc l1))
+        ((generic-comparison (car l1) (car l2))
+         (merge-generic (cdr l1) l2 (cons (car l1) acc)))
+        (t (merge-generic l1 (cdr l2) (cons (car l2) acc)))))
+
+;; The main merge-sort function
+(defun merge-sort-generic (l)
+  (declare (xargs :measure (len l)
+                  :hints
+                  (("Goal"
+                    :in-theory
+                    (union-theories '(o-p o-finp o< len-of-cdr
+                                          (:compound-recognizer natp-compound-recognizer)
+                                          (:type-prescription len)
+                                          ;;consp-when-len-equal-constant
+                                          len-of-split-list-fast-bound2
+                                          len-of-split-list-fast-bound)
+                                    (theory 'minimal-theory))))
+                  :guard (and (true-listp l) (all-generic-predp l))
+                  :verify-guards nil ;done below
+                  ))
+  (if (atom (cdr l))
+      l
+      (mv-let (first-half second-half)
+        (split-list-fast l)
+        (merge-generic (merge-sort-generic first-half)
+                                  (merge-sort-generic second-half)
+                                  nil))))
+
+
+
 (defthm all-generic-predp-of-merge-generic
   (implies (and (all-generic-predp l1)
                 (all-generic-predp l2)
@@ -210,7 +200,8 @@
   :hints (("Goal" :induct (merge-sort-generic l))))
 
 (defthm true-listp-of-merge-generic
-  (implies (and (true-listp l1) (true-listp l2))
+  (implies (and (true-listp l1)
+                (true-listp l2))
            (true-listp (merge-generic l1 l2 acc)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable merge-sort-generic))))

@@ -15,7 +15,7 @@
 ;; combine with list-rules-axe?
 
 (include-book "axe-syntax")
-(include-book "std/lists/list-defuns" :dir :system) ;for prefixp
+(include-book "kestrel/lists-light/prefixp-def" :dir :system)
 (local (include-book "kestrel/lists-light/prefixp" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
@@ -25,7 +25,7 @@
                 (work-hard (true-listp y)))
            (equal (equal (prefixp x y) (equal x y))
                   t))
-  :hints (("Goal" :in-theory (enable prefixp list-equiv))))
+  :hints (("Goal" :in-theory (enable prefixp))))
 
 (defthmd equal-of-equal-and-prefixp-work-hard
   (implies (and (work-hard (equal (len x) (len y)))
@@ -33,7 +33,7 @@
                 (work-hard (true-listp y)))
            (equal (equal (equal x y) (prefixp x y))
                   t))
-  :hints (("Goal" :in-theory (enable prefixp list-equiv))))
+  :hints (("Goal" :in-theory (enable prefixp))))
 
 (defthm equal-of-prefixp-and-equal-work-hard-alt
   (implies (and (work-hard (equal (len x) (len y)))
@@ -41,7 +41,7 @@
                 (work-hard (true-listp y)))
            (equal (equal (prefixp x y) (equal y x))
                   t))
-  :hints (("Goal" :in-theory (enable prefixp list-equiv))))
+  :hints (("Goal" :in-theory (enable prefixp))))
 
 (defthmd equal-of-equal-and-prefixp-work-hard-alt
   (implies (and (work-hard (equal (len x) (len y)))
@@ -49,4 +49,4 @@
                 (work-hard (true-listp y)))
            (equal (equal (equal x y) (prefixp y x))
                   t))
-  :hints (("Goal" :in-theory (enable prefixp list-equiv))))
+  :hints (("Goal" :in-theory (enable prefixp))))

@@ -73,20 +73,7 @@
     (:e scope-listp)
     (:e scopep)
     (:e tyname)
-    (:e tyname-to-type)
     (:e obj-adeclor-none)
-    (:e type-pointer)
-    (:e type-schar)
-    (:e type-uchar)
-    (:e type-sshort)
-    (:e type-ushort)
-    (:e type-sint)
-    (:e type-uint)
-    (:e type-slong)
-    (:e type-ulong)
-    (:e type-sllong)
-    (:e type-ullong)
-    (:e type-void)
     (:e valuep)
     (:e value-list-fix)
     (:e zp)
@@ -163,7 +150,7 @@
     ullong-dec-const
     ullong-oct-const
     ullong-hex-const
-    type-of-value))
+    type-of-value-alt-def))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -309,8 +296,10 @@
      when it appears in @(tsee exec-fun).
      We introduce similar rules for terms of the form
      @('(create-var <ident> ...)'),
-     @('(read-var <ident> ...)'), and
-     @('(write-var <ident> ...)')."))
+     @('(read-var <ident> ...)'),
+     @('(write-var <ident> ...)'),
+     @('(type-struct <ident>)'), and
+     @('(exec-memberp ... <ident> ...)')."))
 
   (defruled equal-of-ident-and-const
     (implies (and (syntaxp (and (quotep x)
@@ -335,7 +324,7 @@
 
   (defruled exec-fun-of-const-identifier
     (implies (and (syntaxp (quotep fun))
-                  (c::identp fun))
+                  (identp fun))
              (equal (exec-fun fun
                               args compst fenv limit)
                     (exec-fun (ident (ident->name fun))
@@ -343,21 +332,33 @@
 
   (defruled create-var-of-const-identifier
     (implies (and (syntaxp (quotep var))
-                  (c::identp var))
+                  (identp var))
              (equal (create-var var val compst)
                     (create-var (ident (ident->name var)) val compst))))
 
   (defruled read-var-of-const-identifier
     (implies (and (syntaxp (quotep var))
-                  (c::identp var))
+                  (identp var))
              (equal (read-var var compst)
                     (read-var (ident (ident->name var)) compst))))
 
   (defruled write-var-of-const-identifier
     (implies (and (syntaxp (quotep var))
-                  (c::identp var))
+                  (identp var))
              (equal (write-var var val compst)
-                    (write-var (ident (ident->name var)) val compst)))))
+                    (write-var (ident (ident->name var)) val compst))))
+
+  (defruled type-struct-of-const-identifier
+    (implies (and (syntaxp (quotep tag))
+                  (identp tag))
+             (equal (type-struct tag)
+                    (type-struct (ident (ident->name tag))))))
+
+  (defruled exec-memberp-of-const-identifier
+    (implies (and (syntaxp (quotep mem))
+                  (identp mem))
+             (equal (exec-memberp val mem compst)
+                    (exec-memberp val (ident (ident->name mem)) compst)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -373,12 +374,14 @@
     equal-of-ident-and-ident
     <<-of-ident-and-ident
     (:e str-fix)
-    (:e c::identp)
-    (:e c::ident->name)
+    (:e identp)
+    (:e ident->name)
     exec-fun-of-const-identifier
     create-var-of-const-identifier
     read-var-of-const-identifier
-    write-var-of-const-identifier))
+    write-var-of-const-identifier
+    type-struct-of-const-identifier
+    exec-memberp-of-const-identifier))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -588,7 +591,7 @@
      in combination with the return type theorems of
      the @('<type>-integer-value') functions, which return @(tsee integerp).")
    (xdoc::p
-    "The rule @('c::len-of-cons') below
+    "The rule @('len-of-cons') below
      is a duplicate of @('acl2::len-of-cons')
      from at least two list libraries,
      but this way we avoid having this file depend on those list libraries;
@@ -1065,6 +1068,7 @@
     compustatep-of-add-var
     compustatep-of-update-var
     compustatep-of-update-array
+    compustatep-of-update-struct
     compustatep-when-compustate-resultp-and-not-errorp
     compustate-resultp-of-write-var
     heap-fix-when-heapp
@@ -1372,6 +1376,7 @@
      that depend on the specific C-representing ACL2 functions involved.
      See @(see atc-implementation)."))
   (append *atc-symbolic-computation-state-rules*
+          *atc-tyname-to-type-rules*
           *atc-valuep-rules*
           *atc-value-listp-rules*
           *atc-value-optionp-rules*

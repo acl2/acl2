@@ -85,7 +85,7 @@
                            ;; ;;                              (or (simpler-dag-termp2 (darg1 non-nil-expr) term dag-array) ;fffixme gotta fix this up to take a term
                            ;; ;;                                  (and (variablep term)
                            ;; ;;                                       (not (member nodenum ;fffixme gotta fix this up to take a term
-                           ;; ;;                                                    (supporters-of-node (darg1 non-nil-expr) 'dag-array dag-array 'tag-array-for-supporters)))))
+                           ;; ;;                                                    (supporters-of-node-with-name (darg1 non-nil-expr) 'dag-array dag-array 'tag-array-for-supporters)))))
                            ;;                              )
                            ))
                     (prog2$ (and (eq :verbose print)
@@ -198,7 +198,7 @@
                                ;;   ;;     nil ;don't put a variable back in... (or can we order the variables???)
                                ;;   ;;   (or nil ;(simpler-dag-termp thing nodenum dag-array) ;fixme do we always want to do this?  fixme is this known from how the equality is ordered? ;can this loop?
                                ;;   ;;       (and (variablep (aref1 'dag-array dag-array nodenum)) ;don't test this over and over?  or we could wait until substitute-a-var?
-                               ;;   ;;            (not (member nodenum (supporters-of-node thing 'dag-array dag-array 'tag-array-for-supporters))))
+                               ;;   ;;            (not (member nodenum (supporters-of-node-with-name thing 'dag-array dag-array 'tag-array-for-supporters))))
                                ;;   ;;       ))
                                ;;   )
                                ) ;expensive?!
@@ -218,7 +218,7 @@
                                  ;;     ;;     nil ;don't put a variable back in...
                                  ;;     ;;   (or nil ;(simpler-dag-termp thing nodenum dag-array)
                                  ;;     ;;       (and (variablep (aref1 'dag-array dag-array nodenum))
-                                 ;;     ;;            (not (member nodenum (supporters-of-node thing 'dag-array dag-array 'tag-array-for-supporters))))))
+                                 ;;     ;;            (not (member nodenum (supporters-of-node-with-name thing 'dag-array dag-array 'tag-array-for-supporters))))))
                                  ;;     ))
                                  )
                             ;; ffixme, don't do this when the assumptions haven't yet been simplified? can lead to loops!

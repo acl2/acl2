@@ -41,6 +41,9 @@
 (include-book "set-difference-equal")
 (include-book "subsequencep")
 (include-book "length")
+(include-book "resize-list")
+(include-book "make-list-ac")
+(include-book "list-sets")
 
 ;; Books about non-built-in functions:
 (include-book "equiv-def")
@@ -71,6 +74,7 @@
 (include-book "add-to-end")
 (include-book "first-non-member")
 (include-book "count-occs")
+(include-book "prefixp-def")
 (include-book "prefixp")
 (include-book "prefixp2")
 (include-book "remove-nth")

@@ -32,6 +32,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
@@ -41,7 +42,7 @@
 (local (in-theory (disable member-equal
                            subsetp-equal
                            ;; axe-treep
-                           all-axe-treep
+                           axe-tree-listp
                            ;; for speed:
                            largest-non-quotep-bound
                            largest-non-quotep-bound-alt
@@ -112,15 +113,15 @@
 
 (local (in-theory (enable consp-of-cdr
                           bounded-renaming-entriesp-of-aset1-special-gen
-                          <-of-lookup-equal-when-all-dargp-less-than-of-strip-cdrs)))
+                          <-of-lookup-equal-when-bounded-darg-listp-of-strip-cdrs)))
 
 (local (in-theory (disable consp-from-len-cheap
-                           all-axe-treep-when-pseudo-term-listp
+                           axe-tree-listp-when-pseudo-term-listp
                            ;;list::nth-with-large-index-2
                            ;cdr-non-nil
                            ;nth1-when-not-cdr
                            ;list::nth-with-large-index
-                           all-dargp-less-than-when-<-of-largest-non-quotep
+                           bounded-darg-listp-when-<-of-largest-non-quotep
                            dargp-less-than
                            dargp
                            default-cdr
@@ -146,7 +147,7 @@
                                            )
   (declare (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               (alistp variable-replacement-alist)
-                              (all-dargp-less-than (strip-cdrs variable-replacement-alist) dag-len)
+                              (bounded-darg-listp (strip-cdrs variable-replacement-alist) dag-len)
                               (weak-dagp-aux rev-dag-lst)
                               ;; have to know that the rev-dag-lst nodenums increase:
                               (if (consp rev-dag-lst)
@@ -160,7 +161,7 @@
                   :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
                                  :expand ((STRIP-CARS REV-DAG-LST)
                                           (WEAK-DAGP-AUX REV-DAG-LST))
-                                 :in-theory (e/d (<-of-lookup-equal-when-all-dargp-less-than-of-strip-cdrs
+                                 :in-theory (e/d (<-of-lookup-equal-when-bounded-darg-listp-of-strip-cdrs
                                                   car-of-cadr-when-consecutivep-of-strip-cars
                                                   dargp-when-natp
                                                   dargp-when-myquotep
@@ -202,7 +203,7 @@
                                                  interpreted-function-alist)
             ;;fixme what about ground terms?!
             (let* ((args (dargs expr))
-                   (renamed-args (rename-args args 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array)
+                   (renamed-args (rename-dargs args 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array)
                                  ))
               (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                 (add-function-call-expr-to-dag-array-with-name fn renamed-args
@@ -236,7 +237,7 @@
                                      )
   (mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   :hyps ((alistp variable-replacement-alist)
-         (all-dargp-less-than (strip-cdrs variable-replacement-alist) dag-len)
+         (bounded-darg-listp (strip-cdrs variable-replacement-alist) dag-len)
          (weak-dagp-aux rev-dag-lst)
          (all-< (strip-cars rev-dag-lst)
                 (alen1 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array))
@@ -252,7 +253,7 @@
   (implies (and (consp rev-dag-lst) ;or else the call of last in the conclusion is a problem
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (alistp variable-replacement-alist)
-                (all-dargp-less-than (strip-cdrs variable-replacement-alist) dag-len)
+                (bounded-darg-listp (strip-cdrs variable-replacement-alist) dag-len)
                 (weak-dagp-aux rev-dag-lst)
                 (all-< (strip-cars rev-dag-lst) (alen1 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array) ;orig-len
                        )
@@ -285,7 +286,7 @@
   (implies (and (consp rev-dag-lst) ;or else the call of last in the conclusion is a problem
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (alistp variable-replacement-alist)
-                (all-dargp-less-than (strip-cdrs variable-replacement-alist) dag-len)
+                (bounded-darg-listp (strip-cdrs variable-replacement-alist) dag-len)
                 (weak-dagp-aux rev-dag-lst)
                 (all-< (strip-cars rev-dag-lst) (alen1 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array) ;orig-len
                        )
@@ -320,7 +321,7 @@
 (defthm alen1-of-mv-nth-1-of-merge-embedded-dag-into-dag-array
   (implies (and (consp rev-dag-lst) ;or else the call of last in the conclusion is a problem
                 (alistp variable-replacement-alist)
-                (all-dargp-less-than (strip-cdrs variable-replacement-alist) dag-len)
+                (bounded-darg-listp (strip-cdrs variable-replacement-alist) dag-len)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (weak-dagp-aux rev-dag-lst)
                 (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
@@ -371,7 +372,7 @@
                        )
                 (consecutivep (strip-cars rev-dag-lst))
                 (alistp variable-replacement-alist)
-                (all-dargp-less-than (strip-cdrs variable-replacement-alist) dag-len))
+                (bounded-darg-listp (strip-cdrs variable-replacement-alist) dag-len))
            (dag-parent-arrayp dag-parent-array-name (mv-nth
                                                      4
                                                      (merge-embedded-dag-into-dag-array rev-dag-lst
@@ -382,7 +383,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (merge-embedded-dag-into-dag-array
                             bounded-renaming-entriesp-of-aset1-special-gen
-                            <-of-lookup-equal-when-all-dargp-less-than-of-strip-cdrs)
+                            <-of-lookup-equal-when-bounded-darg-listp-of-strip-cdrs)
                            (pseudo-dag-arrayp
                             ;;bounded-dag-parent-arrayp
                             dargp)))))
@@ -398,7 +399,7 @@
                        )
                 (consecutivep (strip-cars rev-dag-lst))
                 (alistp variable-replacement-alist)
-                (all-dargp-less-than (strip-cdrs variable-replacement-alist) dag-len)
+                (bounded-darg-listp (strip-cdrs variable-replacement-alist) dag-len)
                 (not (mv-nth 0 (merge-embedded-dag-into-dag-array rev-dag-lst
                                                                   variable-replacement-alist
                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
@@ -421,7 +422,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (merge-embedded-dag-into-dag-array
                             bounded-renaming-entriesp-of-aset1-special-gen
-                            <-of-lookup-equal-when-all-dargp-less-than-of-strip-cdrs)
+                            <-of-lookup-equal-when-bounded-darg-listp-of-strip-cdrs)
                            (pseudo-dag-arrayp
                             dargp)))))
 
@@ -516,13 +517,13 @@
            (alistp (mv-nth 1 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
   :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
 
-(defthm all-dargp-less-than-of-strip-cdrs-of-mv-nth-1-of-make-nodes-for-vars-with-name
-  (implies (and (all-dargp-less-than (strip-cdrs acc) dag-len)
+(defthm bounded-darg-listp-of-strip-cdrs-of-mv-nth-1-of-make-nodes-for-vars-with-name
+  (implies (and (bounded-darg-listp (strip-cdrs acc) dag-len)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (natp alist-nodenum)
                 (< alist-nodenum dag-len)
                 (not (mv-nth 0 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
-           (all-dargp-less-than (strip-cdrs (mv-nth 1 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name)))
+           (bounded-darg-listp (strip-cdrs (mv-nth 1 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name)))
                                            (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))
                                            ))
   :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
@@ -582,7 +583,7 @@
   :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
 
 (defthm pseudo-dag-arrayp-after-make-nodes-for-vars-with-name
-  (implies (and (all-dargp-less-than (strip-cdrs acc) dag-len)
+  (implies (and (bounded-darg-listp (strip-cdrs acc) dag-len)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (natp alist-nodenum)
                 (< alist-nodenum dag-len)
@@ -606,6 +607,7 @@
  ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
  ;; where nodenum-or-quotep is equivalent to the tree passed in, and nodes already in the dag passed in remain unchanged (and the aux. data structures have been updated, of course)
  ;; todo: when this is called on a term, we could instead call a simpler version that only works on terms
+ ;; Handles embedded DAGs in TREE
  (defund merge-tree-into-dag-array (tree
                                     var-replacement-alist ;maps vars in the term to nodenums/quoteps
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
@@ -614,7 +616,7 @@
                                (axe-treep tree)
                                (bounded-axe-treep tree dag-len)
                                (symbol-alistp var-replacement-alist)
-                               (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                               (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                                ;;(<= (+ (len vars) dag-len) 2147483645)
                                (interpreted-function-alistp interpreted-function-alist))
                    :verify-guards nil
@@ -712,11 +714,9 @@
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                      interpreted-function-alist)
    (declare (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                               (true-listp trees)
-                               (all-axe-treep trees)
-                               (all-bounded-axe-treep trees dag-len)
+                               (bounded-axe-tree-listp trees dag-len)
                                (symbol-alistp var-replacement-alist)
-                               (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                               (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                                ;;(<= (+ (len vars) dag-len) 2147483645)
                                (interpreted-function-alistp interpreted-function-alist))))
    (if (endp trees)
@@ -829,7 +829,7 @@
                   (axe-treep tree)
                   (bounded-axe-treep tree dag-len)
                   (symbol-alistp var-replacement-alist)
-                  (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                  (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
 ;                  (interpreted-function-alistp interpreted-function-alist)
                   )
              (and (dargp-less-than (mv-nth 1 (merge-tree-into-dag-array
@@ -885,15 +885,13 @@
                                   var-replacement-alist
                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                   interpreted-function-alist)))
-                  (true-listp trees)
-                  (all-axe-treep trees)
-                  (all-bounded-axe-treep trees dag-len)
+                  (bounded-axe-tree-listp trees dag-len)
                   (symbol-alistp var-replacement-alist)
-                  (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                  (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
 ;                  (interpreted-function-alistp interpreted-function-alist)
                   )
              (and
-              (all-dargp-less-than (mv-nth 1 (merge-trees-into-dag-array
+              (bounded-darg-listp (mv-nth 1 (merge-trees-into-dag-array
                                                          trees
                                                          var-replacement-alist
                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
@@ -944,7 +942,7 @@
 
 (defthm merge-tree-into-dag-array-return-type-2
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                 (axe-treep tree)
                 (bounded-axe-treep tree dag-len)
                 (not (mv-nth 0 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
@@ -969,10 +967,8 @@
 
 (defthm merge-trees-into-dag-array-return-type-2
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
-                (all-axe-treep trees)
-                (true-listp trees)
-                (all-bounded-axe-treep trees dag-len)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
+                (bounded-axe-tree-listp trees dag-len)
                 (not (mv-nth 0 (merge-trees-into-dag-array trees var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
                 (symbol-alistp var-replacement-alist)
                 (interpreted-function-alistp interpreted-function-alist))
@@ -993,7 +989,7 @@
 
 (defthm dargp-less-than-of-mv-nth-1-of-merge-tree-into-dag-array
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                 (axe-treep tree)
                 (bounded-axe-treep tree dag-len)
                 (not (mv-nth 0 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
@@ -1011,7 +1007,7 @@
 
 (defthm integerp-of-mv-nth-1-of-merge-tree-into-dag-array
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                 (axe-treep tree)
                 (bounded-axe-treep tree dag-len)
                 (not (mv-nth 0 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
@@ -1026,7 +1022,7 @@
 
 (defthm nonneg-of-mv-nth-1-of-merge-tree-into-dag-array
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                 (axe-treep tree)
                 (bounded-axe-treep tree dag-len)
                 (not (mv-nth 0 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
@@ -1040,7 +1036,7 @@
 
 (defthm bound-of-mv-nth-1-of-merge-tree-into-dag-array
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                 (axe-treep tree)
                 (bounded-axe-treep tree dag-len)
                 (not (mv-nth 0 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
@@ -1060,10 +1056,10 @@
                                     car-becomes-nth-of-0
                                     cadr-becomes-nth-of-1
                                     consp-of-cdr-of-nth-when-all-dargp
-                                    <-of-nth-when-all-dargp-less-than
+                                    <-of-nth-when-bounded-darg-listp
                                     true-listp-of-nth-1-of-nth-0-when-axe-treep
                                     consp-when-true-listp-iff)
-                                   (all-axe-treep
+                                   (axe-tree-listp
                                     axe-treep
                                     myquotep
                                     natp
@@ -1079,7 +1075,7 @@
   :hyps ((axe-treep tree)
          (bounded-axe-treep tree dag-len)
          (symbol-alistp var-replacement-alist)
-         (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+         (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
          ;;(<= (+ (len vars) dag-len) 2147483645)
          ;(interpreted-function-alistp interpreted-function-alist)
          )
@@ -1093,6 +1089,7 @@
 
 ;returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;will nodenum-or-quotep always be a quotep or the top node?
+;; Handles embedded DAGs in TERM.
 (defund make-term-into-dag-array (term dag-array-name dag-parent-array-name interpreted-function-alist)
   (declare (xargs :guard (and (pseudo-termp term)
                               (symbolp dag-array-name)
@@ -1267,7 +1264,7 @@
                               (symbol-alistp var-replacement-alist)
                               (if (quotep dag-lst)
                                   t
-                                (all-dargp-less-than (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag-lst)))))
+                                (bounded-darg-listp (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag-lst)))))
                   :verify-guards nil ;issue with calling make-into-array on an empty array
                   ))
   (let* ((dag-lst (if (quotep dag-lst) nil dag-lst))
@@ -1301,7 +1298,7 @@
                               (symbol-alistp var-replacement-alist)
                               (if (quotep dag)
                                   t
-                                (all-dargp-less-than (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag)))))
+                                (bounded-darg-listp (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag)))))
                   :verify-guards nil))
   (mv-let (erp nodenum-or-quotep new-dag)
     (merge-tree-into-dag tree dag var-replacement-alist) ;todo: this converts the array back to a list, but get-subdag converts it back to an array
@@ -1416,7 +1413,7 @@
                                                      ))
                  ((when erp) (mv erp nil))
                  (top-nodenum (aref1 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array (top-nodenum main-dag))))
-              (mv (erp-nil) (drop-non-supporters-array 'dag-array dag-array top-nodenum nil)))
+              (mv (erp-nil) (drop-non-supporters-array-with-name 'dag-array dag-array top-nodenum nil)))
           (b* ( ;; make the subdag into a dag array:
                (dag-len (+ 1 (top-nodenum subdag-for-var)))
                (dag-array (make-into-array-with-len 'dag-array subdag-for-var (+ dag-len 1 (top-nodenum main-dag))))
@@ -1433,7 +1430,7 @@
                                                    ))
                ((when erp) (mv erp nil))
                (top-nodenum (aref1 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array (top-nodenum main-dag))))
-            (mv (erp-nil) (drop-non-supporters-array 'dag-array dag-array top-nodenum nil))))))))
+            (mv (erp-nil) (drop-non-supporters-array-with-name 'dag-array dag-array top-nodenum nil))))))))
 
 ;;(compose-dags ''3 'x ''4 nil)
 ;;(compose-dags ''3 'x '((2 foo 1) (1 bar 0) (0 . x)) nil)
@@ -1575,7 +1572,7 @@
 
 (defthm dargp-less-than-of-lookup-equal
   (implies (and (lookup-equal term var-replacement-alist)
-                (all-dargp-less-than (strip-cdrs var-replacement-alist)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist)
                                                 dag-len))
            (dargp-less-than (lookup-equal term var-replacement-alist) dag-len))
   :hints (("Goal" :in-theory (enable lookup-equal))))
@@ -1604,7 +1601,7 @@
    (declare (xargs :guard (and (pseudo-termp term)
                                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                                (symbol-alistp var-replacement-alist)
-                               (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                               (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                                (interpreted-function-alistp interpreted-function-alist))
                    :guard-hints (("Goal" :in-theory (disable merge-term-into-dag-array)))
                    :verify-guards nil ; see below
@@ -1713,10 +1710,9 @@
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                     interpreted-function-alist)
    (declare (xargs :guard (and (pseudo-term-listp terms)
-                               (true-listp terms)
                                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                                (symbol-alistp var-replacement-alist)
-                               (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                               (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                                (interpreted-function-alistp interpreted-function-alist))))
    (if (endp terms)
        (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1858,8 +1854,8 @@
                                   ()))))
 
 (local (in-theory (disable use-all-<-for-car
-                           all-dargp-less-than-when-<-of-largest-non-quotep
-                           ;;all-dargp-less-than-when-all-consp
+                           bounded-darg-listp-when-<-of-largest-non-quotep
+                           ;;bounded-darg-listp-when-all-consp
                            )))
 
 (set-case-split-limitations 'nil)
@@ -1868,7 +1864,7 @@
 (local (in-theory (disable consp-from-len-cheap
                            ;use-all-consp-for-car
                            default-+-2 default-cdr
-                           quote-lemma-for-all-dargp-less-than-gen-alt)))
+                           quote-lemma-for-bounded-darg-listp-gen-alt)))
 
 (local (in-theory (disable symbol-alistp))) ;don't induct
 
@@ -1895,7 +1891,7 @@
     (implies (and (pseudo-termp term)
                   (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                   (symbol-alistp var-replacement-alist)
-                  (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                  (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                   ;;no errors:
                   (not (mv-nth 0 (merge-term-into-dag-array term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
              (and (dargp-less-than (mv-nth 1 (merge-term-into-dag-array term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))
@@ -1941,7 +1937,7 @@
     (implies (and (pseudo-term-listp terms)
                   (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                   (symbol-alistp var-replacement-alist)
-                  (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                  (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                   ;;no errors:
                   (not (mv-nth 0 (merge-terms-into-dag-array terms var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
              (and (true-listp (mv-nth 1 (merge-terms-into-dag-array
@@ -1960,7 +1956,7 @@
                                                    var-replacement-alist
                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                                    interpreted-function-alist)))
-                  (all-dargp-less-than (mv-nth 1 (merge-terms-into-dag-array
+                  (bounded-darg-listp (mv-nth 1 (merge-terms-into-dag-array
                                                              terms
                                                              var-replacement-alist
                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
@@ -2026,7 +2022,7 @@
     ;;                                         INTERPRETED-FUNCTION-ALIST)))
     (PSEUDO-TERMP TERM)
     (SYMBOL-ALISTP VAR-REPLACEMENT-ALIST)
-    (ALL-DARGP-LESS-THAN (STRIP-CDRS VAR-REPLACEMENT-ALIST)
+    (BOUNDED-DARG-LISTP (STRIP-CDRS VAR-REPLACEMENT-ALIST)
                                     DAG-LEN)
     (INTERPRETED-FUNCTION-ALISTP INTERPRETED-FUNCTION-ALIST)
     (NATP DAG-LEN))
@@ -2057,7 +2053,7 @@
   :hyps ((wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist) ;should I have to give this?
          (pseudo-termp term)
          (symbol-alistp var-replacement-alist)
-         (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+         (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
          (interpreted-function-alistp interpreted-function-alist))
   :recursivep nil
   :hyps-everywhere t
@@ -2075,7 +2071,7 @@
                 (pseudo-termp term)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (symbol-alistp var-replacement-alist)
-                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                 ;;no errors:
                 (not (mv-nth 0 (merge-term-into-dag-array term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
            (<= bound
@@ -2097,7 +2093,7 @@
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
 
                 (symbol-alistp var-replacement-alist)
-                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                 ;;no errors:
                 (not (mv-nth 0 (merge-term-into-dag-array term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
            (DARGP-LESS-THAN
@@ -2114,7 +2110,7 @@
   (implies (and (pseudo-termp term)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (symbol-alistp var-replacement-alist)
-                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                 ;;no errors:
                 (not (mv-nth 0 (merge-term-into-dag-array term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
                 (not (consp (mv-nth 1 (merge-term-into-dag-array term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
@@ -2139,7 +2135,7 @@
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
 
                 (symbol-alistp var-replacement-alist)
-                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                 ;;no errors:
                 (not (mv-nth 0 (merge-term-into-dag-array term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
                 (not (consp (mv-nth 1 (merge-term-into-dag-array term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
@@ -2163,7 +2159,7 @@
            :in-theory (e/d (merge-term-into-dag-array merge-terms-into-dag-array car-becomes-nth-of-0
                                                       not-equal-of-len-and-1-when-dargp
                                                       call-of-dag-val-with-axe-evaluator-with-inlineable-dagp
-                                                      <-of-nth-when-all-dargp-less-than
+                                                      <-of-nth-when-bounded-darg-listp
                                                       true-listp-of-nth-1-of-nth-0-when-axe-treep
                                                       ;wf-dagp
                                                       ;wf-dagp-expander

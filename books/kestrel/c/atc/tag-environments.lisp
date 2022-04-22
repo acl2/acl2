@@ -234,6 +234,6 @@
        (info (tag-info-fix info))
        (env (tag-env-fix env)))
     (if (omap::in tag env)
-        (tag-env-option-some (omap::update tag info env))
-      (tag-env-option-none)))
+        (tag-env-option-none)
+      (tag-env-option-some (omap::update tag info env))))
   :hooks (:fix))

@@ -1,6 +1,6 @@
 ; Top file for strings-light library
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,3 +16,4 @@
 (include-book "split-chars-repeatedly")
 (include-book "split-string")
 (include-book "split-string-repeatedly")
+(include-book "reverse")

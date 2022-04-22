@@ -79,11 +79,45 @@
                                        exec-const
                                        exec-iconst
                                        exec-arrsub
+                                       exec-memberp
                                        exec-unary
                                        exec-cast
                                        exec-binary-strict-pure
                                        exec-test
                                        exec-expr-pure))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-tyname-to-type-rules
+  :short "Rules for turning type names into types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Type names arise, in quoted constant form,
+     from the abstract syntax that is symbolically executed.
+     In some circumstance, these type names are turned into types,
+     via @(tsee tyname-to-type).
+     If we just enabled the executable counterpart of this function
+     we would end up with types in quoted constant form.
+     Instead, we want to keep types as terms with constructors,
+     particularly because some types include identifiers (e.g. structure types),
+     and we want to keep identifiers as terms with constructors
+     instead of in quoted constant form (see @(see atc-identifier-rules).")
+   (xdoc::p
+    "Thus, here we collect rules to rewrite quoted type names
+     to types that are terms with constructors."))
+
+  (defval *atc-tyname-to-type-rules*
+    '(tyname-to-type
+      tyname-to-type-aux
+      (:e tyname->tyspec)
+      (:e tyname->declor)
+      (:e obj-adeclor-kind)
+      (:e obj-adeclor-pointer->to)
+      (:e obj-adeclor-array->of)
+      tyspecseq-to-type
+      (:e tyspecseq-kind)
+      (:e tyspecseq-struct->tag))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -470,7 +504,7 @@
       (:e iconst->type)
       (:e iconst->unsignedp)
       (:e iconst->value)
-      (:e iconst-tysuffix-kind)
+      (:e iconst-length-kind)
       (:e sint-integerp)
       (:e uint-integerp)
       (:e slong-integerp)
@@ -1682,6 +1716,7 @@
     '(exec-expr-pure-when-ident
       exec-expr-pure-when-const
       exec-expr-pure-when-arrsub
+      exec-expr-pure-when-memberp
       exec-expr-pure-when-unary
       exec-expr-pure-when-cast
       exec-expr-pure-when-strict-pure-binary
@@ -1695,6 +1730,8 @@
       (:e expr-const->get)
       (:e expr-arrsub->arr)
       (:e expr-arrsub->sub)
+      (:e expr-memberp->target)
+      (:e expr-memberp->name)
       (:e expr-unary->op)
       (:e expr-unary->arg)
       (:e expr-cast->type)
@@ -1847,7 +1884,7 @@
                  (equal (expr-kind left) :arrsub)
                  (equal arr (expr-arrsub->arr left))
                  (equal sub (expr-arrsub->sub left))
-                 (equal (expr-kind (expr-arrsub->arr left)) :ident)
+                 (equal (expr-kind arr) :ident)
                  (not (zp limit))
                  (equal val+compst1
                         (exec-expr-call-or-pure right compst fenv (1- limit)))
@@ -2187,8 +2224,7 @@
       (:e block-item-kind)
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
-      (:e obj-declon-to-ident+tyname+init)
-      (:e tyname-to-type))))
+      (:e obj-declon-to-ident+tyname+init))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2264,5 +2300,4 @@
       eq
       (:e init-scope)
       (:e param-declonp)
-      (:e param-declon-to-ident+tyname)
-      (:e tyname-to-type))))
+      (:e param-declon-to-ident+tyname))))

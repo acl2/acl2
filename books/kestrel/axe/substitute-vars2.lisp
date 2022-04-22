@@ -564,12 +564,12 @@
                                      find-var-and-expr-to-subst2))))
 
 ;similar to the above
-(defthm all-dargp-less-than-of-strip-cadrs-of-subst-candidates
+(defthm bounded-darg-listp-of-strip-cadrs-of-subst-candidates
   (implies (and (all-< literal-nodenums dag-len)
                 (nat-listp literal-nodenums)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-dargp-less-than (strip-cadrs acc) dag-len))
-           (all-dargp-less-than (strip-cadrs (subst-candidates literal-nodenums dag-array dag-len lim acc))
+                (bounded-darg-listp (strip-cadrs acc) dag-len))
+           (bounded-darg-listp (strip-cadrs (subst-candidates literal-nodenums dag-array dag-len lim acc))
                                dag-len))
   :hints (("Goal" :in-theory (enable subst-candidates strip-cadrs largest-non-quotep check-for-var-subst-literal2
                                      find-var-and-expr-to-subst2
@@ -642,8 +642,7 @@
                                   acc ; should be sorted
                                   )
   (declare (xargs :guard (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
-                              (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
-                              (true-listp args)
+                              (bounded-darg-listp args (alen1 'candidate-deps-array candidate-deps-array))
                               (nat-listp acc))))
   (if (endp args)
       acc
@@ -657,16 +656,14 @@
 
 (defthm nat-listp-of-merge-deps-for-args
   (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
-                (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
-                (true-listp args)
+                (bounded-darg-listp args (alen1 'candidate-deps-array candidate-deps-array))
                 (nat-listp acc))
            (nat-listp (merge-deps-for-args args candidate-deps-array acc)))
   :hints (("Goal" :in-theory (enable merge-deps-for-args))))
 
 (defthm true-listp-of-merge-deps-for-args
   (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
-                (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
-                (true-listp args)
+                (bounded-darg-listp args (alen1 'candidate-deps-array candidate-deps-array))
                 (nat-listp acc))
            (true-listp (merge-deps-for-args args candidate-deps-array acc)))
   :rule-classes (:rewrite :type-prescription)
@@ -674,8 +671,7 @@
 
 (defthm sortedp-<=-of-merge-deps-for-args
   (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
-                (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
-                (true-listp args)
+                (bounded-darg-listp args (alen1 'candidate-deps-array candidate-deps-array))
                 (nat-listp acc)
                 (sortedp-<= acc))
            (sortedp-<= (merge-deps-for-args args candidate-deps-array acc)))
@@ -683,8 +679,7 @@
 
 (defthm no-duplicatesp-equal-of-merge-deps-for-args
   (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
-                (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
-                (true-listp args)
+                (bounded-darg-listp args (alen1 'candidate-deps-array candidate-deps-array))
                 (nat-listp acc)
                 (sortedp-<= acc)
                 (no-duplicatesp-equal acc))
@@ -802,8 +797,8 @@
 (local (in-theory (disable MEMBER-EQUAL NAT-LISTP STRIP-CADRS))) ;prevent inductions
 
 (local
- (defthm <-of-cadr-of-car-when-ALL-DARGP-LESS-THAN-of-strip-cadrs
-   (IMPLIES (AND (ALL-DARGP-LESS-THAN (STRIP-CADRS SUBST-CANDIDATES)
+ (defthm <-of-cadr-of-car-when-BOUNDED-DARG-LISTP-of-strip-cadrs
+   (IMPLIES (AND (BOUNDED-DARG-LISTP (STRIP-CADRS SUBST-CANDIDATES)
                                       bound)
                  (NOT (CONSP (CADR (CAR SUBST-CANDIDATES))))
                  (consp SUBST-CANDIDATES))
@@ -866,7 +861,7 @@
                                             )
   (declare (xargs :guard (and (subst-candidate-listp subst-candidates)
                               (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
-                              (all-dargp-less-than (strip-cadrs subst-candidates) (alen1 'candidate-deps-array candidate-deps-array))
+                              (bounded-darg-listp (strip-cadrs subst-candidates) (alen1 'candidate-deps-array candidate-deps-array))
                               (nat-listp nodenums-of-vars-already-added)
                               (sortedp-<= nodenums-of-vars-already-added)
                               (nat-listp nodenums-of-vars-to-avoid)
@@ -922,10 +917,10 @@
                                      len-of-cadr-when-subst-candidatep
                                      ))))
 
-(defthm all-dargp-less-than-of-strip-cadrs-of-find-simultaneous-subst-candidates
-  (implies (and (all-dargp-less-than (strip-cadrs subst-candidates) bound)
-                (all-dargp-less-than (strip-cadrs subst-candidates-acc) bound))
-           (all-dargp-less-than (strip-cadrs (find-simultaneous-subst-candidates subst-candidates candidate-deps-array subst-candidates-acc nodenums-of-vars-already-added nodenums-of-vars-to-avoid))
+(defthm bounded-darg-listp-of-strip-cadrs-of-find-simultaneous-subst-candidates
+  (implies (and (bounded-darg-listp (strip-cadrs subst-candidates) bound)
+                (bounded-darg-listp (strip-cadrs subst-candidates-acc) bound))
+           (bounded-darg-listp (strip-cadrs (find-simultaneous-subst-candidates subst-candidates candidate-deps-array subst-candidates-acc nodenums-of-vars-already-added nodenums-of-vars-to-avoid))
                                 bound))
   :hints (("Goal" :in-theory (enable find-simultaneous-subst-candidates
                                      len-of-cadr-when-subst-candidatep
@@ -985,13 +980,13 @@
                   bound))
   :hints (("Goal" :in-theory (enable drop-irrelevant-subst-candidates))))
 
-(defthm all-dargp-less-than-of-strip-cadrs-of-drop-irrelevant-subst-candidates
+(defthm bounded-darg-listp-of-strip-cadrs-of-drop-irrelevant-subst-candidates
   (implies (and (subst-candidate-listp subst-candidates)
                 ;(subst-candidate-listp acc)
                 ;(all-<= (strip-cars acc) max-literal-nodenum)
-                (all-dargp-less-than (strip-cadrs subst-candidates) bound)
-                (all-dargp-less-than (strip-cadrs acc) bound))
-           (all-dargp-less-than (strip-cadrs (drop-irrelevant-subst-candidates subst-candidates max-literal-nodenum acc))
+                (bounded-darg-listp (strip-cadrs subst-candidates) bound)
+                (bounded-darg-listp (strip-cadrs acc) bound))
+           (bounded-darg-listp (strip-cadrs (drop-irrelevant-subst-candidates subst-candidates max-literal-nodenum acc))
                                 bound))
   :hints (("Goal" :in-theory (enable drop-irrelevant-subst-candidates STRIP-CADRS))))
 
@@ -1050,11 +1045,11 @@
            (translation-arrayp-aux TOP-NODENUM-TO-CHECK (mark-replacements subst-candidates translation-array)))
   :hints (("Goal" :in-theory (enable mark-replacements dargp-of-cadr-when-subst-candidatep))))
 
-(defthm dargp-less-than-of-cadr-of-car-when-all-dargp-less-than-of-strip-cadrs
-  (implies (and (all-dargp-less-than (strip-cadrs x) bound)
+(defthm dargp-less-than-of-cadr-of-car-when-bounded-darg-listp-of-strip-cadrs
+  (implies (and (bounded-darg-listp (strip-cadrs x) bound)
                 (consp x))
            (dargp-less-than (cadr (car x)) bound))
-  :hints (("Goal" :in-theory (enable all-dargp-less-than strip-cadrs))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp strip-cadrs))))
 
 (defthm <-of-car-of-car-when-all-<-of-strip-cars
   (implies (and (all-< (strip-cars x) bound)
@@ -1063,7 +1058,7 @@
   :hints (("Goal" :in-theory (enable all-< strip-cars))))
 
 (defthm bounded-translation-arrayp-aux-of-mark-replacements
-  (implies (and (all-dargp-less-than (strip-cadrs subst-candidates) bound)
+  (implies (and (bounded-darg-listp (strip-cadrs subst-candidates) bound)
                 (subst-candidate-listp subst-candidates)
                 (array1p 'translation-array translation-array)
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
@@ -1076,7 +1071,7 @@
 (defthm bounded-translation-arrayp-aux-of-mark-replacements-gen
   (implies (and (<= top-nodenum-to-check (+ -1 (alen1 'translation-array translation-array)))
                 (natp top-nodenum-to-check)
-                (all-dargp-less-than (strip-cadrs subst-candidates) bound)
+                (bounded-darg-listp (strip-cadrs subst-candidates) bound)
                 (subst-candidate-listp subst-candidates)
                 (array1p 'translation-array translation-array)
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
@@ -1085,7 +1080,6 @@
                 (all-< (strip-cars subst-candidates) bound))
            (bounded-translation-arrayp-aux top-nodenum-to-check (mark-replacements subst-candidates translation-array) bound))
   :hints (("Goal" :in-theory (enable mark-replacements dargp-of-cadr-when-subst-candidatep))))
-
 
 ;;;
 ;;; substitute-var-set

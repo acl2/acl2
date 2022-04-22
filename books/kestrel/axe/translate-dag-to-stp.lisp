@@ -12,7 +12,9 @@
 
 (in-package "ACL2")
 
-;fixme use an array instead of nodenum-type-alist everywhere?
+;; TODO: Use an array instead of nodenum-type-alist everywhere?
+
+;; TODO: Consider adding support for the shift operators (bvshl, bvshr, bvashr).
 
 ;; I have found that is it much faster to write a bunch of strings to a file
 ;; than to append them all into one big string and write it to a file (at least
@@ -56,13 +58,14 @@
 (include-book "kestrel/utilities/file-io-string-trees" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/file-io-light/write-strings-to-file-bang" :dir :system) ;; todo reduce, just used to clear a file
+(include-book "kestrel/file-io-light/read-file-into-character-list" :dir :system)
 (in-theory (disable revappend-removal)) ;caused problems (though this may be a better approach to adopt someday)
 (include-book "kestrel/bv/defs" :dir :system) ;todo: make sure this book includes the definitions of all functions it translates.
 (include-book "kestrel/bv/getbit-def" :dir :system)
 (include-book "call-axe-script")
 (include-book "safe-unquote") ; drop?
 (include-book "axe-syntax-functions-bv") ;for get-type-of-bv-expr-axe, todo reduce
-(include-book "kestrel/utilities/strings" :dir :system)
+(include-book "kestrel/utilities/strings" :dir :system) ; for newline-string
 (include-book "kestrel/utilities/temp-dirs" :dir :system)
 (include-book "conjunctions-and-disjunctions") ;for possibly-negated-nodenumsp
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system)) ;for character-listp-of-take
@@ -546,10 +549,10 @@
 ;;       (and (natp (car lst))
 ;;            (all-natp (cdr lst)))))
 
-;; (defthm nodenum-or-consp-list-when-all-dargp-less-than
-;;   (implies (all-dargp-less-than items nodenum)
+;; (defthm nodenum-or-consp-list-when-bounded-darg-listp
+;;   (implies (bounded-darg-listp items nodenum)
 ;;            (nodenum-or-consp-list items))
-;;   :hints (("Goal" :in-theory (enable all-dargp-less-than nodenum-or-consp-list))))
+;;   :hints (("Goal" :in-theory (enable bounded-darg-listp nodenum-or-consp-list))))
 
 
 ;; ;slow?
@@ -900,7 +903,7 @@
 ;; Returns (mv translated-expr-string constant-array-info).
 ;; (defun translate-dag-expr-bvplus (args dag-array-name dag-array constant-array-info cut-nodenum-type-alist)
 ;;   (declare (xargs :guard (and (array1p dag-array-name dag-array) ;;TODO: Instead, use pseudo-dag-arrayp.
-;;                               (all-dargp-less-than args (alen1 dag-array-name dag-array))
+;;                               (bounded-darg-listp args (alen1 dag-array-name dag-array))
 ;;                               (alistp cut-nodenum-type-alist)
 ;;                               (symbolp dag-array-name)
 ;;                               (equal 3 (len args))
@@ -963,7 +966,7 @@
                   :guard-hints (("Goal" :in-theory (e/d (get-type-of-arg
                                                          car-becomes-nth-of-0
                                                          BOUNDED-DAG-EXPRP
-                                                         dag-exprp0
+                                                         dag-exprp
                                                          NATP-OF-+-OF-1)
                                                         (DARGP
                                                          MYQUOTEP
@@ -1796,7 +1799,7 @@
                   :guard-hints (("Goal" :in-theory (enable <-of-nth-when-all-<
                                                            car-becomes-nth-of-0
                                                            integer-listp-when-nat-listp
-                                                           not-cddr-when-dag-exprp0-and-quotep)))))
+                                                           not-cddr-when-dag-exprp-and-quotep)))))
   (if (endp nodenums-to-translate)
       (mv acc constant-array-info opened-paren-count)
     (let* ((nodenum (first nodenums-to-translate))
@@ -2172,38 +2175,35 @@
             (progn$ (er hard? 'call-stp-on-file "!! ERROR: STP experienced an unknown error (exit status ~x0, input: ~s1, output: ~s2) !!"
                         status input-filename output-filename)
                     (mv *error* state))))
-      ;;check whether the output file contains "Valid."
-      (mv-let (errmsg/contents state)
-        ;; we just need to check whether the output file starts with the characters "Valid."
-        (read-file-characters output-filename state)
-        (if (stringp errmsg/contents) ;a string means error
-            (prog2$ (er hard? 'call-stp-on-file "Unable to read STP output from file ~x0.  Message is: ~s1.~%" output-filename errmsg/contents)
+      (let ((chars (read-file-into-character-list output-filename state)))
+        (if (null chars)
+            (prog2$ (er hard? 'call-stp-on-file "Unable to read STP output from file ~x0.~%" output-filename)
                     (mv *error* state))
-          (let ((chars errmsg/contents))
-            (if (equal chars '(#\V #\a #\l #\i #\d #\. #\Newline)) ;;Look for "Valid."
-                (prog2$ (and print (cw "  STP said Valid."))
-                        (mv *valid* state))
-              ;; Test whether chars end with "Invalid.", perhaps preceded by a printed counterexample.
-              (if (and (<= 9 (len chars)) ;9 is the length of "Invalid." followed by newline - todo make a function 'char-list-ends-with'
-                       (equal (nthcdr (- (len chars) 9) chars)
-                              '(#\I #\n #\v #\a #\l #\i #\d #\. #\Newline))) ;;Look for "Invalid."
-                  (b* ((- (and print (cw "  STP said Invalid.~%")))
-                       ;; Print the counterexample (TODO: What if it is huge?):
-                       (counterexamplep-chars (butlast chars 9))
+          ;; Check whether the output file contains "Valid."
+          (if (equal chars '(#\V #\a #\l #\i #\d #\. #\Newline)) ;;Look for "Valid."
+              (prog2$ (and print (cw "  STP said Valid."))
+                      (mv *valid* state))
+            ;; Test whether chars end with "Invalid.", perhaps preceded by a printed counterexample.
+            (if (and (<= 9 (len chars)) ;9 is the length of "Invalid." followed by newline - todo make a function 'char-list-ends-with'
+                     (equal (nthcdr (- (len chars) 9) chars)
+                            '(#\I #\n #\v #\a #\l #\i #\d #\. #\Newline))) ;;Look for "Invalid."
+                (b* ((- (and print (cw "  STP said Invalid.~%")))
+                     ;; Print the counterexample (TODO: What if it is huge?):
+                     (counterexamplep-chars (butlast chars 9))
 ;(- (and print counterexamplep (cw "~%Counterexample:~%~S0" (coerce counterexamplep-chars 'string))))
-                       (parsed-counterexample (parse-counterexample counterexamplep-chars nil))
+                     (parsed-counterexample (parse-counterexample counterexamplep-chars nil))
 ;(- (and print counterexamplep (cw "~%Parsed counterexample:~%~x0~%" parsed-counterexample)))
-                       )
-                    (mv (if counterexamplep
-                            `(,*counterexample* ,parsed-counterexample)
-                          *invalid*)
-                        state))
-                (if (or ;(equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\, #\Space  #\e #\x #\i #\t #\i #\n #\g #\.)) ;add newline??
-                     (equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\. #\Newline))) ;;Look for "Timed Out."
-                    (prog2$ (and print (cw "  STP timed out."))
-                            (mv *timedout* state))
-                  (prog2$ (er hard? 'call-stp-on-file "STP returned an unexpected result (~x0).  Check the .out file: ~x1.~%" chars output-filename)
-                          (mv *error* state)))))))))))
+                     )
+                  (mv (if counterexamplep
+                          `(,*counterexample* ,parsed-counterexample)
+                        *invalid*)
+                      state))
+              (if (or ;(equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\, #\Space  #\e #\x #\i #\t #\i #\n #\g #\.)) ;add newline??
+                   (equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\. #\Newline))) ;;Look for "Timed Out."
+                  (prog2$ (and print (cw "  STP timed out."))
+                          (mv *timedout* state))
+                (prog2$ (er hard? 'call-stp-on-file "STP returned an unexpected result (~x0).  Check the .out file: ~x1.~%" chars output-filename)
+                        (mv *error* state))))))))))
 
 (defthm call-stp-on-file-return-type
   (let ((res (mv-nth 0 (call-stp-on-file

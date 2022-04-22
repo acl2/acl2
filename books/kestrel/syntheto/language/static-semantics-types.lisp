@@ -19,6 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap variable-context
+  :parents (static-semantics)
   :short "Fixtype of variable contexts."
   :long
   (xdoc::topstring
@@ -33,6 +34,7 @@
 
 (define typed-variables-to-variable-context ((tvars typed-variable-listp))
   :returns (var-ctxt variable-contextp)
+  :parents (variable-context)
   :short "Turn a list of typed variables into a variable context."
   :long
   (xdoc::topstring
@@ -50,6 +52,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod binding
+  :parents (static-semantics)
   :short "Fixtype of bindings."
   :long
   (xdoc::topstring
@@ -207,6 +210,7 @@
 
 (define context-add-variables ((var-ctxt variable-contextp) (ctxt contextp))
   :returns (new-ctxt contextp)
+  :parents (static-semantics)
   :short "Add some variables to a context."
   :long
   (xdoc::topstring
@@ -230,6 +234,7 @@
 
 (define context-add-condition ((cond expressionp) (ctxt contextp))
   :returns (new-ctxt contextp)
+  :parents (static-semantics)
   :short "Add a condition obligation hypothesis to a context."
   :long
   (xdoc::topstring
@@ -251,6 +256,7 @@
 
 (define context-add-condition-list ((conds expression-listp) (ctxt contextp))
   :returns (new-ctxt contextp)
+  :parents (static-semantics)
   :short "Add a list of condition obligation-hypotheses to a context, in order."
   (b* (((when (endp conds)) (context-fix ctxt))
        (ctxt (context-add-condition (car conds) ctxt)))
@@ -261,6 +267,7 @@
 
 (define context-add-binding ((bind bindingp) (ctxt contextp))
   :returns (new-ctxt contextp)
+  :parents (static-semantics)
   :short "Add a binding obligation hypothesis to a context."
   :long
   (xdoc::topstring
@@ -277,6 +284,7 @@
 
 (define context-add-toplevel ((new-top toplevelp) (ctxt contextp))
   :returns (new-ctxt contextp)
+  :parents (static-semantics)
   :short "Add a toplevel object to context."
   :enabled t
   (change-context ctxt :tops (append (context->tops ctxt)
@@ -331,6 +339,7 @@
                (outputs typed-variable-listp)
                (precondition? maybe-expressionp)
                (postcondition? maybe-expressionp))
+  :parents (static-semantics)
   :short "Retrieve the inputs, outputs, precondition, and postcondition
           of a built-in function."
   :long
@@ -702,6 +711,7 @@
                (outputs typed-variable-listp)
                (precondition? maybe-expressionp)
                (postcondition? maybe-expressionp))
+  :parents (static-semantics)
   :short "Retrieve the inputs, outputs, precondition, and postcondition
           of a function."
   :long

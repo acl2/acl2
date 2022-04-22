@@ -44,12 +44,13 @@
 (include-book "bits-and-bytes-inversions")
 (include-book "bits-and-bytes-inversions-little")
 
+;; Map BV functions over lists:
 (include-book "bvxor-list")
 (include-book "bvxor-list-rules")
 (include-book "bvnot-list")
 (include-book "bvchop-list")
 (include-book "getbit-list")
-(include-book "map-slice")
+(include-book "map-slice") ; todo: call this slice-list?
 
 (include-book "width-of-widest-int")
 
@@ -64,6 +65,8 @@
 (include-book "packbv-little")
 (include-book "unpackbv-little")
 (include-book "packbv-little-and-unpackbv-little")
+
+(include-book "packbvs")
 
 (include-book "bv-arrayp")
 (include-book "bv-array-read")

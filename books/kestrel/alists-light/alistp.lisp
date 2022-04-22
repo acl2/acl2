@@ -35,10 +35,15 @@
               (alistp y)))
   :hints(("Goal" :in-theory (enable append))))
 
+(defthm alistp-true-list-fix
+  (implies (alistp x)
+           (alistp (true-list-fix x)))
+  :hints(("Goal" :in-theory (enable true-list-fix))))
+
 (defthm alistp-of-union-equal
-  (implies (and (alistp x)
-                (alistp y))
-           (alistp (union-equal x y)))
+  (equal (alistp (union-equal x y))
+         (and (alistp (true-list-fix x))
+              (alistp y)))
   :hints (("Goal" :in-theory (enable union-equal))))
 
 ;todo: name clash with std without the -2

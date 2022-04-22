@@ -1,7 +1,7 @@
 ; Another Axe Rewriter (not used much yet)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,15 +13,18 @@
 (in-package "ACL2")
 
 ;; Instead of this rewriter, consider using rewriter-basic or rewriter-jvm or
-;; another newer rewriter.
+;; another newer rewriter.  But note that xor simplification is built into this
+;; one in a deep way.
 
 (include-book "rewriter-common")
 (include-book "equality-pairs")
 ;(include-book "equality-assumptions")
 (include-book "refined-assumption-alists")
 (include-book "result-array-stobj")
+(include-book "equivalent-dags")
 (include-book "prover")
-(include-book "simplify-xors")
+(include-book "add-bvxor-nest-to-dag-array")
+(include-book "merge-and-remove-dups")
 (include-book "leaves-of-normalized-bvxor-nest")
 (include-book "if-rules")
 (include-book "defconst-computed2") ;not strictly needed
@@ -56,7 +59,7 @@
        ,objective)))
 
 ;checks whether all vars in term appear as keys in alist
-;fixme maybe this handles (complete) lambdas naturally?
+;fixme maybe this handles (closed) lambdas naturally?
 (defun any-free-varsp (term alist lst-flg)
   (declare (xargs :guard (and (symbol-alistp alist)
                               (if lst-flg
@@ -154,7 +157,7 @@
   (declare (xargs :guard (and ;(array1p 'result-array result-array)
                           (true-listp args)
                           (true-listp arg-objectives)
-                          (all-dargp-less-than
+                          (bounded-darg-listp
                            args ; (alen1 'result-array result-array)
                            (len (thearray-length result-array-stobj)) ;2147483646
                            ))
@@ -179,8 +182,8 @@
                               result-array-stobj)))))
 
 (local (in-theory (disable use-all-<-for-car
-                           all-dargp-less-than-when-<-of-largest-non-quotep
-                           ;;all-dargp-less-than-when-all-consp
+                           bounded-darg-listp-when-<-of-largest-non-quotep
+                           ;;bounded-darg-listp-when-all-consp
                            )))
 
 ;drop some of this stuff?:
@@ -189,23 +192,9 @@
 (set-case-split-limitations '(10 10))
 
 (local (in-theory (disable  use-all-consp-for-car default-+-2 default-cdr
-                           quote-lemma-for-all-dargp-less-than-gen-alt)))
+                           quote-lemma-for-bounded-darg-listp-gen-alt)))
 
 (local (in-theory (disable symbol-alistp))) ;don't induct on this
-
-
-;todo: remove this
-(defun add-bvxor-nest-to-dag-array-ignore-errors (rev-leaves
-                                                  size
-                                                  quoted-size
-                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
-  (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-    (add-bvxor-nest-to-dag-array rev-leaves
-                                 size
-                                 quoted-size
-                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
-    (declare (ignore erp))
-    (mv nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
 
 ;fixme move this up?
 ;;
@@ -294,7 +283,7 @@
        (mv (erp-nil) t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
      (b* ((hyp (first hyps)) ;known to be a non-lambda function call
           (fn (ffn-symb hyp))
-          (- (and (eq :verbose2 print) (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
+          (- (and (eq :verbose! print) (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
        (if (eq 'axe-rewrite-objective fn)
            (let ((arg (farg1 hyp)))
              (if (and (quotep arg) ;check when making the rule?  would we ever want a term that evaluates to an objective?
@@ -422,7 +411,7 @@
                                              (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)))
                                  ;;hyp didn't rewrite to a constant:
                                  (prog2$
-                                  (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw "(~x0 tries wasted: ~x1:~x2 (non-constant result))~%" try-diff rule-symbol hyp-num))
+                                  (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x0 tries wasted: ~x1:~x2 (non-constant result))~%" try-diff rule-symbol hyp-num))
                                   (if (and work-hardp
                                            ;;work-hard-when-instructedp fffffixme thread this through
                                            )
@@ -430,7 +419,7 @@
                                       (progn$
                                        (cw "(Axe Rewriter is working hard on a hyp of ~x0, namely: ~x1~%" rule-symbol hyp) ;print the instantiated-hyp and hyp num too?
                                        (cw "(Rewrote to:~%")
-                                       (if (member-eq print '(t :verbose :verbose2))
+                                       (if (member-eq print '(t :verbose :verbose!))
                                            (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep) ;fixme print the assumptions (of all kinds)?
                                          (cw ":elided"))
                                        (cw ")~%")
@@ -471,7 +460,7 @@
                                                  (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
                                                (if (eq :proved result)
                                                    ;;the hyp counts as relieved:
-                                                   (progn$ ;(print-hit-counts t info (rules-from-rule-alist rule-alist)) ;ffffixme these are cumulative counts
+                                                   (progn$ ;(maybe-print-hit-counts t info) ;ffffixme these are cumulative counts
                                                     (cw "Proved the work-hard hyp)~%")
                                                     (relieve-rewrite-rule-hyps (rest hyps) (+ 1 hyp-num) rewrite-objective alist
                                                                                rule-symbol dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -523,7 +512,7 @@
                                        refined-assumption-alist equality-array print monitored-symbols info tries simplify-xorsp state result-array-stobj)
          ;;the rule matched, so try to relieve its hyps:
          (b* ((rule-symbol (stored-rule-symbol stored-rule))
-              (- (and (eq print ':verbose2)
+              (- (and (eq print :verbose!)
                           (cw "(Trying to apply ~x0.~%" rule-symbol)))
               (hyps (stored-rule-hyps stored-rule)))
            (mv-let (erp hyps-relievedp alist ;may get extended by the binding of free vars
@@ -543,7 +532,7 @@
                      (if hyps-relievedp
                          ;;the hyps were relieved:
                          (let* ((info (and info (increment-hit-count-in-info-world rule-symbol info))))
-                           (prog2$ (and (eq print ':verbose2)
+                           (prog2$ (and (eq print :verbose!)
                                         (cw "Rewriting with ~x0.)~%" rule-symbol))
                                    (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                                      (merge-term-into-dag-array (stored-rule-rhs stored-rule) alist
@@ -553,7 +542,7 @@
                                          (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
                                        (mv (erp-nil) nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)))))
                        ;;failed to relieve the hyps, so try the next rule:
-                       (prog2$ (and (eq print :verbose2)
+                       (prog2$ (and (eq print :verbose!)
                                     (cw "Failed to apply rule ~x0.)~%" rule-symbol))
                                (try-to-apply-rewrite-rules (rest stored-rules) args-to-match rewrite-objective
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -658,7 +647,7 @@
                                         )
                                     (not (eq fn 'repeat)) ;Wed Feb 16 22:23:08 2011
                                     )
-                               ;;it's a ground term:
+                               ;;it's a ground term (TODO: What if it's not evaluatable?):
                                (let* ((result (enquote (apply-axe-evaluator-to-quoted-args fn args interpreted-function-alist 0)))
                                       (result-array-stobj (set-result nodenum rewrite-objective result result-array-stobj)))
                                  (rewrite-dag-core (cons (rest stack) (rest stacks)) ;pop this nodenum
@@ -751,6 +740,7 @@
                                                                        interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries simplify-xorsp state result-array-stobj))
                                                  ;;no rule fired, so add this expr to the dag, then check whether it is equated to anything:
                                                  (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist) ;version for non-ground terms? or maybe we can't eval the fn
+                                                   ;; TODO: Handle xors before we do this?
                                                    (add-function-call-expr-to-dag-array fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist)
                                                    (if erp
                                                        (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
@@ -773,39 +763,33 @@
                                                               interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array
                                                               print monitored-symbols info tries simplify-xorsp state result-array-stobj))
                                                          ;;no equality match:
-                                                         (if (and (eq fn 'bvxor) ;todo: what about bitxor?
+                                                         (if (and (eq fn 'bvxor) ;; TODO: Add similar handling for bitxor!
                                                                   simplify-xorsp
                                                                   (quoted-natp (first simplified-args)))
                                                              ;;it's a bvxor. note that since the args are simplified, if they are bvxor nests they are *normalized* bvxor nests
                                                              (b* ((bvxor-width (unquote (first simplified-args)))
-                                                                  ;; get xors from arg2:
+                                                                  ;; get xors from arg2 (TODO: Consider memoizing):
                                                                   ((mv arg2-constant arg2-leaves-increasing)
                                                                    (leaves-of-normalized-bvxor-nest (second simplified-args) bvxor-width 'dag-array dag-array dag-len))
-                                                                  ;; get xors from arg3:
+                                                                  ;; get xors from arg3 (TODO: Consider memoizing):
                                                                   ((mv arg3-constant arg3-leaves-increasing)
                                                                    (leaves-of-normalized-bvxor-nest (third simplified-args) bvxor-width 'dag-array dag-array dag-len))
-                                                                  ;; (mv-let
-                                                                  ;;  (nodenum-leaves ;sorted in increasing order
-                                                                  ;;   accumulated-constant)
-                                                                  ;;  (bvxor-nest-leaves-aux (list new-nodenum) (unquote (first simplified-args))
-                                                                  ;;                         'dag-array dag-array nil
-                                                                  ;;                         '0 ;initial constant
-                                                                  ;;                         )
                                                                   ;; Make the leaves of the new nest:
                                                                   (nodenum-leaves-decreasing (merge-and-remove-dups arg2-leaves-increasing arg3-leaves-increasing nil))
                                                                   (accumulated-constant (bvxor bvxor-width arg2-constant arg3-constant))
                                                                   ;; Build the new nest:
-                                                                  ((mv new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                                                                   (add-bvxor-nest-to-dag-array-ignore-errors ;fixme handle the constant separately
+                                                                  ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                                                                   (add-bvxor-nest-to-dag-array ;; TODO: handle the constant separately
                                                                     ;;add-bvxor-nest-to-dag-array takes the list of items in *increasing* (reverse) order:
                                                                     (if (eql 0 accumulated-constant)
                                                                         (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it
-                                                                      (revappend nodenum-leaves-decreasing ;fixme handle the constant separately?
+                                                                      (revappend nodenum-leaves-decreasing
                                                                                  (list (enquote accumulated-constant))))
                                                                     bvxor-width
                                                                     (enquote bvxor-width)
-                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array)))
-                                                               (if (consp new-nodenum-or-quotep) ;the bvxor nest became a constant
+                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                                                                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)))
+                                                               (if (consp new-nodenum-or-quotep) ;the bvxor nest became a constant (perhaps duplicate leaves cancelled each other)
                                                                    (let ((result-array-stobj (set-result nodenum rewrite-objective new-nodenum-or-quotep result-array-stobj)))
                                                                      (rewrite-dag-core (cons (rest stack) (rest stacks)) ;pop the nodenum
                                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -863,9 +847,10 @@
                         (and print (not (eq :brief print)) (empty-info-world)) ;fixme if print is brief, keep a simple total number of hits and just print the total below??:
                         (and print (zero-tries))
                         simplify-xorsp state result-array-stobj)
-      (progn$ (and print (not (eq :brief print)) (print-hit-counts print info (append (rules-from-rule-alist rule-alist)
-                                                                                      ;; do these get counted?
-                                                                                      (rules-from-rule-alist oi-rule-alist))))
+      (progn$ (and print (not (eq :brief print)) (maybe-print-hit-counts print info ;; (append (rules-from-rule-alist rule-alist)
+                                                                                    ;;   ;; do these get counted?
+                                                                                    ;;   (rules-from-rule-alist oi-rule-alist))
+                                                                         ))
               (and print (cw "Total tries: ~x0.~%" tries))
               (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist state result-array-stobj)))))
 
@@ -919,11 +904,11 @@
       (if (quotep final-result) ;check consp?
           (mv (erp-nil) final-result state result-array-stobj)
         (prog2$
-         (and (eq print :verbose2)
+         (and (eq print :verbose!)
               (prog2$ (cw "array before crunching:~%")
                       (print-array-vals (+ -1 dag-len) 0 'dag-array dag-array)))
          (mv (erp-nil)
-             (drop-non-supporters-array 'dag-array dag-array final-result nil)
+             (drop-non-supporters-array-with-name 'dag-array dag-array final-result nil)
              state result-array-stobj))))))
 
 ;; Returns (mv erp dag-lst-or-quotep state result-array-stobj)

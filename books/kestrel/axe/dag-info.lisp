@@ -1,7 +1,7 @@
-; Computing information about DAGs
+; Computing information and statistics about DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,12 +13,13 @@
 (in-package "ACL2")
 
 (include-book "kestrel/alists-light/acons-unique" :dir :system)
-(include-book "kestrel/alists-light/alistp" :dir :system)
 (include-book "dag-size")
 (include-book "kestrel/utilities/defmergesort" :dir :system)
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
+(local (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system))
 
 (defun pair-with-rational-cdrp (x)
   (declare (xargs :guard t))
@@ -29,8 +30,67 @@
                               (pair-with-rational-cdrp y))))
   (< (cdr x) (cdr y)))
 
+;; For sorting an alist based on < comparison of the values (the cdrs of the pairs in the alist).
 (defmergesort merge-cdr-< merge-sort-cdr-< cdr-< pair-with-rational-cdrp :verify-guards t)
+
+(defthm alistp-of-merge-cdr-<
+  (implies (and (alistp l1)
+                (alistp l2)
+                (alistp acc))
+           (alistp (merge-cdr-< l1 l2 acc)))
+  :hints (("Goal" :in-theory (enable merge-cdr-<))))
+
+(defthm alistp-of-mv-nth-0-of-split-list-fast-aux
+  (implies (and (alistp lst)
+                (alistp tail)
+                (alistp acc)
+                (<= (len tail) (len lst)))
+           (alistp (mv-nth 0 (split-list-fast-aux lst tail acc))))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+(defthm alistp-of-mv-nth-1-of-split-list-fast-aux
+  (implies (and (alistp lst)
+                (alistp tail)
+                (alistp acc)
+                (<= (len tail) (len lst)))
+           (alistp (mv-nth 1 (split-list-fast-aux lst tail acc))))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+(defthm alistp-of-mv-nth-0-of-split-list-fast
+  (implies (alistp alist)
+           (alistp (mv-nth 0 (split-list-fast alist))))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
+
+(defthm alistp-of-mv-nth-1-of-split-list-fast
+  (implies (alistp alist)
+           (alistp (mv-nth 1 (split-list-fast alist))))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
+
+(defthm alistp-of-merge-sort-cdr-<
+  (implies (alistp alist)
+           (alistp (merge-sort-cdr-< alist)))
+  :hints (("Goal" :in-theory (enable merge-sort-cdr-<))))
+
 (defforall-simple pair-with-rational-cdrp)
+
+(defthm rationalp-of-lookup-equal-when
+  (implies (and (lookup-equal key alist)
+                (all-pair-with-rational-cdrp alist))
+           (rationalp (lookup-equal key alist)))
+  :hints (("Goal" :in-theory (enable all-pair-with-rational-cdrp))))
+
+;gen
+(defthm nat-listp-of-strip-cdrs-of-acons-unique
+  (implies (and (nat-listp (strip-cdrs alist))
+                (natp val))
+           (nat-listp (strip-cdrs (acons-unique key val alist))))
+  :hints (("Goal" :in-theory (enable acons-unique strip-cdrs))))
+
+(defthm all-pair-with-rational-cdrp-of-acons-unique
+  (implies (and (all-pair-with-rational-cdrp alist)
+                (rationalp val))
+           (all-pair-with-rational-cdrp (acons-unique key val alist)))
+  :hints (("Goal" :in-theory (enable acons-unique))))
 
 ;space-separated, on one line
 (defun print-symbols (syms)
@@ -57,27 +117,8 @@
     (b* ((entry (first alist))
          (fn (car entry))
          (count (cdr entry))
-         (- (cw "~x0: ~t2~c1~%" fn (cons count 10) 20)))
+         (- (cw "  ~x0: ~t2~c1~%" fn (cons count 10) 20)))
       (print-function-counts (rest alist)))))
-
-;move?
-(defthm true-listp-of-acons-unique
-  (implies (true-listp alist)
-           (true-listp (acons-unique key val alist)))
-  :hints (("Goal" :in-theory (enable acons-unique))))
-
-;gen
-(defthm nat-listp-of-strip-cdrs-of-acons-unique
-  (implies (and (nat-listp (strip-cdrs alist))
-                (natp val))
-           (nat-listp (strip-cdrs (acons-unique key val alist))))
-  :hints (("Goal" :in-theory (enable acons-unique strip-cdrs))))
-
-(defthm all-pair-with-rational-cdrp-of-acons-unique
-  (implies (and (all-pair-with-rational-cdrp alist)
-                (rationalp val))
-           (all-pair-with-rational-cdrp (acons-unique key val alist)))
-  :hints (("Goal" :in-theory (enable acons-unique))))
 
 ;res is an alist mapping functions in the dag to their occurrence counts
 (defun tabulate-dag-fns-aux (dag alist)
@@ -100,7 +141,6 @@
                (alist (acons-unique fn new-count alist)))
           (tabulate-dag-fns-aux (cdr dag) alist))))))
 
-;move?
 (defthm true-listp-of-tabulate-dag-fns-aux
   (implies (true-listp alist)
            (true-listp (tabulate-dag-fns-aux dag alist))))
@@ -109,90 +149,67 @@
   (implies (alistp alist)
            (alistp (tabulate-dag-fns-aux dag alist))))
 
-(defun tabulate-dag-fns (dag)
-  (declare (xargs :guard (weak-dagp dag)))
-  (tabulate-dag-fns-aux dag nil))
-
-(defthm rationalp-of-lookup-equal
-  (implies (and (LOOKUP-EQUAL key ALIST)
-                (all-pair-with-rational-cdrp alist))
-           (rationalp (LOOKUP-EQUAL key ALIST)))
-  :hints (("Goal" :in-theory (enable all-pair-with-rational-cdrp))))
-
-;move?
 (defthm all-pair-with-rational-cdrp-of-tabulate-dag-fns-aux
   (implies (all-pair-with-rational-cdrp alist)
            (all-pair-with-rational-cdrp (tabulate-dag-fns-aux dag alist)))
   :hints (("Goal" :in-theory (enable tabulate-dag-fns-aux))))
 
-(defthm alistp-of-merge-cdr-<
-  (implies (and (ALISTP l1)
-                (ALISTP l2)
-                (ALISTP acc))
-           (ALISTP (MERGE-CDR-< l1 l2 acc)))
-  :hints (("Goal" :in-theory (enable MERGE-CDR-<))))
+(defun tabulate-dag-fns (dag)
+  (declare (xargs :guard (weak-dagp dag)))
+  (tabulate-dag-fns-aux dag nil))
 
-(defthm alistp-of-mv-nth-0-of-split-list-fast-aux
-  (implies (and (alistp lst)
-                (alistp tail)
-                (alistp acc)
-                (<= (len tail) (len lst))
-                )
-           (alistp (mv-nth 0 (split-list-fast-aux lst tail acc))))
-  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
-
-(defthm alistp-of-mv-nth-1-of-split-list-fast-aux
-  (implies (and (alistp lst)
-                (alistp tail)
-                (alistp acc)
-                (<= (len tail) (len lst))
-                )
-           (alistp (mv-nth 1 (split-list-fast-aux lst tail acc))))
-  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
-
-(defthm alistp-of-mv-nth-0-of-split-list-fast
-  (implies (alistp alist)
-           (alistp (mv-nth 0 (split-list-fast alist))))
-  :hints (("Goal" :in-theory (enable split-list-fast))))
-
-(defthm alistp-of-mv-nth-1-of-split-list-fast
-  (implies (alistp alist)
-           (alistp (mv-nth 1 (split-list-fast alist))))
-  :hints (("Goal" :in-theory (enable split-list-fast))))
-
-(defthm alistp-of-merge-sort-cdr-<
-  (implies (alistp alist)
-           (alistp (merge-sort-cdr-< alist)))
-  :hints (("Goal" :in-theory (enable merge-sort-cdr-<))))
-
-;; Print some statistics about a DAG:
-;; TODO: print something about constant nodes?
-
-;; This calls dag-size, which uses arrays.
-(defun dag-info-fn (dag state)
-  (declare (xargs :stobjs state
-                  :guard (and (PSEUDO-DAGP DAG)
-                              (< (LEN DAG) 2147483647))))
-  (if (quotep dag)
-      (b* ((- (cw "The entire DAG is: ~x0.~%" dag)))
+;; Returns the error triple (mv nil :invisible state).
+(defun dag-info-fn-aux (dag name print-size state)
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (< (len dag) 2147483647)
+                              (or (symbolp name)
+                                  (null name))
+                              (booleanp print-size))
+                  :stobjs state))
+  (if (quotep dag) ; not possible, given the guard
+      (b* ((- (if name
+                  (cw "The entire DAG ~x0 is: ~x1.~%" name dag)
+                (cw "The entire DAG is: ~x0.~%" dag))))
         (value :invisible))
-    (b* ((- (cw "Showing info for DAG:~%"))
-         (- (cw "~x0 unique nodes~%" (len dag)))
-         (- (cw "~x0 total nodes~%" (dag-size dag)))
-;; These usually get inlined (we could count those):
+    (b* ((- (if name
+                (cw "(DAG info for ~x0:~%" name)
+              (cw "(DAG info:~%")))
+         (- (cw " Unique nodes: ~x0~%" (len dag)))
+         ;; Can be slow:
+         (- (and print-size
+                 (cw " Total nodes: ~x0~%" (dag-size dag))))
+         ;; These usually get inlined (we could count those):
          ;; (constants (dag-constants dag))
          ;; (- (cw "~x0 constants~%" (len constants)))
-         (vars (dag-vars dag))
-         (- (cw "~x0 Variables:~%" (len vars)))
+         (vars (merge-sort-symbol< (dag-vars dag)))
+         (- (cw " ~x0 Variables:~%" (len vars)))
          (- (print-symbols-4-per-line vars))
          (fns (dag-fns dag))
-         (- (cw "~x0 Functions:~%" (len fns)))
+         (- (cw " ~x0 Functions:~%" (len fns)))
          (- (print-symbols-4-per-line fns))
-         (- (cw "Function counts:~%"))
+         (- (cw " Function counts:~%"))
          (fn-counts (merge-sort-cdr-< (tabulate-dag-fns dag)))
-         ;; (- (cw "~x0" fn-counts)) ;TODO print more nicely
-         (- (print-function-counts fn-counts)))
+         (- (print-function-counts fn-counts))
+         (- (cw ")~%")))
       (value :invisible))))
 
-(defmacro dag-info (dag)
-  `(dag-info-fn ,dag state))
+;; Print some statistics about a DAG:
+;; TODO: print something about constant nodes, or constants that appear in nodes?
+;; This calls dag-size, which uses arrays.
+;; Returns the error triple (mv nil :invisible state).
+(defun dag-info-fn (dag dag-form print-size state)
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (< (len dag) 2147483647)
+                              (booleanp print-size))
+                  :stobjs state))
+  (dag-info-fn-aux dag
+                   (if (symbolp dag-form)
+                       dag-form
+                     nil ; don't try to print the name of the dag
+                     )
+                   print-size
+                   state))
+
+;; Prine info about the given DAG.  The DAG argument is evaluated.
+(defmacro dag-info (dag &key (print-size 'nil))
+  `(dag-info-fn ,dag ',dag ,print-size state))

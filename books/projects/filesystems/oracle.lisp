@@ -2001,7 +2001,7 @@
                              path)
           (abs-find-file-src frame path)))
   :hints (("goal" :do-not-induct t
-           :in-theory (e/d (frame->frame fat32-filename-list-prefixp-alt)
+           :in-theory (e/d (frame->frame)
                            (abs-find-file-src-of-remove-assoc-1))
            :use (:instance abs-find-file-src-of-remove-assoc-1
                            (x 0)))))

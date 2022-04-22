@@ -94,10 +94,10 @@
          (and (symbol-listp (strip-cars doublets))
               (pseudo-term-listp (strip-cadrs doublets)))))
 
-(defthm all-axe-treep-of-keep-atoms-when-contextp
+(defthm axe-tree-listp-of-keep-atoms-when-contextp
   (implies (and (contextp x)
                 (not (equal :false x)))
-           (all-axe-treep (keep-atoms x)))
+           (axe-tree-listp (keep-atoms x)))
   :hints (("Goal" :in-theory (enable keep-atoms contextp))))
 
 ;move
@@ -105,21 +105,6 @@
   (equal (strip-cdrs (pairlis$ x y))
          (take (len x) y))
   :hints (("Goal" :in-theory (enable (:i len)))))
-
-(defthmd len-of-lambda-formals-when-axe-treep
-  (implies (and (axe-treep tree)
-                (consp (car tree)) ;it's a lambda
-                )
-           (equal (len (car (cdr (car tree))))
-                  (len (fargs tree))))
-  :hints (("Goal" :in-theory (enable axe-treep))))
-
-(defthmd pseudo-termp-of-lambda-body-when-axe-treep
-  (implies (and (axe-treep tree)
-                (consp (car tree)) ;it's a lambda
-                )
-           (pseudo-termp (car (cdr (cdr (car tree))))))
-  :hints (("Goal" :in-theory (enable axe-treep))))
 
 (defthmd <-of--1-when-natp
   (implies (natp x)
@@ -207,16 +192,16 @@
 (defthm all-dargp-of-lookup-args-in-result-array
   (implies (and (not (get-args-not-done args result-array-name result-array acc untagged-foundp)) ;; all args are done
                 (result-arrayp result-array-name result-array bound)
-                (all-dargp-less-than args (alen1 result-array-name result-array)))
+                (bounded-darg-listp args (alen1 result-array-name result-array)))
            (all-dargp (lookup-args-in-result-array args result-array-name result-array)))
   :hints (("Goal" :in-theory (e/d (GET-ARGS-NOT-DONE lookup-args-in-result-array) (dargp)))))
 
-(defthm all-dargp-less-than-of-lookup-args-in-result-array
+(defthm bounded-darg-listp-of-lookup-args-in-result-array
   (implies (and (not (get-args-not-done args2 result-array-name result-array acc untagged-foundp)) ;; all args are done
                 (subsetp-equal args args2)
                 (result-arrayp result-array-name result-array bound)
-                (all-dargp-less-than args (alen1 result-array-name result-array)))
-           (all-dargp-less-than (lookup-args-in-result-array args result-array-name result-array) bound))
+                (bounded-darg-listp args (alen1 result-array-name result-array)))
+           (bounded-darg-listp (lookup-args-in-result-array args result-array-name result-array) bound))
   :hints (("Goal" :in-theory (e/d (get-args-not-done lookup-args-in-result-array) (dargp)))))
 
 ;; Rules used when admitting the generated prover
@@ -225,9 +210,9 @@
     (:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
     (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
     (:CONGRUENCE IFF-IMPLIES-EQUAL-NOT)
-    (:CONGRUENCE PERM-IMPLIES-EQUAL-ALL-DARGP-LESS-THAN-1)
+    ;; (:CONGRUENCE PERM-IMPLIES-EQUAL-BOUNDED-DARG-LISTP-1)
     (:DEFINITION =)
-    (:DEFINITION ALL-AXE-TREEP)
+    (:DEFINITION AXE-TREE-LISTP)
     ;;(:DEFINITION AXE-RULE-HYP-LISTP)
     (:DEFINITION ENDP)
     (:DEFINITION EQ)
@@ -250,7 +235,7 @@
     (:EXECUTABLE-COUNTERPART =)
     (:EXECUTABLE-COUNTERPART ACL2-NUMBERP)
     (:EXECUTABLE-COUNTERPART ALL-<)
-    (:EXECUTABLE-COUNTERPART ALL-AXE-TREEP)
+    (:EXECUTABLE-COUNTERPART AXE-TREE-LISTP)
     (:EXECUTABLE-COUNTERPART ALL-NATP)
     (:EXECUTABLE-COUNTERPART ALL-STORED-AXE-RULEP)
     (:EXECUTABLE-COUNTERPART ASSOC-KEYWORD)
@@ -292,6 +277,8 @@
     (:FORWARD-CHAINING ARRAY1P-FORWARD)
     (:FORWARD-CHAINING ARRAY1P-FORWARD-TO-<=-OF-ALEN1)
     (:FORWARD-CHAINING AXE-RULE-HYP-LISTP-FORWARD-TO-TRUE-LISTP)
+    (:FORWARD-CHAINING axe-tree-listp-forward-to-true-listp)
+    (:forward-chaining bounded-axe-tree-listp-forward-to-axe-tree-listp)
     (:FORWARD-CHAINING BOUNDED-DAG-CONSTANT-ALISTP-FORWARD-TO-DAG-CONSTANT-ALISTP)
     (:FORWARD-CHAINING BOUNDED-DAG-PARENT-ARRAYP-FORWARD-TO-BOUNDED-DAG-PARENT-ARRAYP)
     (:FORWARD-CHAINING BOUNDED-DAG-VARIABLE-ALISTP-FORWARD-TO-DAG-VARIABLE-ALISTP)
@@ -331,21 +318,22 @@
     (:REWRITE ALL-<-TRANSITIVE)
     (:REWRITE ALL-<-TRANSITIVE-FREE)
     (:REWRITE ALL-<-TRANSITIVE-FREE-2)
-    (:REWRITE ALL-AXE-TREEP-OF-CDR)
-    (:REWRITE ALL-AXE-TREEP-OF-CDR-2)
-    (:REWRITE ALL-BOUNDED-AXE-TREEP-MONO)
-    (:REWRITE ALL-BOUNDED-AXE-TREEP-OF-CDR)
-    (:REWRITE ALL-BOUNDED-AXE-TREEP-OF-CDR-2)
-    (:REWRITE ALL-BOUNDED-AXE-TREEP-OF-CONS)
-    (:REWRITE ALL-BOUNDED-AXE-TREEP-WHEN-PSEUDO-TERM-LISTP)
-    (:REWRITE ALL-DARGP-LESS-THAN-MONOTONE)
-    (:REWRITE ALL-DARGP-LESS-THAN-OF-APPEND)
-    (:REWRITE ALL-DARGP-LESS-THAN-OF-CONS)
-    (:REWRITE all-dargp-less-than-of-strip-cdrs-of-match-hyp-with-nodenum-to-assume-false)
-    (:REWRITE ALL-DARGP-LESS-THAN-OF-STRIP-CDRS-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
-    (:REWRITE ALL-DARGP-LESS-THAN-WHEN-ALL-<)
+    (:REWRITE AXE-TREE-LISTP-OF-CDR)
+    (:REWRITE AXE-TREE-LISTP-OF-CDR-2)
+    (:REWRITE BOUNDED-AXE-TREE-LISTP-MONO)
+    (:REWRITE BOUNDED-AXE-TREE-LISTP-OF-CDR)
+    (:REWRITE BOUNDED-AXE-TREE-LISTP-OF-CDR-2)
+    (:REWRITE BOUNDED-AXE-TREE-LISTP-OF-CONS)
+    (:REWRITE BOUNDED-AXE-TREE-LISTP-WHEN-PSEUDO-TERM-LISTP)
+    (:rewrite bounded-darg-listp-when-not-consp)
+    (:REWRITE BOUNDED-DARG-LISTP-MONOTONE)
+    (:REWRITE BOUNDED-DARG-LISTP-OF-APPEND)
+    (:REWRITE BOUNDED-DARG-LISTP-OF-CONS)
+    (:REWRITE bounded-darg-listp-of-strip-cdrs-of-match-hyp-with-nodenum-to-assume-false)
+    (:REWRITE BOUNDED-DARG-LISTP-OF-STRIP-CDRS-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
+    (:REWRITE BOUNDED-DARG-LISTP-WHEN-ALL-<)
     (:REWRITE ALL-DARGP-OF-STRIP-CDRS-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
-    (:REWRITE ALL-DARGP-WHEN-ALL-DARGP-LESS-THAN)
+    (:REWRITE ALL-DARGP-WHEN-BOUNDED-DARG-LISTP)
     (:REWRITE ALL-NATP-OF-CDR)
     (:REWRITE ALL-NATP-WHEN-NAT-LISTP)
     (:REWRITE ALL-NATP-WHEN-NOT-CONSP-CHEAP)
@@ -358,6 +346,7 @@
     (:REWRITE AXE-RULE-HYPP-WHEN-SIMPLE)
     (:REWRITE AXE-RULE-HYPP-WHEN-free-vars)
     (:REWRITE AXE-TREEP-OF-CAR)
+    (:rewrite axe-treep-of-car-when-bounded-axe-tree-listp)
     (:REWRITE AXE-TREEP-OF-CONS-STRONG)
     ;; (:REWRITE AXE-TREEP-OF-SUBLIS-VAR-AND-EVAL-BASIC)
     ;; (:REWRITE AXE-TREEP-OF-REPLACE-NODENUM-USING-ASSUMPTIONS-FOR-AXE-PROVER)
@@ -432,10 +421,10 @@
     (:TYPE-PRESCRIPTION ALEN1-TYPE)
     (:TYPE-PRESCRIPTION ALISTP)
     (:TYPE-PRESCRIPTION ALL-<)
-    (:TYPE-PRESCRIPTION ALL-AXE-TREEP)
-    (:TYPE-PRESCRIPTION ALL-BOUNDED-AXE-TREEP)
+    (:TYPE-PRESCRIPTION AXE-TREE-LISTP)
+    (:TYPE-PRESCRIPTION BOUNDED-AXE-TREE-LISTP)
     (:TYPE-PRESCRIPTION ALL-CONSP)
-    (:TYPE-PRESCRIPTION ALL-DARGP-LESS-THAN)
+    (:TYPE-PRESCRIPTION BOUNDED-DARG-LISTP)
     (:TYPE-PRESCRIPTION ALL-STORED-AXE-RULEP)
     (:TYPE-PRESCRIPTION ARRAY1P)
     (:TYPE-PRESCRIPTION ASSOC-KEYWORD)
@@ -704,7 +693,7 @@
                   (axe-use-instance-listp axe-use-instances))
              (and (nat-listp new-literal-nodenums)
                   (all-< new-literal-nodenums new-dag-len)
-                  (all-dargp-less-than new-literal-nodenums new-dag-len)
+                  (bounded-darg-listp new-literal-nodenums new-dag-len)
                   (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))))
   :hints (("Goal" :expand (axe-use-instance-listp axe-use-instances)
            :in-theory (e/d (apply-axe-use-instances)
@@ -721,7 +710,7 @@
                   (all-< new-nodenums-acc dag-len)
                   (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                   (axe-use-instance-listp axe-use-instances))
-             (all-dargp-less-than new-literal-nodenums bound)))
+             (bounded-darg-listp new-literal-nodenums bound)))
   :hints (("Goal" :use (:instance apply-axe-use-instances-return-type)
            :in-theory (disable apply-axe-use-instances-return-type))))
 
@@ -894,12 +883,12 @@
                           ;;consp-from-len-cheap
                           default-car
                           <-of-nth-and-alen1 ;todo
-                          dag-exprp0
+                          dag-exprp
                           ;;list::nth-with-large-index
                           ;;list::nth-with-large-index-2
                           nat-listp
                           rational-listp
-                          ;;ALL-AXE-TREEP ;try
+                          ;;AXE-TREE-LISTP ;try
                           (:FORWARD-CHAINING ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP)
                           (:FORWARD-CHAINING INTEGER-LISTP-FORWARD-TO-RATIONAL-LISTP)
                           (:FORWARD-CHAINING NAT-LISTP-FORWARD-TO-INTEGER-LISTP)
@@ -917,7 +906,7 @@
                           )))
 
        (local (in-theory (enable natp-of-+-of-1-alt
-                                 natp-of-car-when-all-dargp-less-than-gen
+                                 natp-of-car-when-bounded-darg-listp-gen
                                  nat-listp-forward-to-true-listp-for-axe
                                  nat-listp-forward-to-rational-listp-for-axe)))
 
@@ -979,7 +968,7 @@
                     :verify-guards nil ; done below
                     :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                 (symbol-alistp alist)
-                                (all-dargp-less-than (strip-cdrs alist) dag-len)
+                                (bounded-darg-listp (strip-cdrs alist) dag-len)
                                 (nat-listp nodenums-to-assume-false-to-walk-down)
                                 (all-< nodenums-to-assume-false-to-walk-down dag-len)
                                 (axe-treep hyp)
@@ -1089,7 +1078,7 @@
                                       (alist-suitable-for-hypsp alist hyps)
                                       (symbolp rule-symbol)
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                      (all-dargp-less-than (strip-cdrs alist) dag-len)
+                                      (bounded-darg-listp (strip-cdrs alist) dag-len)
                                       (equiv-alistp equiv-alist)
                                       (rule-alistp rule-alist)
                                       (nat-listp nodenums-to-assume-false)
@@ -1115,7 +1104,7 @@
                 (mv (erp-nil) t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
               (b* ((hyp (first hyps)) ;known to be a non-lambda function call
                    (fn (ffn-symb hyp))
-                   (- (and (member-eq print '(:verbose2 :verbose)) (cw " Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
+                   (- (and (member-eq print '(:verbose! :verbose)) (cw " Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
                 (if (eq :axe-syntaxp fn)
                     (let* ((syntaxp-expr (cdr hyp)) ;; strip off the :AXE-SYNTAXP; dag-array formals have been removed from the calls in this
                            (result (and ;(all-vars-in-term-bound-in-alistp syntaxp-expr alist) ; TODO: remove this check, since it should be guaranteed statically!
@@ -1190,14 +1179,14 @@
                            (try-diff (and old-try-count (sub-tries tries old-try-count))))
                         (if (consp new-nodenum-or-quotep) ;tests for quotep
                             (if (unquote new-nodenum-or-quotep) ;hyp rewrote to a non-nil constant:
-                                (prog2$ (and old-try-count (member-eq print '(t :verbose :verbose2)) (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
+                                (prog2$ (and old-try-count (member-eq print '(t :verbose :verbose!)) (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
                                         (,relieve-rule-hyps-name
                                          (rest hyps) (+ 1 hyp-num) alist rule-symbol ;alist may have been extended by a hyp with free vars
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          equiv-alist rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                               ;;hyp rewrote to *nil* :
                               (progn$
-                               (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
+                               (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
                                (and (member-eq rule-symbol monitored-symbols)
                                     (cw "(Failed to relieve hyp ~x3 for ~x0.~% Reason: Rewrote to nil.~%Alist: ~x1.~%Assumptions (to assume false):~%~x2~%DAG:~x4)~%"
                                         rule-symbol
@@ -1209,7 +1198,7 @@
                                (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                           ;;hyp didn't rewrite to a constant:
                           (prog2$
-                           (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
+                           (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
                            ;; Give up:
                            (prog2$ ;todo: improve this printing?
                             (and (member-eq rule-symbol monitored-symbols)
@@ -1235,8 +1224,7 @@
                                       (true-listp stored-rules)
                                       (all-stored-axe-rulep stored-rules)
                                       (rule-alistp rule-alist)
-                                      (all-dargp-less-than args-to-match dag-len)
-                                      (true-listp args-to-match)
+                                      (bounded-darg-listp args-to-match dag-len)
                                       (nat-listp nodenums-to-assume-false)
                                       (all-< nodenums-to-assume-false dag-len)
                                       (assumption-arrayp 'assumption-array assumption-array)
@@ -1271,7 +1259,7 @@
                   (,try-to-apply-rules-name (rest stored-rules) rule-alist args-to-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                             equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                 ;; The rule matched. now try to relieve its hyps:
-                (b* ((- (and (member-eq print '(:verbose :verbose2))
+                (b* ((- (and (member-eq print '(:verbose :verbose!))
                              (cw "(Trying: ~x0. Alist: ~x1~%"
                                  (stored-rule-symbol stored-rule)
                                  (reverse alist-or-fail) ;nicer to read if reversed
@@ -1294,7 +1282,7 @@
                       ;; instantiate the RHS:
                       ;; could use a faster version where we know there are no free vars:
                       (let ((rhs (,sublis-var-and-eval-name alist (stored-rule-rhs stored-rule) interpreted-function-alist))) ;fixme what if there are free vars in the rhs?
-                        (prog2$ (and (member-eq print '(:verbose2 :verbose))
+                        (prog2$ (and (member-eq print '(:verbose! :verbose))
                                      (cw "Rewriting with ~x0. RHS: ~x1.)~%"
                                          (stored-rule-symbol stored-rule)
                                          rhs))
@@ -1305,7 +1293,7 @@
                                     tries
                                     )))
                     ;;failed to relieve the hyps, so try the next rule
-                    (prog2$ (and (member-eq print '(:verbose2 :verbose))
+                    (prog2$ (and (member-eq print '(:verbose! :verbose))
                                  (cw "Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
                             (,try-to-apply-rules-name
                              (rest stored-rules)
@@ -1388,7 +1376,7 @@
         ;;              ;;first fixup the call to be about nodenums in the main dag:
         ;;              (let* ((fn (ffn-symb expr))
         ;;                     (args (dargs expr))
-        ;;                     (args (rename-args args renaming-array-name renaming-array2))
+        ;;                     (args (rename-dargs args renaming-array-name renaming-array2))
         ;;                     (expr (cons fn args)))
         ;;                ;;then simplify it:
         ;;                (mv-let (erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
@@ -1578,8 +1566,7 @@
           (declare (xargs :guard (and (symbolp fn)
                                       (not (equal 'quote fn))
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                      (true-listp args)
-                                      (all-dargp-less-than args dag-len)
+                                      (bounded-darg-listp args dag-len)
                                       (equivp equiv)
                                       (rule-alistp rule-alist)
                                       (nat-listp nodenums-to-assume-false)
@@ -1619,7 +1606,7 @@
                    rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes equiv-alist
                    print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                 ;; No rule fired, so no simplification can be done.  This node is ready to add to the dag:
-                (b* ((- (and (member-eq print '(:verbose2 :verbose)) (cw "(Making ~x0 term with args: ~x1.)~%" fn args)))
+                (b* ((- (and (member-eq print '(:verbose! :verbose)) (cw "(Making ~x0 term with args: ~x1.)~%" fn args)))
                      ((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
                       ;; todo: perhaps inline this:
                       (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))
@@ -1932,14 +1919,12 @@
                                       equiv-alist print info tries interpreted-function-alist monitored-symbols
                                       embedded-dag-depth case-designator prover-depth
                                       options count)
-          (declare (xargs :guard (and (true-listp trees)
-                                      (all-axe-treep trees)
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       ;; TODO: Consider using nil for the equivs in any case where we can't do better that equal (no entry in the equiv-alist, or even when the remaining args of the call don't need to be treated specially):
                                       (or (eq :equal equivs) ;means use 'equal for all the equivs
                                           (and (equiv-listp equivs)
                                                (equal (len equivs) (len trees))))
-                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                      (all-bounded-axe-treep trees dag-len)
+                                      (bounded-axe-tree-listp trees dag-len)
                                       (rule-alistp rule-alist)
                                       (nat-listp nodenums-to-assume-false)
                                       (all-< nodenums-to-assume-false dag-len)
@@ -2055,7 +2040,7 @@
        (,(pack$ 'defthm-flag- relieve-free-var-hyp-and-all-others-name)
          (DEFTHM ,(pack$ RELIEVE-FREE-VAR-HYP-AND-ALL-OTHERS-name '-return-type)
            (IMPLIES (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-dargp-less-than (strip-cdrs alist) dag-len)
+                         (bounded-darg-listp (strip-cdrs alist) dag-len)
                          (alist-suitable-for-hyp-tree-and-hypsp alist hyp other-hyps)
                          (nat-listp nodenums-to-assume-false-to-walk-down)
                          (all-< nodenums-to-assume-false-to-walk-down dag-len)
@@ -2087,7 +2072,7 @@
                       (declare (ignore HYPS-RELIEVEDP))
                       (implies (not erp)
                                (and (symbol-alistp extended-alist)
-                                    (all-dargp-less-than (strip-cdrs extended-alist) new-dag-len)
+                                    (bounded-darg-listp (strip-cdrs extended-alist) new-dag-len)
                                     (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
                                     (<= dag-len new-dag-len)
                                     (info-worldp info)
@@ -2100,7 +2085,7 @@
                          (symbol-alistp alist)
                          (symbolp rule-symbol)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-dargp-less-than (strip-cdrs alist) dag-len)
+                         (bounded-darg-listp (strip-cdrs alist) dag-len)
                          (equiv-alistp equiv-alist)
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
@@ -2122,7 +2107,7 @@
                       (declare (ignore HYPS-RELIEVEDP))
                       (implies (not erp)
                                (and (symbol-alistp extended-alist)
-                                    (all-dargp-less-than (strip-cdrs extended-alist) new-dag-len)
+                                    (bounded-darg-listp (strip-cdrs extended-alist) new-dag-len)
                                     (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
                                     (<= dag-len new-dag-len)
                                     (info-worldp info)
@@ -2133,8 +2118,7 @@
                          (true-listp stored-rules)
                          (all-stored-axe-rulep stored-rules)
                          (rule-alistp rule-alist)
-                         (all-dargp-less-than args-to-match dag-len)
-                         ;; (true-listp args-to-match)
+                         (bounded-darg-listp args-to-match dag-len)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
                          (assumption-arrayp 'assumption-array assumption-array)
@@ -2228,8 +2212,7 @@
          (DEFTHM ,(pack$ SIMPLIFY-fun-call-name '-return-type)
            (IMPLIES (and (symbolp fn)
                          (not (equal 'quote fn))
-                         (true-listp args)
-                         (all-dargp-less-than args dag-len)
+                         (bounded-darg-listp args dag-len)
                          (equivp equiv)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (rule-alistp rule-alist)
@@ -2287,13 +2270,11 @@
                                     (triesp tries)))))
            :FLAG ,SIMPLIFY-TREE-name)
          (DEFTHM ,(pack$ SIMPLIFY-TREES-name '-return-type)
-           (IMPLIES (and (true-listp trees)
-                         (all-axe-treep trees)
+           (IMPLIES (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (or (eq :equal equivs) ;means use 'equal for all the equivs
                              (and (equiv-listp equivs)
                                   (equal (len equivs) (len trees))))
-                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-bounded-axe-treep trees dag-len)
+                         (bounded-axe-tree-listp trees dag-len)
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
@@ -2313,7 +2294,7 @@
                     (mv-let (erp nodenums-or-quoteps new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                       ,call-of-simplify-trees
                       (implies (not erp)
-                               (and (all-dargp-less-than nodenums-or-quoteps new-dag-len)
+                               (and (bounded-darg-listp nodenums-or-quoteps new-dag-len)
                                     (true-listp nodenums-or-quoteps)
                                     (equal (len nodenums-or-quoteps)
                                            (len trees))
@@ -2387,17 +2368,17 @@
                                ;; ,(pack$ 'bounded-axe-treep-of-mv-nth-0-of- instantiate-hyp-name)
                                ;; ,(pack$ 'consp-of-mv-nth-0-of- instantiate-hyp-name)
                                ;; ,(pack$ 'not-equal-of-quote-and-car-of-mv-nth-0-of- instantiate-hyp-name)
-                               ;; ,(pack$ 'all-axe-treep-of-cdr-of-mv-nth-0-of- instantiate-hyp-name)
+                               ;; ,(pack$ 'axe-tree-listp-of-cdr-of-mv-nth-0-of- instantiate-hyp-name)
                                ;; rules about the free-vars verion:
                                ,(pack$ 'axe-treep-of- instantiate-hyp-free-vars-name)
                                ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-free-vars-name)
                                ,(pack$ 'consp-of- instantiate-hyp-free-vars-name)
-                               ,(pack$ 'all-axe-treep-of-cdr-of- instantiate-hyp-free-vars-name)
+                               ,(pack$ 'axe-tree-listp-of-cdr-of- instantiate-hyp-free-vars-name)
                                ;; rules about the no-free-vars verion:
                                ,(pack$ 'axe-treep-of- instantiate-hyp-no-free-vars-name)
                                ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-no-free-vars-name)
                                ,(pack$ 'consp-of- instantiate-hyp-no-free-vars-name)
-                               ,(pack$ 'all-axe-treep-of-cdr-of- instantiate-hyp-no-free-vars-name)
+                               ,(pack$ 'axe-tree-listp-of-cdr-of- instantiate-hyp-no-free-vars-name)
                                ,@*make-prover-simple-rules*
                                alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep
                                alist-suitable-for-hypsp-when-axe-sytaxp-car
@@ -2432,7 +2413,7 @@
                        (symbol-alistp alist)
                        (symbolp rule-symbol)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-dargp-less-than (strip-cdrs alist) dag-len)
+                       (bounded-darg-listp (strip-cdrs alist) dag-len)
                        (equiv-alistp equiv-alist)
                        (rule-alistp rule-alist)
                        (nat-listp nodenums-to-assume-false)
@@ -2462,8 +2443,7 @@
                        (true-listp stored-rules)
                        (all-stored-axe-rulep stored-rules)
                        (rule-alistp rule-alist)
-                       (all-dargp-less-than args-to-match dag-len)
-                       ;; (true-listp args-to-match)
+                       (bounded-darg-listp args-to-match dag-len)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
                        (assumption-arrayp 'assumption-array assumption-array)
@@ -2504,8 +2484,7 @@
                        (true-listp stored-rules)
                        (all-stored-axe-rulep stored-rules)
                        (rule-alistp rule-alist)
-                       (all-dargp-less-than args-to-match dag-len)
-                       ;; (true-listp args-to-match)
+                       (bounded-darg-listp args-to-match dag-len)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
                        (assumption-arrayp 'assumption-array assumption-array)
@@ -2606,13 +2585,11 @@
                                   (,(pack$ simplify-tree-name '-return-type))))))
 
        (defthm ,(pack$ simplify-trees-name '-return-type-corollary)
-           (implies (and (true-listp trees)
-                         (all-axe-treep trees)
-                         (or (eq :equal equivs) ;means use 'equal for all the equivs
+           (implies (and (or (eq :equal equivs) ;means use 'equal for all the equivs
                              (and (equiv-listp equivs)
                                   (equal (len equivs) (len trees))))
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-bounded-axe-treep trees dag-len)
+                         (bounded-axe-tree-listp trees dag-len)
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
@@ -2641,13 +2618,11 @@
                     :in-theory (e/d (all-myquotep-when-all-dargp) (,(pack$ simplify-trees-name '-return-type))))))
 
        (defthm ,(pack$ simplify-trees-name '-return-type-corollary-linear)
-         (implies (and (true-listp trees)
-                       (all-axe-treep trees)
-                       (or (eq :equal equivs) ;means use 'equal for all the equivs
+         (implies (and (or (eq :equal equivs) ;means use 'equal for all the equivs
                            (and (equiv-listp equivs)
                                 (equal (len equivs) (len trees))))
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-bounded-axe-treep trees dag-len)
+                       (bounded-axe-tree-listp trees dag-len)
                        (rule-alistp rule-alist)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
@@ -2675,8 +2650,7 @@
        (defthm ,(pack$ simplify-fun-call-name '-return-type-corollary-linear)
          (implies (and (symbolp fn)
                        (not (equal 'quote fn))
-                       (true-listp args)
-                       (all-dargp-less-than args dag-len)
+                       (bounded-darg-listp args dag-len)
                        (equivp equiv)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (rule-alistp rule-alist)
@@ -2719,12 +2693,12 @@
                                ,(pack$ 'axe-treep-of- instantiate-hyp-free-vars-name)
                                ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-free-vars-name)
                                ,(pack$ 'consp-of- instantiate-hyp-free-vars-name)
-                               ,(pack$ 'all-axe-treep-of-cdr-of- instantiate-hyp-free-vars-name)
+                               ,(pack$ 'axe-tree-listp-of-cdr-of- instantiate-hyp-free-vars-name)
                                ;; rules about the no-free-vars verion:
                                ,(pack$ 'axe-treep-of- instantiate-hyp-no-free-vars-name)
                                ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-no-free-vars-name)
                                ,(pack$ 'consp-of- instantiate-hyp-no-free-vars-name)
-                               ,(pack$ 'all-axe-treep-of-cdr-of- instantiate-hyp-no-free-vars-name)
+                               ,(pack$ 'axe-tree-listp-of-cdr-of- instantiate-hyp-no-free-vars-name)
                                (:e booleanp)
                                (:e expt)
                                (:e eqlablep)
@@ -2854,7 +2828,7 @@
                                         nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                         rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
                                         case-designator prover-depth options (+ -1 count))
-                 (b* ( ;; (- (and (member-eq print '(:verbose2 :verbose))
+                 (b* ( ;; (- (and (member-eq print '(:verbose! :verbose))
                       ;;         (cw "Processing node ~x0 (may have to process the args first).~%" nodenum)))
                       (expr (aref1 'dag-array dag-array nodenum)))
                    (if (atom expr) ;must be a variable - just see if its node needs to be replaced
@@ -2934,7 +2908,7 @@
                                (if (eq fn 'boolif)
                                    (b* ((simplified-args (lookup-args-in-result-array args result-array-name result-array))
                                         (expr (cons fn simplified-args)) ; todo: consider cons-with-hint here, or avoid this cons
-                                        ;; (- (and (member-eq print '(:verbose2 :verbose))
+                                        ;; (- (and (member-eq print '(:verbose! :verbose))
                                         ;;         (cw "(Rewriting node ~x0." nodenum)))
                                         ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                                          ;; TODO: Optimize this.  Calling ,simplify-tree-name here is overkill.  See what we do for if/myif above, but we do need to deal with the possibility of adding a bool-fix here.
@@ -2992,7 +2966,7 @@
                                                             rule-alist equiv-alist interpreted-function-alist print info tries
                                                             monitored-symbols case-designator prover-depth options (+ -1 count))
                                      ;; Not a ground term we could evaluate:
-                                     (b* ( ;; (- (and (member-eq print '(:verbose2 :verbose))
+                                     (b* ( ;; (- (and (member-eq print '(:verbose! :verbose))
                                           ;;         (cw "(Rewriting node ~x0." nodenum)))
                                           ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                                            (,simplify-fun-call-name fn
@@ -3126,7 +3100,7 @@
                                      (symbolp result-array-name)
                                      (symbol-listp known-booleans)
                                      (simple-prover-optionsp options))))
-         (b* ((- (and (or (eq :verbose print) (eq :verbose2 print))
+         (b* ((- (and (or (eq :verbose print) (eq :verbose! print))
                       (cw "(Rewriting literal ~x0.~%" nodenum)))
               ;; See what info this literal contributed to the assumption-array:
               ((mv assumption-nodenum assumption-item)
@@ -3154,7 +3128,7 @@
                                     *equiv-alist* ;do we need to pass this around?
                                     interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 (expt 2 59))))
               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries assumption-array))
-              (- (and (or (eq :verbose print) (eq :verbose2 print))
+              (- (and (or (eq :verbose print) (eq :verbose! print))
                       (cw "  Done rewriting literal ~x0.)~%" nodenum)))
               (new-nodenum-or-quotep (aref1 result-array-name result-array nodenum))
               ((when (not new-nodenum-or-quotep)) ;todo: prove that this can't happen
@@ -3316,7 +3290,7 @@
                                      (simple-prover-optionsp options))
                          :guard-hints (("Goal" :do-not-induct t))))
          (if (endp work-list)
-             (progn$ (and (member-eq print '(:verbose2 :verbose))
+             (progn$ (and (member-eq print '(:verbose! :verbose))
                           (progn$ (cw "(Literals after rewriting them all:~%")
                                   (print-dag-only-supporters-lst done-list 'dag-array dag-array)
                                   (cw "):~%")))
@@ -3586,7 +3560,7 @@
               ((when erp) (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               (hit-count-alist-after (make-hit-count-alist (uniquify-alist-eq info) nil))
               (hit-count-alist (sort-hit-count-alist (subtract-hit-count-alists hit-count-alist-after hit-count-alist-before)))
-              (- (and (member-eq print '(t :verbose :verbose2)) (cw "(Hits: ~x0)~%" hit-count-alist))))
+              (- (and (member-eq print '(t :verbose :verbose!)) (cw "(Hits: ~x0)~%" hit-count-alist))))
            (if provedp
                (prog2$ (and print (cw "  Rewriting proved case ~s0.)~%" case-designator))
                        (mv (erp-nil)
@@ -4056,7 +4030,7 @@
          (if (atom rule-alists)
              ;; No error but failed to prove this case and no more rule-alists after left:
              (prog2$
-              (and (member-eq print '(:verbose2 :verbose)) ;; TODO: improve this printing.
+              (and (member-eq print '(:verbose! :verbose)) ;; TODO: improve this printing.
                    (prog2$ (cw "Case ~s0 didn't simplify to true.  Literal nodenums:~% ~x1~%(This case: ~x2)~%Literals:~%"
                                case-designator
                                literal-nodenums
@@ -4164,7 +4138,7 @@
        ;;               ;; (print-array2 'dag-array dag-array dag-len)
        ;;               (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
        ;;               (let* ( ;;fixme or we could use a worklist starting with literal-nodenums..
-       ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
+       ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes-with-name literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
        ;;                                                                                 (+ 1 (maxelem literal-nodenums))))
        ;;                      (rec-fn-nodenums (filter-rec-fn-nodes2 (+ -1 dag-len) 'dag-array dag-array 'tag-array-for-prove-clause-miter tag-array-for-prove-clause-miter state))
        ;;                      (rec-fn-nodenums (merge-sort-< rec-fn-nodenums)) ;handle this better (drop it or call reverse?)
@@ -4453,8 +4427,8 @@
                                  print))
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                 (- (cw "(True case reduced dag: ~x0)~%" (drop-non-supporters-array 'dag-array dag-array nodenum nil)))
-                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
+                 (- (cw "(True case reduced dag: ~x0)~%" (drop-non-supporters-array-with-name 'dag-array dag-array nodenum nil)))
+                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
                          (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "true"))))
               ;; Attempt to prove case #1:
               (,prove-or-split-case-name literal-nodenums
@@ -4510,7 +4484,7 @@
                                  print))
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
+                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
                          (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "false"))))
               ;; Attempt to prove case #2:
               (,prove-or-split-case-name literal-nodenums
@@ -4596,7 +4570,7 @@
                     (b* ((- (and print (cw "(Splitting on node ~x0:~%" nodenum)))
                          ;;todo: elide this if too big:
                          (- (and print (print-dag-only-supporters 'dag-array dag-array nodenum)))
-                         ;; (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
+                         ;; (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
                          ;;         (progn$ (cw "Literals:~%")
                          ;;                 (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
                          ;;                 ;;(cw "parent array:~%")
@@ -4942,7 +4916,7 @@
          (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (true-listp literal-nodenums-or-quoteps)
-                                     (all-dargp-less-than literal-nodenums-or-quoteps dag-len)
+                                     (bounded-darg-listp literal-nodenums-or-quoteps dag-len)
                                      (all-rule-alistp rule-alists)
                                      (interpreted-function-alistp interpreted-function-alist)
                                      (info-worldp info)
@@ -5005,7 +4979,7 @@
        (defthm ,(pack$ prove-disjunction-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (true-listp literal-nodenums-or-quoteps)
-                       (all-dargp-less-than literal-nodenums-or-quoteps dag-len)
+                       (bounded-darg-listp literal-nodenums-or-quoteps dag-len)
                        (all-rule-alistp rule-alists)
                        (interpreted-function-alistp interpreted-function-alist)
                        (info-worldp info)
@@ -5128,7 +5102,7 @@
 ;;                     ((when erp) (mv erp :failed))
 ;;                     ;;just print the message in the subroutine and don't case split here?
 ;;                     (- (and print (cw "(~x0 tries.)~%" tries)))
-;;                     (- (and print (print-hit-counts print info (rules-from-rule-alists rule-alists)))))
+;;                     (- (and print (maybe-print-hit-counts print info))))
 ;;                  (if (eq :proved result)
 ;;                      (prog2$ (cw "proved ~s0 with dag prover~%" case-name)
 ;;                              (mv (erp-nil) :proved))
@@ -5257,7 +5231,7 @@
                                         (w state)))
               ((when erp) (mv erp nil state))
               (- (and tries (cw "~%Total rule tries: ~x0.~%" tries)))
-              (- (and info (print-hit-counts print info (rules-from-rule-alists rule-alists)))))
+              (- (and info (maybe-print-hit-counts print info))))
            (if (eq result :proved)
                (progn$ (and print (cw "Proved ~s0.)~%" case-designator))
                        (mv (erp-nil) '(value-triple :ok) state))
@@ -5378,7 +5352,7 @@
                                         wrld))
               ((when erp) (mv erp nil))
               (- (and tries (cw "Total rule tries: ~x0.~%" tries)))
-              (- (and info (print-hit-counts print info (rules-from-rule-alists rule-alists)))))
+              (- (and info (maybe-print-hit-counts print info))))
            (if (eq :proved result)
                (prog2$ (cw "Proved the theorem.)~%")
                        (mv (erp-nil) t))

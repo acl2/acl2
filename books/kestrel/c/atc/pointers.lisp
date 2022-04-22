@@ -90,6 +90,7 @@
   ((address? address-option)
    (reftype type))
   :tag :pointer
+  :layout :list
   :pred pointerp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

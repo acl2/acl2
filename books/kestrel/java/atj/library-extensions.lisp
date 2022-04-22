@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,8 @@
 
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/strings/letter-uscore-dollar-chars" :dir :system)
+(include-book "kestrel/std/strings/letter-digit-uscore-dollar-chars" :dir :system)
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/system/check-if-call" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
@@ -23,7 +25,6 @@
 (include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
-(include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 (include-book "std/typed-lists/pseudo-term-listp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -406,8 +407,8 @@
        (not (equal string *null-literal*))
        (b* ((chars (explode string)))
          (and (consp chars)
-              (alpha/uscore/dollar-char-p (car chars))
-              (alpha/digit/uscore/dollar-charlist-p (cdr chars))))))
+              (str::letter/uscore/dollar-char-p (car chars))
+              (str::letter/digit/uscore/dollar-charlist-p (cdr chars))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

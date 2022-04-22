@@ -15,7 +15,7 @@
 (include-book "dag-arrays")
 (include-book "worklists")
 (include-book "merge-sort-less-than")
-(include-book "dag-size2") ; for size-array-for-sorted-nodes
+(include-book "dag-size-sparse") ; for size-array-for-sorted-nodes
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -192,7 +192,7 @@
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (bounded-dag-exprp dag-len ;upper bound
                                          expr))
-                  :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp0 car-becomes-nth-of-0)
+                  :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp car-becomes-nth-of-0)
                                  :do-not '(generalize eliminate-destructors))))
            (ignore dag-len))
   (if (variablep expr)
@@ -295,13 +295,12 @@
 ;;                            expr))
 ;;            (equal (all-natp (maybe-add-split-candidates expr dag-array-name dag-array dag-len acc))
 ;;                   (all-natp acc)))
-;;   :hints (("Goal" :in-theory (enable maybe-add-split-candidates BOUNDED-DAG-EXPRP DAG-EXPRP0))))
+;;   :hints (("Goal" :in-theory (enable maybe-add-split-candidates BOUNDED-DAG-EXPRP DAG-EXPRP))))
 
 ;; Similar to get-args-not-done and especially to get-unexamined-nodenum-args.
 (defund extend-with-not-done-args (args result-array-name result-array acc)
   (declare (xargs :guard (and (array1p result-array-name result-array)
-                              (true-listp args)
-                              (all-dargp-less-than args (alen1 result-array-name result-array)))))
+                              (bounded-darg-listp args (alen1 result-array-name result-array)))))
   (if (endp args)
       acc
     (let* ((arg (first args)))
@@ -320,7 +319,7 @@
 
 (defthm all-<-of-extend-with-not-done-args
   (implies (and (all-< acc bound)
-                (all-dargp-less-than args bound))
+                (bounded-darg-listp args bound))
            (all-< (extend-with-not-done-args args result-array-name result-array acc) bound))
   :hints (("Goal" :in-theory (enable extend-with-not-done-args))))
 

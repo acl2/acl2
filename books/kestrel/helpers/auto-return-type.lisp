@@ -14,7 +14,8 @@
 
 ;; STATUS: In-progress
 
-;; TODO: Handle functions that return multiple values.
+;; TODO: Handle functions that return multiple values (challenging example:
+;; FNS-SUPPORTING-FNS-AUX with no types about the accs).
 
 ;; TODO: Handle more kinds of patterns
 
@@ -26,6 +27,10 @@
 ;; theorems to hold (do some analysis to see which may be relevant -- may need
 ;; to also look at the tests that guard the branches).
 
+;; TODO: When generating return type theorems for a function, it may first be
+;; necessary to generate, or at least check for, return-type theorems for
+;; subfunctions.
+
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
@@ -35,6 +40,35 @@
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
 (include-book "kestrel/terms-light/expand-lambdas-in-term" :dir :system)
+
+;; todo: this must exist somewhere
+(defun make-conj (conjuncts)
+  (declare (xargs :guard (true-listp conjuncts)))
+  (if (endp conjuncts)
+      *t*
+    (if (endp (rest conjuncts))
+        (first conjuncts)
+      `(and ,@conjuncts))))
+
+(defun maybe-step-limitp (lim)
+  (declare (xargs :guard t))
+  (or (null lim)
+      (natp lim)))
+
+;; Returns (mv successp state).
+(defund try-proof (form hints step-limit verbose state)
+  (declare (xargs :mode :program ; because this calls prove$
+                  :guard (and (maybe-step-limitp step-limit)
+                              (booleanp verbose))
+                  :stobjs state))
+  (b* ((- (and verbose (cw "(Trying:~X01~%..." form nil)))
+       ((mv & successp state)
+        (prove$ form
+                :hints hints
+                :step-limit step-limit
+                ))
+       (- (and verbose (if successp (cw "Success.)~%") (cw "Failed.)~%")))))
+    (mv successp state)))
 
 ;; Given an existing function, the tool uses its structure and guard to attempt
 ;; to guess and prove suitable return type theorems.  If successful, it returns
@@ -105,8 +139,11 @@
            (pseudo-term-listp (remove-calls-to fn terms)))
   :hints (("Goal" :in-theory (enable remove-calls-to))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; returns a conjunct or nil
 ;; todo: generalize from just finding unary calls
+;; todo: Instead of this, consider calling guard-conjunct-for-formals.
 (defund guard-conjunct-for-formal (guard-conjuncts formal)
   (declare (xargs :guard (and (pseudo-term-listp guard-conjuncts)
                               (symbolp formal))))
@@ -125,31 +162,61 @@
            (pseudo-termp (guard-conjunct-for-formal guard-conjuncts formal)))
   :hints (("Goal" :in-theory (enable guard-conjunct-for-formal))))
 
-(defun maybe-step-limitp (lim)
-  (declare (xargs :guard t))
-  (or (null lim)
-      (natp lim)))
+(defund guard-conjuncts-for-formal (guard-conjuncts formal)
+  (declare (xargs :guard (and (pseudo-term-listp guard-conjuncts)
+                              (symbolp formal))))
+  (if (endp guard-conjuncts)
+      nil
+    (let ((guard-conjunct (first guard-conjuncts)))
+      (if (and (consp guard-conjunct)
+               (not (eq 'quote (ffn-symb guard-conjunct)))
+               (= 1 (len (fargs guard-conjunct)))
+               (eq formal (farg1 guard-conjunct)))
+          (cons guard-conjunct (guard-conjuncts-for-formal (rest guard-conjuncts) formal))
+        (guard-conjuncts-for-formal (rest guard-conjuncts) formal)))))
 
-;; Returns (mv successp state).
-(defund try-proof (form hints step-limit verbose state)
-  (declare (xargs :mode :program ; because this calls prove$
-                  :guard (and (maybe-step-limitp step-limit)
+(defthm pseudo-term-listp-of-guard-conjuncts-for-formal
+  (implies (pseudo-term-listp guard-conjuncts) ;(guard-conjunct-for-formal guard-conjuncts formal)
+           (pseudo-term-listp (guard-conjuncts-for-formal guard-conjuncts formal)))
+  :hints (("Goal" :in-theory (enable guard-conjuncts-for-formal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv defthms state).
+(defun theorems-for-returned-formal-aux (guard-conjuncts-for-formal formal guard-conjuncts fn rv suffix step-limit verbose acc state)
+  (declare (xargs :guard (and (symbolp formal)
+                              (pseudo-term-listp guard-conjuncts)
+                              (symbolp fn)
+                              (symbol-listp rv)
+                              (stringp suffix)
+                              (maybe-step-limitp step-limit)
                               (booleanp verbose))
+                  :mode :program ; because this ultimately calls prove$
                   :stobjs state))
-  (b* ((- (and verbose (cw "(Trying:%~X01..." form nil)))
-       ((mv & successp state)
-        (prove$ form
-                :hints hints
-                :step-limit step-limit
-                ))
-       (- (and verbose (if successp (cw "Success.)~%") (cw "Failed.)~%")))))
-    (mv successp state)))
+  (if (endp guard-conjuncts-for-formal)
+      (mv (reverse acc) state)
+    (b* ((guard-conjunct-for-formal (first guard-conjuncts-for-formal))
+         (pred (ffn-symb guard-conjunct-for-formal))
+         (possible-theorem-body `(implies ,(make-conj guard-conjuncts) ;; consider try just guard-conjunct-for-formal, or at least try to reduce this
+                                          ,(sublis-var-simple (acons formal rv nil)
+                                                              guard-conjunct-for-formal)))
+         (hints `(("Goal" :in-theory (enable ,fn))))
+         ((mv successp state)
+          (try-proof possible-theorem-body hints step-limit verbose state)))
+      (if successp
+          (theorems-for-returned-formal-aux (rest guard-conjuncts-for-formal) formal guard-conjuncts fn rv suffix step-limit verbose
+                                            (cons  `(defthm ,(pack$ pred '-of- fn suffix)
+                                                      ,possible-theorem-body
+                                                      :hints ,hints)
+                                                   acc)
+                                            state)
+        (theorems-for-returned-formal-aux (rest guard-conjuncts-for-formal) formal guard-conjuncts fn rv suffix step-limit verbose
+                                          acc
+                                          state)))))
 
-
-
-;; If one of the branches just returns the formal, look for a guard
-;; conjunct for that formal and try to show that the whole RV satisfies
-;; it.
+;; If one of the branches just returns the formal, look for guard
+;; conjuncts for that formal and try to show that the whole RV satisfies
+;; them.
 ;; Returns (mv theorems state).
 (defun theorems-for-returned-formal (formal guard-conjuncts non-self-branches fn rv suffix step-limit verbose state)
   (declare (xargs :stobjs state
@@ -163,24 +230,11 @@
                               (maybe-step-limitp step-limit)
                               (booleanp verbose))))
   (if (member-eq formal non-self-branches)
-      (let ((guard-conjunct-for-formal (guard-conjunct-for-formal guard-conjuncts formal))) ;todo what if more than one
-        (if guard-conjunct-for-formal
-            ;; todo: try to prove it!  check the other branches!
-            (b* ((pred (ffn-symb guard-conjunct-for-formal))
-                 (possible-theorem-body `(implies ,guard-conjunct-for-formal ;ttodo: possibly include more guard conjuncts here...
-                                                  ,(sublis-var-simple (acons formal rv nil)
-                                                                  guard-conjunct-for-formal)))
-                 (hints `(("Goal" :in-theory (enable ,fn))))
-                 ((mv successp state)
-                  (try-proof possible-theorem-body hints step-limit verbose state)))
-              (if successp
-                  (mv (list `(defthm ,(pack$ pred '-of- fn suffix)
-                               ,possible-theorem-body
-                               :hints ,hints))
-                      state)
-                (mv nil state)))
-          (mv nil state)))
+      (theorems-for-returned-formal-aux (guard-conjuncts-for-formal guard-conjuncts formal) ; todo: might have to prove sets of these properties together...
+                                        formal guard-conjuncts fn rv suffix step-limit verbose nil state)
     (mv nil state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun some-term-conses-itemp (item terms)
   (declare (xargs :guard (pseudo-term-listp terms)))

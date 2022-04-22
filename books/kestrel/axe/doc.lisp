@@ -13,6 +13,7 @@
 ;(include-book "xdoc/top" :dir :system)
 (include-book "jvm/doc")
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
+(include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
 
 (defxdoc stp
   :short "An SMT solver used by the Axe toolkit"
@@ -20,6 +21,8 @@
   :long "STP is an SMT solver available <a href='https://github.com/stp/stp'>here</a>.
   It is used by several tools in the @(see axe) toolkit.  See @(see build::cert_param) for
 information on suppressing attempts to use STP during builds.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc axe
   :short "The Axe toolkit"
@@ -31,6 +34,8 @@ information on suppressing attempts to use STP during builds.")
 Most of Axe is now available in the ACL2 Community books, under @('[books]/kestrel/axe/'), though much work remains to document it.
 
 See <a href=\"https://www.kestrel.edu/research/axe/\">the Axe webpage</a> for more information."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc dags
   :short "Axe's DAG data structure"
@@ -64,3 +69,19 @@ The variables in this DAG are @('x') and @('y'), and the functions it calls are 
 @({(foo (binary-* '2 x) (bar '2 y))}).
 
 ")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc lifters
+  :short "Axe Lifters"
+  :parents (axe)
+  :long
+  (xdoc::topparas
+   "The Axe toolkit provides several tools for lifting code into logic.  Currently, Axe can lift JVM bytecode, x86 binaries, and rank-1 constraint systems.
+
+   For lifting JVM bytecode, four lifters are available.  For code that is unrollable, use @(see unroll-java-code) (or try the more experimental @(see unroll-java-code2), for compositional lifting).  When loops cannot be unrolled and so must be lifted into recursive functions, use @('lift-java-code') (or try the more experimental @('lift-java-code2'), for compositional lifting).
+
+   For lifting x86 binaries, two lifters are available.  For code that is unrollable, use @('x::def-unrolled') (still experimental).  When loops cannot be unrolled and so must be lifted into recursive functions, try @('x::lift-subroutine') (very experimental).
+
+   For lifting rank-1 constraint systems, use @(see r1cs::lift-r1cs) or one of its variants."
+   ))

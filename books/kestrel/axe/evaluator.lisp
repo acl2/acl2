@@ -1,7 +1,7 @@
 ; The main (old-style) Axe evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -181,28 +181,6 @@
 ;;   (equal (repeat-unguarded n v)
 ;;          (repeat n v)))
 
-(defund realpart-unguarded (x)
-  (declare (xargs :guard t))
-  (if (acl2-numberp x)
-      (realpart x)
-    0))
-
-(defthm realpart-unguarded-correct
-  (equal (realpart-unguarded x)
-         (realpart x))
-  :hints (("Goal" :in-theory (enable realpart-unguarded realpart))))
-
-(defund imagpart-unguarded (x)
-  (declare (xargs :guard t))
-  (if (acl2-numberp x)
-      (imagpart x)
-    0))
-
-(defthm imagpart-unguarded-correct
-  (equal (imagpart-unguarded x)
-         (imagpart x))
-  :hints (("Goal" :in-theory (enable imagpart-unguarded imagpart))))
-
 (defund strip-cars-unguarded (x)
   (declare (xargs :guard t))
   (cond ((atom x) nil)
@@ -264,17 +242,6 @@
          (bvnot-list           size lst))
   :hints (("Goal" :in-theory (enable bvnot-list-unguarded bvnot-list BVNOT-UNGUARDED-CORRECT))))
 
-
-
-(defund bvle-unguarded (size x y)
-  (declare (xargs :guard t))
-  (bvle (nfix size) (ifix x) (ifix y)))
-
-(defthm bvle-unguarded-correct
-  (equal (bvle-unguarded size x y)
-         (bvle size x y))
-  :hints (("Goal" :in-theory (enable bvle bvle-unguarded bvlt))))
-
 (defund bvxor-list-unguarded (size x y)
   (DECLARE (xargs :guard t))
   (if (atom x)
@@ -298,44 +265,6 @@
          (unpackbv size x y))
 :hints (("Goal" :in-theory (enable unpackbv unpackbv-less-guarded))))
 
-
-;TODO Get these to work...
-;; (defund bvsx-unguarded (new-size old-size val)
-;;   (declare (xargs :guard t))
-;;   (if (and (posp old-size)
-;;            (<= (ifix old-size) (+ 1 (ifix new-size))))
-;;       (bvsx (ifix new-size) (ifix old-size) (ifix val))
-;;     0))
-
-;; (defthm bvsx-unguarded-correct
-;;   (equal (bvsx-unguarded new-size old-size val)
-;;          (bvsx new-size old-size val))
-;;   :hints (("Goal" :in-theory (enable bvsx bvsx-unguarded))))
-
-(defund symbol-package-name-unguarded (x)
-  (declare (xargs :guard t))
-  (if (symbolp x)
-      (symbol-package-name x)
-    ""))
-
-;why was this suddenly necessary?
-(defthm symbol-package-name-unguarded-correct
-  (equal (symbol-package-name-unguarded x)
-         (symbol-package-name x))
-  :hints (("Goal" :in-theory (enable symbol-package-name-unguarded))))
-
-(defund symbol-name-unguarded (x)
-  (declare (xargs :guard t))
-  (if (symbolp x)
-      (symbol-name x)
-    ""))
-
-;why was this suddenly necessary?
-(defthm symbol-name-unguarded-correct
-  (equal (symbol-name-unguarded x)
-         (symbol-name x))
-  :hints (("Goal" :in-theory (enable symbol-name-unguarded))))
-
 (defund set::in-unguarded (a x)
   (declare (xargs :guard t))
   (if (set::setp x)
@@ -346,16 +275,6 @@
   (equal (set::in-unguarded a x)
          (set::in a x))
   :hints (("Goal" :in-theory (enable set::in-unguarded))))
-
-(defund bvif-unguarded (size test thenpart elsepart)
-  (declare (xargs :guard t))
-  (if test (bvchop-unguarded size thenpart)
-      (bvchop-unguarded size elsepart)))
-
-(defthm bvif-unguarded-correct
-  (equal (bvif-unguarded highsize highval lowsize lowval)
-         (bvif           highsize highval lowsize lowval))
-  :hints (("Goal" :in-theory (enable bvif bvif-unguarded))))
 
 ;; This justifies evaluating calls to EQL below by calling EQUAL.
 (local
@@ -456,7 +375,7 @@
            (true-listp true-listp arg1) ;unguarded
            (consp consp arg1)           ;unguarded, primitive
            (bytes-to-bits bytes-to-bits arg1) ;fixme drop since we rewrite it?
-           (width-of-widest-int width-of-widest-int arg1)
+           (width-of-widest-int width-of-widest-int-unguarded arg1)
            (all-natp all-natp arg1) ;unguarded
            (endp endp-unguarded arg1) ;see endp-unguarded-correct
            ;(int-fix-list int-fix-list arg1) ;unguarded
@@ -510,7 +429,7 @@
                   (intersection-equal intersection-equal arg1 arg2)
 ;                  (push-bvchop-list push-bvchop-list arg1 arg2) ;do we need this?
                   (all-equal$ all-equal$ arg1 arg2) ;unguarded
-                  (repeatbit repeatbit arg1 arg2)
+                  (repeatbit repeatbit-unguarded arg1 arg2)
 ;                  (print-dag-expr print-dag-expr arg1 arg2)
                   ;; (binary-and binary-and arg1 arg2) ;unguarded
                   (implies implies arg1 arg2)       ;unguarded
@@ -597,8 +516,7 @@
                          (bvmod bvmod-unguarded arg1 arg2 arg3) ;see bvmod-unguarded-correct
                          (bvdiv bvdiv-unguarded arg1 arg2 arg3) ;see bvdiv-unguarded-correct
 
-
-                         (bvsx bvsx arg1 arg2 arg3)
+                         (bvsx bvsx-unguarded arg1 arg2 arg3)
                          (sbvdiv sbvdiv arg1 arg2 arg3)
                          (sbvdivdown sbvdivdown arg1 arg2 arg3)
                          (sbvrem sbvrem arg1 arg2 arg3)

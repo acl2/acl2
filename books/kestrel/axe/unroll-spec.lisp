@@ -25,11 +25,13 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
+(include-book "dag-info")
 
 (defun unroll-spec-rules ()
   (append (amazing-rules-spec-and-dag) ;todo: reduce?
           (introduce-bv-array-rules)
-          '(list-to-byte-array))) ;todo: add to a rule set (whatever mentions list-to-bv-array)
+          (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
+          (introduce-bv-array-rules)))
 
 (ensure-rules-known (unroll-spec-rules))
 
@@ -78,8 +80,9 @@
         (mv (erp-t) nil state))
        ((when (and (not produce-function)
                    disable-function))
-        (er hard? 'unroll-spec-basic-fn ":disable-function should not be true if :produce-function is nil.")
+        (er hard? 'unroll-spec-fn ":disable-function should not be true if :produce-function is nil.")
         (mv (erp-t) nil state))
+       (- (cw "~%(Unrolling spec:~%"))
        (term (translate-term term 'unroll-spec-fn (w state)))
        (assumptions (translate-terms assumptions 'unroll-spec-fn (w state)))
        ((mv erp rule-alists)
@@ -157,7 +160,11 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
        (items-created (append (list defconst-name)
                               (if produce-function (list function-name) nil)
                               (if produce-theorem (list theorem-name) nil)))
-       (defun-variant (if disable-function 'defund 'defun)))
+       (defun-variant (if disable-function 'defund 'defun))
+       (- (cw "Unrolling finished.~%"))
+       ;; (- (cw "Info on unrolled spec DAG:~%"))
+       ((mv & & state) (dag-info-fn-aux dag defconst-name nil state))
+       (- (cw ")~%")))
     (mv (erp-nil)
         ;; If dag is a quoted constant, then it gets doubly quoted here.  This
         ;; makes sense: You unquote this thing and either get a DAG or a quoted
@@ -165,7 +172,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         `(progn (defconst ,defconst-name ',dag)
                 ,@(and produce-function `((,defun-variant ,function-name ,function-params ,function-body)))
                 ,@(and produce-theorem (list theorem))
-                (table unroll-spec-table ',whole-form ':fake)
+                (with-output :off :all (table unroll-spec-table ',whole-form ':fake))
                 (value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
                 )
         state)))

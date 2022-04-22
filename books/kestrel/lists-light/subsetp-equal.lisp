@@ -291,11 +291,31 @@
            (subsetp-equal (intersection-equal x y) z))
   :hints (("Goal" :in-theory (enable subsetp-equal intersection-equal))))
 
+;; should these be moved?
+
 (defthm subsetp-equal-of-intersection-equal-arg1-same-1
   (subsetp-equal (intersection-equal x y) x))
 
 (defthm subsetp-equal-of-intersection-equal-arg1-same-2
   (subsetp-equal (intersection-equal x y) y))
+
+(local
+ (defthm member-equal-of-intersection-equal-iff
+   (iff (member-equal a (intersection-equal x y))
+        (and (member-equal a x)
+             (member-equal a y)))
+   :hints (("Goal" :in-theory (enable member-equal intersection-equal)))))
+
+(defthm subsetp-equal-of-intersection-equal-arg2
+  (equal (subsetp-equal x (intersection-equal y z))
+         (and (subsetp-equal x y)
+              (subsetp-equal x z)))
+  :hints (("Goal" :in-theory (enable subsetp-equal intersection-equal))))
+
+(defthm subsetp-equal-of-intersection-equal-and-intersection-equal-swapped
+  (subsetp-equal (intersection-equal x y)
+                 (intersection-equal y x))
+  :hints (("Goal" :in-theory (enable subsetp-equal intersection-equal))))
 
 (defthm subsetp-equal-of-cons-and-cons-same
   (implies (subsetp-equal x y)

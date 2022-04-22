@@ -226,7 +226,8 @@
 
 (defcong perm iff (intersection-equal x y) 1
   :hints (("Goal" ;:expand (INTERSECTION-EQUAL X-EQUIV Y)
-           :in-theory (enable intersection-equal perm))))
+           :in-theory (e/d (intersection-equal perm)
+                           (intersection-equal-symmetric-iff)))))
 
 (defcong perm iff (intersection-equal x y) 2
   :hints (("Goal" ;:expand (INTERSECTION-EQUAL X-EQUIV Y)

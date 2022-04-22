@@ -793,7 +793,7 @@
                  (jvm::make-state thread-table2 heap class-table hrt monitor-table sfm ic intern-table))
           (equal thread-table thread-table2)))
 
-(defopeners-mut-rec jvm::lookup-field
+(defopeners jvm::lookup-field
   :hyps ((syntaxp (quotep jvm::c))
          (syntaxp (quotep jvm::field-id))))
 

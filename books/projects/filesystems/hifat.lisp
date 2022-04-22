@@ -2084,6 +2084,18 @@
                   (fat32-filename-list-equiv x y)))
   :hints (("goal" :in-theory (enable fat32-filename-list-equiv))))
 
+(defthm collapse-hifat-place-file-lemma-113
+  (implies (fat32-filename-list-p y)
+           (equal (prefixp x y)
+                  (and (fat32-filename-list-p (true-list-fix x))
+                       (fat32-filename-list-prefixp x y))))
+  :hints (("goal" :in-theory (enable fat32-filename-list-prefixp
+                                     fat32-filename-list-p
+                                     prefixp fat32-filename-equiv))))
+
+(theory-invariant (incompatible (:rewrite fat32-filename-list-prefixp-alt)
+                                (:rewrite collapse-hifat-place-file-lemma-113)))
+
 ;; This function returns *ENOENT* when the root directory is asked for. There's
 ;; a simple reason: we want to return the whole file, including the directory
 ;; entry - and nowhere is there a directory entry for the root. Any

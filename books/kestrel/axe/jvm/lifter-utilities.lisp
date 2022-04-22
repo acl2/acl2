@@ -124,22 +124,6 @@
                 (jvm::bound-in-class-tablep ',class-name (jvm::class-table ,state-var))))
             (class-table-hyps2 state-var (cdr class-alist)))))
 
-(defun class-table-alistp (class-table-alist)
-  (declare (xargs :guard t))
-  (if (atom class-table-alist)
-      (null class-table-alist)
-    (let* ((entry (first class-table-alist)))
-      (and (consp entry)
-           (let* ((class-name (car entry))
-                  (class-info (cdr entry)))
-             (and (jvm::class-namep class-name)
-                  (jvm::class-infop class-info class-name)
-                  (class-table-alistp (rest class-table-alist))))))))
-
-(defthmd alistp-when-class-table-alistp
-  (implies (class-table-alistp class-table-alist)
-           (alistp class-table-alist)))
-
 ;; (defthmd alistp-when-class-infop
 ;;   (implies (jvm::class-infop class-info class-name)
 ;;            (alistp class-info))
@@ -149,21 +133,6 @@
 ;;  (IMPLIES (CLASS-TABLE-ALISTP CLASS-TABLE-ALIST)
 ;;           (ALISTP (LOOKUP-EQUAL class-name CLASS-TABLE-ALIST)))
 ;;  :hints (("Goal" :in-theory (enable LOOKUP-EQUAL assoc-equal))))
-
-(defund field-pair-okayp (pair class-table-alist)
-  (declare (xargs :guard (and (class-name-field-id-pairp pair)
-                              (class-table-alistp class-table-alist))))
-  (or (equal pair (array-contents-pair))
-      (let* ((class-name (car pair))
-             (field-id (cdr pair))
-             (class-info (lookup-equal class-name class-table-alist)))
-        (if (not (jvm::class-infop class-info class-name))
-            (er hard? 'field-pair-okayp "Ill-formed or missing class-info for ~x0" class-name)
-          (let ((class-fields (jvm::class-decl-non-static-fields class-info)))
-            (if (not (alistp class-fields)) ;for guards
-                (er hard? 'field-pair-okayp "Ill-formed class-table alist")
-              (let ((class-field-ids (strip-cars class-fields)))
-                (member-equal field-id class-field-ids))))))))
 
 ;; A dummy function that has special meaning when used in invariants (it gets
 ; replaced by a term representing the array contents of the given expression in
@@ -203,10 +172,10 @@
 (make-flag desugar-calls-of-contents-in-term)
 
 (defthm-flag-desugar-calls-of-contents-in-term
-  (defthm len-of-of-desugar-calls-of-contents-in-terms-skip
+  (defthm len-of-desugar-calls-of-contents-in-terms-skip
     :skip t
     :flag desugar-calls-of-contents-in-term)
-  (defthm len-of-of-desugar-calls-of-contents-in-terms
+  (defthm len-of-desugar-calls-of-contents-in-terms
     (equal (len (desugar-calls-of-contents-in-terms terms heap-term))
            (len terms))
     :flag desugar-calls-of-contents-in-terms))
@@ -727,76 +696,3 @@
   (equal (jvm::step-always-open th s)
          (jvm::step th s))
   :hints (("Goal" :in-theory (enable jvm::step))))
-
-;;;
-;;; output-indicators
-;;;
-
-;; This indicates what output to extract from the state during decompilation.
-;; :return-value means the value on top of the stack.
-;; (:array-local <local-num>) means the final contents of the array that was initially referenced by local <local-num>.
-;TODO: allow any chain of :field and :array-contents and bv-array-read bottoming out in :return-value or (:param n)...
-;TODO: Allow static fields?
-;TODO: Should bottom out in a scalar or array, not an object...
-(mutual-recursion
- (defun output-indicatorp-aux (x)
-   (declare (xargs :guard t
-                   :measure (acl2-count x)
-                   :ruler-extenders :all ;TODO: Why was this needed?
-                   ))
-   (or (eq :all x) ;; return the whole final JVM state
-       (eq :return-value x)
-       (eq :return-value-long x) ;todo: drop?  tool knows the type of the RV?
-       (eq :array-return-value x) ;todo: drop?  tool knows the type of the RV?
-;      (eq :return-value-byte x) ;trim down to 1 byte (TODO: Should be able to tell this from the return type!) ;TODO: Think through if this is negative
-       (and (true-listp x)
-            (eql 1 (len (fargs x)))
-            (eq :array-local (ffn-symb x)) ;(:array-local <local-num>) ;;TODO: rename to array-param
-            (natp (farg1 x)))
-       ;; TODO: Remove this one?  or improve all this to allow chains of field and contents calls
-       (and (true-listp x) ;;(:field <pair> <indicator-for-object>)
-            (eql 2 (len (fargs x)))
-            (eq :field (ffn-symb x))
-            (class-name-field-id-pairp (farg1 x))
-            (output-indicatorp-aux (farg2 x)))
-       (and (true-listp x) ;;(:param-field <pair> <local-num>)
-            (eql 2 (len (fargs x)))
-            (eq :param-field (ffn-symb x))
-            (class-name-field-id-pairp (farg1 x))
-            (natp (farg2 x)))
-       (and (true-listp x) ; (:tuple <indicator1> ... <indicatorn>)
-            (<= 1 (len (fargs x))) ;disallow the empty tuple
-            (eq :tuple (ffn-symb x))
-            (output-indicatorp-aux-lst (fargs x)))))
- (defun output-indicatorp-aux-lst (x)
-   (declare (xargs :measure (acl2-count x)))
-   (if (atom x)
-       (null x)
-     (and (output-indicatorp-aux (first x))
-          (output-indicatorp-aux-lst (rest x))))))
-
-(defun output-indicatorp (x)
-  (declare (xargs :guard t))
-  (or (eq :auto x)
-      (output-indicatorp-aux x)))
-
-;; If the output-indicator is :auto, do something sensible if we can.  Returns
-;; an output-indicatorp-aux, or nil to indicate failure.
-;; TODO: Prove that this always returns an output-indicatorp
-(defun resolve-auto-output-indicator (return-type)
-  (declare (xargs :guard (or (eq :void return-type)
-                             (jvm::typep return-type))))
-  (if (eq :void return-type)
-      ;; If it is void, throw an error for now (TODO: maybe take the last param that can return a value?  what if it's a field?)
-      (er hard? 'resolve-auto-output-indicator "No output-indicator given and method is void.")
-    ;; If it's not void, we'll use the return type as the output:
-    (if (member-eq return-type jvm::*primitive-types*)
-        (if (member-eq return-type jvm::*two-slot-types*)
-            :return-value-long
-          :return-value)
-      ;;not a primitive type.  for now, the only reference we handle is a 1-D array
-      ;; TODO: Add support for 2-D arrays.
-      ;; for any other kind of object, it's not clear what field to return (we probably don't want just the address)
-      (if (jvm::is-one-dim-array-typep return-type)
-          :array-return-value
-        (er hard? 'output-extraction-term "Can't figure out which output to return: method returns a reference that is not a 1-D array.")))))

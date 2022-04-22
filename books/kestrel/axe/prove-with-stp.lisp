@@ -23,7 +23,7 @@
 (include-book "unify-tree-and-dag")
 (include-book "dag-array-printing")
 (include-book "worklists")
-(include-book "supporting-nodes") ;for tag-nodenums
+(include-book "supporting-nodes") ;for tag-nodenums-with-name
 (include-book "merge-sort-less-than")
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -39,10 +39,27 @@
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 
 ;move
-(defthm nat-listp-of-reverse-list
+(local
+ (defthm nat-listp-of-reverse-list
   (equal (nat-listp (reverse-list x))
          (all-natp x))
-  :hints (("Goal" :in-theory (enable nat-listp reverse-list))))
+  :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
+
+;move
+(defthmd myquotep-when-axe-disjunctionp
+  (implies (axe-disjunctionp d)
+           (equal (MYQUOTEP d)
+                  (or (equal (true-disjunction) d)
+                      (equal (false-disjunction) d))))
+  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
+
+;move
+(defthmd quotep-when-axe-disjunctionp
+  (implies (axe-disjunctionp d)
+           (equal (QUOTEP d)
+                  (or (equal (true-disjunction) d)
+                      (equal (false-disjunction) d))))
+  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
 
 (local (in-theory (disable nth-of-cdr
                            ;; cadr-becomes-nth-of-1 ; we want to keep the cdr because it gets the fargs
@@ -55,7 +72,7 @@
                            )))
 
 (local (in-theory (enable posp
-                          true-listp-of-cdr-when-dag-exprp0-and-quotep
+                          true-listp-of-cdr-when-dag-exprp-and-quotep
                           ceiling-in-terms-of-floor
                           TRUE-LISTP-OF-CDR
                           nth-of-cdr
@@ -83,7 +100,7 @@
 (defund unify-tree-with-any-dag-node-no-wrap (tree nodenums-or-quoteps dag-array dag-len alist-acc)
   (declare (xargs :guard (and (axe-treep tree)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (all-dargp-less-than nodenums-or-quoteps dag-len)
+                              (bounded-darg-listp nodenums-or-quoteps dag-len)
                               (symbol-alistp alist-acc))))
   (if (atom nodenums-or-quoteps)
       (mv nil nil nil)
@@ -99,7 +116,7 @@
 
 (defthm all-dargp-of-strip-cdrs-of-unify-tree-with-any-dag-node-no-wrap
   (implies (and (axe-treep tree)
-                (all-dargp-less-than nodenums-or-quoteps dag-len)
+                (bounded-darg-listp nodenums-or-quoteps dag-len)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-dargp (strip-cdrs alist-acc))
                 (symbol-alistp alist-acc))
@@ -109,7 +126,7 @@
 
 (defthm unify-tree-with-any-dag-node-no-wrap-binds-all
   (implies (and (axe-treep tree)
-                (all-dargp-less-than nodenums-or-quoteps dag-len)
+                (bounded-darg-listp nodenums-or-quoteps dag-len)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-dargp (strip-cdrs alist-acc))
                 (symbol-alistp alist-acc)
@@ -120,7 +137,7 @@
 (defthm assoc-equal-of-strip-cars-of-unify-tree-with-any-dag-node-no-wrap-binds-all
   (implies (and (member-equal var (axe-tree-vars tree))
                 (axe-treep tree)
-                (all-dargp-less-than nodenums-or-quoteps dag-len)
+                (bounded-darg-listp nodenums-or-quoteps dag-len)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-dargp (strip-cdrs alist-acc))
                 (symbol-alistp alist-acc)
@@ -1087,8 +1104,7 @@
 (defund can-always-translate-expr-to-stp (fn args dag-array-name dag-array dag-len known-nodenum-type-alist print)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp fn)
-                              (true-listp args)
-                              (all-dargp-less-than args dag-len)
+                              (bounded-darg-listp args dag-len)
                               (nodenum-type-alistp known-nodenum-type-alist)))
            (ignore dag-len))
   (case fn
@@ -1148,6 +1164,7 @@
                nil)))
     (getbit (and (= 2 (len args))
                  (quoted-natp (first args))))
+    ;; we can translate (leftrotate32 amt val) but only if AMT is a constant:
     (leftrotate32 (and (= 2 (len args))
                        (quoted-natp (first args)) ;now allows 0 (todo: test it)
                        ;;(< (unquote (first args)) 32)
@@ -1338,7 +1355,7 @@
                               (symbol-alistp var-type-alist)
                               (string-treep extra-asserts))
                   :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp car-becomes-nth-of-0
-                                                           not-<-of-nth-when-all-dargp-less-than-gen)))))
+                                                           not-<-of-nth-when-bounded-darg-listp-gen)))))
   (make-string-tree (and (eq 'bvmult (ffn-symb expr))
                          (= 3 (len (dargs expr)))
                          (quoted-posp (darg1 expr))
@@ -1458,7 +1475,7 @@
                     ;; translate it and mark its children as being needed for node1
                     (gather-nodes-to-translate-for-heuristically-cut-proof
                      (+ -1 n) dag-array-name dag-array dag-len
-                     (tag-nodenums (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
+                     (tag-nodenums-with-name (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
                      needed-for-node2-tag-array
                      (cons n nodenums-to-translate)
                      cut-nodenum-type-alist extra-asserts print var-type-alist))
@@ -1467,7 +1484,7 @@
                 (gather-nodes-to-translate-for-heuristically-cut-proof
                  (+ -1 n) dag-array-name dag-array dag-len
                  needed-for-node1-tag-array
-                 (tag-nodenums (dargs expr) 'needed-for-node2-tag-array needed-for-node2-tag-array)
+                 (tag-nodenums-with-name (dargs expr) 'needed-for-node2-tag-array needed-for-node2-tag-array)
                  (cons n nodenums-to-translate)
                  cut-nodenum-type-alist extra-asserts print var-type-alist))))))))))
 
@@ -1512,7 +1529,7 @@
                                     t)))
                   (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array var-type-alist
                                                 (if translatep
-                                                    (tag-nodenums (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
+                                                    (tag-nodenums-with-name (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
                                                   needed-for-node1-tag-array)
                                                 (if translatep
                                                     (cons n nodenums-to-translate)
@@ -1587,7 +1604,7 @@
               (if translatep
                   ;;translate it and mark its children (if any) as supporters
                   (gather-nodes-to-translate (+ -1 n) depth depth-array dag-array-name dag-array
-                                             (tag-nodenums (dargs expr) 'supporters-tag-array supporters-tag-array)
+                                             (tag-nodenums-with-name (dargs expr) 'supporters-tag-array supporters-tag-array)
                                              (cons n nodenums-to-translate)
                                              cut-nodenum-type-alist
                                              var-type-alist extra-asserts)
@@ -1615,9 +1632,10 @@
                            )))
 
 (defthmd all-<-when-all-dargp
-  (implies (all-dargp x)
+  (implies (and (all-dargp x)
+                (true-listp x))
            (equal (all-< (keep-atoms x) bound)
-                  (all-dargp-less-than x bound)))
+                  (bounded-darg-listp x bound)))
   :hints (("Goal" :in-theory (enable keep-atoms))))
 
 (local (in-theory (enable all-<-when-all-dargp)))
@@ -1740,6 +1758,9 @@
                                                                (aset1 'handled-node-array handled-node-array nodenum t) dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                                nodenums-to-translate
                                                                (acons nodenum type-for-cut-nodenum cut-nodenum-type-alist))))
+                          ((equal type (make-bv-type 0))
+                           (progn$ (cw "ERROR: Encountered a BV node of width 0: ~x0." expr)
+                                   (mv :bv-of-width-0 nodenums-to-translate cut-nodenum-type-alist handled-node-array)))
                           ((can-always-translate-expr-to-stp fn args 'dag-array ;fixme
                                                              dag-array dag-len known-nodenum-type-alist t)
                            ;; we can always translate it:
@@ -2213,22 +2234,6 @@
                                              base-filename print max-conflicts
                                              counterexamplep state))))))))
 
-;move
-(defthmd myquotep-when-axe-disjunctionp
-  (implies (axe-disjunctionp d)
-           (equal (MYQUOTEP d)
-                  (or (equal (true-disjunction) d)
-                      (equal (false-disjunction) d))))
-  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
-
-;move
-(defthmd quotep-when-axe-disjunctionp
-  (implies (axe-disjunctionp d)
-           (equal (QUOTEP d)
-                  (or (equal (true-disjunction) d)
-                      (equal (false-disjunction) d))))
-  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
-
 ;fixme move this to the translate-dag-to-stp book?
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
@@ -2244,8 +2249,7 @@
                                     state)
   (declare (xargs :stobjs state
                   :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (all-dargp-less-than disjuncts dag-len)
-                              (true-listp disjuncts)
+                              (bounded-darg-listp disjuncts dag-len)
                               (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                               (equal (alen1 'dag-parent-array dag-parent-array)
                                      (alen1 'dag-array dag-array))

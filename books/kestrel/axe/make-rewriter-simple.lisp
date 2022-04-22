@@ -26,32 +26,32 @@
 ;; If you have rules that contain work-hard hyps, consider passing in work-hard
 ;; as a named rule, to expand it.
 
-;; Consider doing (set-evisc-tuple t :iprint nil :sites :gag-mode) when working with
+;; Consider doing:
+;;   (set-evisc-tuple t :iprint nil :sites :gag-mode)
+;  when working with
 ;; calls to make-rewriter-simple, to prevent printing of enormous induction
 ;; schemes.
 
-;; TODO: add a function to simplify a dag.
-
 ;; TODO: Add checks (or guards?) that interpreted-function-alists are complete.
-
-;; TODO: Skip consing tree onto trees-equal-to-tree if we are not memoizing.
 
 ;; TODO: Consider making a separate version for when we are not memoizing.
 
 (include-book "rewriter-common")
 (include-book "supporting-nodes") ; for drop-non-supporters-array
 (include-book "make-node-replacement-alist")
-(include-book "node-replacement-array2")
-(include-book "refined-assumption-alists")
+;(include-book "node-replacement-array2")
+(include-book "node-replacement-array3")
+(include-book "refined-assumption-alists2")
 (include-book "rewriter-support") ;make local? but may be needed by the generated rewriters
 (include-book "tries")
+(include-book "print-levels")
 (include-book "rule-limits")
 (include-book "rule-alists") ; for get-rules-for-fn
 (include-book "make-substitution-code-simple")
 ;; (include-book "make-instantiation-code-simple")
 (include-book "make-instantiation-code-simple-free-vars")
-(include-book "make-instantiation-code-simple-no-free-vars")
-;(include-book "make-instantiation-code-simple-no-free-vars2") ;todo use this one instead but will need assumptions about alist-suitable-for-hypsp
+;(include-book "make-instantiation-code-simple-no-free-vars")
+(include-book "make-instantiation-code-simple-no-free-vars2")
 (include-book "dag-array-builders")
 (include-book "memoization")
 (include-book "dag-array-printing2")
@@ -62,8 +62,11 @@
 (include-book "kestrel/utilities/defconst-computed" :dir :system) ;not strictly needed
 ;(include-book "def-dag-builder-theorems")
 (include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
-(include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system) ;drop?
+(include-book "kestrel/utilities/make-event-quiet" :dir :system)
+;(include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system) ;drop?
 (include-book "kestrel/alists-light/strip-cdrs" :dir :system) ;need strip-cdrs-of-append for the generated proofs
+(include-book "renumbering-stobj")
+(include-book "cars-increasing-by-1")
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
@@ -96,52 +99,37 @@
         (list trees count)
       (simplify-trees-and-add-to-dag-induct (rest trees) (+ -1 count)))))
 
-(defthm all-dargp-of-reverse-list
-  (equal (all-dargp (reverse-list x))
-         (all-dargp x))
-  :hints (("Goal" :in-theory (enable all-dargp))))
-
-;dup.  needed for proofs of the generated functions
-(defthm symbol-listp-of-append2
+;; used in generated proofs, to be kept disabled
+(defthmd symbol-listp-of-append-disabled
   (equal (symbol-listp (append x y))
          (and (symbol-listp (true-list-fix x))
               (symbol-listp y)))
   :hints (("Goal" :in-theory (enable append symbol-listp true-list-fix))))
 
 ;gen
-(defthm PSEUDO-DAG-ARRAYP-of-+-of-1-and-LARGEST-NON-QUOTEP-of-car
-  (implies (and (DARGP-LESS-THAN-LIST-LISTP ASSUMPTION-ARG-LISTS DAG-LEN)
-                (consp ASSUMPTION-ARG-LISTS)
-                (PSEUDO-DAG-ARRAYP 'DAG-ARRAY DAG-ARRAY dag-len))
-           (PSEUDO-DAG-ARRAYP
-            'DAG-ARRAY
-            DAG-ARRAY
-            (BINARY-+ '1
-                      (LARGEST-NON-QUOTEP (CAR ASSUMPTION-ARG-LISTS))))))
+(defthm pseudo-dag-arrayp-of-+-of-1-and-largest-non-quotep-of-car
+  (implies (and (bounded-darg-list-listp assumption-arg-lists dag-len)
+                (consp assumption-arg-lists)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+           (pseudo-dag-arrayp 'dag-array dag-array (binary-+ '1 (largest-non-quotep (car assumption-arg-lists))))))
 
-(defthmd true-list-of-car-when-DARGP-LESS-THAN-LIST-LISTP
-  (implies (and (DARGP-LESS-THAN-LIST-LISTP ASSUMPTION-ARG-LISTS DAG-LEN)
-                (consp ASSUMPTION-ARG-LISTS))
-           (TRUE-LISTP (CAR ASSUMPTION-ARG-LISTS))))
-
-(defthmd all-myquote-or-natp-of-car-when-dargp-less-than-list-listp
-  (implies (and (dargp-less-than-list-listp assumption-arg-lists dag-len)
-                (consp assumption-arg-lists))
-           (all-dargp (car assumption-arg-lists))))
-
-(defthmd symbolp-when-member-equal
+;; used in generated proofs, to be kept disabled
+(defthmd symbolp-when-member-equal-disabled
   (implies (and (member-equal x free)
                 (symbol-listp free))
-           (symbolp x)))
+           (symbolp x))
+  :hints (("Goal" :in-theory (enable symbol-listp member-equal))))
 
-(defthmd not-equal-when-member-equal
+;; used in generated proofs, to be kept disabled
+(defthmd not-equal-when-member-equal-disabled
   (implies (and (syntaxp (quotep y))
                 (member-equal x vals)
                 (syntaxp (quotep vals))
                 (not (member-equal y vals)))
            (not (equal x y))))
 
-(defthmd not-equal-when-member-equal-alt
+;; used in generated proofs, to be kept disabled
+(defthmd not-equal-when-member-equal-alt-disabled
   (implies (and (syntaxp (quotep y))
                 (member-equal x vals)
                 (syntaxp (quotep vals))
@@ -157,18 +145,95 @@
   (equal (if (consp alist) x (< (max-key alist z) y))
          (if (consp alist) x (< z y))))
 
-;; since we may have rules about natp
-(defthmd integerp-when-natp
+;; used in generated proofs, to be kept disabled
+(defthmd integerp-when-natp-disabled
   (implies (natp x)
            (integerp x)))
 
+;; used in generated proofs, to be kept disabled
+(defthmd strip-cars-of-append-disabled
+  (equal (strip-cars (append x y))
+         (append (strip-cars x)
+                 (strip-cars y)))
+  :hints (("Goal" :in-theory (enable strip-cars))))
+
+;; used in generated proofs, to be kept disabled
+(defthmd pseudo-termp-of-car-when-pseudo-term-listp-cheap-disabled
+  (implies (pseudo-term-listp terms)
+           (pseudo-termp (car terms)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+;; used in generated proofs, to be kept disabled
+(defthmd pseudo-term-listp-of-cdr-when-pseudo-term-listp-cheap-disabled
+  (implies (pseudo-term-listp terms)
+           (pseudo-term-listp (cdr terms)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+(defthmd axe-treep-when-dag-exprp
+  (implies (dag-exprp expr)
+           (axe-treep expr))
+  :hints (("Goal" :in-theory (enable axe-treep dag-exprp))))
+
+;; used in generated proofs, to be kept disabled
+(defthmd not-<-of-0-when-natp-disabled
+  (implies (natp x)
+           (not (< x 0))))
+
+;; used in generated proofs, to be kept disabled
+(defthmd natp-of-+-of--1-when-natp-disabled
+  (implies (natp x)
+           (equal (natp (+ -1 x))
+                  (< 0 x))))
+
+(defthm bounded-axe-treep-when-bounded-dag-exprp
+  (implies (and (bounded-dag-exprp bound2 tree)
+                (natp bound2)
+                (<= bound2 bound))
+           (bounded-axe-treep tree bound))
+  :hints (("Goal" :in-theory (enable bounded-axe-treep
+                                     bounded-dag-exprp
+                                     dag-exprp))))
+
+(defthm bounded-axe-treep-of-cdar-when-weak-dagp-aux
+  (implies (and (weak-dagp-aux dag)
+                (<= (car (car dag)) bound))
+           (bounded-axe-treep (cdr (car dag)) bound))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+(defthm consp-of-cdr-forward-to-consp
+  (implies (consp (cdr x))
+           (consp x))
+  :rule-classes :forward-chaining)
+
+;; ;loops with LEN-WHEN-DARGP-LESS-THAN?
+;; (defthmd consp-to-len-bound-for-make-rewriter-simple
+;;   (equal (consp x) (< 0 (len x)))
+;;   :hints (("Goal" :in-theory (e/d (len) (len-of-cdr)))))
+
+;loops with LEN-WHEN-DARGP-LESS-THAN
+;; (defthmd len-of-cdr-better-for-make-rewriter-simple
+;;   (equal (len (cdr x))
+;;          (if (equal 0 (len x))
+;;              0 (+ -1 (len x)))))
+
 ;; How we use the refined-assumption-alist:
-;; 1. To bind free vars in a hyp (calling lookup-eq on the fn and unifying the hyp's args against each arglist).
-;; 2. To check if a rewritten hyp is known to be non-nil (calling nodenum-equal-to-refined-assumptionp on its nodenum).
-;; TODO: Only do this for non-predicates, since predicates should already be replaced by t if they are non-nil.
-;; 3. To check whether a simplified IF test is known to be non-nil (calling nodenum-equal-to-refined-assumptionp on its nodenum).
-;; TODO: Only do this for non-predicates, since predicates should already be replaced by t if they are non-nil.
-;; TODO: For uses 2 and 3, it would be better to use a structure indexed by nodenum.
+;; - To bind free vars in a hyp (calling lookup-in-refined-assumption-alist on the fn and unifying the hyp's args against each arglist).
+;; - When rewriting, a THEN or ELSE branch, if not memoizing, temporarily add info by calling extend-refined-assumption-alist-assuming-node
+;;   or extend-refined-assumption-alist-assuming-negation-of-node.
+
+;; How we use the node-replacement-array:
+;; - To check if a rewritten hyp is known to be non-nil (calling known-true-in-node-replacement-arrayp on its nodenum).
+;; - To check whether a simplified IF test is known to be non-nil (calling known-true-in-node-replacement-arrayp on its nodenum).
+;; - To replace a var (calling apply-node-replacement-array on its nodenum after we add the node to the dag).
+;; - To replace a simplified function call (calling apply-node-replacement-array on its nodenum after we add the node to the dag).
+;; - When rewriting, a THEN or ELSE branch, if not memoizing, temporarily add info by calling update-node-replacement-array-for-assuming-node or
+;;   update-node-replacement-array-for-assuming-negation-of-node and the calling undo-writes-to-node-replacement-array to undo.
+;; Advantages: Lookup is very fast
+;; Disadvantages: The thing being looked up must already be in the dag.
+;; TODO: Consider whether to look up unsimplified assumptions.
+;; TODO: Consider whether to simplify the RHSes of assumptions (at start, or when used).
 
 ;; OLD:
 ;; How we use the equality-assumption-alist:
@@ -176,16 +241,6 @@
 ;;  TODO: Could this be handled using node-replacement-alist instead, letting us eliminate the :var case?
 ;; 2. To replace a (simplified) term that is a function call (calling replace-fun-call-using-equality-assumption-alist).
 
-;; How we use the node-replacement-array:
-;; OLD: To replace a tree that is a nodenum
-;; 1. To replace a var (calling apply-node-replacement-array on its nodenum after we add the node to the dag).
-;; 2. To replace a simplified function call (calling apply-node-replacement-array on its nodenum after we add the node to the dag).
-;; Advantages: Lookup is very fast
-;; Disadvantages: The thing being looked up must already be in the dag.
-;; TODO: Consider how quickly we can add and remove pairs in this array to handle contexts when rewriting individual DAG nodes
-
-;; TODO: Consider whether to look up unsimplified assumptions.
-;; TODO: Consider whether to simplify the RHSes of assumptions (at start, or when used).
 
 (defun make-rewriter-simple-fn (suffix ;; gets added to generated names
                                 evaluator-base-name
@@ -201,174 +256,160 @@
          (sublis-var-and-eval-name (pack$ 'sublis-var-and-eval- suffix)) ; keep in sync with the name generated by make-substitution-code-simple
          ;; (instantiate-hyp-name (pack$ 'instantiate-hyp- suffix)) ; keep in sync with the name generated by make-substitution-code-simple
          (instantiate-hyp-free-vars-name (pack$ 'instantiate-hyp- suffix '-free-vars)) ; keep in sync with the name generated by make-substitution-code-simple-free-vars
-         (instantiate-hyp-no-free-vars-name (pack$ 'instantiate-hyp- suffix '-no-free-vars)) ; keep in sync with the name generated by make-substitution-code-simple-no-free-vars
+         (instantiate-hyp-no-free-vars2-name (pack$ 'instantiate-hyp- suffix '-no-free-vars2)) ; keep in sync with the name generated by make-substitution-code-simple-no-free-vars
          ;; functions in the main mutual recursion:
-        (relieve-free-var-hyp-and-all-others-name (pack$ 'relieve-free-var-hyp-and-all-others- suffix))
-        (relieve-rule-hyps-name (pack$ 'relieve-rule-hyps- suffix))
-        (try-to-apply-rules-name (pack$ 'try-to-apply-rules- suffix))
-        (simplify-trees-and-add-to-dag-name (pack$ 'simplify-trees-and-add-to-dag- suffix))
-        (simplify-if-tree-and-add-to-dag3-name (pack$ 'simplify-if-tree-and-add-to-dag3- suffix))
-        (simplify-if-tree-and-add-to-dag2-name (pack$ 'simplify-if-tree-and-add-to-dag2- suffix))
-        (simplify-if-tree-and-add-to-dag1-name (pack$ 'simplify-if-tree-and-add-to-dag1- suffix))
-        (simplify-boolif-tree-and-add-to-dag2-name (pack$ 'simplify-boolif-tree-and-add-to-dag2- suffix))
-        (simplify-boolif-tree-and-add-to-dag1-name (pack$ 'simplify-boolif-tree-and-add-to-dag1- suffix))
-        (simplify-bvif-tree-and-add-to-dag3-name (pack$ 'simplify-bvif-tree-and-add-to-dag3- suffix))
-        (simplify-bvif-tree-and-add-to-dag2-name (pack$ 'simplify-bvif-tree-and-add-to-dag2- suffix))
-        (simplify-bvif-tree-and-add-to-dag1-name (pack$ 'simplify-bvif-tree-and-add-to-dag1- suffix))
-        (simplify-tree-and-add-to-dag-name (pack$ 'simplify-tree-and-add-to-dag- suffix))
-        (simplify-fun-call-and-add-to-dag-name (pack$ 'simplify-fun-call-and-add-to-dag- suffix))
+         (relieve-free-var-hyp-and-all-others-name (pack$ 'relieve-free-var-hyp-and-all-others- suffix))
+         (relieve-rule-hyps-name (pack$ 'relieve-rule-hyps- suffix))
+         (try-to-apply-rules-name (pack$ 'try-to-apply-rules- suffix))
+         (simplify-trees-and-add-to-dag-name (pack$ 'simplify-trees-and-add-to-dag- suffix))
+         (simplify-if-tree-and-add-to-dag3-name (pack$ 'simplify-if-tree-and-add-to-dag3- suffix))
+         (simplify-if-tree-and-add-to-dag2-name (pack$ 'simplify-if-tree-and-add-to-dag2- suffix))
+         (simplify-if-tree-and-add-to-dag1-name (pack$ 'simplify-if-tree-and-add-to-dag1- suffix))
+         (simplify-not-tree-and-add-to-dag-name (pack$ 'simplify-not-tree-and-add-to-dag- suffix))
+         (simplify-boolif-tree-and-add-to-dag2-name (pack$ 'simplify-boolif-tree-and-add-to-dag2- suffix))
+         (simplify-boolif-tree-and-add-to-dag1-name (pack$ 'simplify-boolif-tree-and-add-to-dag1- suffix))
+         (simplify-bvif-tree-and-add-to-dag3-name (pack$ 'simplify-bvif-tree-and-add-to-dag3- suffix))
+         (simplify-bvif-tree-and-add-to-dag2-name (pack$ 'simplify-bvif-tree-and-add-to-dag2- suffix))
+         (simplify-bvif-tree-and-add-to-dag1-name (pack$ 'simplify-bvif-tree-and-add-to-dag1- suffix))
+         (simplify-tree-and-add-to-dag-name (pack$ 'simplify-tree-and-add-to-dag- suffix))
+         (simplify-fun-call-and-add-to-dag-name (pack$ 'simplify-fun-call-and-add-to-dag- suffix))
+         (simplify-dag-aux-name (pack$ 'simplify-dag-aux- suffix))
+         (simplify-dag-name (pack$ 'simplify-dag- suffix))
+         (def-simplified-dag-name (pack$ 'def-simplified-dag- suffix))
+         (def-simplified-dag-fn-name (pack$ 'def-simplified-dag-fn- suffix))
 
-        ;; Keep these in sync with the formals of each function:
+         ;; Keep these in sync with the formals of each function:
 
-        (call-of-relieve-free-var-hyp-and-all-others `(,relieve-free-var-hyp-and-all-others-name
-                                                       assumption-arg-lists
-                                                       hyp-args
-                                                       hyp-num
-                                                       other-hyps
-                                                       alist
-                                                       rule-symbol
-                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                       rewriter-rule-alist
-                                                       refined-assumption-alist
-                                                       node-replacement-array-num-valid-nodes
+         (call-of-relieve-free-var-hyp-and-all-others `(,relieve-free-var-hyp-and-all-others-name
+                                                        assumption-arg-lists
+                                                        hyp-args
+                                                        hyp-num
+                                                        other-hyps
+                                                        alist
+                                                        rule-symbol
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                        node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                        print interpreted-function-alist known-booleans monitored-symbols count))
+
+         (call-of-relieve-rule-hyps `(,relieve-rule-hyps-name hyps hyp-num alist rule-symbol
+                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                              node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                              print interpreted-function-alist known-booleans monitored-symbols count))
+         (call-of-try-to-apply-rules `(,try-to-apply-rules-name stored-rules
+                                                                rule-alist
+                                                                args-to-match
+                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                node-replacement-array node-replacement-count refined-assumption-alist
+                                                                print interpreted-function-alist known-booleans monitored-symbols count))
+         (call-of-simplify-trees-and-add-to-dag `(,simplify-trees-and-add-to-dag-name
+                                                  trees
+                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                  node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                  print interpreted-function-alist known-booleans monitored-symbols count))
+         (call-of-simplify-if-tree-and-add-to-dag3 `(,simplify-if-tree-and-add-to-dag3-name fn
+                                                                                            simplified-test
+                                                                                            simplified-thenpart
+                                                                                            elsepart
+                                                                                            tree
+                                                                                            trees-equal-to-tree
+                                                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                                            node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                                            print interpreted-function-alist known-booleans monitored-symbols count))
+         (call-of-simplify-if-tree-and-add-to-dag2 `(,simplify-if-tree-and-add-to-dag2-name fn
+                                                                                            simplified-test
+                                                                                            thenpart
+                                                                                            elsepart
+                                                                                            tree
+                                                                                            trees-equal-to-tree
+                                                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                                            node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                                            print interpreted-function-alist known-booleans monitored-symbols count))
+         (call-of-simplify-not-tree-and-add-to-dag `(,simplify-not-tree-and-add-to-dag-name
+                                                     tree
+                                                     trees-equal-to-tree
+                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                     print interpreted-function-alist known-booleans monitored-symbols count))
+         (call-of-simplify-if-tree-and-add-to-dag1 `(,simplify-if-tree-and-add-to-dag1-name
+                                                     tree
+                                                     trees-equal-to-tree
+                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                     print interpreted-function-alist known-booleans monitored-symbols count))
+
+         (call-of-simplify-boolif-tree-and-add-to-dag2 `(,simplify-boolif-tree-and-add-to-dag2-name
+                                                         simplified-test
+                                                         args
+                                                         tree
+                                                         trees-equal-to-tree
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                         node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                         print interpreted-function-alist known-booleans monitored-symbols count))
+
+         (call-of-simplify-boolif-tree-and-add-to-dag1 `(,simplify-boolif-tree-and-add-to-dag1-name
+                                                         tree
+                                                         trees-equal-to-tree
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                         node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                         print interpreted-function-alist known-booleans monitored-symbols count))
+
+         (call-of-simplify-bvif-tree-and-add-to-dag2 `(,simplify-bvif-tree-and-add-to-dag2-name
+                                                       simplified-test
+                                                       args
+                                                       tree
+                                                       trees-equal-to-tree
+                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                       node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                        print interpreted-function-alist known-booleans monitored-symbols count))
 
-        (call-of-relieve-rule-hyps `(,relieve-rule-hyps-name hyps hyp-num alist rule-symbol
-                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                             rewriter-rule-alist
-                                                             refined-assumption-alist
-                                                             node-replacement-array-num-valid-nodes
-                                                             print interpreted-function-alist known-booleans monitored-symbols count))
-        (call-of-try-to-apply-rules `(,try-to-apply-rules-name stored-rules
-                                                               rewriter-rule-alist
-                                                               args-to-match
-                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                               refined-assumption-alist
-                                                               node-replacement-array-num-valid-nodes
-                                                               print interpreted-function-alist known-booleans monitored-symbols count))
-        (call-of-simplify-trees-and-add-to-dag `(,simplify-trees-and-add-to-dag-name
-                                                 trees
-                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                 rewriter-rule-alist
-                                                 refined-assumption-alist
-                                                 node-replacement-array-num-valid-nodes
+         (call-of-simplify-bvif-tree-and-add-to-dag1 `(,simplify-bvif-tree-and-add-to-dag1-name
+                                                       tree
+                                                       trees-equal-to-tree
+                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                       node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                       print interpreted-function-alist known-booleans monitored-symbols count))
+         (call-of-simplify-bvif-tree-and-add-to-dag3 `(,simplify-bvif-tree-and-add-to-dag3-name
+                                                       size-result
+                                                       simplified-test
+                                                       simplified-thenpart
+                                                       elsepart
+                                                       tree
+                                                       trees-equal-to-tree
+                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                       node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                       print interpreted-function-alist known-booleans monitored-symbols count))
+         (call-of-simplify-tree-and-add-to-dag `(,simplify-tree-and-add-to-dag-name
+                                                 tree
+                                                 trees-equal-to-tree
+                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                 node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                  print interpreted-function-alist known-booleans monitored-symbols count))
-        (call-of-simplify-if-tree-and-add-to-dag3 `(,simplify-if-tree-and-add-to-dag3-name fn
-                                                                                           simplified-test
-                                                                                           simplified-thenpart
-                                                                                           elsepart
-                                                                                           tree
-                                                                                           trees-equal-to-tree
-                                                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                                           rewriter-rule-alist
-                                                                                           refined-assumption-alist
-                                                                                           node-replacement-array-num-valid-nodes
-                                                                                           print interpreted-function-alist known-booleans monitored-symbols count))
-        (call-of-simplify-if-tree-and-add-to-dag2 `(,simplify-if-tree-and-add-to-dag2-name fn
-                                                                                           simplified-test
-                                                                                           thenpart
-                                                                                           elsepart
-                                                                                           tree
-                                                                                           trees-equal-to-tree
-                                                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                                           rewriter-rule-alist
-                                                                                           refined-assumption-alist
-                                                                                           node-replacement-array-num-valid-nodes
-                                                                                           print interpreted-function-alist known-booleans monitored-symbols count))
-        (call-of-simplify-if-tree-and-add-to-dag1 `(,simplify-if-tree-and-add-to-dag1-name
-                                                    tree
-                                                    trees-equal-to-tree
-                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                    rewriter-rule-alist
-                                                    refined-assumption-alist
-                                                    node-replacement-array-num-valid-nodes
-                                                    print interpreted-function-alist known-booleans monitored-symbols count))
-
-        (call-of-simplify-boolif-tree-and-add-to-dag2 `(,simplify-boolif-tree-and-add-to-dag2-name
-                                                        simplified-test
-                                                        args
-                                                        tree
-                                                        trees-equal-to-tree
-                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                        rewriter-rule-alist
-                                                        refined-assumption-alist
-                                                        node-replacement-array-num-valid-nodes
-                                                        print interpreted-function-alist known-booleans monitored-symbols count))
-
-        (call-of-simplify-boolif-tree-and-add-to-dag1 `(,simplify-boolif-tree-and-add-to-dag1-name
-                                                        args
-                                                        tree
-                                                        trees-equal-to-tree
-                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                        rewriter-rule-alist
-                                                        refined-assumption-alist
-                                                        node-replacement-array-num-valid-nodes
-                                                        print interpreted-function-alist known-booleans monitored-symbols count))
-
-        (call-of-simplify-bvif-tree-and-add-to-dag2 `(,simplify-bvif-tree-and-add-to-dag2-name
-                                                      simplified-test
-                                                      args
-                                                      tree
-                                                      trees-equal-to-tree
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist
-                                                      node-replacement-array-num-valid-nodes
-                                                      print interpreted-function-alist known-booleans monitored-symbols count))
-
-        (call-of-simplify-bvif-tree-and-add-to-dag1 `(,simplify-bvif-tree-and-add-to-dag1-name
-                                                      args
-                                                      tree
-                                                      trees-equal-to-tree
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist
-                                                      node-replacement-array-num-valid-nodes
-                                                      print interpreted-function-alist known-booleans monitored-symbols count))
-        (call-of-simplify-bvif-tree-and-add-to-dag3 `(,simplify-bvif-tree-and-add-to-dag3-name
-                                                      size-result
-                                                      simplified-test
-                                                      simplified-thenpart
-                                                      elsepart
-                                                      tree
-                                                      trees-equal-to-tree
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist
-                                                      node-replacement-array-num-valid-nodes
-                                                      print interpreted-function-alist known-booleans monitored-symbols count))
-        (call-of-simplify-tree-and-add-to-dag `(,simplify-tree-and-add-to-dag-name
-                                                tree
-                                                trees-equal-to-tree
-                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                rewriter-rule-alist
-                                                refined-assumption-alist
-                                                node-replacement-array-num-valid-nodes
-                                                print interpreted-function-alist known-booleans monitored-symbols count))
-        (call-of-simplify-fun-call-and-add-to-dag `(,simplify-fun-call-and-add-to-dag-name
-                                                    fn
-                                                    args
-                                                    trees-equal-to-tree
-                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                    rewriter-rule-alist
-                                                    refined-assumption-alist
-                                                    node-replacement-array-num-valid-nodes
-                                                    print interpreted-function-alist known-booleans monitored-symbols count))
-        ;; functions after the main mutual recursion:
-        (simplify-term-name (pack$ 'simplify-term- suffix)) ; produces a DAG
-        (simp-term-name (pack$ 'simp-term- suffix)) ; produces a term
-        (simp-terms-name (pack$ 'simp-terms- suffix)) ; produces a list of terms
-        )
+         (call-of-simplify-fun-call-and-add-to-dag `(,simplify-fun-call-and-add-to-dag-name
+                                                     fn
+                                                     args
+                                                     trees-equal-to-tree
+                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                     print interpreted-function-alist known-booleans monitored-symbols count))
+         ;; functions after the main mutual recursion:
+         (simplify-term-name (pack$ 'simplify-term- suffix)) ; produces a DAG
+         (simp-term-name (pack$ 'simp-term- suffix))         ; produces a term
+         (simp-terms-name (pack$ 'simp-terms- suffix)) ; produces a list of terms
+         )
     `(encapsulate ()
 
        (local (include-book "kestrel/lists-light/cdr" :dir :system))
        (local (include-book "kestrel/lists-light/len" :dir :system))
+       (local (include-book "kestrel/lists-light/nth" :dir :system))
+       (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+       (local (include-book "kestrel/lists-light/last" :dir :system))
+       (local (include-book "kestrel/lists-light/take" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
        (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
        (local (include-book "kestrel/arithmetic-light/less-than-or-equal" :dir :system))
-       (local (include-book "kestrel/lists-light/nth" :dir :system))
-       (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+       (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+       (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system)) ;reduce?
 
        (local (in-theory (disable wf-dagp wf-dagp-expander
                                   default-car
@@ -378,22 +419,31 @@
                                   ;; member-of-cons
                                   ;; SUBSETP-CAR-MEMBER
                                   ;;SUBSETP-CONS-2
-                                  ALL-AXE-TREEP PSEUDO-TERM-LISTP
+                                  AXE-TREE-LISTP PSEUDO-TERM-LISTP
                                   DEFAULT-+-1
                                   DEFAULT-+-2
                                   SYMBOLP-OF-CAR-OF-CAR-WHEN-SYMBOL-TERM-ALISTP
                                   symbol-listp
                                   symbol-alistp axe-rule-hyp-listp
                                   EQLABLE-ALISTP ;prevent inductions
-                                  member-equal ; prevent case splitting
-                                  )))
+                                  member-equal   ; prevent case splitting
+                                  strip-cars
+                                  nat-listp ; !
+                                  weak-dagp-aux
+                                  myquotep
+                                  dargp-less-than)))
 
        (local (in-theory (enable ;;consp-of-assoc-equal-when-node-replacement-alistp
                           ;;dargp-of-cdr-of-assoc-equal-when-node-replacement-alistp
                           ;;dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-alistp
                           ;;myquotep-of-cdr-of-assoc-equal-when-node-replacement-alistp
                           ;;natp-of-cdr-of-assoc-equal-when-node-replacement-alistp
-                          )))
+                          strip-cars-of-append-disabled
+                          pseudo-termp-of-car-when-pseudo-term-listp-cheap-disabled
+                          pseudo-term-listp-of-cdr-when-pseudo-term-listp-cheap-disabled
+                          ;;consp-to-len-bound-for-make-rewriter-simple
+                          ;;len-of-cdr-better-for-make-rewriter-simple
+                          myquotep-when-dag-exprp-and-quote)))
 
        ;; Make a version of sublis-var-and-eval:
        (make-substitution-code-simple ,suffix ,evaluator-base-name)
@@ -401,7 +451,7 @@
        ;; Make versions of instantiate-hyp, etc.
        ;; (make-instantiation-code-simple ,suffix ,evaluator-base-name)
        (make-instantiation-code-simple-free-vars ,suffix ,evaluator-base-name)
-       (make-instantiation-code-simple-no-free-vars ,suffix ,evaluator-base-name)
+       (make-instantiation-code-simple-no-free-vars2 ,suffix ,evaluator-base-name)
 
        ;;
        ;; The main mutual recursion:
@@ -415,82 +465,82 @@
 
         ;; Returns (mv erp hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array), where extended-alist is irrelevant if hyps-relievedp is nil
         ;; keeps trying ASSUMPTION-ARG-LISTS until it finds a match for HYP-ARGS (thus binding some free vars) for which it can relieve all the OTHER-HYPS (using those variable bindings)
+        ;; we need to keep the whole alist in addition to walking down the entry for the current fn
         (defund ,relieve-free-var-hyp-and-all-others-name (assumption-arg-lists ;these are lists of nodenums/quoteps for calls of fn that we can assume (where fn is the top function symbol of the hyp)
                                                            hyp-args ;partially instantiated; any vars that remain must match the assumption
                                                            hyp-num ; only used for printing, we could drop this for speed?
                                                            other-hyps
                                                            alist
                                                            rule-symbol
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                           rewriter-rule-alist
-                                                           refined-assumption-alist ;we need to keep the whole alist in addition to walking down the entry for the current fn
-                                                           node-replacement-array-num-valid-nodes
+                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                           node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                            print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (type (integer 1 *) hyp-num) ;; restrict to a fixnum?
-                   (type symbol rule-symbol)
-                   (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                      (all-axe-treep hyp-args)
-                                      (true-listp hyp-args)
-                                      (interpreted-function-alistp interpreted-function-alist)
-                                      (symbol-listp known-booleans)
-                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                      (info-worldp info)
-                                      (symbol-alistp alist)
-                                      (all-dargp-less-than (strip-cdrs alist) dag-len)
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (bounded-darg-list-listp assumption-arg-lists dag-len)
+                                      (axe-tree-listp hyp-args) ; todo replace this and the next one with axe-tree-listp?
+                                      (posp hyp-num)
                                       (axe-rule-hyp-listp other-hyps)
-                                      (dargp-less-than-list-listp assumption-arg-lists dag-len)
-                                      (rule-alistp rewriter-rule-alist)
-                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                      (natp node-replacement-array-num-valid-nodes)
-                                      (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                                      (symbol-alistp alist)
+                                      (bounded-darg-listp (strip-cdrs alist) dag-len)
+                                      (alist-suitable-for-hyp-args-and-hypsp alist hyp-args other-hyps)
+                                      (symbolp rule-symbol)
                                       (maybe-bounded-memoizationp memoization dag-len)
+                                      (info-worldp info)
                                       (triesp tries)
                                       (rule-limitsp limits)
-                                      (symbol-listp monitored-symbols))
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                      (rule-alistp rule-alist)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
                           :measure (nfix count)
+                          :split-types t
                           :verify-guards nil ; done below
-                          ))
-          (if (or (not (mbt (natp count)))
-                  (= 0 count))
+                          )
+                   (type (unsigned-byte 60) count)
+                   (type (integer 1 *) hyp-num) ;; restrict to a fixnum?
+                   (type symbol rule-symbol))
+          (if (or (not (mbt (natp count))) (= 0 count))
               (mv :count-exceeded nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
             (if (endp assumption-arg-lists)
                 ;; failed to relieve the hyp:
                 (prog2$ (and (member-eq rule-symbol monitored-symbols)
                              (cw "(Failed to relieve free vars in hyp ~x0 of rule ~x1.)~%" hyp-num rule-symbol))
                         (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-              (b* ((arg-list (first assumption-arg-lists)) ;; args of this assumption
+              (b* ((arg-list (first assumption-arg-lists)) ;; args of the assumption we are currently checking for a match
                    (fail-or-extended-alist (unify-trees-with-dag-nodes hyp-args arg-list dag-array alist)))
                 (if (eq :fail fail-or-extended-alist)
-                    ;;this assumption didn't match:
+                    ;; this assumption didn't match, so proceed to the next assumption:
                     (,relieve-free-var-hyp-and-all-others-name (rest assumption-arg-lists)
                                                                hyp-args hyp-num other-hyps
                                                                alist rule-symbol
-                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                               rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes print
-                                                               interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
-                  ;; the assumption matched, so try to relieve the rest of the hyps using the resulting extension of ALIST:
-                  (mv-let (erp other-hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                    (,relieve-rule-hyps-name other-hyps (+ 1 hyp-num)
-                                             fail-or-extended-alist ;ASSUMPTION bound some free vars
-                                             rule-symbol
-                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                              rewriter-rule-alist
-                                             refined-assumption-alist
-                                             node-replacement-array-num-valid-nodes print
-                                             interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
-                    (if erp
-                        (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                      (if other-hyps-relievedp
-                          (mv (erp-nil) t extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                        ;;this assumption matched, but we couldn't relieve the rest of the hyps:
-                        (,relieve-free-var-hyp-and-all-others-name (rest assumption-arg-lists)
-                                                                   hyp-args hyp-num other-hyps
-                                                                   alist ;the original alist
-                                                                   rule-symbol
-                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                    rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes print
-                                                                   interpreted-function-alist known-booleans monitored-symbols (+ -1 count))))))))))
+                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                               node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                               print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
+                  ;; this assumption matched, so try to relieve the rest of the hyps using the resulting extension of ALIST:
+                  (b* (((mv erp other-hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                        (,relieve-rule-hyps-name other-hyps (+ 1 hyp-num)
+                                                 fail-or-extended-alist ; matching with the ASSUMPTION caused free vars to be bound here
+                                                 rule-symbol
+                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                 node-replacement-array node-replacement-count rule-alist refined-assumption-alist print
+                                                 interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+                       ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
+                    (if other-hyps-relievedp
+                        (mv (erp-nil) t extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                      ;; this assumption matched, but we couldn't relieve the rest of the hyps, so discard the extension of the alist and proceed to the next assumption:
+                      (,relieve-free-var-hyp-and-all-others-name (rest assumption-arg-lists)
+                                                                 hyp-args hyp-num other-hyps
+                                                                 alist ;the original alist
+                                                                 rule-symbol
+                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                 node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                 print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))))))))
 
         ;; ALIST is the substitution alist so far (it maps vars in the rule to nodenums and quoteps). If alist doesn't bind all the variables in the
         ;; HYP, we'll search for free variable matches in REFINED-ASSUMPTION-ALIST.
@@ -499,54 +549,58 @@
         ;; Returns (mv erp hyps-relievedp alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array), where alist is irrelevant if hyps-relievedp is nil.
         ;; Otherwise, the alist returned may have been extended by the binding of free vars.
         (defund ,relieve-rule-hyps-name (hyps hyp-num alist rule-symbol
-                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                              rewriter-rule-alist
-                                              refined-assumption-alist
-                                              node-replacement-array-num-valid-nodes
+                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                              node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                               print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (axe-rule-hyp-listp hyps)
+                                      (posp hyp-num)
+                                      (symbol-alistp alist)
+                                      (bounded-darg-listp (strip-cdrs alist) dag-len)
+                                      (alist-suitable-for-hypsp alist hyps)
+                                      (symbolp rule-symbol)
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (info-worldp info)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                      (rule-alistp rule-alist)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :measure (nfix count)
+                          :split-types t)
+                   (type (unsigned-byte 60) count)
                    (type (integer 1 *) hyp-num) ;; restrict to a fixnum?
-                   (xargs
-                    :measure (nfix count)
-                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                (axe-rule-hyp-listp hyps)
-                                (symbol-alistp alist)
-                                (all-dargp-less-than (strip-cdrs alist) dag-len)
-                                (symbolp rule-symbol)
-                                (rule-alistp rewriter-rule-alist)
-                                (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                (natp node-replacement-array-num-valid-nodes)
-                                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                (maybe-bounded-memoizationp memoization dag-len)
-                                (info-worldp info)
-                                (triesp tries)
-                                (interpreted-function-alistp interpreted-function-alist)
-                                (symbol-listp known-booleans)
-                                (rule-limitsp limits)
-                                (symbol-listp monitored-symbols))))
+                   )
           (if (or (not (mbt (natp count)))
                   (= 0 count))
-              (mv :count-exceeded t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+              (mv :count-exceeded t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                  node-replacement-array)
             (if (endp hyps)
                 ;; all hyps relieved:
                 (mv (erp-nil) t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
               (b* ((hyp (first hyps))
                    (fn (ffn-symb hyp)) ;; all hyps are conses
-                   (- (and (eq :verbose2 print)
+                   (- (and (eq :verbose! print)
                            (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
                 ;; todo: consider using CASE here:
                 (if (eq :axe-syntaxp fn)
-                    (let* ((syntaxp-expr (cdr hyp)) ;; strip off the AXE-SYNTAXP
-                           (result (and (all-vars-in-term-bound-in-alistp syntaxp-expr alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
-                                        (,eval-axe-syntaxp-expr-fn syntaxp-expr alist dag-array) ;could make a version without dag-array (may be very common?).. fixme use :dag-array?
+                    (let* ((syntaxp-expr (cdr hyp)) ;; strip off the :axe-syntaxp
+                           (result (and ;(all-vars-in-term-bound-in-alistp syntaxp-expr alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
+                                        (,eval-axe-syntaxp-expr-fn syntaxp-expr alist dag-array) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
                                         )))
                       (if result
                           ;;this hyp counts as relieved
                           (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num) alist rule-symbol
-                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                   rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes print
-                                                   interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
+                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                   node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                   print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
                         (prog2$ (and (member-eq rule-symbol monitored-symbols)
                                      ;;is it worth printing in this case?
                                      (progn$ (cw "(Failed to relieve axe-syntaxp hyp: ~x0 for ~x1.)~%" hyp rule-symbol)
@@ -560,50 +614,51 @@
                       ;; To evaluate the axe-bind-free hyp, we use alist, which binds vars to their nodenums or quoteps.
                       ;;The soundness of Axe should not depend on what an axe-bind-free function does; thus we cannot pass alist to such a function and trust it to faithfully extend it.  Nor can we trust it to extend the dag without changing any existing nodes. TODO: What if the axe-bind-free function gives back a result that is not even well-formed?
                       ;;TODO: It might be nice to be able to pass in the assumptions to the axe-bind-free-function? e.g., for finding usbp facts.
-                      (let* ((bind-free-expr (cadr hyp)) ;; strip off the AXE-BIND-FREE
-                             (result (and (all-vars-in-terms-bound-in-alistp (fargs bind-free-expr) alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
-                                          (,eval-axe-bind-free-function-application-fn (ffn-symb bind-free-expr) (fargs bind-free-expr) alist dag-array) ;could make a version without dag-array (may be very common?).. fixme use :dag-array?
+                      (let* ((bind-free-expr (cadr hyp)) ;; strip off the :axe-bind-free
+                             (result (and ; (all-vars-in-terms-bound-in-alistp (fargs bind-free-expr) alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
+                                          (,eval-axe-bind-free-function-application-fn (ffn-symb bind-free-expr) (fargs bind-free-expr) alist dag-array) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
                                           )))
                         (if result ;; nil to indicate failure, or an alist whose keys should be exactly (cddr hyp)
                             (let ((vars-to-bind (cddr hyp)))
                               (if (not (axe-bind-free-result-okayp result vars-to-bind dag-len))
                                   (mv (erp-t)
                                       (er hard? ',relieve-rule-hyps-name "Bind free hyp ~x0 for rule ~x1 returned ~x2, but this is not a well-formed alist that binds ~x3." hyp rule-symbol result vars-to-bind)
-                                      alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                                      alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                      node-replacement-array)
                                 ;; this hyp counts as relieved:
                                 (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num)
                                                          (append result alist) ;; guaranteed to be disjoint given the analysis done when the rule was made and the call of axe-bind-free-result-okayp above
                                                          rule-symbol
-                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                         rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes print
-                                                         interpreted-function-alist known-booleans monitored-symbols (+ -1 count))))
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                         node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                         print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))))
                           ;; failed to relieve the axe-bind-free hyp:
                           (prog2$ (and (member-eq rule-symbol monitored-symbols)
                                        (cw "(Failed to relieve axe-bind-free hyp: ~x0 for ~x1.)~%" hyp rule-symbol))
                                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))))
                     (if (eq :free-vars fn) ;can't be a work-hard since there are free vars
-                        (b* ((instantiated-hyp (,instantiate-hyp-free-vars-name (cdr hyp) ;strip the :free-vars
+                        (b* (;; Partially instantiate the hyp (the free vars will remain free):
+                             ;; TODO: Could we just do the matching wrt the alist, and skip this instantiation step?:
+                             (partially-instantiated-hyp (,instantiate-hyp-free-vars-name (cdr hyp) ;strip the :free-vars
                                                                                 alist interpreted-function-alist))
-                             ((when (eq 'quote (ffn-symb instantiated-hyp))) ;todo: this should not happen since there are free vars (unless perhaps we give special treatment to IFs)
+                             ((when (eq 'quote (ffn-symb partially-instantiated-hyp))) ;todo: this should not happen since there are free vars (unless perhaps we give special treatment to IFs)
                               (er hard? ',relieve-rule-hyps-name "ERROR: Instantiating a hyp with free vars produced a constant.")
                               (mv :error-instantiating nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-                          ;; Some free vars remain in the instantiated-hyp, so we search the REFINED-ASSUMPTIONS for matches to bind them:
-                          ;; fffixme search node-replacement-array too? or make sure all the context info gets put into REFINED-ASSUMPTIONS?
+                          ;; Some free vars remain in the partially-instantiated-hyp, so we search the REFINED-ASSUMPTION-ALIST for matches to bind them:
+                          ;; If the NODE-REPLACEMENT-ARRAY ever contains more information than the REFINED-ASSUMPTION-ALIST, we might need to search it too.
                           ;; The refined-assumptions have been refined so that (equal (pred x) t) becomes (pred x) for better matching.
                           ;; TODO: Should we simplify the terms to which the free vars were bound (in case the assumptions are not simplified)?
-                          (,relieve-free-var-hyp-and-all-others-name (lookup-eq (ffn-symb instantiated-hyp) refined-assumption-alist)
-                                                                     (fargs instantiated-hyp)
+                          (,relieve-free-var-hyp-and-all-others-name (lookup-in-refined-assumption-alist (ffn-symb partially-instantiated-hyp) refined-assumption-alist)
+                                                                     (fargs partially-instantiated-hyp)
                                                                      hyp-num
                                                                      (rest hyps)
                                                                      alist rule-symbol
-                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                     rewriter-rule-alist
-                                                                     refined-assumption-alist
-                                                                     node-replacement-array-num-valid-nodes print
-                                                                     interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                     print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
                       ;; HYP is not a call to axe-syntaxp or axe-bind-free or :free-vars:
                       ;; First, we substitute in for all the vars in HYP (this also evaluates what it can):
-                      (b* ((instantiated-hyp (,instantiate-hyp-no-free-vars-name hyp alist interpreted-function-alist)))
+                      (b* ((instantiated-hyp (,instantiate-hyp-no-free-vars2-name hyp alist interpreted-function-alist)))
                         ;; instantiated-hyp is now fully instantiated.  It is an axe-tree with leaves that are quoteps and nodenums (from vars already bound):
                         (if (fquotep instantiated-hyp) ;; we know the instantiated-hyp is a cons, because hyp is
                             ;; The instantiated-hyp is a quoted constant:
@@ -613,9 +668,9 @@
                                                          (+ 1 hyp-num)
                                                          alist
                                                          rule-symbol
-                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                         rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes print
-                                                         interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                         node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                         print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
                               ;; The instantiated-hyp is 'nil, so it failed to be relieved:
                               (progn$ (and (member-eq rule-symbol monitored-symbols)
                                            ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
@@ -623,22 +678,22 @@
                                       (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
                           ;; There are no free vars, so we try to relieve the (fully-instantiated) hyp by simplifying it:
                           (b* ((old-try-count tries)
-                               ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                               ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                    node-replacement-array)
                                 ;; TODO: This tests whether atoms in the instiantiated-hyp are vars, but that seems wasteful because the hyp is fully instantiated):
                                 ;; bozo do we really want to add stupid natp hyps, etc. to the memoization? what about ground terms (most of them will have been evaluated above)?
                                 ;; TODO: Consider not instantiating the hyp but rather simplifying it wrt an alist:
                                 (,simplify-tree-and-add-to-dag-name instantiated-hyp
                                                                     nil ;nothing is yet known to be equal to instantiated-hyp
-                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                    rewriter-rule-alist
-                                                                    refined-assumption-alist node-replacement-array-num-valid-nodes print
-                                                                    interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
                                ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
                             (if (consp new-nodenum-or-quotep) ;tests for quotep
                                 (if (unquote new-nodenum-or-quotep) ;the unquoted value is non-nil:
                                     (prog2$ (and old-try-count
                                                  print
-                                                 (or (eq :verbose print) (eq :verbose2 print))
+                                                 (print-level-at-least-verbosep print)
                                                  (< 100 (sub-tries tries old-try-count))
                                                  (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                             ;;hyp rewrote to a non-nil constant and so counts as relieved:
@@ -646,13 +701,13 @@
                                                                      (+ 1 hyp-num)
                                                                      alist
                                                                      rule-symbol
-                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                     rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes print
-                                                                     interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                     print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
                                   ;;hyp rewrote to 'nil
                                   (progn$ (and old-try-count
                                                print
-                                               (or (eq :verbose print) (eq :verbose2 print))
+                                               (print-level-at-least-verbosep print)
                                                (< 100 (sub-tries tries old-try-count))
                                                (cw "(~x1 tries wasted ~x0:~x2 (rewrote to NIL))~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                           (and (member-eq rule-symbol monitored-symbols)
@@ -660,11 +715,12 @@
                                                (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.~%" hyp rule-symbol))
                                           (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
                               ;;hyp didn't rewrite to a constant (new-nodenum-or-quotep is a node number):
-                              ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?
-                              (if (nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist dag-array) ;todo: only do this if the hyp is not a known-boolean?
+                              ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?  Or enable the node-replacement-array to include the special symbol :non-nil and use it here:
+                              (if ;;(nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist dag-array) ;todo: only do this if the hyp is not a known-boolean?
+                                  (known-true-in-node-replacement-arrayp new-nodenum-or-quotep node-replacement-array node-replacement-count)
                                   (prog2$ (and old-try-count
                                                print
-                                               (or (eq :verbose print) (eq :verbose2 print))
+                                               (print-level-at-least-verbosep print)
                                                (< 100 (sub-tries tries old-try-count))
                                                (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                           ;;hyp rewrote to a known assumption and so counts as relieved:
@@ -672,13 +728,13 @@
                                                                    (+ 1 hyp-num)
                                                                    alist
                                                                    rule-symbol
-                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                   rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes print
-                                                                   interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                   node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                   print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
                                 ;; Failed to relieve the hyp:
                                 (progn$ (and old-try-count
                                              print
-                                             (or (eq :verbose print) (eq :verbose2 print))
+                                             (print-level-at-least-verbosep print)
                                              (< 100 (sub-tries tries old-try-count))
                                              (cw "(~x1 tries wasted: ~x0:~x2 (non-constant result))~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                         (and (member-eq rule-symbol monitored-symbols)
@@ -695,44 +751,46 @@
 
         ;; Returns (mv erp instantiated-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         (defund ,try-to-apply-rules-name (stored-rules ;the list of rules for the fn in question
-                                          rewriter-rule-alist
+                                          rule-alist
                                           args-to-match
-                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                          refined-assumption-alist
-                                          node-replacement-array-num-valid-nodes
+                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                          node-replacement-array node-replacement-count refined-assumption-alist
                                           print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                      (true-listp args-to-match)
-                                      (all-dargp-less-than args-to-match dag-len)
-                                      (true-listp stored-rules)
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (true-listp stored-rules) ; todo: combine this and the next one
                                       (all-stored-axe-rulep stored-rules)
-                                      (interpreted-function-alistp interpreted-function-alist)
-                                      (symbol-listp known-booleans)
-                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                      (info-worldp info)
-                                      (rule-alistp rewriter-rule-alist)
-                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                      (natp node-replacement-array-num-valid-nodes)
-                                      (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                                      (rule-alistp rule-alist)
+                                      (bounded-darg-listp args-to-match dag-len) ;todo: combine with the next one
                                       (maybe-bounded-memoizationp memoization dag-len)
+                                      (info-worldp info)
                                       (triesp tries)
                                       (rule-limitsp limits)
-                                      (symbol-listp monitored-symbols))
-                          :measure (nfix count)))
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :split-types t
+                          :measure (nfix count))
+                   (type (unsigned-byte 60) count))
           (if (or (not (mbt (natp count)))
                   (= 0 count))
-              (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+              (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                  node-replacement-array)
             (if (endp stored-rules) ;no rule fired
                 (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
               (b* ((stored-rule (first stored-rules))
                    ((when (and limits (limit-reachedp stored-rule limits print)))
                     ;; the limit for this rule is reached, so try the next rule:
                     (,try-to-apply-rules-name
-                     (rest stored-rules) rewriter-rule-alist args-to-match
-                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                     refined-assumption-alist
-                     node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
+                     (rest stored-rules) rule-alist args-to-match
+                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                     node-replacement-array node-replacement-count refined-assumption-alist
+                     print interpreted-function-alist known-booleans monitored-symbols
                      (+ -1 count)))
                    (tries (and tries (increment-tries tries)))
                    ;; Try to match the args-to-match with the args of the LHS of the rule:
@@ -740,31 +798,33 @@
                 (if (eq :fail alist-or-fail)
                     ;; the rule didn't match, so try the next rule:
                     (,try-to-apply-rules-name
-                     (rest stored-rules) rewriter-rule-alist args-to-match
-                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                     refined-assumption-alist
-                     node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
+                     (rest stored-rules) rule-alist args-to-match
+                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                     node-replacement-array node-replacement-count refined-assumption-alist
+                     print interpreted-function-alist known-booleans monitored-symbols
                      (+ -1 count))
                   ;; The rule matched, so try to relieve its hyps:
-                  (b* ((- (and (eq print ':verbose2)
+                  (b* ((- (and (eq print :verbose!)
                                (cw "(Trying to apply ~x0.~%" (stored-rule-symbol stored-rule))))
                        (hyps (stored-rule-hyps stored-rule))
                        ((mv erp hyps-relievedp alist ; may get extended by the binding of free vars
-                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                            node-replacement-array)
                         (if hyps
                             (let ((rule-symbol (stored-rule-symbol stored-rule))) ;delay extracting this? not always needed?
                               (,relieve-rule-hyps-name hyps
                                                        1 ;initial hyp number
                                                        alist-or-fail
                                                        rule-symbol
-                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                        rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                       node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                       print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
                           ;;if there are no hyps, don't even bother: BOZO inefficient?:
                           (mv (erp-nil) t alist-or-fail dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
                        ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
                     (if hyps-relievedp
                         ;; the hyps were relieved, so instantiate the RHS:
-                        (prog2$ (and (eq print ':verbose2)
+                        (prog2$ (and (eq print :verbose!)
                                      (cw "Rewriting with ~x0.)~%" (stored-rule-symbol stored-rule)))
                                 (mv (erp-nil)
                                     ;; could use a faster version where we know there are no free vars:
@@ -777,63 +837,64 @@
                                     (and limits (decrement-rule-limit stored-rule limits))
                                     node-replacement-array))
                       ;;failed to relieve the hyps, so try the next rule:
-                      (prog2$ (and (eq print :verbose2)
+                      (prog2$ (and (eq print :verbose!)
                                    (cw "Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
                               (,try-to-apply-rules-name
                                (cdr stored-rules)
-                               rewriter-rule-alist args-to-match
-                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                               refined-assumption-alist node-replacement-array-num-valid-nodes print
-                               interpreted-function-alist known-booleans monitored-symbols
-                               (+ -1 count))))))))))
+                               rule-alist args-to-match
+                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                               node-replacement-array node-replacement-count refined-assumption-alist
+                               print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))))))))))
 
         ;;simplify all the trees in trees and add to the DAG
         ;; Returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;;if the items in trees are already all nodenums or quoted constants this doesn't re-cons-up the list
         (defund ,simplify-trees-and-add-to-dag-name (trees
-                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                     rewriter-rule-alist
-                                                     refined-assumption-alist
-                                                     node-replacement-array-num-valid-nodes
+                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                      print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs :measure (nfix count)
-                          :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                      (true-listp trees)
-                                      (all-axe-treep trees)
-                                      (all-bounded-axe-treep trees dag-len)
-                                      (interpreted-function-alistp interpreted-function-alist)
-                                      (symbol-listp known-booleans)
-                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                      (info-worldp info)
-                                      (rule-alistp rewriter-rule-alist)
-                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                      (natp node-replacement-array-num-valid-nodes)
-                                      (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (bounded-axe-tree-listp trees dag-len)
                                       (maybe-bounded-memoizationp memoization dag-len)
+                                      (info-worldp info)
                                       (triesp tries)
                                       (rule-limitsp limits)
-                                      (symbol-listp monitored-symbols))))
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                      (rule-alistp rule-alist)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :measure (nfix count)
+                          :split-types t)
+                   (type (unsigned-byte 60) count))
           (if (or (not (mbt (natp count)))
                   (= 0 count))
-              (mv :count-exceeded trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+              (mv :count-exceeded trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                  node-replacement-array)
             (if (atom trees)
                 (mv (erp-nil) trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
               (b* ((first-tree (first trees))
                    (rest (rest trees))
                    ;; why do we handle the rest first?
-                   ((mv erp rest-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                   ((mv erp rest-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                        node-replacement-array)
                     (,simplify-trees-and-add-to-dag-name rest
-                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                         rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes
-                                                          print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
-                   ((when erp) (mv erp trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-                   ((mv erp first-tree-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                         node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                         print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+                   ((when erp) (mv erp trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                   node-replacement-array))
+                   ((mv erp first-tree-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                        node-replacement-array)
                     (,simplify-tree-and-add-to-dag-name first-tree
                                                         nil ;; nothing is yet known equal to first-tree
-                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                        rewriter-rule-alist refined-assumption-alist
-                                                        node-replacement-array-num-valid-nodes
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                        node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                         print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
                    ((when erp) (mv erp trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
                 (mv (erp-nil)
@@ -842,22 +903,18 @@
 
         ;; Helper function for rewriting a tree that is an IF or MYIF.  This is separate just to keep the main function small.
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
-        ;; Note that this function does not return node-replacement-array-num-valid-nodes since no nodes have been assumed that are relevant to the caller.
-        ;; TODO: Are all elements in the array beyond node-replacement-array-num-valid-nodes nil?
+        ;; Note that this function does not return node-replacement-count since no nodes have been assumed that are relevant to the caller.
+        ;; TODO: Are all elements in the array beyond node-replacement-count nil?
         (defund ,simplify-if-tree-and-add-to-dag3-name (fn
                                                         simplified-test ; a nodenum
                                                         simplified-thenpart
                                                         elsepart
                                                         tree
                                                         trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
-                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                        rewriter-rule-alist
-                                                        refined-assumption-alist ; for free variable matching, mentions nodenums in dag-array
-                                                        node-replacement-array-num-valid-nodes
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                        node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                         print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs :measure (nfix count)
-                          :guard (and (member-eq fn '(if myif))
+          (declare (xargs :guard (and (member-eq fn '(if myif))
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (natp simplified-test)
                                       (< simplified-test dag-len)
@@ -866,67 +923,76 @@
                                       (bounded-axe-treep elsepart dag-len)
                                       (tree-to-memoizep tree)
                                       (trees-to-memoizep trees-equal-to-tree)
+                                      (axe-print-levelp print)
                                       (interpreted-function-alistp interpreted-function-alist)
                                       (symbol-listp known-booleans)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (info-worldp info)
-                                      (rule-alistp rewriter-rule-alist)
+                                      (rule-alistp rule-alist)
                                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                      (natp node-replacement-array-num-valid-nodes)
-                                      (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                       (maybe-bounded-memoizationp memoization dag-len)
                                       (triesp tries)
                                       (rule-limitsp limits)
-                                      (symbol-listp monitored-symbols))))
-          (if (or (not (mbt (natp count)))
-                  (= 0 count))
-              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-            (b* (;; Assume the test false (if not memoizing):
-                 ((mv node-replacement-array node-replacement-array-num-valid-nodes)
-                  (if memoization ;can't use context if we are memoizing:
-                      (mv node-replacement-array node-replacement-array-num-valid-nodes)
-                    (assume-nodenum-false-in-node-replacement-array simplified-test dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)))
-                 ((mv erp elsepart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                  (,simplify-tree-and-add-to-dag-name elsepart
-                                                      nil ;no trees are yet known equal to the else branch
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                      (+ -1 count)))
-                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-                 ;; Clear test assumption. node-replacement-array should then be
-                 ;; like it was before we set it (except perhaps longer), since
-                 ;; if there was a replacement for this node, rewriting would
-                 ;; have used it):
-                 ((mv node-replacement-array node-replacement-array-num-valid-nodes)
-                  (if memoization ;can't use context if we are memoizing:
-                      (mv node-replacement-array node-replacement-array-num-valid-nodes)
-                    (unassume-nodenum-false-in-node-replacement-array simplified-test dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-              ;;this function takes simplified args and does not handle ifs specially (or else things might loop):
-              (,simplify-fun-call-and-add-to-dag-name fn (list simplified-test simplified-thenpart elsepart-result)
-                                                      (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                      (+ -1 count)))))
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :split-types t
+                          :measure (nfix count))
+                   (type (unsigned-byte 60) count))
+          (b* (((when (or (not (mbt (natp count))) (= 0 count)))
+                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               ;; Assume the test false (if not memoizing):
+               ;; ((mv node-replacement-array node-replacement-count)
+               ;;  (if memoization ;can't use context if we are memoizing:
+               ;;      (mv node-replacement-array node-replacement-count)
+               ;;    (assume-nodenum-false-in-node-replacement-array simplified-test dag-array dag-len node-replacement-array node-replacement-count known-booleans)))
+               ((mv node-replacement-array node-replacement-count undo-pairs)
+                (if memoization ;can't use context if we are memoizing:
+                    (mv node-replacement-array node-replacement-count nil)
+                  (update-node-replacement-array-for-assuming-negation-of-node simplified-test node-replacement-array node-replacement-count dag-array dag-len known-booleans)))
+               (refined-assumption-alist-for-elsepart
+                (if memoization ;can't use context if we are memoizing:
+                    refined-assumption-alist
+                  (extend-refined-assumption-alist-assuming-negation-of-node refined-assumption-alist simplified-test dag-array dag-len)))
+               ;; Rewrite the else branch:
+               ((mv erp elsepart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                (,simplify-tree-and-add-to-dag-name elsepart
+                                                    nil ;no trees are yet known equal to the else branch
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist-for-elsepart
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               ;; Clear test assumption. node-replacement-array should then be
+               ;; like it was before we set it (except perhaps longer), since
+               ;; if there was a replacement for this node, rewriting would
+               ;; have used it):
+               ;; ((mv node-replacement-array node-replacement-count)
+               ;;  (if memoization ;can't use context if we are memoizing:
+               ;;      (mv node-replacement-array node-replacement-count)
+               ;;    (unassume-nodenum-false-in-node-replacement-array simplified-test dag-array dag-len node-replacement-array node-replacement-count known-booleans)))
+               ;; If memoizing, there will be no pairs here:
+               (node-replacement-array (undo-writes-to-node-replacement-array undo-pairs node-replacement-array node-replacement-count dag-len)))
+            ;; Now apply rules (this function takes simplified args and does not handle ifs specially, or else things might loop):
+            (,simplify-fun-call-and-add-to-dag-name fn (list simplified-test simplified-thenpart elsepart-result)
+                                                    (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))))
 
         ;; Helper function for rewriting a tree that is an IF or MYIF.  This is separate just to keep the main function small.
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
-        ;; Note that this function does not return node-replacement-array-num-valid-nodes since no nodes have been assumed that are relevant to the caller.
+        ;; Note that this function does not return node-replacement-count since no nodes have been assumed that are relevant to the caller.
         (defund ,simplify-if-tree-and-add-to-dag2-name (fn
                                                         simplified-test ; a nodenum
                                                         thenpart
                                                         elsepart
                                                         tree
                                                         trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
-                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                        rewriter-rule-alist
-                                                        refined-assumption-alist ; for free variable matching, mentions nodenums in dag-array
-                                                        node-replacement-array-num-valid-nodes
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                        node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                         print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs :measure (nfix count)
-                          :guard (and (member-eq fn '(if myif))
+          (declare (xargs :guard (and (member-eq fn '(if myif))
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (natp simplified-test)
                                       (< simplified-test dag-len)
@@ -936,272 +1002,278 @@
                                       (bounded-axe-treep elsepart dag-len)
                                       (tree-to-memoizep tree)
                                       (trees-to-memoizep trees-equal-to-tree)
+                                      (axe-print-levelp print)
                                       (interpreted-function-alistp interpreted-function-alist)
                                       (symbol-listp known-booleans)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (info-worldp info)
-                                      (rule-alistp rewriter-rule-alist)
+                                      (rule-alistp rule-alist)
                                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                      (natp node-replacement-array-num-valid-nodes)
-                                      (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                       (maybe-bounded-memoizationp memoization dag-len)
                                       (triesp tries)
                                       (rule-limitsp limits)
-                                      (symbol-listp monitored-symbols))))
-          (if (or (not (mbt (natp count)))
-                  (= 0 count))
-              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-            (b* (;; Assume the test true
-                 ((mv node-replacement-array node-replacement-array-num-valid-nodes)
-                  (if memoization ;can't use context if we are memoizing:
-                      (mv node-replacement-array node-replacement-array-num-valid-nodes)
-                    (assume-nodenum-true-in-node-replacement-array simplified-test dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)))
-                 ;; Rewrite the then-branch:
-                 ((mv erp simplified-thenpart dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                  (,simplify-tree-and-add-to-dag-name thenpart
-                                                      nil ;no trees are yet known equal to the then branch
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                      (+ -1 count)))
-                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-                 ;; Clear test assumption. node-replacement-array should then be
-                 ;; like it was before we set it (except perhaps longer), since
-                 ;; if there was a replacement for this node, rewriting would
-                 ;; have used it):
-                 ((mv node-replacement-array node-replacement-array-num-valid-nodes)
-                  (if memoization ;can't use context if we are memoizing:
-                      (mv node-replacement-array node-replacement-array-num-valid-nodes)
-                    (unassume-nodenum-true-in-node-replacement-array simplified-test dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-              (,simplify-if-tree-and-add-to-dag3-name fn
-                                                      simplified-test ; a nodenum
-                                                      simplified-thenpart ; a nodenum or quotep
-                                                      elsepart
-                                                      tree
-                                                      trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist ; for free variable matching, mentions nodenums in dag-array
-                                                      node-replacement-array-num-valid-nodes
-                                                      print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))))
-
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :split-types t
+                          :measure (nfix count))
+                   (type (unsigned-byte 60) count))
+          (b* (((when (or (not (mbt (natp count)))
+                          (= 0 count)))
+                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               ;; Assume the test true (if not memoizing):
+               ;; ((mv node-replacement-array node-replacement-count)
+               ;;  (if memoization ;can't use context if we are memoizing:
+               ;;      (mv node-replacement-array node-replacement-count)
+               ;;    (assume-nodenum-true-in-node-replacement-array simplified-test dag-array dag-len node-replacement-array node-replacement-count known-booleans)))
+               ((mv node-replacement-array node-replacement-count undo-pairs)
+                (if memoization ;can't use context if we are memoizing:
+                    (mv node-replacement-array node-replacement-count nil)
+                  (update-node-replacement-array-for-assuming-node simplified-test node-replacement-array node-replacement-count dag-array dag-len known-booleans)))
+               (refined-assumption-alist-for-thenpart
+                (if memoization ;can't use context if we are memoizing:
+                    refined-assumption-alist
+                  (extend-refined-assumption-alist-assuming-node refined-assumption-alist simplified-test dag-array dag-len)))
+               ;; Rewrite the then-branch:
+               ((mv erp simplified-thenpart dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array)
+                (,simplify-tree-and-add-to-dag-name thenpart
+                                                    nil ;no trees are yet known equal to the then branch
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist-for-thenpart
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               ;; Clear test assumption. node-replacement-array should then be
+               ;; like it was before we set it (except perhaps longer), since
+               ;; if there was a replacement for this node, rewriting would
+               ;; have used it):
+               ;; ((mv node-replacement-array node-replacement-count)
+               ;;  (if memoization ;can't use context if we are memoizing:
+               ;;      (mv node-replacement-array node-replacement-count)
+               ;;    (unassume-nodenum-true-in-node-replacement-array simplified-test dag-array dag-len node-replacement-array node-replacement-count known-booleans)))
+               ;; If memoizing, there will be no pairs here:
+               (node-replacement-array (undo-writes-to-node-replacement-array undo-pairs node-replacement-array node-replacement-count dag-len)))
+            (,simplify-if-tree-and-add-to-dag3-name fn
+                                                    simplified-test ; a nodenum
+                                                    simplified-thenpart ; a nodenum or quotep
+                                                    elsepart
+                                                    tree
+                                                    trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))))
         ;; Rewrite a tree that is an IF or MYIF.
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;; This is separate just to keep the main function small.
-        (defund ,simplify-if-tree-and-add-to-dag1-name (tree
+        (defund ,simplify-if-tree-and-add-to-dag1-name (tree ; pass the whole tree since the fn may be if or myif
                                                         trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
-                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                        rewriter-rule-alist
-                                                        refined-assumption-alist ; for free variable matching, mentions nodenums in dag-array
-                                                        node-replacement-array-num-valid-nodes
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                        node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                         print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs
-                    :measure (nfix count)
-                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                (axe-treep tree)
-                                (bounded-axe-treep tree dag-len) ;todo: should imply axe-treep
-                                (consp tree)
-                                (member-eq (ffn-symb tree) '(if myif))
-                                (= 3 (len (fargs tree)))
-                                (trees-to-memoizep trees-equal-to-tree)
-                                (interpreted-function-alistp interpreted-function-alist)
-                                (symbol-listp known-booleans)
-                                (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                (info-worldp info)
-                                (rule-alistp rewriter-rule-alist)
-                                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)  ;todo: name these 3?
-                                (natp node-replacement-array-num-valid-nodes)
-                                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                (maybe-bounded-memoizationp memoization dag-len)
-                                (triesp tries)
-                                (rule-limitsp limits)
-                                (symbol-listp monitored-symbols))))
-          (if (or (not (mbt (natp count)))
-                  (= 0 count))
-              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-            ;; First, try to resolve the test (fixme would like to do this in an iff context):
-            (b* ((args (fargs tree))
-                 (test (first args))
-                 ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                  (b* (((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                        (,simplify-tree-and-add-to-dag-name test
-                                                            nil ;no trees are yet known equal to the test
-                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                            rewriter-rule-alist
-                                                            refined-assumption-alist node-replacement-array-num-valid-nodes
-                                                            print interpreted-function-alist known-booleans monitored-symbols
-                                                            (+ -1 count)))
-                       ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-                    (if (consp simplified-test) ; tests for quotep
-                        ;; test simplified to a constant:
-                        (mv (erp-nil) simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                      ;; simplified-test is a nodenum.  Now try looking it up in the refined-assumption-alist:
-                      ;; TODO: Do this also for the other kinds of IF below
-                      (if (nodenum-equal-to-refined-assumptionp simplified-test refined-assumption-alist dag-array)  ;todo: only do this if the hyp is not a known-boolean?
-                          ;; Since the test is known to be true from the refined-assumption-alist, it's as if it rewrote to 't (even though it may not be a predicate, IF/MYIF only looks at whether it is nil):
-                          (mv (erp-nil) *t* dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                        ;; Failed to resolve the test:
-                        (mv (erp-nil) simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))))
-                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-              (if (consp simplified-test)
-                  ;; Rewrite either the then-branch or the else-branch, according to whether the test simplified to nil:
-                  (,simplify-tree-and-add-to-dag-name (if (unquote simplified-test) (second args) (third args))
-                                                      (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                      (+ -1 count))
-                ;; Failed to resolve the test:
-                (progn$
-                 ;; If this gets printed too often for known predicates, we can preprocess such things:
-                 (and (equal test (second args)) (cw "Unresolved IF test with test same as then-branch (from an OR?): ~x0.~%" test))
-                 (,simplify-if-tree-and-add-to-dag2-name (ffn-symb tree) ; if or myif
-                                                         simplified-test
-                                                         (second args) ;"then" branch
-                                                         (third args) ;"else" branch
-                                                         tree
-                                                         trees-equal-to-tree
-                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                         rewriter-rule-alist
-                                                         refined-assumption-alist
-                                                         node-replacement-array-num-valid-nodes
-                                                         print
-                                                         interpreted-function-alist known-booleans monitored-symbols
-                                                         (+ -1 count)))))))
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (axe-treep tree)
+                                      (bounded-axe-treep tree dag-len)
+                                      (consp tree)
+                                      (member-eq (ffn-symb tree) '(if myif))
+                                      ;; (equal 3 (len (fargs tree)))
+                                      (trees-to-memoizep trees-equal-to-tree)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (info-worldp info)
+                                      (rule-alistp rule-alist)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len) ;todo: name these 3?
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :split-types t
+                          :measure (nfix count))
+                   (type (unsigned-byte 60) count))
+          (b* (((when (or (not (mbt (natp count)))
+                          (= 0 count)))
+                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               (args (fargs tree))
+               ((when (not (consp (rest (rest args))))) ;; for guards
+                (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array))
+               ;; First, try to resolve the test (TODO: would like to do this in an iff context):
+               (test (first args))
+               ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                (,simplify-tree-and-add-to-dag-name test
+                                                    nil ;no trees are yet known equal to the test
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+               ((when erp)
+                (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               ;; Handle a test that is known to be :non-nil:
+               ;; TTODO: Do this for the other kinds of IF:
+               (simplified-test
+                (if (consp simplified-test) ; tests for quotep
+                    simplified-test
+                  ;; Simplified-test is a nodenum, so look it up in the node-replacement-array (skip this if the test is a known boolean?):
+                  (if (known-true-in-node-replacement-arrayp simplified-test node-replacement-array node-replacement-count)
+                      ;; Since the test is known to be non-nil, it's as if it rewrote to 't (even though it may not be a predicate, IF/MYIF only looks at whether it is nil):
+                      *t*
+                    simplified-test))))
+            (if (consp simplified-test) ; test for quote (that is, check whether we resolved the test)
+                ;; Rewrite either the then-branch or the else-branch, according to whether the test simplified to nil:
+                (,simplify-tree-and-add-to-dag-name (if (unquote simplified-test) (second args) (third args))
+                                                    (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
+              ;; Failed to resolve the test:
+              (progn$
+               ;; If this gets printed too often for known predicates, we can preprocess such things:
+               ;; (and (equal test (second args)) (cw "Unresolved IF test with test same as then-branch (from an OR?): ~x0.~%" test))
+               (,simplify-if-tree-and-add-to-dag2-name (ffn-symb tree) ; if or myif
+                                                       simplified-test
+                                                       (second args) ;"then" branch
+                                                       (third args) ;"else" branch
+                                                       tree
+                                                       trees-equal-to-tree
+                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                       node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                       print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))))))
 
-        ;; Continue rewriting a tree that is an BOOLIF.  This is separate just to keep the main function small.
+        ;; Continue rewriting a tree that is a BOOLIF.  This is separate just to keep the main function small.
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         (defund ,simplify-boolif-tree-and-add-to-dag2-name (simplified-test ; a nodenum
                                                             args ;the args of the call to boolif
                                                             tree
                                                             trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
-                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                            rewriter-rule-alist
-                                                            refined-assumption-alist
-                                                            node-replacement-array-num-valid-nodes
+                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                            node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                             print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs
-                    :measure (nfix count)
-                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                (natp simplified-test)
-                                (< simplified-test dag-len)
-                                (all-axe-treep args)
-                                (all-bounded-axe-treep args dag-len)
-                                (= 3 (len args))
-                                (tree-to-memoizep tree)
-                                (trees-to-memoizep trees-equal-to-tree)
-                                (interpreted-function-alistp interpreted-function-alist)
-                                (symbol-listp known-booleans)
-                                (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                (info-worldp info)
-                                (rule-alistp rewriter-rule-alist)
-                                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                (natp node-replacement-array-num-valid-nodes)
-                                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                (maybe-bounded-memoizationp memoization dag-len)
-                                (triesp tries)
-                                (rule-limitsp limits)
-                                (symbol-listp monitored-symbols))))
-          (if (or (not (mbt (natp count)))
-                  (= 0 count))
-              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-            (b* (;; Simplify the "then" branch:
-                 ((mv erp simplified-thenpart dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                  (,simplify-tree-and-add-to-dag-name (second args) ;"then" branch
-                                                      nil ;no trees are yet known equal to the then branch
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                      (+ -1 count)))
-                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-                 ;; Simplify the "else" branch:
-                 ((mv erp simplified-elsepart dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                  (,simplify-tree-and-add-to-dag-name (third args) ;"else" branch
-                                                      nil ;no trees are yet known equal to the else branch
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                      (+ -1 count)))
-                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-              ;; Try to apply rules to the call of boolif on simplified args:
-              (,simplify-fun-call-and-add-to-dag-name 'boolif (list simplified-test simplified-thenpart simplified-elsepart)
-                                                      (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                      (+ -1 count)))))
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (natp simplified-test)
+                                      (< simplified-test dag-len)
+                                      (bounded-axe-tree-listp args dag-len)
+                                      (consp (rest (rest args))) ; (<= 3 (len args))
+                                      (tree-to-memoizep tree)
+                                      (trees-to-memoizep trees-equal-to-tree)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (info-worldp info)
+                                      (rule-alistp rule-alist)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :split-types t
+                          :measure (nfix count))
+                   (type (unsigned-byte 60) count))
+          (b* (((when (or (not (mbt (natp count)))
+                          (= 0 count)))
+                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array))
+               ;; Simplify the "then" branch:
+               ((mv erp simplified-thenpart dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array)
+                (,simplify-tree-and-add-to-dag-name (second args) ;"then" branch
+                                                    nil ;no trees are yet known equal to the then branch
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               ;; Simplify the "else" branch:
+               ((mv erp simplified-elsepart dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array)
+                (,simplify-tree-and-add-to-dag-name (third args) ;"else" branch
+                                                    nil ;no trees are yet known equal to the else branch
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
+            ;; Try to apply rules to the call of boolif on simplified args:
+            (,simplify-fun-call-and-add-to-dag-name 'boolif (list simplified-test simplified-thenpart simplified-elsepart)
+                                                    (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))))
 
-        ;; Rewrite a tree that is an BOOLIF.
+        ;; Rewrite a tree that is a BOOLIF.
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;; This is separate just to keep the main function small
-        (defund ,simplify-boolif-tree-and-add-to-dag1-name (args ;the args of the call to boolif
-                                                            tree
+        (defund ,simplify-boolif-tree-and-add-to-dag1-name (tree ; a call of BOOLIF
                                                             trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
-                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                            rewriter-rule-alist
-                                                            refined-assumption-alist
-                                                            node-replacement-array-num-valid-nodes
+                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                            node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                             print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs
-                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                (all-axe-treep args)
-                                (all-bounded-axe-treep args dag-len)
-                                (= 3 (len args))
-                                (tree-to-memoizep tree)
-                                (trees-to-memoizep trees-equal-to-tree)
-                                (interpreted-function-alistp interpreted-function-alist)
-                                (symbol-listp known-booleans)
-                                (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                (info-worldp info)
-                                (rule-alistp rewriter-rule-alist)
-                                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                (natp node-replacement-array-num-valid-nodes)
-                                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                (maybe-bounded-memoizationp memoization dag-len)
-                                (triesp tries)
-                                (rule-limitsp limits)
-                                (symbol-listp monitored-symbols))
-                    :measure (nfix count)))
-          (if (or (not (mbt (natp count)))
-                  (= 0 count))
-              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-            (b* (;; First, try to resolve the if-test:
-                 ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                  (,simplify-tree-and-add-to-dag-name (first args) ;the if-test
-                                                      nil ;no trees are yet known equal to the test
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
-                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-              (if (consp simplified-test) ; tests for quotep
-                  (if (unquote simplified-test)
-                      ;;test rewrote to non-nil:
-                      (,simplify-tree-and-add-to-dag-name `(bool-fix$inline ,(second args)) ;the "then" branch
-                                                          (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
-                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                          rewriter-rule-alist
-                                                          refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                          (+ -1 count))
-                    ;;test rewrote to nil:
-                    (,simplify-tree-and-add-to-dag-name `(bool-fix$inline ,(third args)) ;the "else" branch
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (axe-treep tree)
+                                      (bounded-axe-treep tree dag-len)
+                                      (consp tree)
+                                      (equal 'boolif (ffn-symb tree))
+                                      ;; (tree-to-memoizep tree) implied by the above
+                                      (trees-to-memoizep trees-equal-to-tree)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (info-worldp info)
+                                      (rule-alistp rule-alist)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :split-types t
+                          :measure (nfix count))
+                   (type (unsigned-byte 60) count))
+          (b* (((when (or (not (mbt (natp count)))
+                          (= 0 count)))
+                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array))
+               (args (fargs tree))
+               ((when (not (consp (rest (rest args))))) ;; for guards
+                (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array))
+               ;; First, try to resolve the if-test:
+               ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array)
+                (,simplify-tree-and-add-to-dag-name (first args) ;the if-test
+                                                    nil ;no trees are yet known equal to the test
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
+            (if (consp simplified-test) ; tests for quotep
+                (if (unquote simplified-test)
+                    ;;test rewrote to non-nil:
+                    (,simplify-tree-and-add-to-dag-name `(bool-fix$inline ,(second args)) ;the "then" branch
                                                         (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
-                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                        rewriter-rule-alist
-                                                        refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                        (+ -1 count)))
-                (,simplify-boolif-tree-and-add-to-dag2-name simplified-test
-                                                            args
-                                                            tree trees-equal-to-tree
-                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                            rewriter-rule-alist
-                                                            refined-assumption-alist
-                                                            node-replacement-array-num-valid-nodes
-                                                            print
-                                                            interpreted-function-alist known-booleans monitored-symbols
-                                                            (+ -1 count))))))
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                        node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                        print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
+                  ;;test rewrote to nil:
+                  (,simplify-tree-and-add-to-dag-name `(bool-fix$inline ,(third args)) ;the "else" branch
+                                                      (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                      node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                      print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+              (,simplify-boolif-tree-and-add-to-dag2-name simplified-test
+                                                          args
+                                                          tree trees-equal-to-tree
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                          print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))))
 
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;; This is separate just to keep the proofs tractable (avoid too many sequential rewriter calls in one function).
@@ -1211,53 +1283,53 @@
                                                           elsepart
                                                           tree ;original bvif tree (bvif applied to the args, except the test is unsimplified)
                                                           trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
-                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                          rewriter-rule-alist
-                                                          refined-assumption-alist
-                                                          node-replacement-array-num-valid-nodes
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                           print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs
-                    :measure (nfix count)
-                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                (dargp-less-than size-result dag-len)
-                                (natp simplified-test)
-                                (< simplified-test dag-len)
-                                (dargp-less-than simplified-thenpart dag-len)
-                                (axe-treep elsepart)
-                                (bounded-axe-treep elsepart dag-len)
-                                (tree-to-memoizep tree)
-                                (trees-to-memoizep trees-equal-to-tree)
-                                (interpreted-function-alistp interpreted-function-alist)
-                                (symbol-listp known-booleans)
-                                (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                (info-worldp info)
-                                (rule-alistp rewriter-rule-alist)
-                                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                (natp node-replacement-array-num-valid-nodes)
-                                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                (maybe-bounded-memoizationp memoization dag-len)
-                                (triesp tries)
-                                (rule-limitsp limits)
-                                (symbol-listp monitored-symbols))))
-          (if (or (not (mbt (natp count)))
-                  (= 0 count))
-              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-            (b* (((mv erp elsepart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                  (,simplify-tree-and-add-to-dag-name elsepart ;"else" branch
-                                                      nil ;no trees are yet known equal to the else branch
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                      (+ -1 count)))
-                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-              ;; Try to apply rules to the call of bvif on simplified args:
-              (,simplify-fun-call-and-add-to-dag-name 'bvif (list size-result simplified-test simplified-thenpart elsepart-result)
-                                                      (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                      (+ -1 count)))))
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (dargp-less-than size-result dag-len)
+                                      (natp simplified-test)
+                                      (< simplified-test dag-len)
+                                      (dargp-less-than simplified-thenpart dag-len)
+                                      (axe-treep elsepart)
+                                      (bounded-axe-treep elsepart dag-len)
+                                      (tree-to-memoizep tree)
+                                      (trees-to-memoizep trees-equal-to-tree)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (info-worldp info)
+                                      (rule-alistp rule-alist)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :split-types t
+                          :measure (nfix count))
+                   (type (unsigned-byte 60) count))
+          (b* (((when (or (not (mbt (natp count)))
+                          (= 0 count)))
+                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array))
+               ((mv erp elsepart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array)
+                (,simplify-tree-and-add-to-dag-name elsepart ;"else" branch
+                                                    nil ;no trees are yet known equal to the else branch
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
+            ;; Try to apply rules to the call of bvif on simplified args:
+            (,simplify-fun-call-and-add-to-dag-name 'bvif (list size-result simplified-test simplified-thenpart elsepart-result)
+                                                    (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))))
 
         ;; Rewrite a call of 'BVIF on ARGS.  This is for the case where we cannot rewrite the test
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
@@ -1266,112 +1338,110 @@
                                                           args
                                                           tree ;original bvif tree (bvif applied to the args, except the test is unsimplified)
                                                           trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
-                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                          rewriter-rule-alist
-                                                          refined-assumption-alist
-                                                          node-replacement-array-num-valid-nodes
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                           print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs
-                    :measure (nfix count)
-                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                (natp simplified-test)
-                                (< simplified-test dag-len)
-                                (all-axe-treep args)
-                                (all-bounded-axe-treep args dag-len)
-                                (true-listp args)
-                                (= 4 (len args))
-                                (tree-to-memoizep tree)
-                                (trees-to-memoizep trees-equal-to-tree)
-                                (interpreted-function-alistp interpreted-function-alist)
-                                (symbol-listp known-booleans)
-                                (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                (info-worldp info)
-                                (rule-alistp rewriter-rule-alist)
-                                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                (natp node-replacement-array-num-valid-nodes)
-                                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                (maybe-bounded-memoizationp memoization dag-len)
-                                (triesp tries)
-                                (rule-limitsp limits)
-                                (symbol-listp monitored-symbols))))
-          (if (or (not (mbt (natp count)))
-                  (= 0 count))
-              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-            (b* (((mv erp size-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                  (,simplify-tree-and-add-to-dag-name (first args) ;size param
-                                                      nil ;no trees are yet known equal to the the size param
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                      (+ -1 count)))
-                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-                 ((mv erp simplified-thenpart dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                  (,simplify-tree-and-add-to-dag-name (third args) ;"then" branch
-                                                      nil ;no trees are yet known equal to the then branch
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                      (+ -1 count)))
-                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-              (,simplify-bvif-tree-and-add-to-dag3-name size-result
-                                                        simplified-test
-                                                        simplified-thenpart
-                                                        (fourth args) ;"else" branch
-                                                        tree ;original bvif tree (bvif applied to the args, except the test is unsimplified)
-                                                        trees-equal-to-tree
-                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                        rewriter-rule-alist
-                                                        refined-assumption-alist
-                                                        node-replacement-array-num-valid-nodes
-                                                        print
-                                                        interpreted-function-alist known-booleans monitored-symbols
-                                                        (+ -1 count)))))
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (natp simplified-test)
+                                      (< simplified-test dag-len)
+                                      (bounded-axe-tree-listp args dag-len)
+                                      (consp (rest (rest (rest args)))) ; (<= 4 (len args))
+                                      (tree-to-memoizep tree)
+                                      (trees-to-memoizep trees-equal-to-tree)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (info-worldp info)
+                                      (rule-alistp rule-alist)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :split-types t
+                          :measure (nfix count))
+                   (type (unsigned-byte 60) count))
+          (b* (((when (or (not (mbt (natp count)))
+                          (= 0 count)))
+                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array))
+               ((mv erp size-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array)
+                (,simplify-tree-and-add-to-dag-name (first args) ;size param
+                                                    nil ;no trees are yet known equal to the the size param
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               ((mv erp simplified-thenpart dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array)
+                (,simplify-tree-and-add-to-dag-name (third args) ;"then" branch
+                                                    nil ;no trees are yet known equal to the then branch
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
+            (,simplify-bvif-tree-and-add-to-dag3-name size-result
+                                                      simplified-test
+                                                      simplified-thenpart
+                                                      (fourth args) ;"else" branch
+                                                      tree ;original bvif tree (bvif applied to the args, except the test is unsimplified)
+                                                      trees-equal-to-tree
+                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                      node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                      print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))))
 
         ;; Rewrite a call of 'BVIF on ARGS.
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;; This is separate just to keep the main function small
-        (defund ,simplify-bvif-tree-and-add-to-dag1-name (args
-                                                          tree ;bvif applied to the args
+        (defund ,simplify-bvif-tree-and-add-to-dag1-name (tree ;bvif applied to the args
                                                           trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
-                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                          rewriter-rule-alist
-                                                          refined-assumption-alist
-                                                          node-replacement-array-num-valid-nodes
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                           print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs
-                    :measure (nfix count)
-                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                (all-axe-treep args)
-                                (all-bounded-axe-treep args dag-len)
-                                (true-listp args)
-                                (= 4 (len args))
-                                (consp tree)
-                                (axe-treep tree)
-                                (trees-to-memoizep trees-equal-to-tree)
-                                (interpreted-function-alistp interpreted-function-alist)
-                                (symbol-listp known-booleans)
-                                (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                (info-worldp info)
-                                (rule-alistp rewriter-rule-alist)
-                                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                (natp node-replacement-array-num-valid-nodes)
-                                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                (maybe-bounded-memoizationp memoization dag-len)
-                                (triesp tries)
-                                (rule-limitsp limits)
-                                (symbol-listp monitored-symbols))))
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (axe-treep tree)
+                                      (bounded-axe-treep tree dag-len)
+                                      (consp tree)
+                                      (equal 'bvif (ffn-symb tree))
+                                      (trees-to-memoizep trees-equal-to-tree)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (info-worldp info)
+                                      (rule-alistp rule-alist)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :split-types t
+                          :measure (nfix count))
+                   (type (unsigned-byte 60) count))
           (if (or (not (mbt (natp count)))
                   (= 0 count))
-              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                  node-replacement-array)
             ;; First, try to resolve the if-test:
-            (b* (((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+            (b* ((args (fargs tree))
+                 ((when (not (consp (rest (rest (rest args)))))) ;; for guards
+                  (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
+                 ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array)
                   (,simplify-tree-and-add-to-dag-name (second args) ;the if-test
                                                       nil ;no trees are yet known equal to the test
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                      rewriter-rule-alist
-                                                      refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                      node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                      print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
               (if (consp simplified-test) ; tests for quotep
                   (if (unquote simplified-test)
@@ -1381,77 +1451,135 @@
                                                             ,(first args) ; size arg
                                                             ,(third args)) ; "then" branch
                                                           (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
-                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                          rewriter-rule-alist
-                                                          refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                          (+ -1 count))
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                          print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
                     ;;test rewrote to nil:
                     ;;todo: do better here?
                     (,simplify-tree-and-add-to-dag-name `(bvchop
                                                           ,(first args) ; size arg
                                                           ,(fourth args)) ; "else" branch
                                                         (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
-                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                        rewriter-rule-alist
-                                                        refined-assumption-alist node-replacement-array-num-valid-nodes print interpreted-function-alist known-booleans monitored-symbols
-                                                        (+ -1 count)))
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                        node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                        print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
                 ;;couldn't resolve the if-test:
                 (,simplify-bvif-tree-and-add-to-dag2-name simplified-test
                                                           args
                                                           tree trees-equal-to-tree
-                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                          rewriter-rule-alist
-                                                          refined-assumption-alist
-                                                          node-replacement-array-num-valid-nodes
-                                                          print
-                                                          interpreted-function-alist known-booleans monitored-symbols
-                                                          (+ -1 count))))))
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                          print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))))))
+
+        ;; Rewrite a tree that is a NOT
+        ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
+        (defund ,simplify-not-tree-and-add-to-dag-name (tree ; a call of NOT
+                                                        trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                        node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                        print interpreted-function-alist known-booleans monitored-symbols count)
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (axe-treep tree)
+                                      (bounded-axe-treep tree dag-len)
+                                      (consp tree)
+                                      (equal 'not (ffn-symb tree))
+                                      (tree-to-memoizep tree)
+                                      (trees-to-memoizep trees-equal-to-tree)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (info-worldp info)
+                                      (rule-alistp rule-alist)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :split-types t
+                          :measure (nfix count))
+                   (type (unsigned-byte 60) count))
+          (b* (((when (or (not (mbt (natp count)))
+                          (= 0 count)))
+                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array))
+               (args (fargs tree))
+               ((when (not (consp args))) ;; for guards
+                (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array))
+               ;; First, rewrite the arg:
+               ((mv erp simplified-arg dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array)
+                (,simplify-tree-and-add-to-dag-name (first args) ;the single arg
+                                                    nil ;no trees are yet known equal to the test
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
+            (if (consp simplified-arg) ; tests for quotep
+                (mv (erp-nil)
+                    (if (unquote simplified-arg) *nil* *t*) ; negate since we are rewriting a NOT
+                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array)
+              ;; Next (special treatment for NOT), handle any arg is known to be non-nil:
+              (let ((simplified-arg (apply-node-replacement-array-bool simplified-arg node-replacement-array node-replacement-count)))
+                (if (consp simplified-arg) ; tests for quotep
+                    (mv (erp-nil)
+                        (if (unquote simplified-arg) *nil* *t*) ; negate since we are rewriting a NOT
+                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                        node-replacement-array)
+                  ;; Arg did not rewrite to a constant, so try to apply rules to the call of NOT on the simplified arg:
+                  (,simplify-fun-call-and-add-to-dag-name 'not (list simplified-arg)
+                                                          (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                          print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))))))
 
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
-        ;; Rewrite TREE repeatedly using REWRITER-RULE-ALIST and REFINED-ASSUMPTION-ALIST and add the result to the DAG-ARRAY, returning a nodenum or a quotep.
+        ;; Rewrite TREE repeatedly using RULE-ALIST and REFINED-ASSUMPTION-ALIST and add the result to the DAG-ARRAY (if not a quote), returning a nodenum or a quotep.
         ;; TREE is an axe-tree (with nodenums and quoteps and variables at the leaves).
         ;; TREES-EQUAL-TO-TREE is a list of terms (not vars) equal to TREE (at the bottom is the original term we are rewriting) - when we get the final result, all these terms will be equal to it - TODO: option to turn this off?
 
-        ;; BOZO I forget, why would we ever not memoize??  i guess when we know there are no repeated subterms in the tree? could precompute that info for the RHS of each rule...  ;also, memoization may be unsound if we use internal ITE contexts to rewrite - unless we track that info in the memoization
-        ;; could still memoize when rewriting a given node..
+        ;; All nodenums mentioned in the MEMOIZATION must be part of the DAG.
+        ;; If we are memoizing, we don't use information from if tests when rewriting then-branches and else-branches (potentially unsound).
 
-        ;; MEMOIZATION maps functions call exprs (nothing else??) over nodenums and constants (not vars) to the nodenums or quoteps to which they simplify - no, let memoization map any tree!
-        ;; memoization can be thought of as part of the DAG (all nodenums mentioned in memoization must be part of the DAG)
-
-        ;; This does not return node-replacement-array-num-valid-nodes, because although some node replacement entries may be set (when processing IFs), they should all be cleared again.
+        ;; This does not return node-replacement-count, because although some node replacement entries may be set (when processing IFs), they should all be cleared again.
 
         ;;leaves nodes below dag-len untouched..
         ;;TODO: could put in simple loop checking; check whether TREE is already present in TREES-EQUAL-TO-TREE (maybe only check the first few elements), but TREES-EQUAL-TO-TREE may only be valid if we are memoizing.
-;fixme the dispatch here requires that there not be a function named nil; enforce that in interpreted-function-alists?
         (defund ,simplify-tree-and-add-to-dag-name (tree
                                                     trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
-                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                    rewriter-rule-alist
-                                                    refined-assumption-alist
-                                                    node-replacement-array-num-valid-nodes
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                     print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs
-                    :measure (nfix count)
-                    :guard (and (axe-treep tree)
-                                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                (bounded-axe-treep tree dag-len)
-                                (trees-to-memoizep trees-equal-to-tree)
-                                (interpreted-function-alistp interpreted-function-alist)
-                                (symbol-listp known-booleans)
-                                (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                (info-worldp info)
-                                (rule-alistp rewriter-rule-alist)
-                                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                (natp node-replacement-array-num-valid-nodes)
-                                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                (maybe-bounded-memoizationp memoization dag-len)
-                                (triesp tries)
-                                (rule-limitsp limits)
-                                (symbol-listp monitored-symbols))))
+          (declare (xargs :guard (and (axe-treep tree)
+                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (bounded-axe-treep tree dag-len)
+                                      (trees-to-memoizep trees-equal-to-tree)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (info-worldp info)
+                                      (rule-alistp rule-alist)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :split-types t
+                          :measure (nfix count))
+                   (type (unsigned-byte 60) count))
           (if (or (not (mbt (natp count)))
                   (= 0 count))
-              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                  node-replacement-array)
             (if (atom tree)
                 (if (symbolp tree)
                     ;; It's a variable (this case may be very rare; can we eliminate it by pre-handling vars in the initial term?):
@@ -1460,19 +1588,20 @@
                           (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-variable-alist))
                          ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                          ;; See if the resulting node is known to be equal to something:
-                         (new-nodenum-or-quotep (apply-node-replacement-array nodenum node-replacement-array node-replacement-array-num-valid-nodes)))
+                         (new-nodenum-or-quotep (apply-node-replacement-array nodenum node-replacement-array node-replacement-count)))
                       (mv (erp-nil)
                           new-nodenum-or-quotep
                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                           (and memoization
-                               (add-pairs-to-memoization trees-equal-to-tree ;the items ; TODO: Should we include TREE itself?
+                               (add-pairs-to-memoization trees-equal-to-tree ;the items (TODO: Can this be non-empty?) ; Can't include TREE itself, because we only memoize rewrites of conses.
                                                          new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
                                                          memoization))
-                          info tries limits node-replacement-array))
-                  ;; TREE is a nodenum (because it's an atom but not a symbol): fixme use equalities?
-;ffffixme, this assumes that nodes in the dag are already rewritten.  but what if this nodenum came from a node-equality assumption? in that case, it may not be rewritten! should we simplify the cdrs of node-replacement-array-num-valid-nodes once at the beginning?  also think about  (they are terms so the cdr gets simplified each time an equality fires, but maybe they get simplified over and over).
-                  ;; First, see if the nodenum is mapped to anything in the node-replacement-array-num-valid-nodes:
-                  (let* ((replacement-match nil ;(assoc-in-node-replacement-array-num-valid-nodes tree node-replacement-array-num-valid-nodes)
+                          info tries limits
+                          node-replacement-array))
+                  ;; TREE is a nodenum (because it's an atom but not a symbol): TODO: use equalities?
+                  ;; TODO: replacement works best if the nodes in the dag are already rewritten.  but what if this nodenum came from a node-equality assumption? in that case, it may not be rewritten! should we simplify the entries in the node-replacement-array once at the beginning?
+                  ;; First, see if the nodenum is mapped to anything in the node-replacement-count:
+                  (let* ((replacement-match nil ;(assoc-in-node-replacement-count tree node-replacement-count)
                                             )
                          (tree (if (and replacement-match
                                         ;; This is new (8/10/15), so to be safe we only do it if the result is a constant (I am worried about loops):
@@ -1490,13 +1619,14 @@
                                                       tree ;the nodenum/quotep they are all equal to
                                                       memoization)
                           memoization)
-                        info tries limits node-replacement-array)))
+                        info tries limits
+                        node-replacement-array)))
               ;; TREE is a cons:
               (let ((fn (ffn-symb tree)))
                 (if (eq 'quote fn)
                     ;; TREE is a quoted constant:
                     (mv (erp-nil)
-                        tree ;;return the quoted constant
+                        tree ; return the quoted constant
                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                         (if (and memoization
                                  trees-equal-to-tree)
@@ -1504,9 +1634,10 @@
                                                       tree ;the constant they are all equal to
                                                       memoization)
                           memoization)
-                        info tries limits node-replacement-array)
+                        info tries limits
+                        node-replacement-array)
                   ;; TREE is a function call:
-                  ;;Try looking it up in memoization (note that the args are not yet simplified):
+                  ;; Try looking it up in memoization (note that the args are not yet simplified):
                   (let ((memo-match (and memoization (lookup-in-memoization tree memoization))))
                     (if memo-match
                         (mv (erp-nil)
@@ -1515,274 +1646,292 @@
                             (add-pairs-to-memoization trees-equal-to-tree
                                                       memo-match ;the nodenum or quotep they are all equal to
                                                       memoization)
-                            info tries limits node-replacement-array)
+                            info tries limits
+                            node-replacement-array)
                       ;; Handle the various kinds of if:
-                      (if (and (member-eq fn '(if myif))
-                               ;; optimize?:
-                               (= 3 (len (fargs tree))))
-                          (,simplify-if-tree-and-add-to-dag1-name tree trees-equal-to-tree
-                                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                  rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes
-                                                                   print interpreted-function-alist known-booleans monitored-symbols
-                                                                  (+ -1 count) ;could perhaps be avoided with a more complex measure
-                                                                  )
-                        (if (and (eq 'boolif fn)
-                                 ;; optimize?:
-                                 (= 3 (len (fargs tree))))
-                            (,simplify-boolif-tree-and-add-to-dag1-name (fargs tree)
-                                                                        tree trees-equal-to-tree
-                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                        rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes
-                                                                         print interpreted-function-alist known-booleans monitored-symbols
+                      (case fn
+                        (not
+                         (,simplify-not-tree-and-add-to-dag-name tree trees-equal-to-tree
+                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                 node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                 print interpreted-function-alist known-booleans monitored-symbols
+                                                                 (+ -1 count) ;could perhaps be avoided with a more complex measure
+                                                                 ))
+                        ((if myif)
+                         (,simplify-if-tree-and-add-to-dag1-name tree trees-equal-to-tree
+                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                 node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                 print interpreted-function-alist known-booleans monitored-symbols
+                                                                 (+ -1 count) ;could perhaps be avoided with a more complex measure
+                                                                 ))
+                        (boolif (,simplify-boolif-tree-and-add-to-dag1-name tree trees-equal-to-tree
+                                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                            node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                            print interpreted-function-alist known-booleans monitored-symbols
+                                                                            (+ -1 count) ;could perhaps be avoided with a more complex measure
+                                                                            ))
+                        (bvif (,simplify-bvif-tree-and-add-to-dag1-name tree trees-equal-to-tree
+                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                        node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                        print interpreted-function-alist known-booleans monitored-symbols
                                                                         (+ -1 count) ;could perhaps be avoided with a more complex measure
-                                                                        )
-                          (if (and (eq 'bvif fn)
-                                   ;; optimize?:
-                                   (= 4 (len (fargs tree))))
-                              (,simplify-bvif-tree-and-add-to-dag1-name (fargs tree)
-                                                                        tree trees-equal-to-tree
-                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                        rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes
-                                                                         print interpreted-function-alist known-booleans monitored-symbols
-                                                                        (+ -1 count) ;could perhaps be avoided with a more complex measure
-                                                                        )
-                            ;;It wasn't any kind of IF:
-                            (b* ((args (fargs tree))
-                                 ;; We are simplifying a call of FN on ARGS, where the ARGS are axe-trees.
-                                 ;; First we simplify the args:
-                                 ;; TODO: Should we simplify the args earlier? e.g., before looking the term up in the memoization?
-                                 ;; TODO: might it be possible to not check for ground-terms because we never build them? -- think about where terms might come from other than sublis-var-simple, which we could change to not build ground terms (of functions we know about)
-                                 ;; TODO: maybe we should try to apply rules here (maybe outside-in rules) instead of rewriting the args
-                                 ;; TODO: could pass in a flag for the common case where the args are known to be already simplified (b/c the tree is a dag node?)
-                                 (- (and (eq :verbose2 print) (cw "(Rewriting args of ~x0:~%" fn)))
-                                 ((mv erp args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                                  (,simplify-trees-and-add-to-dag-name args
-                                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                       rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes print
-                                                                       interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
-                                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-                                 (- (and (eq :verbose2 print) (cw "Done rewriting args.)~%")))
-                                 ;;ARGS is now a list of nodenums and quoteps.
-                                 ;;Now we simplify FN applied to (the simplified) ARGS:
-                                 )
-                              (if (consp fn) ;;tests for lambda
-                                  ;; It's a lambda, so we beta-reduce and simplify the result:
-                                  ;; note that we don't look up lambdas in the assumptions (this is consistent with simplifying first)
-                                  ;; TODO: It's possible that we wasted time above simplifying lambda args (some args may be unneeded if the lambda body is a resolvable if), but
-                                  ;; I'm not sure how to prevent that.
-                                  (let* ((formals (second fn))
-                                         (body (third fn))
-                                         ;;BOZO could optimize this pattern: (,sublis-var-and-eval-name (pairlis$-fast formals args) body ...)
-                                         (new-expr (,sublis-var-and-eval-name (pairlis$-fast formals args) body interpreted-function-alist)))
-                                    ;;simplify the result of beta-reducing:
-                                    (,simplify-tree-and-add-to-dag-name new-expr
-                                                                        (and memoization (cons tree trees-equal-to-tree)) ;we memoize the lambda
-                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                        rewriter-rule-alist
-                                                                        refined-assumption-alist node-replacement-array-num-valid-nodes print
-                                                                        interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
-                                ;; not a lambda:
-                                (b* ( ;; handle possible ground term by evaluating:
-                                     ((mv erp evaluatedp val)
-                                      (if (not (all-consp args)) ;; test for args being quoted constants
-                                          ;; not a ground term:
-                                          (mv (erp-nil) nil nil)
-                                        ;; ground term, so try to evaluate (may fail, but we may have a constant opener rule to apply later):
-                                        (b* (((mv erp val)
-                                              (,apply-axe-evaluator-to-quoted-args-name fn args interpreted-function-alist)))
-                                          (if erp
-                                              (if (eq :unknown-function erp)
-                                                  (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
-                                                ;; anything else non-nil is a true error:
-                                                (mv erp nil nil))
-                                            ;; normal case:
-                                            (mv (erp-nil) t val)))))
-                                     ;; I suppose we could suppress any evaluator error here if we choose to (might be a bit faster)?
-                                     ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-                                  (if evaluatedp
-                                      (let ((quoted-val (enquote val)))
-                                        (mv (erp-nil)
-                                            quoted-val
-                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                            (and memoization
-                                                 ;;we memoize the ground term (should we? could use a separate memoization for ground terms)
-                                                 (add-pairs-to-memoization (cons ;we could avoid this cons
-                                                                            tree ;; the original tree, with unsimplified args (might be ground)
-                                                                            ;; should we include here fn applied to args (the simplified args)?
-                                                                            trees-equal-to-tree)
-                                                                           quoted-val ;the quoted constant they are all equal to
-                                                                           memoization))
-                                            info tries limits node-replacement-array))
-                                    ;; Otherwise, simplify the non-lambda FN applied to the simplified args:
-                                    ;; TODO: Perhaps pass in the original expr for use by cons-with-hint:
-                                    (,simplify-fun-call-and-add-to-dag-name fn args
-                                                                            (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting is equal to tree
-                                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                            rewriter-rule-alist
-                                                                            refined-assumption-alist node-replacement-array-num-valid-nodes
-                                                                            print
-                                                                            interpreted-function-alist known-booleans monitored-symbols
-                                                                            (+ -1 count))))))))))))))))
+                                                                        ))
+                        (t
+                         ;; It wasn't any kind of IF:
+                         (b* ((args (fargs tree))
+                              ;; We are simplifying a call of FN on ARGS, where the ARGS are axe-trees.
+                              ;; First we simplify the args:
+                              ;; TODO: Should we simplify the args earlier? e.g., before looking the term up in the memoization?
+                              ;; TODO: might it be possible to not check for ground-terms because we never build them? -- think about where terms might come from other than sublis-var-simple, which we could change to not build ground terms (of functions we know about)
+                              ;; TODO: maybe we should try to apply rules here (maybe outside-in rules) instead of rewriting the args
+                              ;; TODO: could pass in a flag for the common case where the args are known to be already simplified (b/c the tree is a dag node?)
+                              (- (and (eq :verbose! print) (cw "(Rewriting args of ~x0:~%" fn)))
+                              ((mv erp args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                   node-replacement-array)
+                               (,simplify-trees-and-add-to-dag-name args
+                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+                              ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                              (- (and (eq :verbose! print) (cw "Done rewriting args.)~%")))
+                              ;;ARGS is now a list of nodenums and quoteps.
+                              ;;Now we simplify FN applied to (the simplified) ARGS:
+                              )
+                           (if (consp fn) ;;tests for lambda
+                               ;; It's a lambda, so we beta-reduce and simplify the result:
+                               ;; note that we don't look up lambdas in the assumptions (this is consistent with simplifying first)
+                               ;; TODO: It's possible that we wasted time above simplifying lambda args (some args may be unneeded if the lambda body is a resolvable if), but
+                               ;; I'm not sure how to prevent that.
+                               (let* ((formals (second fn))
+                                      (body (third fn))
+                                      ;;BOZO could optimize this pattern: (,sublis-var-and-eval-name (pairlis$-fast formals args) body ...)
+                                      (new-expr (,sublis-var-and-eval-name (pairlis$-fast formals args) body interpreted-function-alist)))
+                                 ;;simplify the result of beta-reducing:
+                                 (,simplify-tree-and-add-to-dag-name new-expr
+                                                                     (and memoization (cons tree trees-equal-to-tree)) ;we memoize the lambda
+                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                     print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+                             ;; not a lambda:
+                             (b* ( ;; handle possible ground term by evaluating:
+                                  ((mv erp evaluatedp val)
+                                   (if (not (all-consp args)) ;; test for args being quoted constants
+                                       ;; not a ground term:
+                                       (mv (erp-nil) nil nil)
+                                     ;; ground term, so try to evaluate (may fail, but we may have a constant opener rule to apply later):
+                                     (b* (((mv erp val)
+                                           (,apply-axe-evaluator-to-quoted-args-name fn args interpreted-function-alist)))
+                                       (if erp
+                                           (if (eq :unknown-function erp)
+                                               (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
+                                             ;; anything else non-nil is a true error:
+                                             (mv erp nil nil))
+                                         ;; normal case:
+                                         (mv (erp-nil) t val)))))
+                                  ;; I suppose we could suppress any evaluator error here if we choose to (might be a bit faster)?
+                                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
+                               (if evaluatedp
+                                   (let ((quoted-val (enquote val)))
+                                     (mv (erp-nil)
+                                         quoted-val
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                         (and memoization
+                                              ;;we memoize the ground term (should we? could use a separate memoization for ground terms)
+                                              (add-pairs-to-memoization (cons ;we could avoid this cons
+                                                                         tree ;; the original tree, with unsimplified args (might be ground)
+                                                                         ;; should we include here fn applied to args (the simplified args)?
+                                                                         trees-equal-to-tree)
+                                                                        quoted-val ;the quoted constant they are all equal to
+                                                                        memoization))
+                                         info tries limits
+                                         node-replacement-array))
+                                 ;; Otherwise, simplify the non-lambda FN applied to the simplified args:
+                                 ;; TODO: Perhaps pass in the original expr for use by cons-with-hint:
+                                 (,simplify-fun-call-and-add-to-dag-name fn args
+                                                                         (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting is equal to tree
+                                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                         node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                         print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))))))))))))))
 
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;; No special handling if FN is an if (of any type).  No evaluation of ground terms.
         (defund ,simplify-fun-call-and-add-to-dag-name (fn ;;a function symbol
                                                         args ;these are simplified (so these are nodenums or quoteps)
                                                         trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization) ;todo: rename
-                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                        rewriter-rule-alist
-                                                        refined-assumption-alist
-                                                        node-replacement-array-num-valid-nodes
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                        node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                         print interpreted-function-alist known-booleans monitored-symbols count)
-          (declare (type (unsigned-byte 60) count)
-                   (xargs
-                    :measure (nfix count)
-                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                (symbolp fn)
-                                (not (equal 'quote fn))
-                                (true-listp args)
-                                (all-dargp-less-than args dag-len)
-                                (trees-to-memoizep trees-equal-to-tree)
-                                (interpreted-function-alistp interpreted-function-alist)
-                                (symbol-listp known-booleans)
-                                (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                                (info-worldp info)
-                                (rule-alistp rewriter-rule-alist)
-                                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                                (natp node-replacement-array-num-valid-nodes)
-                                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                                (maybe-bounded-memoizationp memoization dag-len)
-                                (triesp tries)
-                                (rule-limitsp limits)
-                                (symbol-listp monitored-symbols))))
-          (if (or (not (mbt (natp count)))
-                  (= 0 count))
-              (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-            (b* ((expr (cons fn args)) ;todo: save this cons, or use below?
-                 ;;Try looking it up in the memoization (note that the args are now simplified):
-                 (memo-match (and memoization (lookup-in-memoization expr memoization)))) ; todo: use a more specialized version of lookup-in-memoization, since we know the shape of expr (also avoid the cons for expr here)?
-              (if memo-match
-                  (mv (erp-nil)
-                      memo-match
-                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                      (add-pairs-to-memoization trees-equal-to-tree
-                                                memo-match ;the nodenum or quotep they are all equal to
-                                                memoization)
-                      info tries limits node-replacement-array)
-                ;; Next, try to apply rules:
-                (mv-let
-                  (erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                  (,try-to-apply-rules-name (get-rules-for-fn fn rewriter-rule-alist)
-                                            rewriter-rule-alist args
-                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                            refined-assumption-alist node-replacement-array-num-valid-nodes print
-                                            interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
-                  (if erp
-                      (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                    (if rhs-or-nil
-                        ;;A rule fired, so simplify the instantiated right-hand-side:
-                        ;; This is a tail call, which allows long chains of rewrites:
-                        (,simplify-tree-and-add-to-dag-name rhs-or-nil
-                                                            ;;in the common case in which simplifying the args had no effect, the car of trees-equal-to-tree will be the same as (cons fn args), so don't add it twice
-                                                            (and memoization
-                                                                 (cons-if-not-equal-car expr ;could save this and similar conses in the function
-                                                                                        trees-equal-to-tree))
-                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                            rewriter-rule-alist
-                                                            refined-assumption-alist node-replacement-array-num-valid-nodes print
-                                                            interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
-                      ;; No rule fired, so no simplification can be done.  Add the node to the dag:
-                      (b* (((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
-                            (add-function-call-expr-to-dag-array
-                             fn args ;(if any-arg-was-simplifiedp (cons fn args) tree) ;could put back the any-arg-was-simplifiedp trick to save this cons
-                             dag-array dag-len dag-parent-array dag-constant-alist
-                             ;;1000 ; the print-interval ;todo: consider putting back some printing like that done by add-function-call-expr-to-dag-array-with-memo
-                             ;;print
-                             ))
-                           ((when erp) (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-                           ;; See if the nodenum returned is equated to anything:
-                           ;; Result is not rewritten (we could rewrite all such items (that replacements can introduce) outside the main clique)
-                           (new-nodenum-or-quotep (apply-node-replacement-array nodenum node-replacement-array node-replacement-array-num-valid-nodes)))
-                        (mv (erp-nil)
-                            new-nodenum-or-quotep
-                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                            (and memoization
-                                 (add-pairs-to-memoization (cons-if-not-equal-car expr trees-equal-to-tree) ; might be the same as tree if the args aren't simplified?) well, each arg should be simplified and memoed.
-                                                           new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
-                                                           memoization))
-                            info tries limits node-replacement-array)))))))))
+          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (symbolp fn)
+                                      (not (equal 'quote fn))
+                                      (bounded-darg-listp args dag-len)
+                                      (trees-to-memoizep trees-equal-to-tree)
+                                      (maybe-bounded-memoizationp memoization dag-len)
+                                      (info-worldp info)
+                                      (triesp tries)
+                                      (rule-limitsp limits)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (natp node-replacement-count)
+                                      (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                      (rule-alistp rule-alist)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (axe-print-levelp print)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp known-booleans)
+                                      (symbol-listp monitored-symbols)
+                                      (unsigned-byte-p 60 count))
+                          :split-types t
+                          :measure (nfix count))
+                   (type (unsigned-byte 60) count))
+          (b* (((when (or (not (mbt (natp count)))
+                          (= 0 count)))
+                (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array))
+               (expr (cons fn args)) ;todo: save this cons, or use below?
+               ;;Try looking it up in the memoization (note that the args are now simplified):
+               (memo-match (and memoization (lookup-in-memoization expr memoization))) ; todo: use a more specialized version of lookup-in-memoization, since we know the shape of expr (also avoid the cons for expr here)?
+               ((when memo-match)
+                (mv (erp-nil) memo-match
+                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                    (add-pairs-to-memoization trees-equal-to-tree
+                                              memo-match ;the nodenum or quotep they are all equal to
+                                              memoization)
+                    info tries limits
+                    node-replacement-array))
+               ;; Next, try to apply rules:
+               ((mv erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                    node-replacement-array)
+                (,try-to-apply-rules-name (get-rules-for-fn fn rule-alist)
+                                          rule-alist args
+                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                          node-replacement-array node-replacement-count refined-assumption-alist
+                                          print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
+               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               )
+            (if rhs-or-nil
+                ;;A rule fired, so simplify the instantiated right-hand-side:
+                ;; This is a tail call, which allows long chains of rewrites:
+                (,simplify-tree-and-add-to-dag-name rhs-or-nil
+                                                    ;;in the common case in which simplifying the args had no effect, the car of trees-equal-to-tree will be the same as (cons fn args), so don't add it twice
+                                                    (and memoization
+                                                         (cons-if-not-equal-car expr ;could save this and similar conses in the function
+                                                                                trees-equal-to-tree))
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
+              ;; No rule fired, so no simplification can be done.  Add the node to the dag:
+              (b* (((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
+                    (add-function-call-expr-to-dag-array
+                     fn args ;(if any-arg-was-simplifiedp (cons fn args) tree) ;could put back the any-arg-was-simplifiedp trick to save this cons
+                     dag-array dag-len dag-parent-array dag-constant-alist
+                     ;;1000 ; the print-interval ;todo: consider putting back some printing like that done by add-function-call-expr-to-dag-array-with-memo
+                     ;;print
+                     ))
+                   ((when erp) (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                   node-replacement-array))
+                   ;; See if the nodenum returned is equated to anything:
+                   ;; Result is not rewritten (we could rewrite all such items (that replacements can introduce) outside the main clique)
+                   (new-nodenum-or-quotep (apply-node-replacement-array nodenum node-replacement-array node-replacement-count)))
+                (mv (erp-nil)
+                    new-nodenum-or-quotep
+                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                    (and memoization ; we could save this cons:
+                         (add-pairs-to-memoization (cons-if-not-equal-car expr trees-equal-to-tree) ; might be the same as tree if the args aren't simplified?) well, each arg should be simplified and memoed.
+                                                   new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
+                                                   memoization))
+                    info tries limits node-replacement-array)))))
         ) ;end mutual-recursion
 
        ;; Theorems about when the count reaches 0:
        (progn
          (defthm ,(pack$ 'relieve-free-var-hyp-and-all-others- suffix '-of-0)
            (equal ,(subst 0 'count call-of-relieve-free-var-hyp-and-all-others)
-                  (mv :count-exceeded nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-relieve-free-var-hyp-and-all-others)))))
 
          (defthm ,(pack$ 'relieve-rule-hyps- suffix '-of-0)
            (equal ,(subst 0 'count call-of-relieve-rule-hyps)
-                  (mv :count-exceeded t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-relieve-rule-hyps)))))
 
          (defthm ,(pack$ 'try-to-apply-rules- suffix '-of-0)
            (equal ,(subst 0 'count call-of-try-to-apply-rules)
-                  (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-try-to-apply-rules)))))
 
          (defthm ,(pack$ 'simplify-trees-and-add-to-dag- suffix '-of-0)
            (equal ,(subst 0 'count call-of-simplify-trees-and-add-to-dag)
-                  (mv :count-exceeded trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-simplify-trees-and-add-to-dag)))))
 
          (defthm ,(pack$ 'simplify-fun-call-and-add-to-dag- suffix '-of-0)
            (equal ,(subst 0 'count call-of-simplify-fun-call-and-add-to-dag)
-                  (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-simplify-fun-call-and-add-to-dag)))))
 
          (defthm ,(pack$ 'simplify-tree-and-add-to-dag- suffix '-of-0)
            (equal ,(subst 0 'count call-of-simplify-tree-and-add-to-dag)
-                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-simplify-tree-and-add-to-dag)))))
 
          (defthm ,(pack$ 'simplify-if-tree-and-add-to-dag1- suffix '-of-0)
            (equal ,(subst 0 'count call-of-simplify-if-tree-and-add-to-dag1)
-                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-simplify-if-tree-and-add-to-dag1)))))
+
+         (defthm ,(pack$ 'simplify-not-tree-and-add-to-dag- suffix '-of-0)
+           (equal ,(subst 0 'count call-of-simplify-not-tree-and-add-to-dag)
+                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
+           :hints (("Goal" :expand ((:free (count) ,call-of-simplify-not-tree-and-add-to-dag)))))
 
          (defthm ,(pack$ 'simplify-if-tree-and-add-to-dag2- suffix '-of-0)
            (equal ,(subst 0 'count call-of-simplify-if-tree-and-add-to-dag2)
-                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-simplify-if-tree-and-add-to-dag2)))))
 
          (defthm ,(pack$ 'simplify-if-tree-and-add-to-dag3- suffix '-of-0)
            (equal ,(subst 0 'count call-of-simplify-if-tree-and-add-to-dag3)
-                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-simplify-if-tree-and-add-to-dag3)))))
 
          (defthm ,(pack$ 'simplify-boolif-tree-and-add-to-dag1- suffix '-of-0)
            (equal ,(subst 0 'count call-of-simplify-boolif-tree-and-add-to-dag1)
-                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-simplify-boolif-tree-and-add-to-dag1)))))
 
          (defthm ,(pack$ 'simplify-boolif-tree-and-add-to-dag2- suffix '-of-0)
            (equal ,(subst 0 'count call-of-simplify-boolif-tree-and-add-to-dag2)
-                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-simplify-boolif-tree-and-add-to-dag2)))))
 
          (defthm ,(pack$ 'simplify-bvif-tree-and-add-to-dag1- suffix '-of-0)
            (equal ,(subst 0 'count call-of-simplify-bvif-tree-and-add-to-dag1)
-                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-simplify-bvif-tree-and-add-to-dag1)))))
 
          (defthm ,(pack$ 'simplify-bvif-tree-and-add-to-dag2- suffix '-of-0)
            (equal ,(subst 0 'count call-of-simplify-bvif-tree-and-add-to-dag2)
-                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-simplify-bvif-tree-and-add-to-dag2)))))
 
          (defthm ,(pack$ 'simplify-bvif-tree-and-add-to-dag3- suffix '-of-0)
            (equal ,(subst 0 'count call-of-simplify-bvif-tree-and-add-to-dag3)
-                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                      node-replacement-array))
            :hints (("Goal" :expand ((:free (count) ,call-of-simplify-bvif-tree-and-add-to-dag3)))))
          ) ;end progn
 
@@ -1805,1024 +1954,1079 @@
 
        ;; Everything returns an info-world:
        (,(pack$ 'defthm-flag-simplify-tree-and-add-to-dag- suffix)
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-9-of-relieve-free-var-hyp-and-all-others- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 9 ,call-of-relieve-free-var-hyp-and-all-others)))
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-9-of-relieve-free-var-hyp-and-all-others- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 9 ,call-of-relieve-free-var-hyp-and-all-others)))
 
-           :flag ,relieve-free-var-hyp-and-all-others-name)
+          :flag ,relieve-free-var-hyp-and-all-others-name)
 
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-9-of-relieve-rule-hyps- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 9 ,call-of-relieve-rule-hyps)))
-           :flag ,relieve-rule-hyps-name)
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-9-of-relieve-rule-hyps- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 9 ,call-of-relieve-rule-hyps)))
+          :flag ,relieve-rule-hyps-name)
 
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-try-to-apply-rules- suffix)
-           (implies (and (all-stored-axe-rulep stored-rules)
-                         (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 8 ,call-of-try-to-apply-rules)))
-           :flag ,try-to-apply-rules-name)
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-try-to-apply-rules- suffix)
+          (implies (and (all-stored-axe-rulep stored-rules)
+                        (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 8 ,call-of-try-to-apply-rules)))
+          :flag ,try-to-apply-rules-name)
 
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-trees-and-add-to-dag- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 8 ,call-of-simplify-trees-and-add-to-dag)))
-           :flag ,simplify-trees-and-add-to-dag-name)
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-trees-and-add-to-dag- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 8 ,call-of-simplify-trees-and-add-to-dag)))
+          :flag ,simplify-trees-and-add-to-dag-name)
 
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-if-tree-and-add-to-dag3- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 8 ,call-of-simplify-if-tree-and-add-to-dag3)))
-           :flag ,simplify-if-tree-and-add-to-dag3-name)
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-if-tree-and-add-to-dag3- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 8 ,call-of-simplify-if-tree-and-add-to-dag3)))
+          :flag ,simplify-if-tree-and-add-to-dag3-name)
 
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-if-tree-and-add-to-dag2- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 8 ,call-of-simplify-if-tree-and-add-to-dag2)))
-           :flag ,simplify-if-tree-and-add-to-dag2-name)
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-if-tree-and-add-to-dag2- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 8 ,call-of-simplify-if-tree-and-add-to-dag2)))
+          :flag ,simplify-if-tree-and-add-to-dag2-name)
 
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-if-tree-and-add-to-dag1- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 8 ,call-of-simplify-if-tree-and-add-to-dag1)))
-           :flag ,simplify-if-tree-and-add-to-dag1-name)
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-if-tree-and-add-to-dag1- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 8 ,call-of-simplify-if-tree-and-add-to-dag1)))
+          :flag ,simplify-if-tree-and-add-to-dag1-name)
 
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-boolif-tree-and-add-to-dag2- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 8 ,call-of-simplify-boolif-tree-and-add-to-dag2)))
-           :flag ,simplify-boolif-tree-and-add-to-dag2-name)
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-not-tree-and-add-to-dag- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 8 ,call-of-simplify-not-tree-and-add-to-dag)))
+          :flag ,simplify-not-tree-and-add-to-dag-name)
 
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-boolif-tree-and-add-to-dag1- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 8 ,call-of-simplify-boolif-tree-and-add-to-dag1)))
-           :flag ,simplify-boolif-tree-and-add-to-dag1-name)
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-boolif-tree-and-add-to-dag2- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 8 ,call-of-simplify-boolif-tree-and-add-to-dag2)))
+          :flag ,simplify-boolif-tree-and-add-to-dag2-name)
 
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-bvif-tree-and-add-to-dag3- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 8 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
-           :flag ,simplify-bvif-tree-and-add-to-dag3-name)
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-boolif-tree-and-add-to-dag1- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 8 ,call-of-simplify-boolif-tree-and-add-to-dag1)))
+          :flag ,simplify-boolif-tree-and-add-to-dag1-name)
 
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-bvif-tree-and-add-to-dag2- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 8 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
-           :flag ,simplify-bvif-tree-and-add-to-dag2-name)
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-bvif-tree-and-add-to-dag3- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 8 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
+          :flag ,simplify-bvif-tree-and-add-to-dag3-name)
 
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-bvif-tree-and-add-to-dag1- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 8 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
-           :flag ,simplify-bvif-tree-and-add-to-dag1-name)
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-bvif-tree-and-add-to-dag2- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 8 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
+          :flag ,simplify-bvif-tree-and-add-to-dag2-name)
 
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-tree-and-add-to-dag- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 8 ,call-of-simplify-tree-and-add-to-dag)))
-           :flag ,simplify-tree-and-add-to-dag-name)
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-bvif-tree-and-add-to-dag1- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 8 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
+          :flag ,simplify-bvif-tree-and-add-to-dag1-name)
 
-         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-fun-call-and-add-to-dag- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (info-worldp info))
-                    (info-worldp (mv-nth 8 ,call-of-simplify-fun-call-and-add-to-dag))
-                    )
-           :flag ,simplify-fun-call-and-add-to-dag-name)
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-tree-and-add-to-dag- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 8 ,call-of-simplify-tree-and-add-to-dag)))
+          :flag ,simplify-tree-and-add-to-dag-name)
 
-         :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                  :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
-                                   len-of-cadar-when-axe-treep
-                                   pseudo-termp-of-cadddr-when-axe-treep
-                                   axe-bind-free-result-okayp-rewrite
-                                   symbol-alistp-when-alistp
-                                   true-listp-of-cdr)
-                                  (dargp-less-than
-                                   natp
-                                   quotep
-                                   myquotep))
-                  :expand ((:free (memoization count other-hyps alist)
-                                  ,call-of-relieve-free-var-hyp-and-all-others)
-                           (:free (memoization count)
-                                  ,call-of-relieve-rule-hyps)
-                           (:free (memoization)
-                                  (,RELIEVE-RULE-HYPS-NAME nil HYP-NUM ALIST RULE-SYMBOL
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                            REWRITER-RULE-ALIST
-                                                            REFINED-ASSUMPTION-ALIST
-                                                            NODE-REPLACEMENT-ARRAY-NUM-VALID-NODES
-                                                           PRINT
-                                                           INTERPRETED-FUNCTION-ALIST known-booleans MONITORED-SYMBOLS COUNT))
-                           (:free (memoization count)
-                                  (,SIMPLIFY-TREES-AND-ADD-TO-DAG-NAME NIL
-                                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                       REWRITER-RULE-ALIST
-                                                                       REFINED-ASSUMPTION-ALIST
-                                                                       NODE-REPLACEMENT-ARRAY-NUM-VALID-NODES
-                                                                        PRINT
-                                                                       INTERPRETED-FUNCTION-ALIST known-booleans MONITORED-SYMBOLS COUNT))
-                           (:free (memoization count)
-                                  ,call-of-simplify-trees-and-add-to-dag)
-                           (:free (memoization limits info tries count)
-                                  ,call-of-try-to-apply-rules)
-                           (:free (memoization fn count)
-                                  ,call-of-simplify-if-tree-and-add-to-dag1)
-                           (:free (memoization fn count)
-                                  ,call-of-simplify-if-tree-and-add-to-dag2)
-                           (:free (memoization fn count)
-                                  ,call-of-simplify-if-tree-and-add-to-dag3)
-                           (:free (memoization count)
-                                  ,call-of-simplify-bvif-tree-and-add-to-dag1)
-                           (:free (memoization count)
-                                  ,call-of-simplify-boolif-tree-and-add-to-dag1)
-                           (:free (memoization count)
-                                  ,call-of-simplify-boolif-tree-and-add-to-dag2)
-                           (:free (MEMOIZATION count TREES-EQUAL-TO-TREE)
-                                  ,call-of-simplify-tree-and-add-to-dag)
-                           (:free (MEMOIZATION count TREES-EQUAL-TO-TREE)
-                                  ,call-of-simplify-fun-call-and-add-to-dag)
-                           (:free (MEMOIZATION count)
-                                  ,call-of-simplify-bvif-tree-and-add-to-dag2)
-                           (:free (MEMOIZATION count)
-                                  ,call-of-simplify-bvif-tree-and-add-to-dag3)
-                           (axe-rule-hyp-listp hyps)))))
+        (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-fun-call-and-add-to-dag- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (info-worldp info))
+                   (info-worldp (mv-nth 8 ,call-of-simplify-fun-call-and-add-to-dag))
+                   )
+          :flag ,simplify-fun-call-and-add-to-dag-name)
+
+        :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                 :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                                  len-of-cadar-when-axe-treep
+                                  pseudo-termp-of-cadddr-when-axe-treep
+                                  axe-bind-free-result-okayp-rewrite
+                                  symbol-alistp-when-alistp
+                                  true-listp-of-cdr)
+                                 (dargp-less-than
+                                  natp
+                                  quotep
+                                  myquotep))
+                 :expand ((:free (memoization count other-hyps alist)
+                                 ,call-of-relieve-free-var-hyp-and-all-others)
+                          (:free (memoization count)
+                                 ,call-of-relieve-rule-hyps)
+                          (:free (memoization)
+                                 (,relieve-rule-hyps-name nil hyp-num alist rule-symbol
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                          print interpreted-function-alist known-booleans monitored-symbols count))
+                          (:free (memoization count)
+                                 (,simplify-trees-and-add-to-dag-name nil
+                                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                      node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                      print interpreted-function-alist known-booleans monitored-symbols count))
+                          (:free (memoization count)
+                                 ,call-of-simplify-trees-and-add-to-dag)
+                          (:free (memoization limits info tries count)
+                                 ,call-of-try-to-apply-rules)
+                          (:free (memoization fn count)
+                                 ,call-of-simplify-if-tree-and-add-to-dag1)
+                          (:free (memoization fn count)
+                                 ,call-of-simplify-not-tree-and-add-to-dag)
+                          (:free (memoization fn count)
+                                 ,call-of-simplify-if-tree-and-add-to-dag2)
+                          (:free (memoization fn count)
+                                 ,call-of-simplify-if-tree-and-add-to-dag3)
+                          (:free (memoization count)
+                                 ,call-of-simplify-bvif-tree-and-add-to-dag1)
+                          (:free (memoization count)
+                                 ,call-of-simplify-boolif-tree-and-add-to-dag1)
+                          (:free (memoization count)
+                                 ,call-of-simplify-boolif-tree-and-add-to-dag2)
+                          (:free (MEMOIZATION count TREES-EQUAL-TO-TREE)
+                                 ,call-of-simplify-tree-and-add-to-dag)
+                          (:free (MEMOIZATION count TREES-EQUAL-TO-TREE)
+                                 ,call-of-simplify-fun-call-and-add-to-dag)
+                          (:free (MEMOIZATION count)
+                                 ,call-of-simplify-bvif-tree-and-add-to-dag2)
+                          (:free (MEMOIZATION count)
+                                 ,call-of-simplify-bvif-tree-and-add-to-dag3)
+                          (axe-rule-hyp-listp hyps)))))
 
        ;; The rule-limits returned are ok:
        (,(pack$ 'defthm-flag-simplify-tree-and-add-to-dag- suffix)
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-11-of-relieve-free-var-hyp-and-all-others- suffix)
-           (implies (and
-                     (rule-alistp rewriter-rule-alist)
-                     (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 11 ,call-of-relieve-free-var-hyp-and-all-others)))
-           :flag ,relieve-free-var-hyp-and-all-others-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-11-of-relieve-free-var-hyp-and-all-others- suffix)
+          (implies (and
+                    (rule-alistp rule-alist)
+                    (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 11 ,call-of-relieve-free-var-hyp-and-all-others)))
+          :flag ,relieve-free-var-hyp-and-all-others-name)
 
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-11-of-relieve-rule-hyps- suffix)
-           (implies (and
-                     (rule-alistp rewriter-rule-alist)
-                     (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 11 ,call-of-relieve-rule-hyps)))
-           :flag ,relieve-rule-hyps-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-11-of-relieve-rule-hyps- suffix)
+          (implies (and
+                    (rule-alistp rule-alist)
+                    (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 11 ,call-of-relieve-rule-hyps)))
+          :flag ,relieve-rule-hyps-name)
 
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-try-to-apply-rules- suffix)
-           (implies (and
-                     (all-stored-axe-rulep stored-rules)
-                     (rule-alistp rewriter-rule-alist)
-                     (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 10 ,call-of-try-to-apply-rules)))
-           :flag ,try-to-apply-rules-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-try-to-apply-rules- suffix)
+          (implies (and
+                    (all-stored-axe-rulep stored-rules)
+                    (rule-alistp rule-alist)
+                    (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 10 ,call-of-try-to-apply-rules)))
+          :flag ,try-to-apply-rules-name)
 
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-trees-and-add-to-dag- suffix)
-           (implies (and
-                     (rule-alistp rewriter-rule-alist)
-                     (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 10 ,call-of-simplify-trees-and-add-to-dag)))
-           :flag ,simplify-trees-and-add-to-dag-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-trees-and-add-to-dag- suffix)
+          (implies (and
+                    (rule-alistp rule-alist)
+                    (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 10 ,call-of-simplify-trees-and-add-to-dag)))
+          :flag ,simplify-trees-and-add-to-dag-name)
 
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-if-tree-and-add-to-dag3- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 10 ,call-of-simplify-if-tree-and-add-to-dag3)))
-           :flag ,simplify-if-tree-and-add-to-dag3-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-if-tree-and-add-to-dag3- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 10 ,call-of-simplify-if-tree-and-add-to-dag3)))
+          :flag ,simplify-if-tree-and-add-to-dag3-name)
 
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-if-tree-and-add-to-dag2- suffix)
-           (implies (and
-                     (rule-alistp rewriter-rule-alist)
-                     (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 10 ,call-of-simplify-if-tree-and-add-to-dag2)))
-           :flag ,simplify-if-tree-and-add-to-dag2-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-if-tree-and-add-to-dag2- suffix)
+          (implies (and
+                    (rule-alistp rule-alist)
+                    (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 10 ,call-of-simplify-if-tree-and-add-to-dag2)))
+          :flag ,simplify-if-tree-and-add-to-dag2-name)
 
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-if-tree-and-add-to-dag1- suffix)
-           (implies (and
-                     (rule-alistp rewriter-rule-alist)
-                     (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 10 ,call-of-simplify-if-tree-and-add-to-dag1)))
-           :flag ,simplify-if-tree-and-add-to-dag1-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-if-tree-and-add-to-dag1- suffix)
+          (implies (and
+                    (rule-alistp rule-alist)
+                    (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 10 ,call-of-simplify-if-tree-and-add-to-dag1)))
+          :flag ,simplify-if-tree-and-add-to-dag1-name)
 
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-boolif-tree-and-add-to-dag2- suffix)
-           (implies (and
-                     (rule-alistp rewriter-rule-alist)
-                     (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 10 ,call-of-simplify-boolif-tree-and-add-to-dag2)))
-           :flag ,simplify-boolif-tree-and-add-to-dag2-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-not-tree-and-add-to-dag- suffix)
+          (implies (and
+                    (rule-alistp rule-alist)
+                    (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 10 ,call-of-simplify-not-tree-and-add-to-dag)))
+          :flag ,simplify-not-tree-and-add-to-dag-name)
 
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-boolif-tree-and-add-to-dag1- suffix)
-           (implies (and
-                     (rule-alistp rewriter-rule-alist)
-                     (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 10 ,call-of-simplify-boolif-tree-and-add-to-dag1)))
-           :flag ,simplify-boolif-tree-and-add-to-dag1-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-boolif-tree-and-add-to-dag2- suffix)
+          (implies (and
+                    (rule-alistp rule-alist)
+                    (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 10 ,call-of-simplify-boolif-tree-and-add-to-dag2)))
+          :flag ,simplify-boolif-tree-and-add-to-dag2-name)
 
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-bvif-tree-and-add-to-dag3- suffix)
-           (implies (and
-                     (rule-alistp rewriter-rule-alist)
-                     (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 10 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
-           :flag ,simplify-bvif-tree-and-add-to-dag3-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-boolif-tree-and-add-to-dag1- suffix)
+          (implies (and
+                    (rule-alistp rule-alist)
+                    (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 10 ,call-of-simplify-boolif-tree-and-add-to-dag1)))
+          :flag ,simplify-boolif-tree-and-add-to-dag1-name)
 
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-bvif-tree-and-add-to-dag2- suffix)
-           (implies (and
-                     (rule-alistp rewriter-rule-alist)
-                     (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 10 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
-           :flag ,simplify-bvif-tree-and-add-to-dag2-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-bvif-tree-and-add-to-dag3- suffix)
+          (implies (and
+                    (rule-alistp rule-alist)
+                    (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 10 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
+          :flag ,simplify-bvif-tree-and-add-to-dag3-name)
 
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-bvif-tree-and-add-to-dag1- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 10 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
-           :flag ,simplify-bvif-tree-and-add-to-dag1-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-bvif-tree-and-add-to-dag2- suffix)
+          (implies (and
+                    (rule-alistp rule-alist)
+                    (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 10 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
+          :flag ,simplify-bvif-tree-and-add-to-dag2-name)
 
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-tree-and-add-to-dag- suffix)
-           (implies (and
-                     (rule-alistp rewriter-rule-alist)
-                     (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 10 ,call-of-simplify-tree-and-add-to-dag)))
-           :flag ,simplify-tree-and-add-to-dag-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-bvif-tree-and-add-to-dag1- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 10 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
+          :flag ,simplify-bvif-tree-and-add-to-dag1-name)
 
-         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-fun-call-and-add-to-dag- suffix)
-           (implies (and (rule-alistp rewriter-rule-alist)
-                         (rule-limitsp limits))
-                    (rule-limitsp (mv-nth 10 ,call-of-simplify-fun-call-and-add-to-dag)))
-           :flag ,simplify-fun-call-and-add-to-dag-name)
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-tree-and-add-to-dag- suffix)
+          (implies (and
+                    (rule-alistp rule-alist)
+                    (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 10 ,call-of-simplify-tree-and-add-to-dag)))
+          :flag ,simplify-tree-and-add-to-dag-name)
 
-         :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                  :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
-                                   len-of-cadar-when-axe-treep
-                                   pseudo-termp-of-cadddr-when-axe-treep
-                                   axe-bind-free-result-okayp-rewrite
-                                   symbol-alistp-when-alistp
-                                   true-listp-of-cdr)
-                                  (dargp-less-than
-                                   natp
-                                   quotep
-                                   myquotep
-                                   ))
-                  :expand ((:free (memoization count other-hyps alist)
-                                  ,call-of-relieve-free-var-hyp-and-all-others)
-                           (:free (memoization count)
-                                  ,call-of-relieve-rule-hyps)
-                           (:free (memoization)
-                                  (,RELIEVE-RULE-HYPS-NAME nil HYP-NUM ALIST RULE-SYMBOL
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                            REWRITER-RULE-ALIST
-                                                           REFINED-ASSUMPTION-ALIST
+        (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-fun-call-and-add-to-dag- suffix)
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
+                   (rule-limitsp (mv-nth 10 ,call-of-simplify-fun-call-and-add-to-dag)))
+          :flag ,simplify-fun-call-and-add-to-dag-name)
 
-                                                           NODE-REPLACEMENT-ARRAY-NUM-VALID-NODES
-                                                           PRINT
-                                                           INTERPRETED-FUNCTION-ALIST known-booleans MONITORED-SYMBOLS COUNT))
-                           (:free (memoization count)
-                                  (,SIMPLIFY-TREES-AND-ADD-TO-DAG-NAME NIL
-                                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                       REWRITER-RULE-ALIST
-                                                                       REFINED-ASSUMPTION-ALIST
-
-                                                                       NODE-REPLACEMENT-ARRAY-NUM-VALID-NODES
-                                                                        PRINT
-                                                                       INTERPRETED-FUNCTION-ALIST known-booleans MONITORED-SYMBOLS COUNT))
-                           (:free (memoization count)
-                                  ,call-of-simplify-trees-and-add-to-dag)
-                           (:free (memoization limits info tries count)
-                                  ,call-of-try-to-apply-rules)
-                           (:free (memoization fn count)
-                                  ,call-of-simplify-if-tree-and-add-to-dag1)
-                           (:free (memoization fn count)
-                                  ,call-of-simplify-if-tree-and-add-to-dag2)
-                           (:free (memoization fn count)
-                                  ,call-of-simplify-if-tree-and-add-to-dag3)
-                           (:free (memoization count)
-                                  ,call-of-simplify-bvif-tree-and-add-to-dag1)
-                           (:free (memoization count)
-                                  ,call-of-simplify-boolif-tree-and-add-to-dag1)
-                           (:free (memoization count)
-                                  ,call-of-simplify-boolif-tree-and-add-to-dag2)
-                           (:free (memoization count TREES-EQUAL-TO-TREE)
-                                  ,call-of-simplify-tree-and-add-to-dag)
-                           (:free (memoization count TREES-EQUAL-TO-TREE)
-                                  ,call-of-simplify-fun-call-and-add-to-dag)
-                           (:free (memoization count)
-                                  ,call-of-simplify-bvif-tree-and-add-to-dag2)
-                           (:free (memoization count)
-                                  ,call-of-simplify-bvif-tree-and-add-to-dag3)
-                           (axe-rule-hyp-listp hyps)))))
+        :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                 :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                                  len-of-cadar-when-axe-treep
+                                  pseudo-termp-of-cadddr-when-axe-treep
+                                  axe-bind-free-result-okayp-rewrite
+                                  symbol-alistp-when-alistp
+                                  true-listp-of-cdr)
+                                 (dargp-less-than
+                                  natp
+                                  quotep
+                                  myquotep
+                                  ))
+                 :expand ((:free (memoization count other-hyps alist)
+                                 ,call-of-relieve-free-var-hyp-and-all-others)
+                          (:free (memoization count)
+                                 ,call-of-relieve-rule-hyps)
+                          (:free (memoization)
+                                 (,relieve-rule-hyps-name nil hyp-num alist rule-symbol
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                          print interpreted-function-alist known-booleans monitored-symbols count))
+                          (:free (memoization count)
+                                 (,simplify-trees-and-add-to-dag-name nil
+                                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                      node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                      print interpreted-function-alist known-booleans monitored-symbols count))
+                          (:free (memoization count)
+                                 ,call-of-simplify-trees-and-add-to-dag)
+                          (:free (memoization limits info tries count)
+                                 ,call-of-try-to-apply-rules)
+                          (:free (memoization fn count)
+                                 ,call-of-simplify-if-tree-and-add-to-dag1)
+                          (:free (memoization fn count)
+                                 ,call-of-simplify-not-tree-and-add-to-dag)
+                          (:free (memoization fn count)
+                                 ,call-of-simplify-if-tree-and-add-to-dag2)
+                          (:free (memoization fn count)
+                                 ,call-of-simplify-if-tree-and-add-to-dag3)
+                          (:free (memoization count)
+                                 ,call-of-simplify-bvif-tree-and-add-to-dag1)
+                          (:free (memoization count)
+                                 ,call-of-simplify-boolif-tree-and-add-to-dag1)
+                          (:free (memoization count)
+                                 ,call-of-simplify-boolif-tree-and-add-to-dag2)
+                          (:free (memoization count TREES-EQUAL-TO-TREE)
+                                 ,call-of-simplify-tree-and-add-to-dag)
+                          (:free (memoization count TREES-EQUAL-TO-TREE)
+                                 ,call-of-simplify-fun-call-and-add-to-dag)
+                          (:free (memoization count)
+                                 ,call-of-simplify-bvif-tree-and-add-to-dag2)
+                          (:free (memoization count)
+                                 ,call-of-simplify-bvif-tree-and-add-to-dag3)
+                          (axe-rule-hyp-listp hyps)))))
 
        ;; The tries returned are ok:
        (,(pack$ 'defthm-flag-simplify-tree-and-add-to-dag- suffix)
-         (defthm ,(pack$ 'triesp-of-mv-nth-10-of-relieve-free-var-hyp-and-all-others- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 10 ,call-of-relieve-free-var-hyp-and-all-others)))
-           :flag ,relieve-free-var-hyp-and-all-others-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-10-of-relieve-free-var-hyp-and-all-others- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 10 ,call-of-relieve-free-var-hyp-and-all-others)))
+          :flag ,relieve-free-var-hyp-and-all-others-name)
 
-         (defthm ,(pack$ 'triesp-of-mv-nth-10-of-relieve-rule-hyps- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 10 ,call-of-relieve-rule-hyps)))
-           :flag ,relieve-rule-hyps-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-10-of-relieve-rule-hyps- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 10 ,call-of-relieve-rule-hyps)))
+          :flag ,relieve-rule-hyps-name)
 
-         (defthm ,(pack$ 'triesp-of-mv-nth-9-of-try-to-apply-rules- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 9 ,call-of-try-to-apply-rules)))
-           :flag ,try-to-apply-rules-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-9-of-try-to-apply-rules- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 9 ,call-of-try-to-apply-rules)))
+          :flag ,try-to-apply-rules-name)
 
-         (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-trees-and-add-to-dag- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 9 ,call-of-simplify-trees-and-add-to-dag)))
-           :flag ,simplify-trees-and-add-to-dag-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-trees-and-add-to-dag- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 9 ,call-of-simplify-trees-and-add-to-dag)))
+          :flag ,simplify-trees-and-add-to-dag-name)
 
-         (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-if-tree-and-add-to-dag3- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 9 ,call-of-simplify-if-tree-and-add-to-dag3)))
-           :flag ,simplify-if-tree-and-add-to-dag3-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-if-tree-and-add-to-dag3- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 9 ,call-of-simplify-if-tree-and-add-to-dag3)))
+          :flag ,simplify-if-tree-and-add-to-dag3-name)
 
-         (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-if-tree-and-add-to-dag2- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 9 ,call-of-simplify-if-tree-and-add-to-dag2)))
-           :flag ,simplify-if-tree-and-add-to-dag2-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-if-tree-and-add-to-dag2- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 9 ,call-of-simplify-if-tree-and-add-to-dag2)))
+          :flag ,simplify-if-tree-and-add-to-dag2-name)
 
-         (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-if-tree-and-add-to-dag1- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 9 ,call-of-simplify-if-tree-and-add-to-dag1)))
-           :flag ,simplify-if-tree-and-add-to-dag1-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-if-tree-and-add-to-dag1- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 9 ,call-of-simplify-if-tree-and-add-to-dag1)))
+          :flag ,simplify-if-tree-and-add-to-dag1-name)
 
-         (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-boolif-tree-and-add-to-dag2- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 9 ,call-of-simplify-boolif-tree-and-add-to-dag2)))
-           :flag ,simplify-boolif-tree-and-add-to-dag2-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-not-tree-and-add-to-dag- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 9 ,call-of-simplify-not-tree-and-add-to-dag)))
+          :flag ,simplify-not-tree-and-add-to-dag-name)
 
-         (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-boolif-tree-and-add-to-dag1- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 9 ,call-of-simplify-boolif-tree-and-add-to-dag1)))
-           :flag ,simplify-boolif-tree-and-add-to-dag1-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-boolif-tree-and-add-to-dag2- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 9 ,call-of-simplify-boolif-tree-and-add-to-dag2)))
+          :flag ,simplify-boolif-tree-and-add-to-dag2-name)
 
-         (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-bvif-tree-and-add-to-dag3- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 9 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
-           :flag ,simplify-bvif-tree-and-add-to-dag3-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-boolif-tree-and-add-to-dag1- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 9 ,call-of-simplify-boolif-tree-and-add-to-dag1)))
+          :flag ,simplify-boolif-tree-and-add-to-dag1-name)
 
-         (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-bvif-tree-and-add-to-dag2- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 9 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
-           :flag ,simplify-bvif-tree-and-add-to-dag2-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-bvif-tree-and-add-to-dag3- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 9 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
+          :flag ,simplify-bvif-tree-and-add-to-dag3-name)
 
-         (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-bvif-tree-and-add-to-dag1- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 9 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
-           :flag ,simplify-bvif-tree-and-add-to-dag1-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-bvif-tree-and-add-to-dag2- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 9 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
+          :flag ,simplify-bvif-tree-and-add-to-dag2-name)
 
-         (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-tree-and-add-to-dag- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 9 ,call-of-simplify-tree-and-add-to-dag)))
-           :flag ,simplify-tree-and-add-to-dag-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-bvif-tree-and-add-to-dag1- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 9 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
+          :flag ,simplify-bvif-tree-and-add-to-dag1-name)
 
-         (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-fun-call-and-add-to-dag- suffix)
-           (implies (triesp tries)
-                    (triesp (mv-nth 9 ,call-of-simplify-fun-call-and-add-to-dag)))
-           :flag ,simplify-fun-call-and-add-to-dag-name)
+        (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-tree-and-add-to-dag- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 9 ,call-of-simplify-tree-and-add-to-dag)))
+          :flag ,simplify-tree-and-add-to-dag-name)
 
-         :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                  :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
-                                   len-of-cadar-when-axe-treep
-                                   pseudo-termp-of-cadddr-when-axe-treep
-                                   axe-bind-free-result-okayp-rewrite
-                                   symbol-alistp-when-alistp
-                                   true-listp-of-cdr)
-                                  (dargp-less-than
-                                   natp
-                                   quotep
-                                   myquotep
-                                   ))
-                  :expand ((:free (memoization count other-hyps alist)
-                                  ,call-of-relieve-free-var-hyp-and-all-others)
-                           (:free (memoization count)
-                                  ,call-of-relieve-rule-hyps)
-                           (:free (memoization)
-                                  (,RELIEVE-RULE-HYPS-NAME nil HYP-NUM ALIST RULE-SYMBOL
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                            REWRITER-RULE-ALIST
-                                                           REFINED-ASSUMPTION-ALIST
+        (defthm ,(pack$ 'triesp-of-mv-nth-9-of-simplify-fun-call-and-add-to-dag- suffix)
+          (implies (triesp tries)
+                   (triesp (mv-nth 9 ,call-of-simplify-fun-call-and-add-to-dag)))
+          :flag ,simplify-fun-call-and-add-to-dag-name)
 
-                                                           NODE-REPLACEMENT-ARRAY-NUM-VALID-NODES
-                                                           PRINT
-                                                           INTERPRETED-FUNCTION-ALIST known-booleans MONITORED-SYMBOLS COUNT))
-                           (:free (memoization count)
-                                  (,SIMPLIFY-TREES-AND-ADD-TO-DAG-NAME NIL
-                                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                       REWRITER-RULE-ALIST
-                                                                       REFINED-ASSUMPTION-ALIST
-
-                                                                       NODE-REPLACEMENT-ARRAY-NUM-VALID-NODES
-                                                                        PRINT
-                                                                       INTERPRETED-FUNCTION-ALIST known-booleans MONITORED-SYMBOLS COUNT))
-                           (:free (memoization count)
-                                  ,call-of-simplify-trees-and-add-to-dag)
-                           (:free (memoization limits info tries count)
-                                  ,call-of-try-to-apply-rules)
-                           (:free (memoization fn count)
-                                  ,call-of-simplify-if-tree-and-add-to-dag1)
-                           (:free (memoization fn count)
-                                  ,call-of-simplify-if-tree-and-add-to-dag2)
-                           (:free (memoization fn count)
-                                  ,call-of-simplify-if-tree-and-add-to-dag3)
-                           (:free (memoization count)
-                                  ,call-of-simplify-bvif-tree-and-add-to-dag1)
-                           (:free (memoization count)
-                                  ,call-of-simplify-boolif-tree-and-add-to-dag1)
-                           (:free (memoization count)
-                                  ,call-of-simplify-boolif-tree-and-add-to-dag2)
-                           (:free (memoization count TREES-EQUAL-TO-TREE)
-                                  ,call-of-simplify-tree-and-add-to-dag)
-                           (:free (memoization count TREES-EQUAL-TO-TREE)
-                                  ,call-of-simplify-fun-call-and-add-to-dag)
-                           (:free (memoization count)
-                                  ,call-of-simplify-bvif-tree-and-add-to-dag2)
-                           (:free (memoization count)
-                                  ,call-of-simplify-bvif-tree-and-add-to-dag3)
-                           (AXE-RULE-HYP-LISTP HYPS)))))
+        :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                 :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                                  len-of-cadar-when-axe-treep
+                                  pseudo-termp-of-cadddr-when-axe-treep
+                                  axe-bind-free-result-okayp-rewrite
+                                  symbol-alistp-when-alistp
+                                  true-listp-of-cdr)
+                                 (dargp-less-than
+                                  natp
+                                  quotep
+                                  myquotep
+                                  ))
+                 :expand ((:free (memoization count other-hyps alist)
+                                 ,call-of-relieve-free-var-hyp-and-all-others)
+                          (:free (memoization count)
+                                 ,call-of-relieve-rule-hyps)
+                          (:free (memoization)
+                                 (,relieve-rule-hyps-name nil hyp-num alist rule-symbol
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                          print interpreted-function-alist known-booleans monitored-symbols count))
+                          (:free (memoization count)
+                                 (,simplify-trees-and-add-to-dag-name nil
+                                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                      node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                      print interpreted-function-alist known-booleans monitored-symbols count))
+                          (:free (memoization count)
+                                 ,call-of-simplify-trees-and-add-to-dag)
+                          (:free (memoization limits info tries count)
+                                 ,call-of-try-to-apply-rules)
+                          (:free (memoization fn count)
+                                 ,call-of-simplify-if-tree-and-add-to-dag1)
+                          (:free (memoization fn count)
+                                 ,call-of-simplify-not-tree-and-add-to-dag)
+                          (:free (memoization fn count)
+                                 ,call-of-simplify-if-tree-and-add-to-dag2)
+                          (:free (memoization fn count)
+                                 ,call-of-simplify-if-tree-and-add-to-dag3)
+                          (:free (memoization count)
+                                 ,call-of-simplify-bvif-tree-and-add-to-dag1)
+                          (:free (memoization count)
+                                 ,call-of-simplify-boolif-tree-and-add-to-dag1)
+                          (:free (memoization count)
+                                 ,call-of-simplify-boolif-tree-and-add-to-dag2)
+                          (:free (memoization count TREES-EQUAL-TO-TREE)
+                                 ,call-of-simplify-tree-and-add-to-dag)
+                          (:free (memoization count TREES-EQUAL-TO-TREE)
+                                 ,call-of-simplify-fun-call-and-add-to-dag)
+                          (:free (memoization count)
+                                 ,call-of-simplify-bvif-tree-and-add-to-dag2)
+                          (:free (memoization count)
+                                 ,call-of-simplify-bvif-tree-and-add-to-dag3)
+                          (AXE-RULE-HYP-LISTP HYPS)))))
 
        ;; main theorems about the mutual-recursion:
        (,(pack$ 'defthm-flag-simplify-tree-and-add-to-dag- suffix)
-         (defthm ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix)
-           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (not (mv-nth 0 ,call-of-relieve-free-var-hyp-and-all-others))
-                         (all-axe-treep hyp-args)
-                         (true-listp hyp-args)
-                         (axe-rule-hyp-listp other-hyps)
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                         (symbol-alistp alist)
-                         (all-dargp-less-than (strip-cdrs alist) dag-len)
-                         (dargp-less-than-list-listp assumption-arg-lists dag-len))
-                    (and (wf-dagp 'dag-array
-                                  (mv-nth 3 ,call-of-relieve-free-var-hyp-and-all-others)
-                                  (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others)
-                                  'dag-parent-array
-                                  (mv-nth 5 ,call-of-relieve-free-var-hyp-and-all-others)
-                                  (mv-nth 6 ,call-of-relieve-free-var-hyp-and-all-others)
-                                  (mv-nth 7 ,call-of-relieve-free-var-hyp-and-all-others))
-                         (<= dag-len (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others))
-                         (maybe-bounded-memoizationp (mv-nth 8 ,call-of-relieve-free-var-hyp-and-all-others)
-                                                     (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others))
-                         (symbol-alistp (mv-nth 2 ,call-of-relieve-free-var-hyp-and-all-others))
-                         (all-dargp-less-than (strip-cdrs (mv-nth 2 ,call-of-relieve-free-var-hyp-and-all-others))
-                                                         (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 12 ,call-of-relieve-free-var-hyp-and-all-others)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 12 ,call-of-relieve-free-var-hyp-and-all-others)
-                                                          (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others))))
-           :flag ,relieve-free-var-hyp-and-all-others-name)
+        (defthm ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix)
+          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (not (mv-nth 0 ,call-of-relieve-free-var-hyp-and-all-others))
+                        (axe-tree-listp hyp-args)
+                        (alist-suitable-for-hyp-args-and-hypsp alist hyp-args other-hyps)
+                        (axe-rule-hyp-listp other-hyps)
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                        (symbol-alistp alist)
+                        (bounded-darg-listp (strip-cdrs alist) dag-len)
+                        (bounded-darg-list-listp assumption-arg-lists dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 3 ,call-of-relieve-free-var-hyp-and-all-others)
+                                 (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others)
+                                 'dag-parent-array
+                                 (mv-nth 5 ,call-of-relieve-free-var-hyp-and-all-others)
+                                 (mv-nth 6 ,call-of-relieve-free-var-hyp-and-all-others)
+                                 (mv-nth 7 ,call-of-relieve-free-var-hyp-and-all-others))
+                        (<= dag-len (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others))
+                        (maybe-bounded-memoizationp (mv-nth 8 ,call-of-relieve-free-var-hyp-and-all-others)
+                                                    (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others))
+                        (symbol-alistp (mv-nth 2 ,call-of-relieve-free-var-hyp-and-all-others))
+                        (bounded-darg-listp (strip-cdrs (mv-nth 2 ,call-of-relieve-free-var-hyp-and-all-others))
+                                             (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 12 ,call-of-relieve-free-var-hyp-and-all-others)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 12 ,call-of-relieve-free-var-hyp-and-all-others)
+                                                         (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others))))
+          :flag ,relieve-free-var-hyp-and-all-others-name)
 
-         (defthm ,(pack$ 'theorem-for-relieve-rule-hyps- suffix)
-           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (axe-rule-hyp-listp hyps)
-                         (not (mv-nth 0 ,call-of-relieve-rule-hyps))
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                         (symbol-alistp alist)
-                         (all-dargp-less-than (strip-cdrs alist) dag-len))
-                    (and (wf-dagp 'dag-array
-                                  (mv-nth 3 ,call-of-relieve-rule-hyps)
-                                  (mv-nth 4 ,call-of-relieve-rule-hyps)
-                                  'dag-parent-array
-                                  (mv-nth 5 ,call-of-relieve-rule-hyps)
-                                  (mv-nth 6 ,call-of-relieve-rule-hyps)
-                                  (mv-nth 7 ,call-of-relieve-rule-hyps))
-                         (<= dag-len (mv-nth 4 ,call-of-relieve-rule-hyps))
-                         (maybe-bounded-memoizationp (mv-nth 8 ,call-of-relieve-rule-hyps)
-                                               (mv-nth 4 ,call-of-relieve-rule-hyps))
-                         (symbol-alistp (mv-nth 2 ,call-of-relieve-rule-hyps))
-                         (all-dargp-less-than (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps))
-                                                         (mv-nth 4 ,call-of-relieve-rule-hyps))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 12 ,call-of-relieve-rule-hyps)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 12 ,call-of-relieve-rule-hyps)
-                                                          (mv-nth 4 ,call-of-relieve-rule-hyps))))
-           :flag ,relieve-rule-hyps-name)
+        (defthm ,(pack$ 'theorem-for-relieve-rule-hyps- suffix)
+          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (axe-rule-hyp-listp hyps)
+                        (alist-suitable-for-hypsp alist hyps)
+                        (not (mv-nth 0 ,call-of-relieve-rule-hyps))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                        (symbol-alistp alist)
+                        (bounded-darg-listp (strip-cdrs alist) dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 3 ,call-of-relieve-rule-hyps)
+                                 (mv-nth 4 ,call-of-relieve-rule-hyps)
+                                 'dag-parent-array
+                                 (mv-nth 5 ,call-of-relieve-rule-hyps)
+                                 (mv-nth 6 ,call-of-relieve-rule-hyps)
+                                 (mv-nth 7 ,call-of-relieve-rule-hyps))
+                        (<= dag-len (mv-nth 4 ,call-of-relieve-rule-hyps))
+                        (maybe-bounded-memoizationp (mv-nth 8 ,call-of-relieve-rule-hyps)
+                                                    (mv-nth 4 ,call-of-relieve-rule-hyps))
+                        (symbol-alistp (mv-nth 2 ,call-of-relieve-rule-hyps))
+                        (bounded-darg-listp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps))
+                                             (mv-nth 4 ,call-of-relieve-rule-hyps))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 12 ,call-of-relieve-rule-hyps)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 12 ,call-of-relieve-rule-hyps)
+                                                         (mv-nth 4 ,call-of-relieve-rule-hyps))))
+          :flag ,relieve-rule-hyps-name)
 
-         (defthm ,(pack$ 'theorem-for-try-to-apply-rules- suffix)
-           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-dargp-less-than args-to-match dag-len)
-                         (not (mv-nth 0 ,call-of-try-to-apply-rules))
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (all-stored-axe-rulep stored-rules)
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
-                    (and (axe-treep (mv-nth 1 ,call-of-try-to-apply-rules))
-                         (bounded-axe-treep (mv-nth 1 ,call-of-try-to-apply-rules)
-                                            (mv-nth 3 ,call-of-try-to-apply-rules))
-                         (wf-dagp 'dag-array
-                                  (mv-nth 2 ,call-of-try-to-apply-rules)
-                                  (mv-nth 3 ,call-of-try-to-apply-rules)
-                                  'dag-parent-array
-                                  (mv-nth 4 ,call-of-try-to-apply-rules)
-                                  (mv-nth 5 ,call-of-try-to-apply-rules)
-                                  (mv-nth 6 ,call-of-try-to-apply-rules))
-                         (<= dag-len (mv-nth 3 ,call-of-try-to-apply-rules))
-                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-try-to-apply-rules)
-                                               (mv-nth 3 ,call-of-try-to-apply-rules))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 11 ,call-of-try-to-apply-rules)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 11 ,call-of-try-to-apply-rules)
-                                                          (mv-nth 3 ,call-of-try-to-apply-rules))))
-           :flag ,try-to-apply-rules-name)
+        (defthm ,(pack$ 'theorem-for-try-to-apply-rules- suffix)
+          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (bounded-darg-listp args-to-match dag-len)
+                        (not (mv-nth 0 ,call-of-try-to-apply-rules))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (all-stored-axe-rulep stored-rules)
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                   (and (axe-treep (mv-nth 1 ,call-of-try-to-apply-rules))
+                        (bounded-axe-treep (mv-nth 1 ,call-of-try-to-apply-rules)
+                                           (mv-nth 3 ,call-of-try-to-apply-rules))
+                        (wf-dagp 'dag-array
+                                 (mv-nth 2 ,call-of-try-to-apply-rules)
+                                 (mv-nth 3 ,call-of-try-to-apply-rules)
+                                 'dag-parent-array
+                                 (mv-nth 4 ,call-of-try-to-apply-rules)
+                                 (mv-nth 5 ,call-of-try-to-apply-rules)
+                                 (mv-nth 6 ,call-of-try-to-apply-rules))
+                        (<= dag-len (mv-nth 3 ,call-of-try-to-apply-rules))
+                        (maybe-bounded-memoizationp (mv-nth 7 ,call-of-try-to-apply-rules)
+                                                    (mv-nth 3 ,call-of-try-to-apply-rules))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 11 ,call-of-try-to-apply-rules)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 11 ,call-of-try-to-apply-rules)
+                                                         (mv-nth 3 ,call-of-try-to-apply-rules))))
+          :flag ,try-to-apply-rules-name)
 
-         (defthm ,(pack$ 'theorem-for-simplify-trees-and-add-to-dag- suffix)
-           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-axe-treep trees)
-                         (true-listp trees)
-                         (all-bounded-axe-treep trees dag-len)
-                         (not (mv-nth 0 ,call-of-simplify-trees-and-add-to-dag))
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
-                    (and (wf-dagp 'dag-array
-                                  (mv-nth 2 ,call-of-simplify-trees-and-add-to-dag)
-                                  (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag)
-                                  'dag-parent-array
-                                  (mv-nth 4 ,call-of-simplify-trees-and-add-to-dag)
-                                  (mv-nth 5 ,call-of-simplify-trees-and-add-to-dag)
-                                  (mv-nth 6 ,call-of-simplify-trees-and-add-to-dag))
-                         (true-listp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag))
-                         (all-dargp-less-than (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag)
-                                                         (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag))
-                         ;; implied by the above
-                         (all-dargp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag))
-                         (<= dag-len
-                             (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag))
-                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-trees-and-add-to-dag)
-                                                     (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-trees-and-add-to-dag)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 11 ,call-of-simplify-trees-and-add-to-dag)
-                                                          (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag))))
-           :flag ,simplify-trees-and-add-to-dag-name)
+        (defthm ,(pack$ 'theorem-for-simplify-trees-and-add-to-dag- suffix)
+          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (bounded-axe-tree-listp trees dag-len)
+                        (not (mv-nth 0 ,call-of-simplify-trees-and-add-to-dag))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 2 ,call-of-simplify-trees-and-add-to-dag)
+                                 (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag)
+                                 'dag-parent-array
+                                 (mv-nth 4 ,call-of-simplify-trees-and-add-to-dag)
+                                 (mv-nth 5 ,call-of-simplify-trees-and-add-to-dag)
+                                 (mv-nth 6 ,call-of-simplify-trees-and-add-to-dag))
+                        (true-listp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag))
+                        (bounded-darg-listp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag)
+                                             (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag))
+                        ;; implied by the above
+                        (all-dargp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag))
+                        (<= dag-len
+                            (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag))
+                        (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-trees-and-add-to-dag)
+                                                    (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-trees-and-add-to-dag)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 11 ,call-of-simplify-trees-and-add-to-dag)
+                                                         (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag))))
+          :flag ,simplify-trees-and-add-to-dag-name)
 
-         (defthm ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag3- suffix)
-           (implies (and (member-eq fn '(if myif))
-                         (natp simplified-test)
-                         (< simplified-test dag-len)
-                         (dargp-less-than simplified-thenpart dag-len)
-                         (axe-treep elsepart)
-                         (bounded-axe-treep elsepart dag-len)
-                         (consp tree)
-                         (axe-treep tree)
-                         (bounded-axe-treep tree dag-len)
-                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag3))
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (trees-to-memoizep trees-equal-to-tree)
-                         ;; (all-bounded-axe-treep trees-equal-to-tree dag-len)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
-                    (and (wf-dagp 'dag-array
-                                  (mv-nth 2 ,call-of-simplify-if-tree-and-add-to-dag3)
-                                  (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag3)
-                                  'dag-parent-array
-                                  (mv-nth 4 ,call-of-simplify-if-tree-and-add-to-dag3)
-                                  (mv-nth 5 ,call-of-simplify-if-tree-and-add-to-dag3)
-                                  (mv-nth 6 ,call-of-simplify-if-tree-and-add-to-dag3))
-                         (dargp-less-than (mv-nth 1 ,call-of-simplify-if-tree-and-add-to-dag3)
-                                                     (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag3))
-                         (<= dag-len
-                             (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag3))
-                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-if-tree-and-add-to-dag3)
-                                                     (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag3))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag3)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag3)
-                                                          (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag3))))
-           :flag ,simplify-if-tree-and-add-to-dag3-name)
+        (defthm ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag3- suffix)
+          (implies (and (member-eq fn '(if myif))
+                        (natp simplified-test)
+                        (< simplified-test dag-len)
+                        (dargp-less-than simplified-thenpart dag-len)
+                        (axe-treep elsepart)
+                        (bounded-axe-treep elsepart dag-len)
+                        (tree-to-memoizep tree)
+                        (bounded-axe-treep tree dag-len)
+                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag3))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (trees-to-memoizep trees-equal-to-tree)
+                        ;; (bounded-axe-tree-listp trees-equal-to-tree dag-len)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 2 ,call-of-simplify-if-tree-and-add-to-dag3)
+                                 (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag3)
+                                 'dag-parent-array
+                                 (mv-nth 4 ,call-of-simplify-if-tree-and-add-to-dag3)
+                                 (mv-nth 5 ,call-of-simplify-if-tree-and-add-to-dag3)
+                                 (mv-nth 6 ,call-of-simplify-if-tree-and-add-to-dag3))
+                        (dargp-less-than (mv-nth 1 ,call-of-simplify-if-tree-and-add-to-dag3)
+                                         (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag3))
+                        (<= dag-len
+                            (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag3))
+                        (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-if-tree-and-add-to-dag3)
+                                                    (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag3))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag3)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag3)
+                                                         (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag3))))
+          :flag ,simplify-if-tree-and-add-to-dag3-name)
 
-         (defthm ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag2- suffix)
-           (implies (and (member-eq fn '(if myif))
-                         (natp simplified-test)
-                         (< simplified-test dag-len)
-                         (axe-treep thenpart)
-                         (bounded-axe-treep thenpart dag-len)
-                         (axe-treep elsepart)
-                         (bounded-axe-treep elsepart dag-len)
-                         (consp tree)
-                         (axe-treep tree)
-                         (bounded-axe-treep tree dag-len)
-                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag2))
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (trees-to-memoizep trees-equal-to-tree)
-                         ;; (all-bounded-axe-treep trees-equal-to-tree dag-len)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
-                    (and (wf-dagp 'dag-array
-                                  (mv-nth 2 ,call-of-simplify-if-tree-and-add-to-dag2)
-                                  (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag2)
-                                  'dag-parent-array
-                                  (mv-nth 4 ,call-of-simplify-if-tree-and-add-to-dag2)
-                                  (mv-nth 5 ,call-of-simplify-if-tree-and-add-to-dag2)
-                                  (mv-nth 6 ,call-of-simplify-if-tree-and-add-to-dag2))
-                         (dargp-less-than (mv-nth 1 ,call-of-simplify-if-tree-and-add-to-dag2)
-                                                     (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag2))
-                         (<= dag-len
-                             (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag2))
-                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-if-tree-and-add-to-dag2)
-                                                     (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag2))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag2)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag2)
-                                                          (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag2))))
-           :flag ,simplify-if-tree-and-add-to-dag2-name)
+        (defthm ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag2- suffix)
+          (implies (and (member-eq fn '(if myif))
+                        (natp simplified-test)
+                        (< simplified-test dag-len)
+                        (axe-treep thenpart)
+                        (bounded-axe-treep thenpart dag-len)
+                        (axe-treep elsepart)
+                        (bounded-axe-treep elsepart dag-len)
+                        (tree-to-memoizep tree)
+                        (bounded-axe-treep tree dag-len)
+                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag2))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (trees-to-memoizep trees-equal-to-tree)
+                        ;; (bounded-axe-tree-listp trees-equal-to-tree dag-len)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 2 ,call-of-simplify-if-tree-and-add-to-dag2)
+                                 (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag2)
+                                 'dag-parent-array
+                                 (mv-nth 4 ,call-of-simplify-if-tree-and-add-to-dag2)
+                                 (mv-nth 5 ,call-of-simplify-if-tree-and-add-to-dag2)
+                                 (mv-nth 6 ,call-of-simplify-if-tree-and-add-to-dag2))
+                        (dargp-less-than (mv-nth 1 ,call-of-simplify-if-tree-and-add-to-dag2)
+                                         (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag2))
+                        (<= dag-len
+                            (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag2))
+                        (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-if-tree-and-add-to-dag2)
+                                                    (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag2))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag2)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag2)
+                                                         (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag2))))
+          :flag ,simplify-if-tree-and-add-to-dag2-name)
 
-         (defthm ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag1- suffix)
-           (implies (and (axe-treep tree)
-                         (bounded-axe-treep tree dag-len)
-                         (consp tree) ; not logically necessary but speeds up the proof
-                         (member-eq (ffn-symb tree) '(if myif))
-                         (= 3 (len (fargs tree)))
-                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag1))
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (trees-to-memoizep trees-equal-to-tree)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
-                    (and (wf-dagp 'dag-array
-                                  (mv-nth 2 ,call-of-simplify-if-tree-and-add-to-dag1)
-                                  (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag1)
-                                  'dag-parent-array
-                                  (mv-nth 4 ,call-of-simplify-if-tree-and-add-to-dag1)
-                                  (mv-nth 5 ,call-of-simplify-if-tree-and-add-to-dag1)
-                                  (mv-nth 6 ,call-of-simplify-if-tree-and-add-to-dag1))
-                         (dargp-less-than (mv-nth 1 ,call-of-simplify-if-tree-and-add-to-dag1)
-                                                     (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag1))
-                         (<= dag-len
-                             (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag1))
-                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-if-tree-and-add-to-dag1)
-                                                     (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag1))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag1)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag1)
-                                                          (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag1))))
-           :flag ,simplify-if-tree-and-add-to-dag1-name)
+        (defthm ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag1- suffix)
+          (implies (and (axe-treep tree)
+                        (bounded-axe-treep tree dag-len)
+                        (consp tree) ; not logically necessary but speeds up the proof
+                        (member-eq (ffn-symb tree) '(if myif))
+                        ;; (equal 3 (len (fargs tree)))
+                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag1))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (trees-to-memoizep trees-equal-to-tree)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 2 ,call-of-simplify-if-tree-and-add-to-dag1)
+                                 (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag1)
+                                 'dag-parent-array
+                                 (mv-nth 4 ,call-of-simplify-if-tree-and-add-to-dag1)
+                                 (mv-nth 5 ,call-of-simplify-if-tree-and-add-to-dag1)
+                                 (mv-nth 6 ,call-of-simplify-if-tree-and-add-to-dag1))
+                        (dargp-less-than (mv-nth 1 ,call-of-simplify-if-tree-and-add-to-dag1)
+                                         (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag1))
+                        (<= dag-len
+                            (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag1))
+                        (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-if-tree-and-add-to-dag1)
+                                                    (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag1))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag1)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag1)
+                                                         (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag1))))
+          :flag ,simplify-if-tree-and-add-to-dag1-name)
 
-         (defthm ,(pack$ 'theorem-for-simplify-boolif-tree-and-add-to-dag2- suffix)
-           (implies (and (natp simplified-test)
-                         (< simplified-test dag-len)
-                         (all-axe-treep args)
-                         (all-bounded-axe-treep args dag-len)
-                         (equal (len args) 3)
-                         (consp tree)
-                         (axe-treep tree)
-                         (bounded-axe-treep tree dag-len)
-                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag2))
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (trees-to-memoizep trees-equal-to-tree)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
-                    (and (wf-dagp 'dag-array
-                                  (mv-nth 2 ,call-of-simplify-boolif-tree-and-add-to-dag2)
-                                  (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag2)
-                                  'dag-parent-array
-                                  (mv-nth 4 ,call-of-simplify-boolif-tree-and-add-to-dag2)
-                                  (mv-nth 5 ,call-of-simplify-boolif-tree-and-add-to-dag2)
-                                  (mv-nth 6 ,call-of-simplify-boolif-tree-and-add-to-dag2))
-                         (dargp-less-than (mv-nth 1 ,call-of-simplify-boolif-tree-and-add-to-dag2)
-                                                     (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag2))
-                         (<= dag-len
-                             (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag2))
-                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-boolif-tree-and-add-to-dag2)
-                                                     (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag2))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-boolif-tree-and-add-to-dag2)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 11 ,call-of-simplify-boolif-tree-and-add-to-dag2)
-                                                          (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag2))))
-           :flag ,simplify-boolif-tree-and-add-to-dag2-name)
+        (defthm ,(pack$ 'theorem-for-simplify-not-tree-and-add-to-dag- suffix)
+          (implies (and (axe-treep tree)
+                        (bounded-axe-treep tree dag-len)
+                        (consp tree) ; not logically necessary but speeds up the proof
+                        (eq (ffn-symb tree) 'not)
+                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (not (mv-nth 0 ,call-of-simplify-not-tree-and-add-to-dag))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (trees-to-memoizep trees-equal-to-tree)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 2 ,call-of-simplify-not-tree-and-add-to-dag)
+                                 (mv-nth 3 ,call-of-simplify-not-tree-and-add-to-dag)
+                                 'dag-parent-array
+                                 (mv-nth 4 ,call-of-simplify-not-tree-and-add-to-dag)
+                                 (mv-nth 5 ,call-of-simplify-not-tree-and-add-to-dag)
+                                 (mv-nth 6 ,call-of-simplify-not-tree-and-add-to-dag))
+                        (dargp-less-than (mv-nth 1 ,call-of-simplify-not-tree-and-add-to-dag)
+                                         (mv-nth 3 ,call-of-simplify-not-tree-and-add-to-dag))
+                        (<= dag-len
+                            (mv-nth 3 ,call-of-simplify-not-tree-and-add-to-dag))
+                        (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-not-tree-and-add-to-dag)
+                                                    (mv-nth 3 ,call-of-simplify-not-tree-and-add-to-dag))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-not-tree-and-add-to-dag)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 11 ,call-of-simplify-not-tree-and-add-to-dag)
+                                                         (mv-nth 3 ,call-of-simplify-not-tree-and-add-to-dag))))
+          :flag ,simplify-not-tree-and-add-to-dag-name)
 
-         (defthm ,(pack$ 'theorem-for-simplify-boolif-tree-and-add-to-dag1- suffix)
-           (implies (and (all-axe-treep args)
-                         (all-bounded-axe-treep args dag-len)
-                         (equal (len args) 3)
-                         (consp tree)
-                         (axe-treep tree)
-                         (bounded-axe-treep tree dag-len)
-                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag1))
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (trees-to-memoizep trees-equal-to-tree)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
-                    (and (wf-dagp 'dag-array
-                                  (mv-nth 2 ,call-of-simplify-boolif-tree-and-add-to-dag1)
-                                  (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag1)
-                                  'dag-parent-array
-                                  (mv-nth 4 ,call-of-simplify-boolif-tree-and-add-to-dag1)
-                                  (mv-nth 5 ,call-of-simplify-boolif-tree-and-add-to-dag1)
-                                  (mv-nth 6 ,call-of-simplify-boolif-tree-and-add-to-dag1))
-                         (dargp-less-than (mv-nth 1 ,call-of-simplify-boolif-tree-and-add-to-dag1)
-                                                     (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag1))
-                         (<= dag-len (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag1))
-                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-boolif-tree-and-add-to-dag1)
-                                                     (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag1))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-boolif-tree-and-add-to-dag1)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 11 ,call-of-simplify-boolif-tree-and-add-to-dag1)
-                                                          (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag1))))
-           :flag ,simplify-boolif-tree-and-add-to-dag1-name)
+        (defthm ,(pack$ 'theorem-for-simplify-boolif-tree-and-add-to-dag2- suffix)
+          (implies (and (natp simplified-test)
+                        (< simplified-test dag-len)
+                        (bounded-axe-tree-listp args dag-len)
+                        (consp (rest (rest args))) ; (equal 3 (len args))
+                        (tree-to-memoizep tree)
+                        (bounded-axe-treep tree dag-len)
+                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag2))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (trees-to-memoizep trees-equal-to-tree)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 2 ,call-of-simplify-boolif-tree-and-add-to-dag2)
+                                 (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag2)
+                                 'dag-parent-array
+                                 (mv-nth 4 ,call-of-simplify-boolif-tree-and-add-to-dag2)
+                                 (mv-nth 5 ,call-of-simplify-boolif-tree-and-add-to-dag2)
+                                 (mv-nth 6 ,call-of-simplify-boolif-tree-and-add-to-dag2))
+                        (dargp-less-than (mv-nth 1 ,call-of-simplify-boolif-tree-and-add-to-dag2)
+                                         (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag2))
+                        (<= dag-len
+                            (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag2))
+                        (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-boolif-tree-and-add-to-dag2)
+                                                    (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag2))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-boolif-tree-and-add-to-dag2)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 11 ,call-of-simplify-boolif-tree-and-add-to-dag2)
+                                                         (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag2))))
+          :flag ,simplify-boolif-tree-and-add-to-dag2-name)
 
-         (defthm ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag3- suffix)
-           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (dargp-less-than size-result dag-len)
-                         (natp simplified-test)
-                         (< simplified-test dag-len)
-                         (dargp-less-than simplified-thenpart dag-len)
-                         (axe-treep elsepart)
-                         (bounded-axe-treep elsepart dag-len)
-                         (consp tree)
-                         (axe-treep tree)
-                         (bounded-axe-treep tree dag-len)
-                         (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag3))
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (trees-to-memoizep trees-equal-to-tree)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
-                    (and (wf-dagp 'dag-array
-                                  (mv-nth 2 ,call-of-simplify-bvif-tree-and-add-to-dag3)
-                                  (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag3)
-                                  'dag-parent-array
-                                  (mv-nth 4 ,call-of-simplify-bvif-tree-and-add-to-dag3)
-                                  (mv-nth 5 ,call-of-simplify-bvif-tree-and-add-to-dag3)
-                                  (mv-nth 6 ,call-of-simplify-bvif-tree-and-add-to-dag3))
-                         (dargp-less-than (mv-nth 1 ,call-of-simplify-bvif-tree-and-add-to-dag3)
-                                                     (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag3))
-                         (<= dag-len (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag3))
-                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-bvif-tree-and-add-to-dag3)
-                                                     (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag3))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag3)
-                                                          (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag3))))
-           :flag ,simplify-bvif-tree-and-add-to-dag3-name)
+        (defthm ,(pack$ 'theorem-for-simplify-boolif-tree-and-add-to-dag1- suffix)
+          (implies (and (axe-treep tree)
+                        (bounded-axe-treep tree dag-len)
+                        (consp tree)
+                        (equal 'boolif (ffn-symb tree))
+                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag1))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (trees-to-memoizep trees-equal-to-tree)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 2 ,call-of-simplify-boolif-tree-and-add-to-dag1)
+                                 (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag1)
+                                 'dag-parent-array
+                                 (mv-nth 4 ,call-of-simplify-boolif-tree-and-add-to-dag1)
+                                 (mv-nth 5 ,call-of-simplify-boolif-tree-and-add-to-dag1)
+                                 (mv-nth 6 ,call-of-simplify-boolif-tree-and-add-to-dag1))
+                        (dargp-less-than (mv-nth 1 ,call-of-simplify-boolif-tree-and-add-to-dag1)
+                                         (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag1))
+                        (<= dag-len (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag1))
+                        (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-boolif-tree-and-add-to-dag1)
+                                                    (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag1))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-boolif-tree-and-add-to-dag1)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 11 ,call-of-simplify-boolif-tree-and-add-to-dag1)
+                                                         (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag1))))
+          :flag ,simplify-boolif-tree-and-add-to-dag1-name)
 
-         (defthm ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag2- suffix)
-           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (natp simplified-test)
-                         (< simplified-test dag-len)
-                         (all-axe-treep args)
-                         (all-bounded-axe-treep args dag-len)
-                         (consp tree)
-                         (axe-treep tree)
-                         (bounded-axe-treep tree dag-len)
-                         (equal (len args) 4)
-                         (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag2))
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (trees-to-memoizep trees-equal-to-tree)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
-                    (and (wf-dagp 'dag-array
-                                  (mv-nth 2 ,call-of-simplify-bvif-tree-and-add-to-dag2)
-                                  (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag2)
-                                  'dag-parent-array
-                                  (mv-nth 4 ,call-of-simplify-bvif-tree-and-add-to-dag2)
-                                  (mv-nth 5 ,call-of-simplify-bvif-tree-and-add-to-dag2)
-                                  (mv-nth 6 ,call-of-simplify-bvif-tree-and-add-to-dag2))
-                         (dargp-less-than (mv-nth 1 ,call-of-simplify-bvif-tree-and-add-to-dag2)
-                                                     (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag2))
-                         (<= dag-len (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag2))
-                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-bvif-tree-and-add-to-dag2)
-                                                     (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag2))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag2)
-                                                          (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag2))))
-           :flag ,simplify-bvif-tree-and-add-to-dag2-name)
+        (defthm ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag3- suffix)
+          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (dargp-less-than size-result dag-len)
+                        (natp simplified-test)
+                        (< simplified-test dag-len)
+                        (dargp-less-than simplified-thenpart dag-len)
+                        (axe-treep elsepart)
+                        (bounded-axe-treep elsepart dag-len)
+                        (tree-to-memoizep tree)
+                        (bounded-axe-treep tree dag-len)
+                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag3))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (trees-to-memoizep trees-equal-to-tree)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 2 ,call-of-simplify-bvif-tree-and-add-to-dag3)
+                                 (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag3)
+                                 'dag-parent-array
+                                 (mv-nth 4 ,call-of-simplify-bvif-tree-and-add-to-dag3)
+                                 (mv-nth 5 ,call-of-simplify-bvif-tree-and-add-to-dag3)
+                                 (mv-nth 6 ,call-of-simplify-bvif-tree-and-add-to-dag3))
+                        (dargp-less-than (mv-nth 1 ,call-of-simplify-bvif-tree-and-add-to-dag3)
+                                         (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag3))
+                        (<= dag-len (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag3))
+                        (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-bvif-tree-and-add-to-dag3)
+                                                    (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag3))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag3)
+                                                         (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag3))))
+          :flag ,simplify-bvif-tree-and-add-to-dag3-name)
 
-         (defthm ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag1- suffix)
-           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-axe-treep args)
-                         (all-bounded-axe-treep args dag-len)
-                         (consp tree)
-                         (axe-treep tree)
-                         (bounded-axe-treep tree dag-len)
-                         (equal (len args) 4)
-                         (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag1))
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (trees-to-memoizep trees-equal-to-tree)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
-                    (and (wf-dagp 'dag-array
-                                  (mv-nth 2 ,call-of-simplify-bvif-tree-and-add-to-dag1)
-                                  (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1)
-                                  'dag-parent-array
-                                  (mv-nth 4 ,call-of-simplify-bvif-tree-and-add-to-dag1)
-                                  (mv-nth 5 ,call-of-simplify-bvif-tree-and-add-to-dag1)
-                                  (mv-nth 6 ,call-of-simplify-bvif-tree-and-add-to-dag1))
-                         (dargp-less-than (mv-nth 1 ,call-of-simplify-bvif-tree-and-add-to-dag1)
-                                                     (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1))
-                         (<= dag-len
-                             (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1))
-                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-bvif-tree-and-add-to-dag1)
-                                                     (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag1)
-                                                          (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1))))
-           :flag ,simplify-bvif-tree-and-add-to-dag1-name)
+        (defthm ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag2- suffix)
+          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (natp simplified-test)
+                        (< simplified-test dag-len)
+                        (bounded-axe-tree-listp args dag-len)
+                        (tree-to-memoizep tree)
+                        (bounded-axe-treep tree dag-len)
+                        (consp (rest (rest (rest args)))) ; (equal 4 (len args))
+                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag2))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (trees-to-memoizep trees-equal-to-tree)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 2 ,call-of-simplify-bvif-tree-and-add-to-dag2)
+                                 (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag2)
+                                 'dag-parent-array
+                                 (mv-nth 4 ,call-of-simplify-bvif-tree-and-add-to-dag2)
+                                 (mv-nth 5 ,call-of-simplify-bvif-tree-and-add-to-dag2)
+                                 (mv-nth 6 ,call-of-simplify-bvif-tree-and-add-to-dag2))
+                        (dargp-less-than (mv-nth 1 ,call-of-simplify-bvif-tree-and-add-to-dag2)
+                                         (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag2))
+                        (<= dag-len (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag2))
+                        (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-bvif-tree-and-add-to-dag2)
+                                                    (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag2))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag2)
+                                                         (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag2))))
+          :flag ,simplify-bvif-tree-and-add-to-dag2-name)
 
-         (defthm ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)
-           (implies (and (axe-treep tree)
-                         (bounded-axe-treep tree dag-len)
-                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (not (mv-nth 0 ,call-of-simplify-tree-and-add-to-dag))
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (trees-to-memoizep trees-equal-to-tree)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
-                    (and (wf-dagp 'dag-array
-                                  (mv-nth 2 ,call-of-simplify-tree-and-add-to-dag)
-                                  (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag)
-                                  'dag-parent-array
-                                  (mv-nth 4 ,call-of-simplify-tree-and-add-to-dag)
-                                  (mv-nth 5 ,call-of-simplify-tree-and-add-to-dag)
-                                  (mv-nth 6 ,call-of-simplify-tree-and-add-to-dag))
-                         (dargp-less-than (mv-nth 1 ,call-of-simplify-tree-and-add-to-dag)
-                                                     (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag))
-                         (<= dag-len
-                             (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag))
-                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-tree-and-add-to-dag)
-                                                     (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-tree-and-add-to-dag)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 11 ,call-of-simplify-tree-and-add-to-dag)
-                                                          (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag))))
-           :flag ,simplify-tree-and-add-to-dag-name)
+        (defthm ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag1- suffix)
+          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (axe-treep tree)
+                        (bounded-axe-treep tree dag-len)
+                        (consp tree)
+                        (equal 'bvif (ffn-symb tree))
+                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag1))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (trees-to-memoizep trees-equal-to-tree)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 2 ,call-of-simplify-bvif-tree-and-add-to-dag1)
+                                 (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1)
+                                 'dag-parent-array
+                                 (mv-nth 4 ,call-of-simplify-bvif-tree-and-add-to-dag1)
+                                 (mv-nth 5 ,call-of-simplify-bvif-tree-and-add-to-dag1)
+                                 (mv-nth 6 ,call-of-simplify-bvif-tree-and-add-to-dag1))
+                        (dargp-less-than (mv-nth 1 ,call-of-simplify-bvif-tree-and-add-to-dag1)
+                                         (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1))
+                        (<= dag-len
+                            (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1))
+                        (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-bvif-tree-and-add-to-dag1)
+                                                    (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag1)
+                                                         (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1))))
+          :flag ,simplify-bvif-tree-and-add-to-dag1-name)
 
-         (defthm ,(pack$ 'theorem-for-simplify-fun-call-and-add-to-dag- suffix)
-           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (symbolp fn)
-                         (not (equal 'quote fn))
-                         (true-listp args)
-                         (all-dargp-less-than args dag-len)
-                         (not (mv-nth 0 ,call-of-simplify-fun-call-and-add-to-dag))
-                         (maybe-bounded-memoizationp memoization dag-len)
-                         (trees-to-memoizep trees-equal-to-tree)
-                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
-                    (and (wf-dagp 'dag-array
-                                  (mv-nth 2 ,call-of-simplify-fun-call-and-add-to-dag)
-                                  (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag)
-                                  'dag-parent-array
-                                  (mv-nth 4 ,call-of-simplify-fun-call-and-add-to-dag)
-                                  (mv-nth 5 ,call-of-simplify-fun-call-and-add-to-dag)
-                                  (mv-nth 6 ,call-of-simplify-fun-call-and-add-to-dag))
-                         (DARGP-LESS-THAN (mv-nth 1 ,call-of-simplify-fun-call-and-add-to-dag)
-                                                     (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag))
-                         (<= dag-len
-                             (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag))
-                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-fun-call-and-add-to-dag)
-                                               (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag))
-                         (<= (alen1 'node-replacement-array node-replacement-array)
-                             (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-fun-call-and-add-to-dag)))
-                         (bounded-node-replacement-arrayp 'node-replacement-array
-                                                          (mv-nth 11 ,call-of-simplify-fun-call-and-add-to-dag)
-                                                          (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag))))
-           :flag ,simplify-fun-call-and-add-to-dag-name)
+        (defthm ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)
+          (implies (and (axe-treep tree)
+                        (bounded-axe-treep tree dag-len)
+                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (not (mv-nth 0 ,call-of-simplify-tree-and-add-to-dag))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (trees-to-memoizep trees-equal-to-tree)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 2 ,call-of-simplify-tree-and-add-to-dag)
+                                 (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag)
+                                 'dag-parent-array
+                                 (mv-nth 4 ,call-of-simplify-tree-and-add-to-dag)
+                                 (mv-nth 5 ,call-of-simplify-tree-and-add-to-dag)
+                                 (mv-nth 6 ,call-of-simplify-tree-and-add-to-dag))
+                        (dargp-less-than (mv-nth 1 ,call-of-simplify-tree-and-add-to-dag)
+                                         (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag))
+                        (<= dag-len
+                            (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag))
+                        (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-tree-and-add-to-dag)
+                                                    (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-tree-and-add-to-dag)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 11 ,call-of-simplify-tree-and-add-to-dag)
+                                                         (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag))))
+          :flag ,simplify-tree-and-add-to-dag-name)
 
-         :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                  :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
-                                   len-of-cadar-when-axe-treep
-                                   pseudo-termp-of-cadddr-when-axe-treep
-                                   axe-bind-free-result-okayp-rewrite
-                                   symbol-alistp-when-alistp
-                                   true-listp-of-cdr
-                                   symbolp-when-member-equal
-                                   not-equal-when-member-equal
-                                   not-equal-when-member-equal-alt
-                                   <=-transitive-1
-                                   <=-transitive-2)
-                                  (dargp-less-than
-                                   natp
-                                   quotep
-                                   myquotep))
-                  :expand ((:free (memoization ;count
-                                   other-hyps alist)
-                                  ,call-of-relieve-free-var-hyp-and-all-others)
-                           (:free (memoization ;count
-                                   )
-                                  ,call-of-relieve-rule-hyps)
-                           (:free (memoization)
-                                  (,RELIEVE-RULE-HYPS-NAME nil HYP-NUM ALIST RULE-SYMBOL
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                            REWRITER-RULE-ALIST
-                                                           REFINED-ASSUMPTION-ALIST
+        (defthm ,(pack$ 'theorem-for-simplify-fun-call-and-add-to-dag- suffix)
+          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (symbolp fn)
+                        (not (equal 'quote fn))
+                        (bounded-darg-listp args dag-len)
+                        (not (mv-nth 0 ,call-of-simplify-fun-call-and-add-to-dag))
+                        (maybe-bounded-memoizationp memoization dag-len)
+                        (trees-to-memoizep trees-equal-to-tree)
+                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                        (rule-alistp rule-alist)
+                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                   (and (wf-dagp 'dag-array
+                                 (mv-nth 2 ,call-of-simplify-fun-call-and-add-to-dag)
+                                 (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag)
+                                 'dag-parent-array
+                                 (mv-nth 4 ,call-of-simplify-fun-call-and-add-to-dag)
+                                 (mv-nth 5 ,call-of-simplify-fun-call-and-add-to-dag)
+                                 (mv-nth 6 ,call-of-simplify-fun-call-and-add-to-dag))
+                        (DARGP-LESS-THAN (mv-nth 1 ,call-of-simplify-fun-call-and-add-to-dag)
+                                         (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag))
+                        (DARGP (mv-nth 1 ,call-of-simplify-fun-call-and-add-to-dag)) ; follows from the above but no free vars
+                        (<= dag-len
+                            (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag))
+                        (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-fun-call-and-add-to-dag)
+                                                    (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag))
+                        (<= (alen1 'node-replacement-array node-replacement-array)
+                            (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-fun-call-and-add-to-dag)))
+                        (bounded-node-replacement-arrayp 'node-replacement-array
+                                                         (mv-nth 11 ,call-of-simplify-fun-call-and-add-to-dag)
+                                                         (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag))))
+          :flag ,simplify-fun-call-and-add-to-dag-name)
 
-                                                           NODE-REPLACEMENT-ARRAY-NUM-VALID-NODES
-                                                           PRINT
-                                                           INTERPRETED-FUNCTION-ALIST known-booleans MONITORED-SYMBOLS COUNT))
-                           (:free (memoization ;count
-                                   )
-                                  (,SIMPLIFY-TREES-AND-ADD-TO-DAG-NAME NIL
-                                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                       REWRITER-RULE-ALIST
-                                                                       REFINED-ASSUMPTION-ALIST
-
-                                                                       NODE-REPLACEMENT-ARRAY-NUM-VALID-NODES
-                                                                        PRINT
-                                                                       INTERPRETED-FUNCTION-ALIST known-booleans MONITORED-SYMBOLS COUNT))
-                           (:free (memoization ;count
-                                   )
-                                  ,call-of-simplify-trees-and-add-to-dag)
-                           (:free (memoization limits info tries ;count
-                                               )
-                                  ,call-of-try-to-apply-rules)
-                           (:free (memoization fn ;count
-                                               )
-                                  ,call-of-simplify-if-tree-and-add-to-dag1)
-                           (:free (memoization fn ;count
-                                               )
-                                  ,call-of-simplify-if-tree-and-add-to-dag2)
-                           (:free (memoization fn ;count
-                                               )
-                                  ,call-of-simplify-if-tree-and-add-to-dag3)
-                           (:free (memoization ;count
-                                   )
-                                  ,call-of-simplify-bvif-tree-and-add-to-dag1)
-                           (:free (memoization ;count
-                                   )
-                                  ,call-of-simplify-boolif-tree-and-add-to-dag1)
-                           (:free (memoization ;count
-                                   )
-                                  ,call-of-simplify-boolif-tree-and-add-to-dag2)
-                           (:free (memoization ;count
-                                   TREES-EQUAL-TO-TREE)
-                                  ,call-of-simplify-tree-and-add-to-dag)
-                           (:free (memoization ;count
-                                   TREES-EQUAL-TO-TREE)
-                                  ,call-of-simplify-fun-call-and-add-to-dag)
-                           (:free (memoization ;count
-                                   )
-                                  ,call-of-simplify-bvif-tree-and-add-to-dag2)
-                           (:free (memoization ;count
-                                   )
-                                  ,call-of-simplify-bvif-tree-and-add-to-dag3)
-                           (axe-rule-hyp-listp hyps)))))
+        :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                 :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                                  len-of-cadar-when-axe-treep
+                                  pseudo-termp-of-cadddr-when-axe-treep
+                                  axe-bind-free-result-okayp-rewrite
+                                  symbol-alistp-when-alistp
+                                  true-listp-of-cdr
+                                  symbolp-when-member-equal-disabled
+                                  not-equal-when-member-equal-disabled
+                                  not-equal-when-member-equal-alt-disabled
+                                  <=-transitive-1
+                                  <=-transitive-2
+                                  symbol-listp-of-append-disabled)
+                                 (dargp-less-than
+                                  natp
+                                  quotep
+                                  myquotep))
+                 :expand ((:free (memoization ;count
+                                  other-hyps alist)
+                                 ,call-of-relieve-free-var-hyp-and-all-others)
+                          (:free (memoization ;count
+                                  )
+                                 ,call-of-relieve-rule-hyps)
+                          (:free (memoization)
+                                 (,relieve-rule-hyps-name nil hyp-num alist rule-symbol
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                          print interpreted-function-alist known-booleans monitored-symbols count))
+                          (:free (memoization ;count
+                                  )
+                                 (,simplify-trees-and-add-to-dag-name nil
+                                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                      node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                      print interpreted-function-alist known-booleans monitored-symbols count))
+                          (:free (memoization ;count
+                                  )
+                                 ,call-of-simplify-trees-and-add-to-dag)
+                          (:free (memoization limits info tries ;count
+                                              )
+                                 ,call-of-try-to-apply-rules)
+                          (:free (memoization fn ;count
+                                              )
+                                 ,call-of-simplify-if-tree-and-add-to-dag1)
+                          (:free (memoization fn ;count
+                                              )
+                                 ,call-of-simplify-not-tree-and-add-to-dag)
+                          (:free (memoization fn ;count
+                                              )
+                                 ,call-of-simplify-if-tree-and-add-to-dag2)
+                          (:free (memoization fn ;count
+                                              )
+                                 ,call-of-simplify-if-tree-and-add-to-dag3)
+                          (:free (memoization ;count
+                                  )
+                                 ,call-of-simplify-bvif-tree-and-add-to-dag1)
+                          (:free (memoization ;count
+                                  )
+                                 ,call-of-simplify-boolif-tree-and-add-to-dag1)
+                          (:free (memoization ;count
+                                  )
+                                 ,call-of-simplify-boolif-tree-and-add-to-dag2)
+                          (:free (memoization ;count
+                                  TREES-EQUAL-TO-TREE)
+                                 ,call-of-simplify-tree-and-add-to-dag)
+                          (:free (memoization ;count
+                                  TREES-EQUAL-TO-TREE)
+                                 ,call-of-simplify-fun-call-and-add-to-dag)
+                          (:free (memoization ;count
+                                  )
+                                 ,call-of-simplify-bvif-tree-and-add-to-dag2)
+                          (:free (memoization ;count
+                                  )
+                                 ,call-of-simplify-bvif-tree-and-add-to-dag3)
+                          (axe-rule-hyp-listp hyps)))))
 
        ;; Now we prove some facts that follow from the main theorem proved about the
        ;; mutual-recursion (e.g., weaker claims that are sometimes needed, or claims
        ;; phrased in a better way for rewriting):
 
+
+       (defthm ,(pack$ 'bound-theorem-for-simplify-fun-call-and-add-to-dag- suffix)
+         (implies (and (<= bound (alen1 'node-replacement-array node-replacement-array))
+                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (symbolp fn)
+                       (not (equal 'quote fn))
+                       (bounded-darg-listp args dag-len)
+                       (not (mv-nth 0 ,call-of-simplify-fun-call-and-add-to-dag))
+                       (maybe-bounded-memoizationp memoization dag-len)
+                       (trees-to-memoizep trees-equal-to-tree)
+                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
+                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                  (<= bound
+                      (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-fun-call-and-add-to-dag))))
+         :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-fun-call-and-add-to-dag- suffix))
+                  :in-theory (disable ,(pack$ 'theorem-for-simplify-fun-call-and-add-to-dag- suffix)))))
+
+       (defthm ,(pack$ 'corollary-for-simplify-fun-call-and-add-to-dag- suffix)
+         (implies (and (<= bound (alen1 'node-replacement-array node-replacement-array))
+                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (symbolp fn)
+                       (not (equal 'quote fn))
+                       (bounded-darg-listp args dag-len)
+                       (not (mv-nth 0 ,call-of-simplify-fun-call-and-add-to-dag))
+                       (maybe-bounded-memoizationp memoization dag-len)
+                       (trees-to-memoizep trees-equal-to-tree)
+                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
+                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                  (maybe-memoizationp (mv-nth 7 ,call-of-simplify-fun-call-and-add-to-dag)))
+         :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-fun-call-and-add-to-dag- suffix))
+                  :in-theory (disable ,(pack$ 'theorem-for-simplify-fun-call-and-add-to-dag- suffix)))))
+
        (defthm ,(pack$ 'bound-theorem-for-relieve-free-var-hyp-and-all-others- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-relieve-free-var-hyp-and-all-others))
-                       (all-axe-treep hyp-args)
-                       (true-listp hyp-args)
+                       (axe-tree-listp hyp-args)
+                       (alist-suitable-for-hyp-args-and-hypsp alist hyp-args other-hyps)
                        (axe-rule-hyp-listp other-hyps)
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (symbol-alistp alist)
-                       (all-dargp-less-than (strip-cdrs alist) dag-len)
-                       (dargp-less-than-list-listp assumption-arg-lists dag-len)
+                       (bounded-darg-listp (strip-cdrs alist) dag-len)
+                       (bounded-darg-list-listp assumption-arg-lists dag-len)
                        (<= x dag-len))
                   (<= x (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others)))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix))
@@ -2831,14 +3035,15 @@
        (defthm ,(pack$ 'bound-theorem-for-relieve-rule-hyps- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (axe-rule-hyp-listp hyps)
+                       (alist-suitable-for-hypsp alist hyps)
                        (not (mv-nth 0 ,call-of-relieve-rule-hyps))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (symbol-alistp alist)
-                       (all-dargp-less-than (strip-cdrs alist) dag-len)
+                       (bounded-darg-listp (strip-cdrs alist) dag-len)
                        (<= x dag-len))
                   (and
                    (<= x (mv-nth 4 ,call-of-relieve-rule-hyps))
@@ -2849,27 +3054,28 @@
        (defthm ,(pack$ 'corollary-theorem-for-relieve-rule-hyps- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (axe-rule-hyp-listp hyps)
+                       (alist-suitable-for-hypsp alist hyps)
                        (not (mv-nth 0 ,call-of-relieve-rule-hyps))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (symbol-alistp alist)
-                       (all-dargp-less-than (strip-cdrs alist) dag-len))
+                       (bounded-darg-listp (strip-cdrs alist) dag-len))
                   (all-dargp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-rule-hyps- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-relieve-rule-hyps- suffix)))))
 
        (defthm ,(pack$ 'bound-theorem-for-try-to-apply-rules- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-dargp-less-than args-to-match dag-len)
+                       (bounded-darg-listp args-to-match dag-len)
                        (not (mv-nth 0 ,call-of-try-to-apply-rules))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                        (all-stored-axe-rulep stored-rules)
-                       (rule-alistp rewriter-rule-alist)
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x dag-len))
                   (<= x (mv-nth 3 ,call-of-try-to-apply-rules)))
@@ -2878,13 +3084,13 @@
 
        (defthm ,(pack$ 'corollary-theorem-for-try-to-apply-rules- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-dargp-less-than args-to-match dag-len)
+                       (bounded-darg-listp args-to-match dag-len)
                        (not (mv-nth 0 ,call-of-try-to-apply-rules))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                        (all-stored-axe-rulep stored-rules)
-                       (rule-alistp rewriter-rule-alist)
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                   (and (maybe-memoizationp (mv-nth 7 ,call-of-try-to-apply-rules))
                        (equal (alen1 'dag-parent-array (mv-nth 4 ,call-of-try-to-apply-rules))
@@ -2904,13 +3110,13 @@
          (implies (and (<= n (mv-nth 3 ,call-of-try-to-apply-rules))
                        (natp n)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-dargp-less-than args-to-match dag-len)
+                       (bounded-darg-listp args-to-match dag-len)
                        (not (mv-nth 0 ,call-of-try-to-apply-rules))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                        (all-stored-axe-rulep stored-rules)
-                       (rule-alistp rewriter-rule-alist)
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                   (PSEUDO-DAG-ARRAYP 'DAG-ARRAY
                                      (MV-NTH 2
@@ -2920,17 +3126,16 @@
                   :in-theory (disable ,(pack$ 'theorem-for-try-to-apply-rules- suffix)))))
 
        (defthm ,(pack$ 'bound-theorem-for-simplify-trees-and-add-to-dag- suffix)
-         (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-axe-treep trees)
-                       (true-listp trees)
-                       (all-bounded-axe-treep trees dag-len)
+         (implies (and (<= x dag-len)
+                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (bounded-axe-tree-listp trees dag-len)
                        (not (mv-nth 0 ,call-of-simplify-trees-and-add-to-dag))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                       (<= x dag-len))
+                       )
                   (<= x
                       (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag)))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-trees-and-add-to-dag- suffix))
@@ -2938,14 +3143,12 @@
 
        (defthm ,(pack$ 'corollary-theorem-for-simplify-trees-and-add-to-dag- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-axe-treep trees)
-                       (true-listp trees)
-                       (all-bounded-axe-treep trees dag-len)
+                       (bounded-axe-tree-listp trees dag-len)
                        (not (mv-nth 0 ,call-of-simplify-trees-and-add-to-dag))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                   (maybe-memoizationp (mv-nth 7 ,call-of-simplify-trees-and-add-to-dag)))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-trees-and-add-to-dag- suffix))
@@ -2958,17 +3161,16 @@
                        (dargp-less-than simplified-thenpart dag-len)
                        (axe-treep elsepart)
                        (bounded-axe-treep elsepart dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag3))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
-                       ;; (all-bounded-axe-treep trees-equal-to-tree dag-len)
+                       ;; (bounded-axe-tree-listp trees-equal-to-tree dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x dag-len))
                   (<= x (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag3)))
@@ -2983,17 +3185,16 @@
                        (bounded-axe-treep thenpart dag-len)
                        (axe-treep elsepart)
                        (bounded-axe-treep elsepart dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag2))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
-                       ;; (all-bounded-axe-treep trees-equal-to-tree dag-len)
+                       ;; (bounded-axe-tree-listp trees-equal-to-tree dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x dag-len))
                   (<= x (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag2)))
@@ -3003,8 +3204,9 @@
        (defthm ,(pack$ 'bound-theorem-for-simplify-if-tree-and-add-to-dag1- suffix)
          (implies (and (axe-treep tree)
                        (bounded-axe-treep tree dag-len)
+                       (consp tree) ; not logically necessary, but included above
                        (member-eq (ffn-symb tree) '(if myif))
-                       (= 3 (len (fargs tree)))
+                       ;; (equal 3 (len (fargs tree)))
                        (symbol-listp monitored-symbols)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag1))
@@ -3012,31 +3214,53 @@
                        (trees-to-memoizep trees-equal-to-tree)
 
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x dag-len))
                   (<= x
                       (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag1)))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag1- suffix))
-                  :in-theory (disable ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag1- suffix)))))
+                  :in-theory (e/d (member-equal ; split into 2 cases
+                                   )
+                                  (,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag1- suffix))))))
+
+       (defthm ,(pack$ 'bound-theorem-for-simplify-not-tree-and-add-to-dag- suffix)
+         (implies (and (axe-treep tree)
+                       (bounded-axe-treep tree dag-len)
+                       (consp tree) ; not logically necessary, but included above
+                       (eq (ffn-symb tree) 'not)
+                       (symbol-listp monitored-symbols)
+                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (not (mv-nth 0 ,call-of-simplify-not-tree-and-add-to-dag))
+                       (maybe-bounded-memoizationp memoization dag-len)
+                       (trees-to-memoizep trees-equal-to-tree)
+                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
+                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                       (<= x dag-len))
+                  (<= x
+                      (mv-nth 3 ,call-of-simplify-not-tree-and-add-to-dag)))
+         :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-not-tree-and-add-to-dag- suffix))
+                  :in-theory (e/d (member-equal ; split into 2 cases
+                                   )
+                                  (,(pack$ 'theorem-for-simplify-not-tree-and-add-to-dag- suffix))))))
 
        (defthm ,(pack$ 'bound-theorem-for-simplify-boolif-tree-and-add-to-dag2- suffix)
          (implies (and (natp simplified-test)
                        (< simplified-test dag-len)
-                       (all-axe-treep args)
-                       (all-bounded-axe-treep args dag-len)
-                       (equal (len args) 3)
-                       (consp tree)
-                       (axe-treep tree)
+                       (bounded-axe-tree-listp args dag-len)
+                       (consp (rest (rest args))) ; (equal 3 (len args))
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag2))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x dag-len))
                   (<= x (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag2)))
@@ -3044,19 +3268,17 @@
                   :in-theory (disable ,(pack$ 'theorem-for-simplify-boolif-tree-and-add-to-dag2- suffix)))))
 
        (defthm ,(pack$ 'bound-theorem-for-simplify-boolif-tree-and-add-to-dag1- suffix)
-         (implies (and (all-axe-treep args)
-                       (all-bounded-axe-treep args dag-len)
-                       (equal (len args) 3)
-                       (consp tree)
-                       (axe-treep tree)
+         (implies (and (axe-treep tree)
                        (bounded-axe-treep tree dag-len)
+                       (consp tree)
+                       (equal 'boolif (ffn-symb tree))
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag1))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x dag-len))
                   (<= x (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag1)))
@@ -3071,15 +3293,14 @@
                        (dargp-less-than simplified-thenpart dag-len)
                        (axe-treep elsepart)
                        (bounded-axe-treep elsepart dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag3))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x dag-len))
                   (<= x (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
@@ -3090,18 +3311,16 @@
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (natp simplified-test)
                        (< simplified-test dag-len)
-                       (all-axe-treep args)
-                       (all-bounded-axe-treep args dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (bounded-axe-tree-listp args dag-len)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
-                       (equal (len args) 4)
+                       (consp (rest (rest (rest args)))) ; (equal 4 (len args))
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag2))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x dag-len))
                   (<= x
@@ -3111,21 +3330,18 @@
 
        (defthm ,(pack$ 'bound-theorem-for-simplify-bvif-tree-and-add-to-dag1- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-axe-treep args)
-                       (all-bounded-axe-treep args dag-len)
-                       (consp tree)
                        (axe-treep tree)
                        (bounded-axe-treep tree dag-len)
-                       (equal (len args) 4)
+                       (consp tree)
+                       (equal 'bvif (ffn-symb tree))
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag1))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                       (<= x dag-len)
-                       )
+                       (<= x dag-len))
                   (<= x
                       (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag1- suffix))
@@ -3139,11 +3355,13 @@
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                   (and (pseudo-dag-arrayp 'dag-array (mv-nth '2 ,call-of-simplify-tree-and-add-to-dag) (mv-nth '3 ,call-of-simplify-tree-and-add-to-dag))
                        (array1p 'dag-array (mv-nth 2 ,call-of-simplify-tree-and-add-to-dag))
+                       (integerp (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag))
+                       (natp (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag))
                        (<= (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag)
                            (alen1 'dag-array (mv-nth 2 ,call-of-simplify-tree-and-add-to-dag)))
                        (maybe-memoizationp (mv-nth 7 ,call-of-simplify-tree-and-add-to-dag))
@@ -3163,8 +3381,8 @@
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                   (PSEUDO-DAG-ARRAYP
                    'DAG-ARRAY
@@ -3188,8 +3406,8 @@
                    (maybe-bounded-memoizationp memoization dag-len)
                    (trees-to-memoizep trees-equal-to-tree)
                    (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                   (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                   (rule-alistp rewriter-rule-alist)
+                   (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                   (rule-alistp rule-alist)
                    (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                   (< (MV-NTH '1 ,call-of-simplify-tree-and-add-to-dag)
                      bound))
@@ -3198,7 +3416,7 @@
 
        (defthm ,(pack$ 'dargp-less-than-of-mv-nth-1-of- simplify-tree-and-add-to-dag-name)
          (implies (and (<= (MV-NTH '3
-                               ,call-of-simplify-tree-and-add-to-dag)
+                                   ,call-of-simplify-tree-and-add-to-dag)
                            bound)
                        (axe-treep tree)
                        (bounded-axe-treep tree dag-len)
@@ -3207,12 +3425,12 @@
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                   (DARGP-LESS-THAN (MV-NTH '1
-                                                      ,call-of-simplify-tree-and-add-to-dag)
-                                              bound))
+                                           ,call-of-simplify-tree-and-add-to-dag)
+                                   bound))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)))))
 
@@ -3224,8 +3442,8 @@
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                   (dargp (mv-nth '1 ,call-of-simplify-tree-and-add-to-dag)))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix))
@@ -3241,10 +3459,29 @@
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                   (equal (natp (mv-nth '1 ,call-of-simplify-tree-and-add-to-dag))
+                         (not (consp (mv-nth '1 ,call-of-simplify-tree-and-add-to-dag)))))
+         :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix))
+                  :in-theory (disable ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)
+                                      ,(pack$ 'dargp-less-than-of-mv-nth-1-of- simplify-tree-and-add-to-dag-name)
+                                      ,(pack$ 'dargp-of-mv-nth-1-of- simplify-tree-and-add-to-dag-name)))))
+
+       ;; Use consp as the normal form
+       (defthm ,(pack$ 'integerp-of-mv-nth-1-of- simplify-tree-and-add-to-dag-name)
+         (implies (and (axe-treep tree)
+                       (bounded-axe-treep tree dag-len)
+                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (not (mv-nth 0 ,call-of-simplify-tree-and-add-to-dag))
+                       (maybe-bounded-memoizationp memoization dag-len)
+                       (trees-to-memoizep trees-equal-to-tree)
+                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
+                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                  (equal (integerp (mv-nth '1 ,call-of-simplify-tree-and-add-to-dag))
                          (not (consp (mv-nth '1 ,call-of-simplify-tree-and-add-to-dag)))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)
@@ -3260,8 +3497,8 @@
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                   (equal (myquotep (mv-nth '1 ,call-of-simplify-tree-and-add-to-dag))
                          (consp (mv-nth '1 ,call-of-simplify-tree-and-add-to-dag))))
@@ -3280,8 +3517,8 @@
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                   (equal (equal (car (mv-nth '1 ,call-of-simplify-tree-and-add-to-dag)) 'quote)
                          (consp (mv-nth '1 ,call-of-simplify-tree-and-add-to-dag))))
@@ -3300,8 +3537,8 @@
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x dag-len))
                   (<= x
@@ -3313,15 +3550,13 @@
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (symbolp fn)
                        (not (equal 'quote fn))
-                       (true-listp args)
-                       (all-dargp-less-than args dag-len)
+                       (bounded-darg-listp args dag-len)
                        (not (mv-nth 0 ,call-of-simplify-fun-call-and-add-to-dag))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes)
-                       (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                   (maybe-memoizationp (mv-nth 7 ,call-of-simplify-fun-call-and-add-to-dag)))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-fun-call-and-add-to-dag- suffix))
@@ -3330,17 +3565,17 @@
        (defthm ,(pack$ 'node-replacement-array-bound-theorem-for-relieve-free-var-hyp-and-all-others- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-relieve-free-var-hyp-and-all-others))
-                       (all-axe-treep hyp-args)
-                       (true-listp hyp-args)
+                       (axe-tree-listp hyp-args)
+                       (alist-suitable-for-hyp-args-and-hypsp alist hyp-args other-hyps)
                        (axe-rule-hyp-listp other-hyps)
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (symbol-alistp alist)
-                       (all-dargp-less-than (strip-cdrs alist) dag-len)
-                       (dargp-less-than-list-listp assumption-arg-lists dag-len)
+                       (bounded-darg-listp (strip-cdrs alist) dag-len)
+                       (bounded-darg-list-listp assumption-arg-lists dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 12 ,call-of-relieve-free-var-hyp-and-all-others))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix))
@@ -3349,14 +3584,15 @@
        (defthm ,(pack$ 'node-replacement-array-bound-theorem-for-relieve-rule-hyps- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (axe-rule-hyp-listp hyps)
+                       (alist-suitable-for-hypsp alist hyps)
                        (not (mv-nth 0 ,call-of-relieve-rule-hyps))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (symbol-alistp alist)
-                       (all-dargp-less-than (strip-cdrs alist) dag-len)
+                       (bounded-darg-listp (strip-cdrs alist) dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 12 ,call-of-relieve-rule-hyps))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-rule-hyps- suffix))
@@ -3364,13 +3600,13 @@
 
        (defthm ,(pack$ 'node-replacement-array-bound-theorem-for-try-to-apply-rules- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-dargp-less-than args-to-match dag-len)
+                       (bounded-darg-listp args-to-match dag-len)
                        (not (mv-nth 0 ,call-of-try-to-apply-rules))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                        (all-stored-axe-rulep stored-rules)
-                       (rule-alistp rewriter-rule-alist)
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 11 ,call-of-try-to-apply-rules))))
@@ -3379,14 +3615,12 @@
 
        (defthm ,(pack$ 'node-replacement-array-bound-theorem-for-simplify-trees-and-add-to-dag- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-axe-treep trees)
-                       (true-listp trees)
-                       (all-bounded-axe-treep trees dag-len)
+                       (bounded-axe-tree-listp trees dag-len)
                        (not (mv-nth 0 ,call-of-simplify-trees-and-add-to-dag))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-trees-and-add-to-dag))))
@@ -3401,16 +3635,15 @@
                        (dargp-less-than simplified-thenpart dag-len)
                        (axe-treep elsepart)
                        (bounded-axe-treep elsepart dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag3))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag3))))
@@ -3426,16 +3659,15 @@
                        (bounded-axe-treep thenpart dag-len)
                        (axe-treep elsepart)
                        (bounded-axe-treep elsepart dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag2))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag2))))
@@ -3448,36 +3680,52 @@
                        (consp tree) ; not logically necessary but speeds up the proof
                        (or (eq (ffn-symb tree) 'if)
                            (eq (ffn-symb tree) 'myif))
-                       (= 3 (len (fargs tree)))
+                       ;; (equal 3 (len (fargs tree)))
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag1))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag1))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag1- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag1- suffix)))))
 
+       (defthm ,(pack$ 'node-replacement-array-bound-theorem-for-simplify-not-tree-and-add-to-dag- suffix)
+         (implies (and (axe-treep tree)
+                       (bounded-axe-treep tree dag-len)
+                       (consp tree) ; not logically necessary but speeds up the proof
+                       (eq (ffn-symb tree) 'not)
+                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (not (mv-nth 0 ,call-of-simplify-not-tree-and-add-to-dag))
+                       (maybe-bounded-memoizationp memoization dag-len)
+                       (trees-to-memoizep trees-equal-to-tree)
+                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
+                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                       (<= x (alen1 'node-replacement-array node-replacement-array)))
+                  (<= x (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-not-tree-and-add-to-dag))))
+         :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-not-tree-and-add-to-dag- suffix))
+                  :in-theory (disable ,(pack$ 'theorem-for-simplify-not-tree-and-add-to-dag- suffix)))))
+
        (defthm ,(pack$ 'node-replacement-array-bound-theorem-for-simplify-boolif-tree-and-add-to-dag2- suffix)
          (implies (and (natp simplified-test)
                        (< simplified-test dag-len)
-                       (all-axe-treep args)
-                       (all-bounded-axe-treep args dag-len)
-                       (equal (len args) 3)
-                       (consp tree)
-                       (axe-treep tree)
+                       (bounded-axe-tree-listp args dag-len)
+                       (consp (rest (rest args))) ; (equal 3 (len args))
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag2))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-boolif-tree-and-add-to-dag2))))
@@ -3485,19 +3733,17 @@
                   :in-theory (disable ,(pack$ 'theorem-for-simplify-boolif-tree-and-add-to-dag2- suffix)))))
 
        (defthm ,(pack$ 'node-replacement-array-bound-theorem-for-simplify-boolif-tree-and-add-to-dag1- suffix)
-         (implies (and (all-axe-treep args)
-                       (all-bounded-axe-treep args dag-len)
-                       (equal (len args) 3)
-                       (consp tree)
+         (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (axe-treep tree)
                        (bounded-axe-treep tree dag-len)
-                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (consp tree)
+                       (equal 'boolif (ffn-symb tree))
                        (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag1))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-boolif-tree-and-add-to-dag1))))
@@ -3512,15 +3758,14 @@
                        (dargp-less-than simplified-thenpart dag-len)
                        (axe-treep elsepart)
                        (bounded-axe-treep elsepart dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag3))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag3))))
@@ -3531,18 +3776,16 @@
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (natp simplified-test)
                        (< simplified-test dag-len)
-                       (all-axe-treep args)
-                       (all-bounded-axe-treep args dag-len)
-                       (consp tree)
-                       (axe-treep tree)
+                       (bounded-axe-tree-listp args dag-len)
+                       (tree-to-memoizep tree)
                        (bounded-axe-treep tree dag-len)
-                       (equal (len args) 4)
+                       (consp (rest (rest (rest args)))) ; (equal 4 (len args))
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag2))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag2))))
@@ -3551,18 +3794,16 @@
 
        (defthm ,(pack$ 'node-replacement-array-bound-theorem-for-simplify-bvif-tree-and-add-to-dag1- suffix)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (all-axe-treep args)
-                       (all-bounded-axe-treep args dag-len)
-                       (consp tree)
                        (axe-treep tree)
                        (bounded-axe-treep tree dag-len)
-                       (equal (len args) 4)
+                       (consp tree)
+                       (equal 'bvif (ffn-symb tree))
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag1))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag1))))
@@ -3577,8 +3818,8 @@
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                       (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                       (rule-alistp rewriter-rule-alist)
+                       (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                       (rule-alistp rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (<= x (alen1 'node-replacement-array node-replacement-array)))
                   (<= x (alen1 'node-replacement-array (mv-nth 11 ,call-of-simplify-tree-and-add-to-dag))))
@@ -3590,17 +3831,17 @@
          (defthm ,(pack$ 'node-replacement-arrayp-of-relieve-free-var-hyp-and-all-others- suffix)
            (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (not (mv-nth 0 ,call-of-relieve-free-var-hyp-and-all-others))
-                         (all-axe-treep hyp-args)
-                         (true-listp hyp-args)
+                         (axe-tree-listp hyp-args)
+                         (alist-suitable-for-hyp-args-and-hypsp alist hyp-args other-hyps)
                          (axe-rule-hyp-listp other-hyps)
                          (maybe-bounded-memoizationp memoization dag-len)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                         (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                          (symbol-alistp alist)
-                         (all-dargp-less-than (strip-cdrs alist) dag-len)
-                         (dargp-less-than-list-listp assumption-arg-lists dag-len))
+                         (bounded-darg-listp (strip-cdrs alist) dag-len)
+                         (bounded-darg-list-listp assumption-arg-lists dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 12 ,call-of-relieve-free-var-hyp-and-all-others)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix))
                     :in-theory (disable ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix)))))
@@ -3608,27 +3849,28 @@
          (defthm ,(pack$ 'node-replacement-arrayp-of-relieve-rule-hyps- suffix)
            (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (axe-rule-hyp-listp hyps)
+                         (alist-suitable-for-hypsp alist hyps)
                          (not (mv-nth 0 ,call-of-relieve-rule-hyps))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                         (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                          (symbol-alistp alist)
-                         (all-dargp-less-than (strip-cdrs alist) dag-len))
+                         (bounded-darg-listp (strip-cdrs alist) dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 12 ,call-of-relieve-rule-hyps)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-rule-hyps- suffix))
                     :in-theory (disable ,(pack$ 'theorem-for-relieve-rule-hyps- suffix)))))
 
          (defthm ,(pack$ 'node-replacement-arrayp-of-try-to-apply-rules- suffix)
            (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-dargp-less-than args-to-match dag-len)
+                         (bounded-darg-listp args-to-match dag-len)
                          (not (mv-nth 0 ,call-of-try-to-apply-rules))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                          (all-stored-axe-rulep stored-rules)
-                         (rule-alistp rewriter-rule-alist)
+                         (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 11 ,call-of-try-to-apply-rules)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-try-to-apply-rules- suffix))
@@ -3636,14 +3878,12 @@
 
          (defthm ,(pack$ 'node-replacement-arrayp-of-simplify-trees-and-add-to-dag- suffix)
            (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-axe-treep trees)
-                         (true-listp trees)
-                         (all-bounded-axe-treep trees dag-len)
+                         (bounded-axe-tree-listp trees dag-len)
                          (not (mv-nth 0 ,call-of-simplify-trees-and-add-to-dag))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                         (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 11 ,call-of-simplify-trees-and-add-to-dag)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-trees-and-add-to-dag- suffix))
@@ -3657,16 +3897,15 @@
                          (dargp-less-than simplified-thenpart dag-len)
                          (axe-treep elsepart)
                          (bounded-axe-treep elsepart dag-len)
-                         (consp tree)
-                         (axe-treep tree)
+                         (tree-to-memoizep tree)
                          (bounded-axe-treep tree dag-len)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag3))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (trees-to-memoizep trees-equal-to-tree)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                         (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag3)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag3- suffix))
@@ -3681,16 +3920,15 @@
                          (bounded-axe-treep thenpart dag-len)
                          (axe-treep elsepart)
                          (bounded-axe-treep elsepart dag-len)
-                         (consp tree)
-                         (axe-treep tree)
+                         (tree-to-memoizep tree)
                          (bounded-axe-treep tree dag-len)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag2))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (trees-to-memoizep trees-equal-to-tree)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                         (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag2)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag2- suffix))
@@ -3702,54 +3940,67 @@
                          (consp tree) ; not logically necessary but speeds up the proof
                          (or (eq (ffn-symb tree) 'if)
                              (eq (ffn-symb tree) 'myif))
-                         (= 3 (len (fargs tree)))
+                         ;; (equal 3 (len (fargs tree)))
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (not (mv-nth 0 ,call-of-simplify-if-tree-and-add-to-dag1))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (trees-to-memoizep trees-equal-to-tree)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                         (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 11 ,call-of-simplify-if-tree-and-add-to-dag1)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag1- suffix))
                     :in-theory (disable ,(pack$ 'theorem-for-simplify-if-tree-and-add-to-dag1- suffix)))))
 
+         (defthm ,(pack$ 'node-replacement-arrayp-of-simplify-not-tree-and-add-to-dag- suffix)
+           (implies (and (axe-treep tree)
+                         (bounded-axe-treep tree dag-len)
+                         (consp tree) ; not logically necessary but speeds up the proof
+                         (eq (ffn-symb tree) 'not)
+                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                         (not (mv-nth 0 ,call-of-simplify-not-tree-and-add-to-dag))
+                         (maybe-bounded-memoizationp memoization dag-len)
+                         (trees-to-memoizep trees-equal-to-tree)
+                         (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                         (rule-alistp rule-alist)
+                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
+                    (node-replacement-arrayp 'node-replacement-array (mv-nth 11 ,call-of-simplify-not-tree-and-add-to-dag)))
+           :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-not-tree-and-add-to-dag- suffix))
+                    :in-theory (disable ,(pack$ 'theorem-for-simplify-not-tree-and-add-to-dag- suffix)))))
+
          (defthm ,(pack$ 'node-replacement-arrayp-of-simplify-boolif-tree-and-add-to-dag2- suffix)
            (implies (and (natp simplified-test)
                          (< simplified-test dag-len)
-                         (all-axe-treep args)
-                         (all-bounded-axe-treep args dag-len)
-                         (equal (len args) 3)
-                         (consp tree)
-                         (axe-treep tree)
+                         (bounded-axe-tree-listp args dag-len)
+                         (consp (rest (rest args))) ; (equal 3 (len args))
+                         (tree-to-memoizep tree)
                          (bounded-axe-treep tree dag-len)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag2))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (trees-to-memoizep trees-equal-to-tree)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                         (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 11 ,call-of-simplify-boolif-tree-and-add-to-dag2)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-boolif-tree-and-add-to-dag2- suffix))
                     :in-theory (disable ,(pack$ 'theorem-for-simplify-boolif-tree-and-add-to-dag2- suffix)))))
 
          (defthm ,(pack$ 'node-replacement-arrayp-of-simplify-boolif-tree-and-add-to-dag1- suffix)
-           (implies (and (all-axe-treep args)
-                         (all-bounded-axe-treep args dag-len)
-                         (equal (len args) 3)
-                         (consp tree)
+           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (axe-treep tree)
                          (bounded-axe-treep tree dag-len)
-                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                         (consp tree)
+                         (equal 'boolif (ffn-symb tree))
                          (not (mv-nth 0 ,call-of-simplify-boolif-tree-and-add-to-dag1))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (trees-to-memoizep trees-equal-to-tree)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                         (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 11 ,call-of-simplify-boolif-tree-and-add-to-dag1)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-boolif-tree-and-add-to-dag1- suffix))
@@ -3763,15 +4014,14 @@
                          (dargp-less-than simplified-thenpart dag-len)
                          (axe-treep elsepart)
                          (bounded-axe-treep elsepart dag-len)
-                         (consp tree)
-                         (axe-treep tree)
+                         (tree-to-memoizep tree)
                          (bounded-axe-treep tree dag-len)
                          (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag3))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (trees-to-memoizep trees-equal-to-tree)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                         (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag3- suffix))
@@ -3781,18 +4031,16 @@
            (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (natp simplified-test)
                          (< simplified-test dag-len)
-                         (all-axe-treep args)
-                         (all-bounded-axe-treep args dag-len)
-                         (consp tree)
-                         (axe-treep tree)
+                         (bounded-axe-tree-listp args dag-len)
+                         (tree-to-memoizep tree)
                          (bounded-axe-treep tree dag-len)
-                         (equal (len args) 4)
+                         (consp (rest (rest (rest args)))) ; (equal 4 (len args))
                          (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag2))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (trees-to-memoizep trees-equal-to-tree)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                         (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag2- suffix))
@@ -3800,18 +4048,16 @@
 
          (defthm ,(pack$ 'node-replacement-arrayp-of-simplify-bvif-tree-and-add-to-dag1- suffix)
            (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (all-axe-treep args)
-                         (all-bounded-axe-treep args dag-len)
-                         (consp tree)
                          (axe-treep tree)
                          (bounded-axe-treep tree dag-len)
-                         (equal (len args) 4)
+                         (consp tree)
+                         (equal 'bvif (ffn-symb tree))
                          (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag1))
                          (maybe-bounded-memoizationp memoization dag-len)
                          (trees-to-memoizep trees-equal-to-tree)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                         (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag1- suffix))
@@ -3825,8 +4071,8 @@
                          (maybe-bounded-memoizationp memoization dag-len)
                          (trees-to-memoizep trees-equal-to-tree)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                         (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                         (rule-alistp rewriter-rule-alist)
+                         (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                         (rule-alistp rule-alist)
                          (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 11 ,call-of-simplify-tree-and-add-to-dag)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix))
@@ -3838,488 +4084,1032 @@
        ;; (def-dag-builder-theorems
        ;;   (,simplify-tree-and-add-to-dag-name tree trees-equal-to-tree dag-array dag-len dag-parent-array
        ;;                                 dag-constant-alist dag-variable-alist memoization info tries limits
-       ;;                                 rewriter-rule-alist
+       ;;                                 rule-alist
        ;;                                 refined-assumption-alist
        ;;
-       ;;                                 node-replacement-array-num-valid-nodes
+       ;;                                 node-replacement-count
        ;;                                 print
        ;;                                 interpreted-function-alist
        ;;                                 monitored-symbols count)
        ;;   (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-       ;;   :hyps ((axe-treep tree)
-       ;;          (bounded-axe-treep tree dag-len)
-       ;;          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-       ;;          (not (mv-nth 0 (,simplify-tree-and-add-to-dag-name
-       ;;                          tree trees-equal-to-tree dag-array dag-len dag-parent-array
-       ;;                          dag-constant-alist dag-variable-alist memoization info tries limits
-       ;;                          rewriter-rule-alist
-       ;;                          refined-assumption-alist
-       ;;
-       ;;                          node-replacement-array-num-valid-nodes
-       ;;                          print
-       ;;                          interpreted-function-alist
-       ;;                          monitored-symbols count)))
-       ;;
-       ;;          (maybe-bounded-memoizationp memoization dag-len)
-       ;;          (trees-to-memoizep trees-equal-to-tree)
-       ;;
-       ;;          (alistp node-replacement-array-num-valid-nodes)
-       ;;          (all-dargp-less-than (strip-cdrs node-replacement-array-num-valid-nodes) dag-len)
-       ;;          (rule-alistp rewriter-rule-alist)
-       ;;          (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-       ;;          )
-       ;;   :hyps-everywhere t
-       ;;   :dag-array-name 'dag-array
-       ;;   :dag-parent-array-name 'dag-parent-array
-       ;;   :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix))
-       ;;            :in-theory (e/d (WF-DAGP) (,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)))))
-       ;;   )
+    ;;   :hyps ((axe-treep tree)
+    ;;          (bounded-axe-treep tree dag-len)
+    ;;          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+    ;;          (not (mv-nth 0 (,simplify-tree-and-add-to-dag-name
+    ;;                          tree trees-equal-to-tree dag-array dag-len dag-parent-array
+    ;;                          dag-constant-alist dag-variable-alist memoization info tries limits
+    ;;                          rule-alist
+    ;;                          refined-assumption-alist
+    ;;
+    ;;                          node-replacement-count
+    ;;                          print
+    ;;                          interpreted-function-alist
+    ;;                          monitored-symbols count)))
+    ;;
+    ;;          (maybe-bounded-memoizationp memoization dag-len)
+    ;;          (trees-to-memoizep trees-equal-to-tree)
+    ;;
+    ;;          (alistp node-replacement-count)
+    ;;          (bounded-darg-listp (strip-cdrs node-replacement-count) dag-len)
+    ;;          (rule-alistp rule-alist)
+    ;;          (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+    ;;          )
+    ;;   :hyps-everywhere t
+    ;;   :dag-array-name 'dag-array
+    ;;   :dag-parent-array-name 'dag-parent-array
+    ;;   :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix))
+    ;;            :in-theory (e/d (WF-DAGP) (,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)))))
+    ;;   )
 
-       ;; Show that the dag-len is always a natp:
-       (,(pack$ 'defthm-flag-simplify-tree-and-add-to-dag- suffix)
-        (defthm ,(pack$ 'natp-of-mv-nth-4-of-relieve-free-var-hyp-and-all-others- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others)))
-          :rule-classes (:rewrite :type-prescription) :flag ,relieve-free-var-hyp-and-all-others-name)
+    ;; Show that the dag-len is always a natp:
+    (,(pack$ 'defthm-flag-simplify-tree-and-add-to-dag- suffix)
+     (defthm ,(pack$ 'natp-of-mv-nth-4-of-relieve-free-var-hyp-and-all-others- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others)))
+       :rule-classes (:rewrite :type-prescription) :flag ,relieve-free-var-hyp-and-all-others-name)
 
-        (defthm ,(pack$ 'natp-of-mv-nth-4-of-relieve-rule-hyps- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 4 ,call-of-relieve-rule-hyps)))
-          :rule-classes (:rewrite :type-prescription) :flag ,relieve-rule-hyps-name)
+     (defthm ,(pack$ 'natp-of-mv-nth-4-of-relieve-rule-hyps- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 4 ,call-of-relieve-rule-hyps)))
+       :rule-classes (:rewrite :type-prescription) :flag ,relieve-rule-hyps-name)
 
-        (defthm ,(pack$ 'natp-of-mv-nth-3-of-try-to-apply-rules- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 3 ,call-of-try-to-apply-rules)))
-          :rule-classes (:rewrite :type-prescription) :flag ,try-to-apply-rules-name)
+     (defthm ,(pack$ 'natp-of-mv-nth-3-of-try-to-apply-rules- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 3 ,call-of-try-to-apply-rules)))
+       :rule-classes (:rewrite :type-prescription) :flag ,try-to-apply-rules-name)
 
-        (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-trees-and-add-to-dag- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag)))
-          :rule-classes (:rewrite :type-prescription) :flag ,simplify-trees-and-add-to-dag-name)
+     (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-trees-and-add-to-dag- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag)))
+       :rule-classes (:rewrite :type-prescription) :flag ,simplify-trees-and-add-to-dag-name)
 
-        (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-if-tree-and-add-to-dag3- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag3)))
-          :rule-classes (:rewrite :type-prescription) :flag ,simplify-if-tree-and-add-to-dag3-name)
+     (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-if-tree-and-add-to-dag3- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag3)))
+       :rule-classes (:rewrite :type-prescription) :flag ,simplify-if-tree-and-add-to-dag3-name)
 
-        (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-if-tree-and-add-to-dag2- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag2)))
-          :rule-classes (:rewrite :type-prescription) :flag ,simplify-if-tree-and-add-to-dag2-name)
+     (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-if-tree-and-add-to-dag2- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag2)))
+       :rule-classes (:rewrite :type-prescription) :flag ,simplify-if-tree-and-add-to-dag2-name)
 
-        (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-if-tree-and-add-to-dag1- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag1)))
-          :rule-classes (:rewrite :type-prescription) :flag ,simplify-if-tree-and-add-to-dag1-name)
+     (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-if-tree-and-add-to-dag1- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 3 ,call-of-simplify-if-tree-and-add-to-dag1)))
+       :rule-classes (:rewrite :type-prescription) :flag ,simplify-if-tree-and-add-to-dag1-name)
 
-        (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-boolif-tree-and-add-to-dag2- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag2)))
-          :rule-classes (:rewrite :type-prescription) :flag ,simplify-boolif-tree-and-add-to-dag2-name)
+     (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-not-tree-and-add-to-dag- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 3 ,call-of-simplify-not-tree-and-add-to-dag)))
+       :rule-classes (:rewrite :type-prescription) :flag ,simplify-not-tree-and-add-to-dag-name)
 
-        (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-boolif-tree-and-add-to-dag1- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag1)))
-          :rule-classes (:rewrite :type-prescription) :flag ,simplify-boolif-tree-and-add-to-dag1-name)
+     (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-boolif-tree-and-add-to-dag2- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag2)))
+       :rule-classes (:rewrite :type-prescription) :flag ,simplify-boolif-tree-and-add-to-dag2-name)
 
-        (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-bvif-tree-and-add-to-dag3- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
-          :rule-classes (:rewrite :type-prescription) :flag ,simplify-bvif-tree-and-add-to-dag3-name)
+     (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-boolif-tree-and-add-to-dag1- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 3 ,call-of-simplify-boolif-tree-and-add-to-dag1)))
+       :rule-classes (:rewrite :type-prescription) :flag ,simplify-boolif-tree-and-add-to-dag1-name)
 
-        (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-bvif-tree-and-add-to-dag2- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
-          :rule-classes (:rewrite :type-prescription) :flag ,simplify-bvif-tree-and-add-to-dag2-name)
+     (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-bvif-tree-and-add-to-dag3- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
+       :rule-classes (:rewrite :type-prescription) :flag ,simplify-bvif-tree-and-add-to-dag3-name)
 
-        (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-bvif-tree-and-add-to-dag- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
-          :rule-classes (:rewrite :type-prescription) :flag ,simplify-bvif-tree-and-add-to-dag1-name)
+     (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-bvif-tree-and-add-to-dag2- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
+       :rule-classes (:rewrite :type-prescription) :flag ,simplify-bvif-tree-and-add-to-dag2-name)
 
-        (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-tree-and-add-to-dag- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag)))
-          :rule-classes (:rewrite :type-prescription) :flag ,simplify-tree-and-add-to-dag-name)
+     (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-bvif-tree-and-add-to-dag- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
+       :rule-classes (:rewrite :type-prescription) :flag ,simplify-bvif-tree-and-add-to-dag1-name)
 
-        (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-fun-call-and-add-to-dag- suffix)
-          (implies (natp dag-len)
-                   (natp (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag)))
-          :rule-classes (:rewrite :type-prescription) :flag ,simplify-fun-call-and-add-to-dag-name)
+     (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-tree-and-add-to-dag- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag)))
+       :rule-classes (:rewrite :type-prescription) :flag ,simplify-tree-and-add-to-dag-name)
 
-        :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                 :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
-                                  len-of-cadar-when-axe-treep
-                                  pseudo-termp-of-cadddr-when-axe-treep
-                                  axe-bind-free-result-okayp-rewrite
-                                  symbol-alistp-when-alistp
-                                  true-listp-of-cdr)
-                                 (dargp-less-than
-                                  natp
-                                  quotep
-                                  myquotep))
-                 :expand ((:free (memoization count other-hyps alist)
-                                 ,call-of-relieve-free-var-hyp-and-all-others)
-                          (:free (memoization count)
-                                 ,call-of-relieve-rule-hyps)
-                          (:free (memoization)
-                                 (,RELIEVE-RULE-HYPS-NAME nil HYP-NUM ALIST RULE-SYMBOL
-                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                          REWRITER-RULE-ALIST
-                                                          REFINED-ASSUMPTION-ALIST
-                                                          NODE-REPLACEMENT-ARRAY-NUM-VALID-NODES
-                                                          PRINT
-                                                          INTERPRETED-FUNCTION-ALIST known-booleans MONITORED-SYMBOLS COUNT))
-                          (:free (memoization count)
-                                 (,SIMPLIFY-TREES-AND-ADD-TO-DAG-NAME NIL
-                                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                      REWRITER-RULE-ALIST
-                                                                      REFINED-ASSUMPTION-ALIST
-                                                                      NODE-REPLACEMENT-ARRAY-NUM-VALID-NODES
-                                                                      PRINT
-                                                                      INTERPRETED-FUNCTION-ALIST known-booleans MONITORED-SYMBOLS COUNT))
-                          (:free (memoization count)
-                                 ,call-of-simplify-trees-and-add-to-dag)
-                          (:free (memoization limits info tries count)
-                                 ,call-of-try-to-apply-rules)
-                          (:free (memoization fn count)
-                                 ,call-of-simplify-if-tree-and-add-to-dag1)
-                          (:free (memoization fn count)
-                                 ,call-of-simplify-if-tree-and-add-to-dag2)
-                          (:free (memoization fn count)
-                                 ,call-of-simplify-if-tree-and-add-to-dag3)
-                          (:free (memoization count)
-                                 ,call-of-simplify-bvif-tree-and-add-to-dag1)
-                          (:free (memoization count)
-                                 ,call-of-simplify-boolif-tree-and-add-to-dag1)
-                          (:free (memoization count)
-                                 ,call-of-simplify-boolif-tree-and-add-to-dag2)
-                          (:free (memoization count TREES-EQUAL-TO-TREE)
-                                 ,call-of-simplify-tree-and-add-to-dag)
-                          (:free (memoization count TREES-EQUAL-TO-TREE)
-                                 ,call-of-simplify-fun-call-and-add-to-dag)
-                          (:free (memoization count)
-                                 ,call-of-simplify-bvif-tree-and-add-to-dag2)
-                          (:free (memoization count)
-                                 ,call-of-simplify-bvif-tree-and-add-to-dag3)
-                          (axe-rule-hyp-listp hyps)))))
+     (defthm ,(pack$ 'natp-of-mv-nth-3-of-simplify-fun-call-and-add-to-dag- suffix)
+       (implies (natp dag-len)
+                (natp (mv-nth 3 ,call-of-simplify-fun-call-and-add-to-dag)))
+       :rule-classes (:rewrite :type-prescription) :flag ,simplify-fun-call-and-add-to-dag-name)
 
-       (verify-guards ,relieve-free-var-hyp-and-all-others-name
-         :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                  :expand ((AXE-BIND-FREE-FUNCTION-APPLICATIONP (NTH 1 (CAR HYPS)))
-                           (AXE-RULE-HYP-LISTP HYPS)
-                           (AXE-TREEP TREE)
-                           (MYQUOTEP TREE)
-                           (QUOTEP TREE))
-                  :in-theory (e/d (true-list-of-car-when-DARGP-LESS-THAN-LIST-LISTP
-                                   all-myquote-or-natp-of-car-when-dargp-less-than-list-listp
-                                   ALL-MYQUOTEP-when-ALL-dargp
-                                   axe-bind-free-result-okayp-rewrite
-                                   AXE-RULE-HYPP
-                                   INTEGERP-WHEN-DARGP
-                                   <=-of-0-WHEN-DARGP
-                                   <-WHEN-DARGP-less-than
-                                   len-when-dargp
-                                   natp-WHEN-DARGP
-                                   quotep-when-dargp
-                                   <-of--1-when-dargp
-                                   integerp-of-if
-                                   <-of--0-when-dargp
-                                   NATP-OF-+-OF-1
-                                   <-OF-+-OF-1-WHEN-INTEGERS
-                                   ;;SYMBOL-ALISTP-WHEN-ALISTP
-                                   cadr-becomes-nth-of-1
-                                   memoizationp-when-maybe-memoizationp
-                                   tree-to-memoizep ;todo
-                                   <=-transitive-1 ;drop?
-                                   symbolp-when-member-equal)
-                                  (dargp
-                                   dargp-less-than
-                                   natp
-                                   quotep
-                                   myquotep
-                                   nth-of-cdr
-                                   cadr-becomes-nth-of-1)))
-                 ;;(and stable-under-simplificationp '(:cases (memoizep)))
-                 ))
+     :hints (("Goal" :do-not '(generalize eliminate-destructors)
+              :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                               len-of-cadar-when-axe-treep
+                               pseudo-termp-of-cadddr-when-axe-treep
+                               axe-bind-free-result-okayp-rewrite
+                               symbol-alistp-when-alistp
+                               true-listp-of-cdr)
+                              (dargp-less-than
+                               natp
+                               quotep
+                               myquotep))
+              :expand ((:free (memoization count other-hyps alist)
+                              ,call-of-relieve-free-var-hyp-and-all-others)
+                       (:free (memoization count)
+                              ,call-of-relieve-rule-hyps)
+                       (:free (memoization)
+                              (,relieve-rule-hyps-name nil hyp-num alist rule-symbol
+                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                       node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                       print interpreted-function-alist known-booleans monitored-symbols count))
+                       (:free (memoization count)
+                              (,simplify-trees-and-add-to-dag-name nil
+                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                   node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                   print interpreted-function-alist known-booleans monitored-symbols count))
+                       (:free (memoization count)
+                              ,call-of-simplify-trees-and-add-to-dag)
+                       (:free (memoization limits info tries count)
+                              ,call-of-try-to-apply-rules)
+                       (:free (memoization fn count)
+                              ,call-of-simplify-if-tree-and-add-to-dag1)
+                       (:free (memoization fn count)
+                              ,call-of-simplify-not-tree-and-add-to-dag)
+                       (:free (memoization fn count)
+                              ,call-of-simplify-if-tree-and-add-to-dag2)
+                       (:free (memoization fn count)
+                              ,call-of-simplify-if-tree-and-add-to-dag3)
+                       (:free (memoization count)
+                              ,call-of-simplify-bvif-tree-and-add-to-dag1)
+                       (:free (memoization count)
+                              ,call-of-simplify-boolif-tree-and-add-to-dag1)
+                       (:free (memoization count)
+                              ,call-of-simplify-boolif-tree-and-add-to-dag2)
+                       (:free (memoization count TREES-EQUAL-TO-TREE)
+                              ,call-of-simplify-tree-and-add-to-dag)
+                       (:free (memoization count TREES-EQUAL-TO-TREE)
+                              ,call-of-simplify-fun-call-and-add-to-dag)
+                       (:free (memoization count)
+                              ,call-of-simplify-bvif-tree-and-add-to-dag2)
+                       (:free (memoization count)
+                              ,call-of-simplify-bvif-tree-and-add-to-dag3)
+                       (axe-rule-hyp-listp hyps)))))
 
-       ;; Simplify a term and return an equivalent DAG.  Returns (mv erp dag-or-quotep).
-       ;; TODO: add support for multiple rule-alists.
-       (defund ,simplify-term-name (term
-                                    assumptions
-                                    rule-alist
-                                    interpreted-function-alist
-                                    monitored-symbols
-                                    memoizep
-                                    ;; todo: add context array and other args?
-                                    count-hitsp
-                                    wrld)
-         (declare (xargs :guard (and (pseudo-termp term)
-                                     (pseudo-term-listp assumptions)
-                                     (rule-alistp rule-alist)
-                                     (interpreted-function-alistp interpreted-function-alist)
-                                     (symbol-listp monitored-symbols)
-                                     (booleanp memoizep)
-                                     (booleanp count-hitsp)
-                                     (plist-worldp wrld))
-                         :guard-hints (("Goal" :in-theory (e/d (natp-when-dargp
-                                                                natp-of-+-of-1
-                                                                <-of-+-of-1-when-integers
-                                                                <-OF-+-OF-1-WHEN-natps
-                                                                ;; integerp-when-dargp ;caused problems when natp is known
-                                                                axe-treep-when-pseudo-termp
-                                                                dargp-when-natp
-                                                                <-of-if-arg2-axe)
-                                                               (natp
-                                                                NATP-WHEN-DARGP ;caused problems when natp is known
-                                                                ))))))
-         ;; Could create a variant of ,simplify-tree-and-add-to-dag-name that is restricted to terms:
-         (b* ((dag-array (make-empty-array 'dag-array 1000000)) ;todo: make this size adjustable
-              (dag-parent-array (make-empty-array 'dag-parent-array 1000000)) ;todo: make this size adjustable
-              ;; Create the refined-assumption-alist and add nodes it refers to to the DAG:
-              ((mv erp refined-assumption-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-               (refine-assumptions-and-add-to-dag-array assumptions
-                                                        'dag-array dag-array
-                                                        0 ;dag-len
-                                                        'dag-parent-array dag-parent-array
-                                                        nil ;;dag-constant-alist
-                                                        nil ;;dag-variable-alist
+    (verify-guards ,relieve-free-var-hyp-and-all-others-name
+      :hints (("Goal" :do-not '(generalize eliminate-destructors)
+               :expand ((AXE-BIND-FREE-FUNCTION-APPLICATIONP (NTH 1 (CAR HYPS)))
+                        (AXE-RULE-HYP-LISTP HYPS)
+                        ;; (AXE-TREEP TREE)
+                        (MYQUOTEP TREE)
+                        (QUOTEP TREE))
+               :in-theory (e/d (true-list-of-car-when-BOUNDED-DARG-LIST-LISTP
+                                all-dargp-of-car-when-bounded-darg-list-listp
+                                ALL-MYQUOTEP-when-ALL-dargp
+                                axe-bind-free-result-okayp-rewrite
+                                AXE-RULE-HYPP
+                                INTEGERP-WHEN-DARGP
+                                <=-of-0-WHEN-DARGP
+                                <-WHEN-DARGP-less-than
+                                len-when-dargp
+                                natp-WHEN-DARGP
+                                quotep-when-dargp
+                                <-of--1-when-dargp
+                                integerp-of-if
+                                <-of--0-when-dargp
+                                NATP-OF-+-OF-1
+                                <-OF-+-OF-1-WHEN-INTEGERS
+                                ;;SYMBOL-ALISTP-WHEN-ALISTP
+                                cadr-becomes-nth-of-1
+                                memoizationp-when-maybe-memoizationp
+                                tree-to-memoizep ;todo
+                                <=-transitive-1  ;drop?
+                                symbolp-when-member-equal-disabled
+                                NOT-EQUAL-WHEN-MEMBER-EQUAL-ALT-disabled
+                                NOT-EQUAL-WHEN-MEMBER-EQUAL-disabled
+                                pseudo-termp-of-lambda-body-when-axe-treep
+                                true-listp-of-lambda-formals-when-axe-treep
+                                symbol-listp-of-lambda-formals-when-axe-treep
+                                len-of-lambda-formals-when-axe-treep
+                                len-when-equal-of-car-and-quote-and-axe-treep
+                                consp-of-cdr-when-equal-of-car-and-quote-and-axe-treep)
+                               (dargp
+                                dargp-less-than
+                                natp
+                                quotep
+                                myquotep
+                                nth-of-cdr
+                                cadr-becomes-nth-of-1)))
+              ;;(and stable-under-simplificationp '(:cases (memoizep)))
+              ))
+
+    ;; Simplify a term and return an equivalent DAG.  Returns (mv erp dag-or-quotep).
+    ;; TODO: add support for multiple rule-alists.
+    (defund ,simplify-term-name (term
+                                 assumptions
+                                 rule-alist
+                                 interpreted-function-alist
+                                 monitored-symbols
+                                 memoizep
+                                 ;; todo: add context array and other args?
+                                 count-hits
+                                 print
+                                 wrld)
+      (declare (xargs :guard (and (pseudo-termp term)
+                                  (pseudo-term-listp assumptions)
+                                  (rule-alistp rule-alist)
+                                  (interpreted-function-alistp interpreted-function-alist)
+                                  (symbol-listp monitored-symbols)
+                                  (booleanp memoizep)
+                                  (booleanp count-hits)
+                                  (axe-print-levelp print)
+                                  (plist-worldp wrld))
+                      :guard-hints (("Goal" :in-theory (e/d (natp-when-dargp
+                                                             natp-of-+-of-1
+                                                             <-of-+-of-1-when-integers
+                                                             <-OF-+-OF-1-WHEN-natps
+                                                             ;; integerp-when-dargp ;caused problems when natp is known
+                                                             axe-treep-when-pseudo-termp
+                                                             dargp-when-natp
+                                                             <-of-if-arg2-axe)
+                                                            (natp
+                                                             NATP-WHEN-DARGP ;caused problems when natp is known
+                                                             ))))))
+      (b* (                       ;; Create an empty dag-array:
+           (slack-amount 1000000) ;todo: make this adjustable
+           ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+            (empty-dag-array slack-amount))
+
+           ;; Create the refined-assumption-alist and add relevant nodes to the DAG:
+           ((mv erp refined-assumption-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+            ;; TODO: Make a version specialized to these array names:
+            (refine-assumptions-and-add-to-dag-array assumptions
+                                                     'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist
+                                                     (known-booleans wrld)))
+           ((when erp) (mv erp nil))
+
+           ;; Create the node-replacement-array and add relevant nodes to the DAG:
+           ;; TODO: Consider combining this with the above, in a single pass through the assumptions):
+           ((mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+            (make-node-replacement-array-and-extend-dag assumptions
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                         (known-booleans wrld)))
-              ((when erp) (mv erp nil))
-              ;; TODO: Combine this with the above:
-              ((mv erp node-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-               (make-node-replacement-alist-and-add-to-dag-array assumptions
-                                                                 'dag-array ;todo: make a specialized version?
-                                                                 dag-array dag-len
-                                                                 'dag-parent-array ;todo: make a specialized version?
-                                                                 dag-parent-array dag-constant-alist dag-variable-alist
-                                                                 wrld))
-              ((when erp) (mv erp nil))
-              (node-replacement-array (make-into-array 'node-replacement-array node-replacement-alist))
-              (node-replacement-array-num-valid-nodes (+ 1 (max-key node-replacement-alist 0))) ;todo: optimize if no assumptions?  the array len of 0 will prevent any lookup
-              ((mv erp
-                   new-nodenum-or-quotep
-                   dag-array
-                   & & & & ; dag-len dag-parent-array dag-constant-alist dag-variable-alist
+           ((when erp) (mv erp nil))
+
+           ;; old:
+           ;; ((mv erp node-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+           ;;  ;; TODO: Make a version specialized to these array names:
+           ;;  (make-node-replacement-alist-and-add-to-dag-array assumptions
+           ;;                                                    'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist
+           ;;                                                    wrld))
+           ;; ((when erp) (mv erp nil))
+           ;; ;; TODO: Combine this with the above (don't actually create the node-replacement-alist):
+           ;; (node-replacement-array (make-into-array 'node-replacement-array node-replacement-alist))
+           ;; (node-replacement-count (+ 1 (max-key node-replacement-alist 0))) ;todo: optimize if no assumptions?  the array len of 0 will prevent any lookup
+
+           ;; Call the core term simplification function:
+           ((mv erp new-nodenum-or-quotep
+                dag-array
+                & & & & ; dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                memoization info
+                & & & ; tries limits node-replacement-array
+                )
+            ;; TODO: Consider making a version of ,simplify-tree-and-add-to-dag-name that applies only to terms, not axe-trees, and calling it here.
+            ;; TODO: Or consider handling vars separately and then dropping support for vars in ,simplify-tree-and-add-to-dag-name (and in the memoization).
+            (,simplify-tree-and-add-to-dag-name term
+                                                nil ;trees-equal-to-tree
+                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                (if memoizep
+                                                    (empty-memoization)
+                                                  ;; not memoizing:
+                                                  nil)
+                                                (if count-hits
+                                                    (empty-info-world)
+                                                  nil ;means no hit counting
+                                                  )
+                                                0   ; tries
+                                                nil ; limits
+                                                node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                print
+                                                interpreted-function-alist
+                                                (known-booleans wrld) ;skip if memoizing since we can't use contexts?
+                                                monitored-symbols
+                                                1000000000 ;count
+                                                ))
+           ((when erp) (mv erp nil))
+           (- (and count-hits
+                   (maybe-print-hit-counts t info)))
+           (- (and nil ;; change to t to print info on the memoization
                    memoization
-                   info
-                   &                                          ; tries
-                   &                                          ; limits
-                   & ; node-replacement-array
-                   )
-               ;; TODO: Consider making a version of ,simplify-tree-and-add-to-dag-name that applies only to terms, not axe-trees, and calling it here.
-               ;; TODO: Consider handling vars separately and then dropping support for vars in ,simplify-tree-and-add-to-dag-name.
-               (,simplify-tree-and-add-to-dag-name term
-                                                   nil ;trees-equal-to-tree
-                                                   dag-array
-                                                   dag-len
-                                                   dag-parent-array
-                                                   dag-constant-alist
-                                                   dag-variable-alist
-                                                   (if memoizep
-                                                       (empty-memoization)
-                                                     ;; not memoizing:
-                                                     nil)
-                                                   (if count-hitsp
-                                                       (empty-info-world)
-                                                     nil ;means no hit counting
-                                                     )
-                                                   0 ; tries
-                                                   nil ; limits
-                                                   node-replacement-array
-                                                   rule-alist
-                                                   refined-assumption-alist
-                                                   node-replacement-array-num-valid-nodes
-                                                   nil ;print
-                                                   interpreted-function-alist
-                                                   (known-booleans wrld) ;skip if memoizing since we can't use contexts?
-                                                   monitored-symbols
-                                                   1000000000 ;count
-                                                   ))
-              ((when erp) (mv erp nil))
-              (- (and count-hitsp
-                      (print-hit-counts t info (rules-from-rule-alist rule-alist))))
-              (- (and nil ;; change to t to print info on the memoization
-                      memoization
-                      (print-memo-stats memoization))))
-           (if (consp new-nodenum-or-quotep) ;check for quotep
-               (mv (erp-nil) new-nodenum-or-quotep)
-             (mv (erp-nil) (drop-non-supporters-array 'dag-array dag-array new-nodenum-or-quotep nil)))))
+                   (print-memo-stats memoization))))
+        (if (consp new-nodenum-or-quotep) ;check for quotep
+            (mv (erp-nil) new-nodenum-or-quotep)
+          (mv (erp-nil) (drop-non-supporters-array-with-name 'dag-array dag-array new-nodenum-or-quotep nil)))))
 
-       (defthm ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)
-         (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld))) ; no error
-                   (pseudo-termp term)
-                   (pseudo-term-listp assumptions)
-                   (rule-alistp rule-alist)
-                   (interpreted-function-alistp interpreted-function-alist)
-                   (symbol-listp monitored-symbols)
-                   (booleanp memoizep)
-                   (booleanp count-hitsp)
-                   (plist-worldp wrld))
-                  (or (myquotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld)))
-                      (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld)))))
-         :rule-classes nil
-         :hints (("Goal" :in-theory (e/d (,simplify-term-name
-                                          axe-treep-when-pseudo-termp
-                                          natp-of-+-of-1
-                                          natp-of-max-key-2
-                                          <-of-if-arg1
-                                          max-key-hack
-                                          max-key-hack-2
-                                          <-OF-+-OF-1-WHEN-INTEGERS
-                                          integerp-when-natp
-                                          <-of-if-arg2-axe)
-                                         (natp)))))
+    (defthm ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)
+      (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))) ; no error
+                    (pseudo-termp term)
+                    (pseudo-term-listp assumptions)
+                    (rule-alistp rule-alist)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp monitored-symbols)
+                    (booleanp memoizep)
+                    (booleanp count-hits)
+                    (plist-worldp wrld))
+               (or (myquotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld)))
+                   (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld)))))
+      :rule-classes nil
+      :hints (("Goal" :in-theory (e/d (,simplify-term-name
+                                       axe-treep-when-pseudo-termp
+                                       natp-of-+-of-1
+                                       natp-of-max-key-2
+                                       <-of-if-arg1
+                                       max-key-hack
+                                       max-key-hack-2
+                                       <-OF-+-OF-1-WHEN-INTEGERS
+                                       integerp-when-natp-disabled
+                                       <-of-if-arg2-axe)
+                                      (natp)))))
 
-       (defthm ,(pack$ 'consp-of-cdr-of-mv-nth-1-of- simplify-term-name '-when-quotep)
-         (implies (and (equal 'quote (car (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld))))
-                       (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld))) ; no error
-                       (pseudo-termp term)
-                       (pseudo-term-listp assumptions)
-                       (rule-alistp rule-alist)
-                       (interpreted-function-alistp interpreted-function-alist)
-                       (symbol-listp monitored-symbols)
-                       (booleanp memoizep)
-                       (booleanp count-hitsp)
-                       (plist-worldp wrld))
-                  (consp (cdr (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld)))))
-         :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
+    (defthm ,(pack$ 'consp-of-cdr-of-mv-nth-1-of- simplify-term-name '-when-quotep)
+      (implies (and (equal 'quote (car (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))))
+                    (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))) ; no error
+                    (pseudo-termp term)
+                    (pseudo-term-listp assumptions)
+                    (rule-alistp rule-alist)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp monitored-symbols)
+                    (booleanp memoizep)
+                    (booleanp count-hits)
+                    (plist-worldp wrld))
+               (consp (cdr (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld)))))
+      :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
-       (defthm ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name)
-         (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld))) ; no error
-                       (not (quotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld)))) ;not a constant
-                       (pseudo-termp term)
-                       (pseudo-term-listp assumptions)
-                       (rule-alistp rule-alist)
-                       (interpreted-function-alistp interpreted-function-alist)
-                       (symbol-listp monitored-symbols)
-                       (booleanp memoizep)
-                       (booleanp count-hitsp)
-                       (plist-worldp wrld))
-                  (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld))))
-         :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
+    (defthm ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name)
+      (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))) ; no error
+                    (not (quotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld)))) ;not a constant
+                    (pseudo-termp term)
+                    (pseudo-term-listp assumptions)
+                    (rule-alistp rule-alist)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp monitored-symbols)
+                    (booleanp memoizep)
+                    (booleanp count-hits)
+                    (plist-worldp wrld))
+               (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))))
+      :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
-       ;; (defthm ,(pack$ 'weak-dagp-of-mv-nth-1-of- simplify-term-name)
-       ;;   (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld)))
-       ;;                 (not (quotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld))))
-       ;;                 (pseudo-termp term)
-       ;;                 (pseudo-term-listp assumptions)
-       ;;                 (rule-alistp rule-alist)
-       ;;                 (interpreted-function-alistp interpreted-function-alist)
-       ;;                 (symbol-listp monitored-symbols)
-       ;;                 (booleanp memoizep)
-       ;;                 (booleanp count-hitsp)
-       ;;                 (plist-worldp wrld))
-       ;;            (weak-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld))))
-       ;;   :hints (("Goal" :use (:instance ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))
-       ;;            :in-theory (disable ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name)))))
+    ;; Simplify a term and return a term (not a DAG).  Returns (mv erp term).
+    (defund ,simp-term-name (term
+                             assumptions
+                             rule-alist
+                             interpreted-function-alist
+                             monitored-symbols
+                             memoizep
+                             ;; todo: add context array and other args?
+                             count-hits
+                             print
+                             wrld)
+      (declare (xargs :guard (and (pseudo-termp term)
+                                  (pseudo-term-listp assumptions)
+                                  (rule-alistp rule-alist)
+                                  (interpreted-function-alistp interpreted-function-alist)
+                                  (symbol-listp monitored-symbols)
+                                  (booleanp memoizep)
+                                  (booleanp count-hits)
+                                  (axe-print-levelp print)
+                                  (plist-worldp wrld))))
+      (b* (((mv erp dag) (,simplify-term-name term
+                                              assumptions
+                                              rule-alist
+                                              interpreted-function-alist
+                                              monitored-symbols
+                                              memoizep
+                                              ;; todo: add context array and other args?
+                                              count-hits
+                                              print
+                                              wrld))
+           ((when erp) (mv erp nil)))
+        (mv (erp-nil) (if (quotep dag)
+                          dag
+                        (dag-to-term dag)))))
 
-       ;; Simplify a term and return a term (not a DAG).  Returns (mv erp term).
-       (defund ,simp-term-name (term
+    (defthm ,(pack$ 'pseudo-termp-of-mv-nth-1-of- simp-term-name)
+      (implies (and (pseudo-termp term)
+                    (pseudo-term-listp assumptions)
+                    (rule-alistp rule-alist)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp monitored-symbols)
+                    (booleanp memoizep)
+                    (booleanp count-hits)
+                    (plist-worldp wrld))
+               (pseudo-termp (mv-nth 1 (,simp-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))))
+      :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name))
+               :in-theory (e/d (,simp-term-name) (,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))))))
+
+    ;; Simplify a list of terms, returning a list of the simplified terms
+    ;; (not DAGs).  Returns (mv erp terms).
+    (defun ,simp-terms-name (terms
+                             assumptions
+                             rule-alist
+                             interpreted-function-alist
+                             monitored-symbols
+                             memoizep
+                             ;; todo: add context array and other args?
+                             count-hits
+                             print
+                             wrld)
+      (declare (xargs :guard (and (pseudo-term-listp terms)
+                                  (pseudo-term-listp assumptions)
+                                  (rule-alistp rule-alist)
+                                  (interpreted-function-alistp interpreted-function-alist)
+                                  (symbol-listp monitored-symbols)
+                                  (booleanp memoizep)
+                                  (booleanp count-hits)
+                                  (axe-print-levelp print)
+                                  (plist-worldp wrld))))
+      (if (endp terms)
+          (mv (erp-nil) nil)
+        (b* (((mv erp first-res)
+              (,simp-term-name (first terms)
+                               assumptions
+                               rule-alist
+                               nil
+                               nil
+                               nil
+                               t
+                               print
+                               wrld))
+             ((when erp) (mv erp nil))
+             ((mv erp rest-res)
+              (,simp-terms-name (rest terms)
                                 assumptions
                                 rule-alist
                                 interpreted-function-alist
                                 monitored-symbols
                                 memoizep
-                                ;; todo: add context array and other args?
-                                count-hitsp
-                                wrld)
-         (declare (xargs :guard (and (pseudo-termp term)
-                                     (pseudo-term-listp assumptions)
-                                     (rule-alistp rule-alist)
-                                     (interpreted-function-alistp interpreted-function-alist)
-                                     (symbol-listp monitored-symbols)
-                                     (booleanp memoizep)
-                                     (booleanp count-hitsp)
-                                     (plist-worldp wrld))))
-         (b* (((mv erp dag) (,simplify-term-name term
-                                                 assumptions
-                                                 rule-alist
-                                                 interpreted-function-alist
-                                                 monitored-symbols
-                                                 memoizep
-                                                 ;; todo: add context array and other args?
-                                                 count-hitsp
-                                                 wrld))
-              ((when erp) (mv erp nil)))
-           (mv (erp-nil) (if (quotep dag)
-                             dag
-                           (dag-to-term dag)))))
+                                count-hits
+                                print
+                                wrld))
+             ((when erp) (mv erp nil)))
+          (mv (erp-nil)
+              (cons first-res rest-res)))))
 
-       (defthm ,(pack$ 'pseudo-termp-of-mv-nth-1-of- simp-term-name)
-         (implies (and (pseudo-termp term)
-                       (pseudo-term-listp assumptions)
-                       (rule-alistp rule-alist)
-                       (interpreted-function-alistp interpreted-function-alist)
-                       (symbol-listp monitored-symbols)
-                       (booleanp memoizep)
-                       (booleanp count-hitsp)
-                       (plist-worldp wrld))
-                  (pseudo-termp (mv-nth 1 (,simp-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld))))
-         :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name))
-                  :in-theory (e/d (,simp-term-name) (,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))))))
+    (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- simp-terms-name)
+      (true-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld)))
+      :rule-classes :type-prescription
+      :hints (("Goal" :in-theory (enable ,simp-terms-name))))
 
-       ;; Simplify a list of terms, returning a list of the simplified terms
-       ;; (not DAGs).  Returns (mv erp terms).
-       (defun ,simp-terms-name (terms
-                                assumptions
-                                rule-alist
-                                interpreted-function-alist
-                                monitored-symbols
-                                memoizep
-                                ;; todo: add context array and other args?
-                                count-hitsp
-                                wrld)
-         (declare (xargs :guard (and (pseudo-term-listp terms)
-                                     (pseudo-term-listp assumptions)
-                                     (rule-alistp rule-alist)
-                                     (interpreted-function-alistp interpreted-function-alist)
-                                     (symbol-listp monitored-symbols)
-                                     (booleanp memoizep)
-                                     (booleanp count-hitsp)
-                                     (plist-worldp wrld))))
-         (if (endp terms)
-             (mv (erp-nil) nil)
-           (b* (((mv erp first-res)
-                 (,simp-term-name (first terms)
-                                  assumptions
-                                  rule-alist
-                                  nil
-                                  nil
-                                  nil
-                                  t
-                                  wrld))
-                ((when erp) (mv erp nil))
-                ((mv erp rest-res)
-                 (,simp-terms-name (rest terms)
-                                   assumptions
-                                   rule-alist
-                                   interpreted-function-alist
-                                   monitored-symbols
-                                   memoizep
-                                   count-hitsp
-                                   wrld))
-                ((when erp) (mv erp nil)))
-             (mv (erp-nil)
-                 (cons first-res rest-res)))))
+    (defthm ,(pack$ 'pseudo-term-listp-of-mv-nth-1-of- simp-terms-name)
+      (implies (and (pseudo-term-listp terms)
+                    (pseudo-term-listp assumptions)
+                    (rule-alistp rule-alist)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp monitored-symbols)
+                    (booleanp memoizep)
+                    (booleanp count-hits)
+                    (plist-worldp wrld))
+               (pseudo-term-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print wrld))))
+      :hints (("Goal" :in-theory (enable ,simp-terms-name))))
 
-       (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- simp-terms-name)
-         (true-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld)))
-         :rule-classes :type-prescription
-         :hints (("Goal" :in-theory (enable ,simp-terms-name))))
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (defthm ,(pack$ 'pseudo-term-listp-of-mv-nth-1-of- simp-terms-name)
-         (implies (and (pseudo-term-listp terms)
-                       (pseudo-term-listp assumptions)
-                       (rule-alistp rule-alist)
-                       (interpreted-function-alistp interpreted-function-alist)
-                       (symbol-listp monitored-symbols)
-                       (booleanp memoizep)
-                       (booleanp count-hitsp)
-                       (plist-worldp wrld))
-                  (pseudo-term-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hitsp wrld))))
-         :hints (("Goal" :in-theory (enable ,simp-terms-name))))
-       )))
+    ;; For each node in REV-DAG, fix up its args (if any) according to the renumbering-stobj, then add its simplified form to the dag-array and add its new nodenum or quotep to the renumbering-stobj.
+    ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj).
+    ;; TODO: Add support for assumptions that come in array form?
+    ;; TODO: Add support for rewriting nodes in (an approximation of) their contexts -- but disallow memoization in that case!
+    (defund ,simplify-dag-aux-name (rev-dag ;low nodes come first
+                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                   node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                   print interpreted-function-alist known-booleans monitored-symbols
+                                   renumbering-stobj ; maps nodenums in rev-dag to the dargs (nodenums or quoteps) they rewrote to in dag-array
+                                   )
+      (declare (xargs :guard (and (weak-dagp-aux rev-dag)
+                                  (cars-increasing-by-1 rev-dag)
+                                  (if (consp rev-dag)
+                                      (<= (car (car (last rev-dag))) 2147483646)
+                                    t)
+                                  (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                  (maybe-bounded-memoizationp memoization dag-len)
+                                  (info-worldp info)
+                                  (triesp tries)
+                                  (rule-limitsp limits)
+                                  (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                  (natp node-replacement-count)
+                                  (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                                  (rule-alistp rule-alist)
+                                  (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                  (axe-print-levelp print)
+                                  (interpreted-function-alistp interpreted-function-alist)
+                                  (symbol-listp known-booleans)
+                                  (symbol-listp monitored-symbols)
+                                  (if (consp rev-dag)
+                                      (equal (renumbering-length renumbering-stobj)
+                                             (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
+                                    t)
+                                  (bounded-good-renumbering-stobj (if (consp rev-dag)
+                                                                   (+ -1 (car (first rev-dag)))
+                                                                 -1)
+                                                               dag-len renumbering-stobj))
+                      :stobjs renumbering-stobj
+                      :guard-hints (("Goal" ;:expand (WEAK-DAGP-AUX REV-DAG)
+                                     :in-theory (e/d (car-of-car-of-last-when-cars-increasing-by-1-linear
+                                                      maybe-dargp
+                                                      integerp-when-dargp
+                                                      rationalp-when-integerp
+                                                      symbolp-of-car-when-dag-exprp
+                                                      tree-to-memoizep
+                                                      axe-treep-when-dag-exprp
+                                                      car-of-cadr-when-cars-increasing-by-1
+                                                      all-myquotep-when-all-dargp
+                                                      consp-of-cdr-when-dargp
+                                                      consp-of-cdr-when-dag-exprp-and-quote
+                                                      not-cddr-when-dag-exprp-and-quotep
+                                                      consp-of-car-of-last-when-weak-dagp-aux
+                                                      acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux)
+                                                     (natp dargp))
+                                     :do-not '(generalize eliminate-destructors)))))
+      (if (endp rev-dag)
+          ;; Done rewriting nodes.  The caller can use the renumbering-stobj to lookup what the old top node rewrote to:
+          (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
+        (b* ((entry (first rev-dag))
+             (nodenum (the (integer 0 2147483646) (car entry))) ; or, since they are consecutive, we could track this numerically..
+             (- (and print (= 0 (mod nodenum 1000)) (cw "Simplifying node ~x0.~%" nodenum)))
+             (expr (cdr entry)))
+          (if (atom expr)
+              ;; EXPR is a variable:
+              (b* ( ;; Add it to the DAG:
+                   ((mv erp new-nodenum dag-array dag-len dag-parent-array dag-variable-alist)
+                    (add-variable-to-dag-array expr dag-array dag-len dag-parent-array dag-variable-alist))
+                   ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj))
+                   ;; See if the resulting node is known to be equal to something:
+                   (new-nodenum-or-quotep (apply-node-replacement-array new-nodenum node-replacement-array node-replacement-count))
+                   ;; Record the fact that NODENUM rewrote to NEW-NODENUM-OR-QUOTEP:
+                   (renumbering-stobj (update-renumberingi nodenum new-nodenum-or-quotep renumbering-stobj)))
+                (,simplify-dag-aux-name (rest rev-dag)
+                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                        node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                        print interpreted-function-alist known-booleans monitored-symbols
+                                        renumbering-stobj))
+            (let ((fn (ffn-symb expr)))
+              (case fn
+                (quote ; EXPR is a quoted constant:
+                 ;; Record the fact that NODENUM rewrote to the constant EXPR:
+                 (let ((renumbering-stobj (update-renumberingi nodenum expr renumbering-stobj)))
+                   (,simplify-dag-aux-name (rest rev-dag)
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                           node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                           print interpreted-function-alist known-booleans monitored-symbols
+                                           renumbering-stobj)))
+                ;; TODO: Flesh out these cases:
+                ;; ((if myif) ..)
+                ;; (bvif ..)
+                ;; (not ..)
+                (t ;; EXPR is some other (non-lambda) function call:
+                 ;; TODO: Consider consulting the memoization here
+                 (b* ((new-dargs (renumber-dargs-with-stobj (dargs expr) renumbering-stobj)) ; todo: have the renumbering function return a groundp flag
+                      ;; handle possible ground term by evaluating:
+                      ((mv erp evaluatedp val)
+                       (if (not (all-consp new-dargs)) ;; test for args being quoted constants
+                           ;; not a ground term:
+                           (mv (erp-nil) nil nil)
+                         ;; ground term, so try to evaluate (may fail, but we may have a constant opener rule to apply later):
+                         (b* (((mv erp val)
+                               (,apply-axe-evaluator-to-quoted-args-name fn new-dargs interpreted-function-alist)))
+                           (if erp
+                               (if (eq :unknown-function erp)
+                                   (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
+                                 ;; anything else non-nil is a true error:
+                                 (mv erp nil nil))
+                             ;; normal case (evaluated to VAL):
+                             (mv (erp-nil) t val)))))
+                      ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)))
+                   (if evaluatedp
+                       (let* ((quoted-val (enquote val))
+                              ;; Record the fact that NODENUM rewrote to QUOTED-VAL:
+                              (renumbering-stobj (update-renumberingi nodenum quoted-val renumbering-stobj)))
+                         ;; I suppose we could update the memoization here if we wanted to.
+                         (,simplify-dag-aux-name (rest rev-dag)
+                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                 node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                 print interpreted-function-alist known-booleans monitored-symbols
+                                                 renumbering-stobj))
+                     ;; Not a ground term we could evaluate, so apply rules:
+                     (b* (((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                           ;; Simplify the non-lambda FN applied to the simplified args:
+                           ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
+                           (,simplify-fun-call-and-add-to-dag-name
+                            fn new-dargs
+                            (and memoization (list expr)) ;FN applied to NEW-DARGS is equal to EXPR
+                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                            node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                            print interpreted-function-alist known-booleans monitored-symbols 1000000000))
+                          ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj))
+                          ;; Record the fact that NODENUM rewrote to NEW-NODENUM-OR-QUOTEP:
+                          (renumbering-stobj (update-renumberingi nodenum new-nodenum-or-quotep renumbering-stobj)))
+                       (,simplify-dag-aux-name (rest rev-dag)
+                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                               node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                               print interpreted-function-alist known-booleans monitored-symbols
+                                               renumbering-stobj)))))))))))
+
+    (defthm ,(pack$ simplify-dag-aux-name '-return-type)
+      (implies (and (weak-dagp-aux rev-dag)
+                    (cars-increasing-by-1 rev-dag)
+                    (if (consp rev-dag)
+                        (<= (car (car (last rev-dag))) 2147483646)
+                      t)
+                    (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                    (maybe-bounded-memoizationp memoization dag-len)
+                    (info-worldp info)
+                    (triesp tries)
+                    (rule-limitsp limits)
+                    (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                    (natp node-replacement-count)
+                    (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                    (rule-alistp rule-alist)
+                    (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                    (axe-print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (if (consp rev-dag)
+                        (equal (renumbering-length renumbering-stobj)
+                               (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
+                      t)
+                    (bounded-good-renumbering-stobj (if (consp rev-dag)
+                                                     (+ -1 (car (first rev-dag)))
+                                                   -1)
+                                                 dag-len renumbering-stobj)
+                    (renumbering-stobjp renumbering-stobj))
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj)
+                 (,simplify-dag-aux-name rev-dag
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                         node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                         print interpreted-function-alist known-booleans monitored-symbols
+                                         renumbering-stobj)
+                 (declare (ignore tries limits node-replacement-array))
+                 (implies (not erp)
+                          (and (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+                               (info-worldp new-info)
+                               (maybe-memoizationp new-memoization)
+                               (renumbering-stobjp new-renumbering-stobj)
+                               (bounded-good-renumbering-stobj (if (consp rev-dag)
+                                                                (car (car (last rev-dag)))
+                                                              -1)
+                                                            new-dag-len
+                                                            new-renumbering-stobj)
+                               (equal (renumbering-length new-renumbering-stobj) (renumbering-length renumbering-stobj))))))
+      :hints (("Goal" ;:expand (WEAK-DAGP-AUX REV-DAG)
+               :induct (,simplify-dag-aux-name rev-dag
+                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                               node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                               print interpreted-function-alist known-booleans monitored-symbols
+                                               renumbering-stobj)
+               :in-theory (enable ,simplify-dag-aux-name
+                                  car-of-car-of-last-when-cars-increasing-by-1-linear
+                                  maybe-dargp
+                                  integerp-when-dargp
+                                  rationalp-when-integerp
+                                  symbolp-of-car-when-dag-exprp
+                                  tree-to-memoizep
+                                  axe-treep-when-dag-exprp
+                                  car-of-cadr-when-cars-increasing-by-1
+                                  all-myquotep-when-all-dargp
+                                  consp-of-cdr-when-dargp
+                                  consp-of-cdr-when-dag-exprp-and-quote
+                                  not-cddr-when-dag-exprp-and-quotep
+                                  consp-of-car-of-last-when-weak-dagp-aux
+                                  acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
+                                  natp-of-car-of-car-when-weak-dagp-aux)
+               :do-not '(generalize eliminate-destructors))))
+
+    ;; A simple consequence of the return type theorem
+    (defthm ,(pack$ simplify-dag-aux-name '-return-type-corollary0)
+      (implies (and (weak-dagp-aux rev-dag)
+                    (cars-increasing-by-1 rev-dag)
+                    (if (consp rev-dag)
+                        (<= (car (car (last rev-dag))) 2147483646)
+                      t)
+                    (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                    (maybe-bounded-memoizationp memoization dag-len)
+                    (info-worldp info)
+                    (triesp tries)
+                    (rule-limitsp limits)
+                    (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                    (natp node-replacement-count)
+                    (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                    (rule-alistp rule-alist)
+                    (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                    (axe-print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (if (consp rev-dag)
+                        (equal (renumbering-length renumbering-stobj)
+                               (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
+                      t)
+                    (bounded-good-renumbering-stobj (if (consp rev-dag)
+                                                     (+ -1 (car (first rev-dag)))
+                                                   -1)
+                                                 dag-len renumbering-stobj)
+                    (renumbering-stobjp renumbering-stobj))
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj)
+                 (,simplify-dag-aux-name rev-dag
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                         node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                         print interpreted-function-alist known-booleans monitored-symbols
+                                         renumbering-stobj)
+                 (declare (ignore new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj))
+                 (implies (not erp)
+                          (and (natp new-dag-len)
+                               (integerp new-dag-len)))))
+      :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
+               :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
+
+    ;; A simple consequence of the return type theorem
+    (defthm ,(pack$ simplify-dag-aux-name '-return-type-corollary)
+      (implies (and (weak-dagp-aux rev-dag)
+                    (cars-increasing-by-1 rev-dag)
+                    (if (consp rev-dag)
+                        (<= (car (car (last rev-dag))) 2147483646)
+                      t)
+                    (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                    (maybe-bounded-memoizationp memoization dag-len)
+                    (info-worldp info)
+                    (triesp tries)
+                    (rule-limitsp limits)
+                    (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                    (natp node-replacement-count)
+                    (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                    (rule-alistp rule-alist)
+                    (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                    (axe-print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (if (consp rev-dag)
+                        (equal (renumbering-length renumbering-stobj)
+                               (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
+                      t)
+                    (bounded-good-renumbering-stobj (if (consp rev-dag)
+                                                     (+ -1 (car (first rev-dag)))
+                                                   -1)
+                                                 dag-len renumbering-stobj)
+                    (renumbering-stobjp renumbering-stobj))
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj)
+                 (,simplify-dag-aux-name rev-dag
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                         node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                         print interpreted-function-alist known-booleans monitored-symbols
+                                         renumbering-stobj)
+                 (declare (ignore new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj))
+                 (implies (and (not erp)
+                               (<= bound new-dag-len) ; note this
+                               (natp bound))
+                          (pseudo-dag-arrayp 'dag-array new-dag-array bound))))
+      :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
+               :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
+
+
+    ;; A simple consequence of the return type theorem
+    (defthm ,(pack$ simplify-dag-aux-name '-return-type-corollary2)
+      (implies (and (weak-dagp-aux rev-dag)
+                    (cars-increasing-by-1 rev-dag)
+                    (if (consp rev-dag)
+                        (<= (car (car (last rev-dag))) 2147483646)
+                      t)
+                    (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                    (maybe-bounded-memoizationp memoization dag-len)
+                    (info-worldp info)
+                    (triesp tries)
+                    (rule-limitsp limits)
+                    (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                    (natp node-replacement-count)
+                    (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                    (rule-alistp rule-alist)
+                    (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                    (axe-print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (if (consp rev-dag)
+                        (equal (renumbering-length renumbering-stobj)
+                               (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
+                      t)
+                    (bounded-good-renumbering-stobj (if (consp rev-dag)
+                                                     (+ -1 (car (first rev-dag)))
+                                                   -1)
+                                                 dag-len renumbering-stobj)
+                    (renumbering-stobjp renumbering-stobj)
+                    (consp rev-dag) ; note this
+                    )
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj)
+                 (,simplify-dag-aux-name rev-dag
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                         node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                         print interpreted-function-alist known-booleans monitored-symbols
+                                         renumbering-stobj)
+                 (declare (ignore new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array))
+                 (implies (and (not erp)
+                               (natp bound)
+                               (<= bound (car (car (last rev-dag)))))
+                          (good-renumbering-stobj bound new-renumbering-stobj))))
+      :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
+               :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
+
+    ;; A simple consequence of the return type theorem
+    (defthm ,(pack$ simplify-dag-aux-name '-return-type-corollary3)
+      (implies (and (weak-dagp-aux rev-dag)
+                    (cars-increasing-by-1 rev-dag)
+                    (if (consp rev-dag)
+                        (<= (car (car (last rev-dag))) 2147483646)
+                      t)
+                    (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                    (maybe-bounded-memoizationp memoization dag-len)
+                    (info-worldp info)
+                    (triesp tries)
+                    (rule-limitsp limits)
+                    (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                    (natp node-replacement-count)
+                    (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                    (rule-alistp rule-alist)
+                    (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                    (axe-print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (if (consp rev-dag)
+                        (equal (renumbering-length renumbering-stobj)
+                               (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
+                      t)
+                    (bounded-good-renumbering-stobj (if (consp rev-dag)
+                                                     (+ -1 (car (first rev-dag)))
+                                                   -1)
+                                                 dag-len renumbering-stobj)
+                    (renumbering-stobjp renumbering-stobj)
+                    (consp rev-dag) ; note this
+                    )
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj)
+                 (,simplify-dag-aux-name rev-dag
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                         node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                         print interpreted-function-alist known-booleans monitored-symbols
+                                         renumbering-stobj)
+                 (declare (ignore new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array))
+                 (implies (and (not erp)
+                               (natp bound)
+                               (<= bound (car (car (last rev-dag))))
+                               (<= new-dag-len bound2)
+                               (natp bound2)
+                               )
+                          (bounded-good-renumbering-stobj bound bound2 new-renumbering-stobj))))
+      :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
+               :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    ;; Returns (mv erp dag-or-quotep).
+    ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array-with-name)?
+    ;; TODO: Prove some properties
+    (defun ,simplify-dag-name (dag
+                               assumptions
+                               interpreted-function-alist
+                               limits
+                               rule-alist
+                               count-hits
+                               print
+                               known-booleans
+                               monitored-symbols)
+      (declare (xargs :guard (and (pseudo-dagp dag)
+                                  (< (top-nodenum dag) 2147483646)
+                                  (pseudo-term-listp assumptions)
+                                  (rule-limitsp limits)
+                                  (rule-alistp rule-alist)
+                                  (booleanp count-hits)
+                                  (axe-print-levelp print)
+                                  (interpreted-function-alistp interpreted-function-alist)
+                                  (symbol-listp known-booleans)
+                                  (symbol-listp monitored-symbols))
+                      :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
+                                     :in-theory (e/d (not-<-of-0-when-natp-disabled
+                                                      acl2-numberp-when-natp
+                                                      natp-of-+-of--1-when-natp-disabled
+                                                      ;; natp-when-dargp ; too strong?
+                                                      <-of-+-of-1-when-integers
+                                                      natp-of-+-of-1
+                                                      integerp-of-renumberingi
+                                                      natp-of-renumberingi)
+                                                     (natp))))))
+      (b* ((old-top-nodenum (top-nodenum dag))
+           (old-len (+ 1 old-top-nodenum))
+           (- (cw "(Simplifying DAG (~x0 nodes):~%" old-len))
+           (slack-amount old-len) ;todo: make this adjustable
+           ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+            (empty-dag-array slack-amount))
+           ;; Create the refined-assumption-alist and add relevant nodes to the DAG:
+           ((mv erp refined-assumption-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+            ;; TODO: Make a version specialized to these array names:
+            (refine-assumptions-and-add-to-dag-array assumptions
+                                                     'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist
+                                                     known-booleans))
+           ((when erp) (mv erp nil))
+           ;; Create the node-replacement-array and add relevant nodes to the DAG:
+           ;; TODO: Consider combining this with the above, in a single pass through the assumptions):
+           ((mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+            (make-node-replacement-array-and-extend-dag assumptions
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                        known-booleans))
+           ((when erp) (mv erp nil)))
+        (with-local-stobj
+          renumbering-stobj
+          (mv-let (erp new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
+            (b* ((renumbering-stobj (resize-renumbering old-len renumbering-stobj))
+                 ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
+                  (,simplify-dag-aux-name (reverse-list dag) ;;we'll simplify nodes from the bottom-up
+                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                          (and ; memoizep
+                                           (empty-memoization)) ; todo: add an option to make this bigger?
+                                          ;; TODO: If print is :brief, maybe-print-hit-counts below will only print the total number of hits, so
+                                          ;; tracking hit counts for each rule is overkill:
+                                          (and count-hits print (empty-info-world)) ;used to track the number of rule hits
+                                          (and print (zero-tries)) ;todo: think about this
+                                          limits
+                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                          print interpreted-function-alist known-booleans monitored-symbols
+                                          renumbering-stobj))
+                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj))
+                 ;; See what the top node of the old dag became (after this point, we won't have access to renumbering-stobj anymore, due to with-local-stobj):
+                 (new-top-nodenum-or-quotep (renumberingi old-top-nodenum renumbering-stobj)))
+              (mv (erp-nil) new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj))
+            ;; Cannot refer to the renumbering-stobj:
+            (declare (ignore dag-len dag-parent-array dag-constant-alist dag-variable-alist limits node-replacement-array)) ; print some stats from these?
+            (b* (((when erp) (mv erp nil))
+                 ;; todo: do we support both brief hit counting (just the total) and totals per-rule?:
+                 (- (and count-hits print (maybe-print-hit-counts print info)))
+                 (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
+                 (- (and (print-level-at-least-tp print) memoization (print-memo-stats memoization)))
+                 (- (and print (cw ")~%"))) ; balances "(Simplifying DAG"
+                 )
+              (if (quotep new-top-nodenum-or-quotep)
+                  (mv (erp-nil) new-top-nodenum-or-quotep)
+                (mv (erp-nil)
+                    (drop-non-supporters-array-with-name 'dag-array dag-array new-top-nodenum-or-quotep nil))))))))
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    ;; Returns an (mv erp event state).
+    ;; todo: redundancy
+    ;; todo: check if name already exists
+    (defund ,def-simplified-dag-fn-name (name ; the name of the constant to create
+                                         dag
+                                         assumptions
+                                         interpreted-function-alist
+                                         limits
+                                         rules
+                                         count-hits
+                                         print
+                                         monitored-symbols
+                                         state ; todo: just take wrld?
+                                         )
+      (declare (xargs :guard (and (symbolp name)
+                                  (pseudo-dagp dag)
+                                  (< (top-nodenum dag) 2147483646)
+                                  (pseudo-term-listp assumptions)
+                                  (interpreted-function-alistp interpreted-function-alist)
+                                  (rule-limitsp limits)
+                                  (symbol-listp rules)
+                                  (booleanp count-hits)
+                                  (axe-print-levelp print)
+                                  (symbol-listp monitored-symbols)
+                                  (ilks-plist-worldp (w state)))
+                      :stobjs state))
+      (b* ((known-booleans (known-booleans (w state)))
+           ((mv erp rule-alist) (make-rule-alist rules (w state)))
+           ((when erp) (mv erp nil state))
+           ((mv erp dag-or-quotep) (,simplify-dag-name dag
+                                                      assumptions
+                                                      interpreted-function-alist
+                                                      limits
+                                                      rule-alist
+                                                      count-hits
+                                                      print
+                                                      known-booleans
+                                                      monitored-symbols))
+           ((when erp) (mv erp nil state)))
+        (mv (erp-nil)
+            `(defconst ,name ',dag-or-quotep)
+            state)))
+
+    ;; Creates a constant named *name*.  TODO: Check for name clashes.
+    (defmacro ,def-simplified-dag-name (name
+                                        dag
+                                        &key
+                                        (assumptions 'nil)
+                                        (interpreted-function-alist 'nil)
+                                        (limits 'nil)
+                                        (rules 'nil)
+                                        (count-hits 'nil)
+                                        (print ':brief)
+                                        (monitored-symbols 'nil))
+      `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,interpreted-function-alist ,limits ,rules ,count-hits ,print ,monitored-symbols state)))
+
+    )))
 
 ;; Make a version of the (simple) Axe Rewriter, given an evaluator, a syntaxp evaluator, and an axe-bind-free evaluator.
 (defmacro make-rewriter-simple (suffix ; added to the end of each generated function name

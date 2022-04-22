@@ -80,3 +80,10 @@
            (if (consp x)
                (cons (car (last x)) y)
              y))))
+
+(defthm last-when-not-cdr-cheap
+  (implies (not (cdr x))
+           (equal (last x)
+                  x))
+  :rule-classes ((:rewrite :backchain-limit-lst (1)))
+  :hints (("Goal" :in-theory (enable last))))

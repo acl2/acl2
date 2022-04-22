@@ -16,18 +16,11 @@
 
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)
+(include-book "kestrel/utilities/defstobj-plus" :dir :system)
 (include-book "dags") ;for all-dargp
+(local (include-book "kestrel/lists-light/resize-list" :dir :system))
 
 ;a result-array maps nodenums to alists from rewrite-objectives to nodenums-or-quoteps (the alist is nil if the node is not yet rewritten)
-
-;move to a stobj-helpers book?
-(defthm len-of-resize-list
-  ;; [Jared] tweaked from natp hyp to nfix conclusion, and renamed variables,
-  ;; for compatibility with std/lists
-  (equal (len (resize-list lst n default))
-         (nfix n)))
-
-(in-theory (disable resize-list))
 
 (defund result-alistp (alist)
   (declare (xargs :guard t))
@@ -59,57 +52,21 @@
 ;;stored in the extra-elements field (accessing them will be slow). ;fixme
 ;;implement this
 ;todo: use an intial size larger than 10
-(defstobj result-array-stobj
+(defstobj+ result-array-stobj
 ;  (thearraylength :type (integer 0 *) :initially 10)
   (thearray :type (array (satisfies result-alistp) (10)) :resizable t)
 ;  (extra-elements :type t) ;fixme implement this..
 ;  (default-array-value :type t :initially nil)
   )
 
-(defthmd result-alistp-of-nth-when-thearrayp
-  (implies (and (thearrayp array)
-                (natp n)
-                (< n (len array)))
-           (result-alistp (nth n array)))
-  :hints (("Goal" :in-theory (enable thearrayp))))
+(local
+ (defthmd alistp-of-nth-when-thearrayp
+   (implies (and (thearrayp array)
+                 (natp n)
+                 (< n (len array)))
+            (alistp (nth n array)))
+   :hints (("Goal" :in-theory (enable thearrayp)))))
 
-(defthm result-alistp-of-thearrayi
-  (implies (and (result-array-stobjp result-array-stobj)
-                (natp n)
-                (< n (thearray-length result-array-stobj)))
-           (result-alistp (thearrayi n result-array-stobj)))
-  :hints (("Goal" :in-theory (enable result-array-stobjp thearrayi thearrayp thearray-length))))
-
-(defthm thearray-length-of-resize-thearray
-  (equal (thearray-length (resize-thearray i result-array-stobj))
-         (nfix i))
-  :hints (("Goal" :in-theory (enable resize-thearray  thearray-length))))
-
-(defthm thearrayi-of-update-thearrayi
-  (equal (thearrayi index (update-thearrayi index value result-array-stobj))
-         value)
-  :hints (("Goal" :in-theory (enable update-thearrayi thearrayi))))
-
-(defthm thearray-length-of-update-thearrayi
-  (implies (and (natp index)
-                (< index (thearray-length result-array-stobj)))
-           (equal (thearray-length (update-thearrayi index value result-array-stobj))
-                  (thearray-length result-array-stobj)))
-  :hints (("Goal" :in-theory (enable update-thearrayi thearray-length))))
-
-(in-theory (disable thearray-length
-                    thearrayi
-                    thearrayp
-                    update-thearrayi
-                    resize-thearray
-                    result-array-stobjp))
-
-(defthmd alistp-of-nth-when-thearrayp
-  (implies (and (thearrayp array)
-                (natp n)
-                (< n (len array)))
-           (alistp (nth n array)))
-  :hints (("Goal" :in-theory (enable thearrayp))))
 (local (in-theory (enable alistp-of-nth-when-thearrayp)))
 
 (defthm alistp-of-thearrayi
@@ -231,8 +188,7 @@
                                      arg-objectives ;;a list of objectives, or nil (meaning use '? for all)
                                      result-array-stobj)
   (declare (xargs ;:verify-guards nil ;;fixme need to say that the array entires are alists..
-            :guard (and (true-listp args)
-                        (all-dargp-less-than args (thearray-length result-array-stobj))
+            :guard (and (bounded-darg-listp args (thearray-length result-array-stobj))
                         (or (not arg-objectives)
                             (equal (len arg-objectives)
                                    (len args))))

@@ -4098,7 +4098,8 @@
                                    <-becomes-bvlt <-becomes-bvlt-alt
                                    <-of-bvmult-hack ;bozo
                                    <-of-bvplus-becomes-bvlt-arg1
-                                   <-of-bvplus-becomes-bvlt-arg2)))))
+                                   <-of-bvplus-becomes-bvlt-arg2
+                                   BVLT-OF-EXPT-OF-ONE-LESS-ARG3-CONSTANT-VERSION)))))
 
 ;can we gen the 4??
 (defthm bvmult-of-bvplus-4-3-5
@@ -4135,7 +4136,8 @@
                                    <-becomes-bvlt <-becomes-bvlt-alt
                                    <-of-bvmult-hack ;bozo
                                    <-of-bvplus-becomes-bvlt-arg1
-                                   <-of-bvplus-becomes-bvlt-arg2)))))
+                                   <-of-bvplus-becomes-bvlt-arg2
+                                   BVLT-OF-EXPT-OF-ONE-LESS-ARG3-CONSTANT-VERSION)))))
 
 (defthm bvplus-minus-13-tighten-6
   (implies (and (unsigned-byte-p 5 x) ;use bind-free
@@ -6927,7 +6929,8 @@
   (equal (unsigned-byte-p 9 (bvplus 10 k x))
          (bvlt 10 (bvplus 10 k x) (expt 2 9)))
   :hints (("Goal" :in-theory (e/d (bvlt) (<-becomes-bvlt <-becomes-bvlt-alt
-                                                         <-of-bvplus-becomes-bvlt-arg1)))))
+                                                         <-of-bvplus-becomes-bvlt-arg1
+                                                         BVLT-OF-EXPT-OF-ONE-LESS-ARG3-CONSTANT-VERSION)))))
 
 
 
@@ -7271,7 +7274,8 @@
   (implies (and (syntaxp (want-to-weaken (BVLT 5 16 x)))
                 (NOT (EQUAL 4 (SLICE 4 2 x))))
            (equal (BVLT 5 16 x)
-                  (BVLT 5 15 x))))
+                  (BVLT 5 15 x)))
+  :hints (("Goal" :in-theory (disable BVLT-OF-ONE-LESS-OF-EXPT-OF-ONE-LESS-ARG2-CONSTANT-VERSION))))
 
 ;gen the 4
 (defthm equal-of-0-and-bvmult
@@ -7733,7 +7737,9 @@
 (defthm UNSIGNED-BYTE-P-of-bvplus-smaller
   (equal (UNSIGNED-BYTE-P 3 (bvplus 4 x y))
          (bvlt 4 (bvplus 4 x y) 8))
-  :hints (("Goal" :in-theory (enable bvlt UNSIGNED-BYTE-P integer-range-p))))
+  :hints (("Goal" :in-theory (e/d (bvlt UNSIGNED-BYTE-P integer-range-p
+                                        ) (BVLT-OF-ONE-LESS-OF-EXPT-OF-ONE-LESS-ARG2-CONSTANT-VERSION
+                                           BVLT-OF-EXPT-OF-ONE-LESS-ARG3-CONSTANT-VERSION)))))
 
 
 
@@ -8037,6 +8043,9 @@
                     (bvplus 32 (expt 2 31) (bvplus 32 (bvuminus 31 x) y)))))
   :hints (("Goal" :use (:instance bvplus-of-bvuminus-tighten2)
            :in-theory (disable bvplus-of-bvuminus-tighten2))))
+
+(local (in-theory (disable BVLT-OF-EXPT-OF-ONE-LESS-ARG3-CONSTANT-VERSION
+                           BVLT-OF-ONE-LESS-OF-EXPT-OF-ONE-LESS-ARG2-CONSTANT-VERSION))) ;todo: why?
 
 (defthm bvlt-of-bvplus-of-bvminus-expt
   (implies (unsigned-byte-p 31 x)
@@ -8827,7 +8836,7 @@
                                       my-FLOOR-LOWER-BOUND-ALT
                                       MY-FLOOR-UPPER-BOUND
                                       FLOOR-BOUND-LEMMA3
-                                      my-FLOOR-UPPER-BOUND-ALT
+                                      *-of-floor-upper-bound
                                       <-*-/-LEFT)
           :use (:instance MY-FLOOR-UPPER-BOUND (i 31) (j j)))))
 
@@ -8845,7 +8854,7 @@
                                       my-FLOOR-LOWER-BOUND-ALT
                                       MY-FLOOR-UPPER-BOUND
                                       FLOOR-BOUND-LEMMA3
-                                      my-FLOOR-UPPER-BOUND-ALT
+                                      *-of-floor-upper-bound
 ;                                     <-*-/-LEFT
 ;                                    <-*-/-LEFT-COMMUTED
 ;                                   <-*-/-RIGHT-COMMUTED
@@ -9331,7 +9340,7 @@
                                <-of-mod-same
                                floor-upper-bound-alt-linear
                                floor-bound-lemma3
-                               my-floor-upper-bound-alt
+                               *-of-floor-upper-bound
                                mod-of-expt-of-2-constant-version))))
 
 ;gen
@@ -9354,7 +9363,7 @@
                                FLOOR-BOUND-LEMMA2
                                my-floor-upper-bound
                                FLOOR-BOUND-LEMMA3
-                               my-FLOOR-UPPER-BOUND-ALT))))
+                               *-of-floor-upper-bound))))
 
 (defthm <-of-+-of-*-of-slice-sha1
   (implies (and (unsigned-byte-p 31 x)
@@ -11733,7 +11742,7 @@
   :hints (("Goal"
            :use ((:instance my-floor-upper-bound (i x) (j 4))
                  (:instance my-floor-lower-bound (i x) (j 4)))
-           :in-theory (e/d (unsigned-byte-p) (FLOOR-BOUND-LEMMA2 FLOOR-BOUND-LEMMA3 MY-FLOOR-LOWER-BOUND-ALT my-FLOOR-upper-BOUND-ALT)))))
+           :in-theory (e/d (unsigned-byte-p) (FLOOR-BOUND-LEMMA2 FLOOR-BOUND-LEMMA3 MY-FLOOR-LOWER-BOUND-ALT *-of-floor-upper-bound)))))
 
 (defthm bvlt-of-bvplus-of-bvcat-of-slice-sha1
   (implies (unsigned-byte-p 32 x) ;gen
@@ -11746,8 +11755,7 @@
                            (FLOOR-BOUND-LEMMA2
                             FLOOR-BOUND-LEMMA3
                             MY-FLOOR-LOWER-BOUND-ALT
-                            my-FLOOR-upper-BOUND-ALT
-
+                            *-of-floor-upper-bound
                             anti-slice)))))
 
 (defthm bvlt-of-bvmult-6-5-20
@@ -13627,19 +13635,6 @@
 ;; (defthm bvcat-of-slice-and-bvcat-of-getbit
 ;;   (equal (bvcat 29 (slice 31 3 y) 3 (bvcat 1 (getbit 2 y) 2 x))
 ;;          (bvcat 30 (slice 31 2 y) 2 x)))
-
-;move
-(defthm getbit-of-leftrotate32-high
-  (implies (and (<= amt n) ;other case!
-                (<= n 31)
-                (unsigned-byte-p 5 amt)
-                (natp n)
-                (natp amt))
-           (equal (getbit n (leftrotate32 amt x))
-                  (getbit (- n amt) x)))
-  :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit
-                                            leftrotate32
-                                            slice-becomes-getbit)))))
 
 ;used to simplify the exit test for md5
 (defthm boolor-of-sbvlt-combine-gen-better

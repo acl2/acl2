@@ -77,6 +77,16 @@
   (equal (bitor x 0)
          (getbit 0 x)))
 
+(defthm bitor-same
+  (equal (bitor x x)
+         (getbit 0 x))
+  :hints (("Goal" :in-theory (enable bitor))))
+
+(defthm bitor-same-2
+  (equal (bitor x (bitor x y))
+         (bitor x y))
+  :hints (("Goal" :in-theory (enable bitor))))
+
 (defthm unsigned-byte-p-of-bitor
   (implies (posp size)
            (unsigned-byte-p size (bitor x y)))
@@ -91,11 +101,13 @@
            (equal (bitor x (bitor y z))
                   (bitor (bitor x y) z))))
 
+;todo: rename to have 0 in the name
 (defthm bitor-of-getbit-arg1
   (equal (bitor (getbit 0 x) y)
          (bitor x y))
   :hints (("Goal" :in-theory (e/d (bitor) nil))))
 
+;todo: rename to have 0 in the name
 (defthm bitor-of-getbit-arg2
   (equal (bitor y (getbit 0 x))
          (bitor y x))
@@ -128,4 +140,16 @@
                   (if (equal n 0)
                       (bitor x y)
                     0)))
+  :hints (("Goal" :in-theory (enable bitor))))
+
+(defthm bitor-of-bvchop-arg1
+  (implies (posp size)
+           (equal (bitor (bvchop size x) y)
+                  (bitor x y)))
+  :hints (("Goal" :in-theory (enable bitor))))
+
+(defthm bitor-of-bvchop-arg2
+  (implies (posp size)
+           (equal (bitor y (bvchop size x))
+                  (bitor y x)))
   :hints (("Goal" :in-theory (enable bitor))))

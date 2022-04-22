@@ -19,6 +19,8 @@
 (include-book "axe-trees")
 ;(include-book "def-dag-builder-theorems")
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (mutual-recursion
  ;;TREE is a tree over variables, nodenums in the dag, and quoteps
@@ -34,7 +36,7 @@
                                (axe-treep tree)
                                (bounded-axe-treep tree dag-len)
                                (symbol-alistp var-replacement-alist)
-                               (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                               (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                                ;;(<= (+ (len vars) dag-len) 2147483645)
                                (interpreted-function-alistp interpreted-function-alist))
                    :verify-guards nil ;; done below
@@ -85,11 +87,9 @@
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                            interpreted-function-alist)
    (declare (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                               (true-listp trees)
-                               (all-axe-treep trees)
-                               (all-bounded-axe-treep trees dag-len)
+                               (bounded-axe-tree-listp trees dag-len)
                                (symbol-alistp var-replacement-alist)
-                               (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                               (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                                ;;(<= (+ (len vars) dag-len) 2147483645)
                                (interpreted-function-alistp interpreted-function-alist))))
    (if (endp trees)
@@ -112,7 +112,7 @@
                   (axe-treep tree)
                   (bounded-axe-treep tree dag-len)
                   (symbol-alistp var-replacement-alist)
-                  (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                  (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                   ;;(<= (+ (len vars) dag-len) 2147483645)
                   (interpreted-function-alistp interpreted-function-alist))
              (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -128,11 +128,9 @@
     :flag merge-tree-into-dag-array-basic)
   (defthm merge-trees-into-dag-array-basic-return-type
     (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                  (true-listp trees)
-                  (all-axe-treep trees)
-                  (all-bounded-axe-treep trees dag-len)
+                  (bounded-axe-tree-listp trees dag-len)
                   (symbol-alistp var-replacement-alist)
-                  (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                  (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
                   ;;(<= (+ (len vars) dag-len) 2147483645)
                   (interpreted-function-alistp interpreted-function-alist))
              (mv-let (erp nodenums-or-quoteps new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -143,7 +141,7 @@
                                                  interpreted-function-alist)
                (implies (not erp)
                         (and (wf-dagp dag-array-name new-dag-array new-dag-len dag-parent-array-name new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
-                             (all-dargp-less-than nodenums-or-quoteps new-dag-len)
+                             (bounded-darg-listp nodenums-or-quoteps new-dag-len)
                              (true-listp nodenums-or-quoteps)
                              (<= dag-len new-dag-len)
                              (equal (len nodenums-or-quoteps) (len trees))))))

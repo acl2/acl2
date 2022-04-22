@@ -30,14 +30,14 @@
 (acl2::ensure-rules-known (lift-r1cs-rules))
 
 ;; Returns (mv erp event state).
-(defun lift-r1cs-old-fn (base-name extra-rules remove-rules rules monitor memoizep count-hitsp produce-function function-type vars produce-theorem prime whole-form state)
+(defun lift-r1cs-old-fn (base-name extra-rules remove-rules rules monitor memoizep count-hits produce-function function-type vars produce-theorem prime whole-form state)
   (declare (xargs :guard (and (symbolp base-name)
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp rules)
                               (symbol-listp monitor)
                               (booleanp memoizep)
-                              (booleanp count-hitsp)
+                              (booleanp count-hits)
                               (acl2::keyword-listp vars)
                               (booleanp produce-function)
                               (booleanp produce-theorem)
@@ -51,6 +51,8 @@
                                                                ,(make-valuation-from-keyword-vars2 vars)
                                                                ;;todo: gen:
                                                                ',prime)
+                                rules ;to override the default
+                                ;; nil ;rule-alists
                                 ;; The extra rules:
                                 (if rules
                                     nil ;rules are given below, so extra-rules are not allowed
@@ -58,8 +60,6 @@
                                           (lift-r1cs-rules)
                                           extra-rules))
                                 remove-rules
-                                rules ;to override the default
-                                ;; nil ;rule-alists
                                 ;; drop? but we need to know that all lookups of vars give integers:
                                 (make-fep-assumptions-from-keyword-vars vars prime)
                                 ;; TODO: Add more functions to this?
@@ -76,7 +76,7 @@
                                                                        (w state))
                                 monitor
                                 memoizep
-                                count-hitsp
+                                count-hits
                                 ;; nil                             ;simplify-xorsp
                                 produce-function
                                 (if produce-function
@@ -102,7 +102,7 @@
                             (rules 'nil)
                             (monitor 'nil)
                             (memoizep 'nil) ;; memoization can slow down R1CS lifting a lot, due to many terms with the same single nodenum (the valuation?) being put into the same memo slot
-                            (count-hitsp 'nil)
+                            (count-hits 'nil)
                             (produce-function 't)
                             (produce-theorem 'nil)
                             (function-type ':auto)
@@ -116,7 +116,7 @@
                                          ;; ,assumptions
                                          ,monitor
                                          ,memoizep
-                                         ,count-hitsp
+                                         ,count-hits
                                          ;; ,simplify-xorsp
                                          ,produce-function
                                          ,function-type

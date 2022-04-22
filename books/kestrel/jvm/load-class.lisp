@@ -27,8 +27,6 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 
-(local (in-theory (disable COMMAND-IS-REDUNDANTP))) ;move
-
 ;; Returns (mv erp event state constant-pool).  Helper function for load-class.
 ;; Uses the name stored in the class file, ignoring the filename
 (defun load-class-fn (class-file dir whole-form state constant-pool)

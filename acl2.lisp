@@ -194,7 +194,22 @@
 ;   so indiscriminately that the net effect is to slow the program by causing
 ;   cache misses or even swapping.
 
-             (space #+cmu 1 #-cmu 0)
+             (space
+              ,(let ((our-space
+                      #-CLTL2
+                      (if (boundp 'user::*acl2-space*)
+                          (symbol-value 'user::*acl2-space*)
+                        nil)
+                      #+CLTL2
+                      (if (boundp 'common-lisp-user::*acl2-space*)
+                          (symbol-value 'common-lisp-user::*acl2-space*)
+                        nil)))
+                 (if our-space
+                     (progn (format t "Note: Setting SPACE to ~s."
+                                    our-space)
+                            our-space)
+                   #+(or cmu sbcl) 1 ; see :DOC note-8-5 (system-level changes)
+                   #-(or cmu sbcl) 0)))
 
 ; WARNING:  Do not proclaim (cl-user::fixnum-safety 0) for LispWorks.  Any
 ; fixnum-safety less than 3 expects all integers to be fixnums!

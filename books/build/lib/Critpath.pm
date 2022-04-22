@@ -2,11 +2,6 @@
 # Copyright (C) 2008-2014 Centaur Technology
 # Copyright (C) 2022 Intel Corp.
 #
-# Contact:
-#   Centaur Technology Formal Verification Group
-#   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-#   http://www.centtech.com/
-#
 # License: (An MIT/X11-style license)
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +22,7 @@
 #   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #   DEALINGS IN THE SOFTWARE.
 #
-# Original author: Sol Swords <sswords@centtech.com>
+# Original author: Sol Swords <sol.swords@intel.com>
 
 package Critpath;
 use strict;

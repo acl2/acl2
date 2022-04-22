@@ -1,10 +1,6 @@
 ; SV - Symbolic Vector Hardware Analysis Framework
 ; Copyright (C) 2021 Centaur Technology
-;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+; Copyright (C) 2022 Intel Corp.
 ;
 ; License: (An MIT/X11-style license)
 ;

@@ -1,7 +1,7 @@
 ; Tests of the evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -123,7 +123,7 @@
                                     (EQ 'WIDTH-OF-WIDEST-INT FN)
                                     (MV
                                      T
-                                     (WIDTH-OF-WIDEST-INT ARG1))
+                                     (WIDTH-OF-WIDEST-INT-unguarded ARG1))
                                     (IF
                                      (EQ 'BYTES-TO-BITS FN)
                                      (MV T (BYTES-TO-BITS ARG1))
@@ -556,7 +556,7 @@
                                                              FN)
                                                             (MV
                                                              T
-                                                             (REPEATBIT
+                                                             (REPEATBIT-unguarded
                                                               ARG1
                                                               ARG2))
                                                             (IF
@@ -969,7 +969,7 @@
                                   (MV T (SBVDIV ARG1 ARG2 ARG3))
                                   (IF
                                    (EQ 'BVSX FN)
-                                   (MV T (BVSX ARG1 ARG2 ARG3))
+                                   (MV T (BVSX-unguarded ARG1 ARG2 ARG3))
                                    (IF
                                     (EQ 'BVDIV FN)
                                     (MV T
@@ -1580,7 +1580,7 @@
                                   (IF
                                    (EQ 'WIDTH-OF-WIDEST-INT FN)
                                    (MV
-                                    T (WIDTH-OF-WIDEST-INT ARG1))
+                                    T (WIDTH-OF-WIDEST-INT-unguarded ARG1))
                                    (IF
                                     (EQ 'BYTES-TO-BITS FN)
                                     (MV T (BYTES-TO-BITS ARG1))
@@ -2002,7 +2002,7 @@
                                                              FN)
                                                             (MV
                                                              T
-                                                             (REPEATBIT
+                                                             (REPEATBIT-unguarded
                                                               ARG1
                                                               ARG2))
                                                             (IF
@@ -2394,7 +2394,7 @@
                                              (MV T (SBVDIV ARG1 ARG2 ARG3))
                                              (IF
                                               (EQ 'BVSX FN)
-                                              (MV T (BVSX ARG1 ARG2 ARG3))
+                                              (MV T (BVSX-unguarded ARG1 ARG2 ARG3))
                                               (IF
                                                (EQ 'BVDIV FN)
                                                (MV T

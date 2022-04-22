@@ -34,8 +34,8 @@
 
 ;; TODO: Add support for including xdoc in the generated forms.
 
-(include-book "../../utilities/doc") ; for xdoc-for-macro-general-form
-(include-book "../../utilities/make-cons-nest")
+(include-book "kestrel/utilities/defmacrodoc" :dir :system) ; for xdoc-for-macro-general-form
+(include-book "kestrel/utilities/make-cons-nest" :dir :system)
 (include-book "transformation-table2")
 (include-book "generate-print-events")
 (include-book "print-specifiers")

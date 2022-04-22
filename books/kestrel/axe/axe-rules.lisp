@@ -21,10 +21,8 @@
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/lists-light/perm-def" :dir :system)
 (include-book "kestrel/lists-light/perm" :dir :system) ;for the fact that perm is an equiv
-;(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
-;; (local (include-book "kestrel/lists-light/perm" :dir :system))
-(local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
+(local (include-book "kestrel/lists-light/list-sets" :dir :system))
 
 ;(local (in-theory (disable all-vars)))
 
@@ -144,25 +142,24 @@
   (declare (xargs :guard t))
   (and (consp hyp) ; can't be a variable
        (let ((fn (ffn-symb hyp)))
-         (if (eq :axe-syntaxp fn) ;; (:axe-syntaxp . <expr>)
-             ;; The symbol 'axe-syntaxp consed on to an expression:
+         (if (eq :axe-syntaxp fn) ; (:axe-syntaxp . <expr>)
              (and (pseudo-termp (cdr hyp))
                   (axe-syntaxp-exprp (cdr hyp)))
-           (if (eq :axe-bind-free fn) ;; (:axe-bind-free <expr> . <vars>)
+           (if (eq :axe-bind-free fn) ; (:axe-bind-free <expr> . <vars>)
                (and (consp (cdr hyp))
                     (pseudo-termp (cadr hyp))
                     (axe-bind-free-function-applicationp (cadr hyp))
                     ;; This list of vars to bind is quoted when supplied by the user but is unquoted when we process the hyp
                     (symbol-listp (cddr hyp)))
-             (if (eq :free-vars fn) ;; (:free-vars . expr) indicates that the hyp has free vars
+             (if (eq :free-vars fn) ; (:free-vars . expr) indicates that the hyp has free vars
                  (let ((expr (cdr hyp)))
                    (and (consp expr)                      ; can't be a var
                         (not (eq 'quote (ffn-symb expr))) ; can't be a quoted constant
                         (pseudo-termp expr)
                         (lambda-free-termp expr)))
                ;; regular hyp with no free vars (checked by bound-vars-suitable-for-hypp):
-               (and (not (eq 'quote fn)) ; can't be a quoted constant
-                    (pseudo-termp hyp)
+               (and (pseudo-termp hyp)
+                    (not (eq 'quote fn)) ; can't be a quoted constant
                     ;; consider relaxing this for efficiency of rewriting:
                     (lambda-free-termp hyp))))))))
 
@@ -471,15 +468,6 @@
 
 (defcong perm equal (bound-vars-suitable-for-hypsp bound-vars hyps) 1
   :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypsp))))
-
-;move
-(defthm not-intersection-equal-of-set-difference-equal-arg1
-  (not (intersection-equal (set-difference-equal x y) y)))
-
-;move
-(defthm not-intersection-equal-of-set-difference-equal-arg2
-  (not (intersection-equal y (set-difference-equal x y)))
-  :hints (("Goal" :in-theory (enable intersection-equal-commutative-iff))))
 
 (defthm bound-vars-suitable-for-hypsp-when-free-vars
   (implies (and (equal :free-vars (car (car hyps)))

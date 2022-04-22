@@ -18,11 +18,11 @@
 
 ;; TODO: Rename this to the examined-array?
 
-;; See size-array-for-nodes-aux in dag-size2.lisp for an example of how to use the worklist-array.
+;; See size-array-for-nodes-aux in dag-size-sparse.lisp for an example of how to use the worklist-array.
 
 (include-book "merge-sort-less-than")
 (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
-(include-book "dags") ;for all-dargp-less-than
+(include-book "dags") ;for bounded-darg-listp
 (include-book "kestrel/typed-lists-light/all-rationalp" :dir :system)
 
 ;; For use in the measure
@@ -75,8 +75,7 @@
 ;; :examined in the WORKLIST-ARRAY.  The result comes in reverse order.
 (defund get-unexamined-nodenum-args (args worklist-array acc)
   (declare (xargs :guard (and (array1p 'worklist-array worklist-array)
-                              (true-listp args)
-                              (all-dargp-less-than args (alen1 'worklist-array worklist-array)))))
+                              (bounded-darg-listp args (alen1 'worklist-array worklist-array)))))
   (if (endp args)
       acc
     (let* ((arg (first args)))
@@ -88,7 +87,7 @@
         (get-unexamined-nodenum-args (rest args) worklist-array (cons arg acc))))))
 
 (defthm all-<-of-get-unexamined-nodenum-args
-  (implies (and (all-dargp-less-than args bound)
+  (implies (and (bounded-darg-listp args bound)
                 (all-< acc bound))
            (all-< (get-unexamined-nodenum-args args worklist-array acc)
                   bound))

@@ -37,3 +37,13 @@
                   (equal 1 (getbit (+ -1 n) x))))
   :hints (("Goal"; :cases ((< (BINARY-+ '1 (BINARY-+ (UNARY-- N) SIZE)) '0))
            :in-theory (enable bvsx sbvlt))))
+
+;may be better, though it does shrink the size?
+(defthmd sbvlt-of-bvsx-new
+  (implies (and (integerp size)
+                (posp n)
+                (< n size))
+           (equal (sbvlt size (bvsx size n x) 0)
+                  (sbvlt n x 0)))
+  :hints (("Goal"; :cases ((< (BINARY-+ '1 (BINARY-+ (UNARY-- N) SIZE)) '0))
+           :in-theory (enable bvsx sbvlt <-OF-LOGEXT-AND-0))))

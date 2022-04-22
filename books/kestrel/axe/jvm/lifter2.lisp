@@ -43,7 +43,7 @@
 
 ;; The core function of the lifter
 ;Returns (mv erp event state)
-(defun lift-java-code2-fn (method-designator-string
+(defun lift-java-code2-fn (method-indicator
                           program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
                           param-names ; usually not used
                           array-length-alist
@@ -79,7 +79,9 @@
                           whole-form
                           state)
   (declare (xargs :stobjs (state)
-                  :guard (and ;;(pseudo-term-listp user-assumptions) ;now these can be untranslated terms, so we translate them below
+                  :guard (and
+                          (jvm::method-indicatorp method-indicator)
+                          ;;(pseudo-term-listp user-assumptions) ;now these can be untranslated terms, so we translate them below
                           (booleanp ignore-exceptions)
                           (booleanp ignore-errors)
                           (booleanp inline)
@@ -118,6 +120,8 @@
         (mv t (er hard 'lift-java-code2 "ERROR: Ill-formed guards!") state))
        ((when (not (postludesp postludes)))
         (mv t (er hard 'lift-java-code2 "ERROR: Ill-formed postludes!") state))
+       ;; Adds the descriptor if omitted and unambiguous:
+       (method-designator-string (jvm::elaborate-method-indicator method-indicator (global-class-alist state)))
        ;; Gather info about the main method to be lifted:
        (method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
@@ -282,7 +286,7 @@
             & ;interpreted-function-alist-alist
             interpreted-function-alist
             state)
-        (decompile-code-segment-aux
+        (decompile-code-segment-aux ; this uses lifter-rules, among others
          state-var-dag
          (remove-duplicates-equal ;drop?
           assumptions)
@@ -396,7 +400,7 @@
 ;; TODO: Consider re-playing with :print t if the lift attempt fails.
 ;; TODO: Suppress more printing if :print is nil.
 (defmacro lift-java-code2 (&whole whole-form
-                                 method-designator-string
+                                 method-indicator
                                  program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
                                  &key
                                  (param-names ':auto)
@@ -432,7 +436,7 @@
                                  (branches ':split) ;; either :smart (try to merge at join points) or :split (split the execution and don't re-merge) -- TODO: Switch the default to :smart
                                  (disable-loop-openers 'nil) ;todo: consider T
                                  )
-  (let ((form `(lift-java-code2-fn ,method-designator-string
+  (let ((form `(lift-java-code2-fn ,method-indicator
                                   ,program-name
                                   ',param-names
                                   ,array-length-alist

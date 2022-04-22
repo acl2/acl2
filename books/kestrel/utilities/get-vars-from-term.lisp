@@ -16,7 +16,7 @@
 ;; TODO: Deprecate this in favor of free-vars-in-term, but some things in Axe
 ;; may depend on the order of the vars returned by this.
 
-;I guess this works for lambdas too, since they must be complete (i.e., the lambda formals must include all vars that are free in the lambda body)
+;I guess this works for lambdas too, since they must be closed (i.e., the lambda formals must include all vars that are free in the lambda body)
 ;TODO: Compare to all-vars1
 (mutual-recursion
  (defund get-vars-from-term-aux (term acc)

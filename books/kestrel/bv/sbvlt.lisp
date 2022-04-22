@@ -50,6 +50,14 @@
   (not (sbvlt size x x))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
+;todo: not true:
+;; (defthm sbvlt-when-size-is-not-positive
+;;   (implies (<= size 0)
+;;            (not (sbvlt size x y)))
+;;   :hints (("Goal"
+;; ;           :cases ((equal 0 size))
+;;            :in-theory (enable sbvlt))))
+
 (defthm sbvlt-of-bvchop-arg2
   (implies (posp size)
            (equal (sbvlt size (bvchop size k) x)
@@ -399,3 +407,22 @@
   (equal (< -1 (logext size y))
          (not (sbvlt size y 0)))
   :hints (("Goal" :in-theory (enable sbvlt))))
+
+;todo: rename
+(defthm not-equal-max-int-when-<=
+  (IMPLIES (AND (NOT (SBVLT 32 free x))
+                (NOT (EQUAL (BVCHOP 32 free)
+                            2147483647)))
+           (not (EQUAL 2147483647 (BVCHOP 32 x))))
+  :hints (("Goal" :in-theory (enable SBVLT))))
+
+;; Either x<y or y<x or they are equal.
+;move
+(defthm svblt-trichotomy
+  (or (sbvlt size x y)
+      (sbvlt size y x)
+      (equal (bvchop size x) (bvchop size y)))
+  :rule-classes nil
+  :hints (("Goal" :cases ((posp size))
+           :in-theory (enable sbvlt
+                              EQUAL-OF-LOGEXT-AND-LOGEXT))))
