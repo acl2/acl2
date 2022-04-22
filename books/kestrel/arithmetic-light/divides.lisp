@@ -410,3 +410,24 @@
                 (rationalp j))
            (<= (- i) (* i (/ j))))
   :rule-classes :linear)
+
+(defthm <=-of-*-of-/-when-both-nonnegative-linear
+  (implies (and (<= 0 i)
+                (<= 1 j)
+                (rationalp i)
+                (rationalp j))
+           (<= (* i (/ j)) i))
+  :rule-classes :linear)
+
+(defthm equal-of-*-/-and---same
+  (implies (and (rationalp i)
+                (rationalp j))
+           (equal (equal (* i (/ j)) (- i))
+                  (if (equal i 0)
+                      t
+                    (equal (/ j) -1))))
+  :hints (("Goal" :use (:instance equal-of-*-and-*-cancel
+                                  (x (/ i))
+                                  (y (* i (/ j)))
+                                  (z (- i)))
+           :in-theory (disable equal-of-*-and-*-cancel))))

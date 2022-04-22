@@ -33,56 +33,127 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflatsum value
+(defsection value-disjoint-rules
+  :short "Rules about disjointness of values."
+  (defthm-disjoint *value-disjoint-rules*
+    ucharp
+    scharp
+    ushortp
+    sshortp
+    uintp
+    sintp
+    ulongp
+    slongp
+    ullongp
+    sllongp
+    pointerp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum value
   :short "Fixtype of values."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only support the standard unsigned and signed integer values
      (except @('_Bool') values),
-     as well as pointer values with any referenced type.
-     (However, only some pointer values can be generated and used
-     in our current dynamic semantics of C.)"))
-  (:uchar uchar)
-  (:schar schar)
-  (:ushort ushort)
-  (:sshort sshort)
-  (:uint uint)
-  (:sint sint)
-  (:ulong ulong)
-  (:slong slong)
-  (:ullong ullong)
-  (:sllong sllong)
-  (:pointer pointer)
+     as well as pointer values with any referenced type."))
+  (:uchar ((get uchar-integer)))
+  (:schar ((get schar-integer)))
+  (:ushort ((get ushort-integer)))
+  (:sshort ((get sshort-integer)))
+  (:uint ((get uint-integer)))
+  (:sint ((get sint-integer)))
+  (:ulong ((get ulong-integer)))
+  (:slong ((get slong-integer)))
+  (:ullong ((get ullong-integer)))
+  (:sllong ((get sllong-integer)))
+  (:pointer ((address? address-option)
+             (reftype type)))
   :pred valuep
-  :prepwork ((defthm-disjoint *value-disjoint-rules*
-               ucharp
-               scharp
-               ushortp
-               sshortp
-               uintp
-               sintp
-               ulongp
-               slongp
-               ullongp
-               sllongp
-               pointerp)))
+  ///
 
-(defrule valuep-possibilities
-  (implies (valuep x)
-           (or (ucharp x)
-               (scharp x)
-               (ushortp x)
-               (sshortp x)
-               (uintp x)
-               (sintp x)
-               (ulongp x)
-               (slongp x)
-               (ullongp x)
-               (sllongp x)
-               (pointerp x)))
-  :enable valuep
-  :rule-classes :forward-chaining)
+  (defrule valuep-possibilities
+    (implies (valuep x)
+             (or (ucharp x)
+                 (scharp x)
+                 (ushortp x)
+                 (sshortp x)
+                 (uintp x)
+                 (sintp x)
+                 (ulongp x)
+                 (slongp x)
+                 (ullongp x)
+                 (sllongp x)
+                 (pointerp x)))
+    :enable (valuep
+             ucharp
+             scharp
+             ushortp
+             sshortp
+             uintp
+             sintp
+             ulongp
+             slongp
+             ullongp
+             sllongp
+             pointerp)
+    :rule-classes :forward-chaining)
+
+  (defrule valuep-when-ucharp
+    (implies (ucharp x)
+             (valuep x))
+    :enable (valuep ucharp))
+
+  (defrule valuep-when-scharp
+    (implies (scharp x)
+             (valuep x))
+    :enable (valuep scharp))
+
+  (defrule valuep-when-ushortp
+    (implies (ushortp x)
+             (valuep x))
+    :enable (valuep ushortp))
+
+  (defrule valuep-when-sshortp
+    (implies (sshortp x)
+             (valuep x))
+    :enable (valuep sshortp))
+
+  (defrule valuep-when-uintp
+    (implies (uintp x)
+             (valuep x))
+    :enable (valuep uintp))
+
+  (defrule valuep-when-sintp
+    (implies (sintp x)
+             (valuep x))
+    :enable (valuep sintp))
+
+  (defrule valuep-when-ulongp
+    (implies (ulongp x)
+             (valuep x))
+    :enable (valuep ulongp))
+
+  (defrule valuep-when-slongp
+    (implies (slongp x)
+             (valuep x))
+    :enable (valuep slongp))
+
+  (defrule valuep-when-ullongp
+    (implies (ullongp x)
+             (valuep x))
+    :enable (valuep ullongp))
+
+  (defrule valuep-when-sllongp
+    (implies (sllongp x)
+             (valuep x))
+    :enable (valuep sllongp))
+
+  (defrule valuep-when-pointerp
+    (implies (pointerp x)
+             (valuep x))
+    :enable (valuep pointerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -138,18 +209,7 @@
 (defresult value-option "optional values"
   :enable (errorp
            value-optionp
-           valuep
-           ucharp
-           scharp
-           ushortp
-           sshortp
-           uintp
-           sintp
-           ulongp
-           slongp
-           ullongp
-           sllongp
-           pointerp))
+           valuep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -287,21 +347,54 @@
 (define type-of-value ((val valuep))
   :returns (type typep)
   :short "Type of a value."
-  (b* ((val (value-fix val)))
-    (cond ((ucharp val) (type-uchar))
-          ((scharp val) (type-schar))
-          ((ushortp val) (type-ushort))
-          ((sshortp val) (type-sshort))
-          ((uintp val) (type-uint))
-          ((sintp val) (type-sint))
-          ((ulongp val) (type-ulong))
-          ((slongp val) (type-slong))
-          ((ullongp val) (type-ullong))
-          ((sllongp val) (type-sllong))
-          ((pointerp val) (type-pointer (pointer->reftype val)))
-          (t (prog2$ (impossible) (irr-type)))))
+  (value-case val
+              :uchar (type-uchar)
+              :schar (type-schar)
+              :ushort (type-ushort)
+              :sshort (type-sshort)
+              :uint (type-uint)
+              :sint (type-sint)
+              :ulong (type-ulong)
+              :slong (type-slong)
+              :ullong (type-ullong)
+              :sllong (type-sllong)
+              :pointer (type-pointer val.reftype))
   :hooks (:fix)
   ///
+
+  (defruled type-of-value-alt-def
+    (equal (type-of-value val)
+           (b* ((val (value-fix val)))
+             (cond ((ucharp val) (type-uchar))
+                   ((scharp val) (type-schar))
+                   ((ushortp val) (type-ushort))
+                   ((sshortp val) (type-sshort))
+                   ((uintp val) (type-uint))
+                   ((sintp val) (type-sint))
+                   ((ulongp val) (type-ulong))
+                   ((slongp val) (type-slong))
+                   ((ullongp val) (type-ullong))
+                   ((sllongp val) (type-sllong))
+                   ((pointerp val) (type-pointer (pointer->reftype val)))
+                   (t (prog2$ (impossible) (irr-type))))))
+    :enable (type-of-value
+             value-kind
+             value-fix
+             ucharp
+             scharp
+             ushortp
+             sshortp
+             uintp
+             sintp
+             ulongp
+             slongp
+             ullongp
+             sllongp
+             pointerp
+             pointer->reftype
+             value-pointer->reftype))
+
+  (local (in-theory (e/d (type-of-value-alt-def) (type-of-value))))
 
   (defruled type-signed-integerp-of-type-of-signed-integer-value
     (implies (value-signed-integerp val)
@@ -384,7 +477,7 @@
   :short "Rules that rewrite predicates for values
           to equalities of the types of the values."
 
-  (local (in-theory (enable type-of-value)))
+  (local (in-theory (enable type-of-value-alt-def)))
 
   (defruled ucharp-to-type-of-value
     (implies (valuep x)
@@ -458,7 +551,7 @@
   :short "Forward-chaining rules from predicates for values
           to equalities of the types of the values."
 
-  (local (in-theory (enable type-of-value)))
+  (local (in-theory (enable type-of-value-alt-def)))
 
   (defruled type-of-value-when-ucharp-forward
     (implies (ucharp x)

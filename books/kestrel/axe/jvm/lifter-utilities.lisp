@@ -172,10 +172,10 @@
 (make-flag desugar-calls-of-contents-in-term)
 
 (defthm-flag-desugar-calls-of-contents-in-term
-  (defthm len-of-of-desugar-calls-of-contents-in-terms-skip
+  (defthm len-of-desugar-calls-of-contents-in-terms-skip
     :skip t
     :flag desugar-calls-of-contents-in-term)
-  (defthm len-of-of-desugar-calls-of-contents-in-terms
+  (defthm len-of-desugar-calls-of-contents-in-terms
     (equal (len (desugar-calls-of-contents-in-terms terms heap-term))
            (len terms))
     :flag desugar-calls-of-contents-in-terms))

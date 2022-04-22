@@ -19,12 +19,12 @@
 ;; XARGS (or several), etc.
 
 (include-book "keyword-value-lists2") ; for keyword-value-list-keys
-(include-book "conjunctions")
-(include-book "std/lists/list-defuns" :dir :system) ;for flatten
-(include-book "std/util/bstar" :dir :system)
+(include-book "kestrel/typed-lists-light/append-all" :dir :system)
 (include-book "kestrel/untranslated-terms/add-conjunct-to-uterm" :dir :system)
 (local (include-book "assoc-keyword"))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/true-list-listp" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (local (in-theory (disable keywordp)))
 
@@ -896,9 +896,8 @@
                               (all-declarep declares))))
   (if (atom declares)
       (mv nil nil)
-    (b* ((declare (first declares))
-         ((mv foundp val) (get-xarg-from-declare xarg declare))
-         )
+    (mv-let (foundp val)
+      (get-xarg-from-declare xarg (first declares))
       (if foundp
           (mv foundp val)
         (get-xarg-from-declares xarg (rest declares))))))
@@ -954,20 +953,22 @@
 ;; get-all-values-of-xarg-from-declares and then flatten.
 
 ;returns a singleton list of declares
-(defun append-to-xarg-in-declares (val xarg declares)
+(defund append-to-xarg-in-declares (val xarg declares)
   (declare (xargs :guard (and (true-listp val)
                               (keywordp xarg)
                               (all-declarep declares)
                               (true-listp declares))))
-  (let* ((existing-vals (get-all-values-of-xarg-from-declares xarg declares))
-         (list-of-vals (flatten existing-vals))
-         (new-list-of-vals (append val list-of-vals)))
-    (replace-xarg-in-declares xarg new-list-of-vals declares)))
+  (let* ((existing-vals (get-all-values-of-xarg-from-declares xarg declares)))
+    (if (not (true-list-listp existing-vals))
+        (er hard? 'append-to-xarg-in-declares "Cannot flatten xarg values ~x0" existing-vals)
+      (let* ((list-of-vals (append-all existing-vals))
+             (new-list-of-vals (append val list-of-vals)))
+        (replace-xarg-in-declares xarg new-list-of-vals declares)))))
 
-(defthm len-of-append-to-xarg-in-declares
-  (equal (len (append-to-xarg-in-declares val xarg declares))
-         1)
-  :hints (("Goal" :in-theory (enable append-to-xarg-in-declares))))
+;; (defthm len-of-append-to-xarg-in-declares
+;;   (equal (len (append-to-xarg-in-declares val xarg declares))
+;;          1)
+;;   :hints (("Goal" :in-theory (enable append-to-xarg-in-declares))))
 
 ;;test:
 ;; (append-to-xarg-in-declares '(("Goal" :in-theory (enable natp)))

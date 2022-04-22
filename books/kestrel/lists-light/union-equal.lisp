@@ -39,6 +39,12 @@
        (or (consp x) y))
   :hints (("Goal" :in-theory (enable union-equal))))
 
+(defthm consp-of-union-equal
+  (equal (consp (union-equal x y))
+         (or (consp x)
+             (consp y)))
+  :hints (("Goal" :in-theory (enable union-equal))))
+
 (defthm union-equal-of-cons
   (equal (union-equal (cons a x) y)
          (if (member-equal a y)

@@ -7747,41 +7747,6 @@
                   (bitxor x (trim 1 (leftrotate width amt y)))))
   :hints (("Goal" :in-theory (enable trim))))
 
-
-(defthm bvchop-subst-constant-from-logext
-  (implies (and (equal (logext free x) k)
-                (syntaxp (quotep k))
-                (<= size free)
-                (posp size)
-                (integerp free)
-                )
-           (equal (bvchop size x)
-                  (bvchop size k)))
-  :hints (("Goal"
-           :cases ((equal size (+ -1 free))
-                   (< size (+ -1 free)))
-           :in-theory (e/d (logext logtail-of-bvchop)
-                           ( slice  BVCHOP-OF-LOGTAIL
-                                    )))))
-
-(defthm not-equal-max-int-when-<=
-  (IMPLIES (AND (NOT (SBVLT 32 free x))
-                (NOT (EQUAL (BVCHOP 32 free)
-                            2147483647)))
-           (not (EQUAL 2147483647 (BVCHOP 32 x))))
-  :hints (("Goal" :in-theory (enable SBVLT))))
-
-;; Either x<y or y<x or they are equal.
-;move
-(defthm svblt-trichotomy
-  (or (sbvlt size x y)
-      (sbvlt size y x)
-      (equal (bvchop size x) (bvchop size y)))
-  :rule-classes nil
-  :hints (("Goal" :cases ((posp size))
-           :in-theory (enable sbvlt
-                              EQUAL-OF-LOGEXT-AND-LOGEXT))))
-
 ;move
 ;; This idiom can arise from the JVM LCMP instruction
 (defthm myif-of-sbvlt-of-0-and-not-sbvlt-of-0

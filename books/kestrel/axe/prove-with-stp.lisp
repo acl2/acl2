@@ -45,6 +45,22 @@
          (all-natp x))
   :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
 
+;move
+(defthmd myquotep-when-axe-disjunctionp
+  (implies (axe-disjunctionp d)
+           (equal (MYQUOTEP d)
+                  (or (equal (true-disjunction) d)
+                      (equal (false-disjunction) d))))
+  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
+
+;move
+(defthmd quotep-when-axe-disjunctionp
+  (implies (axe-disjunctionp d)
+           (equal (QUOTEP d)
+                  (or (equal (true-disjunction) d)
+                      (equal (false-disjunction) d))))
+  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
+
 (local (in-theory (disable nth-of-cdr
                            ;; cadr-becomes-nth-of-1 ; we want to keep the cdr because it gets the fargs
                            ;;consp-from-len-cheap
@@ -1742,6 +1758,9 @@
                                                                (aset1 'handled-node-array handled-node-array nodenum t) dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                                nodenums-to-translate
                                                                (acons nodenum type-for-cut-nodenum cut-nodenum-type-alist))))
+                          ((equal type (make-bv-type 0))
+                           (progn$ (cw "ERROR: Encountered a BV node of width 0: ~x0." expr)
+                                   (mv :bv-of-width-0 nodenums-to-translate cut-nodenum-type-alist handled-node-array)))
                           ((can-always-translate-expr-to-stp fn args 'dag-array ;fixme
                                                              dag-array dag-len known-nodenum-type-alist t)
                            ;; we can always translate it:
@@ -2214,22 +2233,6 @@
                                              dag-array dag-len dag-parent-array
                                              base-filename print max-conflicts
                                              counterexamplep state))))))))
-
-;move
-(defthmd myquotep-when-axe-disjunctionp
-  (implies (axe-disjunctionp d)
-           (equal (MYQUOTEP d)
-                  (or (equal (true-disjunction) d)
-                      (equal (false-disjunction) d))))
-  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
-
-;move
-(defthmd quotep-when-axe-disjunctionp
-  (implies (axe-disjunctionp d)
-           (equal (QUOTEP d)
-                  (or (equal (true-disjunction) d)
-                      (equal (false-disjunction) d))))
-  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
 
 ;fixme move this to the translate-dag-to-stp book?
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.

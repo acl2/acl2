@@ -58,6 +58,16 @@
   :hints (("Goal" :use (:instance bitand-of-1-arg2)
            :in-theory (disable bitand-of-1-arg2))))
 
+(defthm bitand-same
+  (equal (bitand x x)
+         (getbit 0 x))
+  :hints (("Goal" :in-theory (enable bitand))))
+
+(defthm bitand-same-2
+  (equal (bitand x (bitand x y))
+         (bitand x y))
+  :hints (("Goal" :in-theory (enable bitand))))
+
 (defthm integerp-of-bitand
   (integerp (bitand x y)))
 
@@ -65,11 +75,13 @@
   (natp (bitand x y))
   :hints (("Goal" :in-theory (enable bitand))))
 
+;todo: rename to have 0 in the name
 (defthm bvand-1-of-getbit-arg2
   (equal (bvand 1 x (getbit 0 y))
          (bvand 1 x y))
   :hints (("Goal" :in-theory (enable bvand))))
 
+;todo: rename to have 0 in the name
 (defthm bvand-1-of-getbit-arg1
   (equal (bvand 1 (getbit 0 x) y)
          (bvand 1 x y))
@@ -99,33 +111,34 @@
 (theory-invariant (incompatible (:rewrite bvand-1-becomes-bitand) (:definition bitand)))
 
 (defthmd bitand-combine-constants
-  (implies (and (syntaxp (quotep x))
-                (syntaxp (quotep y)))
+  (implies (syntaxp (and (quotep y) ;put this hyp first to fail faster
+                         (quotep x)))
            (equal (bitand x (bitand y z))
                   (bitand (bitand x y) z))))
 
+;todo: rename to have 0 in the name
 (defthm bitand-of-getbit-arg1
   (equal (bitand (getbit 0 x) y)
          (bitand x y))
   :hints (("Goal" :in-theory (e/d (bitand) nil))))
 
+;todo: rename to have 0 in the name
 (defthm bitand-of-getbit-arg2
   (equal (bitand y (getbit 0 x))
          (bitand y x))
   :hints (("Goal" :in-theory (e/d (bitand) nil))))
 
-(defthm bitand-of-bvchop-arg2
-  (implies (and (<= 1 n) (natp n))
-           (equal (bitand y (bvchop n x))
-                  (bitand y x)))
-  :hints (("Goal" :in-theory (enable bitand))))
-
 (defthm bitand-of-bvchop-arg1
-  (implies (and (<= 1 n) (natp n))
-           (equal (bitand (bvchop n x) y)
+  (implies (posp size)
+           (equal (bitand (bvchop size x) y)
                   (bitand x y)))
   :hints (("Goal" :in-theory (enable bitand))))
 
+(defthm bitand-of-bvchop-arg2
+  (implies (posp size)
+           (equal (bitand y (bvchop size x))
+                  (bitand y x)))
+  :hints (("Goal" :in-theory (enable bitand))))
 
 (defthm bitand-subst-arg1
   (implies (and (equal (getbit 0 x) free)

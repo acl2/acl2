@@ -501,7 +501,7 @@
            :use ((:instance inverse-of-* (x k2))
                  (:instance associativity-of-* (x k2) (y (/ k2)) (z x))))))
 
-(defthm <-of-of-*-same-arg1
+(defthm <-of---of-*-same-arg1
   (implies (and (rationalp i)
                 (rationalp j))
            (equal (< i (- (* i j)))
