@@ -24,8 +24,20 @@
 (include-book "kestrel/utilities/subtermp" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
+(local (include-book "kestrel/utilities/acl2-count" :dir :system))
+(local (include-book "kestrel/utilities/w" :dir :system))
 
 (in-theory (disable table-alist)) ;why?
+
+(local (in-theory (disable symbol-listp
+                           use-all-consp-for-car
+                           subsetp-car-member ; bad?
+                           member-equal
+                           use-all-consp ; bad?
+                           use-all-consp-2 ; bad?
+                           ;; GET-GLOBAL
+                           ACL2-COUNT
+                           )))
 
 ;; Fixup assumption when it will obviously loop when used as a directed equality.
 ;; could check for (equal <constant> <x>) here too, but Axe may be smart enough to reorient that
