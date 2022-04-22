@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,9 +12,10 @@
 
 (include-book "semantics")
 
+(include-book "kestrel/std/strings/letter-chars" :dir :system)
+(include-book "kestrel/std/strings/letter-digit-dash-chars" :dir :system)
 (include-book "kestrel/utilities/integers-from-to" :dir :system)
 (include-book "kestrel/utilities/osets" :dir :system)
-(include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 (include-book "kestrel/utilities/strings/chars-codes" :dir :system)
 
 (local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
@@ -61,9 +62,8 @@
   (b* ((charstring (rulename->get rulename))
        (chars (explode charstring)))
     (and (consp chars)
-         (standard-char-p (car chars))
-         (alpha-char-p (car chars))
-         (alpha/digit/dash-charlist-p (cdr chars))
+         (str::letter-char-p (car chars))
+         (str::letter/digit/dash-charlist-p (cdr chars))
          (equal (str::downcase-charlist chars) chars)))
   :no-function t)
 

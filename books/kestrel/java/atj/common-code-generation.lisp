@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,7 +18,7 @@
 (include-book "name-translation")
 (include-book "test-structures")
 
-(include-book "kestrel/utilities/strings/char-kinds" :dir :system)
+(include-book "kestrel/std/strings/printable-chars" :dir :system)
 (include-book "kestrel/utilities/strings/hexchars" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
@@ -86,7 +86,7 @@
      that is passed as argument to a Java class instance creation expression
      for a @('String') object."))
   (b* ((chars (explode string)))
-    (if (printable-charlist-p chars)
+    (if (str::printable-charlist-p chars)
         (jexpr-literal-string string)
       (jexpr-newclass (jtype-class "String")
                       (list

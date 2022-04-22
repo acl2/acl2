@@ -437,7 +437,7 @@
      by nesting the @(':pointer') constructor.
      Note also that a direct declarator may be a (parenthesized) declarator,
      but in our abstract syntax we just have declarators,
-     which we can nest put under the @(':array') constructor,
+     which we can nest under the @(':array') constructor,
      so we do not need to represent parentheses explicitly.
      Also see the pretty-printer for how
      the combination of @(':pointer') and @(':array') is handled.")
@@ -869,7 +869,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only model function declarators consisting of [C:6.7.6.3]
+    "For now we only model function declarators [C:6.7.6.3]
      consisting of an identifier as the direct declarator
      and a (parenthesized) list of parameter declarations."))
   ((name ident)
