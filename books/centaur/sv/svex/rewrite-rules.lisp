@@ -4944,7 +4944,8 @@
 
 #||
 
-(acl2::set-max-mem (* 40 (expt 2 30)))
+(acl2::set-max-mem
+ (* 40 (expt 2 30)))
 (hons-resize :addr-ht 500000000
              :sbits 232541312)
 (include-book
