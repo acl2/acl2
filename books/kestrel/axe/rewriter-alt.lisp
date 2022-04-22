@@ -21,8 +21,10 @@
 ;(include-book "equality-assumptions")
 (include-book "refined-assumption-alists")
 (include-book "result-array-stobj")
+(include-book "equivalent-dags")
 (include-book "prover")
-(include-book "simplify-xors")
+(include-book "add-bvxor-nest-to-dag-array")
+(include-book "merge-and-remove-dups")
 (include-book "leaves-of-normalized-bvxor-nest")
 (include-book "if-rules")
 (include-book "defconst-computed2") ;not strictly needed
@@ -785,7 +787,7 @@
                                                                                  (list (enquote accumulated-constant))))
                                                                     bvxor-width
                                                                     (enquote bvxor-width)
-                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array))
+                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                                                                   ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)))
                                                                (if (consp new-nodenum-or-quotep) ;the bvxor nest became a constant (perhaps duplicate leaves cancelled each other)
                                                                    (let ((result-array-stobj (set-result nodenum rewrite-objective new-nodenum-or-quotep result-array-stobj)))

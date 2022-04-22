@@ -16,6 +16,7 @@
 
 ;; Books about built-in functions:
 (include-book "read-byte-dollar")
+(include-book "read-char-dollar")
 (include-book "read-object")
 
 ;; Functions defined in this library:
@@ -23,6 +24,7 @@
 (include-book "read-file-into-byte-list")
 (include-book "read-file-into-character-list")
 (include-book "read-file-into-byte-array-stobj")
+(include-book "read-file-into-character-array-stobj")
 
 (include-book "write-byte-dollar")
 (include-book "write-bytes-to-channel")

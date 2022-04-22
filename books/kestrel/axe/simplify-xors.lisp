@@ -30,8 +30,9 @@
 ;BBOZO handle negations! -well, we handle xoring with 1, right?
 
 (include-book "equivalent-dags")
-(include-book "add-bitxor-nest-to-dag-array")
-(include-book "add-bvxor-nest-to-dag-array")
+(include-book "merge-and-remove-dups")
+(include-book "add-bitxor-nest-to-dag-array-with-name")
+(include-book "add-bvxor-nest-to-dag-array-with-name")
 (include-book "supporting-nodes") ;for drop-non-supporters-array-with-name
 (include-book "dag-array-builders2")
 (include-book "def-dag-builder-theorems")
@@ -1167,10 +1168,10 @@
                                                            translation-array)))
                          ;; (- (cw " (bvxor nest with ~x0 leaves.)~%" (len rev-leaves)))
                          ((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                          (add-bvxor-nest-to-dag-array rev-leaves
-                                                       (unquote (darg1 expr)) ;size
-                                                       (darg1 expr) ;quoted size
-                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'simplify-xors-new-array dag-parent-array-name))
+                          (add-bvxor-nest-to-dag-array-with-name rev-leaves
+                                                                 (unquote (darg1 expr)) ;size
+                                                                 (darg1 expr) ;quoted size
+                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'simplify-xors-new-array dag-parent-array-name))
                          ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)))
                       (simplify-xors-aux (+ 1 n)
                                          old-dag-array old-dag-len old-dag-parent-array
@@ -1200,7 +1201,7 @@
                                                               translation-array)))
                            ;; (- (cw " (bitxor nest with ~x0 leaves.)~%" (len rev-leaves)))
                            ((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                            (add-bitxor-nest-to-dag-array rev-leaves
+                            (add-bitxor-nest-to-dag-array-with-name rev-leaves
                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'simplify-xors-new-array dag-parent-array-name))
                            ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)))
                         (simplify-xors-aux (+ 1 n)
@@ -1870,26 +1871,3 @@
                 (< N (LEN X)))
            (rationalp (NTH N X)))
   :HINTS (("Goal" :IN-THEORY (ENABLE ALL-INTEGERP (:i NTH)))))
-
-;move
-;args are sorted in increasing order
-;result is sorted in decreasing order
-(defund merge-and-remove-dups (lst1 lst2 acc)
-  (declare (xargs :measure (+ 1 (len lst1) (len lst2))
-                  :guard (and (all-integerp lst1)
-                              (true-listp lst1)
-                              (all-integerp lst2)
-                              (true-listp lst2)
-                              (all-integerp acc))))
-  (if (endp lst1)
-      (revappend lst2 acc)
-    (if (endp lst2)
-        (revappend lst1 acc)
-      (let ((item1 (first lst1))
-            (item2 (first lst2)))
-        (if (< item1 item2)
-            (merge-and-remove-dups (rest lst1) lst2 (cons item1 acc))
-          (if (< item2 item1)
-              (merge-and-remove-dups lst1 (rest lst2) (cons item2 acc))
-            ;;they are equal, so drop them both
-            (merge-and-remove-dups (rest lst1) (rest lst2) acc)))))))

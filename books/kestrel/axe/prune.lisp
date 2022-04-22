@@ -193,7 +193,7 @@
  ;; to TERM. Tries to rewrite each myif test using context from all overarching
  ;; tests (and any given assumptions).
 ;TODO: Add an IFF flag and, if set, turn (if x t nil) into x and (if x nil t) into (not x)
- (defun prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+ (defund prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
    (declare (xargs :stobjs (state)
                    :guard (and (pseudo-termp term)
                                (pseudo-term-listp assumptions)
@@ -381,7 +381,7 @@
  ;; Returns (mv erp result-terms state) where, if ERP is nil, then the
  ;; RESULT-TERMS are equal to their corresponding TERMS, given the ASSUMPTIONS
  ;; and EQUALITY-ASSUMPTIONS.
- (defun prune-terms-aux (terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+ (defund prune-terms-aux (terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
    (declare (xargs :stobjs (state)
                    :guard (and (pseudo-term-listp terms)
                                (pseudo-term-listp assumptions)
@@ -437,7 +437,7 @@
                                                         rule-alist interpreted-function-alist
                                                         monitored-rules call-stp state))))
     :flag prune-terms-aux)
-  :hints (("Goal" :in-theory (enable symbolp-when-member-equal-and-symbol-listp))))
+  :hints (("Goal" :in-theory (enable prune-term-aux prune-terms-aux symbolp-when-member-equal-and-symbol-listp))))
 
 (verify-guards prune-term-aux)
 
@@ -537,7 +537,7 @@
 
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
 ;; term size. Returns (mv erp result-dag state).
-(defun prune-dag-with-rule-alist-new (dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+(defund prune-dag-with-rule-alist-new (dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
   (declare (xargs :guard (and (or (pseudo-dagp dag)
                                   ;; (QUOTEP dag) ; possible?
                                   )
@@ -575,7 +575,7 @@
 
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
 ;; term size. Returns (mv erp result-dag state).
-(defun prune-dag-new (dag-lst assumptions rules interpreted-fns monitored-rules call-stp state)
+(defund prune-dag-new (dag-lst assumptions rules interpreted-fns monitored-rules call-stp state)
   (declare (xargs :guard (and (pseudo-dagp dag-lst)
                               (pseudo-term-listp assumptions)
                               (symbol-listp rules)
@@ -628,7 +628,7 @@
 
 ;;Returns (mv erp result-dag state).  Pruning turns the DAG into a term and
 ;;then tries to resolve IF tests via rewriting and perhaps by calls to STP.
-(defun maybe-prune-dag-new (prune-branches ; t, nil, or a limit on the size
+(defund maybe-prune-dag-new (prune-branches ; t, nil, or a limit on the size
                             dag-lst assumptions rules interpreted-fns monitored-rules call-stp state)
   (declare (xargs :guard (and (or (eq nil prune-branches)
                                   (eq t prune-branches)

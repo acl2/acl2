@@ -1,7 +1,7 @@
 ; Utilities for parsing x86 binaries
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,19 +37,22 @@
       (er hard? ctx "Not enough bytes to take ~x0 of them." n)
     (take n l)))
 
-;; Returns (mv first-n-bytes bytes)
+;; Returns (mv first-n-bytes bytes) where BYTES is the bytes that remain after parsing the first N bytes.
 (defun parse-n-bytes (n bytes)
   (declare (type (integer 0 *) n) ;disallow 0?
            (xargs :guard (true-listp bytes)))
   (mv (take-safe n bytes)
       (nthcdr n bytes)))
 
+;; Returns (mv byte bytes) where BYTES is the bytes that remain after parsing the byte.
 (defun parse-u8 (bytes)
   (declare (xargs :guard (true-listp bytes)))
   (let* ((val-bytes (take-safe 1 bytes))
          (val (first val-bytes)))
     (mv val (nthcdr 1 bytes))))
 
+;; Returns (mv uint16 bytes) where BYTES is the bytes that remain after parsing the value.
+;; This is a little-endian operation, because the least significant byte comes first.
 (defun parse-u16 (bytes)
   (declare (xargs :guard (and (integer-listp bytes)
                               (<= 2 (len bytes)))))
@@ -59,6 +62,8 @@
                      8 (first val-bytes))))
     (mv val (nthcdr 2 bytes))))
 
+;; Returns (mv uint32 bytes) where BYTES is the bytes that remain after parsing the value.
+;; This is a little-endian operation, because the least significant byte comes first.
 (defun parse-u32 (bytes)
   (declare (xargs :guard (and (integer-listp bytes)
                               (<= 4 (len bytes)))))
@@ -70,6 +75,8 @@
                       8 (first val-bytes))))
     (mv val (nthcdr 4 bytes))))
 
+;; Returns (mv uint64 bytes) where BYTES is the bytes that remain after parsing the value.
+;; This is a little-endian operation, because the least significant byte comes first.
 (defun parse-u64 (bytes)
   (declare (xargs :guard (and (integer-listp bytes)
                               (<= 8 (len bytes)))))
@@ -82,8 +89,7 @@
                       8 (fourth val-bytes)
                       8 (third val-bytes)
                       8 (second val-bytes)
-                      8 (first val-bytes)
-                      )))
+                      8 (first val-bytes))))
     (mv val (nthcdr 8 bytes))))
 
 (encapsulate

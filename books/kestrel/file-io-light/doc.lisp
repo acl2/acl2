@@ -42,6 +42,12 @@
  ((read-file-into-byte-array-stobj "Read the bytes from a file into a stobj array."))
  (io file-io-light))
 
+;; (depends-on "read-file-into-character-array-stobj.lisp")
+(acl2::gen-xdoc-for-file
+ "read-file-into-character-array-stobj.lisp"
+ ((read-file-into-character-array-stobj "Read the characters from a file into a stobj array."))
+ (io file-io-light))
+
 
 ;; (depends-on "write-bytes-to-channel.lisp")
 (acl2::gen-xdoc-for-file
