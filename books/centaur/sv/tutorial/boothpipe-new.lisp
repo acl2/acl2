@@ -1,5 +1,6 @@
-; Centaur SV Hardware Verification Tutorial
+; SV Hardware Verification Tutorial
 ; Copyright (C) 2012-2015 Centaur Technology
+; Copyright (C) 2022 Intel Corp.
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -27,7 +28,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original authors: Jared Davis <jared@centtech.com>
-;                   Sol Swords <sswords@centtech.com>
+;                   Sol Swords <sol.swords@intel.com
 
 
 ; boothpipe.lisp
