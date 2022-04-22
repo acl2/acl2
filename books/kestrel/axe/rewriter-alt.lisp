@@ -770,10 +770,10 @@
                                                              (b* ((bvxor-width (unquote (first simplified-args)))
                                                                   ;; get xors from arg2 (TODO: Consider memoizing):
                                                                   ((mv arg2-constant arg2-leaves-increasing)
-                                                                   (leaves-of-normalized-bvxor-nest (second simplified-args) bvxor-width 'dag-array dag-array dag-len))
+                                                                   (leaves-of-normalized-bvxor-nest (second simplified-args) bvxor-width dag-array dag-len))
                                                                   ;; get xors from arg3 (TODO: Consider memoizing):
                                                                   ((mv arg3-constant arg3-leaves-increasing)
-                                                                   (leaves-of-normalized-bvxor-nest (third simplified-args) bvxor-width 'dag-array dag-array dag-len))
+                                                                   (leaves-of-normalized-bvxor-nest (third simplified-args) bvxor-width dag-array dag-len))
                                                                   ;; Make the leaves of the new nest:
                                                                   (nodenum-leaves-decreasing (merge-and-remove-dups arg2-leaves-increasing arg3-leaves-increasing nil))
                                                                   (accumulated-constant (bvxor bvxor-width arg2-constant arg3-constant))
