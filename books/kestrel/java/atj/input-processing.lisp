@@ -22,6 +22,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/strings/letter-digit-chars" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)
 (include-book "kestrel/std/system/pure-raw-p" :dir :system)
@@ -576,7 +577,7 @@
        ((when (equal name ""))
         (er-soft+ ctx t nil "The test name ~x0 in the :TESTS input ~
                              cannot be the empty string." name))
-       ((unless (chars-in-charset-p (explode name) (alpha/digit-chars)))
+       ((unless (chars-in-charset-p (explode name) (str::letter/digit-chars)))
         (er-soft+ ctx t nil "The test name ~x0 in the :TESTS input ~
                              must contain only letters and digits." name))
        ((er (list term$ &))
