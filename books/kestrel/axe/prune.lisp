@@ -23,7 +23,9 @@
 (include-book "dag-size-fast")
 (include-book "kestrel/utilities/subtermp" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/w" :dir :system))
 
@@ -31,13 +33,15 @@
 
 (local (in-theory (disable symbol-listp
                            use-all-consp-for-car
-                           subsetp-car-member ; bad?
+                           ;; subsetp-car-member ; bad?
                            member-equal
                            use-all-consp ; bad?
                            use-all-consp-2 ; bad?
                            ;; GET-GLOBAL
                            ACL2-COUNT
-                           )))
+                           default-car
+                           default-cdr
+                           CONSP-FROM-LEN-CHEAP)))
 
 ;; Fixup assumption when it will obviously loop when used as a directed equality.
 ;; could check for (equal <constant> <x>) here too, but Axe may be smart enough to reorient that
@@ -406,7 +410,7 @@
              (equal (len (mv-nth 1  (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)))
                     (len terms)))
     :flag prune-terms-aux)
-  :hints (("Goal" :in-theory (enable len prune-terms-aux))))
+  :hints (("Goal" :in-theory (enable prune-terms-aux))))
 
 (defthm-flag-prune-term-aux
   (defthm prune-term-aux-return-type
@@ -432,7 +436,8 @@
              (pseudo-term-listp (mv-nth 1  (prune-terms-aux terms assumptions equality-assumptions
                                                         rule-alist interpreted-function-alist
                                                         monitored-rules call-stp state))))
-  :flag prune-terms-aux))
+    :flag prune-terms-aux)
+  :hints (("Goal" :in-theory (enable symbolp-when-member-equal-and-symbol-listp))))
 
 (verify-guards prune-term-aux)
 
