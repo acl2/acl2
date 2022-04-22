@@ -437,7 +437,7 @@
      by nesting the @(':pointer') constructor.
      Note also that a direct declarator may be a (parenthesized) declarator,
      but in our abstract syntax we just have declarators,
-     which we can nest put under the @(':array') constructor,
+     which we can nest under the @(':array') constructor,
      so we do not need to represent parentheses explicitly.
      Also see the pretty-printer for how
      the combination of @(':pointer') and @(':array') is handled.")
