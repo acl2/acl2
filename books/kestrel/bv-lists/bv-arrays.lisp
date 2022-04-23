@@ -1,7 +1,7 @@
 ; Rules about bv-array operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,11 +15,11 @@
 (include-book "bv-arrayp")
 (include-book "bv-array-read")
 (include-book "bv-array-write")
+(include-book "bv-array-if")
 (include-book "width-of-widest-int")
 (include-book "bvxor-list")
 (include-book "kestrel/bv/bvif" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
-(include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
@@ -42,11 +42,6 @@
 (local (include-book "all-unsigned-byte-p2"))
 
 ;move
-(defthm take-of-repeat-same
-  (equal (take len (repeat len x))
-         (repeat len x))
-  :hints (("Goal" :in-theory (enable repeat take))))
-
 (in-theory (disable len))
 
 (defthm all-integerp-of-update-nth2
@@ -115,58 +110,6 @@
            (equal (bv-array-read width len index (bv-array-write width len2 index val lst))
                   (bvchop width val)))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener bv-array-write ceiling-of-lg) ()))))
-
-(defund bv-array-clear (element-size len index data)
-  (declare (xargs :guard (and (natp len)
-                              (natp index)
-                              (ALL-INTEGERP data)
-                              (<= len (len data))
-                              (< index (len data))
-                              (natp element-size)
-                              (true-listp data))))
-  (bv-array-write element-size len index 0 data))
-
-(defthm true-listp-of-bv-array-clear
-  (true-listp (bv-array-clear element-size len key lst))
-  :hints (("Goal" :in-theory (enable bv-array-clear))))
-
-;analogues of the bv-array-write theorems?
-
-(defthm len-of-bv-array-clear
-  (equal (len (bv-array-clear element-size len key lst))
-         (nfix len))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear) ()))))
-
-(defthm all-integerp-of-bv-array-clear
-  (all-integerp (bv-array-clear element-size len key lst))
-  :hints (("Goal" :in-theory (enable bv-array-clear))))
-
-(defun bv-array-clear-range (esize len lowindex highindex data)
-  (declare (xargs :measure (+ 1 (nfix (+ 1 (- highindex lowindex))))
-                  :guard (and (true-listp data)
-                              (all-integerp data)
-                              (natp len)
-                              (<= LEN (LEN DATA))
-                              (natp esize)
-                              (rationalp highindex)
-                              (rationalp lowindex)
-                              (< highindex len))
-                  :verify-guards nil ;done below
-                  ))
-  (if (or (not (natp highindex))
-          (not (natp lowindex))
-          (> lowindex highindex))
-      (bvchop-list esize (take len data)) ;was data
-    (bv-array-clear esize len lowindex (bv-array-clear-range esize len (+ 1 lowindex) highindex data))))
-
-(defthm len-of-bv-array-clear-range
-  (equal (len (bv-array-clear-range esize len lowindex highindex data))
-         (nfix len)))
-
-(defthm all-integerp-of-bv-array-clear-range
-  (all-integerp (bv-array-clear-range esize len lowindex highindex data)))
-
-(verify-guards bv-array-clear-range :hints (("Goal" :do-not-induct t)))
 
 (defthm bv-array-read-of-bvchop-helper
   (implies (and (<= m n)
@@ -243,7 +186,6 @@
                   (bv-array-read esize1 len index (bv-array-write esize1 len index2 val data))))
   :hints (("Goal" :in-theory (enable bv-array-read bv-array-write BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))))
 
-
 (defthm bv-array-read-of-bvchop-list
   (implies (and (equal (len data) len)
                 (< 0 len)
@@ -288,42 +230,6 @@
 (defthm bv-array-read-non-negative
   (equal (< (bv-array-read esize len index data) 0)
          nil))
-
-
-
-;move?
-(defthm bvchop-list-does-nothing-better
-  (implies (and (all-unsigned-byte-p size lst)
-;                (natp size)
-                (true-listp lst))
-           (equal (bvchop-list size lst) lst))
-  :hints
-  (("Goal"
-    :in-theory (enable bvchop-list all-unsigned-byte-p))))
-
-(defthm bvchop-list-does-nothing-better-2
-  (implies (and (all-unsigned-byte-p size lst)
-;                (natp size)
-                )
-           (equal (bvchop-list size lst)
-                  (true-list-fix lst)))
-  :hints
-  (("Goal"
-    :in-theory (enable bvchop-list all-unsigned-byte-p))))
-
-(defthm bvchop-list-does-nothing-rewrite
-  (equal (equal x (bvchop-list size x))
-         (and (true-listp x)
-              (all-unsigned-byte-p (nfix size) x)))
-  :hints (("Goal" :in-theory (enable all-unsigned-byte-p bvchop-list))))
-
-(defthmd bvchop-list-does-nothing-rewrite-alt
-  (equal (equal (bvchop-list size x) x)
-         (and (true-listp x)
-              (all-unsigned-byte-p (nfix size) x)))
-  :hints (("Goal" :use (:instance bvchop-list-does-nothing-rewrite)
-           :in-theory (disable bvchop-list-does-nothing-rewrite
-                               bvchop-list-does-nothing-better))))
 
 (defthm all-unsigned-byte-p-of-update-nth
   (implies (and (unsigned-byte-p m val)
@@ -372,17 +278,6 @@
 ;;   :hints (("Goal" :in-theory (enable BVCHOP-WHEN-I-IS-NOT-AN-INTEGER bv-array-read))))
 
 (in-theory (disable bvchop-list))
-
-;move
-(defthm bvchop-list-of-update-nth
-  (implies (and (natp n)
-                (<= n (len lst))
-                )
-           (equal (bvchop-list m (update-nth n val lst))
-                  (update-nth n (bvchop m val)  (bvchop-list m lst))))
-  :hints (("Goal" :expand (UPDATE-NTH 1 VAL LST)
-           :in-theory (e/d (bvchop-list update-nth) (;LIST::UPDATE-NTH-EQUAL-REWRITE
-                                                     )))))
 
 ;; I'm going to try disabling this, now that we are not trimming array reads...
 ;hope the nfixes are okay - could make a function min-nfix..
@@ -660,68 +555,6 @@
                       (bvchop width2 val)
                     (bv-array-read width2 len index1 lst))))
   :hints (("Goal" :in-theory (e/d (power-of-2p ceiling-of-lg) (bv-array-read bv-array-write)))))
-
-(defthm bv-array-clear-of-repeat-same
-  (equal (bv-array-clear 8 len start (repeat len 0))
-         (repeat len 0))
-  :hints (("Goal" :in-theory (e/d (update-nth-when-equal-of-nth
-                                   bv-array-clear
-                                   bv-array-write ;fixme
-                                   update-nth2
-                                   )
-                                  ()))))
-
-(defthm bv-array-clear-range-of-repeat-same
-  (equal (bv-array-clear-range '8 len start end (repeat len 0))
-         (repeat len 0))
-  :hints (("Goal" :in-theory (enable bv-array-clear-range))))
-
-;restrict to constants?
-(defthm bv-array-clear-range-of-zeros
-  (implies (and (all-equal$ 0 data)
-                (true-listp data)
-                (equal len (len data)))
-           (equal (bv-array-clear-range '8 len start end data)
-                  data))
-  :hints (("Goal" :use (:instance bv-array-clear-range-of-repeat-same)
-           :in-theory (e/d (ALL-EQUAL$-WHEN-TRUE-LISTP)
-                           (bv-array-clear-range-of-repeat-same)))))
-
-;move
-(defthm equal-of-bv-array-write-of-1
-  (equal (equal k (bv-array-write size 1 index val data))
-         (and (true-listp k)
-              (equal 1 (len k))
-              (equal (car k) (bvchop size val))))
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                           ( ;update-nth-becomes-update-nth2-extend-gen
-                            ;LIST::UPDATE-NTH-EQUAL-REWRITE
-                            ;LIST::UPDATE-NTH-EQUAL-UPDATE-NTH-REWRITE
-                            )))))
-
-;move
-(defthm equal-of-bv-array-write-of-1-constant-version
-  (implies (syntaxp (quotep k))
-           (equal (equal k (bv-array-write size 1 index val data))
-                  (and (true-listp k)
-                       (equal 1 (len k))
-                       (equal (car k) (bvchop size val)))))
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                           ( ;update-nth-becomes-update-nth2-extend-gen
-                            ;LIST::UPDATE-NTH-EQUAL-REWRITE
-                            ;LIST::UPDATE-NTH-EQUAL-UPDATE-NTH-REWRITE
-                            )))))
-
-(defthm bv-array-clear-1-0
-  (equal (bv-array-clear width 1 0 data)
-         '(0))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear update-nth2 ;list::clear-nth
-                                                  )
-                                  (;LIST::UPDATE-NTH-BECOMES-CLEAR-NTH
-;LIST::UPDATE-NTH-EQUAL-REWRITE
-                                   )))))
 
 (defthm bv-array-read-of-bv-array-write-too-narrow-cheap
   (implies (and (syntaxp (and (quotep len)
@@ -1113,97 +946,6 @@
                                      BV-ARRAY-READ))))
 
 
-
-;;
-;; bv-array-if
-;;
-
-(defund bv-array-if (element-size len test array1 array2)
-  (declare (xargs :guard (and (natp len)
-                              (natp element-size)
-                              (true-listp array1)
-                              (true-listp array2))))
-  (if test
-      (bvchop-list element-size (take len array1))
-    (bvchop-list element-size (take len array2))))
-
-(defthm bv-arrayp-of-bv-array-if
-  (implies (and (natp element-size)
-                (natp len))
-           (bv-arrayp element-size len (bv-array-if element-size len test array1 array2)))
-  :hints (("Goal" :in-theory (enable bv-array-if bv-arrayp))))
-
-(defthm bv-array-if-of-t
-  (equal (bv-array-if element-size len t array1 array2)
-         (bvchop-list element-size (take len array1)))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
-
-(defthm bv-array-if-of-nil
-  (equal (bv-array-if element-size len nil array1 array2)
-         (bvchop-list element-size (take len array2)))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
-
-(defund bind-var-to-bv-array-length (var term)
-  (declare (xargs :guard (and (symbolp var)
-                              (pseudo-termp term))
-                  :guard-hints (("Goal" :in-theory (enable)))))
-  (if (variablep term)
-      nil ;fail
-    (if (and (quotep term)
-             (true-listp term))
-        (acons var `',(len term) nil)
-      (let ((fn (ffn-symb term)))
-        (if (and (member-eq fn '(bv-array-write bv-array-if))
-                 (quotep (farg2 term))
-                 (natp (unquote (farg2 term))))
-            (acons var (farg2 term) nil)
-          nil)))))
-
-(defund bind-var-to-bv-array-element-size (var term)
-  (declare (xargs :guard (and (symbolp var)
-                              (pseudo-termp term))
-                  :guard-hints (("Goal" :in-theory (enable)))))
-  (if (variablep term)
-      nil ;fail
-    (if (and (quotep term)
-             (true-listp term)
-             (all-integerp term))
-        (acons var `',(width-of-widest-int term) nil)
-      (let ((fn (ffn-symb term)))
-        (if (and (member-eq fn '(bv-array-write bv-array-if))
-                 (quotep (farg1 term))
-                 (natp (unquote (farg1 term))))
-            (acons var (farg1 term) nil)
-          nil)))))
-
-(defthmd if-becomes-bv-array-if
-  (implies (and (bind-free (bind-var-to-bv-array-length 'lenx x) (lenx))
-                (bind-free (bind-var-to-bv-array-length 'leny y) (leny))
-                (bind-free (bind-var-to-bv-array-element-size 'element-sizex x) (element-sizex))
-                (bind-free (bind-var-to-bv-array-element-size 'element-sizey y) (element-sizey))
-                (equal element-sizex element-sizey) ;gen (take the larger?)
-                (equal lenx leny)
-                (bv-arrayp element-sizex lenx x) ;make a -forced version?
-                (bv-arrayp element-sizey leny y) ;make a -forced version?
-                )
-           (equal (if test x y)
-                  (bv-array-if element-sizex lenx test x y)))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
-
-(defthmd myif-becomes-bv-array-if
-  (implies (and (bind-free (bind-var-to-bv-array-length 'lenx x) (lenx))
-                (bind-free (bind-var-to-bv-array-length 'leny y) (leny))
-                (bind-free (bind-var-to-bv-array-element-size 'element-sizex x) (element-sizex))
-                (bind-free (bind-var-to-bv-array-element-size 'element-sizey y) (element-sizey))
-                (equal element-sizex element-sizey) ;gen (take the larger?)
-                (equal lenx leny)
-                (bv-arrayp element-sizex lenx x) ;make a -forced version?
-                (bv-arrayp element-sizey leny y) ;make a -forced version?
-                )
-           (equal (myif test x y)
-                  (bv-array-if element-sizex lenx test x y)))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
-
 ;test:
 ;; (thm
 ;;  (equal x (if test
@@ -1277,16 +1019,6 @@
          (if test
              (bv-arrayp element-width length val1)
            (bv-arrayp element-width length val2))))
-
-(defthm len-of-bv-array-if
-  (equal (len (bv-array-if element-size len test array1 array2))
-         (nfix len))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
-
-(defthm consp-of-bv-array-if
-  (equal (consp (bv-array-if element-size len test array1 array2))
-         (posp len))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
 
 ;for axe
 (defthm bv-arrayp-constant-opener
