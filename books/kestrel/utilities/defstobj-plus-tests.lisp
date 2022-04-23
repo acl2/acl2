@@ -43,3 +43,10 @@
   (my-scalar4 :type (and integer (satisfies posp)) :initially 100)
   my-scalar5
   )
+
+;; A test with a hash-table field (note that defstobj+ doesn't generate theorems about the operations on it yet):
+(defstobj+ my-stobj3
+  (an-array-field :type (array integer (10000)) :initially 0 :resizable t)
+  (a-scalar-field :type integer :initially 0)
+  (a-hash-table-field :type (hash-table equal 200))
+  )
