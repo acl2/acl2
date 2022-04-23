@@ -104,7 +104,7 @@
          nil))
 
 ;move to len.lisp?  or just include it?
-(defthm cdr-when-equal-of-len-and-1-cheap
+(defthmd cdr-when-equal-of-len-and-1-cheap
   (implies (and (equal (len x) 1)
                 (true-listp x))
            (equal (cdr x)
