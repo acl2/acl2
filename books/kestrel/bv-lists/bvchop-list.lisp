@@ -253,3 +253,48 @@
   (implies (natp size)
            (unsigned-byte-listp size (bvchop-list size lst)))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp-rewrite))))
+
+(defthm bvchop-list-of-update-nth
+  (implies (and (natp n)
+                (<= n (len lst))
+                )
+           (equal (bvchop-list m (update-nth n val lst))
+                  (update-nth n (bvchop m val)  (bvchop-list m lst))))
+  :hints (("Goal" :expand (UPDATE-NTH 1 VAL LST)
+           :in-theory (e/d (bvchop-list update-nth) (;LIST::UPDATE-NTH-EQUAL-REWRITE
+                                                     )))))
+
+
+;move?
+(defthm bvchop-list-does-nothing-better
+  (implies (and (all-unsigned-byte-p size lst)
+;                (natp size)
+                (true-listp lst))
+           (equal (bvchop-list size lst) lst))
+  :hints
+  (("Goal"
+    :in-theory (enable bvchop-list all-unsigned-byte-p))))
+
+(defthm bvchop-list-does-nothing-better-2
+  (implies (and (all-unsigned-byte-p size lst)
+;                (natp size)
+                )
+           (equal (bvchop-list size lst)
+                  (true-list-fix lst)))
+  :hints
+  (("Goal"
+    :in-theory (enable bvchop-list all-unsigned-byte-p))))
+
+(defthm bvchop-list-does-nothing-rewrite
+  (equal (equal x (bvchop-list size x))
+         (and (true-listp x)
+              (all-unsigned-byte-p (nfix size) x)))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p bvchop-list))))
+
+(defthmd bvchop-list-does-nothing-rewrite-alt
+  (equal (equal (bvchop-list size x) x)
+         (and (true-listp x)
+              (all-unsigned-byte-p (nfix size) x)))
+  :hints (("Goal" :use (:instance bvchop-list-does-nothing-rewrite)
+           :in-theory (disable bvchop-list-does-nothing-rewrite
+                               bvchop-list-does-nothing-better))))

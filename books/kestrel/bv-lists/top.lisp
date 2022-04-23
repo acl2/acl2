@@ -71,6 +71,8 @@
 (include-book "bv-arrayp")
 (include-book "bv-array-read")
 (include-book "bv-array-write")
+(include-book "bv-array-clear")
+(include-book "bv-array-if")
 (include-book "bv-arrays")
 (include-book "bv-array-conversions")
 (include-book "bv-array-conversions2")
