@@ -17,6 +17,7 @@
 (local (include-book "cons"))
 (local (include-book "nthcdr"))
 (local (include-book "len"))
+(local (include-book "take"))
 
 ;; From books/std/lists/list-defuns.lisp:
 (defund repeat (n x)
@@ -165,3 +166,14 @@
   (equal (equal (repeat n x) (cons x (repeat (+ -1 n) x)))
          (posp (nfix n)))
   :hints (("Goal" :in-theory (enable repeat))))
+
+(defthm take-of-repeat-when-<=
+  (implies (and (<= n1 n2)
+                (natp n1)
+                (natp n2))
+           (equal (take n1 (repeat n2 x))
+                  (repeat n1 x)))
+  :hints (("Goal"
+           :induct (sub1-sub1-induct n1 n2)
+           :in-theory (e/d (repeat take)
+                           ()))))

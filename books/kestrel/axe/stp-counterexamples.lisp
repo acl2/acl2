@@ -12,15 +12,27 @@
 
 (in-package "ACL2")
 
-(include-book "std/strings/decimal" :dir :system) ; todo: reduce, for STR::PARSE-NAT-FROM-CHARLIST and str::skip-leading-digits
-(include-book "std/strings/binary" :dir :system) ; todo: reduce, for STR::PARSE-BITS-FROM-CHARLIST and str::skip-leading-bit-digits
+;(include-book "std/strings/decimal" :dir :system) ; todo: reduce, for STR::PARSE-NAT-FROM-CHARLIST and str::skip-leading-digits
+;(include-book "std/strings/binary" :dir :system) ; todo: reduce, for STR::PARSE-BITS-FROM-CHARLIST and str::skip-leading-bit-digits
+(include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/read-chars" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "kestrel/strings-light/parse-binary-digits" :dir :system)
+(include-book "kestrel/strings-light/parse-decimal-digits" :dir :system)
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "nodenum-type-alists")
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
+(include-book "kestrel/lists-light/repeat" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+
+(defthm alistp-of-reverse-list
+  (equal (alistp (reverse-list x))
+         (alistp (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable alistp reverse-list))))
+
+(local (in-theory (disable natp mv-nth)))
 
 ;;
 ;; counterexample parsing
@@ -47,6 +59,15 @@
                   (or (natp val)
                       (booleanp val))
                   (raw-counterexamplep (rest cex))))))))
+
+(defthm raw-counterexamplep-of-append
+  (implies (and (raw-counterexamplep x)
+                (raw-counterexamplep y))
+           (raw-counterexamplep (append x y))))
+
+(defthm raw-counterexamplep-of-rev
+  (implies (raw-counterexamplep x)
+           (raw-counterexamplep (reverse-list x))))
 
 (defconst *assert-chars* (coerce "ASSERT( " 'list))
 
@@ -93,60 +114,19 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable match-chars))))
 
-; returns (mv number remainingchars)
-(defund parse-decimal-number (chars)
-  (declare (xargs :guard (character-listp chars)))
-  (b* (((mv num len chars)
-        (str::parse-nat-from-charlist chars 0 0))
-       ((when (zp len)) ; no digits for the nodenum
-        (prog2$ (er hard? 'parse-decimal-number "Failed to parse a number from chars: ~x0" chars)
-                (mv 0 chars))))
-    (mv num chars)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm skip-leading-digits-len-bound
-  (<= (len (str::skip-leading-digits chars))
-      (len chars))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable str::skip-leading-digits))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm true-listp-of-skip-leading-digits
-  (implies (true-listp chars)
-           (true-listp (str::skip-leading-digits chars)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable str::skip-leading-digits))))
-
-(defthm parse-decimal-number-len-bound
-  (<= (len (mv-nth 1 (parse-decimal-number chars)))
-      (len chars))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable parse-decimal-number))))
-
-(defthm true-listp-of-mv-nth-1-of-parse-decimal-number
-  (implies (true-listp chars)
-           (true-listp (mv-nth 1 (parse-decimal-number chars))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable parse-decimal-number))))
-
-(defthm character-listp-of-mv-nth-1-of-parse-decimal-number
-  (implies (character-listp chars)
-           (character-listp (mv-nth 1 (parse-decimal-number chars))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable parse-decimal-number))))
-
-(defthm natp-of-mv-nth-0-of-parse-decimal-number
-  (natp (mv-nth 0 (parse-decimal-number chars)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable parse-decimal-number))))
-
-; returns (mv number remainingchars)
-(defund parse-binary-number (chars)
-  (declare (xargs :guard (character-listp chars)))
-  (b* (((mv num len chars)
-        (str::parse-bits-from-charlist chars 0 0))
-       ((when (zp len)) ; no digits for the nodenum
-        (prog2$ (er hard? 'parse-binary-number "Failed to parse a number from chars: ~x0" chars)
-                (mv 0 chars))))
-    (mv num chars)))
+;; ; returns (mv number remainingchars)
+;; (defund parse-binary-number (chars)
+;;   (declare (xargs :guard (character-listp chars)))
+;;   (b* (((mv num len chars)
+;;         (str::parse-bits-from-charlist chars 0 0))
+;;        ((when (zp len)) ; no digits for the nodenum
+;;         (prog2$ (er hard? 'parse-binary-number "Failed to parse a number from chars: ~x0" chars)
+;;                 (mv 0 chars))))
+;;     (mv num chars)))
 
 ;; (defthm skip-leading-hex-digits-len-bound
 ;;   (<= (len (str::skip-leading-hex-digits chars))
@@ -160,40 +140,17 @@
 ;;   :rule-classes (:rewrite :type-prescription)
 ;;   :hints (("Goal" :in-theory (enable str::skip-leading-hex-digits))))
 
-(defthm skip-leading-bit-digits-len-bound
-  (<= (len (str::skip-leading-bit-digits chars))
-      (len chars))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable str::skip-leading-bit-digits))))
+;; (defthm skip-leading-bit-digits-len-bound
+;;   (<= (len (str::skip-leading-bit-digits chars))
+;;       (len chars))
+;;   :rule-classes (:rewrite :linear)
+;;   :hints (("Goal" :in-theory (enable str::skip-leading-bit-digits))))
 
-(defthm true-listp-of-skip-leading-bit-digits
-  (implies (true-listp chars)
-           (true-listp (str::skip-leading-bit-digits chars)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable str::skip-leading-bit-digits))))
-
-(defthm parse-binary-number-len-bound
-  (<= (len (mv-nth 1 (parse-binary-number chars)))
-      (len chars))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable parse-binary-number))))
-
-(defthm true-listp-of-mv-nth-1-of-parse-binary-number
-  (implies (true-listp chars)
-           (true-listp (mv-nth 1 (parse-binary-number chars))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable parse-binary-number))))
-
-(defthm character-listp-of-mv-nth-1-of-parse-binary-number
-  (implies (character-listp chars)
-           (character-listp (mv-nth 1 (parse-binary-number chars))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable parse-binary-number))))
-
-(defthm natp-of-mv-nth-0-of-parse-binary-number
-  (natp (mv-nth 0 (parse-binary-number chars)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable parse-binary-number))))
+;; (defthm true-listp-of-skip-leading-bit-digits
+;;   (implies (true-listp chars)
+;;            (true-listp (str::skip-leading-bit-digits chars)))
+;;   :rule-classes (:rewrite :type-prescription)
+;;   :hints (("Goal" :in-theory (enable str::skip-leading-bit-digits))))
 
 ;; returns (mv bool remaining-chars)
 (defund parse-boolean (chars)
@@ -241,7 +198,10 @@
     (if match
         ;; non-boolean
         (b* ((chars chars1)
-             ((mv value chars) (parse-binary-number chars))
+             ((mv value chars) (parse-binary-number-from-chars chars))
+             ((when (not value))
+              (prog2$ (er hard? 'parse-equality-etc "Ill-formed counterexample chars: ~X01" all-chars nil)
+                      (mv nil chars)))
              ((mv match chars)
               (match-chars '(#\Space #\) #\; #\Newline) chars))
              ((when (not match))
@@ -301,7 +261,10 @@
          ((when (not matchp))
           (prog2$ (er hard? 'maybe-parse-array-index "Ill-formed counterexample chars: ~X01" all-chars nil)
                   (mv nil chars)))
-         ((mv index chars) (parse-binary-number chars))
+         ((mv index chars) (parse-binary-number-from-chars chars))
+         ((when (not index))
+          (er hard? 'maybe-parse-array-index "Ill-formed counterexample chars: ~X01" all-chars nil)
+          (mv nil chars))
          ((mv matchp chars)
           (match-chars '(#\]) chars))
          ((when (not matchp))
@@ -345,7 +308,7 @@
                   :verify-guards nil ;done below
                   ))
   (if (endp chars)
-      (rev acc)
+      (reverse-list acc)
     (if (eql #\newline (first chars)) ;skip all newlines
         (parse-counterexample (rest chars) acc)
       (let ((old-chars chars))
@@ -353,7 +316,7 @@
           (match-chars *assert-chars* chars)
           (if (not matchp)
               (prog2$ (er hard? 'parse-counterexample "Ill-formed counterexample: ~x0" old-chars)
-                      nil)
+                      :error)
             (mv-let (matchp chars) ;test for array... (only constant arrays are named that way)
               (match-chars *constant-array-node-chars* chars)
               (if matchp ;;this is a constant array node, but we already know their values, so skip it
@@ -365,8 +328,11 @@
                   (match-chars *normal-node-chars* chars)
                   (if (not matchp)
                       (prog2$ (er hard? 'parse-counterexample "Ill-formed counterexample: ~x0" old-chars)
-                              nil)
-                    (b* (((mv nodenum chars) (parse-decimal-number chars))
+                              :error)
+                    (b* (((mv nodenum chars) (parse-decimal-number-from-chars chars))
+                         ((when (not nodenum))
+                          (er hard? 'parse-counterexample "Ill-formed counterexample: ~x0" old-chars)
+                          :error)
                          ((mv array-index-or-nil chars) (maybe-parse-array-index chars old-chars))
                          ((mv value chars) (parse-equality-etc chars old-chars))
                          (key (if array-index-or-nil
@@ -374,27 +340,15 @@
                                 nodenum)))
                       (parse-counterexample chars (acons key value acc)))))))))))))
 
-(defthm alistp-of-rev
-  (equal (alistp (rev x))
-         (alistp (true-list-fix x)))
-  :hints (("Goal" :in-theory (enable alistp rev))))
-
 (defthm alistp-of-parse-counterexample
-  (implies (alistp acc)
+  (implies (and (alistp acc)
+                (not (equal :error (parse-counterexample chars acc))))
            (alistp (parse-counterexample chars acc)))
   :hints (("Goal" :in-theory (enable parse-counterexample))))
 
-(defthm raw-counterexamplep-of-append
-  (implies (and (raw-counterexamplep x)
-                (raw-counterexamplep y))
-           (raw-counterexamplep (append x y))))
-
-(defthm raw-counterexamplep-of-rev
-  (implies (raw-counterexamplep x)
-           (raw-counterexamplep (rev x))))
-
 (defthm raw-counterexamplep-of-parse-counterexample
-  (implies (raw-counterexamplep acc)
+  (implies (and (raw-counterexamplep acc)
+                (not (equal :error (parse-counterexample chars acc))))
            (raw-counterexamplep (parse-counterexample chars acc)))
   :hints (("Goal" :in-theory (enable acons parse-counterexample))))
 
@@ -539,15 +493,10 @@
            (true-listp (set-array-vals-from-counterexample raw-counterexample nodenum array-val)))
   :hints (("Goal" :in-theory (enable set-array-vals-from-counterexample))))
 
-(defthmd integerp-of-lookup-equal-when-raw-counterexamplep
+(defthmd natp-of-lookup-equal-when-raw-counterexamplep
   (implies (and (raw-counterexamplep raw-counterexample)
                 (not (booleanp (lookup-equal nodenum raw-counterexample))))
-           (integerp (lookup-equal nodenum raw-counterexample)))
-  :hints (("Goal" :in-theory (enable raw-counterexamplep lookup-equal))))
-
-(defthmd not-negative-of-lookup-equal-when-raw-counterexamplep
-  (implies (raw-counterexamplep raw-counterexample)
-           (not (< (lookup-equal nodenum raw-counterexample) 0)))
+           (natp (lookup-equal nodenum raw-counterexample)))
   :hints (("Goal" :in-theory (enable raw-counterexamplep lookup-equal))))
 
 (defthm counterexamplep-of-fixup-counterexample
@@ -556,7 +505,6 @@
            (counterexamplep (fixup-counterexample cut-nodenum-type-alist raw-counterexample)))
   :hints (("Goal" :in-theory (e/d (fixup-counterexample
                                    counterexamplep acons
-                                   integerp-of-lookup-equal-when-raw-counterexamplep
-                                   not-negative-of-lookup-equal-when-raw-counterexamplep
-                                   nodenum-type-alistp)
+                                   nodenum-type-alistp
+                                   natp-of-lookup-equal-when-raw-counterexamplep)
                                   (BOOLEAN-TYPEP bv-typep BV-ARRAY-TYPEP BV-ARRAY-TYPE-LEN)))))

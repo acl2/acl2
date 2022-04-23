@@ -4286,7 +4286,8 @@
                                 symbol-listp-of-lambda-formals-when-axe-treep
                                 len-of-lambda-formals-when-axe-treep
                                 len-when-equal-of-car-and-quote-and-axe-treep
-                                consp-of-cdr-when-equal-of-car-and-quote-and-axe-treep)
+                                consp-of-cdr-when-equal-of-car-and-quote-and-axe-treep
+                                len-of-car-when-axe-treep)
                                (dargp
                                 dargp-less-than
                                 natp
