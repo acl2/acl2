@@ -74,15 +74,18 @@
 ;(include-book "kestrel/lists-light/cdr" :dir :system) ;for cdr-iff
 (include-book "kestrel/utilities/make-tuple" :dir :system)
 (include-book "kestrel/lists-light/all-same-eql" :dir :system)
-(include-book "coi/lists/nth-and-update-nth" :dir :system) ;drop?
-(in-theory (disable LIST::UPDATE-NTH-EQUAL-REWRITE
-                    LIST::FIX-OF-NTHCDR))
+;(include-book "coi/lists/nth-and-update-nth" :dir :system) ;drop?
+;; (in-theory (disable LIST::UPDATE-NTH-EQUAL-REWRITE
+;;                     LIST::FIX-OF-NTHCDR))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/utilities/acl2-count" :dir :system))
+
+(local (in-theory (disable acl2-count)))
 
 ;; (in-theory (disable LIST::MEMBER-EQ-IS-MEMBERP-PROPOSITIONALLY
 ;;                     LIST::MEMBER-IS-MEMBERP-PROPOSITIONALLY
@@ -9512,7 +9515,9 @@
                              (,new-fn '0 ,@formals))
                       :hints (("Goal"
                                :in-theory (union-theories (theory 'minimal-theory)
-                                                          '(natp LIST::NTHCDR-OF-ZP zp))
+                                                          '(natp
+                                                            nthcdr-of-0 ; LIST::NTHCDR-OF-ZP
+                                                            zp))
                                :use (:instance ,helper-lemma-name
                                                ,@(bind-new-to-old-for-cdred-formals formals cdred-formals)
                                                (,numcdrs-formal 0)))))))
@@ -11725,7 +11730,7 @@
                                                     '(equal-cons-cases2
                                                       equal-cons-cases2-alt
                                                       EQUAL-OF-NIL-AND-CDR
-                                                      LIST::LEN-OF-CDR-BETTER
+                                                      len-of-cdr ; LIST::LEN-OF-CDR-BETTER
                                                       )
                                                     (exit-test-simplification-proof-rules))
                                                    ;;ffixme this causes a lot of printing!!
@@ -11830,7 +11835,7 @@
                                                                               CONSP-OF-NTHCDR
                                                                               equal-of-nthcdr-and-cons
                                                                               equal-of-cons-when-equal-nth-0
-                                                                              LIST::NTHCDR-IFF
+                                                                              NTHCDR-IFF
                                                                               ,@(list-rules2)
                                                                               ,@(list-rules2-executable-counterparts)))
                                           ;;i guess because of substitution, this may not be reliable:
