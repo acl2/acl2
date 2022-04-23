@@ -64,8 +64,6 @@
 (def-dag-builder-theorems
   (add-bitxor-nest-to-dag-array-aux rev-leaves core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-;  :dag-array-name dag-array-name
- ; :dag-parent-array-name dag-parent-array-name
   :hyps ((true-listp rev-leaves)
          (natp core-nodenum)
          (< core-nodenum dag-len)
@@ -139,8 +137,6 @@
   (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   :recursivep nil
-;  :dag-array-name dag-array-name
-;  :dag-parent-array-name dag-parent-array-name
   :hyps ((true-listp rev-leaves)
          (bounded-darg-listp rev-leaves dag-len)))
 
@@ -156,5 +152,5 @@
                 (bounded-darg-listp rev-leaves dag-len)
                 (not (mv-nth 0 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
            (dargp-less-than (mv-nth 1 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                                       (mv-nth 3 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+                            (mv-nth 3 (add-bitxor-nest-to-dag-array rev-leaves dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
   :hints (("Goal" :in-theory (e/d (add-bitxor-nest-to-dag-array) (dargp-less-than)))))
