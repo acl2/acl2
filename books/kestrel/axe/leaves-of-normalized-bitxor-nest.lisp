@@ -49,10 +49,10 @@
 ;; nodenums of the leaves in the nest (in increasing order by nodenum -- the
 ;; reverse of the order in which they appear in the nest).
 (defund leaves-of-normalized-bitxor-nest-aux (nodenum ;if this points to a bitxor nest, that nest is known to be normalized
-                                              dag-array-name dag-array dag-len
+                                              dag-array dag-len
                                               nodenums-acc)
   (declare (xargs :guard (and (natp nodenum)
-                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (< nodenum dag-len))
                   :measure (nfix (+ 1 nodenum))
                   :guard-hints (("Goal" :in-theory (e/d (nth-of-cdr
@@ -60,36 +60,36 @@
                                                         (car-becomes-nth-of-0))))))
   (if (not (mbt (natp nodenum)))
       nodenums-acc
-    (let* ((expr (aref1 dag-array-name dag-array nodenum)))
+    (let* ((expr (aref1 'dag-array dag-array nodenum)))
       (if (and (call-of 'bitxor expr) ; (bitxor <x> <y>)
                (consp (cdr (dargs expr)))
                (not (consp (darg1 expr))) ; a quoted constant should not appear as arg1 since we have handled the top node specially
                (not (consp (darg2 expr))) ; a quoted constant should not appear as arg2 if the nest is normalized
                (mbt (< (darg2 expr) nodenum)))
           ;;expr is of the form (bitxor <arg1> <ar23>).  since the nest is normalized, arg1 cannot be a bitxor and arg2 cannot be a constant
-          (leaves-of-normalized-bitxor-nest-aux (darg2 expr) dag-array-name dag-array dag-len (cons (darg1 expr) nodenums-acc))
+          (leaves-of-normalized-bitxor-nest-aux (darg2 expr) dag-array dag-len (cons (darg1 expr) nodenums-acc))
         ;; Not a suitable bitxor:
         (cons nodenum nodenums-acc)))))
 
 (defthm true-listp-of-leaves-of-normalized-bitxor-nest-aux
   (implies (true-listp nodenums-acc)
-           (true-listp (leaves-of-normalized-bitxor-nest-aux nodenum dag-array-name dag-array dag-len nodenums-acc)))
+           (true-listp (leaves-of-normalized-bitxor-nest-aux nodenum dag-array dag-len nodenums-acc)))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bitxor-nest-aux))))
 
 (defthm all-integerp-of-leaves-of-normalized-bitxor-nest-aux
   (implies (and (natp nodenum)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (all-integerp nodenums-acc))
-           (all-integerp (leaves-of-normalized-bitxor-nest-aux nodenum dag-array-name dag-array dag-len nodenums-acc)))
+           (all-integerp (leaves-of-normalized-bitxor-nest-aux nodenum dag-array dag-len nodenums-acc)))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bitxor-nest-aux))))
 
 (defthm bounded-darg-listp-of-leaves-of-normalized-bitxor-nest-aux
   (implies (and (natp nodenum)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (bounded-darg-listp nodenums-acc dag-len))
-           (bounded-darg-listp (leaves-of-normalized-bitxor-nest-aux nodenum dag-array-name dag-array dag-len nodenums-acc) dag-len))
+           (bounded-darg-listp (leaves-of-normalized-bitxor-nest-aux nodenum dag-array dag-len nodenums-acc) dag-len))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bitxor-nest-aux))))
 
 ;fixme handle bvnots (by negating the accumulated-constant and stripping the not).  or we could rely on rules to do that.
@@ -97,9 +97,9 @@
 ;; Returns (mv accumulated-constant rev-leaf-nodenums) where leaf-nodenums is sorted in increasing order (the opposite of the nest).
 ; NODENUM-OR-QUOTEP should be an argument to a BITXOR.
 (defund leaves-of-normalized-bitxor-nest (nodenum-or-quotep ;if this points to bitxor nest, that nest is known to be normalized
-                                          dag-array-name dag-array
+                                          dag-array
                                           dag-len)
-  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (dargp-less-than nodenum-or-quotep dag-len))
                   :guard-hints (("Goal" :in-theory (e/d (nth-of-cdr cadr-becomes-nth-of-1)
                                                         (car-becomes-nth-of-0))))))
@@ -107,7 +107,7 @@
       ;; Just the constant and no nodenums:
       (mv (bvchop 1 (ifix (unquote nodenum-or-quotep)))
           nil)
-    (let* ((expr (aref1 dag-array-name dag-array nodenum-or-quotep)))
+    (let* ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
       (if (and (call-of 'bitxor expr)
                (consp (cdr (dargs expr)))
                (not (consp (darg2 expr))) ;actually known to be true (can't be a constant since the bitxor nest is normalized)
@@ -122,27 +122,27 @@
                 (mv 0
                     (list arg1))))
             (mv constant
-                (leaves-of-normalized-bitxor-nest-aux (darg2 expr) dag-array-name dag-array dag-len nodenums-acc)))
+                (leaves-of-normalized-bitxor-nest-aux (darg2 expr) dag-array dag-len nodenums-acc)))
         ;;not a bitxor nest:
         (mv 0
             (list nodenum-or-quotep))))))
 
 (defthm natp-of-mv-nth-0-of-leaves-of-normalized-bitxor-nest
-  (natp (mv-nth 0 (leaves-of-normalized-bitxor-nest nodenum-or-quotep dag-array-name dag-array dag-len)))
+  (natp (mv-nth 0 (leaves-of-normalized-bitxor-nest nodenum-or-quotep dag-array dag-len)))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bitxor-nest))))
 
 (defthm true-listp-of-mv-nth-1-of-leaves-of-normalized-bitxor-nest
-  (true-listp (mv-nth 1 (leaves-of-normalized-bitxor-nest nodenum-or-quotep dag-array-name dag-array dag-len)))
+  (true-listp (mv-nth 1 (leaves-of-normalized-bitxor-nest nodenum-or-quotep dag-array dag-len)))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bitxor-nest))))
 
 (defthm all-integerp-of-mv-nth-1-of-leaves-of-normalized-bitxor-nest
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+  (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (dargp-less-than nodenum-or-quotep dag-len))
-           (all-integerp (mv-nth 1 (leaves-of-normalized-bitxor-nest nodenum-or-quotep dag-array-name dag-array dag-len))))
+           (all-integerp (mv-nth 1 (leaves-of-normalized-bitxor-nest nodenum-or-quotep dag-array dag-len))))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bitxor-nest))))
 
 (defthm bounded-darg-listp-of-leaves-of-normalized-bitxor-nest
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+  (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (dargp-less-than nodenum-or-quotep dag-len))
-           (bounded-darg-listp (mv-nth 1 (leaves-of-normalized-bitxor-nest nodenum-or-quotep dag-array-name dag-array dag-len)) dag-len))
+           (bounded-darg-listp (mv-nth 1 (leaves-of-normalized-bitxor-nest nodenum-or-quotep dag-array dag-len)) dag-len))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bitxor-nest))))
