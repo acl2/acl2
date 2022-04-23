@@ -159,18 +159,7 @@
 
 (defresult value "values"
   :enable (errorp
-           valuep
-           ucharp
-           scharp
-           ushortp
-           sshortp
-           uintp
-           sintp
-           ulongp
-           slongp
-           ullongp
-           sllongp
-           pointerp))
+           valuep))
 
 (defruled errorp-when-value-resultp-and-not-valuep
   (implies (and (value-resultp x)
