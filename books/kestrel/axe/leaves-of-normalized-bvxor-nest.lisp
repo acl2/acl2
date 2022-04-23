@@ -70,7 +70,7 @@
                (let ((size-arg (darg1 expr)))
                  (and (consp size-arg) ;the size argument must be a quotep
                       (eql size (unquote size-arg))))
-               (not (consp (darg2 expr))) ; a quoted constant should not appear as arg2 since we have the top node specially
+               (not (consp (darg2 expr))) ; a quoted constant should not appear as arg2 since we have handled the top node specially
                (not (consp (darg3 expr))) ; a quoted constant should not appear as arg3 if the nest is normalized
                (mbt (< (darg3 expr) nodenum)))
           ;;expr is of the form (bvxor '<size> <arg2> <arg3>).  since the nest is normalized, arg2 cannot be a bvxor and arg3 cannot be a constant
