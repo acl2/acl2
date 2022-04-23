@@ -1819,7 +1819,7 @@
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                     print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
-              ;; No rule fired, so no simplification can be done.  Add the node to the dag:
+              ;; No rule fired, so no simplification can be done.  Add the expression to the dag:
               (b* (((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
                     (add-function-call-expr-to-dag-array
                      fn args ;(if any-arg-was-simplifiedp (cons fn args) tree) ;could put back the any-arg-was-simplifiedp trick to save this cons
