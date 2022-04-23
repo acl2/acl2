@@ -1685,7 +1685,7 @@
                               ;; TODO: might it be possible to not check for ground-terms because we never build them? -- think about where terms might come from other than sublis-var-simple, which we could change to not build ground terms (of functions we know about)
                               ;; TODO: maybe we should try to apply rules here (maybe outside-in rules) instead of rewriting the args
                               ;; TODO: could pass in a flag for the common case where the args are known to be already simplified (b/c the tree is a dag node?)
-                              (- (and (eq :verbose! print) (cw "(Rewriting args of ~x0:~%" fn)))
+                              ;; (- (and (eq :verbose! print) (cw "(Rewriting args of ~x0:~%" fn)))
                               ((mv erp args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                    node-replacement-array)
                                (,simplify-trees-and-add-to-dag-name args
@@ -1693,18 +1693,17 @@
                                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                                     print interpreted-function-alist known-booleans monitored-symbols (+ -1 count)))
                               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-                              (- (and (eq :verbose! print) (cw "Done rewriting args.)~%")))
-                              ;;ARGS is now a list of nodenums and quoteps.
-                              ;;Now we simplify FN applied to (the simplified) ARGS:
+                              ;; (- (and (eq :verbose! print) (cw "Done rewriting args.)~%")))
                               )
+                           ;; ARGS is now a list of dargs (nodenums and quoteps). Now we simplify FN applied to (the simplified) ARGS:
                            (if (consp fn) ;;tests for lambda
                                ;; It's a lambda, so we beta-reduce and simplify the result:
                                ;; note that we don't look up lambdas in the assumptions (this is consistent with simplifying first)
                                ;; TODO: It's possible that we wasted time above simplifying lambda args (some args may be unneeded if the lambda body is a resolvable if), but
                                ;; I'm not sure how to prevent that.
-                               (let* ((formals (second fn))
-                                      (body (third fn))
-                                      ;;BOZO could optimize this pattern: (,sublis-var-and-eval-name (pairlis$-fast formals args) body ...)
+                               (let* ((formals (lambda-formals fn))
+                                      (body (lambda-body fn))
+                                      ;; TTODO: could optimize this pattern: (,sublis-var-and-eval-name (pairlis$-fast formals args) body ...)
                                       (new-expr (,sublis-var-and-eval-name (pairlis$-fast formals args) body interpreted-function-alist)))
                                  ;;simplify the result of beta-reducing:
                                  (,simplify-tree-and-add-to-dag-name new-expr
@@ -4662,8 +4661,9 @@
                 ;; (not ..)
                 (t ;; EXPR is some other (non-lambda) function call:
                  ;; TODO: Consider consulting the memoization here
-                 (b* ((new-dargs (renumber-dargs-with-stobj (dargs expr) renumbering-stobj)) ; todo: have the renumbering function return a groundp flag
-                      ;; handle possible ground term by evaluating:
+                 (b* (;; Renumber the args:
+                      (new-dargs (renumber-dargs-with-stobj (dargs expr) renumbering-stobj)) ; todo: have the renumbering function return a groundp flag
+                      ;; Handle possible ground term by evaluating:
                       ((mv erp evaluatedp val)
                        (if (not (all-consp new-dargs)) ;; test for args being quoted constants
                            ;; not a ground term:
@@ -4689,7 +4689,7 @@
                                                  node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                  print interpreted-function-alist known-booleans monitored-symbols
                                                  renumbering-stobj))
-                     ;; Not a ground term we could evaluate, so apply rules:
+                     ;; Not a ground term we could evaluate, so try to apply rewrite rules:
                      (b* (((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                            ;; Simplify the non-lambda FN applied to the simplified args:
                            ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
