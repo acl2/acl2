@@ -812,10 +812,10 @@
                                get-field-of-set-field-same
                                get-static-field-of-set-static-field-same
                                get-static-field-of-set-static-field-diff
-                               list::nth-of-cons
+                               nth-of-cons
 ;                               equal-of-cons-and-cons
                                insert-of-rkeys-of-set-field-same
-                               list::len-cons
+                               len-of-cons
                                all-bound-in-heap-of-cons
                                all-bound-in-heap-of-nil
                                get-field-of-addresses-of-nil
