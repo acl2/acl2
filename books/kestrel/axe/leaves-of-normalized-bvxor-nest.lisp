@@ -21,6 +21,8 @@
 
 (local (in-theory (enable consp-of-cdr)))
 
+(local (in-theory (disable natp)))
+
 ;; Justifies how constants are handled below:
 (thm
  (implies (natp size)
@@ -52,11 +54,11 @@
 ;; reverse of the order in which they appear in the nest).
 (defund leaves-of-normalized-bvxor-nest-aux (nodenum ;if this points to a bvxor nest, that nest is known to be normalized
                                              size    ;not quoted
-                                             dag-array-name dag-array dag-len
+                                             dag-array dag-len
                                              nodenums-acc)
   (declare (xargs :guard (and (natp nodenum)
                               (natp size)
-                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (< nodenum dag-len))
                   :measure (nfix (+ 1 nodenum))
                   :guard-hints (("Goal" :in-theory (e/d (nth-of-cdr
@@ -64,7 +66,7 @@
                                                         (car-becomes-nth-of-0))))))
   (if (not (mbt (natp nodenum)))
       nodenums-acc
-    (let* ((expr (aref1 dag-array-name dag-array nodenum)))
+    (let* ((expr (aref1 'dag-array dag-array nodenum)))
       (if (and (call-of 'bvxor expr) ; (bvxor <size> <x> <y>)
                (consp (cdr (cdr (dargs expr))))
                (let ((size-arg (darg1 expr)))
@@ -74,31 +76,30 @@
                (not (consp (darg3 expr))) ; a quoted constant should not appear as arg3 if the nest is normalized
                (mbt (< (darg3 expr) nodenum)))
           ;;expr is of the form (bvxor '<size> <arg2> <arg3>).  since the nest is normalized, arg2 cannot be a bvxor and arg3 cannot be a constant
-          (leaves-of-normalized-bvxor-nest-aux (darg3 expr) size dag-array-name dag-array dag-len (cons (darg2 expr) nodenums-acc))
-        ;; Not a suitable bvxor:
+          (leaves-of-normalized-bvxor-nest-aux (darg3 expr) size dag-array dag-len (cons (darg2 expr) nodenums-acc))
         (cons nodenum nodenums-acc)))))
 
 (defthm true-listp-of-leaves-of-normalized-bvxor-nest-aux
   (implies (true-listp nodenums-acc)
-           (true-listp (leaves-of-normalized-bvxor-nest-aux nodenum size dag-array-name dag-array dag-len nodenums-acc)))
+           (true-listp (leaves-of-normalized-bvxor-nest-aux nodenum size dag-array dag-len nodenums-acc)))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bvxor-nest-aux))))
 
 (defthm all-integerp-of-leaves-of-normalized-bvxor-nest-aux
   (implies (and (natp nodenum)
                 (natp size)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (all-integerp nodenums-acc))
-           (all-integerp (leaves-of-normalized-bvxor-nest-aux nodenum size dag-array-name dag-array dag-len nodenums-acc)))
+           (all-integerp (leaves-of-normalized-bvxor-nest-aux nodenum size dag-array dag-len nodenums-acc)))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bvxor-nest-aux))))
 
 (defthm bounded-darg-listp-of-leaves-of-normalized-bvxor-nest-aux
   (implies (and (natp nodenum)
                 (natp size)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (bounded-darg-listp nodenums-acc dag-len))
-           (bounded-darg-listp (leaves-of-normalized-bvxor-nest-aux nodenum size dag-array-name dag-array dag-len nodenums-acc) dag-len))
+           (bounded-darg-listp (leaves-of-normalized-bvxor-nest-aux nodenum size dag-array dag-len nodenums-acc) dag-len))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bvxor-nest-aux))))
 
 ;fixme handle bvnots (by negating the accumulated-constant and stripping the not).  or we could rely on rules to do that.
@@ -107,18 +108,17 @@
 ; NODENUM-OR-QUOTEP should be an argument to a BVXOR whose size argument is (quote SIZE).
 (defund leaves-of-normalized-bvxor-nest (nodenum-or-quotep ;if this points to bvxor nest, that nest is known to be normalized
                                          size ;the unquoted size of the bvxor nest whose leaves we seek
-                                         dag-array-name dag-array
-                                         dag-len)
-  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (dargp-less-than nodenum-or-quotep dag-len)
-                              (natp size))
+                                         dag-array dag-len)
+  (declare (xargs :guard  (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                               (dargp-less-than nodenum-or-quotep dag-len)
+                               (natp size))
                   :guard-hints (("Goal" :in-theory (e/d (nth-of-cdr cadr-becomes-nth-of-1)
                                                         (car-becomes-nth-of-0))))))
   (if (consp nodenum-or-quotep) ;checks for quotep
       ;; Just the constant and no nodenums:
       (mv (bvchop size (ifix (unquote nodenum-or-quotep)))
           nil)
-    (let* ((expr (aref1 dag-array-name dag-array nodenum-or-quotep)))
+    (let* ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
       (if (and (call-of 'bvxor expr)
                (consp (cdr (cdr (dargs expr))))
                (let ((size-arg (darg1 expr)))
@@ -137,30 +137,29 @@
                 (mv 0
                     (list arg2))))
             (mv constant
-                (leaves-of-normalized-bvxor-nest-aux (darg3 expr)
-                                                     size dag-array-name dag-array dag-len nodenums-acc)))
+                (leaves-of-normalized-bvxor-nest-aux (darg3 expr) size dag-array dag-len nodenums-acc)))
         ;;not a bvxor nest of the right size:
         (mv 0
             (list nodenum-or-quotep))))))
 
 (defthm natp-of-mv-nth-0-of-leaves-of-normalized-bvxor-nest
-  (natp (mv-nth 0 (leaves-of-normalized-bvxor-nest nodenum-or-quotep size dag-array-name dag-array dag-len)))
+  (natp (mv-nth 0 (leaves-of-normalized-bvxor-nest nodenum-or-quotep size dag-array dag-len)))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bvxor-nest))))
 
 (defthm true-listp-of-mv-nth-1-of-leaves-of-normalized-bvxor-nest
-  (true-listp (mv-nth 1 (leaves-of-normalized-bvxor-nest nodenum-or-quotep size dag-array-name dag-array dag-len)))
+  (true-listp (mv-nth 1 (leaves-of-normalized-bvxor-nest nodenum-or-quotep size dag-array dag-len)))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bvxor-nest))))
 
 (defthm all-integerp-of-mv-nth-1-of-leaves-of-normalized-bvxor-nest
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+  (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (dargp-less-than nodenum-or-quotep dag-len)
                 (natp size))
-           (all-integerp (mv-nth 1 (leaves-of-normalized-bvxor-nest nodenum-or-quotep size dag-array-name dag-array dag-len))))
+           (all-integerp (mv-nth 1 (leaves-of-normalized-bvxor-nest nodenum-or-quotep size dag-array dag-len))))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bvxor-nest))))
 
 (defthm bounded-darg-listp-of-leaves-of-normalized-bvxor-nest
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+  (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (dargp-less-than nodenum-or-quotep dag-len)
                 (natp size))
-           (bounded-darg-listp (mv-nth 1 (leaves-of-normalized-bvxor-nest nodenum-or-quotep size dag-array-name dag-array dag-len)) dag-len))
+           (bounded-darg-listp (mv-nth 1 (leaves-of-normalized-bvxor-nest nodenum-or-quotep size dag-array dag-len)) dag-len))
   :hints (("Goal" :in-theory (enable leaves-of-normalized-bvxor-nest))))

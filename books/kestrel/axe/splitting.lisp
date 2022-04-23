@@ -59,12 +59,13 @@
          (all-< x bound))
   :hints (("Goal" :in-theory (enable remove-duplicates-from-grouped-list))))
 
-(defthm not-<-of-car-when-nat-listp
-  (implies (and (syntaxp k)
-                (<= k 0)
-                (nat-listp x))
-           (not (< (car x) k)))
-  :hints (("Goal" :in-theory (enable nat-listp))))
+;; ;; Keep disabled
+;; (defthmd not-<-of-car-when-nat-listp
+;;   (implies (and (syntaxp k)
+;;                 (<= k 0)
+;;                 (nat-listp x))
+;;            (not (< (car x) k)))
+;;   :hints (("Goal" :in-theory (enable nat-listp))))
 
 ;strip off any number of nested calls to not
 ;returns the "core" nodenum, or nil if the "core" is a constant
