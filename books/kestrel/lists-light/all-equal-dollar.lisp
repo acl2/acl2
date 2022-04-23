@@ -56,7 +56,7 @@
 (defthm booleanp-of-all-equal$
   (booleanp (all-equal$ x lst)))
 
-(defthm nth-when-all-equal$-helper
+(defthmd nth-when-all-equal$-helper
   (implies (and (all-equal$ val data)
                 (syntaxp (not (equal val `(nth ,index ,data)))) ;helps prevent loops
                 (natp index)
@@ -66,6 +66,7 @@
                   val))
   :hints (("Goal" :in-theory (enable all-equal$ nth))))
 
+;Disable?
 (defthm nth-when-all-equal$
   (implies (and (all-equal$ val data)
                 (syntaxp (not (equal val `(nth ,index ,data)))) ;helps prevent loops
