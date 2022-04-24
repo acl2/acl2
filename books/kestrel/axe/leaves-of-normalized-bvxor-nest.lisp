@@ -52,11 +52,11 @@
 ;; reverse of the order in which they appear in the nest).
 (defund leaves-of-normalized-bvxor-nest-aux (nodenum ;if this points to a bvxor nest, that nest is known to be normalized
                                              size    ;not quoted
-                                             dag-array-name dag-array dag-len
+                                             dag-array dag-len
                                              nodenums-acc)
   (declare (xargs :guard (and (natp nodenum)
                               (natp size)
-                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (< nodenum dag-len))
                   :measure (nfix (+ 1 nodenum))
                   :guard-hints (("Goal" :in-theory (e/d (nth-of-cdr
@@ -64,7 +64,7 @@
                                                         (car-becomes-nth-of-0))))))
   (if (not (mbt (natp nodenum)))
       nodenums-acc
-    (let* ((expr (aref1 dag-array-name dag-array nodenum)))
+    (let* ((expr (aref1 'dag-array dag-array nodenum)))
       (if (and (call-of 'bvxor expr)
                (consp (cdr (cdr (dargs expr))))
                (let ((size-arg (darg1 expr)))
@@ -73,7 +73,7 @@
                (not (consp (darg3 expr))) ;todo: check for error
                (mbt (< (darg3 expr) nodenum)))
           ;;expr is of the form (bvxor '<size> <arg2> <arg3>)  since the nest is normalized, arg2 cannot be a bvxor and arg3 cannot be a constant
-          (leaves-of-normalized-bvxor-nest-aux (darg3 expr) size dag-array-name dag-array dag-len (cons (darg2 expr) nodenums-acc))
+          (leaves-of-normalized-bvxor-nest-aux (darg3 expr) size dag-array dag-len (cons (darg2 expr) nodenums-acc))
         (cons nodenum nodenums-acc)))))
 
 ;fixme handle bvnots (by negating the accumulated-constant and stripping the not).  or we could rely on rules to do that.
@@ -82,9 +82,8 @@
 ; NODENUM-OR-QUOTEP should be an argument to a BVXOR whose size argument is (quote SIZE).
 (defund leaves-of-normalized-bvxor-nest (nodenum-or-quotep ;if this points to bvxor nest, that nest is known to be normalized
                                          size ;the unquoted size of the bvxor nest
-                                         dag-array-name dag-array
-                                         dag-len)
-  (declare (xargs :guard  (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                                         dag-array dag-len)
+  (declare (xargs :guard  (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                                (dargp-less-than nodenum-or-quotep dag-len)
                                (natp size))
                   :guard-hints (("Goal" :in-theory (e/d (nth-of-cdr cadr-becomes-nth-of-1)
@@ -92,7 +91,7 @@
   (if (consp nodenum-or-quotep) ;checks for quotep
       (mv (bvchop size (ifix (unquote nodenum-or-quotep))) ;FIXME: the ifix was needed for acl2 5.0;  we had a call to :fake here.
           nil)
-    (let* ((expr (aref1 dag-array-name dag-array nodenum-or-quotep)))
+    (let* ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
       (if (and (call-of 'bvxor expr)
                (= 3 (len (dargs expr)))
                (let ((size-arg (darg1 expr)))
@@ -111,8 +110,7 @@
                 (mv 0
                     (list arg2))))
             (mv constant
-                (leaves-of-normalized-bvxor-nest-aux (darg3 expr)
-                                                     size dag-array-name dag-array dag-len nodenums-acc)))
+                (leaves-of-normalized-bvxor-nest-aux (darg3 expr) size dag-array dag-len nodenums-acc)))
         ;;not a bvxor nest of the right size:
         (mv 0
             (list nodenum-or-quotep))))))

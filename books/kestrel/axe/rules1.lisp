@@ -1,7 +1,7 @@
 ; Mixed rules 1
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,6 +25,7 @@
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
 (local (include-book "kestrel/bv-lists/bytes-to-bits2" :dir :system))
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
 (include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system) ;todo
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
