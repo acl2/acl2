@@ -12,6 +12,8 @@
 
 ;; TODO: Add support for hash table fields!
 ;; TODO: Add support for stobj table fields!
+;; TODO: Consider not disabling recognizers for non-array fields
+;; TODO: Call defstobj-fnname to compute the names (first get it into logic mode)
 
 (include-book "split-keyword-args")
 (include-book "pack") ; todo: reduce or drop?
@@ -564,7 +566,7 @@
            (default-creator (pack$ 'create- stobj-name))
            (top-recognizer (maybe-rename-symbol default-top-recognizer renaming))
            (creator (maybe-rename-symbol default-creator renaming)))
-      (mv-let (theorems-for-fields names-for-fields) ; the names-for-fields include recgonizrers, accessors, updaters, etc.
+      (mv-let (theorems-for-fields names-for-fields) ; the names-for-fields include recognizers, accessors, updaters, etc.
         (theorems-and-names-for-defstobj-fields field-infos 0 stobj-name top-recognizer renaming field-infos nil nil state)
         `(encapsulate ()
            (local (include-book "kestrel/lists-light/resize-list" :dir :system))
