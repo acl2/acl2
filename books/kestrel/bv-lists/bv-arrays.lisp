@@ -1063,57 +1063,9 @@
                       (bv-array-write element-size len index val arr2)))
   :hints (("Goal" :in-theory (enable bv-array-if bv-array-write update-nth2 take-when-zp))))
 
-(defthm bv-array-if-of-0-arg2
-  (equal (bv-array-if element-size 0 test array1 array2)
-         nil)
-  :hints (("Goal" :in-theory (enable bv-array-if))))
 
-;can lose type info?
-(defthm bv-array-if-same-branches
-  (equal (bv-array-if element-size len test array array)
-         (bvchop-list element-size (take len array)))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
 
-;can lose explicit type info
-;could restrict to constant arrays...
-(defthm bv-array-if-same-branches-safe
-  (implies (and (bv-arrayp element-size len array)
-                ;; (natp len)
-                )
-           (equal (bv-array-if element-size len test array array)
-                  array))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
 
-;; This passes through the CAR.  We could instead use BV-ARRAY-READ
-(defthm car-of-bv-array-if
-  (implies (posp len)
-           (equal (car (bv-array-if element-size len test array1 array2))
-                  (bvif element-size test (car array1) (car array2))))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
-
-;; This passes through the CDR.
-(defthm cdr-of-bv-array-if
-  (implies (posp len)
-           (equal (cdr (bv-array-if element-size len test array1 array2))
-                  (bv-array-if element-size (+ -1 len) test (cdr array1) (cdr array2))))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
-
-(defthm cdr-of-bv-array-if-2
-  (implies (and (bv-arrayp element-size len array1)
-                (bv-arrayp element-size len array2))
-           (equal (cdr (bv-array-if element-size len test array1 array2))
-                  (if test
-                      (cdr array1)
-                    (cdr array2))))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
-
-(defthmd nth-of-bv-array-if
-  (implies (and (< n len)
-                (natp n)
-                (natp len))
-           (equal (nth n (bv-array-if element-size len test array1 array2))
-                  (bvif element-size test (nth n array1) (nth n array2))))
-  :hints (("Goal" :in-theory (enable bv-array-if))))
 
 ;; Rules about treating bv-array-if as a list:
 (defun bv-array-if-list-rules ()

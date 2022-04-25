@@ -214,7 +214,7 @@
   (xdoc::p
    "As stated in @(see atc-tutorial-approach),
     ATC recognizes, and translates to C,
-    a subset of ACL2 that represents C code fairly directly.
+    a subset of ACL2 that represents C code quite directly.
     In other words, there are representations of C constructs in ACL2,
     which the ATC user must know so that they can invoke ATC
     on ACL2 code of the appropriate form.
@@ -235,7 +235,7 @@
   (xdoc::p
    "The (C, not ACL2) representation of @('int') values in memory,
     which may be visible to the C code via access as @('unsigned char[]')
-    (as allowed by the [C]),
+    (as allowed by [C]),
     consists of a sign bit, some value bits, and optionally some padding bits
     [C:6.2.6.2/2].
     The signed representation may be
@@ -264,34 +264,9 @@
 
   (xdoc::p
    "C provides a variety of @('int') operations,
-    i.e. operations that operate on @('int') values.
+    i.e. operations on @('int') values.
     These operations also apply to other arithmetic types,
-    but operands are subjected to promotions and conversions
-    that reduce the possible combinations of operand types for each operation.
-    For instance, the addition operation @('+') does not directly add
-    @('short') or @('unsigned char') operands:
-    these are promoted to @('int') values before adding them up,
-    according to the integer promotions described in [C:6.3.1.1/2].
-    Similarly, the addition operation @('+') does not directly add
-    an @('int') operand and a @('long') operand:
-    the first operand is converted to @('long') first,
-    so that addition is performed on two @('long') values,
-    according to the usual arithmetic conversions
-    described in [C:6.3.1.8].")
-
-  (xdoc::p
-   "This means that there are only certain ``interesting'' instances
-    of operations like @('+'),
-    i.e. one for @('int') operands, one for @('long') operands etc.
-    The instances for @('short') or @('unsigned char') operands,
-    as well the instance for
-    an @('int') first operand and a @('long') second operand,
-    are less interesting because they can be viewed as
-    combinations of conversions with the interesting instances.
-    Thus, in the context of this tutorial page,
-    we are interested in the instances of the C operations
-    that apply to @('int') operands:
-    this is what we mean by `@('int') operations'.")
+    but in this tutorial page we focus on the @('int') type.")
 
   (xdoc::p
    "C provides the following unary and binary @('int') operations [C:6.5]:")
@@ -335,12 +310,7 @@
     as the @('int') values 0 (for false) and 1 (for true),
     and thus the relational and equality operations,
     as well as the logical conjunction and disjunction operations,
-    all return @('int') results [C:6.5.13] [C:6.5.14].
-    Note also that the left and right shift operations, in general,
-    may apply to operands of different types (unlike other binary operations)
-    [C:6.5.7];
-    however, here we are interested in the instances of those operations
-    where both operands are @('int') values.")
+    all return @('int') results [C:6.5.13] [C:6.5.14].")
 
   (xdoc::p
    "Some of the above operations yield well-defined results,
@@ -348,7 +318,7 @@
     For instance, the addition operation @('+') on @('int') operands
     is well-defined only if the exact result is representable as an @('int')
     [C:6.5/5].
-    An implementation may actually add definedness to this operation,
+    An implementation may actually add definedness to these operations,
     by relying on the (well-defined) behavior of the underlying hardware,
     e.g. by keeping the low bits of the exact result that fit @('int')
     (which is the same result prescribed by the Java language specification).")
@@ -457,7 +427,7 @@
    (xdoc::li "@(tsee shl-sint-sint-okp)")
    (xdoc::li "@(tsee shr-sint-sint-okp)"))
   (xdoc::p
-   "We remark that the predicates for @('/') and @('%') include
+   "The predicates for @('/') and @('%') include
     the condition that the divisor is not 0.")
 
   (xdoc::p
@@ -473,7 +443,7 @@
     whose calls on suitable ACL2 quoted integer constants
     represent decimal, octal, and hexadecimal @('int') constants.
     The quoted integer constant arguments must be
-    a natural number in the range of signed two's complement 32-bit integers:
+    natural numbers in the range of signed two's complement 32-bit integers:
     this is enforced by the guard of the three aforementioned functions.
     Note that C integer constants are always non-negative.")
 

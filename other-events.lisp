@@ -9538,14 +9538,22 @@
 
   (cond
    ((stringp x)
-    (let* ((lst (coerce x 'list))
-           (rlst (reverse lst))
-           (temp (member *directory-separator* rlst)))
+    (cond
+     ((search "//" x)
+      (mv (er hard ctx
+              "The filename~|~x0~|is illegal because it has consecutive ~
+               directory separators, //."
+              x)
+          nil x))
+    (t
+     (let* ((lst (coerce x 'list))
+            (rlst (reverse lst))
+            (temp (member *directory-separator* rlst))
 
 ; If x is "project/task3/arith.lisp" then temp is "project/task3/" except is a
 ; list of chars and is in reverse order (!).
 
-      (let ((familiar (coerce (reverse (first-n-ac
+            (familiar (coerce (reverse (first-n-ac
                                         (- (length x) (length temp))
                                         rlst nil))
                               'string))
@@ -9556,7 +9564,7 @@
                 (concatenate 'string dir1 familiar extension)
               (concatenate 'string dir1 familiar))
             dir1
-            familiar))))
+            familiar)))))
    (t (mv (er hard ctx
               "A book name must be a string, but ~x0 is not a string."
               x)

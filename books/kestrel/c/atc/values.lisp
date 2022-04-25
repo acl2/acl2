@@ -159,18 +159,7 @@
 
 (defresult value "values"
   :enable (errorp
-           valuep
-           ucharp
-           scharp
-           ushortp
-           sshortp
-           uintp
-           sintp
-           ulongp
-           slongp
-           ullongp
-           sllongp
-           pointerp))
+           valuep))
 
 (defruled errorp-when-value-resultp-and-not-valuep
   (implies (and (value-resultp x)
@@ -191,7 +180,58 @@
   :elt-type value
   :true-listp t
   :elementp-of-nil nil
-  :pred value-listp)
+  :pred value-listp
+  ///
+
+  (defrule value-listp-when-uchar-listp
+    (implies (uchar-listp x)
+             (value-listp x))
+    :enable value-listp)
+
+  (defrule value-listp-when-schar-listp
+    (implies (schar-listp x)
+             (value-listp x))
+    :enable value-listp)
+
+  (defrule value-listp-when-ushort-listp
+    (implies (ushort-listp x)
+             (value-listp x))
+    :enable value-listp)
+
+  (defrule value-listp-when-sshort-listp
+    (implies (sshort-listp x)
+             (value-listp x))
+    :enable value-listp)
+
+  (defrule value-listp-when-uint-listp
+    (implies (uint-listp x)
+             (value-listp x))
+    :enable value-listp)
+
+  (defrule value-listp-when-sint-listp
+    (implies (sint-listp x)
+             (value-listp x))
+    :enable value-listp)
+
+  (defrule value-listp-when-ulong-listp
+    (implies (ulong-listp x)
+             (value-listp x))
+    :enable value-listp)
+
+  (defrule value-listp-when-slong-listp
+    (implies (slong-listp x)
+             (value-listp x))
+    :enable value-listp)
+
+  (defrule value-listp-when-ullong-listp
+    (implies (ullong-listp x)
+             (value-listp x))
+    :enable value-listp)
+
+  (defrule value-listp-when-sllong-listp
+    (implies (sllong-listp x)
+             (value-listp x))
+    :enable value-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
