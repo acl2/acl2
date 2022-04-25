@@ -1,6 +1,6 @@
 ; SV Hardware Verification Tutorial
 ; Copyright (C) 2012-2015 Centaur Technology
-; Copyright (C) 2022 Intel Corp.
+; Copyright (C) 2022 Intel Corporation
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group

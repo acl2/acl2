@@ -2,7 +2,7 @@
 
 ; SVL - Listener-based Hierachical Symbolic Vector Hardware Analysis Framework
 ; Copyright (C) 2019 Centaur Technology
-; Copyright (C) 2022 Intel Corp.
+; Copyright (C) 2022 Intel Corporation
 ;
 ; License: (An MIT/X11-style license)
 ;

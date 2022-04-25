@@ -1,6 +1,6 @@
 ; SV - Symbolic Vector Hardware Analysis Framework
 ; Copyright (C) 2014-2015 Centaur Technology
-; Copyright (C) 2022 Intel Corp.
+; Copyright (C) 2022 Intel Corporation
 ;
 ; License: (An MIT/X11-style license)
 ;
