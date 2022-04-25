@@ -2707,6 +2707,52 @@ proved.</p>")
                          (x env1) (y env2) (var k)))
            :in-theory (disable svex-env-<<=-necc))))
 
+(encapsulate nil
+  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+  (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+  (local (defthm logbitp-of-logeqv
+           (equal (logbitp n (logeqv x y))
+                  (iff (logbitp n x) (logbitp n y)))))
+  (local (in-theory (disable logeqv)))
+  
+  (local (defthm loghead-lemma
+           (implies (and (equal -1 (logior (logand xu (lognot xl))
+                                           (logand (logeqv xl yl)
+                                                   (logeqv xu yu))))
+                         (equal (loghead n xl)
+                                (loghead n xu)))
+                    (and (equal (loghead n yl) (loghead n xl))
+                         (equal (loghead n yu) (loghead n xu))))
+           :hints ((bitops::logbitp-reasoning))))
+  
+  (defthmd zero-ext-equal-when-4vec-<<=-and-2vec-p
+    (implies (and (4vec-<<= x y)
+                  (sv::2vec-p (sv::4vec-zero-ext n x)))
+             (equal (sv::4vec-zero-ext n y)
+                    (sv::4vec-zero-ext n x)))
+    :hints(("Goal" :in-theory (e/d (sv::4vec-zero-ext 4vec-<<=))
+            :do-not-induct t))
+    :otf-flg t)
+
+  (defthmd zero-ext-equal-when-4vec-<<=-and-integerp
+    (implies (and (4vec-<<= x y)
+                  (integerp (sv::4vec-zero-ext n x)))
+             (equal (sv::4vec-zero-ext n y)
+                    (sv::4vec-zero-ext n x)))
+    :hints(("Goal" :in-theory (e/d (4vec->upper 4vec->lower 4vec-fix))
+            :use zero-ext-equal-when-4vec-<<=-and-2vec-p)))
+
+
+  (defthmd zero-ext-of-svex-env-lookup-when-integerp-and-<<=
+    (implies (and (svex-env-<<= env1 env2)
+                  (integerp (sv::4vec-zero-ext n (svex-env-lookup k env1))))
+             (equal (sv::4vec-zero-ext n (svex-env-lookup k env2))
+                    (sv::4vec-zero-ext n (svex-env-lookup k env1))))
+    :hints (("goal" :use ((:instance svex-env-<<=-necc
+                           (x env1) (y env2) (var k)))
+             :in-theory (e/d (zero-ext-equal-when-4vec-<<=-and-integerp)
+                             (svex-env-<<=-necc))))))
+
 
 
 #!sv
