@@ -50,3 +50,22 @@
   (a-scalar-field :type integer :initially 0)
   (a-hash-table-field :type (hash-table equal 200))
   )
+
+;; A test where the field name is in the common-lisp package
+(defstobj+ foo (print :type atom)
+  :renaming ((common-lisp::print get-print)
+             (common-lisp::printp printp)
+             (common-lisp::update-print update-print)))
+
+;; test of the renaming:
+(defstobj+ foo2 (bar :type atom)
+  :renaming ((bar get-bar)
+             (barp my-barp)
+             (update-bar my-update-bar)))
+
+;; In this one, the field is in a different package and we use more exotic names:
+;; TODO: Need to fix the generation of names (see TODO in defstobj-plus.lisp):
+;; (defstobj+ foo3 (print :type atom)
+;;   :renaming ((common-lisp::print my-get-print)
+;;              (common-lisp::printp my-printp)
+;;              (common-lisp::update-print put-print)))
