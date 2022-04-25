@@ -1739,6 +1739,10 @@ notation causes an error and (b) the use of ,. is not permitted."
 
   (when (pathnamep filename)
     (setq filename (namestring filename)))
+  (when (search "//" filename)
+    (error "The filename~%~s~%is illegal because it has consecutive directory ~
+            separators, //."
+           filename))
   (let* ((truename
           (cond
            #+allegro
