@@ -103,3 +103,37 @@
                          shift-amount
                          0)))
   :hints (("Goal" :by bvshl-rewrite-with-bvchop)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund bvshl-cases-term-fn-aux (i width)
+  (declare (xargs :guard (integerp width)
+                  :measure (nfix (+ 1 i))))
+  (if (not (natp i))
+      nil
+    (cons `(,i (bvcat ,(- width i) x ,i 0))
+          (bvshl-cases-term-fn-aux (+ -1 i) width))))
+
+(defund bvshl-cases-term-fn (width)
+  (declare (xargs :guard (natp width)))
+  `(case shift-amount
+     ,@(bvshl-cases-term-fn-aux width width)))
+
+(defmacro bvshl-cases-term (width)
+  (bvshl-cases-term-fn width))
+
+;pretty gross
+(defthmd bvshl-32-cases
+  (implies (and (natp shift-amount)
+                (<= shift-amount 32))
+           (equal (bvshl 32 x shift-amount)
+                  (bvshl-cases-term 32)))
+  :hints (("Goal" :in-theory (enable bvshl))))
+
+;pretty gross
+(defthmd bvshl-64-cases
+  (implies (and (natp shift-amount)
+                (<= shift-amount 64))
+           (equal (bvshl 64 x shift-amount)
+                  (bvshl-cases-term 64)))
+  :hints (("Goal" :in-theory (enable bvshl))))
