@@ -12,6 +12,8 @@
 
 ;; TODO: Add support for hash table fields!
 ;; TODO: Add support for stobj table fields!
+;; TODO: Consider not disabling recognizers for non-array fields
+;; TODO: Call defstobj-fnname to compute the names (first get it into logic mode)
 
 (include-book "split-keyword-args")
 (include-book "pack") ; todo: reduce or drop?
