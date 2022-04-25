@@ -1777,22 +1777,6 @@
     :in-theory (e/d (bvplus bvchop-when-i-is-not-an-integer)
                     (;anti-bvplus
                      )))))
-;dups?
-(defthm bvif-of-bvcat-low-arg2
-  (implies (and (<= size lowsize)
-                (natp size)
-                (natp lowsize))
-           (equal (bvif size test x (bvcat highsize highval lowsize lowval))
-                  (bvif size test x lowval)))
-  )
-
-(defthm bvif-of-bvcat-low-arg1
-  (implies (and (<= size lowsize)
-                (natp size)
-                (natp lowsize))
-           (equal (bvif size test (bvcat highsize highval lowsize lowval) x)
-                  (bvif size test lowval x)))
-  )
 
 ;gen the 1 to any constant
 ;try without this?  may need a rule for usbp of bvcat in this case?

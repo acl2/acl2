@@ -55,6 +55,7 @@
 (include-book "slice-rules")
 (include-book "getbit-rules")
 (include-book "bvcat-rules")
+(include-book "bvsx-rules")
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -913,33 +914,6 @@
            (equal (slice 31 24 (+ (BVCHOP 32 y) x))
                   (slice 31 24 (+ y x)))))
 
-(defthm bvplus-of-bvcat-irrel-arg2
-  (implies (and (<= size2 size)
-                (natp size2)
-                (integerp size)
-                )
-           (equal (bvplus size2 x (bvcat n z size y))
-                  (bvplus size2 x y)))
-  :hints (("Goal"
-           :use ((:instance bvplus-of-bvchop-arg2
-                           (size size2)
-                           (x x)
-                           (y (bvcat n z size y)))
-                 (:instance bvplus-of-bvchop-arg2
-                           (size size2)
-                           (x x)
-                           (y y)))
-           :in-theory (disable bvplus-of-bvchop-arg2))))
-
-(defthm bvplus-of-bvcat-irrel-arg1
-  (implies (and (<= size2 size)
-                (natp size2)
-                (integerp size))
-           (equal (bvplus size2 (bvcat n z size y) x)
-                  (bvplus size2 y x)))
-  :hints (("Goal" :use (:instance bvplus-of-bvcat-irrel-arg2)
-           :in-theory (disable bvplus-of-bvcat-irrel-arg2))))
-
 (defthm bvif-equal-0-usb1
   (implies (unsigned-byte-p 1 x)
            (equal (bvif 1 (equal 0 x) 1 0)
@@ -1138,42 +1112,6 @@
                                   (x z)
                                   (y (BVOR size2 x y)))
            :in-theory (disable bvmult-of-bvchop-arg3 BVMULT-OF-BVOR-TIGHTEN-2))))
-
-;use trim
-(defthm bvmult-of-bvcat-irrel-arg2
-  (implies (and (<= size2 size)
-                (natp size2)
-                (integerp size)
-                (natp n)
-                )
-           (equal (bvmult size2 x (bvcat n z size y))
-                  (bvmult size2 x y)))
-  :hints (("Goal"
-           :use ((:instance BVMULT-OF-BVCHOP-arg2
-                            (size size2)
-                            (x (bvcat n z size y))
-                            (y x))
-                 (:instance BVMULT-OF-BVCHOP-arg2
-                            (size size2)
-                            (x y)
-                            (y x)))
-           :in-theory (e/d ( ;bvmult
-                            ) (BVMULT-OF-BVCHOP-arg2
-                            BVMULT-OF-BVCHOP-arg3
-                            )))))
-
-
-;use trim
-(defthm bvmult-of-bvcat-irrel-arg1
-  (implies (and (<= size2 size)
-                (natp size2)
-                (natp n)
-                (integerp size))
-           (equal (bvmult size2 (bvcat n z size y) x)
-                  (bvmult size2 y x)))
-  :hints (("Goal"
-           :use (:instance bvmult-of-bvcat-irrel-arg2)
-           :in-theory (disable bvmult-of-bvcat-irrel-arg2))))
 
 ;bozo simplify the rhs?
 (defthm bvmult-of-bvcat-trim-arg1
@@ -2284,34 +2222,7 @@
                    (and (not (integerp a)) (integerp b))
                    (and (integerp a) (not (integerp b)))))))
 
-(defthm bvminus-of-bvcat-irrel-arg2
-   (implies (and (<= size2 size)
-                 (natp size2)
-  ;               (integerp x)
-   ;              (integerp y)
-                 (integerp size)
-                 )
-            (equal (bvminus size2 x (bvcat n z size y))
-                   (bvminus size2 x y)))
-   :hints (("Goal"
-            :use ((:instance bvchop-of-minus-of-bvchop
-                            (size size2)
-                            (x (bvcat n z size (ifix y))))
-                  (:instance bvchop-of-minus-of-bvchop
-                            (size size2)
-                            (x y)))
-            :in-theory (e/d (bvminus bvplus bvchop-when-i-is-not-an-integer) (bvchop-of-minus-of-bvchop bvchop-of-minus-of-bvchop-gen)))))
 
-(defthm bvminus-of-bvcat-irrel-arg1
-  (implies (and (<= size2 size)
-                (natp size2)
-;                (integerp x)
- ;               (integerp y)
-                (integerp size)
-                )
-           (equal (bvminus size2 (bvcat n z size y) x)
-                  (bvminus size2 y x)))
-  :hints (("Goal" :in-theory (enable bvminus bvplus bvchop-when-i-is-not-an-integer))))
 
 (defthm bvplus-of-logext-gen-arg1
    (implies (and (<= size1 size2)
@@ -2402,22 +2313,6 @@
            (equal (getbit n (bvif size test x y))
                   0))
   :hints (("Goal" :in-theory (enable bvif getbit-too-high))))
-
-(defthm bvif-of-bvcat-arg2
-  (implies (and (<= size lowsize)
-                (natp size)
-                (natp lowsize))
-           (equal (bvif size test x (bvcat highsize highval lowsize lowval))
-                  (bvif size test x lowval)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
-
-(defthm bvif-of-bvcat-arg1
-  (implies (and (<= size lowsize)
-                (natp size)
-                (natp lowsize))
-           (equal (bvif size test (bvcat highsize highval lowsize lowval) x)
-                  (bvif size test lowval x)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
 
 (defthm bvif-of-bvcat-tighten-arg1
   (implies (and (< (+ highsize lowsize) size)
@@ -5290,30 +5185,7 @@
                   (bitand bit x)))
   :hints (("Goal" :in-theory (enable bitand bvand))))
 
-;use trim
-(defthm bitand-of-bvsx-arg2
-  (implies (and (< 0 old-size)
-                (< 0 new-size)
-                (integerp old-size)
-                (integerp new-size)
-                )
-           (equal (bitand x (bvsx new-size old-size y))
-                  (bitand x y)))
-  :hints (("Goal"
-           :cases ((equal 1 old-size))
-           :in-theory (enable bvsx bitand bvand))))
-
-(defthm bitand-of-bvsx-arg1
-  (implies (and (< 0 old-size)
-                (< 0 new-size)
-                (integerp old-size)
-                (integerp new-size)
-                )
-           (equal (bitand (bvsx new-size old-size y) x)
-                  (bitand y x)))
-  :hints (("Goal"
-           :cases ((equal 1 old-size))
-           :in-theory (enable bvsx bitand bvand))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;why does logtail arise?
 (defthmd bvand-logtail-arg1
@@ -6272,20 +6144,6 @@
   (equal (equal (bitxor x y) (bitor x y))
          (equal 0 (bitand x y)))
   :hints (("Goal" :cases ((equal 1 (getbit 0 x))))))
-
-(defthm bitxor-of-bvcat-irrel-arg2
-  (implies (and (posp lowsize)
-                (posp highsize) ;drop?
-                )
-           (equal (bitxor x (bvcat highsize highval lowsize lowval))
-                  (bitxor x lowval))))
-
-(defthm bitxor-of-bvcat-irrel-arg1
-  (implies (and (posp lowsize)
-                (posp highsize) ;drop?
-                )
-           (equal (bitxor (bvcat highsize highval lowsize lowval) x)
-                  (bitxor lowval x))))
 
 (defthm equal-of-bvplus-constant-and-constant
   (implies (and (syntaxp (quotep k1))
