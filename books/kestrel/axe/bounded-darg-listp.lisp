@@ -43,6 +43,12 @@
               (bounded-darg-listp dargs2 bound)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
+(defthm bounded-darg-listp-of-revappend
+  (equal (bounded-darg-listp (revappend dargs1 dargs2) bound)
+         (and (bounded-darg-listp (true-list-fix dargs1) bound)
+              (bounded-darg-listp dargs2 bound)))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp revappend))))
+
 (defthm bounded-darg-listp-of-cdr
   (implies (bounded-darg-listp dargs bound)
            (bounded-darg-listp (cdr dargs) bound))

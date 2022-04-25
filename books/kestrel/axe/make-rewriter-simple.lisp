@@ -52,7 +52,8 @@
 (include-book "make-instantiation-code-simple-free-vars")
 ;(include-book "make-instantiation-code-simple-no-free-vars")
 (include-book "make-instantiation-code-simple-no-free-vars2")
-(include-book "dag-array-builders")
+;(include-book "dag-array-builders")
+(include-book "add-and-normalize-expr")
 (include-book "memoization")
 (include-book "dag-array-printing2")
 (include-book "unify-tree-and-dag")
@@ -1818,19 +1819,19 @@
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                     print interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
-              ;; No rule fired, so no simplification can be done.  Add the node to the dag:
-              (b* (((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
-                    (add-function-call-expr-to-dag-array
-                     fn args ;(if any-arg-was-simplifiedp (cons fn args) tree) ;could put back the any-arg-was-simplifiedp trick to save this cons
-                     dag-array dag-len dag-parent-array dag-constant-alist
-                     ;;1000 ; the print-interval ;todo: consider putting back some printing like that done by add-function-call-expr-to-dag-array-with-memo
-                     ;;print
-                     ))
-                   ((when erp) (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                                   node-replacement-array))
+              ;; No rule fired, so no simplification can be done.  Add the expression to the dag:
+              (b* (;; ((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                   ;;  (add-and-normalize-expr fn args ; can we often save consing FN onto ARGS in this?
+                   ;;                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                   ((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist)
+                    (add-function-call-expr-to-dag-array fn args ;(if any-arg-was-simplifiedp (cons fn args) tree) ;could put back the any-arg-was-simplifiedp trick to save this cons
+                                                         dag-array dag-len dag-parent-array dag-constant-alist))
+                   ((when erp) (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                    ;; See if the nodenum returned is equated to anything:
                    ;; Result is not rewritten (we could rewrite all such items (that replacements can introduce) outside the main clique)
-                   (new-nodenum-or-quotep (apply-node-replacement-array nodenum node-replacement-array node-replacement-count)))
+                   (new-nodenum-or-quotep (if nil ; (consp nodenum-or-quotep) ; check for constant (e.g., if all xors cancelled)
+                                              nodenum-or-quotep
+                                            (apply-node-replacement-array nodenum-or-quotep node-replacement-array node-replacement-count))))
                 (mv (erp-nil)
                     new-nodenum-or-quotep
                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
