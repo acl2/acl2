@@ -246,6 +246,6 @@
                 acl2::getbit-of-bvcat-all
                 acl2::getbit-of-0-when-bitp
                 acl2::bvxor-1-becomes-bitxor
-                acl2::bitxor-of-bvcat-irrel-arg1
-                acl2::bitxor-of-bvcat-irrel-arg2
+                acl2::bitxor-of-bvcat-low-arg1
+                acl2::bitxor-of-bvcat-low-arg2
                 acl2::bitxor-commutative-increasing-axe)))
