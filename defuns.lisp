@@ -10452,8 +10452,9 @@
            (remove-lambdas1 (car termlist))
            (mv-let (changedp2 rest)
              (remove-lambdas-lst (cdr termlist))
-             (mv (or changedp1 changedp2)
-                 (cons term rest)))))
+             (cond ((or changedp1 changedp2)
+                    (mv t (cons term rest)))
+                   (t (mv nil termlist))))))
         (t (mv nil nil))))
 )
 
