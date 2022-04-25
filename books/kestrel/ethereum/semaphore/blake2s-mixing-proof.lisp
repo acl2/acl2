@@ -1436,8 +1436,8 @@
                 acl2::getbit-of-bvcat-all
                 acl2::getbit-of-0-when-bitp
                 acl2::bvxor-1-becomes-bitxor
-                acl2::bitxor-of-bvcat-irrel-arg1
-                acl2::bitxor-of-bvcat-irrel-arg2
+                acl2::bitxor-of-bvcat-low-arg1
+                acl2::bitxor-of-bvcat-low-arg2
                 acl2::bitxor-commutative-increasing-axe
                 acl2::bvplus-of-plus-arg2
                 acl2::bvplus-of-plus-arg3
@@ -1485,8 +1485,8 @@
                 ;; these 2 are just for proof debugging:
                 acl2::equal-of-bitxor-and-bitxor-same
                 acl2::equal-of-bitxor-and-bitxor-same-alt
-                acl2::bitxor-of-bvcat-irrel-arg1 ; todo make non-arith trim rules for bitxor
-                acl2::bitxor-of-bvcat-irrel-arg2
+                acl2::bitxor-of-bvcat-low-arg1 ; todo make non-arith trim rules for bitxor
+                acl2::bitxor-of-bvcat-low-arg2
                 acl2::bitxor-of-getbit-arg1
                 acl2::bitxor-of-getbit-arg2
                 acl2::bvplus-commutative-2-increasing-axe
