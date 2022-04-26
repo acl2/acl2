@@ -14,6 +14,7 @@
 ;; TODO: Should these be in the x86isa package?
 
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (defund get-pe-sections (parsed-pe)
   (acl2::lookup-eq-safe :sections parsed-pe))
@@ -79,3 +80,32 @@
 (defund get-pe-base-of-code (parsed-pe)
   (let* ((optional-header-standard-fields (lookup-eq-safe :optional-header-standard-fields parsed-pe)))
     (lookup-eq-safe :base-of-code optional-header-standard-fields)))
+
+;This assumes we have a symbol table to find the address of the subroutine
+(defun subroutine-address-within-text-section-pe-64 (subroutine-name
+                                                     parsed-executable)
+  (b* ((symbol-table (acl2::lookup-eq-safe :symbol-table parsed-executable))
+       ((when (eq :none symbol-table))
+        (er hard? 'subroutine-address-within-text-section-pe-64 "No symbol table present."))
+       (symbol-record (acl2::lookup-pe-symbol subroutine-name symbol-table))
+       ((when (not symbol-record))
+        (er hard? 'subroutine-address-within-text-section-pe-64 "Can't find ~x0 in symbol table." subroutine-name))
+       (subroutine-address-within-text-section (acl2::lookup-eq-safe :value symbol-record)))
+    subroutine-address-within-text-section))
+
+;; Returns (mv offset-to-subroutine section-number).  Throws an error if not found
+(defun subroutine-offset-and-section-number-pe-32 (target parsed-pe)
+  (b* ((symbol-table (acl2::lookup-eq-safe :symbol-table parsed-pe))
+       ((when (eq :none symbol-table))
+        (er hard? 'subroutine-offset-pe-32 "No symbol table present.")
+        (mv nil nil))
+       (symbol-record (acl2::lookup-pe-symbol target symbol-table))
+       (offset-to-subroutine (acl2::lookup-eq-safe :value symbol-record)) ;relative to the base of the section?
+       (section-number (acl2::lookup-eq-safe :section-number symbol-record)))
+    (mv offset-to-subroutine section-number)))
+
+(defun subroutine-offset-pe-32 (target parsed-pe)
+  (mv-let (offset-to-subroutine section-number)
+    (subroutine-offset-and-section-number-pe-32 target parsed-pe)
+    (declare (ignore section-number))
+    offset-to-subroutine))
