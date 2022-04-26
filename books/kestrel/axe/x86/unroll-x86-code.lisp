@@ -93,6 +93,7 @@
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or unsupported instruction is detected.  Returns (mv
 ;; erp result-dag state).
+;; TODO: Handle returning a quotep?
 (defun repeatedly-run (steps-left step-increment dag rules assumptions rules-to-monitor use-internal-contextsp print print-base memoizep total-steps state)
   (declare (xargs :stobjs (state)
                   :guard (and (natp steps-left)
@@ -128,11 +129,13 @@
          ((when erp) (mv erp nil state))
          ;; Prune the DAG:
          ((mv erp dag state)
-          (acl2::prune-dag-new dag assumptions rules
-                               nil ; interpreted-fns
-                               rules-to-monitor
-                               t ;call-stp
-                               state))
+          (if (> (acl2::dag-size-fast dag) 10000)
+              (mv (erp-nil) dag state) ; don't prune if it will explode (todo: make this threshhold customizable, add some sort of DAG-based pruning)
+            (acl2::prune-dag-new dag assumptions rules
+                                 nil ; interpreted-fns
+                                 rules-to-monitor
+                                 t ;call-stp
+                                 state)))
          ((when erp) (mv erp nil state))
          (dag-fns (acl2::dag-fns dag)))
       (if (not (member-eq 'run-until-rsp-greater-than dag-fns)) ;; stop if the run is done
