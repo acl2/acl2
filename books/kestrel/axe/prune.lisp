@@ -454,6 +454,7 @@
                                   (natp call-stp)))
                   :stobjs state))
   (b* ((- (cw "(Pruning branches in term (~x0 rules, ~x1 assumptions).~%" (count-rules-in-rule-alist rule-alist) (len assumptions)))
+       (- (cw "(Term: ~x0)~%" term))
        ((mv erp new-term state)
         (prune-term-aux term
                         (fixup-assumptions assumptions)

@@ -139,25 +139,17 @@
                                   stack-slots-needed
                                   x86)))
 
-
-;  This assumes we have a symbol table to find the address of the subroutine
 ;; TODO: The error below may not be thrown since this gets inserted as an assumption and simplified rather than being executed.
 (defun standard-assumptions-pe-64 (subroutine-name
-                                   parsed-pe
+                                   parsed-executable
                                    stack-slots-needed
                                    text-offset
                                    x86)
   (declare (xargs :stobjs x86
                   :verify-guards nil ;todo
                   ))
-  (b* ((text-section-bytes (acl2::lookup-eq :raw-data (acl2::get-pe-text-section parsed-pe))) ;all the code, not just the given subroutine
-       (symbol-table (acl2::lookup-eq-safe :symbol-table parsed-pe))
-       ((when (eq :none symbol-table))
-        (er hard 'standard-assumptions-pe-64 "No symbol table present."))
-       (symbol-record (acl2::lookup-pe-symbol subroutine-name symbol-table))
-       (subroutine-address-within-text-section (acl2::lookup-eq-safe :value symbol-record)))
-    (standard-assumptions-core-64 text-section-bytes
-                                  text-offset
-                                  subroutine-address-within-text-section
-                                  stack-slots-needed
-                                  x86)))
+  (standard-assumptions-core-64 (acl2::lookup-eq :raw-data (acl2::get-pe-text-section parsed-executable)) ; text-section-bytes, all the code, not just the given subroutine
+                                text-offset
+                                (acl2::subroutine-address-within-text-section-pe-64 subroutine-name parsed-executable)
+                                stack-slots-needed
+                                x86))

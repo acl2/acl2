@@ -1,7 +1,7 @@
 ; An unrolling lifter xfor x86 code (based on Axe)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,6 +37,7 @@
 ;(include-book "../basic-rules")
 (include-book "../step-increments")
 (include-book "../dag-size")
+(include-book "../prune")
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
 (include-book "kestrel/lists-light/append" :dir :system)
@@ -125,6 +126,14 @@
                           :limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration nil)
                           :memoizep memoizep))
          ((when erp) (mv erp nil state))
+         ;; Prune the DAG:
+         ((mv erp dag state)
+          (acl2::prune-dag-new dag assumptions rules
+                               nil ; interpreted-fns
+                               rules-to-monitor
+                               t ;call-stp
+                               state))
+         ((when erp) (mv erp nil state))
          (dag-fns (acl2::dag-fns dag)))
       (if (not (member-eq 'run-until-rsp-greater-than dag-fns)) ;; stop if the run is done
           (prog2$ (cw "Note: The run has completed.~%")
@@ -168,6 +177,7 @@
                             extra-rules
                             remove-rules
                             extra-assumption-rules
+                            produce-function
                             produce-theorem
                             prove-theorem ;whether to try to prove the theorem with ACL2 (rarely works)
                             output
@@ -185,6 +195,9 @@
                             state)
   (declare (xargs :stobjs (state)
                   :guard (and (symbolp lifted-name)
+                              (booleanp produce-function)
+                              (booleanp produce-theorem)
+                              (booleanp prove-theorem)
                               (output-indicatorp output)
                               (booleanp non-executable)
                               (or (symbol-listp monitor)
@@ -267,53 +280,68 @@
                   (cw "~X01" result-dag nil)
                   (cw ")~%")))
         (mv t (er hard 'lifter "Lifter error: The run did not finish.") state))
-       ;;TODO: consider untranslating this, or otherwise cleaning it up:
-       (result-term (and (< result-dag-size 10000) ;avoids exploding
-                         (acl2::dag-to-term result-dag)))
-       (function-body (if (< result-dag-size 1000)
-                          result-term
-                        `(acl2::dag-val-with-axe-evaluator ',result-dag
-                                                           ,(acl2::make-acons-nest result-dag-vars)
-                                                           ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-dag-fns (w state)) (w state))
-                                                           '0 ;array depth (not very important)
-                                                           )))
-       (function-body-untranslated (untranslate function-body nil (w state))) ;todo: is this unsound (e.g., because of user changes how untranslate works)?
-       (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn-aux (w state)))
-       ((when (not (equal function-body function-body-retranslated))) ;todo: make a safe-untranslate that does this check?
-        (mv t (er hard 'lifter "Problem with function body.  Untranslating and the re-translating did not give original body.") state))
-
-       ;; Print the term if small:
+       ;; Not valid if (not (< result-dag-size 10000)):
+       (maybe-result-term (and (< result-dag-size 10000) ; avoids exploding
+                               (acl2::dag-to-term result-dag)))
+       ;; Print the result:
        (- (and print
-               (< result-dag-size 10000)
-               (cw "Result: ~x0" result-term)))
-       ;;(- (cw "Runes used: ~x0" runes)) ;TODO: Have Axe return these?
-       ;;use defun-nx by default because stobj updates are not all let-bound to x86
-       (defun-variant (if non-executable 'defun-nx 'defun))
-       (defun `(,defun-variant ,lifted-name (,@fn-formals)
-                 (declare (xargs ,@(if (member-eq 'x86 fn-formals)
-                                       `(:stobjs x86)
-                                     nil)
-                                 :verify-guards nil ;TODO
-                                 )
-                          ,@(let ((ignored-vars (set-difference-eq fn-formals result-dag-vars)))
-                              (and ignored-vars
-                                   `((ignore ,@ignored-vars)))))
-                 ,function-body-untranslated))
-       (defthm `(defthm ,(acl2::pack$ lifted-name '-correct)
-                  (implies (and ,@assumptions)
-                           (equal (run-until-return x86)
-                                  (,lifted-name ,@fn-formals)))
-                  :hints ,(if restrict-theory
-                              `(("Goal" :in-theory '(,lifted-name ;,@runes ;without the runes here, this won't work
-                                                     )))
-                            `(("Goal" :in-theory (enable ,@rules))))
-                  :otf-flg t))
-       (defthm (if prove-theorem
-                   defthm
-                 `(skip-proofs ,defthm)))
+               (if (< result-dag-size 10000)
+                   (cw "(Result: ~x0)~%" maybe-result-term)
+                 (progn$ (cw "(Result:~%")
+                         (cw "~X01" result-dag nil)
+                         (cw ")~%")))))
+       ;; Possibly produce a defun:
+       ((mv erp defuns) ; defuns is nil or a singleton list
+        (if (not produce-function)
+            (mv (erp-nil) nil)
+          (b* (;;TODO: consider untranslating this, or otherwise cleaning it up:
+               (function-body (if (< result-dag-size 1000)
+                                  maybe-result-term
+                                `(acl2::dag-val-with-axe-evaluator ',result-dag
+                                                                   ,(acl2::make-acons-nest result-dag-vars)
+                                                                   ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-dag-fns (w state)) (w state))
+                                                                   '0 ;array depth (not very important)
+                                                                   )))
+               (function-body-untranslated (untranslate function-body nil (w state))) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
+               (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn-aux (w state)))
+               ;; TODO: I've seen this check fail when (if x y t) got turned into (if (not x) (not x) y):
+               ((when (not (equal function-body function-body-retranslated))) ;todo: make a safe-untranslate that does this check?
+                (er hard? 'lifter "Problem with function body.  Untranslating and then re-translating did not give original body.  Body was ~X01" function-body nil)
+                (mv :problem-with-function-body nil))
+               ;;(- (cw "Runes used: ~x0" runes)) ;TODO: Have Axe return these?
+               ;;use defun-nx by default because stobj updates are not all let-bound to x86
+               (defun-variant (if non-executable 'defun-nx 'defun))
+               (defun `(,defun-variant ,lifted-name (,@fn-formals)
+                         (declare (xargs ,@(if (member-eq 'x86 fn-formals)
+                                               `(:stobjs x86)
+                                             nil)
+                                         :verify-guards nil ;TODO
+                                         )
+                                  ,@(let ((ignored-vars (set-difference-eq fn-formals result-dag-vars)))
+                                      (and ignored-vars
+                                           `((ignore ,@ignored-vars)))))
+                         ,function-body-untranslated)))
+            (mv (erp-nil) (list defun)))))
+       ((when erp) (mv erp nil state))
+       (defthms ; either nil or a singleton list
+         (if (not produce-theorem)
+             nil
+           (let* ((defthm `(defthm ,(acl2::pack$ lifted-name '-correct)
+                             (implies (and ,@assumptions)
+                                      (equal (run-until-return x86)
+                                             (,lifted-name ,@fn-formals)))
+                             :hints ,(if restrict-theory
+                                         `(("Goal" :in-theory '(,lifted-name ;,@runes ;without the runes here, this won't work
+                                                                )))
+                                       `(("Goal" :in-theory (enable ,@rules))))
+                             :otf-flg t))
+                  (defthm (if prove-theorem
+                              defthm
+                            `(skip-proofs ,defthm))))
+             (list defthm))))
        (event `(progn ,defconst-form
-                      ,defun
-                      ,@(if produce-theorem (list defthm) nil))))
+                      ,@defuns
+                      ,@defthms)))
     (mv nil event state)))
 
 ;; Returns (mv erp event state)
@@ -325,6 +353,7 @@
                         remove-rules
                         extra-assumption-rules
                         whole-form
+                        produce-function
                         produce-theorem
                         prove-theorem ;whether to try to prove the theorem with ACL2 (rarely works)
                         output
@@ -345,6 +374,9 @@
                               (lifter-targetp target)
                               (natp stack-slots)
                               (output-indicatorp output)
+                              (booleanp produce-function)
+                              (booleanp produce-theorem)
+                              (booleanp prove-theorem)
                               (booleanp non-executable)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
@@ -369,6 +401,9 @@
                    (not (eq :pe-32 executable-type))))
         (er hard? 'def-unrolled-fn "Starting from a numeric offset is currently only supported for PE-32 files.")
         (mv t nil state))
+       (- (and (stringp target)
+               ;; Throws an error if the target doesn't exist:
+               (acl2::ensure-target-exists-in-executable target parsed-executable)))
        ;; assumptions (these get simplified below to put them into normal form):
        (assumptions (if suppress-assumptions
                         assumptions
@@ -404,6 +439,7 @@
           extra-rules
           remove-rules
           extra-assumption-rules
+          produce-function
           produce-theorem
           prove-theorem ;whether to try to prove the theorem with ACL2 (rarely works)
           output
@@ -426,14 +462,15 @@
 ;bad name?
 ;try defmacroq?
 (defmacro def-unrolled (&whole whole-form
-                               lifted-name ;name to use for the generated function
-                               parsed-executable
+                               lifted-name ;name to use for the generated function and constant (the latter surrounded by stars)
+                               parsed-executable ; for example, a defconst created by defconst-x86
                                &key
                                (stack-slots '100) ;; tells us what to assume about available stack space
                                (target ':entry-point) ;; where to start lifting (see lifter-targetp)
                                (extra-rules 'nil) ;Rules to use in addition to (lifter-rules32) or (lifter-rules64).
                                (remove-rules 'nil) ;Rules to turn off
                                (extra-assumption-rules 'nil) ; Extra rules to use when simplifying assumptions
+                               (produce-function 't) ;whether to produce a function, not just a constant dag, representing the result of the lifting
                                (produce-theorem 't) ;whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting
                                (prove-theorem 'nil) ;whether to try to prove the theorem with ACL2 (rarely works)
                                (output ':all)
@@ -459,6 +496,7 @@
       ,remove-rules            ;not quoted!
       ,extra-assumption-rules  ;not quoted!
       ',whole-form
+      ',produce-function
       ',produce-theorem
       ',prove-theorem
       ',output

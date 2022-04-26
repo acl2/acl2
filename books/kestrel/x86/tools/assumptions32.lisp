@@ -100,12 +100,16 @@
             target
           (if (eq :entry-point target)
               (acl2::get-pe-entry-point parsed-pe) ; relative to the base of the image
-            (b* ((symbol-table (acl2::lookup-eq-safe :symbol-table parsed-pe))
-                 ((when (eq :none symbol-table))
-                  (er hard 'gen-standard-assumption-pe-32 "No symbol table present."))
-                 (symbol-record (acl2::lookup-pe-symbol target symbol-table))
-                 (offset-to-subroutine (acl2::lookup-eq-safe :value symbol-record)) ;relative to the base of the section?
-                 (section-number (acl2::lookup-eq-safe :section-number symbol-record))
+            ;; target is a string (subroutine name):
+            (b* (((mv offset-to-subroutine section-number)
+                  (acl2::subroutine-offset-and-section-number-pe-32 target parsed-pe))
+                 (sections (acl2::get-pe-sections parsed-pe))
+                 ;; (symbol-table (acl2::lookup-eq-safe :symbol-table parsed-pe))
+                 ;; ((when (eq :none symbol-table))
+                 ;;  (er hard 'gen-standard-assumption-pe-32 "No symbol table present."))
+                 ;; (symbol-record (acl2::lookup-pe-symbol target symbol-table))
+                 ;; (offset-to-subroutine (acl2::lookup-eq-safe :value symbol-record)) ;relative to the base of the section?
+                 ;; (section-number (acl2::lookup-eq-safe :section-number symbol-record))
                  (- (cw "Offset to ~x0 in symbol table (for section ~x1) is ~x2.~%" target section-number offset-to-subroutine))
                  (section-entry (nth (- section-number 1) sections)) ;numbering starts at 1?
                  (section-info (cdr section-entry))
