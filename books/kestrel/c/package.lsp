@@ -30,7 +30,8 @@
                                   schar
                                   type
                                   typep
-                                  value))
+                                  value
+                                  values))
              '(alist-to-doublets
                all-fnnames
                any
