@@ -1110,6 +1110,7 @@
      acl2::lookup-pe-symbol-base-1
      acl2::lookup-pe-symbol-base-2
      acl2::lookup-pe-symbol-unroll
+     acl2::subroutine-address-within-text-section-pe-64
 
      ;;     read64
 ;     read-becomes-mv-nth-1-of-rb
