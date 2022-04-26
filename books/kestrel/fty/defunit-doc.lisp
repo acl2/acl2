@@ -10,6 +10,7 @@
 
 (in-package "FTY")
 
+(include-book "centaur/fty/portcullis" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
