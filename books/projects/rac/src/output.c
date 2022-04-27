@@ -2884,3 +2884,7 @@ void Program::display(ostream& os, DispMode mode) {
   os << "\n";
   displayFunDefs(os, mode);
 }
+
+bool Program::isEmpty() const {
+  return !funDefs->length();
+}
