@@ -1315,6 +1315,7 @@
             :array todo))
           ((pointerp arg) todo)
           ((value-case arg :array) todo)
+          ((value-case arg :struct) todo)
           (t (error (impossible)))))
   :hooks (:fix))
 
