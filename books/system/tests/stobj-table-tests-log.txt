@@ -1310,9 +1310,11 @@ ACL2 !>>(DEFMACRO
                                          (SYMBOLP RECOGNIZER)
                                          (SYMBOLP CREATOR))))
              (LET ((RECOGNIZER (OR RECOGNIZER
-                                   (DEFSTOBJ-FNNAME ST :RECOGNIZER NIL NIL)))
+                                   (DEFSTOBJ-FNNAME ST :RECOGNIZER
+                                                    :TOP NIL)))
                    (CREATOR (OR CREATOR
-                                (DEFSTOBJ-FNNAME ST :CREATOR NIL NIL))))
+                                (DEFSTOBJ-FNNAME ST :CREATOR
+                                                 :TOP NIL))))
                   (CONS 'IF
                         (CONS (CONS RECOGNIZER (CONS ST 'NIL))
                               (CONS ST (CONS (CONS CREATOR 'NIL) 'NIL))))))
