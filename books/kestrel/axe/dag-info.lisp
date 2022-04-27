@@ -158,19 +158,17 @@
   (declare (xargs :guard (weak-dagp dag)))
   (tabulate-dag-fns-aux dag nil))
 
-;; Returns the error triple (mv nil :invisible state).
-(defun dag-info-fn-aux (dag name print-size state)
+(defun print-dag-info (dag name print-size)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (< (len dag) 2147483647)
                               (or (symbolp name)
                                   (null name))
-                              (booleanp print-size))
-                  :stobjs state))
+                              (booleanp print-size))))
   (if (quotep dag) ; not possible, given the guard
       (b* ((- (if name
                   (cw "The entire DAG ~x0 is: ~x1.~%" name dag)
                 (cw "The entire DAG is: ~x0.~%" dag))))
-        (value :invisible))
+        nil)
     (b* ((- (if name
                 (cw "(DAG info for ~x0:~%" name)
               (cw "(DAG info:~%")))
@@ -191,7 +189,7 @@
          (fn-counts (merge-sort-cdr-< (tabulate-dag-fns dag)))
          (- (print-function-counts fn-counts))
          (- (cw ")~%")))
-      (value :invisible))))
+      nil)))
 
 ;; Print some statistics about a DAG:
 ;; TODO: print something about constant nodes, or constants that appear in nodes?
@@ -202,13 +200,13 @@
                               (< (len dag) 2147483647)
                               (booleanp print-size))
                   :stobjs state))
-  (dag-info-fn-aux dag
-                   (if (symbolp dag-form)
-                       dag-form
-                     nil ; don't try to print the name of the dag
-                     )
-                   print-size
-                   state))
+  (prog2$ (print-dag-info dag
+                          (if (symbolp dag-form)
+                              dag-form
+                            nil ; don't try to print the name of the dag
+                            )
+                          print-size)
+          (value :invisible)))
 
 ;; Prine info about the given DAG.  The DAG argument is evaluated.
 (defmacro dag-info (dag &key (print-size 'nil))

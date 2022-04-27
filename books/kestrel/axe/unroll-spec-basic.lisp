@@ -280,7 +280,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
        (defun-variant (if disable-function 'defund 'defun))
        (- (cw "Unrolling finished.~%"))
        ;; (- (cw "Info on unrolled spec DAG:~%"))
-       ((mv & & state) (dag-info-fn-aux dag defconst-name nil state))
+       (- (print-dag-info dag defconst-name nil))
        (- (cw ")~%")))
     (mv (erp-nil)
         ;; If dag is a quoted constant, then it gets doubly quoted here.  This
