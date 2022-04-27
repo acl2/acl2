@@ -50,28 +50,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum value
-  :short "Fixtype of values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we only support the standard unsigned and signed integer values
-     (except @('_Bool') values),
-     as well as pointer values with any referenced type."))
-  (:uchar ((get uchar-integer)))
-  (:schar ((get schar-integer)))
-  (:ushort ((get ushort-integer)))
-  (:sshort ((get sshort-integer)))
-  (:uint ((get uint-integer)))
-  (:sint ((get sint-integer)))
-  (:ulong ((get ulong-integer)))
-  (:slong ((get slong-integer)))
-  (:ullong ((get ullong-integer)))
-  (:sllong ((get sllong-integer)))
-  (:pointer ((address? address-option)
-             (reftype type)))
-  :pred valuep
-  ///
+(fty::deftypes values
+  :short "Fixtypes of values."
+
+  (fty::deftagsum value
+    :short "Fixtype of values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For now we only support the standard unsigned and signed integer values
+       (except @('_Bool') values),
+       pointer values with any referenced type,
+       and arrays of values of any type.")
+     (xdoc::p
+      "Array values are modeled as consisting of
+       the element type and a non-empty list of values.
+       [C:6.2.5/20] requires arrays to be non-empty.")
+     (xdoc::p
+      "Arrays are indexed via integers
+       [C] only provides minimum requirements for the sizes of integer types,
+       not maximum requirements.
+       Other than practical considerations,
+       nothing, mathematically, prevents some integer types
+       to consists of thousands or millions of bits.
+       So our model of arrays requires them to be non-empty,
+       but puts no maximum limits on their length.")
+     (xdoc::p
+      "This definition of arrays alone does not prevent arrays
+       from having values of different types.
+       That all the values have the element type
+       can and will be enforced in separate predicates."))
+    (:uchar ((get uchar-integer)))
+    (:schar ((get schar-integer)))
+    (:ushort ((get ushort-integer)))
+    (:sshort ((get sshort-integer)))
+    (:uint ((get uint-integer)))
+    (:sint ((get sint-integer)))
+    (:ulong ((get ulong-integer)))
+    (:slong ((get slong-integer)))
+    (:ullong ((get ullong-integer)))
+    (:sllong ((get sllong-integer)))
+    (:pointer ((address? address-option)
+               (reftype type)))
+    (:array ((elemtype type)
+             (elements value-list
+                       :reqfix (if (consp elements)
+                                   elements
+                                 (list (value-fix :irrelevant)))))
+     :require (consp elements))
+    :pred valuep)
+
+  (fty::deflist value-list
+    :short "Fixtype of lists of values."
+    :elt-type value
+    :true-listp t
+    :elementp-of-nil nil
+    :pred value-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection value-theorems
+  :extension value
 
   (defrule valuep-possibilities
     (implies (valuep x)
@@ -85,7 +124,9 @@
                  (slongp x)
                  (ullongp x)
                  (sllongp x)
-                 (pointerp x)))
+                 (pointerp x)
+                 (value-case x :array)
+                 ))
     :enable (valuep
              ucharp
              scharp
@@ -97,7 +138,8 @@
              slongp
              ullongp
              sllongp
-             pointerp)
+             pointerp
+             value-kind)
     :rule-classes :forward-chaining)
 
   (defrule valuep-when-ucharp
@@ -157,81 +199,89 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult value "values"
-  :enable (errorp
-           valuep))
-
-(defruled errorp-when-value-resultp-and-not-valuep
-  (implies (and (value-resultp x)
-                (not (valuep x)))
-           (errorp x)))
-
-(defrule value-resultp-possibilities
-  (implies (value-resultp x)
-           (or (valuep x)
-               (errorp x)))
-  :enable value-resultp
-  :rule-classes :forward-chaining)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist value-list
-  :short "Fixtype of lists of values."
-  :elt-type value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred value-listp
-  ///
+(defsection value-list-theorems
+  :extension value-list
 
   (defrule value-listp-when-uchar-listp
     (implies (uchar-listp x)
              (value-listp x))
+    :induct (len x)
     :enable value-listp)
 
   (defrule value-listp-when-schar-listp
     (implies (schar-listp x)
              (value-listp x))
+    :induct (len x)
     :enable value-listp)
 
   (defrule value-listp-when-ushort-listp
     (implies (ushort-listp x)
              (value-listp x))
+    :induct (len x)
     :enable value-listp)
 
   (defrule value-listp-when-sshort-listp
     (implies (sshort-listp x)
              (value-listp x))
+    :induct (len x)
     :enable value-listp)
 
   (defrule value-listp-when-uint-listp
     (implies (uint-listp x)
              (value-listp x))
+    :induct (len x)
     :enable value-listp)
 
   (defrule value-listp-when-sint-listp
     (implies (sint-listp x)
              (value-listp x))
+    :induct (len x)
     :enable value-listp)
 
   (defrule value-listp-when-ulong-listp
     (implies (ulong-listp x)
              (value-listp x))
+    :induct (len x)
     :enable value-listp)
 
   (defrule value-listp-when-slong-listp
     (implies (slong-listp x)
              (value-listp x))
+    :induct (len x)
     :enable value-listp)
 
   (defrule value-listp-when-ullong-listp
     (implies (ullong-listp x)
              (value-listp x))
+    :induct (len x)
     :enable value-listp)
 
   (defrule value-listp-when-sllong-listp
     (implies (sllong-listp x)
              (value-listp x))
+    :induct (len x)
     :enable value-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult value "values"
+  :enable (errorp
+           valuep))
+
+(defsection value-result-theorems
+  :extension value-result
+
+  (defruled errorp-when-value-resultp-and-not-valuep
+    (implies (and (value-resultp x)
+                  (not (valuep x)))
+             (errorp x)))
+
+  (defrule value-resultp-possibilities
+    (implies (value-resultp x)
+             (or (valuep x)
+                 (errorp x)))
+    :enable value-resultp
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -356,18 +406,7 @@
     (implies (valuep x)
              (not (errorp x)))
     :rule-classes :tau-system
-    :enable (scharp
-             ucharp
-             sshortp
-             ushortp
-             sintp
-             uintp
-             slongp
-             ulongp
-             sllongp
-             ullongp
-             pointerp
-             valuep
+    :enable (valuep
              errorp))
 
   (defrule not-errorp-when-value-listp
@@ -398,7 +437,8 @@
               :slong (type-slong)
               :ullong (type-ullong)
               :sllong (type-sllong)
-              :pointer (type-pointer val.reftype))
+              :pointer (type-pointer val.reftype)
+              :array (type-array val.elemtype))
   :hooks (:fix)
   ///
 
@@ -416,23 +456,47 @@
                    ((ullongp val) (type-ullong))
                    ((sllongp val) (type-sllong))
                    ((pointerp val) (type-pointer (pointer->reftype val)))
+                   ((value-case val :array) (type-array
+                                             (value-array->elemtype val)))
                    (t (prog2$ (impossible) (irr-type))))))
-    :enable (type-of-value
-             value-kind
-             value-fix
-             ucharp
-             scharp
-             ushortp
-             sshortp
-             uintp
-             sintp
-             ulongp
-             slongp
-             ullongp
-             sllongp
-             pointerp
-             pointer->reftype
-             value-pointer->reftype))
+    :use (:instance lemma (val (value-fix val)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (valuep val)
+                (equal (type-of-value val)
+                       (cond ((ucharp val) (type-uchar))
+                             ((scharp val) (type-schar))
+                             ((ushortp val) (type-ushort))
+                             ((sshortp val) (type-sshort))
+                             ((uintp val) (type-uint))
+                             ((sintp val) (type-sint))
+                             ((ulongp val) (type-ulong))
+                             ((slongp val) (type-slong))
+                             ((ullongp val) (type-ullong))
+                             ((sllongp val) (type-sllong))
+                             ((pointerp val)
+                              (type-pointer (pointer->reftype val)))
+                             ((value-case val :array)
+                              (type-array (value-array->elemtype val)))
+                             (t (prog2$ (impossible) (irr-type))))))
+       :enable (type-of-value
+                value-kind
+                value-fix
+                valuep
+                ucharp
+                scharp
+                ushortp
+                sshortp
+                uintp
+                sintp
+                ulongp
+                slongp
+                ullongp
+                sllongp
+                pointerp
+                pointer->reftype
+                value-pointer->reftype
+                value-array->elemtype))))
 
   (local (in-theory (e/d (type-of-value-alt-def) (type-of-value))))
 

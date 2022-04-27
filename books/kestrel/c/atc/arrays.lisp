@@ -100,7 +100,7 @@
     "[C:6.2.5/20] requires arrays to be non-empty,
      i.e. to contain at least one element,
      i.e. to have positive length.
-     As noted in @(see atc-arrays), arrays are indexed via integers.
+     As noted above, arrays are indexed via integers.
      [C] only provides minimum requirements for the sizes of integer types,
      not maximum requirements:
      other than practical considerations,

@@ -464,6 +464,12 @@
           ((sllongp arg) (boolean-from-sllong arg))
           ((pointerp arg) (not (pointer-nullp arg)))
           (t (error (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable value-scalarp
+                                           value-arithmeticp
+                                           value-realp
+                                           value-integerp
+                                           value-signed-integerp
+                                           value-unsigned-integerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1308,6 +1314,7 @@
             :pointer todo
             :array todo))
           ((pointerp arg) todo)
+          ((value-case arg :array) todo)
           (t (error (impossible)))))
   :hooks (:fix))
 
