@@ -860,3 +860,61 @@
              (equal (compustate-scopes-numbers new-compst)
                     (compustate-scopes-numbers compst)))
     :hints (("Goal" :in-theory (enable compustate-scopes-numbers)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The following will be moved somewhere else
+; when we refactor the model of values better.
+
+(defsection value-theorems-more
+  :extension value
+
+  (defrule valuep-when-uchar-arrayp
+    (implies (uchar-arrayp x)
+             (valuep x))
+    :enable (valuep uchar-arrayp))
+
+  (defrule valuep-when-schar-arrayp
+    (implies (uchar-arrayp x)
+             (valuep x))
+    :enable (valuep uchar-arrayp))
+
+  (defrule valuep-when-ushort-arrayp
+    (implies (ushort-arrayp x)
+             (valuep x))
+    :enable (valuep ushort-arrayp))
+
+  (defrule valuep-when-sshort-arrayp
+    (implies (ushort-arrayp x)
+             (valuep x))
+    :enable (valuep ushort-arrayp))
+
+  (defrule valuep-when-uint-arrayp
+    (implies (uint-arrayp x)
+             (valuep x))
+    :enable (valuep uint-arrayp))
+
+  (defrule valuep-when-sint-arrayp
+    (implies (uint-arrayp x)
+             (valuep x))
+    :enable (valuep uint-arrayp))
+
+  (defrule valuep-when-ulong-arrayp
+    (implies (ulong-arrayp x)
+             (valuep x))
+    :enable (valuep ulong-arrayp))
+
+  (defrule valuep-when-slong-arrayp
+    (implies (ulong-arrayp x)
+             (valuep x))
+    :enable (valuep ulong-arrayp))
+
+  (defrule valuep-when-ullong-arrayp
+    (implies (ullong-arrayp x)
+             (valuep x))
+    :enable (valuep ullong-arrayp))
+
+  (defrule valuep-when-sllong-arrayp
+    (implies (ullong-arrayp x)
+             (valuep x))
+    :enable (valuep ullong-arrayp)))
