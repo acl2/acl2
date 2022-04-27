@@ -37,6 +37,7 @@
 ;(include-book "../basic-rules")
 (include-book "../step-increments")
 (include-book "../dag-size")
+(include-book "../dag-info")
 (include-book "../prune")
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
@@ -92,7 +93,7 @@
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or unsupported instruction is detected.  Returns (mv
-;; erp result-dag state).
+;; erp result-dag-or-quotep state).
 ;; TODO: Handle returning a quotep?
 (defun repeatedly-run (steps-left step-increment dag rules assumptions rules-to-monitor use-internal-contextsp print print-base memoizep total-steps state)
   (declare (xargs :stobjs (state)
@@ -115,7 +116,7 @@
     (b* ((this-step-increment (acl2::this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
          (old-dag dag)
-         ((mv erp dag state)
+         ((mv erp dag-or-quote state)
           (acl2::simp-dag dag
                           :rules rules
                           :assumptions assumptions
@@ -127,9 +128,12 @@
                           :limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration nil)
                           :memoizep memoizep))
          ((when erp) (mv erp nil state))
+         ((when (quotep dag-or-quote))
+          (mv (erp-nil) dag-or-quote state))
+         (dag dag-or-quote)
          ;; Prune the DAG:
          ((mv erp dag state)
-          (if (> (acl2::dag-size-fast dag) 10000)
+          (if (acl2::dag-or-quotep-size-less-thanp dag-or-quote 10000)
               (mv (erp-nil) dag state) ; don't prune if it will explode (todo: make this threshhold customizable, add some sort of DAG-based pruning)
             (acl2::prune-dag-new dag assumptions rules
                                  nil ; interpreted-fns
@@ -244,7 +248,7 @@
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
        (- (cw "Done simplifying assumptions)~%"))
        (- (and print (cw "(Simplified assumptions: ~x0)~%" assumptions)))
-       ;; Do the symbolic simulation:
+       ;; Prepare for symbolic execution:
        (term-to-simulate '(run-until-return x86))
        (term-to-simulate (wrap-in-output-extractor output term-to-simulate)) ;TODO: delay this if lifting a loop?
        (- (cw "(Limiting the unrolling to ~x0 steps.)~%" step-limit))
@@ -254,20 +258,20 @@
        (rules-to-monitor (if (eq :debug monitor)
                              (debug-rules32)
                            monitor))
-       ((mv erp result-dag state)
+       ;; Do the symbolic execution:
+       ((mv erp result-dag ; result-dag-or-quotep ; FFIXME: Handle a quotep here
+            state)
         (repeatedly-run step-limit step-increment dag-to-simulate rules assumptions rules-to-monitor use-internal-contextsp print print-base memoizep 0 state))
        ((when erp) (mv erp nil state))
-       ;; could instead use dag-info (what was it called?) here to print the dag info:
-       (- (and print (cw "Result DAG: ~x0~%" result-dag)))
+       (- (if (quotep result-dag)
+              (cw "Result is ~x0.`%" result-dag)
+            (acl2::print-dag-info result-dag 'result t)))
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
-       (- (cw "(Result DAG size: ~x0)~%" result-dag-size))
        (result-dag-fns (acl2::dag-fns result-dag))
-       (- (cw "(Result DAG functions: ~x0)~%" result-dag-fns))
        ;; Sometimes the presence of text-offset may indicate that something
        ;; wasn't resolved, but other times it's just needed to express some
        ;; junk left on the stack
        (result-dag-vars (acl2::dag-vars result-dag))
-       (- (cw "(Result DAG vars: ~x0)~%" result-dag-vars))
        (defconst-name (pack-in-package-of-symbol lifted-name '* lifted-name '*))
        (defconst-form `(defconst ,defconst-name ',result-dag))
        (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
