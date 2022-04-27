@@ -187,7 +187,8 @@
                                            (list (,<type> 0)))))
          :require (and (type-case elemtype ,(type-kind type))
                        (consp elements))
-         :tag ,(intern$ (symbol-name <type>-array) "KEYWORD")
+         :layout :list
+         :tag :array
          :pred ,<type>-arrayp)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
