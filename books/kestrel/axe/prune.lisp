@@ -549,13 +549,16 @@
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp)))
                   :stobjs state))
-  (b* ((term (dag-to-term dag)) ; can explode!
-       ((mv erp term state)
-        (prune-term-new term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
-       ((when erp) (mv erp nil state))
-       ((mv erp dag) (make-term-into-dag-simple term))
-       ((when erp) (mv erp nil state)))
-    (mv (erp-nil) dag state)))
+  (if (not (dag-fns-include-any dag '(if myif boolif bvif)))
+      ;; No IFs, so no point in pruning:
+      (mv (erp-nil) dag state)
+    (b* ((term (dag-to-term dag)) ; can explode!
+         ((mv erp term state)
+          (prune-term-new term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)) ; todo: call something here that returns a dag, not a term!
+         ((when erp) (mv erp nil state))
+         ((mv erp dag) (make-term-into-dag-simple term))
+         ((when erp) (mv erp nil state)))
+      (mv (erp-nil) dag state))))
 
 ;; ;; Prune unreachable branches using full contexts.  Warning: can explode the
 ;; ;; term size. Returns (mv erp result-dag state).
@@ -576,8 +579,9 @@
 
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
 ;; term size. Returns (mv erp result-dag state).
-(defund prune-dag-new (dag-lst assumptions rules interpreted-fns monitored-rules call-stp state)
-  (declare (xargs :guard (and (pseudo-dagp dag-lst)
+;; TODO: This makes the rule-alist each time it is called.
+(defund prune-dag-new (dag assumptions rules interpreted-fns monitored-rules call-stp state)
+  (declare (xargs :guard (and (pseudo-dagp dag)
                               (pseudo-term-listp assumptions)
                               (symbol-listp rules)
                               (symbol-listp interpreted-fns)
@@ -586,9 +590,9 @@
                                   (natp call-stp))
                               (ilks-plist-worldp (w state)))
                   :stobjs state))
-  (b* (((mv erp rule-alist) (make-rule-alist rules (w state)))
+  (b* (((mv erp rule-alist) (make-rule-alist rules (w state))) ; todo: avoid this if the dag-fns-include-any check will fail
        ((when erp) (mv erp nil state)))
-    (prune-dag-with-rule-alist-new dag-lst assumptions rule-alist
+    (prune-dag-with-rule-alist-new dag assumptions rule-alist
                                    (make-interpreted-function-alist interpreted-fns (w state))
                                    monitored-rules call-stp state)))
 
@@ -629,13 +633,14 @@
 
 ;;Returns (mv erp result-dag state).  Pruning turns the DAG into a term and
 ;;then tries to resolve IF tests via rewriting and perhaps by calls to STP.
+;; TODO: This can make the rule-alist each time it is called.
 (defund maybe-prune-dag-new (prune-branches ; t, nil, or a limit on the size
-                            dag-lst assumptions rules interpreted-fns monitored-rules call-stp state)
+                             dag assumptions rules interpreted-fns monitored-rules call-stp state)
   (declare (xargs :guard (and (or (eq nil prune-branches)
                                   (eq t prune-branches)
                                   (natp prune-branches))
-                              (pseudo-dagp dag-lst)
-                              (< (len dag-lst) 2147483647) ;todo?
+                              (pseudo-dagp dag)
+                              (< (len dag) 2147483647) ;todo?
                               (pseudo-term-listp assumptions)
                               (symbol-listp rules)
                               (symbol-listp interpreted-fns)
@@ -649,20 +654,20 @@
                            (if (eq nil prune-branches)
                                nil
                              (if (not (natp prune-branches))
-                                 (er hard 'maybe-prune-dag "Bad prune-branches option (~x0)." prune-branches)
+                                 (er hard 'maybe-prune-dag-new "Bad prune-branches option (~x0)." prune-branches)
                                ;; todo: allow this to fail fast:
-                               (dag-or-quotep-size-less-thanp dag-lst
+                               (dag-or-quotep-size-less-thanp dag
                                                               prune-branches))))))
     (if prune-branchesp
-        (b* ((size (dag-or-quotep-size-fast dag-lst)) ;todo: also perhaps done above
-             (- (cw "(Pruning branches in DAG (~x0 nodes, ~x1 unique)~%" size (len dag-lst)))
+        (b* ((size (dag-or-quotep-size-fast dag)) ;todo: also perhaps done above
+             (- (cw "(Pruning branches in DAG (~x0 nodes, ~x1 unique)~%" size (len dag)))
              ;; (- (progn$ (cw "(DAG:~%")
-             ;;            (print-list dag-lst)
+             ;;            (print-list dag)
              ;;            (cw ")~%")))
              (- (progn$ (cw "(Assumptions: ~X01)~%" assumptions nil)))
              ((mv erp result-dag state)
-              (prune-dag-new dag-lst assumptions rules interpreted-fns monitored-rules call-stp state))
+              (prune-dag-new dag assumptions rules interpreted-fns monitored-rules call-stp state))
              ((when erp) (mv erp nil state))
              (- (cw "Done pruning branches in DAG)~%")))
           (mv nil result-dag state))
-      (mv nil dag-lst state))))
+      (mv nil dag state))))

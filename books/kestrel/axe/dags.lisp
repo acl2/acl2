@@ -780,9 +780,7 @@
 (defun get-vars-from-dags (dags)
   (get-vars-from-dags-aux dags nil))
 
-;;
-;; dag-fns
-;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun dag-fns-aux (dag acc)
   (declare (xargs :guard (and (true-listp dag)
@@ -805,6 +803,9 @@
            (symbol-listp (dag-fns-aux dag acc)))
   :hints (("Goal" :in-theory (enable weak-dagp dag-exprp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Return a list of all the functions that appear in the DAG-OR-QUOTEP
 (defund dag-fns (dag-or-quotep)
   (declare (xargs :guard (or (quotep dag-or-quotep)
                              (weak-dagp dag-or-quotep))))
@@ -816,6 +817,41 @@
   (implies (weak-dagp dag-or-quotep)
            (symbol-listp (dag-fns dag-or-quotep)))
   :hints (("Goal" :in-theory (enable dag-fns))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund dag-fns-include-any-aux (dag fns)
+  (declare (xargs :guard (and (true-listp dag)
+                              (weak-dagp-aux dag)
+                              (symbol-listp fns)
+                              (not (member-eq 'quote fns)))
+                  :guard-hints (("Goal" :in-theory (enable dag-exprp
+                                                           symbolp-of-car-when-dag-exprp)))))
+  (if (endp dag)
+      nil
+    (let* ((entry (car dag))
+           (expr (cdr entry)))
+      (if (and (consp expr)
+               ;; implies that (ffn-symb expr) can't be 'quote, since FNS should not include 'quote:
+               (member-eq (ffn-symb expr) fns))
+          t
+        (dag-fns-include-any-aux (rest dag) fns)))))
+
+;; Checks whether the functions that appear in DAG-OR-QUOTEP include any of the
+;; FNS.  Stops as soon as it finds any of the FNS.  Does not cons up the list
+;; of all fns found.
+(defund dag-fns-include-any (dag-or-quotep fns)
+  (declare (xargs :guard (and (or (quotep dag-or-quotep)
+                                  (weak-dagp dag-or-quotep))
+                              (symbol-listp fns)
+                              (not (member-eq 'quote fns)))))
+  (if (quotep dag-or-quotep)
+      nil
+    (dag-fns-include-any-aux dag-or-quotep fns)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 
 ;could allow the result to have duplicate nodes, but it doesn't seem worth it to check for that, if we are going to simplify the result anyway
 ;may be slow
