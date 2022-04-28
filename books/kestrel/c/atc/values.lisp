@@ -151,6 +151,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection member-value-list->name-list (x)
+  :guard (member-value-listp x)
+  :returns (names ident-listp)
+  :short "Lift @(tsee member-value->name) to lists."
+  (member-value->name x)
+  ///
+  (fty::deffixequiv member-value-list->name-list
+    :args ((x member-value-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection member-value-list->value-list (x)
+  :guard (member-value-listp x)
+  :returns (values value-listp)
+  :short "Lift @(tsee member-value->value) to lists."
+  (member-value->value x)
+  ///
+  (fty::deffixequiv member-value-list->value-list
+    :args ((x member-value-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection value-theorems
   :extension value
 
@@ -342,6 +364,17 @@
   :enable (errorp
            value-optionp
            valuep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult member-value-list "lists of member values")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-errorp-when-member-value-listp
+  (implies (member-value-listp x)
+           (not (errorp x)))
+  :enable (member-value-listp errorp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
