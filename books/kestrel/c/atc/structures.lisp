@@ -124,24 +124,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define member-value-to-info ((member member-valuep))
-  :returns (meminfo member-infop)
-  :short "Turn a member value into its information."
+(define member-value-to-type ((member member-valuep))
+  :returns (meminfo member-typep)
+  :short "Turn a member value into the corresponding member type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A @(tsee member-info) is the static counterpart of a @(tsee member)."))
-  (make-member-info :name (member-value->name member)
+    "A @(tsee member-type) is the static counterpart of a @(tsee member)."))
+  (make-member-type :name (member-value->name member)
                     :type (type-of-value (member-value->value member)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection member-values-to-infos (x)
+(std::defprojection member-values-to-types (x)
   :guard (member-value-listp x)
-  :returns (infos member-info-listp)
-  :short "Lift @(tsee member-value-to-info) to lists."
-  (member-value-to-info x)
+  :returns (infos member-type-listp)
+  :short "Lift @(tsee member-value-to-type) to lists."
+  (member-value-to-type x)
   ///
-  (fty::deffixequiv member-values-to-infos
+  (fty::deffixequiv member-values-to-types
     :args ((x member-value-listp))))

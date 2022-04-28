@@ -1272,8 +1272,8 @@
          ((unless (equal (struct->tag struct)
                          (struct->tag obj)))
           nil)
-         ((unless (equal (member-values-to-infos (struct->members struct))
-                         (member-values-to-infos (struct->members obj))))
+         ((unless (equal (member-values-to-types (struct->members struct))
+                         (member-values-to-types (struct->members obj))))
           nil))
       t)
     :hooks (:fix))
@@ -1329,8 +1329,8 @@
             (if (equal addr addr2)
                 (and (equal (struct->tag struct)
                             (struct->tag struct2))
-                     (equal (member-values-to-infos (struct->members struct))
-                            (member-values-to-infos (struct->members struct2))))
+                     (equal (member-values-to-types (struct->members struct))
+                            (member-values-to-types (struct->members struct2))))
               (write-struct-okp addr struct compst))))
     :enable (write-struct-okp
              update-struct))
@@ -1343,8 +1343,8 @@
                     (and
                      (equal (struct->tag struct)
                             (struct->tag old-struct))
-                     (equal (member-values-to-infos (struct->members struct))
-                            (member-values-to-infos (struct->members old-struct))))))
+                     (equal (member-values-to-types (struct->members struct))
+                            (member-values-to-types (struct->members old-struct))))))
     :enable (write-struct-okp read-struct)
     :prep-lemmas
     ((defrule lemma

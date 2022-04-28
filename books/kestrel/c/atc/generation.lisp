@@ -1320,7 +1320,7 @@
        (member (symbol-name member))
        ((unless (atc-ident-stringp member)) (no))
        (member (ident member))
-       (meminfo (member-info-lookup member members))
+       (meminfo (member-type-lookup member members))
        ((unless meminfo) (no))
        (out-type meminfo)
        (in-type (type-struct tag))
@@ -1389,7 +1389,7 @@
        (member (symbol-name member))
        ((unless (atc-ident-stringp member)) (no))
        (member (ident member))
-       (meminfo (member-info-lookup member members))
+       (meminfo (member-type-lookup member members))
        ((unless meminfo) (no))
        (mem-type meminfo)
        ((unless (list-lenp 2 val.args)) (no))
@@ -6310,7 +6310,7 @@
                                       (recognizer symbolp)
                                       (fixer-recognizer-thm symbolp)
                                       (not-error-thm symbolp)
-                                      (member member-infop)
+                                      (member member-typep)
                                       (reader symbolp)
                                       (names-to-avoid symbol-listp)
                                       (wrld plist-worldp))
@@ -6326,7 +6326,7 @@
     "This class of theorems are the structure counterpart of
      the ones that rewrite @(tsee exec-arrsub) to array readers,
      generated in @(see atc-exec-arrsub-rules-generation)."))
-  (b* ((memname (member-info->name member))
+  (b* ((memname (member-type->name member))
        (thm-name (pack 'exec-memberp-when-
                        recognizer
                        '-and-
@@ -6369,7 +6369,7 @@
                                        (recognizer symbolp)
                                        (fixer-recognizer-thm symbolp)
                                        (not-error-thm symbolp)
-                                       (members member-info-listp)
+                                       (members member-type-listp)
                                        (readers symbol-listp)
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
@@ -6412,7 +6412,7 @@
 (define atc-gen-tag-exec-asg-memberp-thm ((recognizer symbolp)
                                           (fixer-recognizer-thm symbolp)
                                           (not-error-thm symbolp)
-                                          (member member-infop)
+                                          (member member-typep)
                                           (writer symbolp)
                                           (writer-return-thm symbolp)
                                           (names-to-avoid symbol-listp)
@@ -6432,8 +6432,8 @@
      that have @(':arrsub') left expressions
      to array writers,
      generated in @(see atc-exec-expr-asg-arrsub-rules-generation)."))
-  (b* ((memname (member-info->name member))
-       (memtype (member-info->type member))
+  (b* ((memname (member-type->name member))
+       (memtype (member-type->type member))
        (thm-name (pack 'exec-expr-asg-memberp-when-
                        recognizer
                        '-and-
@@ -6547,7 +6547,7 @@
 (define atc-gen-tag-exec-asg-memberp-thms ((recognizer symbolp)
                                            (fixer-recognizer-thm symbolp)
                                            (not-error-thm symbolp)
-                                           (members member-info-listp)
+                                           (members member-type-listp)
                                            (writers symbol-listp)
                                            (writer-return-thms symbol-listp)
                                            (names-to-avoid symbol-listp)
@@ -6590,13 +6590,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-struct-declon-list ((meminfos member-info-listp))
+(define atc-gen-struct-declon-list ((meminfos member-type-listp))
   :returns (declons struct-declon-listp)
   :short "Generate a list of C structure declarations
-          from a list of member information items."
+          from a list of member types."
   (b* (((when (endp meminfos)) nil)
        (meminfo (car meminfos))
-       ((member-info meminfo) meminfo)
+       ((member-type meminfo) meminfo)
        ((mv tyspec declor) (ident+type-to-tyspec+declor meminfo.name
                                                         meminfo.type))
        (declon (make-struct-declon :tyspec tyspec :declor declor))
