@@ -146,6 +146,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection array-ext
+  :extension array
+
+  (defrule valuep-when-arrayp
+    (implies (arrayp x)
+             (valuep x))
+    :enable (valuep
+             arrayp
+             uchar-arrayp
+             schar-arrayp
+             ushort-arrayp
+             sshort-arrayp
+             uint-arrayp
+             sint-arrayp
+             ulong-arrayp
+             slong-arrayp
+             ullong-arrayp
+             sllong-arrayp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defresult array "arrays"
   :enable (errorp
            arrayp

@@ -45,8 +45,15 @@
                         members
                       (list (member-value-fix :irrelevant)))))
   :require (consp members)
+  :layout :list
   :tag :struct
-  :pred structp)
+  :pred structp
+  ///
+
+  (defrule valuep-when-structp
+    (implies (structp x)
+             (valuep x))
+    :enable (structp valuep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
