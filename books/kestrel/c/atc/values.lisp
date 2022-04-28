@@ -85,11 +85,10 @@
        can and will be enforced in separate predicates.")
      (xdoc::p
       "Structures are modeled as consisting of a tag (identifier)
-       and a list of member values.
+       and a non-empty list of member values.
        The tag is the one that identifies the structure type;
        we only model structures with non-anonymous types.
-       [C:6.2.5/20] requires at least one member;
-       we do not capture this requirement here, but we plan to.
+       [C:6.2.5/20] requires at least one member.
        The member values must have distinct names;
        we do not capture this requirement here, but we may in the future.")
      (xdoc::p
@@ -116,7 +115,11 @@
                                  (list (value-fix :irrelevant)))))
      :require (consp elements))
     (:struct ((tag ident)
-              (members member-value-list)))
+              (members member-value-list
+                       :reqfix (if (consp members)
+                                   members
+                                 (list (member-value-fix :irrelevant)))))
+     :require (consp members))
     :pred valuep
     :measure (two-nats-measure (acl2-count x) 0))
 

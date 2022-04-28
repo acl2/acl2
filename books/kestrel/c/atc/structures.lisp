@@ -37,11 +37,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "There must be at least one member.
-     The members must have distinct names.
-     These requirements are currently not captured in this fixtype."))
+    "The members must have distinct names.
+     This requirement is currently not captured in this fixtype."))
   ((tag ident)
-   (members member-value-list))
+   (members member-value-list
+            :reqfix (if (consp members)
+                        members
+                      (list (member-value-fix :irrelevant)))))
+  :require (consp members)
   :tag :struct
   :pred structp)
 
