@@ -154,7 +154,7 @@
     (xdoc::li
      "The name of the theorem asserting that
       the recognizer implies a specific value of
-      @(tsee members-to-infos) of @(tsee struct->members)."))
+      @(tsee member-values-to-infos) of @(tsee struct->members)."))
    (xdoc::p
     "The call of @(tsee defstruct).
      This supports redundancy checking."))
@@ -484,7 +484,7 @@
      These theorems are proved from some general theorems given here."))
 
   (defruled defstruct-reader-lemma
-    (implies (equal meminfos (members-to-infos members))
+    (implies (equal meminfos (member-values-to-infos members))
              (b* ((type (member-info-lookup name meminfos))
                   (val (struct-read-member-aux name members)))
                (implies (typep type)
@@ -493,7 +493,7 @@
                                     type)))))
     :prep-lemmas
     ((defrule lemma
-       (b* ((type (member-info-lookup name (members-to-infos members)))
+       (b* ((type (member-info-lookup name (member-values-to-infos members)))
             (val (struct-read-member-aux name members)))
          (implies (typep type)
                   (and (valuep val)
@@ -501,35 +501,35 @@
                               type))))
        :enable (struct-read-member-aux
                 member-info-lookup
-                members-to-infos
-                member-to-info))))
+                member-values-to-infos
+                member-value-to-info))))
 
   (defruled defstruct-writer-lemma
-    (implies (equal meminfos (members-to-infos members))
+    (implies (equal meminfos (member-values-to-infos members))
              (b* ((type (member-info-lookup name meminfos))
                   (new-members (struct-write-member-aux name val members)))
                (implies (and (typep type)
                              (valuep val)
                              (equal (type-of-value val)
                                     type))
-                        (and (member-listp new-members)
-                             (equal (members-to-infos new-members)
+                        (and (member-value-listp new-members)
+                             (equal (member-values-to-infos new-members)
                                     meminfos)))))
     :prep-lemmas
     ((defrule lemma
-       (b* ((type (member-info-lookup name (members-to-infos members)))
+       (b* ((type (member-info-lookup name (member-values-to-infos members)))
             (new-members (struct-write-member-aux name val members)))
          (implies (and (typep type)
                        (valuep val)
                        (equal (type-of-value val)
                               type))
-                  (and (member-listp new-members)
-                       (equal (members-to-infos new-members)
-                              (members-to-infos members)))))
+                  (and (member-value-listp new-members)
+                       (equal (member-values-to-infos new-members)
+                              (member-values-to-infos members)))))
        :enable (struct-write-member-aux
                 member-info-lookup
-                members-to-infos
-                member-to-info)))))
+                member-values-to-infos
+                member-value-to-info)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -559,7 +559,7 @@
    (xdoc::p
     "We also generate two theorems saying that the recognizer
      implies specific values of @(tsee struct->tag)
-     and of @(tsee members-to-infos) of @(tsee struct->members)."))
+     and of @(tsee member-values-to-infos) of @(tsee struct->members)."))
   (b* ((not-errorp-when-struct-tag-p
         (packn-pos (list 'not-errorp-when- struct-tag-p)
                    struct-tag-p))
@@ -578,7 +578,7 @@
            (and (structp x)
                 (equal (struct->tag x)
                        (ident ,(symbol-name tag)))
-                (equal (members-to-infos (struct->members x))
+                (equal (member-values-to-infos (struct->members x))
                        ',members))
            :hooks (:fix)
            ///
@@ -597,7 +597,7 @@
              :in-theory '(,struct-tag-p))
            (defruled ,struct->members-when-struct-tag-p
              (implies (,struct-tag-p x)
-                      (equal (members-to-infos (struct->members x))
+                      (equal (member-values-to-infos (struct->members x))
                              ',members))
              :in-theory '(,struct-tag-p)))))
     (mv event
@@ -658,7 +658,7 @@
                  (:ullong '(ullong 0))
                  (:sllong '(sllong 0))
                  (t (raise "Internal error: member type ~x0." member.type))))
-          (term `(make-member :name ',member.name :value ,val))
+          (term `(make-member-value :name ',member.name :value ,val))
           (terms (defstruct-gen-fixer-aux (cdr members))))
        (cons term terms)))))
 
