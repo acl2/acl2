@@ -96,22 +96,23 @@
 ;; reduced to 0, or a loop or unsupported instruction is detected.  Returns (mv
 ;; erp result-dag-or-quotep state).
 ;; TODO: Handle returning a quotep?
-(defun repeatedly-run (steps-left step-increment dag rules assumptions rules-to-monitor use-internal-contextsp print print-base memoizep total-steps state)
-  (declare (xargs :stobjs (state)
-                  :guard (and (natp steps-left)
+(defun repeatedly-run (steps-left step-increment dag rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep total-steps state)
+  (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
+                              (acl2::pseudo-dagp dag)
                               (symbol-listp rules)
                               (pseudo-term-listp assumptions)
                               (symbol-listp rules-to-monitor)
                               (booleanp use-internal-contextsp)
-                              ;; print
+                              (or (eq nil prune)
+                                  (eq t prune)
+                                  (natp prune))
+                              (acl2::axe-print-levelp print)
                               (member print-base '(10 16))
                               (booleanp memoizep)
-                              (natp total-steps)
-                              )
-                  :mode :program)
-           ;; (irrelevant print)
-           )
+                              (natp total-steps))
+                  :mode :program
+                  :stobjs (state)))
   (if (zp steps-left)
       (mv (erp-nil) dag state)
     (b* ((this-step-increment (acl2::this-step-increment step-increment total-steps))
@@ -136,11 +137,11 @@
          ((mv erp dag state)
           (if (acl2::dag-or-quotep-size-less-thanp dag-or-quote 10000)
               (mv (erp-nil) dag state) ; don't prune if it will explode (todo: make this threshhold customizable, add some sort of DAG-based pruning)
-            (acl2::prune-dag-new dag assumptions rules
-                                 nil ; interpreted-fns
-                                 rules-to-monitor
-                                 t ;call-stp
-                                 state)))
+            (acl2::maybe-prune-dag-new prune dag assumptions rules
+                                       nil ; interpreted-fns
+                                       rules-to-monitor
+                                       t ;call-stp
+                                       state)))
          ((when erp) (mv erp nil state))
          (dag-fns (acl2::dag-fns dag)))
       (if (not (member-eq 'run-until-rsp-greater-than dag-fns)) ;; stop if the run is done
@@ -173,7 +174,7 @@
                         state))))
               (repeatedly-run (- steps-left steps-for-this-iteration)
                               step-increment
-                              dag rules assumptions rules-to-monitor use-internal-contextsp print print-base memoizep
+                              dag rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep
                               total-steps
                               state))))))))
 
@@ -185,6 +186,7 @@
                              stack-slots
                              output
                              use-internal-contextsp
+                             prune
                              extra-rules
                              remove-rules
                              extra-assumption-rules
@@ -203,6 +205,9 @@
                               (natp stack-slots)
                               (output-indicatorp output)
                               (booleanp use-internal-contextsp)
+                              (or (eq nil prune)
+                                  (eq t prune)
+                                  (natp prune))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp extra-assumption-rules)
@@ -308,7 +313,7 @@
        ;; Do the symbolic execution:
        ((mv erp result-dag ; result-dag-or-quotep ; FFIXME: Handle a quotep here
             state)
-        (repeatedly-run step-limit step-increment dag-to-simulate rules assumptions rules-to-monitor use-internal-contextsp print print-base memoizep 0 state))
+        (repeatedly-run step-limit step-increment dag-to-simulate rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
        ((when erp) (mv erp nil nil nil state))
        (- (if (quotep result-dag)
               (cw "Result is ~x0.`%" result-dag)
@@ -324,6 +329,7 @@
                         stack-slots
                         output
                         use-internal-contextsp
+                        prune
                         extra-rules
                         remove-rules
                         extra-assumption-rules
@@ -348,6 +354,9 @@
                               (natp stack-slots)
                               (output-indicatorp output)
                               (booleanp use-internal-contextsp)
+                              (or (eq nil prune)
+                                  (eq t prune)
+                                  (natp prune))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp extra-assumption-rules)
@@ -375,7 +384,7 @@
             state)
         (def-unrolled-fn-core target parsed-executable
           assumptions suppress-assumptions stack-slots
-          output use-internal-contextsp extra-rules remove-rules extra-assumption-rules
+          output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
           step-limit step-increment memoizep monitor print print-base state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
@@ -482,6 +491,7 @@
                                (stack-slots '100) ;; tells us what to assume about available stack space
                                (output ':all)
                                (use-internal-contextsp 't)
+                               (prune '1000)
                                (extra-rules 'nil) ;Rules to use in addition to (lifter-rules32) or (lifter-rules64).
                                (remove-rules 'nil) ;Rules to turn off
                                (extra-assumption-rules 'nil) ; Extra rules to use when simplifying assumptions
@@ -507,6 +517,7 @@
       ',stack-slots
       ',output
       ',use-internal-contextsp
+      ',prune
       ,extra-rules             ;not quoted!
       ,remove-rules            ;not quoted!
       ,extra-assumption-rules  ;not quoted!
