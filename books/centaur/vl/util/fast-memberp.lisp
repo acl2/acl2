@@ -39,7 +39,7 @@
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/alists/alist-keys" :dir :system))
 
-;; It might be good to move this material a more general library.
+;; It might be good to move this material to a more general library.
 
 (define make-lookup-alist (x)
   :parents (utilities)
