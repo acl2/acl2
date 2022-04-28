@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -219,49 +219,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflatsum object
-  :short "Fixtype of objects."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are the objects in the heap (see @(tsee heap));
-     so it is a more restricted notion of object than in [C].
-     An object is either an array or a structure here."))
-  (:array array)
-  (:struct struct)
-  :pred objectp
-
-  :prepwork
-
-  ((defrulel car-when-arrayp
-     (implies (arrayp x)
-              (not (equal (car x) :struct)))
-     :rule-classes :tau-system
-     :enable (arrayp
-              uchar-arrayp
-              schar-arrayp
-              ushort-arrayp
-              sshort-arrayp
-              uint-arrayp
-              sint-arrayp
-              ulong-arrayp
-              slong-arrayp
-              ullong-arrayp
-              sllong-arrayp))
-
-   (defrulel car-when-structp
-     (implies (structp x)
-              (equal (car x) :struct))
-     :rule-classes :tau-system
-     :enable structp)
-
-   (defrulel not-structp-when-arrayp
-     (implies (arrayp x)
-              (not (structp x)))
-     :cases ((equal (car x) :struct)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defomap heap
   :short "Fixtype of heaps."
   :long
@@ -273,10 +230,9 @@
      However, `heap' is sufficiently commonly used
      that it seems adequate to use it here.")
    (xdoc::p
-    "For now we model the heap just as a finite map from addresses to objects,
-     which are arrays and structures (see @(tsee object))."))
+    "For now we model the heap just as a finite map from addresses to values."))
   :key-type address
-  :val-type object
+  :val-type value
   :pred heapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
