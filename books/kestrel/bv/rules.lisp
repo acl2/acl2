@@ -7618,7 +7618,7 @@
                         (not (sbvlt size x 0)))
                   (equal 0 (bvchop size x))))
   :hints (("Goal"
-           :use (:instance svblt-trichotomy (y 0))
+           :use (:instance sbvlt-trichotomy (y 0))
            :in-theory (enable myif))))
 
 (defthm booland-of-not-sbvlt-and-not-equal
@@ -7626,7 +7626,7 @@
                 (unsigned-byte-p size k))
            (equal (booland (not (sbvlt size k x)) (not (equal k x)))
                   (sbvlt size x k)))
-  :hints (("Goal" :use (:instance svblt-trichotomy (y k)))))
+  :hints (("Goal" :use (:instance sbvlt-trichotomy (y k)))))
 
 (defthm unsigned-byte-p-of-slice-lemma
   (implies (and (unsigned-byte-p (+ n low) x)
