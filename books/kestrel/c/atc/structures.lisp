@@ -133,7 +133,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A @(tsee member-type) is the static counterpart of a @(tsee member)."))
+    "A @(tsee member-type) is the static counterpart of
+     a @(tsee member-value)."))
   (make-member-type :name (member-value->name member)
                     :type (type-of-value (member-value->value member)))
   :hooks (:fix))
