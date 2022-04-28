@@ -465,6 +465,9 @@
                      so the call is not redundant."
                     tag-name (defstruct-info->call info) call)))
        (members (cdr args))
+       ((unless (consp members))
+        (er-soft+ ctx t irrelevant
+                  "There must be at least one member."))
        ((mv erp members state) (defstruct-process-members members ctx state))
        ((when erp) (mv erp irrelevant state)))
     (acl2::value (list tag tag-ident members nil)))
