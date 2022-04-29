@@ -16,6 +16,8 @@
 
 (include-book "defthm-disjoint")
 
+(include-book "std/basic/two-nats-measure" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-values
@@ -61,7 +63,8 @@
       "For now we only support the standard unsigned and signed integer values
        (except @('_Bool') values),
        pointer values with any referenced type,
-       and arrays of values of any type.")
+       arrays of values of any type,
+       and structures of member values of any type.")
      (xdoc::p
       "Array values are modeled as consisting of
        the element type and a non-empty list of values.
@@ -79,7 +82,20 @@
       "This definition of arrays alone does not prevent arrays
        from having values of different types.
        That all the values have the element type
-       can and will be enforced in separate predicates."))
+       can and will be enforced in separate predicates.")
+     (xdoc::p
+      "Structures are modeled as consisting of a tag (identifier)
+       and a non-empty list of member values.
+       The tag is the one that identifies the structure type;
+       we only model structures with non-anonymous types.
+       [C:6.2.5/20] requires at least one member.
+       The member values must have distinct names;
+       we do not capture this requirement here, but we may in the future.")
+     (xdoc::p
+      "The requirement that the member values
+       match the members of the structure type
+       requires contextual information about the structure type.
+       So this requirement cannot be captured in this definition of values."))
     (:uchar ((get uchar-integer)))
     (:schar ((get schar-integer)))
     (:ushort ((get ushort-integer)))
@@ -98,14 +114,65 @@
                                    elements
                                  (list (value-fix :irrelevant)))))
      :require (consp elements))
-    :pred valuep)
+    (:struct ((tag ident)
+              (members member-value-list
+                       :reqfix (if (consp members)
+                                   members
+                                 (list (member-value-fix :irrelevant)))))
+     :require (consp members))
+    :pred valuep
+    :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::deflist value-list
     :short "Fixtype of lists of values."
     :elt-type value
     :true-listp t
     :elementp-of-nil nil
-    :pred value-listp))
+    :pred value-listp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  (fty::defprod member-value
+    :short "Fixtype of member values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A member value consists of a name (identifier) and a value.
+       Member values are the constituents of structure values."))
+    ((name ident)
+     (value value))
+    :tag :member-value
+    :pred member-valuep
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::deflist member-value-list
+    :short "Fixtype of lists of member values."
+    :elt-type member-value
+    :true-listp t
+    :elementp-of-nil nil
+    :pred member-value-listp
+    :measure (two-nats-measure (acl2-count x) 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection member-value-list->name-list (x)
+  :guard (member-value-listp x)
+  :returns (names ident-listp)
+  :short "Lift @(tsee member-value->name) to lists."
+  (member-value->name x)
+  ///
+  (fty::deffixequiv member-value-list->name-list
+    :args ((x member-value-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection member-value-list->value-list (x)
+  :guard (member-value-listp x)
+  :returns (values value-listp)
+  :short "Lift @(tsee member-value->value) to lists."
+  (member-value->value x)
+  ///
+  (fty::deffixequiv member-value-list->value-list
+    :args ((x member-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,7 +193,7 @@
                  (sllongp x)
                  (pointerp x)
                  (value-case x :array)
-                 ))
+                 (value-case x :struct)))
     :enable (valuep
              ucharp
              scharp
@@ -301,6 +368,17 @@
            value-optionp
            valuep))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult member-value-list "lists of member values")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-errorp-when-member-value-listp
+  (implies (member-value-listp x)
+           (not (errorp x)))
+  :enable (member-value-listp errorp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value-signed-integerp ((val valuep))
@@ -438,7 +516,8 @@
               :ullong (type-ullong)
               :sllong (type-sllong)
               :pointer (type-pointer val.reftype)
-              :array (type-array val.elemtype))
+              :array (type-array val.elemtype)
+              :struct (type-struct val.tag))
   :hooks (:fix)
   ///
 
@@ -458,6 +537,8 @@
                    ((pointerp val) (type-pointer (pointer->reftype val)))
                    ((value-case val :array) (type-array
                                              (value-array->elemtype val)))
+                   ((value-case val :struct) (type-struct
+                                              (value-struct->tag val)))
                    (t (prog2$ (impossible) (irr-type))))))
     :use (:instance lemma (val (value-fix val)))
     :prep-lemmas
@@ -478,6 +559,8 @@
                               (type-pointer (pointer->reftype val)))
                              ((value-case val :array)
                               (type-array (value-array->elemtype val)))
+                             ((value-case val :struct)
+                              (type-struct (value-struct->tag val)))
                              (t (prog2$ (impossible) (irr-type))))))
        :enable (type-of-value
                 value-kind

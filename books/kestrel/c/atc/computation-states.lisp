@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -146,6 +146,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection array-ext
+  :extension array
+
+  (defrule valuep-when-arrayp
+    (implies (arrayp x)
+             (valuep x))
+    :enable (valuep
+             arrayp
+             uchar-arrayp
+             schar-arrayp
+             ushort-arrayp
+             sshort-arrayp
+             uint-arrayp
+             sint-arrayp
+             ulong-arrayp
+             slong-arrayp
+             ullong-arrayp
+             sllong-arrayp))
+
+  (defrule value-kind-when-arrayp
+    (implies (arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (arrayp
+             uchar-arrayp
+             schar-arrayp
+             ushort-arrayp
+             sshort-arrayp
+             uint-arrayp
+             sint-arrayp
+             ulong-arrayp
+             slong-arrayp
+             ullong-arrayp
+             sllong-arrayp
+             value-kind)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defresult array "arrays"
   :enable (errorp
            arrayp
@@ -180,67 +218,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-of-array-element ((array arrayp))
-  :returns (type typep)
-  :short "Element type of an array."
-  (array-case array
-              :uchar (type-uchar)
-              :schar (type-schar)
-              :ushort (type-ushort)
-              :sshort (type-sshort)
-              :uint (type-uint)
-              :sint (type-sint)
-              :ulong (type-ulong)
-              :slong (type-slong)
-              :ullong (type-ullong)
-              :sllong (type-sllong))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defflatsum object
-  :short "Fixtype of objects."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are the objects in the heap (see @(tsee heap));
-     so it is a more restricted notion of object than in [C].
-     An object is either an array or a structure here."))
-  (:array array)
-  (:struct struct)
-  :pred objectp
-
-  :prepwork
-
-  ((defrulel car-when-arrayp
-     (implies (arrayp x)
-              (not (equal (car x) :struct)))
-     :rule-classes :tau-system
-     :enable (arrayp
-              uchar-arrayp
-              schar-arrayp
-              ushort-arrayp
-              sshort-arrayp
-              uint-arrayp
-              sint-arrayp
-              ulong-arrayp
-              slong-arrayp
-              ullong-arrayp
-              sllong-arrayp))
-
-   (defrulel car-when-structp
-     (implies (structp x)
-              (equal (car x) :struct))
-     :rule-classes :tau-system
-     :enable structp)
-
-   (defrulel not-structp-when-arrayp
-     (implies (arrayp x)
-              (not (structp x)))
-     :cases ((equal (car x) :struct)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defomap heap
   :short "Fixtype of heaps."
   :long
@@ -252,10 +229,9 @@
      However, `heap' is sufficiently commonly used
      that it seems adequate to use it here.")
    (xdoc::p
-    "For now we model the heap just as a finite map from addresses to objects,
-     which are arrays and structures (see @(tsee object))."))
+    "For now we model the heap just as a finite map from addresses to values."))
   :key-type address
-  :val-type object
+  :val-type value
   :pred heapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -752,11 +728,11 @@
        (obj (cdr addr+obj))
        ((unless (arrayp obj))
         (error (list :address-not-array addr obj)))
-       ((unless (equal (type-of-array-element array)
-                       (type-of-array-element obj)))
+       ((unless (equal (value-array->elemtype (array-fix array))
+                       (value-array->elemtype obj)))
         (error (list :array-type-mismatch
-                     :old (type-of-array-element obj)
-                     :new (type-of-array-element array))))
+                     :old (value-array->elemtype obj)
+                     :new (value-array->elemtype (array-fix array)))))
        ((unless (equal (array-length array)
                        (array-length obj)))
         (error (list :array-length-mismatch
@@ -838,11 +814,11 @@
         (error (list :struct-tag-mismatch
                      :old (struct->tag obj)
                      :new (struct->tag struct))))
-       ((unless (equal (members-to-infos (struct->members struct))
-                       (members-to-infos (struct->members obj))))
+       ((unless (equal (member-values-to-types (struct->members struct))
+                       (member-values-to-types (struct->members obj))))
         (error (list :struct-members-mismatch
-                     :old (members-to-infos (struct->members obj))
-                     :new (members-to-infos (struct->members struct)))))
+                     :old (member-values-to-types (struct->members obj))
+                     :new (member-values-to-types (struct->members struct)))))
        (new-heap (omap::update addr (struct-fix struct) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)
@@ -860,3 +836,61 @@
              (equal (compustate-scopes-numbers new-compst)
                     (compustate-scopes-numbers compst)))
     :hints (("Goal" :in-theory (enable compustate-scopes-numbers)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The following will be moved somewhere else
+; when we refactor the model of values better.
+
+(defsection value-theorems-more
+  :extension value
+
+  (defrule valuep-when-uchar-arrayp
+    (implies (uchar-arrayp x)
+             (valuep x))
+    :enable (valuep uchar-arrayp))
+
+  (defrule valuep-when-schar-arrayp
+    (implies (uchar-arrayp x)
+             (valuep x))
+    :enable (valuep uchar-arrayp))
+
+  (defrule valuep-when-ushort-arrayp
+    (implies (ushort-arrayp x)
+             (valuep x))
+    :enable (valuep ushort-arrayp))
+
+  (defrule valuep-when-sshort-arrayp
+    (implies (ushort-arrayp x)
+             (valuep x))
+    :enable (valuep ushort-arrayp))
+
+  (defrule valuep-when-uint-arrayp
+    (implies (uint-arrayp x)
+             (valuep x))
+    :enable (valuep uint-arrayp))
+
+  (defrule valuep-when-sint-arrayp
+    (implies (uint-arrayp x)
+             (valuep x))
+    :enable (valuep uint-arrayp))
+
+  (defrule valuep-when-ulong-arrayp
+    (implies (ulong-arrayp x)
+             (valuep x))
+    :enable (valuep ulong-arrayp))
+
+  (defrule valuep-when-slong-arrayp
+    (implies (ulong-arrayp x)
+             (valuep x))
+    :enable (valuep ulong-arrayp))
+
+  (defrule valuep-when-ullong-arrayp
+    (implies (ullong-arrayp x)
+             (valuep x))
+    :enable (valuep ullong-arrayp))
+
+  (defrule valuep-when-sllong-arrayp
+    (implies (ullong-arrayp x)
+             (valuep x))
+    :enable (valuep ullong-arrayp)))

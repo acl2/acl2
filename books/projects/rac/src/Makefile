@@ -1,3 +1,4 @@
+.PHONY: all clean veryclean
 
 all: ../bin/rac ../bin/parse
 

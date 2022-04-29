@@ -18959,7 +18959,7 @@
 (defun chk-acceptable-defstobj (name args ctx wrld state)
 
 ; We check that (defstobj name . args) is well-formed and either
-; signal an error or return nil.
+; signals an error or returns nil.
 
   (cond
    ((not (symbolp name))
