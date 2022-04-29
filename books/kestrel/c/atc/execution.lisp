@@ -1345,10 +1345,10 @@
        (array (read-array addr compst))
        ((when (errorp array))
         (error (list :array-not-found arr (compustate-fix compst))))
-       ((unless (equal reftype (type-of-array-element array)))
+       ((unless (equal reftype (value-array->elemtype array)))
         (error (list :mistype-array-read
                      :pointer reftype
-                     :array (type-of-array-element array))))
+                     :array (value-array->elemtype array))))
        (sub (value-result-fix sub))
        ((when (errorp sub)) sub)
        ((unless (value-integerp sub)) (error
@@ -1723,10 +1723,10 @@
               (reftype (pointer->reftype ptr))
               (array (read-array addr compst))
               ((when (errorp array)) array)
-              ((unless (equal reftype (type-of-array-element array)))
+              ((unless (equal reftype (value-array->elemtype array)))
                (error (list :mistype-array-read
                             :pointer reftype
-                            :array (type-of-array-element array))))
+                            :array (value-array->elemtype array))))
               (idx (exec-expr-pure sub compst))
               ((when (errorp idx)) idx)
               ((unless (value-integerp idx))

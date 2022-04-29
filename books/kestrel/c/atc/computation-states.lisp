@@ -163,7 +163,24 @@
              ulong-arrayp
              slong-arrayp
              ullong-arrayp
-             sllong-arrayp)))
+             sllong-arrayp))
+
+  (defrule value-kind-when-arrayp
+    (implies (arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (arrayp
+             uchar-arrayp
+             schar-arrayp
+             ushort-arrayp
+             sshort-arrayp
+             uint-arrayp
+             sint-arrayp
+             ulong-arrayp
+             slong-arrayp
+             ullong-arrayp
+             sllong-arrayp
+             value-kind)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -197,24 +214,6 @@
               :slong (slong-array-length array.get)
               :ullong (ullong-array-length array.get)
               :sllong (sllong-array-length array.get))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-of-array-element ((array arrayp))
-  :returns (type typep)
-  :short "Element type of an array."
-  (array-case array
-              :uchar (type-uchar)
-              :schar (type-schar)
-              :ushort (type-ushort)
-              :sshort (type-sshort)
-              :uint (type-uint)
-              :sint (type-sint)
-              :ulong (type-ulong)
-              :slong (type-slong)
-              :ullong (type-ullong)
-              :sllong (type-sllong))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -729,11 +728,11 @@
        (obj (cdr addr+obj))
        ((unless (arrayp obj))
         (error (list :address-not-array addr obj)))
-       ((unless (equal (type-of-array-element array)
-                       (type-of-array-element obj)))
+       ((unless (equal (value-array->elemtype (array-fix array))
+                       (value-array->elemtype obj)))
         (error (list :array-type-mismatch
-                     :old (type-of-array-element obj)
-                     :new (type-of-array-element array))))
+                     :old (value-array->elemtype obj)
+                     :new (value-array->elemtype (array-fix array)))))
        ((unless (equal (array-length array)
                        (array-length obj)))
         (error (list :array-length-mismatch
