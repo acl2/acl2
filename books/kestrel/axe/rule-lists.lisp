@@ -93,7 +93,7 @@
     booland-of-nil-arg2
     booland-same
     booland-same-2
-;    booland-commute-constant ;trying without since we know how to handle any particular constant..
+    ;; booland-commute-constant ; trying without since we know how to handle any particular constant
     booland-of-not-and-booland-same
     booland-of-not-and-booland-same-alt ;drop?
     booland-of-not-same
@@ -252,6 +252,7 @@
     bvminus-of-bvsx-low-arg2
     bvminus-of-bvsx-low-arg3
     bvuminus-of-bvsx-low
+    ;; todo: what about rules like bvand-of-bvcat-tighten-arg2 here?
 
     ;;these also seem safe (perhaps trimming constants is always safe?):
     bvcat-normalize-constant-arg2
@@ -279,10 +280,27 @@
     bvcat-of-getbit-becomes-leftrotate ;; todo: loops with defn?
     ))
 
+;; Some of these may not be needed if we are commuting constants forward
+(defun bv-constant-chop-rules ()
+  (declare (xargs :guard t))
+  '(bvand-of-constant-chop-arg2
+    bvand-of-constant-chop-arg3
+    bvor-of-constant-chop-arg2
+    bvor-of-constant-chop-arg3
+    bvxor-of-constant-chop-arg2
+    bvxor-of-constant-chop-arg3
+    bitand-of-constant-chop-arg1
+    bitand-of-constant-chop-arg2
+    bitor-of-constant-chop-arg1
+    bitor-of-constant-chop-arg2
+    bitxor-of-constant-chop-arg1
+    bitxor-of-constant-chop-arg2))
+
 ;;includes rules from bv-rules-axe.lisp (bad?) and axerulescore.lisp and dagrulesmore.lisp and dagrules.lisp
 (defun core-rules-bv ()
   (declare (xargs :guard t))
   (append
+   (bv-constant-chop-rules)
    (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
    (safe-trim-rules) ;in case trimming is disabled
    '(;; our normal form is to let these open up to calls to bvlt and sbvlt:
@@ -351,7 +369,7 @@
      bvplus-bvminus-same
      bvplus-bvminus-same-arg2
 
-     bvplus-of-0
+     bvplus-of-0-arg2
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commute constants forward
@@ -416,7 +434,7 @@
      sbvdiv-of-sbvdiv-arg2-combine-constants
      bvcat-combine-constants
 
-     bvshl-of-0-arg1
+
      bvshl-of-0-arg2
      bvshl-of-0-arg3
      equal-of-bvplus-and-bvplus-cancel-arg2-arg2 ;sat feb 19 17:28:05 2011
@@ -452,7 +470,7 @@
      mod-becomes-bvmod-better-free-and-bind-free
      mod-becomes-bvmod-better-bind-free-and-free
 
-     bvcat-of-0 ;trying... for when the highval is 0
+     bvcat-of-0-arg2 ;trying... for when the highval is 0
 
      ;; TODO: more like this?
      ;; TODO: Replace these with of-0-arg1 rules, which may fail faster (no need
@@ -469,8 +487,10 @@
      bvdiv-when-size-is-not-positive
      bvif-when-size-is-not-positive ;bvif-of-0-arg1
      bvlt-when-not-posp-arg1
-     bvcat-when-lowsize-is-0 ;newly moved here
-     bvcat-when-highsize-is-0
+     ;; Rules about size=0:
+     bvshl-of-0-arg1
+     bvcat-of-0-arg1
+     bvcat-of-0-arg3
 
      not-equal-constant-when-unsigned-byte-p ;Fri Dec 17 01:47:42 2010
      ;;not-equal-constant-when-unsigned-byte-p-alt ;not needed since we commute constants forward?
@@ -521,7 +541,7 @@
      bvuminus-of-bvchop-arg2
      bvcat-of-bvchop-high
      bvcat-of-bvchop-low
-
+     ;; TODO: More like this:
      bitxor-of-getbit-arg1
      bitxor-of-getbit-arg2
      bitor-of-getbit-arg1
@@ -554,10 +574,8 @@
 ;    bvlt-of-0-arg2 ;fixme use polarity?
      bvlt-of-0-arg3
 
-     bvmult-of-1
-     bvmult-of-0
-;    max ;hope this is okay
-;   min ;hope this is okay
+     bvmult-of-0-arg2
+     bvmult-of-1-arg2
 
      bvminus-solve ;don't we get rid of bvminus?
 ;    bvminus-solve-for-dag2 ;drop, if we commute constants to the front of the equal?
@@ -581,7 +599,7 @@
 
      bvchop-of-bvchop
      bvchop-of-bvcat-cases
-     bvchop-0-i-eric
+     bvchop-of-0-arg1
      bvchop-1-becomes-getbit
      bvchop-of-slice-both
 ;this may be bad... trying without..
@@ -594,10 +612,14 @@
      <-lemma-for-known-operators
      <-of-bv-and-non-positive-constant ;Thu May 17 00:37:24 2012
 
-;what about comm-2?
-     bvplus-commute-constant ;fixme more like this - or generalize to commuting any args (but maybe those will be off)?
-     bvand-commute-constant
+     ;; We leave most commutativity rules out of core-rules-bv, because they can be expensive for large nests
+     bvplus-commute-constant
      bvmult-commute-constant
+     bvand-commute-constant
+     bvor-commute-constant
+     bvxor-commute-constant
+     bitand-commute-constant
+     bitor-commute-constant
      bitxor-commute-constant
 
 ;think about these:
@@ -728,8 +750,6 @@
     <-of-bvif-constants-true
 
 ;    bvxor-all-ones ;do we want this? ;trying without...
-
-;    bvxor-commutative-axe ;hope this is okay
 
     bvif-of-getbit-arg1
     bvif-of-getbit-arg2
@@ -1246,7 +1266,6 @@
 
 ;;     ;; bvchop-8-becomes-slice-7-0 ;bozo do i really want this?  maybe having bvchop is nicer, since fewer rules?
 
-;;     ;; bvcat-of-0
 ;;     ;; slice-8-0-bvxor-9
 ;; ;    get-rid-of-logtail ;bbozo drop me! we need a more systematic way to get rid of logtail? or does it not appear?
 
@@ -2700,8 +2719,6 @@
 ;;     ;; bvplus-when-low-bits-are-zero ;yuck?! ;this rules caused a big slowdown!
 ;;     bvplus-of-bvcat-0-arg2 ;hmm...
 ;;     bvplus-of-bvcat-0-arg1 ;hmm...
-
-;; ;;;    bvcat-of-0
 
 ;; ;;;    bvmult-of-bvplus-trim-arg1
 ;;   ;;;  bvmult-of-bvplus-trim-arg2

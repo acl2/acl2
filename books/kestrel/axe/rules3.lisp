@@ -15859,7 +15859,7 @@
  ;                           IF-BACKCHAIN-RULE2
                             BVCHOP-CHOP-LEADING-CONSTANT
                             GETBIT-WHEN-BVLT-OF-SMALL-HELPER
-                            BVPLUS-OF-0
+                            ;;BVPLUS-OF-0-arg2
                             BVPLUS-SUBST-VALUE
                             BVCHOP-OF-IF)))))
 

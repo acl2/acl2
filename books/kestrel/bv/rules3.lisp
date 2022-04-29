@@ -615,7 +615,7 @@
                   (equal 0 (getbit 7 x))))
   :hints (("Goal"
            :use (:instance bvcat-of-getbit-and-x-adjacent (n 7))
-           :in-theory (e/d (getbit-too-high bvcat-of-0) (bvcat-of-getbit-and-x-adjacent bvcat-equal-rewrite BVCAT-EQUAL-REWRITE-ALT)))))
+           :in-theory (e/d (getbit-too-high) (bvcat-of-getbit-and-x-adjacent bvcat-equal-rewrite BVCAT-EQUAL-REWRITE-ALT)))))
 
 
 

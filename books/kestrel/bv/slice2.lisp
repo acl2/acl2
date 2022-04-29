@@ -52,7 +52,7 @@
                                   (n m)
                                   (k (+ -1 n))
                                   (m (- n m)))
-           :in-theory (e/d (BVCAT-OF-0) ( BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE
+           :in-theory (e/d () ( BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE
                                                              ;DAGIFY-INSIDE-HIDE-META-RULE
                                                            )))))
 

@@ -183,7 +183,7 @@
          (bvchop size x))
   :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer))))
 
-(defthm bvchop-0-i-eric
+(defthm bvchop-of-0-arg1
   (equal (bvchop 0 i)
          0))
 
