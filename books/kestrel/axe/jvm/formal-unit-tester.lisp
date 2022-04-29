@@ -122,7 +122,7 @@
                               )))
   (let ((str-length (length str)))
     (if (> str-length field-width)
-        (prog2$ (cw "~s0" (implode (take (- field-width 3) (explode str))))
+        (prog2$ (cw "~s0" (coerce (take (- field-width 3) (coerce str 'list)) 'string))
                 (cw "..."))
       (prog2$ (cw "~s0" str)
               (cw "~_0" (- field-width str-length))))))

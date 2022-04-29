@@ -13,6 +13,8 @@
 
 (include-book "execution")
 
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-execution-rules
@@ -236,88 +238,98 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-type-of-array-element-rules
-  :short "Rules about @(tsee type-of-array-element)."
+(defsection atc-value-array->elemtype-rules
+  :short "Rules about @(tsee value-array->elemtype)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These turn @(tsee type-of-array-element) into specific types
+    "These turn @(tsee value-array->elemtype) into specific types
      given that the argument satisfies predicates like @(tsee uchar-arrayp).
      Hypotheses that arrays satisfy these predicates
      are in the generated theorems,
      so they can be discharged."))
 
-  (defruled type-of-array-element-when-uchar-arrayp
+  (defruled value-array->elemtype-when-uchar-arrayp
     (implies (uchar-arrayp x)
-             (equal (type-of-array-element x)
+             (equal (value-array->elemtype x)
                     (type-uchar)))
-    :enable (type-of-array-element array-kind))
+    :enable (value-array->elemtype
+             uchar-arrayp))
 
-  (defruled type-of-array-element-when-schar-arrayp
+  (defruled value-array->elemtype-when-schar-arrayp
     (implies (schar-arrayp x)
-             (equal (type-of-array-element x)
+             (equal (value-array->elemtype x)
                     (type-schar)))
-    :enable (type-of-array-element array-kind))
+    :enable (value-array->elemtype
+             schar-arrayp))
 
-  (defruled type-of-array-element-when-ushort-arrayp
+  (defruled value-array->elemtype-when-ushort-arrayp
     (implies (ushort-arrayp x)
-             (equal (type-of-array-element x)
+             (equal (value-array->elemtype x)
                     (type-ushort)))
-    :enable (type-of-array-element array-kind))
+    :enable (value-array->elemtype
+             ushort-arrayp))
 
-  (defruled type-of-array-element-when-sshort-arrayp
+  (defruled value-array->elemtype-when-sshort-arrayp
     (implies (sshort-arrayp x)
-             (equal (type-of-array-element x)
+             (equal (value-array->elemtype x)
                     (type-sshort)))
-    :enable (type-of-array-element array-kind))
+    :enable (value-array->elemtype
+             sshort-arrayp))
 
-  (defruled type-of-array-element-when-uint-arrayp
+  (defruled value-array->elemtype-when-uint-arrayp
     (implies (uint-arrayp x)
-             (equal (type-of-array-element x)
+             (equal (value-array->elemtype x)
                     (type-uint)))
-    :enable (type-of-array-element array-kind))
+    :enable (value-array->elemtype
+             uint-arrayp))
 
-  (defruled type-of-array-element-when-sint-arrayp
+  (defruled value-array->elemtype-when-sint-arrayp
     (implies (sint-arrayp x)
-             (equal (type-of-array-element x)
+             (equal (value-array->elemtype x)
                     (type-sint)))
-    :enable (type-of-array-element array-kind))
+    :enable (value-array->elemtype
+             sint-arrayp))
 
-  (defruled type-of-array-element-when-ulong-arrayp
+  (defruled value-array->elemtype-when-ulong-arrayp
     (implies (ulong-arrayp x)
-             (equal (type-of-array-element x)
+             (equal (value-array->elemtype x)
                     (type-ulong)))
-    :enable (type-of-array-element array-kind))
+    :enable (value-array->elemtype
+             ulong-arrayp))
 
-  (defruled type-of-array-element-when-slong-arrayp
+  (defruled value-array->elemtype-when-slong-arrayp
     (implies (slong-arrayp x)
-             (equal (type-of-array-element x)
+             (equal (value-array->elemtype x)
                     (type-slong)))
-    :enable (type-of-array-element array-kind))
+    :enable (value-array->elemtype
+             slong-arrayp))
 
-  (defruled type-of-array-element-when-ullong-arrayp
+  (defruled value-array->elemtype-when-ullong-arrayp
     (implies (ullong-arrayp x)
-             (equal (type-of-array-element x)
+             (equal (value-array->elemtype x)
                     (type-ullong)))
-    :enable (type-of-array-element array-kind))
+    :enable (value-array->elemtype
+             ullong-arrayp))
 
-  (defruled type-of-array-element-when-sllong-arrayp
+  (defruled value-array->elemtype-when-sllong-arrayp
     (implies (sllong-arrayp x)
-             (equal (type-of-array-element x)
+             (equal (value-array->elemtype x)
                     (type-sllong)))
-    :enable (type-of-array-element array-kind))
+    :enable (value-array->elemtype
+             sllong-arrayp))
 
-  (defval *atc-type-of-array-element-rules*
-    '(type-of-array-element-when-uchar-arrayp
-      type-of-array-element-when-schar-arrayp
-      type-of-array-element-when-ushort-arrayp
-      type-of-array-element-when-sshort-arrayp
-      type-of-array-element-when-uint-arrayp
-      type-of-array-element-when-sint-arrayp
-      type-of-array-element-when-ulong-arrayp
-      type-of-array-element-when-slong-arrayp
-      type-of-array-element-when-ullong-arrayp
-      type-of-array-element-when-sllong-arrayp)))
+  (defval *atc-value-array->elemtype-rules*
+    '(value-array->elemtype-when-uchar-arrayp
+      value-array->elemtype-when-schar-arrayp
+      value-array->elemtype-when-ushort-arrayp
+      value-array->elemtype-when-sshort-arrayp
+      value-array->elemtype-when-uint-arrayp
+      value-array->elemtype-when-sint-arrayp
+      value-array->elemtype-when-ulong-arrayp
+      value-array->elemtype-when-slong-arrayp
+      value-array->elemtype-when-ullong-arrayp
+      value-array->elemtype-when-sllong-arrayp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -967,7 +979,7 @@
                          (equal array
                                 (read-array (pointer->address x) compst))
                          (equal (pointer->reftype x)
-                                (type-of-array-element array))
+                                (value-array->elemtype array))
                          (,apred array)
                          (,ipred y)
                          (,atype-array-itype-index-okp array y))
@@ -1897,7 +1909,7 @@
                  (equal array
                         (read-array (pointer->address ptr) compst1))
                  (equal (pointer->reftype ptr)
-                        (type-of-array-element array))
+                        (value-array->elemtype array))
                  (,apred array)
                  (equal index (exec-expr-pure sub compst1))
                  (,ipred index)

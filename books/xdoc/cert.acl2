@@ -29,5 +29,4 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (include-book "std/portcullis" :dir :system)
-(include-book "centaur/fty/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all

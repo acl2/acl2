@@ -6459,9 +6459,10 @@
 ; This function generates the actual name we will use for a function generated
 ; by defstobj.  Root and renaming-alist are, respectively, a symbol and an
 ; alist.  Key1 describes which function name we are to generate and is one of
-; :length, :resize, :recognizer, :accessor, :updater, or :creator.  Key2
-; describes the ``type'' of root.  It is :top if root is the name of the stobj
-; and it is otherwise either :array, :hash-table, :stobj-table, or :scalar (see
+; :length, :resize, :recognizer, :accessor, :updater, or :creator.  Key2 is
+; irrelevant if key1 is :recognizer or :creator; often key is :top in those
+; cases, though this is not necessary.  Otherwise key2 describes the ``type''
+; of root. and is either :array, :hash-table, :stobj-table, or :scalar (see
 ; defstobj-fnname-key2).  Note that if renaming-alist is nil, then this
 ; function returns the ``default'' name used.  If renaming-alist pairs some
 ; default name with an illegal name, the result is, of course, an illegal name.

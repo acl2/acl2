@@ -22,7 +22,7 @@
   (cond
    ((null lst) t)
    (t (mv-let
-        (msg eqv lhs rhs ttree)
+        (msg eqv lhs0 lhs rhs ttree)
 
 ; J Moore 8/22/2020: Modified call below when new first argument, qc-flg, was added.  By
 ; specifying qc-flg = nil we require name to be a :rewrite rule rather than
@@ -34,7 +34,7 @@
                                         (cdar lst) ; concl
                                         nil        ; ctx
                                         ens wrld)
-        (declare (ignore eqv lhs rhs ttree))
+        (declare (ignore eqv lhs0 lhs rhs ttree))
         (and (null msg)
              (acceptable-rewrite-rule-p1 name (cdr lst) ens wrld))))))
 

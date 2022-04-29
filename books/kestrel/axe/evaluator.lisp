@@ -40,7 +40,8 @@
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; for bv-array-clear, etc
+(include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; reduce?
+(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/bv-lists/map-packbv" :dir :system) ;for map-packbv, map-reverse-list, etc.
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
 (include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system)

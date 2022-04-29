@@ -212,14 +212,47 @@
   (declare (xargs :guard t))
   '(;these should be safe, because each replaces an argument of a BV op with a
     ;strict subterm of that argument:
+    bvand-of-bvcat-low-arg2
+    bvand-of-bvcat-low-arg3
     bvor-of-bvcat-low-arg2
     bvor-of-bvcat-low-arg3
     bvxor-of-bvcat-low-arg2
     bvxor-of-bvcat-low-arg3
-    bvand-of-bvcat-low-arg2
-    bvand-of-bvcat-low-arg3
-    bvplus-of-bvcat-irrel-arg1
-    bvplus-of-bvcat-irrel-arg2
+    bitand-of-bvcat-low-arg1
+    bitand-of-bvcat-low-arg2
+    bitor-of-bvcat-low-arg1
+    bitor-of-bvcat-low-arg2
+    bitxor-of-bvcat-low-arg1
+    bitxor-of-bvcat-low-arg2
+    bvplus-of-bvcat-low-arg2
+    bvplus-of-bvcat-low-arg3
+    bvmult-of-bvcat-low-arg2
+    bvmult-of-bvcat-low-arg3
+    bvminus-of-bvcat-low-arg2
+    bvminus-of-bvcat-low-arg3
+    bvuminus-of-bvcat-low
+    bvif-of-bvcat-low-arg3
+    bvif-of-bvcat-low-arg4
+    bitand-of-bvsx-low-arg1
+    bitand-of-bvsx-low-arg2
+    bitor-of-bvsx-low-arg1
+    bitor-of-bvsx-low-arg2
+    bitxor-of-bvsx-low-arg1
+    bitxor-of-bvsx-low-arg2
+    bvand-of-bvsx-low-arg2
+    bvand-of-bvsx-low-arg3
+    bvor-of-bvsx-low-arg2
+    bvor-of-bvsx-low-arg3
+    bvxor-of-bvsx-low-arg2
+    bvxor-of-bvsx-low-arg3
+    bvplus-of-bvsx-low-arg2
+    bvplus-of-bvsx-low-arg3
+    bvmult-of-bvsx-low-arg2
+    bvmult-of-bvsx-low-arg3
+    bvminus-of-bvsx-low-arg2
+    bvminus-of-bvsx-low-arg3
+    bvuminus-of-bvsx-low
+
     ;;these also seem safe (perhaps trimming constants is always safe?):
     bvcat-normalize-constant-arg2
     bvcat-normalize-constant-arg4
@@ -587,8 +620,6 @@
      bvsx-too-high-dag
      bvsx-when-sizes-match
      getbit-of-bvsx
-     bitand-of-bvsx-arg2         ;handled by trim rule?
-     bitand-of-bvsx-arg1         ;handled by trim rule?
      ;; bvsx base cases?
      ;; introduce-bvsx-25-7 ;fixme yuck
 
@@ -612,8 +643,6 @@
 ;    bvmult-27-bvcat-hack ;;trying without...
 ;            bvmult-8-27-blast-hack
 ;           bvmult-8-27-blast
-;bvmult-of-bvcat-irrel-arg1 handled by trim rules
-;bvmult-of-bvcat-irrel-arg2 handled by trim rules
 ;bvmult-of-bvcat-trim-arg2 handled by trim rules
 ;bvmult-of-bvcat-trim-arg1 handled by trim rules
      bvand-1-becomes-bitand
@@ -628,8 +657,6 @@
 
 ;            bitand-of-slice-arg1
 ;           bitand-of-slice-arg2
-;            bitand-of-bvcat-arg1
-;           bitand-of-bvcat-arg2
 ;            bitxor-of-slice-arg1 done by trim rule and slice-becomes-getbit
 ;            bitxor-of-slice-arg2 done by trim rule and slice-becomes-getbit
 ;these may have caused big problems:
@@ -1053,10 +1080,6 @@
   '(all-unsigned-byte-p-of-update-nth
     bvchop-8-bvnth-8 ;gen
     bvchop-of-logtail-becomes-slice
-
-;            bvminus-of-bvcat-irrel-arg1
-;           bvminus-of-bvcat-irrel-arg2
-
     getbit-of-bvnth-when-getbit-is-always-0
     getbit-of-bvnth-when-getbit-is-always-1
     bvnth-of-bvchop
@@ -1644,8 +1667,6 @@
             my-right-cancellation-for-+
 
             bvcat-trim-high-size-when-constant-1
-;    bvif-of-bvcat-low-arg1 ;use trim Thu Mar  3 01:47:56 2011
-;    bvif-of-bvcat-low-arg2 ;use trim
             )
           (unsigned-byte-p-forced-rules)
           (boolean-rules)

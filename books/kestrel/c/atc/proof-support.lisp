@@ -1382,7 +1382,7 @@
           *atc-value-optionp-rules*
           *atc-arrayp-rules*
           *atc-type-of-value-option-rules*
-          *atc-type-of-array-element-rules*
+          *atc-value-array->elemtype-rules*
           *atc-array-length-rules*
           *atc-array-length-write-rules*
           *atc-exec-ident-rules*

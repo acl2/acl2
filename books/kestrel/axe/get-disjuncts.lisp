@@ -229,7 +229,7 @@
                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))))))))
 
 ;; (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-;;   (make-term-into-dag-array-basic '(booland x y) 'dag-array-name 'dag-parent-array-name nil)
+;;   (make-term-into-dag-array-basic '(booland x y) 'dag-array 'dag-parent-array nil)
 ;;   (declare (ignore erp))
 ;;   (get-darg-disjuncts nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil t print))
 

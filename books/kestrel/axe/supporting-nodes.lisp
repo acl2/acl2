@@ -860,9 +860,8 @@
 ;; The "-with-name" suffix indicates that this function takes the dag-array-name as an argument.
 (defund drop-non-supporters-array-with-name (dag-array-name dag-array top-nodenum print)
   (declare (xargs :guard (and (natp top-nodenum)
-                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 top-nodenum))))
-           (ignore print))
-  (b* ((- (cw "(Discarding unused nodes (~x0 total nodes))~%" (+ 1 top-nodenum)))
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 top-nodenum)))))
+  (b* ((- (and print (cw "(Discarding unused nodes (~x0 total nodes))~%" (+ 1 top-nodenum))))
        (tag-array (tag-supporters-of-node-with-name top-nodenum dag-array-name dag-array 'tag-array (+ 1 top-nodenum)))
        (translation-array (make-empty-array 'translation-array (+ 1 top-nodenum))))
     (mv-let (dag-lst translation-array)
@@ -930,10 +929,10 @@
            (dag-array (make-dag-into-array dag-array-name dag-or-quotep 0))
            (top-nodenum (top-nodenum-of-dag dag-or-quotep)))
       (drop-non-supporters-array-with-name dag-array-name
-                                 dag-array
-                                 top-nodenum
-                                 nil ;nil
-                                 ))))
+                                           dag-array
+                                           top-nodenum
+                                           nil ; print
+                                           ))))
 
 (defthm true-listp-of-drop-non-supporters
   (implies (or (pseudo-dagp dag-or-quotep)

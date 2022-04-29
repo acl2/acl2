@@ -113,7 +113,7 @@
         (assert-event (equal (,read-i ,stobj) '(1 2 3 0)))
         (,tbl-init 100 5/3 8/10 ,stobj) ; (ht-size rehash-size rehash-threshold ,stobj)
         (assert-event (equal (,read-i ,stobj) '(0 0 0 0))) ; yes, back to start
-        (,update-i ,stobj) 
+        (,update-i ,stobj)
         ))))
 
 ; Do the tests above with update-1 and read-1 not yet guard-verified.  This
@@ -736,9 +736,9 @@
                               (symbolp recognizer)
                               (symbolp creator))))
   (let ((recognizer (or recognizer
-                        (defstobj-fnname st :recognizer nil nil)))
+                        (defstobj-fnname st :recognizer :top nil)))
         (creator (or creator
-                     (defstobj-fnname st :creator nil nil))))
+                     (defstobj-fnname st :creator :top nil))))
     `(if (,recognizer ,st) ,st (,creator))))
 
 (defun read-fld-from-stobj-table-2 (stobj-table)

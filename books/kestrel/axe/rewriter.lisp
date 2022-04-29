@@ -19,6 +19,9 @@
 ;; NOTE: This currentlty depends on the JVM model, for the axe-syntaxp and
 ;; axe-bind-free functions.
 
+;; TODO: Consider adding support for normalizing bvxor and bitxor nests during
+;; the rewriting process, like rewriter-alt has for bvxor nests.
+
 (include-book "rewriter-common")
 (include-book "refined-assumption-alists")
 (include-book "equality-assumption-alists")

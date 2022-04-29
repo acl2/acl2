@@ -12,9 +12,47 @@
 
 ;; TODO: Add support for hash table fields!
 ;; TODO: Add support for stobj table fields!
+;; TODO: Consider not disabling recognizers for non-array fields
+;; TODO: Call defstobj-fnname to compute the names (first get it into logic mode)
 
 (include-book "split-keyword-args")
 (include-book "pack") ; todo: reduce or drop?
+
+;; Try to generate an equivalent predicate for a type-spec, or just the default-name if we can't do better.
+;; TODO: Add more cases
+(defun type-spec-to-name (type-spec default-name)
+  (cond ((eq type-spec 'atom) 'atom)
+        ((eq type-spec 'bit) 'bitp)
+        ((eq type-spec 'character) 'characterp)
+        ((eq type-spec 'cons) 'consp)
+        ((eq type-spec 'integer) 'integerp)
+        ;; todo: handle nil?
+        ((eq type-spec 'null) 'not)
+        ((eq type-spec 'rational) 'rationalp)
+        ((and (consp type-spec)
+              (eq 'satisfies (car type-spec)))
+         (cadr type-spec))
+        ((eq type-spec 'signed-byte) 'integerp)
+        ((eq type-spec 'standard-char) 'standard-charp)
+        ((eq type-spec 'string) 'stringp)
+        ((eq type-spec 'symbol) 'symbolp)
+        ;; todo: handle t?
+        ((eq type-spec 'unsigned-byte) 'natp)
+        ;; Special cases:
+        ((equal type-spec '(integer * *)) 'integerp)
+        ((equal type-spec '(integer 0 *)) 'natp)
+        ((equal type-spec '(integer 1 *)) 'posp)
+        (t default-name)))
+
+;; Checks whether nil satisfies the predicate PRED.
+(defun nil-satisfies-predp (pred state)
+  (declare (xargs :stobjs state))
+  (mv-let (erp value)
+    ;; Apply pred to nil
+    (magic-ev-fncall pred (list nil) state t nil)
+    (if erp
+        (er hard? 'nil-satisfies-predp "Error evaluating ~x0 on nil." pred)
+      (if value t nil))))
 
 (defun maybe-rename-symbol (sym alist)
   (declare (xargs :guard (and (symbolp sym)
@@ -230,42 +268,6 @@
                                         (,this-resize-fn i (,update-fn v ,stobj-name)))
                                 :hints (("Goal" :in-theory (enable ,update-fn ,this-resize-fn)))))))
                     (interaction-theorems-for-array-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-update-fn this-resize-fn)))))))))
-
-;; Try to generate an equivalent predicate for a type-spec, or just the default-name if we can't do better.
-;; TODO: Add more cases
-(defun type-spec-to-name (type-spec default-name)
-  (cond ((eq type-spec 'atom) 'atom)
-        ((eq type-spec 'bit) 'bitp)
-        ((eq type-spec 'character) 'characterp)
-        ((eq type-spec 'cons) 'consp)
-        ((eq type-spec 'integer) 'integerp)
-        ;; todo: handle nil?
-        ((eq type-spec 'null) 'not)
-        ((eq type-spec 'rational) 'rationalp)
-        ((and (consp type-spec)
-              (eq 'satisfies (car type-spec)))
-         (cadr type-spec))
-        ((eq type-spec 'signed-byte) 'integerp)
-        ((eq type-spec 'standard-char) 'standard-charp)
-        ((eq type-spec 'string) 'stringp)
-        ((eq type-spec 'symbol) 'symbolp)
-        ;; todo: handle t?
-        ((eq type-spec 'unsigned-byte) 'natp)
-        ;; Special cases:
-        ((equal type-spec '(integer * *)) 'integerp)
-        ((equal type-spec '(integer 0 *)) 'natp)
-        ((equal type-spec '(integer 1 *)) 'posp)
-        (t default-name)))
-
-;; Checks whether nil satisfies the predicate PRED.
-(defun nil-satisfies-predp (pred state)
-  (declare (xargs :stobjs state))
-  (mv-let (erp value)
-    ;; Apply pred to nil
-    (magic-ev-fncall pred (list nil) state t nil)
-    (if erp
-        (er hard? 'nil-satisfies-predp "Error evaluating ~x0 on nil." pred)
-      (if value t nil))))
 
 ;; Returns (mv theorems names).
 (defun theorems-for-defstobj-field (field-info field-num stobj-name top-recognizer renaming all-field-infos state)
@@ -564,7 +566,7 @@
            (default-creator (pack$ 'create- stobj-name))
            (top-recognizer (maybe-rename-symbol default-top-recognizer renaming))
            (creator (maybe-rename-symbol default-creator renaming)))
-      (mv-let (theorems-for-fields names-for-fields) ; the names-for-fields include recgonizrers, accessors, updaters, etc.
+      (mv-let (theorems-for-fields names-for-fields) ; the names-for-fields include recognizers, accessors, updaters, etc.
         (theorems-and-names-for-defstobj-fields field-infos 0 stobj-name top-recognizer renaming field-infos nil nil state)
         `(encapsulate ()
            (local (include-book "kestrel/lists-light/resize-list" :dir :system))

@@ -705,12 +705,13 @@
                              simplify-xors
                              type
                              state
-                            ))
+                             ))
+       ;; todo: move into apply-tactic-prover?:
        (state (if debug
                   state
                 (maybe-remove-temp-dir state))))
     (if (eq result *valid*)
-        (b* ((- (cw "Proof of theorem succeeded.~%"))
+        (b* ((- (cw "Proof of theorem succeeded.~%")) ; todo: move into apply-tactic-prover?
              ;; make the theorem:
              (theorem-conclusion (if (< (dag-or-quotep-size actual-dag) 1000)
                                      (dag-to-term actual-dag)

@@ -51,6 +51,7 @@
 ;(local (in-theory (disable car-becomes-nth-of-0)))
 
 (local (in-theory (disable NAT-LISTP
+                           natp
                            DAG-EXPRP
                            ;;LIST::LEN-WHEN-AT-MOST-1
                            all-natp-when-not-consp
@@ -70,6 +71,15 @@
                           <-of-+-of-1-when-integers
                           natp-of-+-of-1
                           )))
+
+;move
+(local
+ ;; try last?
+ (defthm natp-of-+-of-when-integerp
+   (implies (integerp (+ (- x) y))
+            (equal (natp (+ (- x) y))
+                   (<= x y)))
+   :hints (("Goal" :in-theory (enable natp)))))
 
 (local
  (defthm integerp-of-if

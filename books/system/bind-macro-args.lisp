@@ -51,6 +51,7 @@
 
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 (local (include-book "kestrel/utilities/keyword-value-lists2" :dir :system))
+(local (include-book "kestrel/utilities/assoc-keyword" :dir :system))
 (local (include-book "kestrel/utilities/intern-in-package-of-symbol" :dir :system))
 (local (include-book "kestrel/utilities/member-symbol-name" :dir :system))
 (local (include-book "kestrel/utilities/chk-length-and-keys" :dir :system))
