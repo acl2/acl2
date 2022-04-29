@@ -863,7 +863,7 @@
                      (ident-fix tag)
                      info)))
        (members (tag-info-struct->members info))
-       (type (member-info-lookup mem members))
+       (type (member-type-lookup mem members))
        ((when (type-option-case type :none))
         (error (list :member-not-found
                      (ident-fix tag)
@@ -1725,7 +1725,7 @@
 
 (define check-struct-declon-list ((declons struct-declon-listp)
                                   (tagenv tag-envp))
-  :returns (members member-info-list-resultp)
+  :returns (members member-type-list-resultp)
   :short "Check a list of structure declarations."
   :long
   (xdoc::topstring
@@ -1733,11 +1733,11 @@
     "These specify the members of a structure or union type
      (see @(tsee struct-declon)).
      We go through the declarations
-     and turn each of them into member information (see @(tsee member-info)).
+     and turn each of them into member types (see @(tsee member-type)).
      We ensure that each member name is well-formed;
      we will also need to check that each member type is well-formed,
      but we need to extend our static semantics for that.
-     By using @(tsee member-info-add-first),
+     By using @(tsee member-type-add-first),
      we ensure that there are no duplicate member names."))
   (b* (((when (endp declons)) nil)
        (members (check-struct-declon-list (cdr declons) tagenv))
@@ -1748,8 +1748,8 @@
        (wf (check-ident name))
        ((when (errorp wf)) (error (list :bad-member-name wf)))
        (type (tyname-to-type tyname))
-       (members-opt (member-info-add-first name type members)))
-    (member-info-list-option-case members-opt
+       (members-opt (member-type-add-first name type members)))
+    (member-type-list-option-case members-opt
                                   :some members-opt.val
                                   :none (error (list :duplicate-member name))))
   :hooks (:fix))
@@ -1765,7 +1765,7 @@
     "For now we only support structure type declarations,
      not union or enumeration type declarations.
      For a structure type declaration, we first check the members,
-     obtaining a list of member information if successful.
+     obtaining a list of member types if successful.
      We ensure that there is at least one member [C:6.2.5/20].
      We use @(tsee tag-env-add) to ensure that there is not already
      another structure or union or enumeration type with the same tag,
