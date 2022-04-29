@@ -383,10 +383,11 @@
 
 (define value-array->length ((array valuep))
   :guard (value-case array :array)
-  :returns (length natp)
+  :returns (length posp)
   :short "Length of an array."
   (len (value-array->elements array))
-  :hooks (:fix))
+  :hooks (:fix)
+  :prepwork ((local (include-book "std/lists/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
