@@ -200,20 +200,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define array-length ((array arrayp))
+(define value-array->length ((array valuep))
+  :guard (value-case array :array)
   :returns (length natp)
   :short "Length of an array."
-  (array-case array
-              :uchar (uchar-array-length array.get)
-              :schar (schar-array-length array.get)
-              :ushort (ushort-array-length array.get)
-              :sshort (sshort-array-length array.get)
-              :uint (uint-array-length array.get)
-              :sint (sint-array-length array.get)
-              :ulong (ulong-array-length array.get)
-              :slong (slong-array-length array.get)
-              :ullong (ullong-array-length array.get)
-              :sllong (sllong-array-length array.get))
+  (len (value-array->elements array))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -733,11 +724,11 @@
         (error (list :array-type-mismatch
                      :old (value-array->elemtype obj)
                      :new (value-array->elemtype (array-fix array)))))
-       ((unless (equal (array-length array)
-                       (array-length obj)))
+       ((unless (equal (value-array->length (array-fix array))
+                       (value-array->length obj)))
         (error (list :array-length-mismatch
-                     :old (array-length obj)
-                     :new (array-length array))))
+                     :old (value-array->length obj)
+                     :new (value-array->length (array-fix array)))))
        (new-heap (omap::update addr (array-fix array) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)

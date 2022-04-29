@@ -952,10 +952,11 @@
          ((unless (equal (value-array->elemtype (array-fix array))
                          (value-array->elemtype obj)))
           nil)
-         ((unless (equal (array-length array)
-                         (array-length obj)))
+         ((unless (equal (value-array->length (array-fix array))
+                         (value-array->length obj)))
           nil))
-      t))
+      t)
+    :hooks (:fix))
 
   (defruled write-array-okp-of-add-frame
     (equal (write-array-okp addr array (add-frame fun compst))
@@ -996,8 +997,8 @@
             (if (equal addr addr2)
                 (and (equal (value-array->elemtype (array-fix array))
                             (value-array->elemtype (array-fix array2)))
-                     (equal (array-length array)
-                            (array-length array2)))
+                     (equal (value-array->length (array-fix array))
+                            (value-array->length (array-fix array2))))
               (write-array-okp addr array compst))))
     :enable (write-array-okp
              update-array))
@@ -1009,8 +1010,8 @@
              (equal (write-array-okp addr array compst)
                     (and (equal (value-array->elemtype (array-fix array))
                                 (value-array->elemtype (array-fix old-array)))
-                         (equal (array-length array)
-                                (array-length old-array)))))
+                         (equal (value-array->length (array-fix array))
+                                (value-array->length (array-fix old-array))))))
     :enable (write-array-okp read-array arrayp))
 
   (defruled write-array-to-update-array
