@@ -1583,7 +1583,7 @@
 (defun amazing-rules-bv ()
   (declare (xargs :guard t))
   (append ;; todo: a lot of cruft in here:
-          '(bvand-of-constant-tighten-dag-version
+          '(;bvand-of-constant-tighten-dag-version ; warning: can change the size of the bvand
 
             max-constants-lemma ;bozo more like this?
             myif-not-myif-same  ;bozo more like this?
