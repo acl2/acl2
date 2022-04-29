@@ -200,15 +200,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-array->length ((array valuep))
-  :guard (value-case array :array)
-  :returns (length natp)
-  :short "Length of an array."
-  (len (value-array->elements array))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defomap heap
   :short "Fixtype of heaps."
   :long
