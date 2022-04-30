@@ -241,7 +241,7 @@
      This is accompanied by @(tsee b*) binders to check and propagate errors.")
 
    (xdoc::p
-    "Several fixtypes have been added, under @('[books]/kestrel/fty/'.")
+    "Several fixtypes have been added, under @('[books]/kestrel/fty/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
