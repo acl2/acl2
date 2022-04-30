@@ -315,7 +315,7 @@
    (xdoc::p
     "These are not operations in C, as we know,
      but we have functions in our C semantics for array length.
-     We introduce rules to turn @(tsee array-length)
+     We introduce rules to turn @(tsee value-array->length)
      into more specific array length functions like @(tsee uchar-array-length).
      We also add existing (i.e. proved elsewhere) rules
      about @(tsee uchar-array-length) and the others being @(tsee natp)."))
