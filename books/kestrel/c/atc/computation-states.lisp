@@ -115,91 +115,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflatsum array
-  :short "Fixtype of arrays."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we only support arrays of the supported integer types."))
-  (:uchar uchar-array)
-  (:schar schar-array)
-  (:ushort ushort-array)
-  (:sshort sshort-array)
-  (:uint uint-array)
-  (:sint sint-array)
-  (:ulong ulong-array)
-  (:slong slong-array)
-  (:ullong ullong-array)
-  (:sllong sllong-array)
-  :pred arrayp
-  :prepwork ((defthm-disjoint *array-disjoint-rules*
-               uchar-arrayp
-               schar-arrayp
-               ushort-arrayp
-               sshort-arrayp
-               uint-arrayp
-               sint-arrayp
-               ulong-arrayp
-               slong-arrayp
-               ullong-arrayp
-               sllong-arrayp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection array-ext
-  :extension array
-
-  (defrule valuep-when-arrayp
-    (implies (arrayp x)
-             (valuep x))
-    :enable (valuep
-             arrayp
-             uchar-arrayp
-             schar-arrayp
-             ushort-arrayp
-             sshort-arrayp
-             uint-arrayp
-             sint-arrayp
-             ulong-arrayp
-             slong-arrayp
-             ullong-arrayp
-             sllong-arrayp))
-
-  (defrule value-kind-when-arrayp
-    (implies (arrayp x)
-             (equal (value-kind x)
-                    :array))
-    :enable (arrayp
-             uchar-arrayp
-             schar-arrayp
-             ushort-arrayp
-             sshort-arrayp
-             uint-arrayp
-             sint-arrayp
-             ulong-arrayp
-             slong-arrayp
-             ullong-arrayp
-             sllong-arrayp
-             value-kind)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult array "arrays"
-  :enable (errorp
-           arrayp
-           uchar-arrayp
-           schar-arrayp
-           ushort-arrayp
-           sshort-arrayp
-           uint-arrayp
-           sint-arrayp
-           ulong-arrayp
-           slong-arrayp
-           ullong-arrayp
-           sllong-arrayp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defomap heap
   :short "Fixtype of heaps."
   :long
@@ -661,7 +576,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-array ((addr addressp) (compst compustatep))
-  :returns (array array-resultp)
+  :returns (array value-resultp)
   :short "Read an array in the computation state."
   :long
   (xdoc::topstring
@@ -679,14 +594,21 @@
        ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
        (obj (cdr addr+obj))
-       ((unless (arrayp obj))
+       ((unless (value-case obj :array))
         (error (list :address-not-array addr obj))))
     obj)
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret value-kind-of-read-array
+    (implies (not (errorp array))
+             (equal (value-kind array)
+                    :array))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-array ((addr addressp) (array arrayp) (compst compustatep))
+(define write-array ((addr addressp) (array valuep) (compst compustatep))
+  :guard (value-case array :array)
   :returns (new-compst compustate-resultp)
   :short "Write an array in the computation state."
   :long
@@ -708,19 +630,19 @@
        ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
        (obj (cdr addr+obj))
-       ((unless (arrayp obj))
+       ((unless (value-case obj :array))
         (error (list :address-not-array addr obj)))
-       ((unless (equal (value-array->elemtype (array-fix array))
+       ((unless (equal (value-array->elemtype array)
                        (value-array->elemtype obj)))
         (error (list :array-type-mismatch
                      :old (value-array->elemtype obj)
-                     :new (value-array->elemtype (array-fix array)))))
-       ((unless (equal (value-array->length (array-fix array))
+                     :new (value-array->elemtype array))))
+       ((unless (equal (value-array->length array)
                        (value-array->length obj)))
         (error (list :array-length-mismatch
                      :old (value-array->length obj)
-                     :new (value-array->length (array-fix array)))))
-       (new-heap (omap::update addr (array-fix array) heap))
+                     :new (value-array->length array))))
+       (new-heap (omap::update addr (value-fix array) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)
   :hooks (:fix)
@@ -833,9 +755,9 @@
     :enable (valuep uchar-arrayp))
 
   (defrule valuep-when-schar-arrayp
-    (implies (uchar-arrayp x)
+    (implies (schar-arrayp x)
              (valuep x))
-    :enable (valuep uchar-arrayp))
+    :enable (valuep schar-arrayp))
 
   (defrule valuep-when-ushort-arrayp
     (implies (ushort-arrayp x)
@@ -843,9 +765,9 @@
     :enable (valuep ushort-arrayp))
 
   (defrule valuep-when-sshort-arrayp
-    (implies (ushort-arrayp x)
+    (implies (sshort-arrayp x)
              (valuep x))
-    :enable (valuep ushort-arrayp))
+    :enable (valuep sshort-arrayp))
 
   (defrule valuep-when-uint-arrayp
     (implies (uint-arrayp x)
@@ -853,9 +775,9 @@
     :enable (valuep uint-arrayp))
 
   (defrule valuep-when-sint-arrayp
-    (implies (uint-arrayp x)
+    (implies (sint-arrayp x)
              (valuep x))
-    :enable (valuep uint-arrayp))
+    :enable (valuep sint-arrayp))
 
   (defrule valuep-when-ulong-arrayp
     (implies (ulong-arrayp x)
@@ -863,9 +785,9 @@
     :enable (valuep ulong-arrayp))
 
   (defrule valuep-when-slong-arrayp
-    (implies (ulong-arrayp x)
+    (implies (slong-arrayp x)
              (valuep x))
-    :enable (valuep ulong-arrayp))
+    :enable (valuep slong-arrayp))
 
   (defrule valuep-when-ullong-arrayp
     (implies (ullong-arrayp x)
@@ -873,6 +795,82 @@
     :enable (valuep ullong-arrayp))
 
   (defrule valuep-when-sllong-arrayp
-    (implies (ullong-arrayp x)
+    (implies (sllong-arrayp x)
              (valuep x))
-    :enable (valuep ullong-arrayp)))
+    :enable (valuep sllong-arrayp))
+
+  (defrule value-kind-when-uchar-arrayp
+    (implies (uchar-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind uchar-arrayp))
+
+  (defrule value-kind-when-schar-arrayp
+    (implies (schar-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind schar-arrayp))
+
+  (defrule value-kind-when-ushort-arrayp
+    (implies (ushort-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind ushort-arrayp))
+
+  (defrule value-kind-when-sshort-arrayp
+    (implies (sshort-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind sshort-arrayp))
+
+  (defrule value-kind-when-uint-arrayp
+    (implies (uint-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind uint-arrayp))
+
+  (defrule value-kind-when-sint-arrayp
+    (implies (sint-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind sint-arrayp))
+
+  (defrule value-kind-when-ulong-arrayp
+    (implies (ulong-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind ulong-arrayp))
+
+  (defrule value-kind-when-slong-arrayp
+    (implies (slong-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind slong-arrayp))
+
+  (defrule value-kind-when-ullong-arrayp
+    (implies (ullong-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind ullong-arrayp))
+
+  (defrule value-kind-when-sllong-arrayp
+    (implies (sllong-arrayp x)
+             (equal (value-kind x)
+                    :array))
+    :enable (valuep value-kind sllong-arrayp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection array-value-disjoint-rules
+  :short "Rules about disjointness of array values."
+  (defthm-disjoint *array-value-disjoint-rules*
+    uchar-arrayp
+    schar-arrayp
+    ushort-arrayp
+    sshort-arrayp
+    uint-arrayp
+    sint-arrayp
+    ulong-arrayp
+    slong-arrayp
+    ullong-arrayp
+    sllong-arrayp))

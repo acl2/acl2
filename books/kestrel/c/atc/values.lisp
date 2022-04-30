@@ -35,9 +35,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection value-disjoint-rules
-  :short "Rules about disjointness of values."
-  (defthm-disjoint *value-disjoint-rules*
+(defsection integer-value-disjoint-rules
+  :short "Rules about disjointness of integer values."
+  (defthm-disjoint *integer-value-disjoint-rules*
     ucharp
     scharp
     ushortp

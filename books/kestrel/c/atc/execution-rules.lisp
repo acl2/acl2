@@ -184,31 +184,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-arrayp-rules
-  :short "Rules for discharging @(tsee arrayp) hypotheses."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Some symbolic execution rules have hypotheses saying that
-     certain terms are arrays, i.e. they satisfy @(tsee arrayp).
-     These are discharged by backchaining to
-     the fact that those terms satisfy specific array predicates,
-     such as @(tsee uchar-arrayp)."))
-
-  (defval *atc-arrayp-rules*
-    '(arrayp-when-uchar-arrayp
-      arrayp-when-schar-arrayp
-      arrayp-when-ushort-arrayp
-      arrayp-when-sshort-arrayp
-      arrayp-when-uint-arrayp
-      arrayp-when-sint-arrayp
-      arrayp-when-ulong-arrayp
-      arrayp-when-slong-arrayp
-      arrayp-when-ullong-arrayp
-      arrayp-when-sllong-arrayp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection atc-type-of-value-option-rules
   :short "Rules about @(tsee type-of-value-option)."
   :long

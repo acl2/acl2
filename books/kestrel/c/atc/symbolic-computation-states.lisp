@@ -305,7 +305,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define update-array ((addr addressp) (array arrayp) (compst compustatep))
+(define update-array ((addr addressp) (array valuep) (compst compustatep))
+  :guard (value-case array :array)
   :returns (new-compst compustatep)
   :short (xdoc::topstring
           "Update an array in a "
@@ -327,7 +328,7 @@
      so in a way @(tsee update-array) caches the fact that
      those conditions are satisfied."))
   (b* ((heap (compustate->heap compst))
-       (new-heap (omap::update (address-fix addr) (array-fix array) heap))
+       (new-heap (omap::update (address-fix addr) (value-fix array) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)
   :hooks (:fix))
@@ -940,7 +941,8 @@
      needed to discharge the @(tsee addressp) hypotheses
      of the rule @('write-array-okp-of-update-array') below."))
 
-  (define write-array-okp ((addr addressp) (array arrayp) (compst compustatep))
+  (define write-array-okp ((addr addressp) (array valuep) (compst compustatep))
+    :guard (value-case array :array)
     :returns (yes/no booleanp)
     :parents nil
     (b* ((addr (address-fix addr))
@@ -948,11 +950,11 @@
          (addr+obj (omap::in addr heap))
          ((unless (consp addr+obj)) nil)
          (obj (cdr addr+obj))
-         ((unless (arrayp obj)) nil)
-         ((unless (equal (value-array->elemtype (array-fix array))
+         ((unless (value-case obj :array)) nil)
+         ((unless (equal (value-array->elemtype (value-fix array))
                          (value-array->elemtype obj)))
           nil)
-         ((unless (equal (value-array->length (array-fix array))
+         ((unless (equal (value-array->length (value-fix array))
                          (value-array->length obj)))
           nil))
       t)
@@ -992,27 +994,30 @@
   (defruled write-array-okp-of-update-array
     (implies
      (and (addressp addr)
-          (addressp addr2))
+          (addressp addr2)
+          (value-case array :array)
+          (value-case array2 :array))
      (equal (write-array-okp addr array (update-array addr2 array2 compst))
             (if (equal addr addr2)
-                (and (equal (value-array->elemtype (array-fix array))
-                            (value-array->elemtype (array-fix array2)))
-                     (equal (value-array->length (array-fix array))
-                            (value-array->length (array-fix array2))))
+                (and (equal (value-array->elemtype array)
+                            (value-array->elemtype array2))
+                     (equal (value-array->length array)
+                            (value-array->length array2)))
               (write-array-okp addr array compst))))
     :enable (write-array-okp
              update-array))
 
-  (defruled write-array-okp-when-arrayp-of-read-array
+  (defruled write-array-okp-when-value-arrayp-of-read-array
     (implies (and (syntaxp (symbolp compst))
                   (equal old-array (read-array addr compst))
-                  (arrayp old-array))
+                  (valuep old-array)
+                  (value-case old-array :array))
              (equal (write-array-okp addr array compst)
-                    (and (equal (value-array->elemtype (array-fix array))
-                                (value-array->elemtype (array-fix old-array)))
-                         (equal (value-array->length (array-fix array))
-                                (value-array->length (array-fix old-array))))))
-    :enable (write-array-okp read-array arrayp))
+                    (and (equal (value-array->elemtype array)
+                                (value-array->elemtype old-array))
+                         (equal (value-array->length array)
+                                (value-array->length old-array)))))
+    :enable (write-array-okp read-array))
 
   (defruled write-array-to-update-array
     (implies (write-array-okp addr array compst)
@@ -1027,8 +1032,28 @@
       write-array-okp-of-add-var
       write-array-okp-of-update-var
       write-array-okp-of-update-array
-      write-array-okp-when-arrayp-of-read-array
-      addressp-of-pointer->address)))
+      write-array-okp-when-value-arrayp-of-read-array
+      addressp-of-pointer->address
+      valuep-when-uchar-arrayp
+      valuep-when-schar-arrayp
+      valuep-when-ushort-arrayp
+      valuep-when-sshort-arrayp
+      valuep-when-uint-arrayp
+      valuep-when-sint-arrayp
+      valuep-when-ulong-arrayp
+      valuep-when-slong-arrayp
+      valuep-when-ullong-arrayp
+      valuep-when-sllong-arrayp
+      value-kind-when-uchar-arrayp
+      value-kind-when-schar-arrayp
+      value-kind-when-ushort-arrayp
+      value-kind-when-sshort-arrayp
+      value-kind-when-uint-arrayp
+      value-kind-when-sint-arrayp
+      value-kind-when-ulong-arrayp
+      value-kind-when-slong-arrayp
+      value-kind-when-ullong-arrayp
+      value-kind-when-sllong-arrayp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1079,10 +1104,11 @@
 
   (defruled read-array-of-update-array
     (implies (and (addressp addr)
-                  (addressp addr2))
+                  (addressp addr2)
+                  (value-case array :array))
              (equal (read-array addr (update-array addr2 array compst))
                     (if (equal addr addr2)
-                        (array-fix array)
+                        (value-fix array)
                       (read-array addr compst))))
     :enable (read-array
              update-array))
@@ -1093,8 +1119,7 @@
       read-array-of-add-var
       read-array-of-update-var
       read-array-of-update-array
-      addressp-of-pointer->address
-      array-fix-when-arrayp)))
+      addressp-of-pointer->address)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1216,14 +1241,13 @@
     (implies (and (syntaxp (symbolp compst))
                   (addressp addr)
                   (compustatep compst1)
-                  (arrayp (read-array addr compst))
+                  (valuep (read-array addr compst))
                   (equal (read-array addr compst)
                          (read-array addr compst1)))
              (equal (update-array addr (read-array addr compst) compst1)
                     compst1))
     :enable (read-array
              update-array
-             arrayp
              omap::update-of-cdr-of-in-when-in)
     :prep-lemmas
     ((defruled omap::update-of-cdr-of-in-when-in
