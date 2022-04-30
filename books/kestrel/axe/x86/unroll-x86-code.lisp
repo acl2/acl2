@@ -316,7 +316,7 @@
         (repeatedly-run step-limit step-increment dag-to-simulate rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
        ((when erp) (mv erp nil nil nil state))
        (- (if (quotep result-dag)
-              (cw "Result is ~x0.`%" result-dag)
+              (cw "Result is ~x0.~%" result-dag)
             (acl2::print-dag-info result-dag 'result t))))
     (mv (erp-nil) result-dag rules assumption-rules state)))
 

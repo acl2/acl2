@@ -70,20 +70,18 @@
          (getbit 0 x))
   :hints (("Goal" :in-theory (enable bitxor))))
 
-;use trim?
-(defthm bitxor-when-constant-is-not-usb-arg2
-  (implies (and (syntaxp (quotep k))
-                (not (unsigned-byte-p 1 k)))
-           (equal (bitxor x k)
-                  (bitxor x (getbit 0 k))))
+(defthm bitxor-of-constant-chop-arg1
+  (implies (and (syntaxp (quotep x))
+                (not (unsigned-byte-p 1 x)))
+           (equal (bitxor x y)
+                  (bitxor (getbit 0 x) y)))
   :hints (("Goal" :in-theory (enable bitxor))))
 
-;use trim?
-(defthm bitxor-when-constant-is-not-usb-arg1
-  (implies (and (syntaxp (quotep k))
-                (not (unsigned-byte-p 1 k)))
-           (equal (bitxor k x)
-                  (bitxor (getbit 0 k) x)))
+(defthm bitxor-of-constant-chop-arg2
+  (implies (and (syntaxp (quotep y))
+                (not (unsigned-byte-p 1 y)))
+           (equal (bitxor x y)
+                  (bitxor x (getbit 0 y))))
   :hints (("Goal" :in-theory (enable bitxor))))
 
 ;justifies the correctness of some operations performed by Axe

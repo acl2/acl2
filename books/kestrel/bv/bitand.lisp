@@ -37,6 +37,13 @@
 ;           :use (:instance bvxor-commutative-2 (y x) (x y) (z z))
            :in-theory (enable bitand))))
 
+(defthmd bitand-commute-constant
+  (implies (syntaxp (quotep y))
+           (equal (bitand x y)
+                  (bitand y x)))
+  :hints (("Goal" :use (:instance bitand-commutative)
+           :in-theory (disable bitand-commutative))))
+
 (defthm bitand-of-0-arg1
   (equal (bitand 0 x)
          0)
@@ -115,6 +122,20 @@
                          (quotep x)))
            (equal (bitand x (bitand y z))
                   (bitand (bitand x y) z))))
+
+(defthm bitand-of-constant-chop-arg1
+  (implies (and (syntaxp (quotep x))
+                (not (unsigned-byte-p 1 x)))
+           (equal (bitand x y)
+                  (bitand (getbit 0 x) y)))
+  :hints (("Goal" :in-theory (enable bitand))))
+
+(defthm bitand-of-constant-chop-arg2
+  (implies (and (syntaxp (quotep y))
+                (not (unsigned-byte-p 1 y)))
+           (equal (bitand x y)
+                  (bitand x (getbit 0 y))))
+  :hints (("Goal" :in-theory (enable bitand))))
 
 ;todo: rename to have 0 in the name
 (defthm bitand-of-getbit-arg1

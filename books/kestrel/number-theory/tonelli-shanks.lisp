@@ -207,7 +207,6 @@
  ()
 
  (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
- (local (include-book "arithmetic/equalities" :dir :system))
  (local (include-book "arithmetic-5/top" :dir :system))
 
  (defthm repeated-square-equiv
@@ -220,13 +219,7 @@
    :hints (("Goal"
 	    :use ((:instance acl2::mod-of-expt-of-mod (i (expt 2 (+ -1 x)))
 			     (x (* c c))
-			     (y p))
-		  (:instance acl2::exponents-add-for-nonneg-exponents
-			     (r c)
-			     (i (expt 2 (+ -1 x)))
-			     (j (expt 2 (+ -1 x))))
-		  (:instance acl2::exponents-add-unrestricted (r c)
-			     (i (expt 2 (+ -1 x))) (j (expt 2 (+ -1 x)))))
+			     (y p)))
 	    :in-theory (enable acl2::mod-expt-fast repeated-square)
 	    ))))
 
