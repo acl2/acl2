@@ -65,7 +65,14 @@ Abstract)
 
 David Russinoff. A Formalization of Finite Group Theory
 
+russinoff-groups/
+
+------------------------------
+
 David Russinoff. Properties of the Hebrew Calendar
+
+russinoff-calendar/
+
 ------------------------------
 
 Mertcan Temel. Verified Implementation of an Efficient Term-Rewriting
@@ -78,6 +85,8 @@ Andrew Walter and Panagiotis Manolios. ACL2s Systems Programming
 ------------------------------
 
 William Young. Modeling Asymptotic Complexity Using ACL2
+
+young-asymptotic/
 
 ------------------------------
 
