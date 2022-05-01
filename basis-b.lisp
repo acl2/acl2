@@ -973,13 +973,6 @@
                        ,@type-dcls)))
      ,body))
 
-(defun doublet-listp (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) (equal x nil))
-        (t (and (true-listp (car x))
-                (eql (length (car x)) 2)
-                (doublet-listp (cdr x))))))
-
 (defmacro er-let* (alist body)
 
 ; This macro introduces the variable er-let-star-use-nowhere-else.
