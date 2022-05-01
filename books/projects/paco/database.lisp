@@ -558,8 +558,7 @@
 
 ; This function makes the value of (@ nume-to-rune-map) be a structure
 ; that maps all numes to their runes.  Actually, the structure is an
-; enabled structure and we just use the universal-theory to compute
-; it.
+; enabled structure and we just use the current-theory to compute it.
 
   (let ((d (car
             (cadr
@@ -605,8 +604,8 @@
        (t
         (er-let*
           ((map (load-theory-into-enabled-structure
-                 '(universal-theory-fn :here (w state)) ;;; theory-expr
-                 (universal-theory-fn :here (w state))  ;;; theory
+                 '(current-theory-fn :here (w state))   ;;; theory-expr
+                 (current-theory-fn :here (w state))    ;;; theory
                  nil                                    ;;; augmented-p
                  map                                    ;;; ens
                  nil                                    ;;; incrmt-array-name-flg
