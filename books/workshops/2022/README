@@ -52,15 +52,16 @@ Simulator
 ------------------------------
 
 Matt Kaufmann and J Moore. Extended Abstract: Iteration in ACL2, WITH
-.. DO (Extended Abstract)
+.. DO
 
 kaufmann-moore/
 
 ------------------------------
 
-Matt Kaufmann, Rob Sumners and Sol Swords. Stobj-tables (Extended
-Abstract)
+Matt Kaufmann, Rob Sumners and Sol Swords. Extended Abstract: Stobj-tables
 
+Community book demos/stobj-table-examples.lisp
+and also subdirectory of this directory,
 stobj-tables/
 
 ------------------------------
