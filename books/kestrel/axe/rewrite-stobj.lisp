@@ -14,16 +14,16 @@
 
 (include-book "print-levels")
 
-;; TODO:
-;; (defstobj+ rewrite-stobj
-;;   (known-booleans :type (satisfies symbol-listp) :initially nil)
-;;   (monitored-symbols :type (satisfies symbol-listp) :initially nil)
-;;   (print :type (satisfies axe-print-levelp) :initially nil)
-;;   :inline t
-;;   :renaming ((known-booleans get-known-booleans)
-;;              (update-known-booleans put-known-booleans)
-;;              (monitored-symbols get-monitored-symbols)
-;;              (update-monitored-symbols put-monitored-symbols)
-;;              (common-lisp::printp printp)
-;;              (common-lisp::print get-print)
-;;              (common-lisp::update-print put-print)))
+;; TODO: rename print0 to print once defstobj+ is fixed
+(defstobj+ rewrite-stobj
+  (known-booleans :type (satisfies symbol-listp) :initially nil)
+  (monitored-symbols :type (satisfies symbol-listp) :initially nil)
+  (print0 :type (satisfies axe-print-levelp) :initially nil)
+  :inline t
+  :renaming ((known-booleans get-known-booleans)
+             (update-known-booleans put-known-booleans)
+             (monitored-symbols get-monitored-symbols)
+             (update-monitored-symbols put-monitored-symbols)
+             (print0p printp)
+             (print0 get-print)
+             (update-print0 put-print)))

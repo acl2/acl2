@@ -301,6 +301,8 @@
              (default-update-fn (pack$ 'update- name 'i))
              (update-fn (maybe-rename-symbol default-update-fn renaming))
              ;; todo: suppress these if they are 't:
+             ;; TODO: For scalar fields, when do we want to phrase things in terms of the RECOGNIZER?
+             ;; If the type is (satisfies ...), RECOGNIZER is likely unnecessary.
              (type-claim-for-default-value (translate-declaration-to-guard-gen element-type 'default-value t nil))
              (type-claim-for-val (translate-declaration-to-guard-gen element-type 'val t nil))
              (type-claim-for-v (translate-declaration-to-guard-gen element-type 'v t nil))
@@ -336,7 +338,7 @@
                               (natp i)
                               ,type-claim-for-v)
                          (,top-recognizer (,update-fn i v ,stobj-name)))
-                :hints (("Goal" :in-theory (enable ,top-recognizer ,update-fn ,length-fn))))
+                :hints (("Goal" :in-theory (enable ,top-recognizer ,update-fn ,length-fn ,recognizer))))
 
               ;; Updating an element doesn't affect the length:
               (defthm ,(pack$ length-fn '-of- update-fn)
@@ -438,7 +440,8 @@
                      `(;; Helper theorem:
                        (defthm ,(pack$ recognizer '-of-resize-list)
                          (implies (and (,recognizer lst)
-                                       ,type-claim-for-default-value)
+                                       ,type-claim-for-default-value ; todo: can we compute this?
+                                       )
                                   (,recognizer (resize-list lst n default-value)))
                          :hints (("Goal" :in-theory (enable resize-list ,recognizer)
                                   :induct (resize-list lst n default-value))))
@@ -510,7 +513,7 @@
                 (implies (and (,top-recognizer ,stobj-name)
                               ,type-claim-for-v)
                          (,top-recognizer (,update-fn v ,stobj-name)))
-                :hints (("Goal" :in-theory (enable ,top-recognizer ,update-fn))))
+                :hints (("Goal" :in-theory (enable ,top-recognizer ,update-fn ,recognizer))))
 
               ;; Read-over-write rule:
               ;; proof uses nth-update-nth, which is built in
@@ -530,7 +533,7 @@
                      `((defthm ,(pack$ field-type-name '-of- accessor-fn)
                          (implies (,top-recognizer ,stobj-name)
                                   ,type-claim-for-accessor)
-                         :hints (("Goal" :in-theory (enable ,top-recognizer ,accessor-fn))))))
+                         :hints (("Goal" :in-theory (enable ,top-recognizer ,accessor-fn ,recognizer))))))
 
               ,@(interaction-theorems-for-scalar-field all-field-infos 0 stobj-name renaming field-num update-fn)
               )

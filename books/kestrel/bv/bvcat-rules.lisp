@@ -208,6 +208,29 @@
                   (bvxor size x (bvcat (- size lowsize) highval lowsize lowval))))
   :hints (("Goal" :in-theory (enable bvxor))))
 
+;; (defthmd bvxor-of-bvcat-arg2
+;;   (implies (and (equal size (+ lowsize highsize))
+;;                 (natp lowsize)
+;;                 (natp highsize))
+;;            (equal (bvxor size (bvcat highsize highval lowsize lowval) x)
+;;                   (bvcat highsize
+;;                          (bvxor highsize (slice (+ -1 size) lowsize x) highval)
+;;                          lowsize
+;;                          (bvxor lowsize x lowval)))))
+
+;; Do we want this enabled?
+(defthm bvxor-of-bvcat-arg2
+  (implies (and (<= size (+ highsize lowsize))
+                (<= lowsize size)
+                (natp highsize)
+                (natp size)
+                (natp lowsize))
+           (equal (bvxor size (bvcat highsize highval lowsize lowval) y)
+                  (bvcat (- size lowsize)
+                         (bvxor (- size lowsize) highval (slice (+ -1 size) lowsize y))
+                         lowsize
+                         (bvxor lowsize lowval y)))))
+
 (defthmd bvxor-of-bvcat-arg3
   (implies (and (equal size (+ lowsize highsize)) ;gen?
                 (natp size)
@@ -217,38 +240,7 @@
                   (bvcat highsize
                          (bvxor highsize (slice (+ -1 size) lowsize x) highval)
                          lowsize
-                         (bvxor lowsize (bvchop lowsize x) lowval))))
-  :hints (("Goal" :in-theory (enable bvcat bvxor LOGTAIL-OF-BVCHOP-BECOMES-SLICE))))
-
-(defthmd bvxor-of-bvcat-arg2
-  (implies (and (equal size (+ lowsize highsize))
-                (natp lowsize)
-                (natp highsize))
-           (equal (bvxor size (bvcat highsize highval lowsize lowval) x)
-                  (bvcat highsize
-                         (bvxor highsize (slice (+ -1 size) lowsize x) highval)
-                         lowsize
-                         (bvxor lowsize (bvchop lowsize x) lowval))))
-  :hints (("Goal" :use (:instance bvxor-of-bvcat-arg3)
-           :in-theory (disable bvxor-of-bvcat-arg3))))
-
-;replace the other?
-(defthm bvxor-of-bvcat-arg2-gen
-  (implies (and (<= (+ -1 size2) size)
-                (< lowsize size2)
-                (< 0 lowsize)
-                (integerp x)
-                (integerp y)
-                (integerp z)
-                (natp size)
-                (natp size2)
-                (natp lowsize)
-                )
-           (equal (bvxor size2 (bvcat size y lowsize x) z)
-                  (bvcat (- size2 lowsize)
-                         (bvxor (- size2 lowsize) y (slice (+ -1 size2) lowsize z))
-                         lowsize
-                         (bvxor lowsize x z)))))
+                         (bvxor lowsize (bvchop lowsize x) lowval)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

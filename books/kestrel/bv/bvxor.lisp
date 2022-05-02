@@ -17,6 +17,7 @@
 (local (include-book "../utilities/equal-of-booleans"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 (defund bvxor (size x y)
   (declare (type integer x y)
@@ -471,6 +472,34 @@
                   (bvxor (+ 1 highbit (- lowbit))
                          (slice highbit lowbit x)
                          (slice highbit lowbit y))))
+  :hints (("Goal" :in-theory (e/d (slice bvxor natp BVCHOP-OF-LOGTAIL)
+                                  (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                                   LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))
+
+;bozo or just use SLICE-TOO-HIGH-IS-0 - which is cheaper?
+;or just pass slice through?
+(defthm slice-of-bvxor-too-high
+  (implies (and (<= size low)
+                (integerp low)
+                (natp size))
+           (equal (slice high low (bvxor size x y))
+                  0))
+  :hints (("Goal" :in-theory (enable slice-too-high-is-0))))
+
+(defthm slice-of-bvxor-gen
+  (implies (and (natp low)
+                (integerp high)
+                (natp size))
+           (equal (slice high low (bvxor size x y))
+                  (if (<= size low)
+                      0
+                    (if (< high size)
+                        (bvxor (+ 1 high (- low))
+                               (slice high low x)
+                               (slice high low y))
+                      (bvxor (+ size (- low))
+                             (slice (+ -1 size) low x)
+                             (slice (+ -1 size) low y))))))
   :hints (("Goal" :in-theory (e/d (slice bvxor natp BVCHOP-OF-LOGTAIL)
                                   (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                    LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))
