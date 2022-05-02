@@ -184,31 +184,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-arrayp-rules
-  :short "Rules for discharging @(tsee arrayp) hypotheses."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Some symbolic execution rules have hypotheses saying that
-     certain terms are arrays, i.e. they satisfy @(tsee arrayp).
-     These are discharged by backchaining to
-     the fact that those terms satisfy specific array predicates,
-     such as @(tsee uchar-arrayp)."))
-
-  (defval *atc-arrayp-rules*
-    '(arrayp-when-uchar-arrayp
-      arrayp-when-schar-arrayp
-      arrayp-when-ushort-arrayp
-      arrayp-when-sshort-arrayp
-      arrayp-when-uint-arrayp
-      arrayp-when-sint-arrayp
-      arrayp-when-ulong-arrayp
-      arrayp-when-slong-arrayp
-      arrayp-when-ullong-arrayp
-      arrayp-when-sllong-arrayp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection atc-type-of-value-option-rules
   :short "Rules about @(tsee type-of-value-option)."
   :long
@@ -340,70 +315,100 @@
    (xdoc::p
     "These are not operations in C, as we know,
      but we have functions in our C semantics for array length.
-     We introduce rules to turn @(tsee array-length)
+     We introduce rules to turn @(tsee value-array->length)
      into more specific array length functions like @(tsee uchar-array-length).
      We also add existing (i.e. proved elsewhere) rules
      about @(tsee uchar-array-length) and the others being @(tsee natp)."))
 
   (defruled array-length-when-uchar-array-length
     (implies (uchar-arrayp x)
-             (equal (array-length x)
+             (equal (value-array->length x)
                     (uchar-array-length x)))
-    :enable (array-length array-kind array-uchar->get))
+    :enable (value-array->length
+             uchar-array-length
+             uchar-array->elements
+             value-array->elements))
 
   (defruled array-length-when-schar-array-length
     (implies (schar-arrayp x)
-             (equal (array-length x)
+             (equal (value-array->length x)
                     (schar-array-length x)))
-    :enable (array-length array-kind array-schar->get))
+    :enable (value-array->length
+             schar-array-length
+             schar-array->elements
+             value-array->elements))
 
   (defruled array-length-when-ushort-array-length
     (implies (ushort-arrayp x)
-             (equal (array-length x)
+             (equal (value-array->length x)
                     (ushort-array-length x)))
-    :enable (array-length array-kind array-ushort->get))
+    :enable (value-array->length
+             ushort-array-length
+             ushort-array->elements
+             value-array->elements))
 
   (defruled array-length-when-sshort-array-length
     (implies (sshort-arrayp x)
-             (equal (array-length x)
+             (equal (value-array->length x)
                     (sshort-array-length x)))
-    :enable (array-length array-kind array-sshort->get))
+    :enable (value-array->length
+             sshort-array-length
+             sshort-array->elements
+             value-array->elements))
 
   (defruled array-length-when-uint-array-length
     (implies (uint-arrayp x)
-             (equal (array-length x)
+             (equal (value-array->length x)
                     (uint-array-length x)))
-    :enable (array-length array-kind array-uint->get))
+    :enable (value-array->length
+             uint-array-length
+             uint-array->elements
+             value-array->elements))
 
   (defruled array-length-when-sint-array-length
     (implies (sint-arrayp x)
-             (equal (array-length x)
+             (equal (value-array->length x)
                     (sint-array-length x)))
-    :enable (array-length array-kind array-sint->get))
+    :enable (value-array->length
+             sint-array-length
+             sint-array->elements
+             value-array->elements))
 
   (defruled array-length-when-ulong-array-length
     (implies (ulong-arrayp x)
-             (equal (array-length x)
+             (equal (value-array->length x)
                     (ulong-array-length x)))
-    :enable (array-length array-kind array-ulong->get))
+    :enable (value-array->length
+             ulong-array-length
+             ulong-array->elements
+             value-array->elements))
 
   (defruled array-length-when-slong-array-length
     (implies (slong-arrayp x)
-             (equal (array-length x)
+             (equal (value-array->length x)
                     (slong-array-length x)))
-    :enable (array-length array-kind array-slong->get))
+    :enable (value-array->length
+             slong-array-length
+             slong-array->elements
+             value-array->elements))
 
   (defruled array-length-when-ullong-array-length
     (implies (ullong-arrayp x)
-             (equal (array-length x)
+             (equal (value-array->length x)
                     (ullong-array-length x)))
-    :enable (array-length array-kind array-ullong->get))
+    :enable (value-array->length
+             ullong-array-length
+             ullong-array->elements
+             value-array->elements))
 
   (defruled array-length-when-sllong-array-length
     (implies (sllong-arrayp x)
-             (equal (array-length x)
+             (equal (value-array->length x)
                     (sllong-array-length x)))
-    :enable (array-length array-kind array-sllong->get))
+    :enable (value-array->length
+             sllong-array-length
+             sllong-array->elements
+             value-array->elements))
 
   (defval *atc-array-length-rules*
     '(array-length-when-uchar-array-length
