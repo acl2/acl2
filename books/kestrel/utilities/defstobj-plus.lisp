@@ -13,6 +13,7 @@
 ;; TODO: Add support for hash table fields!
 ;; TODO: Add support for stobj table fields!
 ;; TODO: Consider not disabling recognizers for non-array fields
+;; TODO: Restrcict the theories used in the hints
 
 (include-book "split-keyword-args")
 (include-book "pack") ; todo: reduce or drop?
@@ -106,8 +107,11 @@
             (append `((defthm ,(pack$ accessor-fn '-of- this-updater-fn)
                         (equal (,accessor-fn i (,this-updater-fn v ,stobj-name))
                                (,accessor-fn i ,stobj-name))
-                        :hints (("Goal" :in-theory (enable ,accessor-fn ,this-updater-fn))))
-
+                        :hints (("Goal" :in-theory '(,accessor-fn
+                                                     ,this-updater-fn
+                                                     nth-update-nth
+                                                     (:e nfix)))))
+                      
                       (defthm ,(pack$ length-fn '-of- this-updater-fn)
                         (equal (,length-fn (,this-updater-fn v ,stobj-name))
                                (,length-fn ,stobj-name))
