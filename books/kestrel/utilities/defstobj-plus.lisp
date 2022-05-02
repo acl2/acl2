@@ -13,7 +13,6 @@
 ;; TODO: Add support for hash table fields!
 ;; TODO: Add support for stobj table fields!
 ;; TODO: Consider not disabling recognizers for non-array fields
-;; TODO: Call defstobj-fnname to compute the names (first get it into logic mode)
 
 (include-book "split-keyword-args")
 (include-book "pack") ; todo: reduce or drop?
@@ -71,12 +70,12 @@
       default)))
 
 ;; Theorems about operations wrapped around inner scalar updaters
-(defun interaction-theorems-for-scalar-field (all-field-infos other-field-num stobj-name renaming this-field-num this-update-fn)
+(defun interaction-theorems-for-scalar-field (all-field-infos other-field-num stobj-name renaming this-field-num this-updater-fn)
   (if (endp all-field-infos)
       nil
     (if (= this-field-num other-field-num)
         ;; no theorems about this field interacting with itself (that's handled elsewhere):
-        (interaction-theorems-for-scalar-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-update-fn)
+        (interaction-theorems-for-scalar-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-updater-fn)
       (let* ((other-field-info (first all-field-infos))
              (name (if (consp other-field-info)
                    (car other-field-info)
@@ -93,14 +92,10 @@
                  ;(element-type (cadr type))
                  ;; is (nth n l) here okay (not a variable)?
                  ;(type-claim-for-nth-n-l (translate-declaration-to-guard-gen element-type '(nth n l) t nil))
-                 (default-length-fn (pack$ name '-length))
-                 (length-fn (maybe-rename-symbol default-length-fn renaming))
-                 (default-resize-fn (pack$ 'resize- name))
-                 (resize-fn (maybe-rename-symbol default-resize-fn renaming))
-                 (default-accessor-fn (pack$ name 'i))
-                 (accessor-fn (maybe-rename-symbol default-accessor-fn renaming))
-                 (default-update-fn (pack$ 'update- name 'i))
-                 (update-fn (maybe-rename-symbol default-update-fn renaming))
+                 (length-fn (defstobj-fnname name :length :array renaming))
+                 (resize-fn (defstobj-fnname name :resize :array renaming))
+                 (accessor-fn (defstobj-fnname name :accessor :array renaming))
+                 (updater-fn (defstobj-fnname name :updater :array renaming))
                  ;; todo: suppress these if they are 't:
                  ;(type-claim-for-default-value (translate-declaration-to-guard-gen element-type 'default-value t nil))
                  ;(type-claim-for-val (translate-declaration-to-guard-gen element-type 'val t nil))
@@ -108,25 +103,25 @@
                  ;(type-claim-for-accessor (translate-declaration-to-guard-gen element-type `(,accessor-fn i ,stobj-name) t nil))
                  )
             ;; Array operations wrapped around scalar update
-            (append `((defthm ,(pack$ accessor-fn '-of- this-update-fn)
-                        (equal (,accessor-fn i (,this-update-fn v ,stobj-name))
+            (append `((defthm ,(pack$ accessor-fn '-of- this-updater-fn)
+                        (equal (,accessor-fn i (,this-updater-fn v ,stobj-name))
                                (,accessor-fn i ,stobj-name))
-                        :hints (("Goal" :in-theory (enable ,accessor-fn ,this-update-fn))))
+                        :hints (("Goal" :in-theory (enable ,accessor-fn ,this-updater-fn))))
 
-                      (defthm ,(pack$ length-fn '-of- this-update-fn)
-                        (equal (,length-fn (,this-update-fn v ,stobj-name))
+                      (defthm ,(pack$ length-fn '-of- this-updater-fn)
+                        (equal (,length-fn (,this-updater-fn v ,stobj-name))
                                (,length-fn ,stobj-name))
-                        :hints (("Goal" :in-theory (enable ,length-fn ,this-update-fn))))
+                        :hints (("Goal" :in-theory (enable ,length-fn ,this-updater-fn))))
                       ,@(and (< this-field-num other-field-num) ; bring inner writes outward since field number is lower
-                             `((defthm ,(pack$ update-fn '-of- this-update-fn)
-                                 (equal (,update-fn i v1 (,this-update-fn v2 ,stobj-name))
-                                        (,this-update-fn v2 (,update-fn i v1 ,stobj-name)))
-                                 :hints (("Goal" :in-theory (enable ,update-fn ,this-update-fn))))
-                               (defthm ,(pack$ resize-fn '-of- this-update-fn)
-                                 (equal (,resize-fn i v1 (,this-update-fn v2 ,stobj-name))
-                                        (,this-update-fn v2 (,update-fn i v1 ,stobj-name)))
-                                 :hints (("Goal" :in-theory (enable ,update-fn ,this-update-fn)))))))
-                    (interaction-theorems-for-scalar-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-update-fn))))
+                             `((defthm ,(pack$ updater-fn '-of- this-updater-fn)
+                                 (equal (,updater-fn i v1 (,this-updater-fn v2 ,stobj-name))
+                                        (,this-updater-fn v2 (,updater-fn i v1 ,stobj-name)))
+                                 :hints (("Goal" :in-theory (enable ,updater-fn ,this-updater-fn))))
+                               (defthm ,(pack$ resize-fn '-of- this-updater-fn)
+                                 (equal (,resize-fn i v1 (,this-updater-fn v2 ,stobj-name))
+                                        (,this-updater-fn v2 (,updater-fn i v1 ,stobj-name)))
+                                 :hints (("Goal" :in-theory (enable ,updater-fn ,this-updater-fn)))))))
+                    (interaction-theorems-for-scalar-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-updater-fn))))
          ((eq 'hash-table type-kind)
           (progn$ ;(cw "NOTE: Hash table fields are not yet supported by defstobj+.")
            nil))
@@ -135,34 +130,32 @@
            nil))
          (t ;must be a scalar type (possibly TYPE is t)
           (let* ( ;; (initial-value (assoc-keyword-with-default :initially keyword-value-list nil))
-                 (default-accessor-fn name)
-                 (accessor-fn (maybe-rename-symbol default-accessor-fn renaming))
-                 (default-update-fn (pack$ 'update- name))
-                 (update-fn (maybe-rename-symbol default-update-fn renaming))
+                 (accessor-fn (defstobj-fnname name :accessor :scalar renaming))
+                 (updater-fn (defstobj-fnname name :updater :scalar renaming))
                  ;; todo: suppress these if they are 't:
                  ;; (type-claim-for-val (translate-declaration-to-guard-gen element-type 'val t nil))
                  ;(type-claim-for-v (translate-declaration-to-guard-gen type 'v t nil))
                  ;(type-claim-for-accessor (translate-declaration-to-guard-gen type `(,accessor-fn ,stobj-name) t nil))
                  )
             ;; Scalar operations wrapped around scalar update
-            (append `((defthm ,(pack$ accessor-fn '-of- this-update-fn)
-                        (equal (,accessor-fn (,this-update-fn v ,stobj-name))
+            (append `((defthm ,(pack$ accessor-fn '-of- this-updater-fn)
+                        (equal (,accessor-fn (,this-updater-fn v ,stobj-name))
                                (,accessor-fn ,stobj-name))
-                        :hints (("Goal" :in-theory (enable ,accessor-fn ,this-update-fn))))
+                        :hints (("Goal" :in-theory (enable ,accessor-fn ,this-updater-fn))))
                       ,@(and (< this-field-num other-field-num) ; bring inner writes outward since field number is lower
-                             `((defthm ,(pack$ update-fn '-of- this-update-fn)
-                                (equal (,update-fn v1 (,this-update-fn v2 ,stobj-name))
-                                       (,this-update-fn v2 (,update-fn v1 ,stobj-name)))
-                                :hints (("Goal" :in-theory (enable ,update-fn ,this-update-fn)))))))
-                    (interaction-theorems-for-scalar-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-update-fn)))))))))
+                             `((defthm ,(pack$ updater-fn '-of- this-updater-fn)
+                                (equal (,updater-fn v1 (,this-updater-fn v2 ,stobj-name))
+                                       (,this-updater-fn v2 (,updater-fn v1 ,stobj-name)))
+                                :hints (("Goal" :in-theory (enable ,updater-fn ,this-updater-fn)))))))
+                    (interaction-theorems-for-scalar-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-updater-fn)))))))))
 
 ;; Theorems about operations wrapped around inner array updaters
-(defun interaction-theorems-for-array-field (all-field-infos other-field-num stobj-name renaming this-field-num this-update-fn this-resize-fn)
+(defun interaction-theorems-for-array-field (all-field-infos other-field-num stobj-name renaming this-field-num this-updater-fn this-resize-fn)
   (if (endp all-field-infos)
       nil
     (if (= this-field-num other-field-num)
         ;; no theorems about this field interacting with itself (that's handled elsewhere):
-        (interaction-theorems-for-array-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-update-fn this-resize-fn)
+        (interaction-theorems-for-array-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-updater-fn this-resize-fn)
       (let* ((other-field-info (first all-field-infos))
              (name (if (consp other-field-info)
                    (car other-field-info)
@@ -178,15 +171,11 @@
                  ;(resizable (assoc-keyword-with-default :resizable keyword-value-list nil))
                  ;(element-type (cadr type))
                  ;; is (nth n l) here okay (not a variable)?
-                 ;(type-claim-for-nth-n-l (translate-declaration-to-guard-gen element-type '(nth n l) t nil))
-                 (default-length-fn (pack$ name '-length))
-                 (length-fn (maybe-rename-symbol default-length-fn renaming))
-                 (default-resize-fn (pack$ 'resize- name))
-                 (resize-fn (maybe-rename-symbol default-resize-fn renaming))
-                 (default-accessor-fn (pack$ name 'i))
-                 (accessor-fn (maybe-rename-symbol default-accessor-fn renaming))
-                 (default-update-fn (pack$ 'update- name 'i))
-                 (update-fn (maybe-rename-symbol default-update-fn renaming))
+                 ;;(type-claim-for-nth-n-l (translate-declaration-to-guard-gen element-type '(nth n l) t nil))
+                 (length-fn (defstobj-fnname name :length :array renaming))
+                 (resize-fn (defstobj-fnname name :resize :array renaming))
+                 (accessor-fn (defstobj-fnname name :accessor :array renaming))
+                 (updater-fn (defstobj-fnname name :updater :array renaming))
                  ;; todo: suppress these if they are 't:
                  ;(type-claim-for-default-value (translate-declaration-to-guard-gen element-type 'default-value t nil))
                  ;(type-claim-for-val (translate-declaration-to-guard-gen element-type 'val t nil))
@@ -194,15 +183,15 @@
                  ;(type-claim-for-accessor (translate-declaration-to-guard-gen element-type `(,accessor-fn i ,stobj-name) t nil))
                  )
             ;; Array operations wrapped around array updates
-            (append `((defthm ,(pack$ accessor-fn '-of- this-update-fn)
-                        (equal (,accessor-fn i1 (,this-update-fn i2 v ,stobj-name))
+            (append `((defthm ,(pack$ accessor-fn '-of- this-updater-fn)
+                        (equal (,accessor-fn i1 (,this-updater-fn i2 v ,stobj-name))
                                (,accessor-fn i1 ,stobj-name))
-                        :hints (("Goal" :in-theory (enable ,accessor-fn ,this-update-fn))))
+                        :hints (("Goal" :in-theory (enable ,accessor-fn ,this-updater-fn))))
 
-                      (defthm ,(pack$ length-fn '-of- this-update-fn)
-                        (equal (,length-fn (,this-update-fn i v ,stobj-name))
+                      (defthm ,(pack$ length-fn '-of- this-updater-fn)
+                        (equal (,length-fn (,this-updater-fn i v ,stobj-name))
                                (,length-fn ,stobj-name))
-                        :hints (("Goal" :in-theory (enable ,length-fn ,this-update-fn))))
+                        :hints (("Goal" :in-theory (enable ,length-fn ,this-updater-fn))))
 
                       (defthm ,(pack$ accessor-fn '-of- this-resize-fn)
                         (equal (,accessor-fn i1 (,this-resize-fn i2 ,stobj-name))
@@ -215,23 +204,23 @@
                         :hints (("Goal" :in-theory (enable ,length-fn ,this-resize-fn))))
 
                       ,@(and (< this-field-num other-field-num) ; bring inner writes outward since field number is lower
-                             `((defthm ,(pack$ update-fn '-of- this-update-fn)
-                                 (equal (,update-fn i1 v1 (,this-update-fn i2 v2 ,stobj-name))
-                                        (,this-update-fn i2 v2 (,update-fn i1 v1 ,stobj-name)))
-                                 :hints (("Goal" :in-theory (enable ,update-fn ,this-update-fn))))
-                               (defthm ,(pack$ resize-fn '-of- this-update-fn)
-                                 (equal (,resize-fn i1 (,this-update-fn i2 v ,stobj-name))
-                                        (,this-update-fn i2 v (,resize-fn i1 ,stobj-name)))
-                                 :hints (("Goal" :in-theory (enable ,resize-fn ,this-update-fn))))
-                               (defthm ,(pack$ update-fn '-of- this-resize-fn)
-                                 (equal (,update-fn i1 v (,this-resize-fn i2 ,stobj-name))
-                                        (,this-resize-fn i2 (,update-fn i1 v ,stobj-name)))
-                                 :hints (("Goal" :in-theory (enable ,update-fn ,this-resize-fn))))
+                             `((defthm ,(pack$ updater-fn '-of- this-updater-fn)
+                                 (equal (,updater-fn i1 v1 (,this-updater-fn i2 v2 ,stobj-name))
+                                        (,this-updater-fn i2 v2 (,updater-fn i1 v1 ,stobj-name)))
+                                 :hints (("Goal" :in-theory (enable ,updater-fn ,this-updater-fn))))
+                               (defthm ,(pack$ resize-fn '-of- this-updater-fn)
+                                 (equal (,resize-fn i1 (,this-updater-fn i2 v ,stobj-name))
+                                        (,this-updater-fn i2 v (,resize-fn i1 ,stobj-name)))
+                                 :hints (("Goal" :in-theory (enable ,resize-fn ,this-updater-fn))))
+                               (defthm ,(pack$ updater-fn '-of- this-resize-fn)
+                                 (equal (,updater-fn i1 v (,this-resize-fn i2 ,stobj-name))
+                                        (,this-resize-fn i2 (,updater-fn i1 v ,stobj-name)))
+                                 :hints (("Goal" :in-theory (enable ,updater-fn ,this-resize-fn))))
                                (defthm ,(pack$ resize-fn '-of- this-resize-fn)
                                  (equal (,resize-fn i1 (,this-resize-fn i2 ,stobj-name))
                                         (,this-resize-fn i2 (,resize-fn i1 ,stobj-name)))
                                  :hints (("Goal" :in-theory (enable ,resize-fn ,this-resize-fn)))))))
-                    (interaction-theorems-for-array-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-update-fn this-resize-fn))))
+                    (interaction-theorems-for-array-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-updater-fn this-resize-fn))))
          ((eq 'hash-table type-kind)
           (progn$ ;(cw "NOTE: Hash table fields are not yet supported by defstobj+.")
            nil))
@@ -240,34 +229,32 @@
            nil))
          (t ;must be a scalar type (possibly TYPE is t)
           (let* ( ;; (initial-value (assoc-keyword-with-default :initially keyword-value-list nil))
-                 (default-accessor-fn name)
-                 (accessor-fn (maybe-rename-symbol default-accessor-fn renaming))
-                 (default-update-fn (pack$ 'update- name))
-                 (update-fn (maybe-rename-symbol default-update-fn renaming))
+                 (accessor-fn (defstobj-fnname name :accessor :scalar renaming))
+                 (updater-fn (defstobj-fnname name :updater :scalar renaming))
                  ;; todo: suppress these if they are 't:
                  ;; (type-claim-for-val (translate-declaration-to-guard-gen element-type 'val t nil))
                  ;(type-claim-for-v (translate-declaration-to-guard-gen type 'v t nil))
                  ;(type-claim-for-accessor (translate-declaration-to-guard-gen type `(,accessor-fn ,stobj-name) t nil))
                  )
             ;; Scalar operations wrapped around array updates
-            (append `((defthm ,(pack$ accessor-fn '-of- this-update-fn)
-                        (equal (,accessor-fn (,this-update-fn i v ,stobj-name))
+            (append `((defthm ,(pack$ accessor-fn '-of- this-updater-fn)
+                        (equal (,accessor-fn (,this-updater-fn i v ,stobj-name))
                                (,accessor-fn ,stobj-name))
-                        :hints (("Goal" :in-theory (enable ,accessor-fn ,this-update-fn))))
+                        :hints (("Goal" :in-theory (enable ,accessor-fn ,this-updater-fn))))
                       (defthm ,(pack$ accessor-fn '-of- this-resize-fn)
                         (equal (,accessor-fn (,this-resize-fn i ,stobj-name))
                                (,accessor-fn ,stobj-name))
                         :hints (("Goal" :in-theory (enable ,accessor-fn ,this-resize-fn))))
                       ,@(and (< this-field-num other-field-num) ; bring inner writes outward since field number is lower
-                             `((defthm ,(pack$ update-fn '-of- this-update-fn)
-                                (equal (,update-fn v1 (,this-update-fn i v2 ,stobj-name))
-                                       (,this-update-fn i v2 (,update-fn v1 ,stobj-name)))
-                                :hints (("Goal" :in-theory (enable ,update-fn ,this-update-fn))))
-                               (defthm ,(pack$ update-fn '-of- this-resize-fn)
-                                 (equal (,update-fn v (,this-resize-fn i ,stobj-name))
-                                        (,this-resize-fn i (,update-fn v ,stobj-name)))
-                                :hints (("Goal" :in-theory (enable ,update-fn ,this-resize-fn)))))))
-                    (interaction-theorems-for-array-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-update-fn this-resize-fn)))))))))
+                             `((defthm ,(pack$ updater-fn '-of- this-updater-fn)
+                                (equal (,updater-fn v1 (,this-updater-fn i v2 ,stobj-name))
+                                       (,this-updater-fn i v2 (,updater-fn v1 ,stobj-name)))
+                                :hints (("Goal" :in-theory (enable ,updater-fn ,this-updater-fn))))
+                               (defthm ,(pack$ updater-fn '-of- this-resize-fn)
+                                 (equal (,updater-fn v (,this-resize-fn i ,stobj-name))
+                                        (,this-resize-fn i (,updater-fn v ,stobj-name)))
+                                :hints (("Goal" :in-theory (enable ,updater-fn ,this-resize-fn)))))))
+                    (interaction-theorems-for-array-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming this-field-num this-updater-fn this-resize-fn)))))))))
 
 ;; Returns (mv theorems names).
 (defun theorems-for-defstobj-field (field-info field-num stobj-name top-recognizer renaming all-field-infos state)
@@ -277,8 +264,7 @@
                    (car field-info)
                  ;; the entire arg is the field name:
                  field-info))
-         (default-recognizer (pack$ name 'p)) ; same for all kinds of fields
-         (recognizer (maybe-rename-symbol default-recognizer renaming))
+         (recognizer (defstobj-fnname name :recognizer :scalar renaming)) ; same for all kinds of fields
          (keyword-value-list (if (consp field-info) (cdr field-info) nil))
          (type (assoc-keyword-with-default :type keyword-value-list t))
          (type-kind (if (consp type) (car type) type)))
@@ -292,14 +278,10 @@
                                                          (nil-satisfies-predp element-type-pred state)))
              ;; is (nth n l) here okay (not a variable)?
              (type-claim-for-nth-n-l (translate-declaration-to-guard-gen element-type '(nth n l) t nil))
-             (default-length-fn (pack$ name '-length))
-             (length-fn (maybe-rename-symbol default-length-fn renaming))
-             (default-resize-fn (pack$ 'resize- name))
-             (resize-fn (maybe-rename-symbol default-resize-fn renaming))
-             (default-accessor-fn (pack$ name 'i))
-             (accessor-fn (maybe-rename-symbol default-accessor-fn renaming))
-             (default-update-fn (pack$ 'update- name 'i))
-             (update-fn (maybe-rename-symbol default-update-fn renaming))
+             (length-fn (defstobj-fnname name :length :array renaming))
+             (resize-fn (defstobj-fnname name :resize :array renaming))
+             (accessor-fn (defstobj-fnname name :accessor :array renaming))
+             (updater-fn (defstobj-fnname name :updater :array renaming))
              ;; todo: suppress these if they are 't:
              ;; TODO: For scalar fields, when do we want to phrase things in terms of the RECOGNIZER?
              ;; If the type is (satisfies ...), RECOGNIZER is likely unnecessary.
@@ -332,21 +314,21 @@
                                           )))))
 
               ;; Updating the array field preserves well-formedness:
-              (defthm ,(pack$ top-recognizer '-of- update-fn)
+              (defthm ,(pack$ top-recognizer '-of- updater-fn)
                 (implies (and (,top-recognizer ,stobj-name)
                               (< i (,length-fn ,stobj-name))
                               (natp i)
                               ,type-claim-for-v)
-                         (,top-recognizer (,update-fn i v ,stobj-name)))
-                :hints (("Goal" :in-theory (enable ,top-recognizer ,update-fn ,length-fn ,recognizer))))
+                         (,top-recognizer (,updater-fn i v ,stobj-name)))
+                :hints (("Goal" :in-theory (enable ,top-recognizer ,updater-fn ,length-fn ,recognizer))))
 
               ;; Updating an element doesn't affect the length:
-              (defthm ,(pack$ length-fn '-of- update-fn)
+              (defthm ,(pack$ length-fn '-of- updater-fn)
                 (implies (and (< i (,length-fn ,stobj-name))
                               (natp i))
-                         (equal (,length-fn (,update-fn i v ,stobj-name))
+                         (equal (,length-fn (,updater-fn i v ,stobj-name))
                                 (,length-fn ,stobj-name)))
-                :hints (("Goal" :in-theory (enable ,length-fn ,update-fn))))
+                :hints (("Goal" :in-theory (enable ,length-fn ,updater-fn))))
 
               (local
                (defthm ,(pack$ accessor-fn '-when-not-natp)
@@ -356,61 +338,61 @@
                  :hints (("Goal" :in-theory (enable ,accessor-fn)))))
 
               (local
-               (defthm ,(pack$ update-fn '-when-not-natp)
+               (defthm ,(pack$ updater-fn '-when-not-natp)
                  (implies (not (natp i))
-                          (equal (,update-fn i v ,stobj-name)
-                                 (,update-fn 0 v ,stobj-name)))
-                 :hints (("Goal" :in-theory (enable ,update-fn)))))
+                          (equal (,updater-fn i v ,stobj-name)
+                                 (,updater-fn 0 v ,stobj-name)))
+                 :hints (("Goal" :in-theory (enable ,updater-fn)))))
 
               ;; First read-over-write rule:
-              (defthm ,(pack$ accessor-fn '-of- update-fn '-same)
-                (equal (,accessor-fn i (,update-fn i v ,stobj-name))
+              (defthm ,(pack$ accessor-fn '-of- updater-fn '-same)
+                (equal (,accessor-fn i (,updater-fn i v ,stobj-name))
                        v)
-                :hints (("Goal" :in-theory (enable ,accessor-fn ,length-fn ,update-fn))))
+                :hints (("Goal" :in-theory (enable ,accessor-fn ,length-fn ,updater-fn))))
 
               ;; Second read-over-write rule:
-              (defthm ,(pack$ accessor-fn '-of- update-fn '-diff)
+              (defthm ,(pack$ accessor-fn '-of- updater-fn '-diff)
                 (implies (not (equal (nfix i1) (nfix i2)))
-                         (equal (,accessor-fn i1 (,update-fn i2 v ,stobj-name))
+                         (equal (,accessor-fn i1 (,updater-fn i2 v ,stobj-name))
                                 (,accessor-fn i1 ,stobj-name)))
-                :hints (("Goal" :in-theory (enable ,accessor-fn ,length-fn ,update-fn))))
+                :hints (("Goal" :in-theory (enable ,accessor-fn ,length-fn ,updater-fn))))
 
               ;; Third read-over-write rule.  Disabled, since it can cause case splits:
-              (defthmd ,(pack$ accessor-fn '-of- update-fn '-split)
-                (equal (,accessor-fn i1 (,update-fn i2 v ,stobj-name))
+              (defthmd ,(pack$ accessor-fn '-of- updater-fn '-split)
+                (equal (,accessor-fn i1 (,updater-fn i2 v ,stobj-name))
                        (if (equal (nfix i1) (nfix i2))
                            v
                          (,accessor-fn i1 ,stobj-name))))
 
               ;; First write-over-write rule:
-              (defthm ,(pack$ update-fn '-of- update-fn '-same)
-                (equal (,update-fn i v1 (,update-fn i v2 ,stobj-name))
-                       (,update-fn i v1 ,stobj-name))
-                :hints (("Goal" :in-theory (enable ,update-fn))))
+              (defthm ,(pack$ updater-fn '-of- updater-fn '-same)
+                (equal (,updater-fn i v1 (,updater-fn i v2 ,stobj-name))
+                       (,updater-fn i v1 ,stobj-name))
+                :hints (("Goal" :in-theory (enable ,updater-fn))))
 
               ;; Second write-over-write rule:
-              (defthm ,(pack$ update-fn '-of- update-fn '-diff)
+              (defthm ,(pack$ updater-fn '-of- updater-fn '-diff)
                 (implies (and (syntaxp (not (term-order i1 i2))) ; i2 is a smaller term than i1
                               (not (equal (nfix i1) (nfix i2))))
-                         (equal (,update-fn i1 v1 (,update-fn i2 v2 ,stobj-name))
-                                (,update-fn i2 v2 (,update-fn i1 v1 ,stobj-name))))
-                :hints (("Goal" :in-theory (enable ,update-fn))))
+                         (equal (,updater-fn i1 v1 (,updater-fn i2 v2 ,stobj-name))
+                                (,updater-fn i2 v2 (,updater-fn i1 v1 ,stobj-name))))
+                :hints (("Goal" :in-theory (enable ,updater-fn))))
 
               ;; Third write-over-write rule:
-              (defthm ,(pack$ update-fn '-of- update-fn '-split)
+              (defthm ,(pack$ updater-fn '-of- updater-fn '-split)
                 (implies (syntaxp (not (term-order i1 i2))) ; i2 is a smaller term than i1
-                         (equal (,update-fn i1 v1 (,update-fn i2 v2 ,stobj-name))
+                         (equal (,updater-fn i1 v1 (,updater-fn i2 v2 ,stobj-name))
                                 (if (equal (nfix i1) (nfix i2))
-                                    (,update-fn i1 v1 ,stobj-name)
-                                  (,update-fn i2 v2 (,update-fn i1 v1 ,stobj-name)))))
-                :hints (("Goal" :in-theory (enable ,update-fn))))
+                                    (,updater-fn i1 v1 ,stobj-name)
+                                  (,updater-fn i2 v2 (,updater-fn i1 v1 ,stobj-name)))))
+                :hints (("Goal" :in-theory (enable ,updater-fn))))
 
               ;;  Fourth write-over-write rule (special case when the values are the same):
-              (defthm ,(pack$ update-fn '-of- update-fn '-same-values)
+              (defthm ,(pack$ updater-fn '-of- updater-fn '-same-values)
                 (implies (syntaxp (not (term-order i1 i2))) ; i2 is a smaller term than i1
-                         (equal (,update-fn i1 v (,update-fn i2 v ,stobj-name))
-                                (,update-fn i2 v (,update-fn i1 v ,stobj-name))))
-                :hints (("Goal" :in-theory (enable ,update-fn))))
+                         (equal (,updater-fn i1 v (,updater-fn i2 v ,stobj-name))
+                                (,updater-fn i2 v (,updater-fn i1 v ,stobj-name))))
+                :hints (("Goal" :in-theory (enable ,updater-fn))))
 
               ,@(and (not (equal element-type t)) ; rewrite rules would be illegal
                      `(;; Helper theorem, disabled since may be hung on a common function:
@@ -472,20 +454,20 @@
                          :hints (("Goal" :in-theory (enable ,accessor-fn ,resize-fn ,length-fn))))
 
                        ;; TODO: Make safe versions that don't case split:
-                       (defthm ,(pack$ resize-fn '-of- update-fn)
+                       (defthm ,(pack$ resize-fn '-of- updater-fn)
                          (implies (and (natp i) ; move hyps to conclusion?
                                        (natp new-size)
                                        (< i (,length-fn ,stobj-name)))
-                                  (equal (,resize-fn new-size (,update-fn i v ,stobj-name))
+                                  (equal (,resize-fn new-size (,updater-fn i v ,stobj-name))
                                          (if (< i new-size)
-                                             (,update-fn i v (,resize-fn new-size ,stobj-name))
+                                             (,updater-fn i v (,resize-fn new-size ,stobj-name))
                                            (,resize-fn new-size ,stobj-name))))
-                         :hints (("Goal" :in-theory (enable ,update-fn ,resize-fn ,length-fn))))
+                         :hints (("Goal" :in-theory (enable ,updater-fn ,resize-fn ,length-fn))))
                        ))
-              ,@(interaction-theorems-for-array-field all-field-infos 0 stobj-name renaming field-num update-fn resize-fn)
+              ,@(interaction-theorems-for-array-field all-field-infos 0 stobj-name renaming field-num updater-fn resize-fn)
               )
             ;; names:
-            (list recognizer accessor-fn update-fn length-fn resize-fn))))
+            (list recognizer accessor-fn updater-fn length-fn resize-fn))))
      ((eq 'hash-table type-kind)
       (prog2$ (cw "NOTE: Hash table fields are not yet supported by defstobj+.")
               (mv nil
@@ -499,34 +481,32 @@
      (t ;must be a scalar type (possibly TYPE is t)
       (let* (;; (initial-value (assoc-keyword-with-default :initially keyword-value-list nil))
              (field-type-name (type-spec-to-name type 'field-type))
-             (default-accessor-fn name)
-             (accessor-fn (maybe-rename-symbol default-accessor-fn renaming))
-             (default-update-fn (pack$ 'update- name))
-             (update-fn (maybe-rename-symbol default-update-fn renaming))
+             (accessor-fn (defstobj-fnname name :accessor :scalar renaming))
+             (updater-fn (defstobj-fnname name :updater :scalar renaming))
              ;; todo: suppress these if they are 't:
              ;; (type-claim-for-val (translate-declaration-to-guard-gen element-type 'val t nil))
              (type-claim-for-v (translate-declaration-to-guard-gen type 'v t nil))
              (type-claim-for-accessor (translate-declaration-to-guard-gen type `(,accessor-fn ,stobj-name) t nil))
              )
         (mv `(;; Updating the scalar field preserves well-formedness:
-              (defthm ,(pack$ top-recognizer '-of- update-fn)
+              (defthm ,(pack$ top-recognizer '-of- updater-fn)
                 (implies (and (,top-recognizer ,stobj-name)
                               ,type-claim-for-v)
-                         (,top-recognizer (,update-fn v ,stobj-name)))
-                :hints (("Goal" :in-theory (enable ,top-recognizer ,update-fn ,recognizer))))
+                         (,top-recognizer (,updater-fn v ,stobj-name)))
+                :hints (("Goal" :in-theory (enable ,top-recognizer ,updater-fn ,recognizer))))
 
               ;; Read-over-write rule:
               ;; proof uses nth-update-nth, which is built in
-              (defthm ,(pack$ accessor-fn '-of- update-fn)
-                (equal (,accessor-fn (,update-fn v ,stobj-name))
+              (defthm ,(pack$ accessor-fn '-of- updater-fn)
+                (equal (,accessor-fn (,updater-fn v ,stobj-name))
                        v)
-                :hints (("Goal" :in-theory (enable ,update-fn ,accessor-fn))))
+                :hints (("Goal" :in-theory (enable ,updater-fn ,accessor-fn))))
 
               ;; Write-over-write rule:
-              (defthm ,(pack$ update-fn '-of- update-fn)
-                (equal (,update-fn v2 (,update-fn v1 ,stobj-name))
-                       (,update-fn v2 ,stobj-name))
-                :hints (("Goal" :in-theory (enable ,update-fn))))
+              (defthm ,(pack$ updater-fn '-of- updater-fn)
+                (equal (,updater-fn v2 (,updater-fn v1 ,stobj-name))
+                       (,updater-fn v2 ,stobj-name))
+                :hints (("Goal" :in-theory (enable ,updater-fn))))
 
               ;; The accessor of the scalar field returns a value of the appropriate type:
               ,@(and (not (equal type t)) ; rewrite rule would be illegal
@@ -535,9 +515,9 @@
                                   ,type-claim-for-accessor)
                          :hints (("Goal" :in-theory (enable ,top-recognizer ,accessor-fn ,recognizer))))))
 
-              ,@(interaction-theorems-for-scalar-field all-field-infos 0 stobj-name renaming field-num update-fn)
+              ,@(interaction-theorems-for-scalar-field all-field-infos 0 stobj-name renaming field-num updater-fn)
               )
-            (list recognizer accessor-fn update-fn)))))))
+            (list recognizer accessor-fn updater-fn)))))))
 
 ;; Returns (mv theorems names).
 (defun theorems-and-names-for-defstobj-fields (field-infos field-num stobj-name top-recognizer renaming all-field-infos theorems-acc names-acc state)
@@ -564,11 +544,9 @@
     (split-keyword-args args)
     (let* ((renaming (cadr (assoc-keyword :renaming keyword-value-list)))
            ;; Make the renaming into an alist:
-           (renaming (pairlis$ (strip-cars renaming) (strip-cadrs renaming)))
-           (default-top-recognizer (pack$ stobj-name 'p))
-           (default-creator (pack$ 'create- stobj-name))
-           (top-recognizer (maybe-rename-symbol default-top-recognizer renaming))
-           (creator (maybe-rename-symbol default-creator renaming)))
+           ;; (renaming (pairlis$ (strip-cars renaming) (strip-cadrs renaming)))
+           (top-recognizer (defstobj-fnname stobj-name :recognizer :top renaming))
+           (creator (defstobj-fnname stobj-name :creator :top renaming)))
       (mv-let (theorems-for-fields names-for-fields) ; the names-for-fields include recognizers, accessors, updaters, etc.
         (theorems-and-names-for-defstobj-fields field-infos 0 stobj-name top-recognizer renaming field-infos nil nil state)
         `(encapsulate ()
