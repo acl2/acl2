@@ -167,7 +167,8 @@
            (weak-dagp-aux (acons 0 expr nil)))
   :hints (("Goal" :expand ((weak-dagp-aux (acons 0 expr nil))))))
 
-(defthm consp-when-bounded-dag-exprp-weaken
+;can loop with symbolp-when-bounded-dag-exprp. drop this?
+(defthmd consp-when-bounded-dag-exprp-weaken
   (implies (and (syntaxp (want-to-weaken (consp expr)))
                 (bounded-dag-exprp n expr))
            (equal (consp expr)
