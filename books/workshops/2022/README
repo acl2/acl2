@@ -67,7 +67,7 @@ kaufmann-moore/
 
 Matt Kaufmann, Rob Sumners and Sol Swords. Extended Abstract: Stobj-tables
 
-Community book demos/stobj-table-examples.lisp
+[books]/demos/stobj-table-examples.lisp
 and also subdirectory of this directory,
 stobj-tables/
 
