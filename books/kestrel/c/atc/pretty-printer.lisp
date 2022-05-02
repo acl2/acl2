@@ -60,9 +60,7 @@
      @('lines') for @(tsee msg-listp) values that are multiple lines.")
    (xdoc::p
     "A separate function writes the lines for a C translation unit
-     to an output channel, which is associated to a file.
-     The newline characters are added to this function;
-     they do not appear in the @(tsee msgp) and @(tsee msg-listp) values.")
+     to an output channel, which is associated to a file.")
    (xdoc::p
     "Currently in our abstract syntax there is no distinction between
      translation units and preprocessing translation units.
@@ -517,7 +515,7 @@
      and @('grade2') is the grade of additive expressions,
      because there is a (sub)rule
      <i>additive-expression: multiplicative-expression</i> in the grammar.
-     (Here by 'subrule' we mean a rule not necessarily in the grammar
+     (Here by `subrule' we mean a rule not necessarily in the grammar
      but obtainable by selecting just some of the alternatives in the definiens
      that are on different lines in [C].)
      The nonterminal <i>additive-expression</i> also has other alternatives,
@@ -537,7 +535,7 @@
      the second argument is changed according to
      the grammar rule corresponding to the super-expressions.
      For instance, when pretty-printing the left and right subexpressions
-     of a super-expression @('(binary-expr (binop-add) left right)'),
+     of a super-expression @('(expr-binary (binop-add) left right)'),
      we recursively call the pretty-printer twice,
      once on @('left') and once on @('right').
      Because of the grammar rule
