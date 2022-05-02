@@ -40,7 +40,6 @@
 (include-book "../utilities/fresh-names")
 (include-book "kestrel/utilities/make-or" :dir :system)
 (include-book "kestrel/utilities/make-and" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system) ;for manage-screen-output (TODO: reduce the stuff included in this book)
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
@@ -798,12 +797,18 @@
                                                       (x ,list-formal)
                                                       ,@fixed-formal-bindings)
                                ,@theory))))))
-              theorems))))
-    (manage-screen-output ;todo: expand manage-screen-output here?
-     verbose
-     `(progn ,defun
-             ,@theorems
-             (value-triple ',forall-fn)))))
+              theorems)))
+         (event `(progn ,defun
+                        ,@theorems
+                        (value-triple ',forall-fn)))
+         (event (if verbose
+                    event
+                  `(with-output
+                     :off (proof-tree warning! warning observation prove event summary proof-builder ;; comment
+                                      history)
+                     :gag-mode nil
+                     ,event))))
+    event))
 
 (defun defforall-simple-fn (pred name guard guard-hints true-listp verbose)
   (declare (xargs :mode :program))
