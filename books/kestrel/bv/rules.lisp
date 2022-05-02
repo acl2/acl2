@@ -2819,16 +2819,6 @@
 
 ;stuff for rc6 recursive equivalence proof
 
-;bozo or just use SLICE-TOO-HIGH-IS-0 - which is cheaper?
-;or just pass slice through?
-(defthm slice-of-bvxor-too-high
-  (implies (and (<= n low)
-                (integerp low)
-                (natp n))
-           (equal (slice high low (bvxor n x y))
-                  0))
-  :hints (("Goal" :in-theory (enable slice-too-high-is-0))))
-
 (defthm slice-of-bvand-too-high
   (implies (and (<= n low)
                 (integerp low)
