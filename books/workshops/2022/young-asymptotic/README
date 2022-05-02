@@ -1,0 +1,12 @@
+This directory contains the ACL2 file supporting proofs of asymptotic
+complexity described in the paper "Modeling Asymptotic Complexity
+Using ACL2" from the 2022 ACL2 Workshop.  The files should all certify
+using the command:
+
+
+mycert --acl2 /p/bin/acl2 *.lisp
+
+where mycert is aliased to:
+/v/filer4b/v8q001/acl2/v8-4/books/build/cert.pl
+
+However, I believe that it should certify under other versions of ACL2. 

@@ -13,16 +13,23 @@ Jagadish Bapanapally and Ruben Gamboa. A Free Group of Rotations of Rank 2
 Alessandro Coglio. A Complex Java Code Generator for ACL2 Based on a
 Shallow Embedding of ACL2 in Java
 
+[books]/kestrel/java/atj/
+
 ------------------------------
 
 Alessandro Coglio. A Proof-Generating C Code Generator for ACL2 Based
 on a Shallow Embedding of C in ACL2
+
+[books]/kestrel/c/atc/
 
 ------------------------------
 
 Alessandro Coglio, Eric McCarthy, Stephen Westfold, Daniel
 Balasubramanian, Abhishek Dubey and Gabor Karsai. Syntheto: A Surface
 Language for APT and ACL2
+
+[books]/kestrel/syntheto/
+
 ------------------------------
 
 Ruben Gamboa and Woodrow Gamboa. All Prime Numbers Have Primitive
@@ -52,20 +59,30 @@ Simulator
 ------------------------------
 
 Matt Kaufmann and J Moore. Extended Abstract: Iteration in ACL2, WITH
-.. DO (Extended Abstract)
+.. DO
 
 kaufmann-moore/
 
 ------------------------------
 
-Matt Kaufmann, Rob Sumners and Sol Swords. Stobj-tables (Extended
-Abstract)
+Matt Kaufmann, Rob Sumners and Sol Swords. Extended Abstract: Stobj-tables
+
+Community book demos/stobj-table-examples.lisp
+and also subdirectory of this directory,
+stobj-tables/
 
 ------------------------------
 
 David Russinoff. A Formalization of Finite Group Theory
 
+russinoff-groups/
+
+------------------------------
+
 David Russinoff. Properties of the Hebrew Calendar
+
+russinoff-calendar/
+
 ------------------------------
 
 Mertcan Temel. Verified Implementation of an Efficient Term-Rewriting
@@ -79,5 +96,6 @@ Andrew Walter and Panagiotis Manolios. ACL2s Systems Programming
 
 William Young. Modeling Asymptotic Complexity Using ACL2
 
-------------------------------
+young-asymptotic/
 
+------------------------------

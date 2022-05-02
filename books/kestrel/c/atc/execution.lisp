@@ -1400,13 +1400,8 @@
            (if (sllong-array-index-okp array index)
                (sllong-array-read array index)
              err))
-          (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use (:instance array-resultp-of-read-array
-                       (addr (pointer->address arr)))
-                 :in-theory (e/d (arrayp
-                                  array-resultp)
-                                 (array-resultp-of-read-array))))
+          (t (error (list :array-element-type-not-supported
+                          :element-type reftype)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1801,7 +1796,8 @@
                     (write-array addr
                                  (sllong-array-write array index val)
                                  compst)))
-                 (t (error :impossible)))))
+                 (t (error (list :array-element-type-not-supported
+                                 :element-type reftype))))))
         (:memberp
          (b* ((str (expr-memberp->target left))
               (mem (expr-memberp->name left))

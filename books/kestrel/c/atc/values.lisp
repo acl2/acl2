@@ -35,9 +35,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection value-disjoint-rules
-  :short "Rules about disjointness of values."
-  (defthm-disjoint *value-disjoint-rules*
+(defsection integer-value-disjoint-rules
+  :short "Rules about disjointness of integer values."
+  (defthm-disjoint *integer-value-disjoint-rules*
     ucharp
     scharp
     ushortp
@@ -378,6 +378,16 @@
   (implies (member-value-listp x)
            (not (errorp x)))
   :enable (member-value-listp errorp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-array->length ((array valuep))
+  :guard (value-case array :array)
+  :returns (length posp)
+  :short "Length of an array."
+  (len (value-array->elements array))
+  :hooks (:fix)
+  :prepwork ((local (include-book "std/lists/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
