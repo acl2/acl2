@@ -326,14 +326,21 @@
            (<= 0 (strip-steps nest dag-array)))
   :hints (("Goal" :in-theory (enable <=-of-0-when-0-natp))))
 
+(local
+ (defthm not-consp-when-not-consp-of-strip-steps
+   (implies (not (consp (strip-steps nest dag-array)))
+            (not (consp nest)))
+   :hints (("Goal" :in-theory (enable strip-steps)))))
+
 (defthm <-of-strip-steps
-  (Implies (and (or (myquotep nest)
+  (implies (and (or (myquotep nest)
                     (and (natp nest)
                          (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nest))))
-                (not (consp (STRIP-STEPS nest DAG-ARRAY))))
-           (< (STRIP-STEPS nest DAG-ARRAY)
-              (alen1 'DAG-ARRAY DAG-ARRAY)))
-  :hints (("Goal" :in-theory (enable strip-steps myquotep))))
+                (not (consp (strip-steps nest dag-array))))
+           (< (strip-steps nest dag-array)
+              (alen1 'dag-array dag-array)))
+  :hints (("Goal" ;:expand ((strip-steps (nth 2 (dargs (aref1 'dag-array dag-array nest))) dag-array))
+           :in-theory (enable strip-steps))))
 
 ;;NEST is usually a nodenum in DAG-ARRAY that represents a MYIF nest with
 ;;make-states at the leaves, but the leaves may also be calls of the exception
