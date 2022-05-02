@@ -88,6 +88,8 @@ russinoff-calendar/
 Mertcan Temel. Verified Implementation of an Efficient Term-Rewriting
 Algorithm for Multiplier Verification on ACL2
 
+[books]/projects/rp-rewriter/lib/mult3
+
 ------------------------------
 
 Andrew Walter and Panagiotis Manolios. ACL2s Systems Programming
