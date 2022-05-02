@@ -109,7 +109,6 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable largest-non-quotep))))
 
-(defthm natp-of-+-of-a-and-largest-non-quotep
-  (implies (all-dargp items)
-           (natp (+ 1 (largest-non-quotep items))))
+(defthm natp-of-+-of-1-and-largest-non-quotep
+  (natp (+ 1 (largest-non-quotep items)))
   :hints (("Goal" :in-theory (enable largest-non-quotep))))
