@@ -33,7 +33,6 @@
 (include-book "utils")
 (include-book "../../parsetree")
 (include-book "expressions")
-(include-book "datatypes")
 (include-book "functions")
 (local (include-book "../../util/arithmetic"))
 

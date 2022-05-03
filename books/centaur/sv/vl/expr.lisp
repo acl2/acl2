@@ -579,8 +579,8 @@ address.  Either:</p>
 <ul>
 <li>It's at root scope.  We make a root address.</li>
 
-<li>It's in a package or module scope.  We don't support this yet, but they'll
-translate to something based at the root scope.</li>
+<li>It's in a package or class scope.  We support this when not strictp,
+meaning we're looking up a parameter value rather than a variable name.</li>
 
 <li>It's at local scope, N levels up.  We make a local address, but we have to
 translate the number of levels by examining the scopestack. -- see below.</li>
@@ -629,6 +629,11 @@ ignored.</p>"
                                      :path (sv::make-path-scope
                                             :namespace (vl-package->name x.pkg)
                                             :subpath path)))
+    :class (mv (and strictp (vmsg "Class-scoped variables aren't yet supported"))
+               (sv::make-address :scope :root
+                                 :path (sv::make-path-scope
+                                        :namespace (vl-class->name x.class)
+                                        :subpath path)))
     :module (mv (and strictp (vmsg "Module-scoped variables aren't yet supported"))
                 (sv::make-address :scope :root
                                     :path (sv::make-path-scope

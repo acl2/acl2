@@ -1,5 +1,6 @@
 ; VL Verilog Toolkit
 ; Copyright (C) 2008-2014 Centaur Technology
+; Copyright (C) 2022 Intel Corporation
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -2170,6 +2171,18 @@ endmodule
   (vl-typedef->name x))
 
 
+(defprod vl-letdecl
+  :tag :vl-letdecl
+  ((name stringp "name being defined")
+   (portdecls vl-portdecllist-p "ports of the let")
+   (expr vl-expr-p)
+   (atts vl-atts-p)
+   (loc vl-location-p)))
+
+(fty::deflist vl-letdecllist
+  :elt-type vl-letdecl
+  :elementp-of-nil nil)
+
 
 (deftranssum vl-blockitem
   :short "Recognizer for a valid block item."
@@ -2179,7 +2192,8 @@ block statements, function declarations, and task declarations.</p>"
   (vl-vardecl
    vl-paramdecl
    vl-import
-   vl-typedef))
+   vl-typedef
+   vl-letdecl))
 
 ;; This is automatic now, see TAG-OF-VL-BLOCKITEM-FIX-FORWARD
 ;; (defthmd vl-blockitem-fix-possible-tags
@@ -2248,7 +2262,9 @@ block statements, function declarations, and task declarations.</p>"
           (:vl-vardecl   (mv (cons x1 vardecls-acc) paramdecls-acc imports-acc typedefs-acc))
           (:vl-paramdecl (mv vardecls-acc (cons x1 paramdecls-acc) imports-acc typedefs-acc))
           (:vl-import    (mv vardecls-acc paramdecls-acc (cons x1 imports-acc) typedefs-acc))
-          (otherwise     (mv vardecls-acc paramdecls-acc imports-acc (cons x1 typedefs-acc))))))
+          (:vl-typedef   (mv vardecls-acc paramdecls-acc imports-acc (cons x1 typedefs-acc)))
+          (otherwise ;; IGNORING LETDECLS for now
+           (mv vardecls-acc paramdecls-acc imports-acc typedefs-acc)))))
     (vl-sort-blockitems-aux (cdr x) vardecls-acc paramdecls-acc imports-acc typedefs-acc)))
 
 (define vl-sort-blockitems ((x vl-blockitemlist-p))
@@ -3912,7 +3928,13 @@ be non-sliceable, at least if it's an input.</p>"
    (atts     vl-atts-p)
    (comments vl-commentmap-p)
    (virtualp booleanp :rule-classes :type-prescription)
-   (lifetime vl-lifetime-p))
+   (lifetime vl-lifetime-p)
+   (paramdecls vl-paramdecllist-p)
+   (fundecls vl-fundecllist-p)
+   (taskdecls vl-taskdecllist-p)
+   (vardecls vl-vardecllist-p)
+   (imports vl-importlist-p)
+   (typedefs vl-typedeflist-p))
   :long "BOZO incomplete stub -- we don't really support classes yet."
   :extra-binder-names (loc))
 
@@ -4009,6 +4031,7 @@ be non-sliceable, at least if it's an input.</p>"
       class
       covergroup
       elabtask
+      letdecl
       ))
 
   (local (defun typenames-to-tags (x)
@@ -4585,6 +4608,8 @@ the type information between the variable and port declarations.</p>"
                 separate in the ANSI case because the ports may refer to parameters,
                 and we therefore need to preserve the textual order so that shadowcheck
                 doesn't fail.")
+   (imports   vl-importlist-p
+              "Package imports occurring before the parameter and port lists")
    (loaditems vl-genelementlist-p
               "See @(see make-implicit-wires).  This is a temporary container to
                hold the module elements, in program order, until the rest of the

@@ -3,6 +3,7 @@
 
 ; Copyright (C) 2019, Regents of the University of Texas
 ; All rights reserved.
+; Copyright (C) 2022 Intel Corporation
 
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are
@@ -168,14 +169,13 @@
                              dummy-arith-lemma-1)
                             (+-IS-SUM))))))
 
-(local
- (defthm valid-sc-subterms-merge-sorted-and$-lists
-   (implies (and (valid-sc-subterms lst1 a)
-                 (valid-sc-subterms lst2 a))
-            (valid-sc-subterms (merge-sorted-and$-lists lst1 lst2) a))
-   :hints (("Goal"
-            :induct (merge-sorted-and$-lists lst1 lst2)
-            :in-theory (e/d (merge-sorted-and$-lists) ())))))
+(defthm valid-sc-subterms-merge-sorted-and$-lists
+  (implies (and (valid-sc-subterms lst1 a)
+                (valid-sc-subterms lst2 a))
+           (valid-sc-subterms (merge-sorted-and$-lists lst1 lst2) a))
+  :hints (("Goal"
+           :induct (merge-sorted-and$-lists lst1 lst2)
+           :in-theory (e/d (merge-sorted-and$-lists) ()))))
 
 (encapsulate nil
   (local
@@ -286,7 +286,6 @@
                            ()))))
 
 
-
 (defret pp-flatten-returns-valid-sc
   (implies (force (valid-sc term a))
            (VALID-SC-SUBTERMS pp-lst a))
@@ -348,6 +347,34 @@
              a))
    :hints (("goal"
             :in-theory (e/d (sort-sum-meta-aux
+                             )
+                            ((:definition valid-sc)
+                             (:DEFINITION EVAL-AND-ALL)
+                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                             (:DEFINITION INCLUDE-FNC)
+                             (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
+
+                             (:DEFINITION RP-TERMP)
+                             (:DEFINITION FALIST-CONSISTENT)
+                             (:REWRITE DEFAULT-CDR)
+                             (:DEFINITION FALIST-CONSISTENT-AUX)
+                             rp-trans
+                             (:definition rp-termp)
+                             (:rewrite car-of-ex-from-rp-is-not-rp)
+                             (:definition rp-term-listp)
+                             (:rewrite not-include-rp-means-valid-sc)
+                             (:definition include-fnc)
+                             (:rewrite rp-termp-implies-subterms)
+                             (:definition quotep)))))))
+
+(local
+ (defthm sort-sum-meta-aux2-returns-valid-sc
+   (implies (valid-sc term a)
+            (valid-sc-subterms-lst
+             (strip-cdrs (mv-nth 1 (sort-sum-meta-aux2 term)))
+             a))
+   :hints (("goal"
+            :in-theory (e/d (sort-sum-meta-aux2
                              )
                             ((:definition valid-sc)
                              (:DEFINITION EVAL-AND-ALL)
@@ -746,11 +773,7 @@
 
 (progn
   (local
-   (defun bit-listp (lst)
-     (if (atom lst)
-         (equal lst nil)
-       (and (bitp (car lst))
-            (bit-listp (cdr lst))))))
+   (in-theory (enable bit-listp)))
 
   (local
    (defun bit-list-listp (lst)
@@ -2780,7 +2803,6 @@
             :in-theory (e/d* (regular-eval-lemmas)
                              ())))))
 
-
 (defthm valid-sc-subterms-of-negate-lst
   (implies (valid-sc-subterms lst a)
            (valid-sc-subterms (negate-lst lst enabled) a))
@@ -2792,29 +2814,6 @@
                             NEGATE-LST-AUX)
                            ()))))
 
-(defret ex-from-pp-lst-returns-valid-sc
-  (implies (and (force (valid-sc-subterms pp-lst a)))
-           (and (VALID-SC-SUBTERMS s-lst a)
-                (VALID-SC-SUBTERMS res-pp-lst a)
-                (VALID-SC-SUBTERMS c-lst a)))
-  :fn ex-from-pp-lst
-  :hints (("Goal"
-           :in-theory (e/d (ex-from-pp-lst
-                            create-and-list-instance
-                            is-if is-rp)
-                           ((:DEFINITION EVAL-AND-ALL)
-                            ;;(:REWRITE VALID-SC-WHEN-SINGLE-C-P)
-                            (:TYPE-PRESCRIPTION SINGLE-C-P$INLINE)
-                            (:REWRITE ACL2::FN-CHECK-DEF-NOT-QUOTE)
-                            (:REWRITE EX-FROM-SYNP-LEMMA1)
-                            ;;(:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
-                            (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
-                            (:DEFINITION RP-TRANS)
-;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
-                            (:DEFINITION TRANS-LIST)
-                            include-fnc
-                            (:REWRITE DEFAULT-CDR)
-                            (:REWRITE VALID-SC-SUBTERMS-OF-CDR))))))
 
 (defthm rp-evlt-lst-of-negate-lst
   (implies (and (mult-formula-checks state)
@@ -2828,7 +2827,7 @@
            :do-not-induct t
            :in-theory (e/d (NEGATE-LST
                             negate-lst-aux)
-                           ())))) 
+                           ()))))
 
 #|(defthm sum-list-eval-of-append-wog
   (equal (sum-list-eval (append-wog x y) a)
@@ -2839,67 +2838,6 @@
            :do-not-induct t
            :in-theory (e/d (append-wog) ()))))|#
 
-(defret ex-from-pp-lst-correct
-  (implies (and (mult-formula-checks state)
-                (force (valid-sc-subterms pp-lst a))
-                (rp-evl-meta-extract-global-facts))
-           (equal (sum-list (rp-evlt-lst res-pp-lst a))
-                  (sum (sum-list (rp-evlt-lst pp-lst a))
-                       (-- (sum-list (rp-evlt-lst s-lst a)))
-                       (-- (sum-list (rp-evlt-lst c-lst a))))))
-  :fn ex-from-pp-lst
-  :hints (("subgoal *1/4"
-           :use ((:instance pp-has-bitp-rp-implies
-                            (term (cadr (caddr (car pp-lst)))))
-                 (:instance pp-has-bitp-rp-implies
-                            (term (CADR (CADDR (CADR (CAR PP-LST))))))))
-          ("goal"
-           :induct (ex-from-pp-lst pp-lst)
-           :expand ((rp-trans (caddr (car pp-lst)))
-                    (rp-trans (CADDR (CADR (CAR PP-LST))))
-                    ;;(ex-from-pp-lst pp-lst)
-                    (:free (x y) (and-list y (list x))))
-           :do-not-induct t
-           :in-theory (e/d* (ex-from-pp-lst
-                             regular-rp-evl-of_--_when_mult-formula-checks
-                             regular-rp-evl-of_--_when_mult-formula-checks_with-ex-from-rp
-                             regular-rp-evl-of_and-list_when_mult-formula-checks
-                             regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp
-                             regular-rp-evl-of_s-c-res_when_mult-formula-checks_with-ex-from-rp
-                             rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
-                             s-c-res
-
-                             ;;regular-eval-lemmas-with-ex-from-rp
-                             )
-                            (rp-trans
-                             (:REWRITE CONSP-RP-TRANS-LST)
-                             (:TYPE-PRESCRIPTION O<)
-                             (:REWRITE
-                                REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
-;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
-                             (:REWRITE VALID-SC-SUBTERMS-OF-CDR)
-                             (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                             (:TYPE-PRESCRIPTION BINARY-SUM)
-                             (:DEFINITION ACL2::APPLY$-BADGEP)
-                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                             (:DEFINITION INCLUDE-FNC)
-                             (:DEFINITION SUBSETP-EQUAL)
-                             (:DEFINITION MEMBER-EQUAL)
-                             valid-sc
-                             sum-of-negated-elements
-                             eval-and-all
-                             type-fix-when-bitp
-                             --of--equals
-                             default-car
-                             default-cdr
-                             include-fnc-subterms
-                             rp-trans-lst-is-lst-when-list-is-absent
-                             bitp
-                             rp-trans-is-term-when-list-is-absent
-                             ex-from-rp
-                             rp-evlt-of-ex-from-rp
-                             ;;is-falist
-                             rp-termp)))))
 
 
 ;; A MAIN LEMMA
@@ -3049,6 +2987,15 @@
                               (bitp
                                valid-sc))))))
 
+  (defthm rp-evlt-of-bitp
+    (implies (and (mult-formula-checks state)
+                  (rp-evl-meta-extract-global-facts))
+             (equal (RP-EVLT (LIST 'BITP x) A)
+                    (bitp (rp-evlt x a))))
+    :hints (("Goal"
+             :in-theory (e/d* (regular-eval-lemmas)
+                              ()))))
+
   (local
    (defret sort-sum-meta-aux-aux-returns-bit-list-listp
      (implies (and valid
@@ -3108,6 +3055,26 @@
                        (RP-TRANS-LST (CDdR TERM))
                        (RP-TRANS-LST (CDddR TERM)))
               :in-theory (e/d (SORT-SUM-META-AUX)
+                              (bitp
+                               valid-sc
+                               rp-trans))))))
+
+  (local
+   (defthm SORT-SUM-META-AUX2-returns-bit-list-listp
+     (implies (and (MV-NTH 0 (SORT-SUM-META-AUX2 term))
+                   (mult-formula-checks state)
+                   (valid-sc term a)
+                   (rp-evl-meta-extract-global-facts))
+              (BIT-LIST-LISTP
+               (RP-EVLT-LST-LST (STRIP-CDRS (MV-NTH 1 (SORT-SUM-META-AUX2 term)))
+                                A)))
+     :hints (("Goal"
+              :induct (SORT-SUM-META-AUX2 term)
+              :do-not-induct t
+              :expand ((RP-TRANS-LST (CDR TERM))
+                       (RP-TRANS-LST (CDdR TERM))
+                       (RP-TRANS-LST (CDddR TERM)))
+              :in-theory (e/d (SORT-SUM-META-AUX2)
                               (bitp
                                valid-sc
                                rp-trans))))))
@@ -3316,6 +3283,55 @@
                                TYPE-FIX-WHEN-INTEGERP
                                PP-LISTS-TO-TERM-P+-TO-PP-LISTS-TO-TERM-PP-LST)))))
 
+  (defthm PP-LISTS-TO-TERM-P+-SORT-SUM-META-AUX2
+    (implies (and (mult-formula-checks state)
+                  (valid-sc term a)
+                  (rp-evl-meta-extract-global-facts)
+                  (MV-NTH 0 (SORT-SUM-META-AUX2 term)))
+             (EQUAL
+              (rp-evlt (pp-lists-to-term-p+ (mv-nth 1 (sort-sum-meta-aux2 term))) a)
+              (rp-evlt term A)))
+    :hints (("Goal"
+             :induct (MV-NTH 1 (SORT-SUM-META-AUX2 term))
+             :do-not-induct t
+             :Expand ((true-listp (cdr term))
+                      (RP-TRANS-LST (CDR TERM))
+                      (RP-TRANS-LST (CDdR TERM)))
+             :in-theory (e/d* (SORT-SUM-META-AUX2
+                               regular-eval-lemmas
+                               rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
+                               not-consp-SORT-SUM-META-AUX-AUX-means
+                               is-if is-rp context-from-rp eval-and-all
+                               true-listp
+                               ifix-opener
+                               PP-LISTS-TO-TERM-P+)
+                              (PP-LISTS-TO-TERM-AND$-REDEF
+                               rp-evlt-of-ex-from-rp
+                               rp-trans
+                               rp-trans-lst
+                               (:DEFINITION EX-FROM-RP)
+;(:REWRITE VALID-SC-CADR)
+;(:REWRITE VALID-SC-CADDR)
+                               (:DEFINITION EVAL-AND-ALL)
+                               (:REWRITE DEFAULT-CDR)
+                               (:REWRITE DEFAULT-CAR)
+;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
+                               (:DEFINITION RP-TRANS)
+                               (:REWRITE ATOM-RP-TERMP-IS-SYMBOLP)
+                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                               (:REWRITE EVAL-OF-BIT-OF)
+                               (:REWRITE EVAL-OF-BINARY-XOR)
+                               (:REWRITE EVAL-OF-BINARY-OR)
+                               (:DEFINITION INCLUDE-FNC)
+                               (:DEFINITION RP-TERMP)
+;VALID-SC-EX-FROM-RP-2
+                               rp-evl-of-ex-from-rp-reverse
+                               bitp
+                               TYPE-FIX-WHEN-BITP
+                               TYPE-FIX-WHEN-INTEGERP
+                               PP-LISTS-TO-TERM-P+-TO-PP-LISTS-TO-TERM-PP-LST)))))
+
   ;; A MAIN LEMMA
   (defthm sort-sum-meta-correct
     (implies (and (mult-formula-checks state)
@@ -3326,12 +3342,12 @@
     :hints (("Goal"
              :do-not-induct t
              :use ((:instance pp-lists-to-term-p+-to-pp-lists-to-term-pp-lst
-                              (lst (SORT-PP-LISTS (MV-NTH 1 (SORT-SUM-META-AUX (CADR TERM)))
+                              (lst (SORT-PP-LISTS (MV-NTH 1 (SORT-SUM-META-AUX2 (CADR TERM)))
                                                   (LEN (MV-NTH 1
-                                                               (SORT-SUM-META-AUX (CADR TERM)))))))
+                                                               (SORT-SUM-META-AUX2 (CADR TERM)))))))
                    (:instance EVAL-OF-SORT-PP-LISTS-IS-CORRECT
-                              (lst (MV-NTH 1 (SORT-SUM-META-AUX (CADR TERM))))
-                              (size (LEN (MV-NTH 1 (SORT-SUM-META-AUX (CADR TERM)))))))
+                              (lst (MV-NTH 1 (SORT-SUM-META-AUX2 (CADR TERM))))
+                              (size (LEN (MV-NTH 1 (SORT-SUM-META-AUX2 (CADR TERM)))))))
              :in-theory (e/d (sort-sum-meta
                               SORT-SUM
                               )

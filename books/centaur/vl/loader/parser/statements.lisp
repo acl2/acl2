@@ -1817,7 +1817,13 @@
        ((:vl-kwd-unique :vl-kwd-unique0 :vl-kwd-priority)
         ;; Can be either a case statement or an IF statement.
         (if (vl-lookahead-is-token? :vl-kwd-if (cdr (vl-tokstream->tokens)))
-            (vl-parse-error "BOZO not yet implemented: unique/unique0/priority if statements.")
+            (b* ((type (vl-token->type (car (vl-tokstream->tokens))))
+                 (tokstream (vl-tokstream-pop)))
+              (vl-parse-conditional-statement (cons (case type
+                                                      (:vl-kwd-unique '("IF_UNIQUE"))
+                                                      (:vl-kwd-unique0 '("IF_UNIQUE0"))
+                                                      (otherwise '("IF_PRIORITY")))
+                                                    atts)))
           (vl-parse-case-statement atts)))
        ((:vl-kwd-case :vl-kwd-casez :vl-kwd-casex)
         (vl-parse-case-statement atts))

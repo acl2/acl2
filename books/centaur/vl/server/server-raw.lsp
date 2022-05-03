@@ -294,7 +294,8 @@ a bleeding edge zip.</p>")
         (db *vls-transdb*))
     (cl-user::format t "; vls-loader-thread hons space allocated~%")
     (acl2::hons-summary)
-    (acl2::hons-analyze-memory nil)
+    ;; note: getting memo table ownership errors when this is uncommented
+    ;; (acl2::hons-analyze-memory nil)
     ;; (format t "In vls-loader-thread, hons space is at ~s~%" (ccl::%address-of acl2::*default-hs*))
     (loop do
           (handler-case

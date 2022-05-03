@@ -3,6 +3,7 @@
 
 ; Copyright (C) 2019, Regents of the University of Texas
 ; All rights reserved.
+; Copyright (C) 2022 Intel Corporation
 
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are
@@ -1456,3 +1457,354 @@
 
 (add-rp-rule loghead-of-+-is-2vec-adder-without-carry)
 (add-rp-rule loghead-of-+-is-2vec-adder)
+
+
+(def-rp-rule integerp-of-if
+  (implies (and (integerp then)
+                (integerp else))
+           (integerp (if test then else))))
+
+(encapsulate
+  nil
+  (local
+   (use-ihs-logops-lemmas t))
+  (local
+   (use-ihs-extensions t))
+
+
+  (local
+   (defthm dummy-measure-lemma
+     (implies (and (<= x x2)
+                   (< y y2))
+              (and (< (+ x y)
+                      (+ x2 y2))
+                   (< (+ y x)
+                      (+ y2 x2))))))
+
+
+  (local
+   (defthm natp-implies-logcdr-is-lte
+     (implies (natp x)
+              (<= (ACL2::LOGCDR X) X))
+     :hints (("Goal"
+              :cases ((equal x 0)
+                      (logbitp 0 x))
+              :expand ((ACL2::LOGCONS 0 (ACL2::LOGCDR X))
+                       (ACL2::LOGCONS 1 (ACL2::LOGCDR X)))
+              :use ((:instance BITOPS::LOGCONS-DESTRUCT
+                               (acl2::x x)))
+              :in-theory (e/d* (natp)
+                               (BITOPS::LOGCONS-DESTRUCT
+                                ACL2::EQUAL-LOGCONS))))))
+
+  (local
+   (defun +-recursive (x y carry-in)
+     (declare (xargs :measure (+ (nfix x)
+                                 (nfix y))))
+     (if (or (not (natp x))
+             (not (natp y)))
+         carry-in
+       (if (and (zp x)
+                (zp y))
+           carry-in
+         (logapp 1 (m2 (sum
+                        (acl2::logcar x)
+                        (acl2::logcar y)
+                        carry-in))
+                 (+-recursive (acl2::logcdr x)
+                              (acl2::logcdr y)
+                              (f2 (sum
+                                   (acl2::logcar x)
+                                   (acl2::logcar y)
+                                   carry-in))))))))
+
+  (local
+   (defun +-recursive-only-carry (x carry-in)
+     (declare (xargs :measure (nfix x)))
+     (if (zp x)
+         carry-in
+       (logapp 1 (m2 (sum (acl2::logcar x)
+                          carry-in))
+               (+-recursive-only-carry (acl2::logcdr x)
+                                       (f2 (sum (acl2::logcar x)
+                                                carry-in)))))))
+
+  (local
+   (defthm sum-of-0
+     (and (equal (sum x 0)
+                 (ifix x))
+          (equal (sum 0 x)
+                 (ifix x)))
+     :hints (("Goal"
+              :in-theory (e/d (sum)
+                              ())))))
+
+  (local
+   (defthm sum-of-ifix
+     (and (equal (sum (ifix x) other)
+                 (sum x other))
+          (equal (sum x (ifix other))
+                 (sum x other)))
+     :hints (("Goal"
+              :in-theory (e/d (sum)
+                              ())))))
+
+  (local
+   (defthm +-recursive-to-+-recursive-only-carry
+     (and (equal (+-recursive x 0 carry-in)
+                 (+-recursive-only-carry x carry-in))
+          (equal (+-recursive 0 x carry-in)
+                 (+-recursive-only-carry x carry-in)))
+     :hints (("Goal"
+              :expand ((+-RECURSIVE X 0 CARRY-IN))
+              :induct (+-recursive-only-carry x carry-in)
+              :in-theory (e/d () ())))))
+           
+  (local
+   (defthmd m2-and-f2-to-logical-def
+     (and (implies (and (bitp x)
+                        (bitp y)
+                        (bitp z))
+                   (and (equal (m2 (sum x y z))
+                               (binary-xor x (binary-xor y z)))
+                        (equal (f2 (sum x y z))
+                               (or$ (and$ x y)
+                                    (and$ x z)
+                                    (and$ y z)))))
+          (implies (and (bitp x)
+                        (bitp y))
+                   (and (equal (m2 (sum x y))
+                               (binary-xor x y))
+                        (equal (f2 (sum x y))
+                               (and$ x y)))))
+     :hints (("Goal"
+              :in-theory (e/d (bitp) ())))))
+
+  (defthm logbitp-0-of-sum
+    (implies (and (natp x)
+                  (natp y))
+             (equal (logbitp 0 (+ x y))
+                    (not (equal (logbitp 0 x)
+                                (logbitp 0 y)))))
+    :hints (("Goal"
+             :cases ((oddp x)
+                     (oddp y))
+             :in-theory (e/d (logbitp
+                              (:REWRITE ACL2::IFIX-WHEN-INTEGERP)
+                              (:REWRITE ACL2::SUM-IS-EVEN . 1)
+                              (:REWRITE ACL2::|(* x (+ y z))|)
+                              (:REWRITE ACL2::|(* y x)|)
+                              (:REWRITE ACL2::|(floor x 1)|)
+                              oddp natp evenp) ()))))
+                   
+  (local
+   (defthmd +-to-+-recursive
+     (implies (and (natp x)
+                   (natp y)
+                   (bitp carry-in))
+              (equal (+ x y carry-in)
+                     (+-recursive x y carry-in)))
+     :hints (("Goal"
+              :do-not-induct t
+              :induct (+-recursive x y carry-in)
+              :expand ((:free (x) (LOGAPP 1 1 x))
+                       (:free (x) (ash x 1)))
+              :in-theory (e/d (or$ binary-xor and$
+                                   bitp
+                                   m2-and-f2-to-logical-def)
+                              ())))))
+
+  (local
+   (defthmd +-to-+-recursive-without-carry
+     (implies (and (syntaxp (and (equal x 'x)
+                                 (equal y 'y)))
+                   (natp x)
+                   (natp y))
+              (equal (+ x y)
+                     (+-recursive x y 0)))
+     :hints (("Goal"
+              :do-not-induct t
+              :use ((:instance +-to-+-recursive
+                               (carry-in 0)))
+              :in-theory (e/d ()
+                              ())))))
+
+
+  (local
+   (defthm natp-of-+-RECURSIVE
+     (implies (and (natp x)
+                   (natp y)
+                   (bitp z))
+              (and (natp (+-RECURSIVE X Y Z))
+                   (integerp (+-RECURSIVE X Y Z))))
+     :rule-classes (:rewrite :type-prescription)
+     :hints (("Goal"
+              :do-not-induct t
+              :induct (+-RECURSIVE X Y Z)
+              :in-theory (e/d (+-to-+-recursive
+                               m2-and-f2-to-logical-def
+                               or$ and$ binary-xor)
+                              ())))))
+
+  ;; (skip-proofs
+  ;;  (defthmd logbitp-implies-deconstruct-var
+  ;;   (implies (and (LOGBITP 0 Y)
+  ;;                 (integerp y))
+  ;;            (equal (acl2::logcdr y)
+  ;;                   (/ (- y 1) 2)))
+  ;;   :rule-classes :rewrite 
+  ;;   :hints (("Goal"
+  ;;            :in-theory (e/d () ())))))
+
+  ;; (skip-proofs
+  ;;  (defthmd not-logbitp-implies-deconstruct-var
+  ;;   (implies (and (not (LOGBITP 0 Y))
+  ;;                 (integerp y))
+  ;;            (equal (acl2::logcdr y)
+  ;;                   (/ y 2)))
+  ;;   :rule-classes :rewrite 
+  ;;   :hints (("Goal"
+  ;;            :in-theory (e/d () ())))))
+
+  (local
+   (defthm dummy-logcdr-relations
+     (implies (and (natp x)
+                   (< x other))
+              (< (acl2::logcdr x) other))
+     :hints (("Goal"
+              :cases ((logbitp 0 x))
+              :expand ((ACL2::LOGCONS 0 (ACL2::LOGCDR X))
+                       (ACL2::LOGCONS 1 (ACL2::LOGCDR X)))
+              :use ((:instance BITOPS::LOGCONS-DESTRUCT
+                               (acl2::x x)))
+              :in-theory (e/d* (natp)
+                               (BITOPS::LOGCONS-DESTRUCT
+                                ACL2::EQUAL-LOGCONS))))))
+
+  (local
+   (defthm UNSIGNED-BYTE-P-implies-natp-size
+     (implies (UNSIGNED-BYTE-P size x)
+              (and (natp size)
+                   (natp (1+ size))))))
+
+  (local
+   (defthm unsigned-byte-p-of-logcdr-lemma
+     (implies (unsigned-byte-p size x)
+              (unsigned-byte-p size (acl2::logcdr x)))))
+
+  (local
+   (defthm unsigned-byte-p-of-+-RECURSIVE-ONLY-CARRY
+     (implies (and (unsigned-byte-p size x)
+                   (bitp z))
+              (UNSIGNED-BYTE-P (+ 1 SIZE)
+                               (+-RECURSIVE-ONLY-CARRY x Z)))
+     :otf-flg t
+     :hints (("Goal"
+              :expand ()
+              :in-theory (e/d (ACL2::UNSIGNED-BYTE-P**
+                               natp
+                               ;;logbitp-implies-deconstruct-var
+                               ;;not-logbitp-implies-deconstruct-var
+                               m2-and-f2-to-logical-def
+                               ;;or$ and$ binary-xor
+                               )
+                              (unsigned-byte-p))))))
+
+  (local
+   (defthm unsigned-byte-p-of-+-RECURSIVE-ONLY-CARRY-corol
+     (implies (and (unsigned-byte-p (1- size) x)
+                   (bitp z))
+              (UNSIGNED-BYTE-P size
+                               (+-RECURSIVE-ONLY-CARRY x Z)))
+     :otf-flg t
+     :hints (("Goal"
+              :use ((:instance unsigned-byte-p-of-+-RECURSIVE-ONLY-CARRY
+                               (size (1- size))))
+              :in-theory (e/d (
+                               ;;or$ and$ binary-xor
+                               )
+                              (unsigned-byte-p-of-+-RECURSIVE-ONLY-CARRY))))))
+
+  (local
+   (defun unsigned-byte-p-of-+-induct (x size1 y size2 carry-in)
+     (declare (ignorable x size1 y size2 carry-in))
+     (declare (xargs :measure (+ (nfix x)
+                                 (nfix y))))
+     (if (or (not (natp x))
+             (not (natp y)))
+         carry-in
+       (IF (and (ZP x) (ZP y))
+           carry-in
+           (unsigned-byte-p-of-+-induct (ACL2::LOGCDR X)
+                                        (1- size1)
+                                        (ACL2::LOGCDR Y)
+                                        (1- size2)
+                                        (F2 (SUM (ACL2::LOGCAR X)
+                                                 (ACL2::LOGCAR Y)
+                                                 CARRY-IN)))))))
+
+  (local
+   (defthm unsigned-byte-p-of-+-RECURSIVE
+     (implies (and (unsigned-byte-p size1 x)
+                   (unsigned-byte-p size2 y)
+                   (bitp z))
+              (unsigned-byte-p (1+ (max size1 size2))
+                               (+-RECURSIVE x y z)))
+     :otf-flg t
+     :hints (("Goal"
+              :do-not-induct t
+              :induct (unsigned-byte-p-of-+-induct X size1 Y size2 Z)
+              :expand ((:free (x) (LOGAPP 1 1 x))
+                       (:free (x) (acl2::logcons 0 x))
+                       (:free (x) (acl2::logcons 1 x))
+                       (:free (x) (ash x 1))
+                       (+-RECURSIVE X Y Z))
+              :in-theory (e/d (ACL2::UNSIGNED-BYTE-P**
+                               natp
+                               ;;logbitp-implies-deconstruct-var
+                               ;;not-logbitp-implies-deconstruct-var
+                               m2-and-f2-to-logical-def
+                               ;;or$ and$ binary-xor
+                               )
+                              (unsigned-byte-p))))))
+
+  (defthm unsigned-byte-p-of-+
+    (implies (and (unsigned-byte-p size1 x)
+                  (unsigned-byte-p size2 y)
+                  (bitp z))
+             (unsigned-byte-p (1+ (max size1 size2))
+                              (+ x y z)))
+    :otf-flg t
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (+-to-+-recursive
+                              ;;or$ and$ binary-xor
+                              )
+                             (unsigned-byte-p
+                              max)))))
+
+  (defthm +-of-known-sized-vecs
+    (and (Implies (and (unsigned-byte-p size1 x)
+                       (unsigned-byte-p size2 y))
+                  (equal (+ x y)
+                         (2vec-adder x y 0 (1+ (max size1 size2)))))
+         (Implies (and (unsigned-byte-p size1 x)
+                       (unsigned-byte-p size2 y)
+                       (unsigned-byte-p 1 z))
+                  (equal (+ x y z)
+                         (2vec-adder x y z (1+ (max size1 size2))))))
+    :otf-flg t
+    :hints (("Goal"
+             :do-not-induct t
+             :use ((:instance loghead-of-+-is-2vec-adder-without-carry
+                              (size (1+ (max size1 size2))))
+                   (:instance loghead-of-+-is-2vec-adder
+                              (size (1+ (max size1 size2)))
+                              (carry z))
+                   (:instance unsigned-byte-p-of-+)
+                   (:instance unsigned-byte-p-of-+
+                              (z 0)))
+             :in-theory (e/d () (loghead-of-+-is-2vec-adder-without-carry
+                                 unsigned-byte-p
+                                 unsigned-byte-p-of-+
+                                 loghead-of-+-is-2vec-adder))))))

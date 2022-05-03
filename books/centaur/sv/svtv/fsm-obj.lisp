@@ -87,3 +87,28 @@ names in SystemVerilog hierarchical syntax (strings)."
   (base-fsm->nextstate (svtv-fsm->base-fsm x)))
 
 
+(define make-fast-alists (x)
+  (if (atom x)
+      x
+    (cons-with-hint
+     (make-fast-alist (car x))
+     (make-fast-alists (cdr x))
+     x))
+  ///
+  (defthm make-fast-alists-is-identity
+    (equal (make-fast-alists x) x)))
+
+
+
+(define fast-alistlist-clean-aux (x)
+  (if (atom x)
+      nil
+    (let ((ans1 (fast-alist-clean (car x))))
+      (declare (ignore ans1))
+      (fast-alistlist-clean-aux (cdr x)))))
+
+(define fast-alistlist-clean (x)
+  (mbe :logic x
+       :exec (let ((ans1 (fast-alistlist-clean-aux x)))
+               (declare (ignore ans1))
+               x)))

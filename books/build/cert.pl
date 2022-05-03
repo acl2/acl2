@@ -417,7 +417,7 @@ COMMAND LINE OPTIONS
            Any number of --source-cmd directives may be given; the
            commands will then be run in the order in which they are given.
 
-   --otherdeps-cmd <command-str>
+   --otherdep-cmd <command-str>
            Run the command on each non-source dependency file, in the same
            manner as --source-cmd.  Non-source dependencies include files
            referenced by depends-on comments as well as .image files.
@@ -1009,6 +1009,15 @@ unless ($no_makefile) {
             print $mf "export ACL2_BIN_DIR := ${bin_dir}\n";
         }
         print $mf "include \$(ACL2_SYSTEM_BOOKS)/build/make_cert\n\n";
+
+	print $mf 'STARTTIME := $(shell date +\'%s.%N\')';
+	print $mf "\n";
+	print $mf '$(info Beginning build at $(shell date +\'%d-%b-%Y %H:%M:%S.%N\' --date "@$(STARTTIME)")';
+	if ($ENV{'CERT_PL_PARSEABLE_TIMESTAMPS'}) {
+	    print $mf ' [$(STARTTIME)]';
+	}
+	print $mf ")\n";
+
     }
 
     foreach my $incl (@includes) {

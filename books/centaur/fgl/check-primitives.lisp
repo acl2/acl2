@@ -91,6 +91,13 @@
                   (equal (fgl-object-eval x env) x))
          :hints(("Goal" :in-theory (enable fgl-object-eval fgl-object-kind g-concrete->val)))))
 
+
+(local (defthm fgl-object-alist-eval-when-atom
+         (implies (atom x)
+                  (equal (fgl-object-alist-eval x env logicman)
+                         x))
+         :hints(("Goal" :in-theory (enable fgl-object-alist-eval)))))
+
 (local (in-theory (disable member-equal
                            equal-of-booleans-rewrite)))
 
@@ -125,6 +132,7 @@
           :g-apply (or (and (eq arg.fn 'ifix) (eql (len arg.args) 1))
                        (eq arg.fn 'intcdr)
                        (eq arg.fn 'intcons))
+          :g-map (integerp arg.alist)
           :otherwise nil)))
     (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
@@ -137,6 +145,7 @@
         (fgl-object-case arg
           :g-concrete (natp arg.val)
           :g-integer (eq (car (last arg.bits)) nil)
+          :g-map (natp arg.alist)
           :otherwise nil)))
     (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
@@ -152,6 +161,15 @@
                       :hints(("Goal" :in-theory (enable gobj-bfr-list-eval)))))))
 
 
+
+
+(local (defthm int-endp-of-fgl-object-alist-eval
+         (implies (and (fgl-object-alist-p x)
+                       (int-endp x))
+                  (int-endp (fgl-object-alist-eval x env logicman)))
+         :hints(("Goal" :expand ((fgl-object-alist-eval x env logicman))
+                 :in-theory (enable int-endp)))))
+
 (def-fgl-binder-meta check-int-endp-binder
   (b* ((ans
         (fgl-object-case arg
@@ -161,6 +179,8 @@
                          (atom (cdr arg.bits)))
           :g-boolean t
           :g-cons t
+          :g-map (or (not (integerp arg.alist))
+                     (int-endp arg.alist))
           :otherwise nil)))
     (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
@@ -190,6 +210,7 @@
                          (and (consp (cdr arg.bits))
                               (endp (cddr arg.bits))
                               (not (cadr arg.bits))))
+          :g-map (bitp arg.alist)
           :otherwise nil)))
     (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
@@ -229,6 +250,8 @@
         (fgl-object-case arg
           :g-concrete (signed-byte-p len arg.val)
           :g-integer (<= (len arg.bits) len)
+          :g-map (and (integerp arg.alist)
+                      (signed-byte-p len arg.alist))
           :otherwise nil)))
     (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
@@ -264,6 +287,8 @@
           :g-concrete (unsigned-byte-p len arg.val)
           :g-integer (and (<= (len arg.bits) (+ 1 len))
                           (not (car (last arg.bits))))
+          :g-map (and (integerp arg.alist)
+                      (unsigned-byte-p len arg.alist))
           :otherwise nil)))
     (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
@@ -290,6 +315,13 @@
                       :hints(("Goal" :in-theory (enable gobj-bfr-list-eval)))))))
 
 
+(local (defthm not-integerp-of-fgl-object-alist-eval
+         (implies (and (fgl-object-alist-p x)
+                       (not (integerp x)))
+                  (not (integerp (fgl-object-alist-eval x env logicman))))
+         :hints(("Goal" :expand ((fgl-object-alist-eval x env logicman))))))
+
+
 (def-fgl-binder-meta check-non-integerp-binder
   (b* ((ans
         (fgl-object-case arg
@@ -297,11 +329,21 @@
           :g-integer nil
           :g-boolean t
           :g-cons t
+          :g-map (not (integerp arg.alist))
           :otherwise nil)))
     (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
   :origfn check-non-integerp :formals (arg)
   :prepwork ((local (in-theory (enable check-non-integerp)))))
+
+
+(local (defthm consp-of-fgl-object-alist-eval
+         (implies (and (fgl-object-alist-p x)
+                       (consp x))
+                  (consp (fgl-object-alist-eval x env logicman)))
+         :hints(("Goal" :expand ((fgl-object-alist-eval x env logicman))))))
+
+
 
 
 (def-fgl-binder-meta check-consp-binder
@@ -312,6 +354,7 @@
           :g-boolean nil
           :g-cons t
           :g-apply (eq arg.fn 'cons)
+          :g-map (consp arg.alist)
           :otherwise nil)))
     (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
@@ -324,6 +367,7 @@
           :g-concrete (not (consp arg.val))
           :g-integer t
           :g-boolean t
+          :g-map (not (consp arg.alist))
           :otherwise nil)))
     (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
@@ -339,11 +383,18 @@
           :g-apply (or (eq arg.fn 'equal)
                        (eq arg.fn 'intcar)
                        (eq arg.fn 'integerp))
+          :g-map (booleanp arg.alist)
           :otherwise nil)))
     (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
   :origfn check-booleanp :formals (arg)
   :prepwork ((local (in-theory (enable check-booleanp)))))
+
+(local (defthm not-booleanp-of-fgl-object-alist-eval
+         (implies (and (fgl-object-alist-p x)
+                       (not (booleanp x)))
+                  (not (booleanp (fgl-object-alist-eval x env logicman))))
+         :hints(("Goal" :expand ((fgl-object-alist-eval x env logicman))))))
 
 (def-fgl-binder-meta check-non-booleanp-binder
   (b* ((ans
@@ -351,6 +402,7 @@
           :g-concrete (not (booleanp arg.val))
           :g-integer t
           :g-cons t
+          :g-map (not (booleanp arg.alist))
           :otherwise nil)))
     (mv t (if ans ''t ''nil) nil nil interp-st state))
   :formula-check checks-formula-checks
@@ -366,6 +418,9 @@
           :g-boolean 0
           :g-cons 0
           :g-integer (max 0 (1- (len arg.bits)))
+          :g-map (if (integerp arg.alist)
+                     (integer-length arg.alist)
+                   0)
           :otherwise nil)))
     (mv t (kwote ans) nil nil interp-st state))
   :formula-check checks-formula-checks

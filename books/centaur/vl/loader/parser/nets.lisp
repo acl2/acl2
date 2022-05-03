@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "datatypes")
+(include-book "expressions")
 (include-book "assignments")
 (include-book "delays")
 (include-book "strengths")

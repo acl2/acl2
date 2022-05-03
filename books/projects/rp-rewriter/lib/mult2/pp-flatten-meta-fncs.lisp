@@ -781,7 +781,8 @@
                  (dont-rw dont-rw-syntaxp))
     (case-match term
       (('sort-sum x)
-       (b* (((mv valid pp-lists)
+       (b* (
+            ((mv valid pp-lists)
              (sort-sum-meta-aux x))
             ((unless valid)
              (progn$ (cw "sort-sum-meta got an unexpected term ~p0 ~%"

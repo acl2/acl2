@@ -1,5 +1,6 @@
 ; SV - Symbolic Vector Hardware Analysis Framework
 ; Copyright (C) 2014-2015 Centaur Technology
+; Copyright (C) 2022 Intel Corporation
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -1096,3 +1097,34 @@ Correctness is stated in terms of @(see svexlist-vars):</p>
            (append (constraintlist-vars a)
                    (constraintlist-vars b)))))
 
+
+
+
+
+
+(define svarlist-non-override-test-p ((x svarlist-p))
+  (if (atom x)
+      t
+    (and (b* (((svar x1) (car x)))
+           (not x1.override-test))
+         (svarlist-non-override-test-p (cdr x)))))
+
+(define svarlist-non-override-p ((x svarlist-p))
+  (if (atom x)
+      t
+    (and (b* (((svar x1) (car x)))
+           (and (not x1.override-test)
+                (not x1.override-val)))
+         (svarlist-non-override-p (cdr x))))
+  ///
+  (defthm svarlist-non-override-p-of-append
+    (equal (svarlist-non-override-p (append x y))
+           (and (svarlist-non-override-p x)
+                (svarlist-non-override-p y)))))
+
+(define svarlist->override-tests ((x svarlist-p))
+  :returns (new-x svarlist-p)
+  (if (atom x)
+      nil
+    (cons (change-svar (Car x) :override-test t)
+          (svarlist->override-tests (cdr x)))))

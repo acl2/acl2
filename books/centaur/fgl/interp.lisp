@@ -50,6 +50,7 @@
 (local (include-book "centaur/meta/resolve-flag-cp" :dir :system))
 (local (include-book "centaur/meta/urewrite" :dir :system))
 (local (include-book "centaur/meta/let-abs" :dir :system))
+(local (include-book "centaur/meta/flatten-clause" :dir :system))
 
 (std::make-returnspec-config :hints-sub-returnnames t)
 
@@ -3762,7 +3763,7 @@
              ((interp-st-bind
                (equiv-contexts (fgl-interp-or-test-equiv-contexts equiv-contexts) equiv-contexts))
               ((fgl-interp-recursive-call testobj)
-               (fgl-interp-term-equivs test interp-st state)))
+               (fgl-interp-term-top test interp-st state)))
              ((mv ok boolfix) (gobj-syntactic-boolean-fix testobj))
              ((unless (and** ok (fgl-object-case boolfix :g-concrete)))
               (fgl-interp-error :msg (fgl-msg "Symbolic IF test occurred under ~
@@ -3839,7 +3840,7 @@
              ((interp-st-bind
                (equiv-contexts or-test-equiv-contexts equiv-contexts))
               ((fgl-interp-recursive-call testval)
-               (fgl-interp-term-equivs test interp-st state)))
+               (fgl-interp-term-top test interp-st state)))
              (interp-st (interp-st-incr-term-index (fgl-minor-frame-subterm-count test) interp-st))
              ;; ((when err) (mv nil interp-st state))
              (interp-st (interp-st-push-scratch-fgl-obj testval interp-st))
@@ -4534,206 +4535,19 @@
              :expand ((acl2::beta-reduce-full-list x))
              :induct (len x))))
 
-   (define dumb-negate ((x pseudo-termp))
-     :returns (neg-x pseudo-termp)
-     (pseudo-term-case x
-       :fncall (if (eq x.fn 'not)
-                   (car x.args)
-                 `(not ,(pseudo-term-fix x)))
-       :otherwise `(not ,(pseudo-term-fix x)))
-     ///
-     (defthm dumb-negate-correct
-       (iff (fgl-ev (dumb-negate x) a)
-            (not (fgl-ev x a)))))
 
-   (define dumb-conjunction-to-literals ((x pseudo-termp))
-     :returns (lits pseudo-term-listp)
-     :measure (pseudo-term-count x)
-     (pseudo-term-case x
-       :fncall (if (and (eq x.fn 'if)
-                        (equal (third x.args) ''nil))
-                   (cons (dumb-negate (first x.args))
-                         (dumb-conjunction-to-literals (second x.args)))
-                 (list (dumb-negate (pseudo-term-fix x))))
-       :otherwise (list (dumb-negate (pseudo-term-fix x))))
-     ///
-     (defthm dumb-conjunction-to-literals-correct
-       (iff (fgl-ev (disjoin (dumb-conjunction-to-literals x)) a)
-            (not (fgl-ev x a)))))
-
-
-   (define dumb-formula-to-clause ((x pseudo-termp))
-     :returns (clause pseudo-term-listp)
-     (pseudo-term-case x
-       :fncall (if (eq x.fn 'implies)
-                   (append (dumb-conjunction-to-literals (car x.args))
-                           (list (cadr x.args)))
-                 (list (pseudo-term-fix x)))
-       :otherwise (list (pseudo-term-fix x)))
-     ///
-     (defthm dumb-formula-to-clause-correct
-       (iff (fgl-ev (disjoin (dumb-formula-to-clause x)) a)
-            (fgl-ev x a))))
-
-   (define dumb-negate-each ((x pseudo-term-listp))
-     :returns (neg-x pseudo-term-listp)
-     (if (atom x)
-         nil
-       (cons (dumb-negate (car x))
-             (dumb-negate-each (cdr x))))
-     ///
-     (defthm disjoin-of-dumb-negate-each
-       (iff (fgl-ev (disjoin (dumb-negate-each x)) a)
-            (not (fgl-ev (conjoin x) a))))
-     (defthm conjoin-of-dumb-negate-each
-       (iff (fgl-ev (conjoin (dumb-negate-each x)) a)
-            (not (fgl-ev (disjoin x) a)))))
-
-   (defthm fgl-ev-of-disjoin-pseudo-term-list-fix
-     (iff (fgl-ev (disjoin (pseudo-term-list-fix x)) a)
-          (fgl-ev (disjoin x) a))
-     :hints(("Goal" :induct (len x)
-             :in-theory (enable pseudo-term-list-fix len))))
-
-   (define dumb-disjoin-lit-lists ((x pseudo-term-listp)
-                              (y pseudo-term-listp))
-     :returns (disj pseudo-term-listp)
-     (b* ((x (pseudo-term-list-fix x))
-          (y (pseudo-term-list-fix y)))
-       (if (or (equal x '('t))
-               (equal y '('t)))
-           '('t)
-         (append x y)))
-     ///
-     (defthm dumb-disjoin-lit-lists-correct
-       (iff (fgl-ev (disjoin (dumb-disjoin-lit-lists x y)) a)
-            (or (fgl-ev (disjoin x) a)
-                (fgl-ev (disjoin y) a)))
-       :hints (("goal" :use ((:instance fgl-ev-of-disjoin-pseudo-term-list-fix
-                              (x x))
-                             (:instance fgl-ev-of-disjoin-pseudo-term-list-fix
-                              (x y)))
-                :in-theory (disable fgl-ev-of-disjoin-pseudo-term-list-fix)))))
-
-
-
-   (defthm fgl-ev-of-conjoin-pseudo-term-list-fix
-     (iff (fgl-ev (conjoin (pseudo-term-list-fix x)) a)
-          (fgl-ev (conjoin x) a))
-     :hints(("Goal" :induct (len x)
-             :in-theory (enable pseudo-term-list-fix len))))
-
-   (define dumb-conjoin-lit-lists ((x pseudo-term-listp)
-                              (y pseudo-term-listp))
-     :returns (disj pseudo-term-listp)
-     (b* ((x (pseudo-term-list-fix x))
-          (y (pseudo-term-list-fix y)))
-       (if (or (equal x '('nil))
-               (equal y '('nil)))
-           '('nil)
-         (append x y)))
-     ///
-     (defthm dumb-conjoin-lit-lists-correct
-       (iff (fgl-ev (conjoin (dumb-conjoin-lit-lists x y)) a)
-            (and (fgl-ev (conjoin x) a)
-                 (fgl-ev (conjoin y) a)))
-       :hints (("goal" :use ((:instance fgl-ev-of-conjoin-pseudo-term-list-fix
-                              (x x))
-                             (:instance fgl-ev-of-conjoin-pseudo-term-list-fix
-                              (x y)))
-                :in-theory (disable fgl-ev-of-conjoin-pseudo-term-list-fix)))))
-
-
-
-   (defines dumb-flatten-disjunction
-     (define dumb-flatten-disjunction ((x pseudo-termp))
-       :returns (lits pseudo-term-listp)
-       :measure (pseudo-term-count x)
-       (pseudo-term-case x
-         :fncall (b* (((when (and** (eq x.fn 'not)
-                                    (eql (len x.args) 1)))
-                       (dumb-negate-each (dumb-flatten-conjunction (first x.args))))
-                      ((when (and** (eq x.fn 'implies)
-                                    (eql (len x.args) 2)))
-                       (dumb-disjoin-lit-lists (dumb-negate-each (dumb-flatten-conjunction (first x.args)))
-                                               (dumb-flatten-disjunction (second x.args))))
-                      ((unless (and** (eq x.fn 'if)
-                                      (eql (len x.args) 3)))
-                       (list (pseudo-term-fix x)))
-                      ((when (and (equal (second x.args) ''nil)
-                                  (equal (third x.args) ''t)))
-                       (dumb-negate-each
-                        (dumb-flatten-conjunction (first x.args))))
-                      ((when (or (equal (first x.args) (second x.args))
-                                 (equal (second x.args) ''t)))
-                       (dumb-disjoin-lit-lists (dumb-flatten-disjunction (first x.args))
-                                               (dumb-flatten-disjunction (third x.args)))))
-                   (list (pseudo-term-fix x)))
-         :const (if x.val
-                    '('t)
-                  nil)
-         :otherwise (list (pseudo-term-fix x))))
-
-     (define dumb-flatten-conjunction ((x pseudo-termp))
-       :returns (lits pseudo-term-listp)
-       :measure (pseudo-term-count x)
-       :verify-guards nil
-       (pseudo-term-case x
-         :fncall (b* (((when (and** (eq x.fn 'not)
-                                    (eql (len x.args) 1)))
-                       (dumb-negate-each (dumb-flatten-disjunction (first x.args))))
-                      ((unless (and** (eq x.fn 'if)
-                                      (eql (len x.args) 3)))
-                       (list (pseudo-term-fix x)))
-                      ((when (and (equal (second x.args) ''nil)
-                                  (equal (third x.args) ''t)))
-                       (dumb-negate-each
-                        (dumb-flatten-disjunction (first x.args))))
-                      ((when (equal (third x.args) ''nil))
-                       (dumb-conjoin-lit-lists (dumb-flatten-conjunction (first x.args))
-                                               (dumb-flatten-conjunction (second x.args)))))
-                   (list (pseudo-term-fix x)))
-         :const (if x.val
-                    nil
-                  '('nil))
-         :otherwise (list (pseudo-term-fix x))))
-     ///
-     (verify-guards dumb-flatten-disjunction)
-
-     (defret-mutual dumb-flatten-disjunction-correct
-       (defret dumb-flatten-disjunction-correct
-         (iff (fgl-ev (disjoin (dumb-flatten-disjunction x)) a)
-              (fgl-ev x a))
-         :fn dumb-flatten-disjunction)
-       (defret dumb-flatten-conjunction-correct
-         (iff (fgl-ev (conjoin (dumb-flatten-conjunction x)) a)
-              (fgl-ev x a))
-         :fn dumb-flatten-conjunction))
-
-     (fty::deffixequiv-mutual dumb-flatten-disjunction))
-
-   (define dumb-flatten-clause ((x pseudo-term-listp))
-     :returns (new-x pseudo-term-listp)
-     (if (atom x)
-         nil
-       (dumb-disjoin-lit-lists (dumb-flatten-disjunction (car x))
-                               (dumb-flatten-clause (cdr x))))
-     ///
-     (defthm dumb-flatten-clause-correct
-       (iff (fgl-ev (disjoin (dumb-flatten-clause x)) a)
-            (fgl-ev (disjoin x) a))))
-
-   (define dumb-flatten-clause-proc ((x pseudo-term-listp))
-     (list (dumb-flatten-clause x))
-     ///
-     (defthm dumb-flatten-clause-proc-correct
-       (implies (and (pseudo-term-listp x)
-                     (alistp a)
-                     (fgl-ev (conjoin-clauses (dumb-flatten-clause-proc x)) a))
-                (fgl-ev (disjoin x) a))
-       :rule-classes :clause-processor))
-
-
+   (local (defthm fgl-ev-dumb-formula-to-clause-correct
+            (iff (fgl-ev (disjoin (cmr::dumb-formula-to-clause x)) a)
+                 (fgl-ev x a))
+            :hints (("goal" :use ((:instance
+                                   (:functional-instance
+                                    cmr::dumb-formula-to-clause-correct
+                                    (cmr::flatten-ev fgl-ev)
+                                    (cmr::flatten-ev-list fgl-ev-list))
+                                   (x x) (a a)))
+              :in-theory (enable fgl-ev-of-fncall-args
+                                 fgl-ev-of-bad-fncall
+                                 fgl-ev-of-nonsymbol-atom)))))
 
    (define my-by-hint-cp ((clause pseudo-term-listp)
                           (hint)
@@ -4744,7 +4558,7 @@
           (thm (meta-extract-formula hint state))
           ((unless (pseudo-termp thm))
            (value (list clause)))
-          (thm-clause (dumb-formula-to-clause (acl2::beta-reduce-full thm)))
+          (thm-clause (cmr::dumb-formula-to-clause (acl2::beta-reduce-full thm)))
           (reduced-clause (acl2::beta-reduce-full-list clause)))
        (if (equal reduced-clause thm-clause)
            (value nil)
@@ -4763,11 +4577,11 @@
                 (fgl-ev (disjoin clause) a))
        :hints (("goal" :use ((:instance fgl-ev-of-disjoin-beta-reduce-full-list
                               (x clause))
-                             (:instance dumb-formula-to-clause-correct
+                             (:instance cmr::dumb-formula-to-clause-correct
                               (x (acl2::beta-reduce-full (meta-extract-formula hint state)))))
                 :in-theory (disable ;; FGL-EV-META-EXTRACT-FORMULA
-                                    dumb-formula-to-clause-correct
-                                    fgl-ev-of-disjoin-beta-reduce-full-list)))
+                            cmr::dumb-formula-to-clause-correct
+                            fgl-ev-of-disjoin-beta-reduce-full-list)))
        :rule-classes :clause-processor))))
 
 (local (defun fgl-interp-default-hint
@@ -4785,7 +4599,7 @@
                 `(:computed-hint-replacement
                   ('(:clause-processor (mark-expands-cp clause '(t t ,expand-hints)))
                    (cmr::call-urewrite-clause-proc)
-                   '(:clause-processor fgl::dumb-flatten-clause-proc)
+                   '(:clause-processor cmr::dumb-flatten-clause-proc)
                    '(:clause-processor (cmr::let-abstract-lits-clause-proc clause 'xxx))
                    (and (or (not ',wait-til-stablep) stable-under-simplificationp)
                         (expand-marked)))

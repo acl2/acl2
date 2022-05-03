@@ -45,13 +45,14 @@
 (local (include-book "proofs/extract-formula-lemmas"))
 (local (include-book "proofs/rp-correct"))
 (local (include-book "proofs/rp-equal-lemmas"))
+(local (include-book "proofs/rp-state-functions-lemmas"))
 
 (include-book "proofs/guards")
 
 (encapsulate
   nil
   (defrec rp-cl-hints
-    (runes runes-outside-in . new-synps)
+    (runes runes-outside-in new-synps . cases)
     t)
   (defun rp-cl-hints-p (hints)
     (declare (xargs :guard t))
@@ -77,6 +78,7 @@
     :guard-hints (("Goal"
                    :in-theory (e/d ()
                                    (preprocess-then-rp-rw
+                                    update-casesplitter-cases
                                     get-rules
                                     beta-search-reduce))))
     :verify-guards t))
@@ -91,8 +93,15 @@
                                  'rp-clause-processor-aux
                                  "Conjectures given to RP-Rewriter cannot include an rp instance~%" nil)))))
             (mv nil (list cl) rp-state state))
-         
+
            (rp-state (rp-state-new-run rp-state))
+           (cases (access rp-cl-hints hints :cases))
+           (rp-state (if (rp-term-listp cases)
+                         (update-casesplitter-cases cases rp-state)
+                       (progn$ (hard-error 'rp-clause-processor-aux
+                                           "Given cases does not satisfy rp-term-listp: ~p0 ~%"
+                                           (list (cons #\0 cases)))
+                               rp-state)))
            (rp-state (rp-state-init-rules (access rp-cl-hints hints :runes)
                                           (access rp-cl-hints hints :runes-outside-in)
                                           (access rp-cl-hints hints :new-synps)
@@ -125,6 +134,7 @@
                              rp-evl-of-beta-search-reduce
                              preprocess-then-rp-rw-is-correct)
                             (get-rules
+                             update-casesplitter-cases
                              ex-from-synp-lemma1
                              valid-rules-alistp
                              preprocess-then-rp-rw

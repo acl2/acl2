@@ -228,14 +228,19 @@
 
 (def-fgl-rewrite 4vec->upper-of-integer
   #!sv
-  (implies (integerp x)
-
+  (implies (and (syntaxp (not (fgl::fgl-object-case x
+                                :g-apply (eq x.fn 'sv::4vec)
+                                :otherwise nil)))
+                (integerp x))
            (equal (4vec->upper x) x))
   :hints(("Goal" :in-theory (enable sv::4vec->upper))))
 
 (def-fgl-rewrite 4vec->lower-of-integer
   #!sv
-  (implies (integerp x)
+  (implies (and (syntaxp (not (fgl::fgl-object-case x
+                                :g-apply (eq x.fn 'sv::4vec)
+                                :otherwise nil)))
+                (integerp x))
            (equal (4vec->lower x) x))
   :hints(("Goal" :in-theory (enable sv::4vec->lower))))
 

@@ -52,27 +52,34 @@
     (vl-ps-seq (vl-print ", ")
                (vl-pp-define-formals (cdr x)))))
 
-(define vl-pp-define ((x vl-define-p) &key (ps 'ps))
+(define vl-pp-define ((name stringp) (x vl-maybe-define-p) &key (ps 'ps))
   :parents (vl-define)
   :short "Pretty print a @('`define') directive."
-  (b* (((vl-define x)))
-    (vl-ps-seq (vl-print "`define ")
-               (vl-print-str (vl-maybe-escape-identifier x.name))
-               (vl-print " ")
-               (if (not x.formals)
-                   ps
-                 (vl-ps-seq (vl-print "(")
-                            (vl-pp-define-formals x.formals)
-                            (vl-print ") ")))
-               (vl-print-str x.body)
+  (if x
+      (b* (((vl-define x)))
+        (vl-ps-seq (vl-print "`define ")
+                   (vl-print-str (vl-maybe-escape-identifier name))
+                   (vl-print " ")
+                   (if (not x.formals)
+                       ps
+                     (vl-ps-seq (vl-print "(")
+                                (vl-pp-define-formals x.formals)
+                                (vl-print ") ")))
+                   (vl-print-str x.body)
+                   (vl-println "")))
+    (vl-ps-seq (vl-print "`undef ")
+               (vl-print-str (vl-maybe-escape-identifier name))
                (vl-println ""))))
 
-(define vl-pps-define ((x vl-define-p))
+
+(define vl-pps-define ((name stringp) (x vl-maybe-define-p))
   :returns (str stringp :rule-classes :type-prescription)
-  (with-local-ps (vl-pp-define x)))
+  (with-local-ps (vl-pp-define name x)))
 
 (define vl-pp-defines ((x vl-defines-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-define (car x))
-               (vl-pp-defines (cdr x)))))
+  :measure (len (vl-defines-fix x))
+  (b* ((x (vl-defines-fix x)))
+    (if (atom x)
+        ps
+      (vl-ps-seq (vl-pp-define (caar x) (cdar x))
+                 (vl-pp-defines (cdr x))))))

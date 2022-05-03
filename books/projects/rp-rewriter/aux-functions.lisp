@@ -5,6 +5,7 @@
 
 ; Copyright (C) 2019, Regents of the University of Texas
 ; All rights reserved.
+; Copyright (C) 2022 Intel Corporation
 
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are
@@ -42,6 +43,7 @@
 (include-book "misc/beta-reduce" :dir :system)
 (include-book "tools/flag" :dir :system)
 (include-book "std/util/defines" :dir :system)
+(include-book "centaur/misc/starlogic" :dir :system)
 ;; Functions and lemmas used by both correctness proofs (rp-correct.lisp) and
 ;; guards (rp-rewriter.lisp)
 
@@ -396,6 +398,24 @@
            (t (and (rp-termp (car lst))
                    (rp-term-listp (cdr lst)))))))
 
+  (define rp-term-fix (term)
+    (if (rp-termp term)
+        term
+      ''nil)
+    ///
+    (defthm rp-termp-rp-term-fix
+      (rp-termp (rp-term-fix term))
+      :rule-classes :type-prescription))
+
+  (define rp-term-list-fix (term)
+    (if (rp-term-listp term)
+        term
+      nil)
+    ///
+    (defthm rp-term-listp-rp-term-list-fix
+      (rp-term-listp (rp-term-list-fix term))
+      :rule-classes :type-prescription))
+  
   (defun rp-term-list-listp (lst)
     (declare (xargs :guard t))
     (if (atom lst)
@@ -464,6 +484,7 @@
           (rp-term-listp (strip-cdrs ,bindings)))))
 
 (defun cons-count (x)
+  (declare (xargs :guard t))
   (cond ((atom x)
          1)
         (t
@@ -600,6 +621,11 @@
     (mbe :exec (ex-from-rp-loose term)
          :logic (ex-from-rp term)))
 
+  (defun-inline is-rp$ (term)
+    (declare (xargs :guard (rp-termp term)))
+    (mbe :exec (is-rp-loose term)
+         :logic (is-rp term)))
+    
   
   (defun extract-from-rp-with-context (term context)
     (declare (xargs :guard (rp-termp term)))
@@ -662,24 +688,34 @@
 (define dumb-negate-lit2 (term)
   :enabled t
   :inline t
+  :returns (mv new-term dont-rw)
   (cond ((atom term)
-         (acl2::fcons-term* 'not term))
+         (mv (acl2::fcons-term* 'not term)
+             `(nil t)))
         ((acl2::fquotep term)
-         (cond ((equal term ''nil)
-                ''t)
-               (t ''nil)))
-        ((case-match term (('not &) t) (& nil))
-         (acl2::fargn term 1))
-        ((and (case-match term (('equal & &) t) (& nil))
+         (mv (cond ((equal term ''nil)
+                    ''t)
+                   (t ''nil))
+             t))
+        ((case-match term (('not &) t))
+         (mv (acl2::fargn term 1) t))
+        ((case-match term (('if & then ''nil) (nonnil-p then)))
+         (mv `(if ,(acl2::fargn term 1) 'nil 't)
+             `(nil t t t)))
+        ((case-match term (('if & ''nil else) (nonnil-p else)))
+         (mv (acl2::fargn term 1) t))
+        ((and (case-match term (('equal & &) t))
               (or (equal (acl2::fargn term 2)
                          ''nil)
                   (equal (acl2::fargn term 1)
                          ''nil)))
-         (if (equal (acl2::fargn term 2)
-                    ''nil)
-             (acl2::fargn term 1)
-           (acl2::fargn term 2)))
-        (t (acl2::fcons-term* 'not term))))
+         (mv (if (equal (acl2::fargn term 2)
+                        ''nil)
+                 (acl2::fargn term 1)
+               (acl2::fargn term 2))
+             t))
+        ((nonnil-p term) (mv ''nil t))
+        (t (mv `(if ,term 'nil 't) `(nil t t t)))))
 
 (encapsulate
   nil
@@ -1100,7 +1136,7 @@
    (define rp-equal-cnt (term1 term2 cnt)
      :enabled t
      (declare (xargs :mode :logic
-                     :verify-guards nil
+                     ;;:verify-guards nil
                      :guard (and (natp cnt)
                                  #|(rp-termp term1)||#
                                  #|(rp-termp term2)||#)))
@@ -1122,7 +1158,7 @@
    (define rp-equal-cnt-subterms (subterm1 subterm2 cnt)
      :enabled t
      (declare (xargs :mode :logic
-                     :verify-guards nil
+                     ;;:verify-guards nil
                      :guard (and (natp cnt)
                                  #|(rp-term-listp subterm1)||#
                                  #|(rp-term-listp subterm2)||#)))
@@ -1171,7 +1207,7 @@
                                 #|(rp-termp (rp-lhs rule))||#
                                 #|(rp-termp (rp-rhs rule))||#)))
     (let ((vars (get-vars (rp-lhs rule))))
-      (and (subsetp (get-vars (rp-hyp rule))
+      (and (subsetp (get-vars-subterms (rp-hyp rule) nil)
                     vars
                     :test 'equal)
            (subsetp (get-vars (rp-rhs rule))
@@ -1201,22 +1237,22 @@
             (and warning
                  (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'rp))
     failed! LHS cannot contain an instance of rp. ~%")))
-        (or (not (include-fnc (rp-hyp rule) 'rp))
+        (or (not (include-fnc-subterms (rp-hyp rule) 'rp))
             (and warning
-                 (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'rp))
+                 (cw "ATTENTION! (not (include-fnc-subterms (rp-hyp rule) 'rp))
     failed! HYP cannot contain an instance of rp. ~%")))
         (or (not (include-fnc (rp-rhs rule) 'falist))
             (and warning
                  (cw "ATTENTION! (not (include-fnc (rp-rhs rule) 'falist))
     failed! RHS cannot contain an instance of falist ~%")))
-        (or (not (include-fnc (rp-hyp rule) 'falist))
+        (or (not (include-fnc-subterms (rp-hyp rule) 'falist))
             (and warning
                  (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'falist))
     failed! HYP cannot contain an instance of falist ~%")))
         (or (and
-             (or (rp-termp (rp-hyp rule))
+             (or (rp-term-listp (rp-hyp rule))
                  (and warning
-                      (cw "ATTENTION! (rp-termp (rp-hyp rule)) failed! Hyp of the ~
+                      (cw "ATTENTION! (rp-term-listp (rp-hyp rule)) failed! Hyp of the ~
     rule does not satisfy rp::rp-termp. ~%")))
              (or (rp-termp (rp-lhs rule))
                  (and warning
@@ -1250,19 +1286,19 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
                       (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'synp))
     failed! LHS cannot contain an instance of synp ~%")))
              (not (include-fnc (rp-lhs rule) 'list))
-             (not (include-fnc (rp-hyp rule) 'list))
+             (not (include-fnc-subterms (rp-hyp rule) 'list))
              (not (include-fnc (rp-rhs rule) 'list)))
             (and (equal warning ':err)
                  (hard-error
                   'rule-syntaxp
-                  "Error  is issued for: ~%
+                  "Read the above messages. Error  is issued for: ~%
  rp-rune: ~p0 ~% rp-hyp: ~p1 ~% rp-lhs: ~p2 ~% rp-rhs ~p3 ~%"
                   (list (cons #\0 (rp-rune rule))
                         (cons #\1 (rp-hyp rule))
                         (cons #\2 (rp-lhs rule))
                         (cons #\3 (rp-rhs rule)))))
             (and warning
-                 (cw "Warning in rp::rule-syntaxp is issued for: ~%
+                 (cw "Read the above messages. Warning in rp::rule-syntaxp is issued for: ~%
  rp-rune: ~p0 ~% rp-hyp: ~p1 ~% rp-lhs: ~p2 ~% rp-rhs ~p3 ~%"
                      (rp-rune rule)
                      (rp-hyp rule)
@@ -1741,8 +1777,16 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
   (rule-frame-cnts :type (satisfies alistp) :initially nil)
 
   (rw-step-limit :type (unsigned-byte 58) :initially 100000)
+  (rw-backchain-limit :type (unsigned-byte 58) :initially 1000)
+  (rw-backchain-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be set outside and read internally when starting to rewrite a hyp.
+  (rw-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be used
+  ;; only internally.
+  (backchaining-rule :type t :initially nil)
+  (rw-context-disabled :type (satisfies booleanp) :initially nil) 
 
   (not-simplified-action :type (satisfies symbolp) :initially :error)
+
+  (casesplitter-cases :type (satisfies rp-term-listp) :initially nil)
 
   :inline t)
 
@@ -1766,7 +1810,11 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (defund rp-state-new-run (rp-state)
   (declare (xargs :stobjs (rp-state)))
-  (b* ((rp-state (rules-used-clear rp-state))
+  (b* ((rp-state (update-rw-context-disabled nil rp-state))
+       (rp-state (update-rw-limit-throws-error t rp-state))
+       (rp-state (update-backchaining-rule nil rp-state))
+       (rp-state (update-casesplitter-cases nil rp-state))
+       (rp-state (rules-used-clear rp-state))
        (rp-state (update-rw-stack-size 0 rp-state))
        (rp-state (update-rw-stack nil rp-state))
        (rp-state (update-rule-frame-cnts nil rp-state)))
@@ -1828,3 +1876,94 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
        (rp-state-preservedp-sk old-rp-state
                                new-rp-state)))     
        
+
+(define not* (x)
+  (not x)
+  ///
+  (defthm not*-forward
+    (implies (not* x)
+             (not x))
+    :rule-classes :forward-chaining)
+  (defthm not-of-not*-forward
+    (implies (not (not* a))
+             a)
+    :rule-classes :forward-chaining))
+
+
+(defund casesplit-from-context-trig (x)
+  (declare (xargs :guard t))
+  x)
+
+(defund dont-rw-context (x)
+  (declare (xargs :guard t))
+  x)
+
+(progn
+  (defund is-dont-rw-context (x)
+    (declare (xargs :guard t))
+    (case-match x
+      (('dont-rw-context &)
+       t)))
+  (defthm is-dont-rw-context-implies
+    (implies (is-dont-rw-context x)
+             (case-match x
+               (('dont-rw-context &)
+                t)))
+    :rule-classes :forward-chaining
+    :hints (("Goal"
+             :in-theory (e/d (is-dont-rw-context) ())))))
+
+(progn
+  (defund binary-and** (x y)
+    (declare (xargs :guard t))
+    (and x y))
+
+  (DEFUN AND**-MACRO (ACL2::LST)
+    (IF (ATOM ACL2::LST)
+        T
+        (IF (ATOM (CDR ACL2::LST))
+            (CAR ACL2::LST)
+            (LIST 'BINARY-AND**
+                  (CAR ACL2::LST)
+                  (AND**-MACRO (CDR ACL2::LST))))))
+
+  (defmacro and** (&rest lst)
+    `(mbe :logic ,(and**-macro lst)
+          :exec (hide ,(and-macro lst))))
+
+  (defmacro and*e (&rest lst)
+    `(mbe :logic ,(acl2::and*-macro lst)
+          :exec (hide ,(and-macro lst))))
+  
+  (defund binary-or** (x y)
+    (declare (xargs :guard t))
+    (or x y))
+
+  (DEFUN OR**-MACRO (ACL2::LST)
+    (IF (ATOM ACL2::LST)
+        T
+        (IF (ATOM (CDR ACL2::LST))
+            (CAR ACL2::LST)
+            (LIST 'BINARY-OR**
+                  (CAR ACL2::LST)
+                  (OR**-MACRO (CDR ACL2::LST))))))
+
+  (defmacro or** (&rest lst)
+    `(mbe :logic ,(or**-macro lst)
+          :exec (hide ,(or-macro lst))))
+
+  (defmacro or*e (&rest lst)
+    `(mbe :logic ,(acl2::or*-macro lst)
+          :exec (hide ,(or-macro lst))))
+
+  (defund not** (x)
+    (declare (xargs :guard t))
+    (not x)))
+
+(defund if** (x y z)
+  (declare (xargs :guard t))
+  (if x y z))
+
+
+
+

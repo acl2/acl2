@@ -29,6 +29,13 @@
 // Original author: Jared Davis <jared@centtech.com>
 
 
+
+// NOTE: The notes below pertain to versions of VCS before around 2015
+// or so.  Versions dated later than 2017 now seem to match
+// NCVerilog's behavior, which means we're mismatching for now.
+
+
+
 // Special hand-crafted tests of the inside operator.
 //
 // SystemVerilog-2012 seems to not cover this operator very well and there are
@@ -169,7 +176,7 @@ module spec (input logic [127:0] in,
   wire [5:0] test2b = 4'b  1100 inside { 3'sb 100 } ;
 
   wire [5:0] test3a = 3'sb 100  inside { (3'sb100 << 1'b1) >>> 1'b1, 4'sb 0 } ;
-  wire [5:0] 			 test3b = 3'sb 100  inside { (3'sb100 << 1'b1) >>> 1'b1, 4'b  0 } ;
+  wire [5:0] test3b = 3'sb 100  inside { (3'sb100 << 1'b1) >>> 1'b1, 4'b  0 } ;
 
   wire [5:0] test3c = 4'sb 1100 inside { (3'sb100 << 1'b1) >>> 1'b1, 4'b  0 } ;
 

@@ -2485,8 +2485,7 @@ appropriately if @('activep') is set.</p>"
                      :args (list loc name (duplicated-members formal-names)))))
           (mv nil echars ppst)))
 
-       (new-def (make-vl-define :name    name
-                                :formals formals
+       (new-def (make-vl-define :formals formals
                                 :body    (vl-echarlist->string body)
                                 :loc     loc
                                 :stickyp nil))
@@ -2519,16 +2518,12 @@ appropriately if @('activep') is set.</p>"
                             new-str
                             loc))))
 
-       (defines (cond ((and prev-def
-                            (vl-define->stickyp prev-def))
-                       ;; Ignore the new definition, keep the old.
-                       defines)
-                      (prev-def
-                       ;; Not sticky so delete the old definition and add the new.
-                       (vl-add-define new-def (vl-delete-define name defines)))
-                      (t
-                       ;; No old definition, add the new one.
-                       (vl-add-define new-def defines))))
+       (defines (if (and prev-def
+                         (vl-define->stickyp prev-def))
+                    ;; Ignore the new definition, keep the old.
+                    defines
+                  ;; Add the new one, overriding the old if it exists.
+                  (vl-add-define name new-def defines)))
        (ppst (vl-ppst-update-defines defines)))
 
     (mv t remainder ppst))
@@ -4000,6 +3995,13 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
         ;; BOZO maybe add a note that we are ignoring these directives?
         (vl-preprocess-loop remainder n ppst state))
 
+       ((when (and (equal directive "default_nettype")
+                   (not (vl-ppst->activep))))
+        (b* (((mv & ?prefix remainder) (vl-read-until-literal *nls*
+                                                              remainder)))
+          (vl-preprocess-loop remainder n ppst state)))
+             
+       
        (ppst (vl-ppst-fatal
               :msg "~a0: we do not support `~s1."
               :args (list (vl-echar->loc echar1)

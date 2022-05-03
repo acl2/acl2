@@ -121,7 +121,7 @@
        (vl-fmt-tilde-a-case vl-exprdist-p vl-pp-exprdist))
       ((:vl-repetition)
        (vl-fmt-tilde-a-case vl-repetition-p vl-pp-repetition))
-      ((:colon)
+      ((:colon :paramscolon)
        (vl-fmt-tilde-a-case vl-scopeexpr-p vl-pp-scopeexpr))
       ((:vl-range)
        (vl-fmt-tilde-a-case vl-range-p vl-pp-range))
@@ -242,7 +242,8 @@
                          (not (vl-hidexpr-p x)))
                 (implies (and (symbolp (tag x))
                               (consp x)
-                              (not (equal (tag x) :colon)))
+                              (not (equal (tag x) :colon))
+                              (not (equal (tag x) :paramscolon)))
                          (not (vl-scopeexpr-p x))))
            :hints(("Goal" :in-theory (enable tag
                                              vl-scopeexpr-p
@@ -253,7 +254,8 @@
 
   (local (defthm not-scopeexpr-when-not-colon-or-hidexpr
            (implies (and (not (vl-hidexpr-p x))
-                         (not (Equal (tag x) :colon)))
+                         (not (Equal (tag x) :colon))
+                         (not (Equal (tag x) :paramscolon)))
                     (not (vl-scopeexpr-p x)))
            :hints(("Goal" :in-theory (enable tag)
                    :expand ((vl-scopeexpr-p x))))))

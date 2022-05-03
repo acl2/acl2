@@ -1909,7 +1909,9 @@ by redefining the constant.</p>")
 
   (defret sparseint$-val-of-<fn>
     (equal (sparseint$-val bitnot)
-           (lognot (sparseint$-val x)))))
+           (lognot (sparseint$-val x))))
+
+  (memoize 'sparseint$-bitnot))
 
 (define sparseint-bitnot ((x sparseint-p))
   :parents (sparseint)

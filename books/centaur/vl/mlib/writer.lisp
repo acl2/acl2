@@ -4207,6 +4207,7 @@ expression into a string."
       (:vl-elabtask   (vl-pp-elabtask x))
       (:vl-assertion  (vl-pp-assertion x :include-name t))
       (:vl-cassertion (vl-pp-cassertion x :include-name t))
+      (:vl-letdecl    (vl-println "/* Implement LETDECL printing */"))
       (OTHERWISE (progn$ (impossible) ps)))))
 
 (define vl-pp-modelementlist ((x vl-modelementlist-p) &key (ps 'ps))

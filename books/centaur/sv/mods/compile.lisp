@@ -1002,7 +1002,15 @@ svex-assigns-compose)).</li>
              (svarlist-addr-p (svex-alist-vars new-x)))
     :hints(("Goal" :in-theory (enable svex-alist-vars))))
 
+  (defret keys-of-<fn>
+    (implies (and (not (svex-lookup v x))
+                  (not (svex-lookup v acc)))
+             (not (svex-lookup v new-x)))
+    :hints(("Goal" :in-theory (enable svex-lookup))))
+
   (local (in-theory (enable svex-alist-fix))))
+
+
 
 (define svex-normalize-assigns ((assigns assigns-p)
                                 (fixups assigns-p)
@@ -1081,6 +1089,21 @@ svex-assigns-compose)).</li>
   (defret vars-of-svex-normalize-assigns
     (implies (svarlist-addr-p (aliases-vars aliases))
              (svarlist-addr-p (svex-alist-vars res-assigns))))
+
+  (local (include-book "std/alists/fast-alist-clean" :dir :system))
+  (local (in-theory (disable acl2::hons-assoc-equal-iff-member-alist-keys)))
+
+  (local (defthm svex-lookup-of-fast-alist-clean
+         (equal (svex-lookup k (fast-alist-clean x))
+                (svex-lookup k x))
+         :hints(("Goal" :in-theory (e/d (svex-lookup)
+                                        (fast-alist-clean))))))
+  
+  (defret keys-of-svex-normalize-assigns
+    (implies (svarlist-addr-p (aliases-vars aliases))
+             (svarlist-addr-p (svex-alist-keys res-assigns)))
+    :hints (("goal" :do-not-induct t
+             :in-theory (disable fast-alist-clean))))
 
   (defret vars-of-svex-normalize-assigns-delays
     (implies (svarlist-addr-p (aliases-vars aliases))
