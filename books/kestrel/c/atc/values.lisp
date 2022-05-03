@@ -394,26 +394,78 @@
 (define value-signed-integerp ((val valuep))
   :returns (yes/no booleanp)
   :short "Check if a value is a signed integer [C:6.2.5/4]."
-  (b* ((val (value-fix val)))
-    (or (scharp val)
-        (sshortp val)
-        (sintp val)
-        (slongp val)
-        (sllongp val)))
-  :hooks (:fix))
+  (or (value-case val :schar)
+      (value-case val :sshort)
+      (value-case val :sint)
+      (value-case val :slong)
+      (value-case val :sllong))
+  :hooks (:fix)
+  ///
+
+  (defruled value-signed-integerp-alt-def
+    (equal (value-signed-integerp val)
+           (b* ((val (value-fix val)))
+             (or (scharp val)
+                 (sshortp val)
+                 (sintp val)
+                 (slongp val)
+                 (sllongp val))))
+    :use (:instance lemma (val (value-fix val)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (valuep val)
+                (equal (value-signed-integerp val)
+                       (or (scharp val)
+                           (sshortp val)
+                           (sintp val)
+                           (slongp val)
+                           (sllongp val))))
+       :enable (valuep
+                value-kind
+                scharp
+                sshortp
+                sintp
+                slongp
+                sllongp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value-unsigned-integerp ((val valuep))
   :returns (yes/no booleanp)
   :short "Check if a value is an unsigned integer [C:6.2.5/6]."
-  (b* ((val (value-fix val)))
-    (or (ucharp val)
-        (ushortp val)
-        (uintp val)
-        (ulongp val)
-        (ullongp val)))
-  :hooks (:fix))
+  (or (value-case val :uchar)
+      (value-case val :ushort)
+      (value-case val :uint)
+      (value-case val :ulong)
+      (value-case val :ullong))
+  :hooks (:fix)
+  ///
+
+  (defruled value-unsigned-integerp-alt-def
+    (equal (value-unsigned-integerp val)
+           (b* ((val (value-fix val)))
+             (or (ucharp val)
+                 (ushortp val)
+                 (uintp val)
+                 (ulongp val)
+                 (ullongp val))))
+    :use (:instance lemma (val (value-fix val)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (valuep val)
+                (equal (value-unsigned-integerp val)
+                       (or (ucharp val)
+                           (ushortp val)
+                           (uintp val)
+                           (ulongp val)
+                           (ullongp val))))
+       :enable (valuep
+                value-kind
+                ucharp
+                ushortp
+                uintp
+                ulongp
+                ullongp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -470,7 +522,7 @@
              value-arithmeticp
              value-realp
              value-integerp
-             value-signed-integerp))
+             value-signed-integerp-alt-def))
 
   (defrule unsigned-integer-value-kinds
     (implies (or (ucharp x)
@@ -488,7 +540,7 @@
              value-arithmeticp
              value-realp
              value-integerp
-             value-unsigned-integerp))
+             value-unsigned-integerp-alt-def))
 
   (defrule not-errorp-when-valuep
     (implies (valuep x)
@@ -596,27 +648,27 @@
   (defruled type-signed-integerp-of-type-of-signed-integer-value
     (implies (value-signed-integerp val)
              (type-signed-integerp (type-of-value val)))
-    :enable value-signed-integerp)
+    :enable value-signed-integerp-alt-def)
 
   (defruled type-unsigned-integerp-of-type-of-unsigned-integer-value
     (implies (value-unsigned-integerp val)
              (type-unsigned-integerp (type-of-value val)))
-    :enable value-unsigned-integerp)
+    :enable value-unsigned-integerp-alt-def)
 
   (defruled type-integerp-of-type-of-integer-value
     (implies (value-integerp val)
              (type-integerp (type-of-value val)))
     :enable (value-integerp
-             value-signed-integerp
-             value-unsigned-integerp))
+             value-signed-integerp-alt-def
+             value-unsigned-integerp-alt-def))
 
   (defruled type-realp-of-type-of-real-value
     (implies (value-realp val)
              (type-realp (type-of-value val)))
     :enable (value-realp
              value-integerp
-             value-signed-integerp
-             value-unsigned-integerp))
+             value-signed-integerp-alt-def
+             value-unsigned-integerp-alt-def))
 
   (defruled type-arithmeticp-of-type-of-arithmetic-value
     (implies (value-arithmeticp val)
@@ -624,8 +676,8 @@
     :enable (value-arithmeticp
              value-realp
              value-integerp
-             value-signed-integerp
-             value-unsigned-integerp))
+             value-signed-integerp-alt-def
+             value-unsigned-integerp-alt-def))
 
   (defruled type-scalarp-of-type-of-scalar-value
     (implies (value-scalarp val)
@@ -634,8 +686,8 @@
              value-arithmeticp
              value-realp
              value-integerp
-             value-signed-integerp
-             value-unsigned-integerp
+             value-signed-integerp-alt-def
+             value-unsigned-integerp-alt-def
              type-scalarp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
