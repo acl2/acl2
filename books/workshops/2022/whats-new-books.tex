@@ -90,7 +90,8 @@
 \subtitle{Since the ACL2-2020 Workshop}
 
 \author{Alessandro Coglio\inst{1} (presenter),
-        Matt Kaufmann\inst{2}}
+        Matt Kaufmann\inst{2}, \\
+        J Strother Moore\inst{2}}
 
 \institute{\inst{1}Kestrel Institute,
            \inst{2}University of Texas at Austin}
@@ -331,6 +332,20 @@ Automated Program Transformations (APT) library.
 
 \implibtitle
 
+\bookpath{build}:
+Book build library.
+\begin{itemize}
+\item Now \code{cert.pl} makes use of useless runes just as \code{make} does.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{kestrel/crypto/ecurve}:
 Elliptic curve cryptographic library.
 \begin{itemize}
@@ -467,6 +482,29 @@ X86ISA library.
 \item Simplified the treatment of CPUID features.
 \item Added the \code{MOVD} and \code{MOVQ} instruction variants
       that move data from/to the XMM registers.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{projects/apply}:
+\code{apply\$} and \code{loop\$} libraries.
+\begin{itemize}
+\item Replaced \code{top.lisp} with:
+      \begin{itemize}
+      \item \code{apply.lisp}, to reason about \code{apply\$}.
+      \item \code{loop.lisp}, to reason about \code{loop\$}
+            (this also includes \code{apply.lisp}).
+      \item \code{top.lisp},
+            which includes \code{apply.lisp} and \code{loop.lisp},
+            and is thus the same as \code{loop.lisp}.
+      \end{itemize}
+\item Made the inclusion of certain supporting books local.
 \end{itemize}
 
 \end{frame}
