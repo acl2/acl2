@@ -31,6 +31,7 @@
 
 (in-package "GL")
 
+(include-book "centaur/vl/util/defs" :dir :system)
 (include-book "glmc-generic-defs")
 (include-book "centaur/gl/gl-generic-clause-proc" :dir :system)
 (include-book "centaur/gl/gl-generic-interp" :dir :system)
