@@ -23,6 +23,7 @@
 (include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
 ;(include-book "kestrel/utilities/polarity" :dir :system)
 (include-book "kestrel/utilities/printing" :dir :system) ;for print-list
+(include-book "kestrel/utilities/mv-nth" :dir :system) ; could make local, but many other books may need this
 (include-book "kestrel/acl2-arrays/bounded-nat-alists" :dir :system)
 (include-book "numeric-lists")
 (include-book "bounded-dag-exprs")
@@ -40,6 +41,8 @@
 (local (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+
+(in-theory (disable mv-nth)) ; so the rules in this book fire
 
 (local (in-theory (disable symbol-alistp strip-cdrs alistp))) ;prevent inductions
 

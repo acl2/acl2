@@ -19,7 +19,7 @@
 
 (include-book "simplify-defun")
 
-(local (include-book "arithmetic/top" :dir :system))
+(local (include-book "arithmetic-5/top" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,8 +38,6 @@
    ((gte32 * *) => * :formals (u v) :guard (and (int32p u) (int32p v))))
 
   (local (include-book "ihs/basic-definitions" :dir :system))
-
-  (local (include-book "arithmetic-5/top" :dir :system))
 
   ;; For witnessing the constrained functions,
   ;; we represent two's complement 32-bit integers
@@ -234,8 +232,8 @@
                          (IF (< (INT D) 0)
                              (INT32 (+ (INT D) (* 2 (INT B))))
                              (INT32 (+ (INT D)
-                                       (- (* 2 (INT A)))
-                                       (* 2 (INT B)))))
+                                       (* 2 (INT B))
+                                       (* -2 (INT A)))))
                          (DRAWPOINT X Y SCREEN)))
    :UNDEFINED))
 

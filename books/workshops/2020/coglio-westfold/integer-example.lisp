@@ -14,7 +14,7 @@
 (include-book "std/testing/must-be-redundant" :dir :system)
 (include-book "workshops/2017/coglio-kaufmann-smith/support/simplify-defun" :dir :system)
 
-(local (include-book "arithmetic/top" :dir :system))
+(local (include-book "arithmetic-5/top" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,8 +43,6 @@
    ((gte32 * *) => * :formals (u v) :guard (and (int32p u) (int32p v))))
 
   (local (include-book "ihs/basic-definitions" :dir :system))
-
-  (local (include-book "arithmetic-5/top" :dir :system))
 
   ;; For witnessing the constrained functions,
   ;; we represent two's complement 32-bit integers
@@ -378,7 +376,7 @@
                                  (IF (< D 0) Y (+ 1 Y))
                                  (IF (< D 0)
                                      (+ D (* 2 B))
-                                     (+ D (- (* 2 A)) (* 2 B)))
+                                     (+ D (* 2 B) (* -2 A)))
                                  (DRAWPOINT (INT32 X) (INT32 Y) SCREEN)))
            :UNDEFINED)
        NIL)))
