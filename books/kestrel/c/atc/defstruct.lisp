@@ -153,6 +153,9 @@
       the recognizer implies @(tsee valuep).")
     (xdoc::li
      "The name of the theorem asserting that
+      the recognizer implies that the @(tsee value-kind) is @(':struct').")
+    (xdoc::li
+     "The name of the theorem asserting that
       the recognizer implies a specific value of @(tsee struct->tag).")
     (xdoc::li
      "The name of the theorem asserting that
@@ -173,6 +176,7 @@
    (not-error-thm symbolp)
    (structp-thm symbolp)
    (valuep-thm symbolp)
+   (value-kind-thm symbolp)
    (tag-thm symbolp)
    (members-thm symbolp)
    (call pseudo-event-form))
@@ -547,6 +551,7 @@
                (not-error-thm symbolp)
                (structp-thm symbolp)
                (valuep-thm symbolp)
+               (value-kind-thm symbolp)
                (tag-thm symbolp)
                (members-thm symbolp))
   :short "Generate the recognizer of
@@ -576,6 +581,9 @@
                    struct-tag-p))
        (valuep-when-struct-tag-p
         (packn-pos (list 'valuep-when- struct-tag-p)
+                   struct-tag-p))
+       (value-kind-when-struct-tag-p
+        (packn-pos (list 'value-kind-when- struct-tag-p)
                    struct-tag-p))
        (struct->tag-when-struct-tag-p
         (packn-pos (list 'struct->tag-when- struct-tag-p)
@@ -609,6 +617,10 @@
              (implies (,struct-tag-p x)
                       (valuep x))
              :in-theory '(,struct-tag-p))
+           (defruled ,value-kind-when-struct-tag-p
+             (implies (,struct-tag-p x)
+                      (equal (value-kind x) :struct))
+             :in-theory '(,struct-tag-p))
            (defruled ,struct->tag-when-struct-tag-p
              (implies (,struct-tag-p x)
                       (equal (struct->tag x)
@@ -627,6 +639,7 @@
         not-errorp-when-struct-tag-p
         structp-when-struct-tag-p
         valuep-when-struct-tag-p
+        value-kind-when-struct-tag-p
         struct->tag-when-struct-tag-p
         struct->members-when-struct-tag-p)))
 
@@ -917,6 +930,7 @@
             not-errorp-when-struct-tag-p
             structp-when-struct-tag-p
             valuep-when-struct-tag-p
+            value-kind-when-struct-tag-p
             struct->tag-when-struct-tag-p
             struct->members-when-struct-tag-p)
         (defstruct-gen-recognizer struct-tag-p tag members))
@@ -944,6 +958,7 @@
                                   :not-error-thm not-errorp-when-struct-tag-p
                                   :structp-thm structp-when-struct-tag-p
                                   :valuep-thm valuep-when-struct-tag-p
+                                  :value-kind-thm value-kind-when-struct-tag-p
                                   :tag-thm struct->tag-when-struct-tag-p
                                   :members-thm struct->members-when-struct-tag-p
                                   :call call))
