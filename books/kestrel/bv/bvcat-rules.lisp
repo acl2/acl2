@@ -41,6 +41,30 @@
                   (bvand size x lowval)))
   :hints (("Goal" :in-theory (enable bvand))))
 
+(defthm bvand-of-bvcat-tighten-arg2
+  (implies (and (< size (+ lowsize highsize))
+                (< lowsize size) ; allow = ?
+                (natp size)
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvand size (bvcat highsize highval lowsize lowval) y)
+                  (bvand size (bvcat (- size lowsize) highval lowsize lowval) y)))
+  :hints (("Goal" :in-theory (e/d (bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
+                                         bvchop-of-logapp-bigger)
+                                  ()))))
+
+(defthm bvand-of-bvcat-tighten-arg3
+  (implies (and (< size (+ lowsize highsize))
+                (< lowsize size) ; allow = ?
+                (natp size)
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvand size x (bvcat highsize highval lowsize lowval))
+                  (bvand size x (bvcat (- size lowsize) highval lowsize lowval))))
+  :hints (("Goal" :in-theory (e/d (bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
+                                         bvchop-of-logapp-bigger)
+                                  ()))))
+
 (defthmd bvand-of-bvcat-arg3
   (implies (and (equal size (+ lowsize highsize)) ;gen?
                 (natp size)
@@ -103,6 +127,26 @@
                   (bvor size x lowval)))
   :hints (("Goal" :in-theory (enable bvor))))
 
+(defthm bvor-of-bvcat-tighten-arg2
+  (implies (and (< size (+ lowsize highsize))
+                (< lowsize size)
+                (natp size)
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvor size (bvcat highsize highval lowsize lowval) y)
+                  (bvor size (bvcat (- size lowsize) highval lowsize lowval) y)))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+(defthm bvor-of-bvcat-tighten-arg3
+  (implies (and (< size (+ lowsize highsize))
+                (< lowsize size)
+                (natp size)
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvor size x (bvcat highsize highval lowsize lowval))
+                  (bvor size x (bvcat (- size lowsize) highval lowsize lowval))))
+  :hints (("Goal" :in-theory (enable bvor))))
+
 (defthmd bvor-of-bvcat-arg3
   (implies (and (equal size (+ lowsize highsize)) ;gen?
                 (natp size)
@@ -144,7 +188,50 @@
            (equal (bvxor size x (bvcat highsize highval lowsize lowval))
                   (bvxor size x lowval))))
 
-(defthmd bvxor-of-bvcat
+(defthm bvxor-of-bvcat-tighten-arg2
+  (implies (and (< size (+ lowsize highsize))
+                (< lowsize size)
+                (natp size)
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvxor size (bvcat highsize highval lowsize lowval) y)
+                  (bvxor size (bvcat (- size lowsize) highval lowsize lowval) y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(defthm bvxor-of-bvcat-tighten-arg3
+  (implies (and (< size (+ lowsize highsize))
+                (< lowsize size)
+                (natp size)
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvxor size x (bvcat highsize highval lowsize lowval))
+                  (bvxor size x (bvcat (- size lowsize) highval lowsize lowval))))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+;; (defthmd bvxor-of-bvcat-arg2
+;;   (implies (and (equal size (+ lowsize highsize))
+;;                 (natp lowsize)
+;;                 (natp highsize))
+;;            (equal (bvxor size (bvcat highsize highval lowsize lowval) x)
+;;                   (bvcat highsize
+;;                          (bvxor highsize (slice (+ -1 size) lowsize x) highval)
+;;                          lowsize
+;;                          (bvxor lowsize x lowval)))))
+
+;; Do we want this enabled?
+(defthm bvxor-of-bvcat-arg2
+  (implies (and (<= size (+ highsize lowsize))
+                (<= lowsize size)
+                (natp highsize)
+                (natp size)
+                (natp lowsize))
+           (equal (bvxor size (bvcat highsize highval lowsize lowval) y)
+                  (bvcat (- size lowsize)
+                         (bvxor (- size lowsize) highval (slice (+ -1 size) lowsize y))
+                         lowsize
+                         (bvxor lowsize lowval y)))))
+
+(defthmd bvxor-of-bvcat-arg3
   (implies (and (equal size (+ lowsize highsize)) ;gen?
                 (natp size)
                 (natp lowsize)
@@ -153,20 +240,7 @@
                   (bvcat highsize
                          (bvxor highsize (slice (+ -1 size) lowsize x) highval)
                          lowsize
-                         (bvxor lowsize (bvchop lowsize x) lowval))))
-  :hints (("Goal" :in-theory (enable bvcat bvxor LOGTAIL-OF-BVCHOP-BECOMES-SLICE))))
-
-(defthmd bvxor-of-bvcat-alt
-  (implies (and (equal size (+ lowsize highsize))
-                (natp lowsize)
-                (natp highsize))
-           (equal (bvxor size (bvcat highsize highval lowsize lowval) x)
-                  (bvcat highsize
-                         (bvxor highsize (slice (+ -1 size) lowsize x) highval)
-                         lowsize
-                         (bvxor lowsize (bvchop lowsize x) lowval))))
-  :hints (("Goal" :use (:instance bvxor-of-bvcat)
-           :in-theory (disable bvxor-of-bvcat))))
+                         (bvxor lowsize (bvchop lowsize x) lowval)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

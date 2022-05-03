@@ -18361,12 +18361,20 @@
               name because it is not a legal variable name."
              name))))
 
-(defun chk-unrestricted-guards-for-user-fns (names wrld ctx state)
+(defun chk-unrestricted-guards-for-type-spec-term (names wrld ctx state)
+
+; This function is intended to be run on the names called in the translation of
+; a type-spec to a term, to check that the term is well-guarded.  We are only
+; concerned with each name, pred, that comes from (SATISFIES pred) -- but pred
+; is thus unary, so we can exempt non-unary functions from the check.  That's
+; important; for example, < may be in names, for example as a result of
+; translating the type-spec (unsigned-byte 30) to a term.
+
   (cond
    ((null names) (value nil))
-   ((or (acl2-system-namep-state (car names) state)
+   ((or (not (eq (arity (car names) wrld) 1)) ; not from SATISFIES
         (equal (guard (car names) nil wrld) *t*))
-    (chk-unrestricted-guards-for-user-fns (cdr names) wrld ctx state))
+    (chk-unrestricted-guards-for-type-spec-term (cdr names) wrld ctx state))
    (t (er soft ctx
           "The guard for ~x0 is ~p1.  But in order to use ~x0 in the ~
            type-specification of a single-threaded object it must ~
@@ -18519,7 +18527,7 @@
                     (chk-common-lisp-compliant-subfunctions
                      nil (list field) (list (car pair))
                      wrld "auxiliary function" ctx state)
-                    (chk-unrestricted-guards-for-user-fns
+                    (chk-unrestricted-guards-for-type-spec-term
                      (all-fnnames (car pair))
                      wrld ctx state)
                     (cond
@@ -18632,7 +18640,7 @@
                   (chk-common-lisp-compliant-subfunctions
                    nil (list field) (list (car pair))
                    wrld "body" ctx state)
-                  (chk-unrestricted-guards-for-user-fns
+                  (chk-unrestricted-guards-for-type-spec-term
                    (all-fnnames (car pair))
                    wrld ctx state)
                   (cond

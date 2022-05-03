@@ -2709,7 +2709,7 @@
                                unsigned-byte-p-forward
                                rule-alistp-means-alistp
                                axe-bind-free-function-applicationp
-                               natp-of-+-of-a-and-largest-non-quotep
+                               natp-of-+-of-1-and-largest-non-quotep
                                <-of-largest-non-quotep
                                consp-when-true-listp-and-non-nil
                                ;; rationalp-+

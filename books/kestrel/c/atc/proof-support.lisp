@@ -1380,7 +1380,6 @@
           *atc-valuep-rules*
           *atc-value-listp-rules*
           *atc-value-optionp-rules*
-          *atc-arrayp-rules*
           *atc-type-of-value-option-rules*
           *atc-value-array->elemtype-rules*
           *atc-array-length-rules*
@@ -1418,8 +1417,8 @@
           *atc-more-rewrite-rules*
           *atc-type-prescription-rules*
           *atc-compound-recognizer-rules*
-          *value-disjoint-rules*
-          *array-disjoint-rules*))
+          *integer-value-disjoint-rules*
+          *array-value-disjoint-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

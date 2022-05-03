@@ -17,6 +17,7 @@
 (local (include-book "../utilities/equal-of-booleans"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 (defund bvxor (size x y)
   (declare (type integer x y)
@@ -48,6 +49,12 @@
   :hints (("Goal" :in-theory (e/d (bvxor-commutative) (bvxor-associative))
            :use ((:instance bvxor-associative)
                  (:instance bvxor-associative (x y) (y x))))))
+
+(defthmd bvxor-commute-constant
+  (implies (syntaxp (and (quotep y)
+                         (not (quotep x))))
+           (equal (bvxor size x y)
+                  (bvxor size y x))))
 
 (defthm bvxor-same
   (equal (bvxor size x x)
@@ -366,14 +373,26 @@
                                   (x (bvchop size y)))
            :in-theory (e/d (bvxor-commutative) (bvxor-cancel)))))
 
-(defthm bvxor-of-constant-trim-arg1
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep size)))
-                (not (unsigned-byte-p size k))
-                (natp size) ; means that k is the reason that (unsigned-byte-p size k) is false
-                )
-           (equal (bvxor size k x)
-                  (bvxor size (bvchop size k) x))))
+(defthm bvxor-of-constant-chop-arg2
+   (implies (and (syntaxp (and (quotep x)
+                               (quotep size)))
+                 (not (unsigned-byte-p size x))
+                 (natp size) ; prevents loops
+                 )
+            (equal (bvxor size x y)
+                   (bvxor size (bvchop size x) y)))
+   :hints (("Goal" :in-theory (enable bvxor))))
+
+;; may not be needed if we commute constants forward
+(defthm bvxor-of-constant-chop-arg3
+   (implies (and (syntaxp (and (quotep y)
+                               (quotep size)))
+                 (not (unsigned-byte-p size y))
+                 (natp size) ; prevents loops
+                 )
+            (equal (bvxor size x y)
+                   (bvxor size x (bvchop size y))))
+   :hints (("Goal" :in-theory (enable bvxor))))
 
 (defthm bvxor-of-+-of-expt-2-same-arg2
   (implies (and (integerp x)
@@ -441,3 +460,46 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvxor (size 1))
            :in-theory (disable unsigned-byte-p-of-bvxor
                                unsigned-byte-p-of-bvxor-gen))))
+
+(defthm slice-of-bvxor
+  (implies (and (< highbit size)
+;                (<= lowbit highbit)
+                (natp size)
+                (natp lowbit)
+                (natp highbit)
+                )
+           (equal (slice highbit lowbit (bvxor size x y))
+                  (bvxor (+ 1 highbit (- lowbit))
+                         (slice highbit lowbit x)
+                         (slice highbit lowbit y))))
+  :hints (("Goal" :in-theory (e/d (slice bvxor natp BVCHOP-OF-LOGTAIL)
+                                  (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                                   LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))
+
+;bozo or just use SLICE-TOO-HIGH-IS-0 - which is cheaper?
+;or just pass slice through?
+(defthm slice-of-bvxor-too-high
+  (implies (and (<= size low)
+                (integerp low)
+                (natp size))
+           (equal (slice high low (bvxor size x y))
+                  0))
+  :hints (("Goal" :in-theory (enable slice-too-high-is-0))))
+
+(defthm slice-of-bvxor-gen
+  (implies (and (natp low)
+                (integerp high)
+                (natp size))
+           (equal (slice high low (bvxor size x y))
+                  (if (<= size low)
+                      0
+                    (if (< high size)
+                        (bvxor (+ 1 high (- low))
+                               (slice high low x)
+                               (slice high low y))
+                      (bvxor (+ size (- low))
+                             (slice (+ -1 size) low x)
+                             (slice (+ -1 size) low y))))))
+  :hints (("Goal" :in-theory (e/d (slice bvxor natp BVCHOP-OF-LOGTAIL)
+                                  (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                                   LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))

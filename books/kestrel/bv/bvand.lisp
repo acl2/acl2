@@ -69,6 +69,12 @@
            :use ((:instance bvand-associative)
                  (:instance bvand-associative (x y) (y x))))))
 
+(defthmd bvand-commute-constant
+  (implies (syntaxp (and (quotep y)
+                         (not (quotep x))))
+           (equal (bvand size x y)
+                  (bvand size y x))))
+
 (defthm bvand-same
   (equal (bvand size x x)
          (bvchop size x))
@@ -108,7 +114,7 @@
                   0))
   :hints (("Goal" :in-theory (enable bvand))))
 
-(defthm bvand-when-size-is-0
+(defthm bvand-of-0-arg1
   (equal (bvand 0 x y)
          0)
   :hints (("Goal" :in-theory (enable bvand))))
@@ -146,15 +152,25 @@
                   (bvand size1 x y)))
   :hints (("Goal" :in-theory (enable bvand))))
 
-;use trim?
-(defthm bvand-of-constant
-   (implies (and (syntaxp (and (quotep k)
+(defthm bvand-of-constant-chop-arg2
+   (implies (and (syntaxp (and (quotep x)
                                (quotep size)))
-                 (not (unsigned-byte-p size k))
+                 (not (unsigned-byte-p size x))
                  (natp size) ; prevents loops
                  )
-            (equal (bvand size k x)
-                   (bvand size (bvchop size k) x)))
+            (equal (bvand size x y)
+                   (bvand size (bvchop size x) y)))
+   :hints (("Goal" :in-theory (enable bvand))))
+
+;; may not be needed if we commute constants forward
+(defthm bvand-of-constant-chop-arg3
+   (implies (and (syntaxp (and (quotep y)
+                               (quotep size)))
+                 (not (unsigned-byte-p size y))
+                 (natp size) ; prevents loops
+                 )
+            (equal (bvand size x y)
+                   (bvand size x (bvchop size y))))
    :hints (("Goal" :in-theory (enable bvand))))
 
 ;; ;improve?
@@ -265,11 +281,7 @@
            (equal (bvand size x y) 0))
   :hints (("Goal" :in-theory (enable bvand))))
 
-(defthmd bvand-commute-constant
-  (implies (syntaxp (and (quotep y)
-                         (not (quotep x))))
-           (equal (bvand size x y)
-                  (bvand size y x))))
+
 
 (defthm unsigned-byte-p-of-bvand-2
   (implies (or (unsigned-byte-p size i)

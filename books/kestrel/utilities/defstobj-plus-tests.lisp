@@ -69,3 +69,19 @@
 ;;   :renaming ((common-lisp::print my-get-print)
 ;;              (common-lisp::printp my-printp)
 ;;              (common-lisp::update-print put-print)))
+
+;; todo: uncomment/fix (evenp may not be legal below)
+;; Test with some scalar types
+;; (defstobj+ foo3
+;;   (f1 :type atom :initially nil)
+;;   (bar :type (integer 200 300) :initially 250)
+;;   (baz :type t :initially 250) ; some theorems get suppressed since :type is t
+;;   (evenf :type (satisfies evenp) :initially 250) ; some theorems get suppressed since :type is t
+;;   ))
+
+(defstobj+ foo3
+  (f1 :type atom :initially nil)
+  (bar :type (integer 200 300) :initially 250)
+  (baz :type t :initially 250) ; some theorems get suppressed since :type is t
+  (posf :type (satisfies posp) :initially 250) ; some theorems get suppressed since :type is t
+  )

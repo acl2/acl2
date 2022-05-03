@@ -244,7 +244,6 @@
    ()
 
    (local (include-book "rtl/rel11/lib/basic" :dir :system))
-   (local (include-book "arithmetic/equalities" :dir :system))
    (local (include-book "arithmetic-5/top" :dir :system))
 
    (defthm integerp-mod

@@ -241,7 +241,7 @@
      This is accompanied by @(tsee b*) binders to check and propagate errors.")
 
    (xdoc::p
-    "Several fixtypes have been added, under @('[books]/kestrel/fty/'.")
+    "Several fixtypes have been added, under @('[books]/kestrel/fty/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -311,7 +311,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "std::std/basic" "Standard Basic Library"))
+   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
 
    (xdoc::p
     "A fixer @(tsee maybe-string-fix) for @(tsee maybe-stringp)
@@ -319,7 +319,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "std::std/strings" "Standard Strings Library"))
+   (xdoc::h4 (xdoc::seetopic "std/strings" "Standard Strings Library"))
 
    (xdoc::p
     "The names of several functions, and associated theorems,
@@ -327,7 +327,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "std::std/system" "Standard System Library"))
+   (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
 
    (xdoc::p
     "Some theorems about @(tsee fsublis-var) and @(tsee fsublis-var-lst)
@@ -338,7 +338,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "std::std/typed-alists"
+   (xdoc::h4 (xdoc::seetopic "std/typed-alists"
                              "Standard Typed Alists Library"))
 
    (xdoc::p

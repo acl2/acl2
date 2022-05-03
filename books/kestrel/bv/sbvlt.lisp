@@ -418,7 +418,7 @@
 
 ;; Either x<y or y<x or they are equal.
 ;move
-(defthm svblt-trichotomy
+(defthm sbvlt-trichotomy
   (or (sbvlt size x y)
       (sbvlt size y x)
       (equal (bvchop size x) (bvchop size y)))

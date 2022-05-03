@@ -46,6 +46,12 @@
            :use ((:instance bvor-associative)
                  (:instance bvor-associative (x y) (y x))))))
 
+(defthmd bvor-commute-constant
+  (implies (syntaxp (and (quotep y)
+                         (not (quotep x))))
+           (equal (bvor size x y)
+                  (bvor size y x))))
+
 (defthm bvor-of-0-arg2
   (equal (bvor size 0 x)
          (bvchop size x))
@@ -205,6 +211,27 @@
                          (quotep size)))
            (equal (bvor size x (bvor size y z))
                   (bvor size (bvor size x y) z))))
+
+(defthm bvor-of-constant-chop-arg2
+   (implies (and (syntaxp (and (quotep x)
+                               (quotep size)))
+                 (not (unsigned-byte-p size x))
+                 (natp size) ; prevents loops
+                 )
+            (equal (bvor size x y)
+                   (bvor size (bvchop size x) y)))
+   :hints (("Goal" :in-theory (enable bvor))))
+
+;; may not be needed if we commute constants forward
+(defthm bvor-of-constant-chop-arg3
+   (implies (and (syntaxp (and (quotep y)
+                               (quotep size)))
+                 (not (unsigned-byte-p size y))
+                 (natp size) ; prevents loops
+                 )
+            (equal (bvor size x y)
+                   (bvor size x (bvchop size y))))
+   :hints (("Goal" :in-theory (enable bvor))))
 
 (defthm slice-of-bvor
    (implies (and (< highbit size)

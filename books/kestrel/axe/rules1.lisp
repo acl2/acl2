@@ -1831,7 +1831,7 @@
                             BVCAT-OF-GETBIT-AND-X-ADJACENT
                             BVCAT-EQUAL-REWRITE BVCAT-EQUAL-REWRITE-alt
                             LOGAPP-EQUAL-REWRITE
-                            BVCAT-OF-0
+                            BVCAT-OF-0-arg2
                             )))))
 
 ;actually matches

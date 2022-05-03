@@ -833,28 +833,6 @@
                                                       (mod x m)))))))
 
 
-(defthm slice-of-bvxor
-  (implies (and (< highbit size)
-;                (<= lowbit highbit)
-                (integerp size)
-                (<= 0 size)
-                (natp lowbit)
-                (natp highbit)
-                )
-           (equal (slice highbit lowbit (bvxor size x y))
-                  (bvxor (+ 1 highbit (- lowbit))
-                         (slice highbit lowbit x)
-                         (slice highbit lowbit y))))
-  :hints (("Goal"
-           :cases ((and (integerp x) (integerp y))
-                   (and (integerp x) (not (integerp y)))
-                   (and (not (integerp x)) (integerp y))
-                   )
-           :in-theory (e/d (slice bvxor natp) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                                               LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))
-
-
-
 (defthm bvchop-bvchop-8-32-hack
   (implies (and (integerp x)
                 (integerp y))
@@ -2840,16 +2818,6 @@
            (< x k)))
 
 ;stuff for rc6 recursive equivalence proof
-
-;bozo or just use SLICE-TOO-HIGH-IS-0 - which is cheaper?
-;or just pass slice through?
-(defthm slice-of-bvxor-too-high
-  (implies (and (<= n low)
-                (integerp low)
-                (natp n))
-           (equal (slice high low (bvxor n x y))
-                  0))
-  :hints (("Goal" :in-theory (enable slice-too-high-is-0))))
 
 (defthm slice-of-bvand-too-high
   (implies (and (<= n low)
@@ -7377,7 +7345,7 @@
                   (bvsx (+ (min new-size (+ 1 high)) (- low))
                         (- old-size low)
                         (slice high low x))))
-  :hints (("Goal" :in-theory (enable bvsx BVCAT-OF-0 natp))))
+  :hints (("Goal" :in-theory (enable bvsx natp))))
 
 (defthm bvsx-too-high
   (implies (and (unsigned-byte-p (+ -1 old-size) x)
@@ -7422,7 +7390,7 @@
                   (repeatbit (+ (min (+ 1 high) new-size)
                                 (- low))
                              (getbit (+ -1 old-size) x))))
-  :hints (("Goal" :in-theory (enable bvsx bvcat-of-0 natp))))
+  :hints (("Goal" :in-theory (enable bvsx natp))))
 
 (defthm unsigned-byte-p-of-repeatbit-of-1-arg2
   (implies (natp n)
@@ -7618,7 +7586,7 @@
                         (not (sbvlt size x 0)))
                   (equal 0 (bvchop size x))))
   :hints (("Goal"
-           :use (:instance svblt-trichotomy (y 0))
+           :use (:instance sbvlt-trichotomy (y 0))
            :in-theory (enable myif))))
 
 (defthm booland-of-not-sbvlt-and-not-equal
@@ -7626,7 +7594,7 @@
                 (unsigned-byte-p size k))
            (equal (booland (not (sbvlt size k x)) (not (equal k x)))
                   (sbvlt size x k)))
-  :hints (("Goal" :use (:instance svblt-trichotomy (y k)))))
+  :hints (("Goal" :use (:instance sbvlt-trichotomy (y k)))))
 
 (defthm unsigned-byte-p-of-slice-lemma
   (implies (and (unsigned-byte-p (+ n low) x)
