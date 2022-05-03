@@ -89,9 +89,11 @@
 
 \subtitle{Since the ACL2-2020 Workshop}
 
-\author{Alessandro Coglio\inst{1} (presenter)}
+\author{Alessandro Coglio\inst{1} (presenter),
+        Matt Kaufmann\inst{2}}
 
-\institute{\inst{1}Kestrel Institute}
+\institute{\inst{1}Kestrel Institute,
+           \inst{2}University of Texas at Austin}
 
 \date{ACL2-2022 Workshop}
 
@@ -443,6 +445,22 @@ Standard library extensions in the Kestrel books.
 
 \implibtitle
 
+\bookpath{kestrel/utilities}:
+Utilities in the Kestrel books.
+\begin{itemize}
+\item Added macro \code{checkpoint-list},
+      which provides a programmatic, flexible interface
+      to the key checkpoint information.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{projects/x86isa}:
 X86ISA library.
 \begin{itemize}
@@ -468,6 +486,23 @@ Standard library.
 \item Added several typed alists.
 \end{itemize}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{tools}: Tools library.
+\begin{itemize}
+\item Added macro \code{rewrite\$},
+      which provides a programmatic, flexible interface
+      to the ACL2 rewriter.
+\item Improved macro \code{prove\$},
+      which provides a programmatic, flexible interface
+      to the ACL2 prover.
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
