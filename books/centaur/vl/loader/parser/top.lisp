@@ -35,7 +35,6 @@
 (include-book "interfaces")
 (include-book "packages")
 (include-book "programs")
-(include-book "classes")
 (include-book "configs")
 (include-book "imports")
 (include-book "std/strings/fast-cat" :dir :system)

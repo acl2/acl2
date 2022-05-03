@@ -1,10 +1,6 @@
 ; SV - Symbolic Vector Hardware Analysis Framework
 ; Copyright (C) 2021 Centaur Technology
-;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+; Copyright (C) 2022 Intel Corporation
 ;
 ; License: (An MIT/X11-style license)
 ;
@@ -31,14 +27,14 @@
 (in-package "SV")
 
 (include-book "svtv-stobj-pipeline-thm")
-(include-book "centaur/meta/variable-free" :dir :system)
 (include-book "../svex/override")
 (include-book "process")
+(include-book "svtv-fsm-override")
 (include-book "misc/hons-help" :dir :system)
 (local (include-book "../svex/alist-thms"))
 (local (std::add-default-post-define-hook :fix))
 
-(defthm svex-lookup-when-variable-free
+(defthmd svex-lookup-when-variable-free
   (implies (syntaxp (and (cmr::term-variable-free-p key)
                          (cmr::term-variable-free-p alist)))
            (iff (svex-lookup key alist)
@@ -61,6 +57,57 @@
   (svexlist-check-overridetriples
    svex-check-overridetriples))
 
+(cmr::def-force-execute pipeline-setup->initst-execute-when-variable-free
+  pipeline-setup->initst)
+
+(cmr::def-force-execute pipeline-setup->inputs-execute-when-variable-free
+  pipeline-setup->inputs)
+
+(cmr::def-force-execute pipeline-setup->overrides-execute-when-variable-free
+  pipeline-setup->overrides)
+
+(cmr::def-force-execute pipeline-setup->probes-execute-when-variable-free
+  pipeline-setup->probes)
+
+
+
+(define svarlist-override-test-vars ((x svarlist-p))
+  (if (atom x)
+      nil
+    (if (svar->override-test (car x))
+        (cons (svar-fix (Car x))
+              (svarlist-override-test-vars (cdr x)))
+      (svarlist-override-test-vars (cdr x))))
+  ///
+  (defthm svarlist-override-test-vars-of-append
+    (equal (svarlist-override-test-vars (append x y))
+           (append (svarlist-override-test-vars x) (svarlist-override-test-vars y)))))
+
+
+(define svex-alist-keys-for-svtv-stobj-decomp  ((x svex-alist-p))
+  (svex-alist-keys x)
+  ///
+  (local (in-theory (enable svex-alist-keys)))
+  (defthm svex-alist-keys-for-svtv-stobj-decomp-of-cons
+    (implies (svar-p key)
+             (equal (svex-alist-keys-for-svtv-stobj-decomp (cons (cons key val) x))
+                    (cons key (svex-alist-keys-for-svtv-stobj-decomp x)))))
+
+  (defthm svex-alist-keys-for-svtv-stobj-decomp-of-append
+    (equal (svex-alist-keys-for-svtv-stobj-decomp (append x y))
+           (append (svex-alist-keys-for-svtv-stobj-decomp x)
+                   (svex-alist-keys-for-svtv-stobj-decomp y)))))
+
+(define svex-alistlist-keys-for-svtv-stobj-decomp ((x svex-alistlist-p))
+  (if (atom x)
+      nil
+    (append (svex-alist-keys-for-svtv-stobj-decomp (car x))
+            (svex-alistlist-keys-for-svtv-stobj-decomp (cdr x))))
+  ///
+  (defthm svex-alistlist-keys-for-svtv-stobj-decomp-of-cons
+    (equal (svex-alistlist-keys-for-svtv-stobj-decomp (cons x y))
+           (append (svex-alist-keys-for-svtv-stobj-decomp x)
+                   (svex-alistlist-keys-for-svtv-stobj-decomp y)))))
 
 
 (define svex-env-override-test-vars ((x svex-env-p))
@@ -87,6 +134,20 @@
            (append (svex-env-override-test-vars a)
                    (svex-env-override-test-vars b))))
 
+  (defthm svarlist-override-test-vars-of-alist-keys
+    (implies (svex-env-p x)
+             (equal (svarlist-override-test-vars (alist-keys x))
+                    (svex-env-override-test-vars x)))
+    :hints(("Goal" :in-theory (enable svarlist-override-test-vars
+                                      alist-keys))))
+
+  (defthmd svex-env-override-test-vars-of-svex-alist-eval
+    (equal (svex-env-override-test-vars (svex-alist-eval x env))
+           (svarlist-override-test-vars (svex-alist-keys x)))
+    :hints(("Goal" :in-theory (enable svex-alist-keys
+                                      svex-alist-eval
+                                      svarlist-override-test-vars))))
+  
   (local (in-theory (enable svex-env-fix))))
 
 (define collect-known-members-from-list-term ((x pseudo-termp))
@@ -268,7 +329,6 @@
                 (bind-free `((known-tests . ,(acl2::pseudo-term-quote (collect-known-members-from-list-term testvars))))
                            (known-tests))
                 (syntaxp (not (equal known-tests ''nil)))
-                (no-duplicatesp-equal (svarlist-fix known-tests))
                 (bind-free (svtv-override-parameter-bindings mfc state)
                            (values non-composable-vars))
                 (equal known-tests2 (set-difference-equal known-tests non-composable-vars))
@@ -285,6 +345,104 @@
                 (force (svex-override-triplelist-env-ok trips env new-env)))
            (equal (svexlist-eval list env)
                   (svexlist-eval list new-env))))
+
+
+
+
+
+
+
+
+
+
+
+(local (include-book "std/alists/alist-keys" :dir :system))
+
+(define svex-alist-unbound-vars-p ((vars svarlist-p)
+                                   (x svex-alist-p))
+  :enabled t
+  :prepwork ((local (defthm hons-intersect-p1-redef
+                      (equal (acl2::hons-intersect-p1 x y)
+                             (intersectp-equal x (alist-keys y)))
+                      :hints(("Goal" :in-theory (e/d (acl2::hons-intersect-p1 intersectp-equal alist-keys)
+                                                     (acl2::intersectp-equal-commute))))))
+             (local (defthm svex-alist-keys-is-alist-keys
+                      (implies (svex-alist-p x)
+                               (equal (svex-alist-keys x) (alist-keys x)))
+                      :hints(("Goal" :in-theory (enable svex-alist-keys alist-keys))))))
+  (mbe :logic (not (intersectp-equal (svarlist-fix vars)
+                                     (svex-alist-keys x)))
+       :exec (b* (((with-fast x)))
+               (not (acl2::hons-intersect-p1 (svarlist-fix vars) x))))
+  ///
+  (cmr::def-force-execute svex-alist-unbound-vars-p-execute-term-when-variable-free
+    (svex-alist-unbound-vars-p))
+  (local (Defthm alist-keys-of-svex-alist-fix
+           (equal (alist-keys (svex-alist-fix x))
+                  (svex-alist-keys x))
+           :hints(("Goal" :in-theory (enable alist-keys svex-alist-keys
+                                             svex-alist-fix))))))
+
+(include-book "centaur/misc/hons-remove-dups" :dir :system)
+
+(define svex-envlist-override-test-vars ((x svex-envlist-p))
+  :returns (test-vars svarlist-p)
+  (if (atom x)
+      nil
+    (append (svex-env-override-test-vars (car x))
+            (svex-envlist-override-test-vars (cdr x))))
+  ///
+  (defthm svex-envlist-override-test-vars-of-cons
+    (equal (svex-envlist-override-test-vars (cons a b))
+           (append (svex-env-override-test-vars a)
+                   (svex-envlist-override-test-vars b))))
+
+  (defthm svex-envlist-override-test-vars-of-append
+    (equal (svex-envlist-override-test-vars (append a b))
+           (append (svex-envlist-override-test-vars a)
+                   (svex-envlist-override-test-vars b)))))
+
+(define base-fsm-check-overridetriples ((x base-fsm-p)
+                                        (trips svex-override-triplelist-p))
+  (or (svexlist-check-overridetriples (svex-alist-vals (base-fsm->values x)) trips)
+      (svexlist-check-overridetriples (svex-alist-vals (base-fsm->nextstate x)) trips))
+  ///
+  (cmr::def-force-execute base-fsm-check-overridetriples-execute-term-when-variable-free
+    (base-fsm-check-overridetriples)))
+
+
+(defthmd svtv-decomp-remove-override-vars-from-base-fsm-eval-when-svexlist-check-overridetriples
+  (implies (and (syntaxp (cmr::term-variable-free-p fsm))
+                (equal testvars (svex-envlist-override-test-vars envs))
+                (bind-free `((known-tests . ,(acl2::pseudo-term-quote (acl2::hons-remove-dups (collect-known-members-from-list-term testvars)))))
+                           (known-tests))
+                (syntaxp (not (equal known-tests ''nil)))
+                (bind-free (svtv-override-parameter-bindings mfc state)
+                           (values non-composable-vars))
+                (equal known-tests2 (set-difference-equal known-tests non-composable-vars))
+                (syntaxp (and (or (quotep known-tests2)
+                                  (cw "Known-tests2 not quotep: ~x0~%" known-tests2))
+                              (or (cw "known-tests2: ~x0~%" known-tests2) t)
+                              (not (equal known-tests2 ''nil))))
+                (no-duplicatesp-equal (svarlist-fix known-tests2))
+                ;; Note. The override-tests-to-svex-override-triplelist-exec term isn't going to be simplified
+                ;; when this rule is being applied; it's just going to be forced to execute by the meta rule
+                ;; base-fsm-check-overridetriples-execute-term-when-variable-free.
+                (equal trips-exec (override-tests-to-svex-override-triplelist-exec known-tests2 values))
+                (equal check (base-fsm-check-overridetriples fsm trips-exec))
+                (equal trips (override-tests-to-svex-override-triplelist known-tests2 values))
+                (syntaxp (or (equal check ''nil)
+                             (diagnose-overridetriple-check-result check trips)))
+                (not check)
+                (equal trips-vars (svex-override-triplelist-vars trips))
+                (syntaxp (or (quotep trips-vars)
+                             (cw "Trips-vars not quotep: ~x0~%" trips-vars)))
+                (svex-alist-unbound-vars-p trips-vars (base-fsm->nextstate fsm))
+                (equal new-envs (svex-envlist-removekeys trips-vars envs))
+                (force (svex-override-triplelist-fsm-inputs-ok trips envs new-envs initst fsm)))
+           (equal (base-fsm-eval envs initst fsm)
+                  (base-fsm-eval new-envs initst fsm)))
+  :hints(("Goal" :in-theory (enable base-fsm-check-overridetriples))))
 
 
 (defthmd svex-alist-eval-when-svexlist-variable-free-p
@@ -308,6 +466,7 @@
                   (syntaxp (quotep x)))
              (equal (svex-env-lookup k x)
                     (svex-env-lookup-exec k x)))))
+
 
 (encapsulate nil
   (local (defthm hons-assoc-equal-of-svex-alist-eval
@@ -411,8 +570,7 @@
 
 
 
-(defcong svex-envs-similar equal (svex-env-extract keys x) 2
-  :hints(("Goal" :in-theory (enable svex-env-extract))))
+
 
 (defcong svex-envs-equivalent equal (svex-env-reduce keys x) 2
   :hints(("Goal" :in-theory (enable svex-env-reduce-redef)
@@ -463,11 +621,6 @@
            (equal (no-duplicatesp-equal x)
                   (not (acl2::hons-dups-p x)))))
 
-(defthmd base-fsm->nextstate-of-svtv-fsm->renamed-fsm
-  (equal (base-fsm->nextstate (svtv-fsm->renamed-fsm svtv-fsm))
-         (base-fsm->nextstate (svtv-fsm->base-fsm svtv-fsm)))
-  :hints(("Goal" :in-theory (enable svtv-fsm->renamed-fsm))))
-
 
 (add-to-ruleset! svtv-env-autoins-in-terms-of-svex-env-extract nil)
 (add-to-ruleset! svtv-pipeline-thms nil)
@@ -489,6 +642,7 @@
     (:rewrite svex-env-p-of-svex-env-reduce)
     (:ruleset svtv-env-autoins-in-terms-of-svex-env-extract)))
 
+
 (acl2::set-ruleset! svtv-decomp-phase1-rules
   '((:CONGRUENCE SVEX-ENVS-EQUIVALENT-IMPLIES-SVEX-ENVS-EQUIVALENT-APPEND-1)
     (:CONGRUENCE SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-LOOKUP-2)
@@ -508,7 +662,12 @@
     (:META SVTV-FSM-RUN-INPUT-SUBSTS-EXECUTE-TERM-WHEN-VARIABLE-FREE)
     (:REWRITE SVEX-ALIST-EVAL-WHEN-SVEXLIST-VARIABLE-FREE-P)
     (:ruleset svtv-pipeline-thms)
-    (:ruleset svtv-pipeline-thm-constants)))
+    (:ruleset svtv-pipeline-thm-constants)
+    pipeline-setup->initst-execute-when-variable-free
+    pipeline-setup->inputs-execute-when-variable-free
+    pipeline-setup->overrides-execute-when-variable-free
+    pipeline-setup->probes-execute-when-variable-free
+    ))
 
 (acl2::set-ruleset! svtv-decomp-phase2-rules
   '((:CONGRUENCE 4VEC-CONCAT-4VEC-EQUIV-CONGRUENCE-ON-HIGH)
@@ -541,6 +700,7 @@
     (:EXECUTABLE-COUNTERPART 4VEC-FIX$INLINE)
     (:EXECUTABLE-COUNTERPART 4VEC-NO-1S-P)
     (:EXECUTABLE-COUNTERPART 4VEC-RSH)
+    (:EXECUTABLE-COUNTERPART 4VEC-Res)
     (:EXECUTABLE-COUNTERPART 4VECLIST-FIX$INLINE)
     (:EXECUTABLE-COUNTERPART 4VECLIST-NTH-SAFE)
     (:EXECUTABLE-COUNTERPART <)
@@ -610,6 +770,7 @@
     (:REWRITE 4VEC-CONCAT-ASSOCIATIVE)
     (:REWRITE 4VEC-CONCAT-OF-RSH)
     (:REWRITE 4VEC-FIX-OF-4VEC)
+    (:rewrite 4vec-p-of-4vec-res)
     (:REWRITE 4VEC-FIX-UNDER-4VEC-EQUIV)
     (:REWRITE 4VEC-P-OF-4VEC-CONCAT)
     (:REWRITE 4VEC-P-OF-SVEX-ENV-LOOKUP)
@@ -691,17 +852,414 @@
 
 
 
-(defun svtv-decomp-hints-fn (enables disables forcep)
+(defun svtv-decomp-hints-fn (enables disables forcep fsm)
   `'(:computed-hint-replacement
      ((and stable-under-simplificationp
-           '(:in-theory (e/d** (svtv-decomp-phase1-rules))))
+           '(:in-theory (e/d** (svtv-decomp-phase1-rules))
+             :expand (:lambdas)))
       (and stable-under-simplificationp
-           '(:in-theory (e/d** (svtv-decomp-phase2-rules
-                                . ,(and forcep '((force))))))))
+           '(:in-theory (e/d** (,(if fsm 'svtv-decomp-phase2-rules-fsm 'svtv-decomp-phase2-rules)
+                                . ,(and forcep '((force)))))
+             :expand (:lambdas))))
      :in-theory (e/d** (svtv-decomp-phase0-rules
                         . ,enables)
-                       ,disables)))
+                       ,disables)
+     :expand (:lambdas)))
 
 
-(defmacro svtv-decomp-hints (&key enables disables forcep)
-  (svtv-decomp-hints-fn enables disables forcep))
+
+
+
+
+;; ;; (defthmd nth-of-base-fsm-eval
+;; ;;   (implies (syntaxp (quotep n))
+;; ;;            (equal (nth n (base-fsm-eval ins initst fsm))
+;; ;;                   (and (consp ins)
+;; ;;                        (if (zp n)
+;; ;;                            (base-fsm-step-outs (car ins) initst fsm)
+;; ;;                          (nth (1- n) (base-fsm-eval (cdr ins)
+;; ;;                                                     (base-fsm-step (car ins) initst fsm)
+;; ;;                                                     fsm))))))
+;; ;;   :hints(("Goal" :in-theory (enable base-fsm-eval nth))))
+
+;; (define svex-alist-removekeys ((keys svarlist-p)
+;;                                (alist svex-alist-p))
+;;   (b* (((when (atom alist)) nil)
+;;        ((unless (mbt (and (consp (car alist))
+;;                           (svar-p (caar alist)))))
+;;         (svex-alist-removekeys keys (cdr alist)))
+;;        ((when (member-equal (caar alist) (svarlist-fix keys)))
+;;         (svex-alist-removekeys keys (cdr alist))))
+;;     (cons (mbe :logic (cons (caar alist) (svex-fix (cdar alist)))
+;;                :exec (car alist))
+;;           (svex-alist-removekeys keys (cdr alist))))
+;;   ///
+;;   (defthm svex-alist-removekeys-of-cons
+;;     (equal (svex-alist-removekeys keys (cons a b))
+;;            (if (or (atom a)
+;;                    (not (svar-p (car a)))
+;;                    (member-equal (car a) (svarlist-fix keys)))
+;;                (svex-alist-removekeys keys b)
+;;              (cons (cons (car a) (svex-fix (cdr a)))
+;;                    (svex-alist-removekeys keys b)))))
+
+;;   ;; (defthm svex-alist-removekeys-of-append
+;;   ;;   (equal (svex-alist-removekeys keys (append a b))
+;;   ;;          (append (svex-alist-removekeys keys a)
+;;   ;;                  (svex-alist-removekeys keys b))))
+
+;;   (defthmd svex-env-removekeys-of-svex-alist-eval
+;;     (Equal (svex-env-removekeys keys (svex-alist-eval x a))
+;;            (svex-alist-eval (svex-alist-removekeys keys x) a))
+;;     :hints(("Goal" :in-theory (enable svex-alist-removekeys
+;;                                       svex-alist-eval
+;;                                       svex-env-removekeys)))))
+
+
+
+;; (define svex-alistlist-removekeys ((keys svarlist-p)
+;;                                    (x svex-alistlist-p))
+;;   (if (atom x)
+;;       nil
+;;     (cons (svex-alist-removekeys keys (car x))
+;;           (svex-alistlist-removekeys keys (cdr x))))
+;;   ///
+;;   (defthm svex-alistlist-removekeys-of-cons
+;;     (equal (svex-alistlist-removekeys keys (cons a b))
+;;            (cons (svex-alist-removekeys keys a)
+;;                  (svex-alistlist-removekeys keys b))))
+
+;;   (defthm svex-alistlist-removekeys-of-append
+;;     (equal (svex-alistlist-removekeys keys (append a b))
+;;            (append (svex-alistlist-removekeys keys a)
+;;                    (svex-alistlist-removekeys keys b))))
+
+;;   (defthmd svex-envlist-removekeys-of-svex-alistlist-eval
+;;     (Equal (svex-envlist-removekeys keys (svex-alistlist-eval x a))
+;;            (svex-alistlist-eval (svex-alistlist-removekeys keys x) a))
+;;     :hints(("Goal" :in-theory (enable svex-alistlist-removekeys
+;;                                       svex-alistlist-eval
+;;                                       svex-envlist-removekeys
+;;                                       svex-env-removekeys-of-svex-alist-eval)))))
+
+
+
+;; (define svex-env-extract-for-svtv-stobj-decomp ((keys svarlist-p)
+;;                                                 (env svex-env-p))
+;;   (acl2::with-fast-alist env
+;;     (svex-env-extract keys env))
+;;   ///
+;;   (local (in-theory (enable svex-env-extract)))
+;;   (defthm svex-env-extract-for-svtv-stobj-decomp-of-cons
+;;     (equal (svex-env-extract-for-svtv-stobj-decomp (cons v vars) env)
+;;            (cons (cons (svar-fix v) (svex-env-lookup v env))
+;;                  (svex-env-extract-for-svtv-stobj-decomp vars env))))
+
+;;   (defthm svex-env-extract-for-svtv-stobj-decomp-of-nil
+;;     (equal (svex-env-extract-for-svtv-stobj-decomp nil env) nil)))
+
+
+;; (define svex-eval-exec ((x svex-p) (env svex-env-p))
+;;   :enabled t
+;;   (svex-eval x (make-fast-alist env)))
+
+;; (defthmd svex-eval-when-vars-bound-to-constants
+;;   (implies (and (syntaxp (quotep x))
+;;                 (equal vars (svex-vars x))
+;;                 (equal new-env (svex-env-extract-for-svtv-stobj-decomp vars env))
+;;                 (bind-free `((quotep . ',(quotep new-env))) (quotep)))
+;;            (equal (svex-eval x env)
+;;                   (svex-eval-exec x new-env)))
+;;   :hints(("Goal" :in-theory (enable svex-env-extract-for-svtv-stobj-decomp))))
+
+;; (defthm nth-of-svex-envlist-extract
+;;   (implies (syntaxp (quotep vars))
+;;            (equal (nth n (svex-envlist-extract vars envs))
+;;                   (svex-env-extract (nth n vars) (nth n envs))))
+;;   :hints(("Goal" :in-theory (enable svex-envlist-extract nth))))
+
+;; (defthm car-of-svex-alistlist-eval
+;;   (equal (car (svex-alistlist-eval x env))
+;;          (svex-alist-eval (car x) env))
+;;   :hints(("Goal" :in-theory (enable svex-alist-eval svex-alistlist-eval))))
+
+;; (defthm cdr-of-svex-alistlist-eval
+;;   (equal (cdr (svex-alistlist-eval x env))
+;;          (svex-alistlist-eval (cdr x) env))
+;;   :hints(("Goal" :in-theory (enable svex-alist-eval svex-alistlist-eval))))
+
+;; (defthm consp-of-svex-alistlist-eval
+;;   (equal (consp (svex-alistlist-eval x env))
+;;          (consp x))
+;;   :hints(("Goal" :in-theory (enable svex-alistlist-eval))))
+
+
+;; (defthm lhs-compose-zero-to-compose
+;;   (svex-eval-equiv (lhs-compose-zero x al)
+;;                    (svex-compose (lhs->svex-zero x) al))
+;;   :hints(("Goal" :in-theory (enable svex-eval-equiv))))
+
+;; (defthm svex-eval-lookup-of-svtv-name-lhs-map-compose
+;;   (implies (and (equal pair (hons-assoc-equal (svar-fix v) (svtv-name-lhs-map-fix map)))
+;;                 pair)
+;;            (equal (svex-eval (svex-lookup v (svtv-name-lhs-map-compose map al)) env)
+;;                   (svex-eval (svex-compose (lhs->svex-zero (cdr pair)) al) env))))
+
+;; (acl2::set-ruleset! svtv-decomp-phase2-rules-fsm
+;;                     (append '((:REWRITE svtv-decomp-remove-override-vars-from-base-fsm-eval-when-svexlist-check-overridetriples)
+;;                               (:REWRITE SVEX-ENVLIST-OVERRIDE-TEST-VARS-OF-APPEND)
+;;                               (:REWRITE SVEX-ENVLIST-OVERRIDE-TEST-VARS-OF-CONS)
+;;                               (:rewrite svex-envlist-removekeys-of-cons)
+;;                               (:rewrite svex-envlist-removekeys-of-append)
+;;                               (:rewrite nth-of-base-fsm-eval)
+;;                               (:EXECUTABLE-COUNTERPART SVEX-ENVLIST-OVERRIDE-TEST-VARS)
+;;                               (:executable-counterpart svex-envlist-removekeys)
+;;                               (:executable-counterpart base-fsm-check-overridetriples)
+;;                               (:META base-fsm-CHECK-OVERRIDETRIPLES-EXECUTE-TERM-WHEN-VARIABLE-FREE)
+;;                               (:rewrite svex-override-triplelist-fsm-inputs-ok-of-cons)
+;;                               (:rewrite svex-override-triplelist-fsm-inputs-ok-of-nil)
+;;                               (:meta svex-alist-unbound-vars-p-execute-term-when-variable-free))
+;;                             (set-difference-equal
+;;                              (acl2::ruleset 'svtv-decomp-phase2-rules)
+;;                              '((:rewrite base-fsm-eval-of-cons)))))
+
+
+
+
+
+
+
+(defmacro svtv-decomp-hints (&key enables disables forcep fsm)
+  (svtv-decomp-hints-fn enables disables forcep fsm))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;; (defprod pipeline-override-triple
+;;   ((override-test svar-p)
+;;    (override-var svar-p)
+;;    (output-var svar-p))
+;;   :layout :list)
+
+;; (fty::deflist pipeline-override-triplelist :elt-type pipeline-override-triple :true-listp t)
+
+;; (define pipeline-override-triplelist-input-vars ((x pipeline-override-triplelist-p))
+;;   (if (atom x)
+;;       nil
+;;     (b* (((pipeline-override-triple x1) (car x)))
+;;       (cons x1.override-test
+;;             (cons x1.override-var
+;;                   (pipeline-override-triplelist-input-vars (cdr x)))))))
+
+
+;; (define pipeline-override-triple->subst ((trip pipeline-override-triple-p)
+;;                                          (setup pipeline-setup-p)
+;;                                          (namemap svtv-name-lhs-map-p)
+;;                                          (cycle base-fsm-p))
+;;   (b* (
+
+
+;; )))
+
+
+
+
+
+
+
+
+;; (define pipeline-run ((setup pipeline-setup-p)
+;;                       (namemap svtv-name-lhs-map-p)
+;;                       (cycle base-fsm-p)
+;;                       (env svex-env-p))
+;;   :guard (and (equal (svex-alist-keys (pipeline-setup->initst setup))
+;;                      (svex-alist-keys (base-fsm->nextstate cycle)))
+;;               (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate cycle)))))
+;;   :guard-hints (("goal" :in-theory (enable svtv-fsm->renamed-fsm)))
+;;   (b* ((fsm (svtv-fsm cycle namemap))
+;;        ((pipeline-setup setup))
+;;        (outvars (svtv-probealist-outvars setup.probes)))
+;;     (SVTV-PROBEALIST-EXTRACT
+;;      setup.probes
+;;      (BASE-FSM-RUN
+;;       (SVEX-ALISTLIST-EVAL
+;;        (SVTV-FSM-RUN-INPUT-SUBSTS
+;;         (TAKE
+;;          (LEN outvars)
+;;          setup.inputs)
+;;         setup.overrides
+;;         fsm)
+;;        ENV)
+;;       (SVEX-ALIST-EVAL setup.initst ENV)
+;;       (SVTV-FSM->RENAMED-FSM fsm)
+;;       outvars))))
+
+
+;; (define pipeline-override-triplelist-env-ok ((triples pipeline-override-triplelist-p)
+;;                                     (env svex-env-p)
+;;                                     (prev-result svex-env-p))
+;;   (if (atom triples)
+;;       t
+;;     (b* (((pipeline-override-triple trip) (car triples))
+;;          (test (svex-env-lookup trip.override-test env))
+;;          (val (svex-env-lookup trip.override-var env))
+;;          (spec (svex-env-lookup trip.output-var prev-result)))
+;;       (and (equal (4vec-bit?! test val 0)
+;;                   (4vec-bit?! test spec 0))
+;;            (pipeline-override-triplelist-env-ok (cdr triples) env prev-result)))))
+
+;; (define svtv-probealist-sufficient-varlists ((x svtv-probealist-p)
+;;                                              (vars svarlist-list-p))
+;;   :prepwork ((local (defthm true-listp-when-svarlist-p-rw
+;;                       (implies (svarlist-p x)
+;;                                (true-listp x))))
+;;              (local (defthm svarlist-p-nth-of-svarlist-list
+;;                       (implies (svarlist-list-p x)
+;;                                (svarlist-p (nth n x))))))
+;;   (if (atom x)
+;;       t
+;;     (if (mbt (consp (car x)))
+;;         (b* (((svtv-probe x1) (cdar x)))
+;;           (and (member-equal x1.signal (svarlist-fix (nth x1.time vars)))
+;;                (svtv-probealist-sufficient-varlists (cdr x) vars)))
+;;       (svtv-probealist-sufficient-varlists (cdr x) vars)))
+;;   ///
+;;   (defthm add-preserves-sufficient-varlists
+;;     (implies (svtv-probealist-sufficient-varlists x vars)
+;;              (svtv-probealist-sufficient-varlists x (update-nth n (cons v (nth n vars)) vars)))
+;;     :hints(("Goal" :in-theory (disable nth))))
+  
+;;   (defthm svtv-probealist-sufficient-of-outvars
+;;     (svtv-probealist-sufficient-varlists x
+;;                                          (svtv-probealist-outvars x))
+;;     :hints(("Goal" :in-theory (enable svtv-probealist-outvars))))
+
+;;   (local (defthm nth-of-svex-envlist-extract
+;;            (Equal (nth n (svex-envlist-extract vars envs))
+;;                   (svex-env-extract (nth n vars)
+;;                                     (nth n envs)))
+;;            :hints(("Goal" :in-theory (enable svex-envlist-extract)))))
+  
+;;   (defthm svtv-probealist-extract-of-svex-envlist-extract-when-sufficient
+;;     (implies (svtv-probealist-sufficient-varlists x vars)
+;;              (equal (svtv-probealist-extract x (svex-envlist-extract vars envs))
+;;                     (svtv-probealist-extract x envs)))
+;;     :hints(("Goal" :in-theory (enable svtv-probealist-extract)))))
+
+;; (defthm svtv-probealist-extract-of-svex-envlist-extract-outvars
+;;   (equal (svtv-probealist-extract probes (svex-envlist-extract (svtv-probealist-outvars probes) envs))
+;;          (svtv-probealist-extract probes envs))
+;;   :hints(("Goal" :in-theory (enable svtv-probealist-outvars svtv-probealist-extract))))
+
+;; (defthm take-of-svtv-fsm-run-input-substs
+;;   (implies (<= (nfix n) (len inputs))
+;;            (equal (take n (svtv-fsm-run-input-substs inputs override-tests x))
+;;                   (svtv-fsm-run-input-substs  (take n inputs) override-tests x)))
+;;   :hints(("Goal" :in-theory (e/d (svtv-fsm-run-input-substs
+;;                                   take)
+;;                                  (acl2::take-of-too-many
+;;                                   acl2::take-when-atom)))))
+
+;; (local (include-book "std/osets/element-list" :dir :system))
+
+;; (local (std::deflist svarlist-p (x)
+;;          (svar-p x)
+;;          :true-listp t
+;;          :elementp-of-nil nil))
+
+;; (define svex-alistlist-vars ((x svex-alistlist-p))
+;;   :returns (vars (and (svarlist-p vars)
+;;                       (set::setp vars)))
+;;   (if (atom x)
+;;       nil
+;;     (union (svex-alist-vars (car x))
+;;            (svex-alistlist-vars (cdr x))))
+;;   ///
+;;   (local (defthm svex-alist-eval-of-remove-non-intersecting
+;;            (implies (not (intersectp-equal (svex-alist-vars x) (svarlist-fix vars)))
+;;                     (equal (svex-alist-eval x (svex-env-removekeys vars env))
+;;                            (svex-alist-eval x env)))
+;;            :hints(("Goal" :in-theory (enable svex-alist-vars svex-alist-eval)))))
+  
+;;   (defthm svex-alistlist-eval-of-remove-non-intersecting
+;;     (implies (not (intersectp-equal (svex-alistlist-vars x) (svarlist-fix vars)))
+;;              (equal (svex-alistlist-eval x (svex-env-removekeys vars env))
+;;                     (svex-alistlist-eval x env)))
+;;     :hints(("Goal" :in-theory (enable svex-alistlist-eval)))))
+
+;; (defthm pipeline-override-correct-lemma
+;;   (b* ((spec (BASE-FSM-EVAL
+;;               (SVEX-ALISTLIST-EVAL
+;;                input-substs
+;;                (SVEX-ENV-REMOVEKEYS (PIPELINE-OVERRIDE-TRIPLELIST-INPUT-VARS TRIPLES)
+;;                                     ENV))
+;;               initst
+;;               (SVTV-FSM->RENAMED-FSM (SVTV-FSM CYCLE NAMEMAP)))))
+;;     (IMPLIES
+;;      (and (PIPELINE-OVERRIDE-TRIPLELIST-ENV-OK TRIPLES ENV (SVTV-PROBEALIST-EXTRACT probes spec))
+;;           (not (intersectp-equal (svex-alistlist-vars
+;;                                   (svex-alistlist-remove-keys
+;;                                    (svex-override-triplelist-vars svex-triples)
+;;                                    input-substs))
+;;                                  (pipeline-override-triplelist-input-vars triples)))
+;;           (not (intersectp-equal 
+;;      (EQUAL spec
+;;             (BASE-FSM-EVAL
+;;              (svex-alistlist-eval input-substs env)
+;;              initst
+;;              (SVTV-FSM->RENAMED-FSM (SVTV-FSM CYCLE NAMEMAP)))))))
+
+
+;; (defthm pipeline-override-correct
+;;   (b* ((triple-input-vars (pipeline-override-triplelist-input-vars triples))
+;;        (prev-env (svex-env-removekeys triple-input-vars env))
+;;        (prev-result (pipeline-run setup namemap cycle prev-env))
+;;        (env-result (pipeline-run setup namemap cycle env)))
+;;     (implies (and (pipeline-override-triplelist-env-ok triples env prev-result)
+;;                   |...|)
+;;              (equal prev-result env-result)))
+;;   :hints(("Goal" :in-theory (e/d (pipeline-run
+;;                                   base-fsm-run)
+;;                                  (EVAL-OF-SVTV-FSM-RUN-INPUT-SUBSTS
+;;                                   eval-of-svtv-fsm-subst)))))
+
+
+
+
+
+;; (b* (((pipeline-setup setup) (ryl::evfdiv-sp-run-overrides-pipeline-setup))
+;;      (cycle (ryl::evfdiv-sp-run-cycle))
+;;      (namemap (ryl::evfdiv-sp-run-overrides-namemap)))
+;;   (sv::svtv-fsm-run-input-substs setup.inputs setup.overrides (svtv-fsm cycle namemap)))
+
+
+
+
+
+;;   (defthm svex-envlist-override-test-vars-of-svex-alistlist-eval
+;;     (equal (svex-envlist-override-test-vars (svex-alistlist-eval x env))
+;;            (svarlist-override-test-vars
+;;             (svex-alistlist-keys-for-svtv-stobj-decomp x)))
+;;     :hints(("Goal" :in-theory (enable svex-alistlist-keys-for-svtv-stobj-decomp
+;;                                       svex-alist-keys-for-svtv-stobj-decomp
+;;                                       svex-alistlist-eval
+;;                                       svex-env-override-test-vars-of-svex-alist-eval))))

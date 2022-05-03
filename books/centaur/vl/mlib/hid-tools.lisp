@@ -972,6 +972,7 @@ top-level hierarchical identifiers.</p>"
                        "How many levels up from the current scope was the item found")))
   (:root      ())
   (:package   ((pkg vl-package-p)))
+  (:class     ((class vl-class-p)))
   (:module    ((mod vl-module-p)))
   (:interface ((iface vl-interface-p)))
   :layout :tree)
@@ -1247,9 +1248,13 @@ instance, in this case the @('tail') would be
                       (:vl-$unit "$unit")
                       (otherwise "??UNKNOWN??")))
               nil nil (vl-scopeexpr->hid x)))
-         ((mv package pkg-ss) (vl-scopestack-find-package/ss x.first ss))
+         ((mv package pkg-ss elabkey classp)
+          (b* (((mv class class-ss) (vl-scopestack-find-class/ss x.first ss))
+               ((when class) (mv class class-ss (vl-elabkey-class x.first) t))
+               ((mv package pkg-ss) (vl-scopestack-find-package/ss x.first ss)))
+            (mv package pkg-ss (vl-elabkey-package x.first) nil)))
          ((unless package)
-          (mv (vmsg "~a0: Package ~s1 not found.."
+          (mv (vmsg "~a0: Package/class ~s1 not found.."
                     x x.first)
               nil nil (vl-scopeexpr->hid x)))
          (pkg-ss (vl-scopestack-push package pkg-ss))
@@ -1258,7 +1263,7 @@ instance, in this case the @('tail') would be
                                      not yet supported."
                     x)
               nil nil (vl-scopeexpr->hid x)))
-         (elabpath (list (vl-elabinstruction-push-named (vl-elabkey-package x.first))
+         (elabpath (list (vl-elabinstruction-push-named elabkey)
                          (vl-elabinstruction-root)))
          ((mv err trace context tail)
           (vl-follow-hidexpr
@@ -1267,7 +1272,11 @@ instance, in this case the @('tail') would be
          ((when err) (mv err trace context tail))
          ((unless (vl-scopecontext-case context :local))
           (mv nil trace context tail)))
-      (mv nil trace (make-vl-scopecontext-package :pkg package) tail)))
+      (mv nil trace
+          (if classp 
+              (make-vl-scopecontext-class :class package)
+            (make-vl-scopecontext-package :pkg package))
+          tail)))
   ///
   (defret consp-of-vl-follow-scopeexpr.trace
     (implies (not err)

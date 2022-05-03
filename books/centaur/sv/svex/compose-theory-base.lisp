@@ -632,7 +632,7 @@
 
     (defun-sk lookup-signal-not-in-network-cond (x network neteval env)
       (forall signal
-              (implies (not (svex-lookup signal network))
+              (implies (svex-eval-equiv (svex-compose-lookup signal network) (svex-var signal))
                        (equal (svex-env-lookup signal neteval)
                               (if (hons-assoc-equal (svar-fix signal) (neteval-ordering-fix x))
                                   (svex-env-lookup signal env)
@@ -658,17 +658,28 @@
                 (and stable-under-simplificationp '(:expand (<call>))))
         :fn neteval-ordering-eval)
       (defretd <fn>-when-signal-not-in-network
-        (implies (not (svex-lookup signal network))
+        (implies (svex-eval-equiv (svex-compose-lookup signal network) (svex-var signal))
                  (equal val (4vec-rsh (2vec (nfix offset)) (svex-env-lookup signal env))))
         :hints ('(:expand (<call>)))
         :fn neteval-sigordering-eval)
       (defretd <fn>-when-signal-not-in-network
-        (implies (not (svex-lookup signal network))
+        (implies (svex-eval-equiv (svex-compose-lookup signal network) (svex-var signal))
                  (equal val (svex-env-lookup signal env)))
         :hints ('(:expand (<call>
                            (:free (env) (svex-eval (svex-var signal) env)))
-                  :in-theory (disable SVEX-ENV-LOOKUP-OF-NETEVAL-ORDERING-EVAL)))
+                  :in-theory (disable SVEX-ENV-LOOKUP-OF-NETEVAL-ORDERING-EVAL
+                                      equal-of-svex-var)))
         :fn neteval-ordering-or-null-eval))
+
+    (defretd lookup-network-fixed-signal-of-<fn>
+      (implies (svex-eval-equiv (svex-compose-lookup signal network) (svex-var signal))
+               (equal (svex-env-lookup signal neteval)
+                      (if (hons-assoc-equal (svar-fix signal) (neteval-ordering-fix x))
+                          (svex-env-lookup signal env)
+                        (4vec-x))))
+      :hints (("goal" :use lookup-signal-not-in-network-of-<fn>-lemma
+               :in-theory (disable <fn>)))
+      :fn neteval-ordering-eval)
 
     (defretd lookup-signal-not-in-network-of-<fn>
       (implies (not (svex-lookup signal network))
@@ -677,7 +688,8 @@
                           (svex-env-lookup signal env)
                         (4vec-x))))
       :hints (("goal" :use lookup-signal-not-in-network-of-<fn>-lemma
-               :in-theory (disable <fn>)))
+               :in-theory (e/d (svex-compose-lookup)
+                               (<fn>))))
       :fn neteval-ordering-eval))
 
 
@@ -1931,10 +1943,10 @@
 (defsection netevalcomp-p
   (defun-sk netevalcomp-p (comp network)
     (exists ordering
-            (svex-alist-<<= comp
-                           (svex-alist-compose
-                            (neteval-ordering-compile ordering network)
-                            (svarlist-x-subst (svex-alist-keys network))))))
+            (svex-alist-eval-equiv comp
+                                   (svex-alist-compose
+                                    (neteval-ordering-compile ordering network)
+                                    (svarlist-x-subst (svex-alist-keys network))))))
 
   (in-theory (disable netevalcomp-p netevalcomp-p-suff))
 

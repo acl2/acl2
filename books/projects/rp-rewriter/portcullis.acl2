@@ -6,6 +6,8 @@
 (defpkg "RP"
   (union$ *acl2-exports*
           '(
+	  acl2::and*
+	  acl2::or*
             b*
             define
             repeat

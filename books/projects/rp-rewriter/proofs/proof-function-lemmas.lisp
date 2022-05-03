@@ -5,6 +5,7 @@
 
 ; Copyright (C) 2019, Regents of the University of Texas
 ; All rights reserved.
+; Copyright (C) 2022 Intel Corporation
 
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are
@@ -103,11 +104,11 @@
   )||#
 
 (defthm-valid-sc
-  (defthm not-include-rp-means-valid-sc
+  (defthmd not-include-rp-means-valid-sc
     (implies (not (include-fnc term 'rp))
              (and (valid-sc term a)))
     :flag valid-sc)
-  (defthm not-include-rp-means-valid-sc-lst
+  (defthmd not-include-rp-means-valid-sc-lst
     (implies (not (include-fnc-subterms subterms 'rp))
              (and (valid-sc-subterms subterms a)))
     :flag valid-sc-subterms)
@@ -116,11 +117,11 @@
                             valid-sc-nt) ()))))
 
 (defthm-valid-sc-nt
-  (defthm not-include-rp-means-valid-sc-nt
+  (defthmd not-include-rp-means-valid-sc-nt
     (implies (not (include-fnc term 'rp))
              (and (valid-sc-nt term a)))
     :flag valid-sc-nt)
-  (defthm not-include-rp-means-valid-sc-nt-subterms
+  (defthmd not-include-rp-means-valid-sc-nt-subterms
     (implies (not (include-fnc-subterms subterms 'rp))
              (and (valid-sc-nt-subterms subterms a)))
     :flag valid-sc-nt-subterms)
@@ -258,11 +259,13 @@
 
 (defthm valid-rulep-implies-valid-sc
   (implies (and (valid-rulep rule)
-                (rp-evl (rp-hyp rule) a))
+                (eval-and-all-nt (rp-hyp rule) a))
            (valid-sc-nt (rp-rhs rule) a))
   :hints (("Goal"
            :use (:instance valid-rulep-sk-necc)
-           :in-theory (e/d (valid-rulep)
+           :in-theory (e/d (valid-rulep
+                            not-include-rp-means-valid-sc
+                            not-include-rp-means-valid-sc-nt)
                            (valid-sc
                             rp-rhs
                             rp-hyp
@@ -447,7 +450,7 @@
                             rule-syntaxp
                             (:definition subsetp-equal))))))
 
-(defthm VALID-SC-and-is-if
+#|(defthm valid-sc-and-is-if
   (implies (and (is-if term)
                 (valid-sc term a))
            (and (valid-sc (cadr term) a)
@@ -458,7 +461,7 @@
   :hints (("Goal"
            :expand (valid-sc term a)
            :in-theory (e/d (is-if)
-                           (valid-sc)))))
+                           (valid-sc)))))|#
 
 
 
@@ -469,6 +472,33 @@
            (valid-rulesp subrules))
   :hints (("Goal"
            :in-theory (disable valid-rulep))))
+
+(defthm-ex-from-rp-all2
+  (defthm valid-sc-ex-from-rp-all2
+    (valid-sc (ex-from-rp-all2 term) a)
+    :flag ex-from-rp-all2)
+  (defthm valid-sc-subterms-ex-from-rp-all2-lst
+    (valid-sc-subterms (ex-from-rp-all2-lst lst) a)
+    :flag ex-from-rp-all2-lst)
+  :hints (("Goal"
+           :do-not-induct t
+           
+           :expand (VALID-SC (CONS (CAR TERM)
+                         (EX-FROM-RP-ALL2-LST (CDR TERM)))
+                   A)
+           :in-theory (e/d (
+                            EX-FROM-RP-ALL2
+                            IS-RP-LOOSE
+                            is-rp
+                            is-if
+                            ;;rp-termp-ex-from-rp-all2-lemma
+                            ex-from-rp-all2-lst
+                            )
+                           (ex-from-rp
+                            ;;FALIST-CONSISTENT
+                            RP-TERMP-EX-FROM-RP
+                            RP-TERMP-CONS-CAR-TERM-SUBTERMS
+                            )))))
 
 (encapsulate
   nil
@@ -606,6 +636,7 @@
                     (valid-sc-subterms subterms a)))
     :flag valid-sc-subterms)
   :hints (("Goal"
+           :expand (VALID-SC-NT TERM A)
            :in-theory (e/d (EVAL-AND-ALL-NT-of-context-from-rp) ()))))
 
 
@@ -706,3 +737,14 @@
                             (:TYPE-PRESCRIPTION VALID-RULESP)
                             RP-STATEP)))))
 
+(defthm valid-sc-subterms-of-rev
+  (equal (valid-sc-subterms (rev x) a)
+         (valid-sc-subterms x a))
+  :hints (("Goal"
+           :in-theory (e/d (rev) ()))))
+
+(defthm eval-and-all-of-rev
+  (equal (eval-and-all (rev x) a)
+         (eval-and-all x a))
+  :hints (("Goal"
+           :in-theory (e/d (rev) ()))))

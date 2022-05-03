@@ -28,7 +28,9 @@
 
 (include-book "svexl")
 
-(define equal-len (lst (size natp))
+(include-book "../fnc-defs")
+
+#|(define equal-len (lst (size natp))
   (if (zp size)
       (atom lst)
       (and (not (atom lst))
@@ -45,7 +47,7 @@
   (defthm equal-len-opener-size-0
       (implies t
                (equal (equal-len lst 0)
-                      (atom lst)))))
+                      (atom lst)))))|#
         
 
 

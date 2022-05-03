@@ -142,46 +142,49 @@
 (local (in-theory (disable hons-dups-p)))
 
 
-(local (defthm cycle-fsm-okp-of-base-fsm-to-cycle
-         (b* (((base-fsm base-fsm) (svtv-data$c->phase-fsm svtv-data))
-              ((mv values nextstate)
-               (svtv-cycle-compile (svex-identity-subst
-                                    (svex-alist-keys base-fsm.nextstate))
-                                   (svtv-data$c->cycle-phases svtv-data)
-                                   base-fsm simp)))
-           (svtv-data$c-cycle-fsm-okp svtv-data (make-base-fsm :values values :nextstate nextstate)))
-         :hints(("Goal" :in-theory (enable svtv-data$c-cycle-fsm-okp)))))
+(defthmd cycle-fsm-okp-of-base-fsm-to-cycle
+  (b* (((base-fsm base-fsm) (svtv-data$c->phase-fsm svtv-data))
+       ((mv values nextstate)
+        (svtv-cycle-compile (svex-identity-subst
+                             (svex-alist-keys base-fsm.nextstate))
+                            (svtv-data$c->cycle-phases svtv-data)
+                            base-fsm simp)))
+    (svtv-data$c-cycle-fsm-okp svtv-data (make-base-fsm :values values :nextstate nextstate)))
+  :hints(("Goal" :in-theory (enable svtv-data$c-cycle-fsm-okp))))
 
-(local (defthm cycle-fsm-okp-implies-cycle-compile-values-equiv
-         (implies (svtv-data$c-cycle-fsm-okp svtv-data cycle-fsm)
-                  (b* (((base-fsm base-fsm) (svtv-data$c->phase-fsm svtv-data))
-                       ((mv ?values ?nextstate)
-                        (svtv-cycle-compile (svex-identity-subst
-                                             (svex-alist-keys base-fsm.nextstate))
-                                            (svtv-data$c->cycle-phases svtv-data)
-                                            base-fsm simp)))
-                    (base-fsm-eval-equiv (make-base-fsm :values values :nextstate nextstate) cycle-fsm)))
-         :hints ((acl2::use-termhint
-                  (b* (((base-fsm base-fsm) (svtv-data$c->phase-fsm svtv-data))
-                       ((base-fsm cycle-fsm))
-                       ((mv ?values ?nextstate)
-                        (svtv-cycle-compile (svex-identity-subst
-                                             (svex-alist-keys base-fsm.nextstate))
-                                            (svtv-data$c->cycle-phases svtv-data)
-                                            base-fsm simp)))
-                    `(:use ((:instance svex-envs-equivalent-implies-alist-eval-equiv
-                             (x ,(hq values))
-                             (y ,(hq cycle-fsm.values)))
-                            (:instance svex-envs-equivalent-implies-alist-eval-equiv
-                             (x ,(hq nextstate))
-                             (y ,(hq cycle-fsm.nextstate)))
-                            (:instance svtv-data$c-cycle-fsm-okp-necc
-                             (cycle-fsm ,(hq cycle-fsm))
-                             (svtv-data$c svtv-data)
-                             (env (svex-alist-eval-equiv-envs-equivalent-witness
-                                   ,(hq values) ,(hq values1)))))
-                      :in-theory (enable base-fsm-eval-equiv
-                                         svex-alist-eval-equiv!-when-svex-alist-eval-equiv)))))))
+(defthmd cycle-fsm-okp-implies-cycle-compile-values-equiv
+  (implies (svtv-data$c-cycle-fsm-okp svtv-data cycle-fsm)
+           (b* (((base-fsm base-fsm) (svtv-data$c->phase-fsm svtv-data))
+                ((mv ?values ?nextstate)
+                 (svtv-cycle-compile (svex-identity-subst
+                                      (svex-alist-keys base-fsm.nextstate))
+                                     (svtv-data$c->cycle-phases svtv-data)
+                                     base-fsm simp)))
+             (base-fsm-eval-equiv (make-base-fsm :values values :nextstate nextstate) cycle-fsm)))
+  :hints ((acl2::use-termhint
+           (b* (((base-fsm base-fsm) (svtv-data$c->phase-fsm svtv-data))
+                ((base-fsm cycle-fsm))
+                ((mv ?values ?nextstate)
+                 (svtv-cycle-compile (svex-identity-subst
+                                      (svex-alist-keys base-fsm.nextstate))
+                                     (svtv-data$c->cycle-phases svtv-data)
+                                     base-fsm simp)))
+             `(:use ((:instance svex-envs-equivalent-implies-alist-eval-equiv
+                      (x ,(hq values))
+                      (y ,(hq cycle-fsm.values)))
+                     (:instance svex-envs-equivalent-implies-alist-eval-equiv
+                      (x ,(hq nextstate))
+                      (y ,(hq cycle-fsm.nextstate)))
+                     (:instance svtv-data$c-cycle-fsm-okp-necc
+                      (cycle-fsm ,(hq cycle-fsm))
+                      (svtv-data$c svtv-data)
+                      (env (svex-alist-eval-equiv-envs-equivalent-witness
+                            ,(hq values) ,(hq values1)))))
+               :in-theory (enable base-fsm-eval-equiv
+                                  svex-alist-eval-equiv!-when-svex-alist-eval-equiv))))))
+
+(local (in-theory (enable cycle-fsm-okp-implies-cycle-compile-values-equiv
+                          cycle-fsm-okp-of-base-fsm-to-cycle)))
          
          
 ;; (local (defthm cycle-fsm-okp-equivalent-values-and-nextstate
@@ -203,12 +206,14 @@
   :guard-hints (("goal" :do-not-induct t
                  :in-theory (enable base-fsm-to-cycle)))
   :returns new-svtv-data
-  (b* (((base-fsm cycle-fsm)
-        (base-fsm-to-cycle (svtv-data->cycle-phases svtv-data)
-                           (svtv-data->phase-fsm svtv-data)
-                           simp))
-       (svtv-data (update-svtv-data->cycle-fsm cycle-fsm svtv-data)))
-    (update-svtv-data->cycle-fsm-validp t svtv-data))
+  (time$
+   (b* (((base-fsm cycle-fsm)
+         (base-fsm-to-cycle (svtv-data->cycle-phases svtv-data)
+                            (svtv-data->phase-fsm svtv-data)
+                            simp))
+        (svtv-data (update-svtv-data->cycle-fsm cycle-fsm svtv-data)))
+     (update-svtv-data->cycle-fsm-validp t svtv-data))
+   :msg "; Svtv-data cycle: ~st seconds, ~sa bytes.~%")
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))

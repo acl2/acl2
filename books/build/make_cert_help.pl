@@ -96,6 +96,25 @@ sub mytime {
     }
 }
 
+my $parseable_timestamps = 0;
+if ($ENV{'CERT_PL_PARSEABLE_TIMESTAMPS'}) {
+    $parseable_timestamps = 1;
+}
+
+sub timestr {
+    my ($stamp) = @_;
+    my $base = strftime('%d-%b-%Y %H:%M:%S',localtime $stamp);
+    if ($msectiming) {
+	$base = sprintf("%s.%03d", $base, ($stamp-int($stamp))*1000);
+    }
+    if ($parseable_timestamps) {
+	$base = sprintf("%s [%d.%03d]", $base, int($stamp), ($stamp-int($stamp))*1000);
+    }
+    return $base;
+}
+
+my $SCRIPT_START_TIME = mytime();
+
 binmode(STDOUT,':utf8');
 
 
@@ -526,7 +545,7 @@ my $full_file = File::Spec->rel2abs($TARGET);
 my $goal = "$file.$TARGETEXT";
 my $printgoal = path_export("$full_file.$TARGETEXT");
 
-print "Making $printgoal on " . strftime('%d-%b-%Y %H:%M:%S',localtime) . "\n";
+print "Making $printgoal on " . timestr($SCRIPT_START_TIME) . "\n";
 
 my $fulldir = File::Spec->canonpath(File::Spec->catpath($vol, $dir, ""));
 print "-- Entering directory $fulldir\n" if $DEBUG;
@@ -579,6 +598,7 @@ $instrs .= "(acl2::in-package \"ACL2\")\n";
 $instrs .= "; see github issue #638 (waterfall-parallelism and profiling): \n";
 $instrs .= "#+(and hons (not acl2-par)) (profile-fn 'prove)\n";
 $instrs .= "#+(and hons (not acl2-par)) (profile-fn 'certify-book-fn)\n";
+$instrs .= "#+(and hons (not acl2-par)) (profile-fn 'include-book-fn)\n";
 $instrs .= "(acl2::lp)\n";
 # We used to comment this out, but maybe it's better to leave this enabled by default?
 $instrs .= "(set-debugger-enable :bt)\n" if ($STACK_TRACES);
@@ -593,6 +613,10 @@ $instrs .= "\n";
 my ($max_mem, $max_time, $includes, $book_pbs) = scan_source_file("$file.lisp");
 $max_mem = $max_mem ? ($max_mem + 3) : 4;
 $max_time = $max_time || 240;
+
+$ENV{"CERT_MAX_MEM"} = $max_mem;
+$ENV{"CERT_MAX_TIME"} = $max_time;
+$ENV{"CERT_GOALFILE"} = $goal;
 
 # Get the certification instructions from foo.acl2 or cert.acl2, if either
 # exists, or make a generic certify-book command.
@@ -728,7 +752,7 @@ write_whole_file($lisptmp, $instrs);
     }
 
     write_whole_file($shtmp, $shinsts);
-
+chmod(0750,$shtmp);
 
 # Run it!  ------------------------------------------------
 
@@ -823,7 +847,12 @@ if ($success) {
 	$hostname = " " . extract_hostname_from_outfile($outfile);
     }
 
-    printf("%sBuilt %s (%.3fs%s)%s\n", $color, $printgoal, $ELAPSED, $hostname, $black);
+    my $endtime = "";
+    if (! $ENV{"CERT_PL_HIDE_ENDTIME"}) {
+	my $SCRIPT_END_TIME = mytime();
+	$endtime = sprintf(' at %s ', timestr($SCRIPT_END_TIME));
+    }
+    printf("%sBuilt %s (%.3fs%s)%s%s\n", $color, $printgoal, $ELAPSED, $hostname, $endtime, $black);
 
 } else {
     my $taskname = ($STEP eq "acl2x" || $STEP eq "acl2xskip") ? "ACL2X GENERATION" :
@@ -831,7 +860,7 @@ if ($success) {
 	($STEP eq "pcertify") ? "PROVISIONAL CERTIFICATION" :
 	($STEP eq "pcertifyplus") ? "PROVISIONAL CERTIFICATION+" :
 	($STEP eq "convert")  ? "PCERT0->PCERT1 CONVERSION" :
-	($STEP eq "complete") ? "PCERT1->CERT COMLETION" : "UNKNOWN";
+	($STEP eq "complete") ? "PCERT1->CERT COMPLETION" : "UNKNOWN";
     print "\n**$taskname FAILED** for $dir$file.lisp\n\n" .
         ($outfile ? `tail -300 $outfile | sed 's/^/   | /'` : "") .
         "\n**$taskname FAILED** for $dir$file.lisp\n\n";

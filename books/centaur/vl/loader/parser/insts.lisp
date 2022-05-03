@@ -33,7 +33,6 @@
 (include-book "assignments")
 (include-book "delays")
 (include-book "strengths")
-(include-book "datatypes")
 (include-book "../../mlib/expr-tools")
 (include-book "../../mlib/port-tools")
 (local (include-book "../../util/arithmetic"))

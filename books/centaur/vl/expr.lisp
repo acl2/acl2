@@ -739,6 +739,11 @@ for plain atoms like @('a') and @('b') in @('always @(a or b)').</p>")
             (implies (vl-hidexpr-p x)
                      (not (equal (car x) :colon)))
             :hints(("Goal" :in-theory (enable vl-hidexpr-p
+                                              vl-hidindex-p)))))
+   (local (defthm hidexpr-car-not-paramscolon
+            (implies (vl-hidexpr-p x)
+                     (not (equal (car x) :paramscolon)))
+            :hints(("Goal" :in-theory (enable vl-hidexpr-p
                                               vl-hidindex-p))))))
 
 
@@ -1284,15 +1289,26 @@ unnamed (plain) arguments followed by some named arguments.</p>"
     :measure (two-nats-measure (acl2-count x) 110)
     (:colon
      :cond (and (consp x)
-                (eq (car x) :colon))
+                (or (eq (car x) :colon)
+                    (eq (car x) :paramscolon))) ;; ugh
      :short "Represents a single scoping operator (@('::') being applied to
              some interior scopeexpr."
-     :shape (consp (cdr x))
+     :shape (and (consp (cdr x))
+                 (or (eq (car x) :colon)
+                     (and (consp (cddr x))
+                          (caddr x))))
      :fields ((first :acc-body (cadr x) :type  vl-scopename-p
                      :doc "The outer scope name, e.g., @('ape')")
-              (rest :acc-body (cddr x) :type  vl-scopeexpr-p
+              (paramargs :acc-body (and (eq (car x) :paramscolon)
+                                        (caddr x))
+                         :type vl-maybe-paramargs
+                         :doc "The parameter arguments for a class scope")
+              (rest :acc-body (if (eq (car X) :paramscolon) (cdddr x) (cddr x))
+                    :type  vl-scopeexpr-p
                     :doc "The inner scope expression, e.g., @('bat::cat.dog[3][2][1].elf')."))
-     :ctor-body (cons :colon (cons first rest)))
+     :ctor-body (if paramargs
+                    (cons :paramscolon (cons first (cons paramargs rest)))
+                  (cons :colon (cons first rest))))
     (:end
      :cond t
      :short "A scope expression that has no scoping operators.  For instance,

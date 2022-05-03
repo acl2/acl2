@@ -545,7 +545,7 @@
            (defsvtv-stobj-pipeline-setup x ,svtv-data :skip-cycle t))
           ((when err)
            (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))
-          ((mv err ,moddb ,aliases ,vcd-wiremap ,vcd-vals state)
+          ((mv ,vcd-wiremap ,vcd-vals state)
            (svtv-data-debug-pipeline-aux ,env pipeline-setup . ,args)))
        (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))))
 
@@ -658,11 +658,11 @@
                              (fsm base-fsm-p))
   :returns (result svex-env-p)
   (b* (((base-fsm fsm))
-       ((with-fast fsm.values initst))
+       ((with-fast fsm.values fsm.nextstate initst))
        (renamed-values (svtv-name-lhs-map-compose namemap fsm.values))
        ((with-fast renamed-values))
        (evaldata (make-svtv-evaldata :nextstate fsm.nextstate
-                                     :inputs (make-fast-alistlist ins)
+                                     :inputs (make-fast-alists ins)
                                      :initst initst))
        (res
         (svtv-probealist-eval probes renamed-values evaldata)))
@@ -693,7 +693,7 @@
                            (svtv-data->namemap svtv-data)
                            (svtv-data->cycle-fsm svtv-data))
     (b* ((phases (svtv-data->cycle-phases svtv-data)))
-      (svtv-fsm-run-probes (svtv-cycle-run-fsm-inputs ins phases)
+      (svtv-fsm-run-probes (make-fast-alist (svtv-cycle-run-fsm-inputs ins phases))
                            initst
                            (svtv-probealist-cycle-adjust probes phases)
                            (svtv-data->namemap svtv-data)
@@ -724,7 +724,8 @@
        (cycle-ins (svtv-fsm-run-input-envs
                    (take len rename-ins)
                    rename-overrides fsm)))
-    (svtv-data-run-cycle-fsm cycle-ins initst setup.probes)))
+    (with-fast-alist initst
+      (svtv-data-run-cycle-fsm cycle-ins initst setup.probes))))
 
 
 

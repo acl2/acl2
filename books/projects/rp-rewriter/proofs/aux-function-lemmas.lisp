@@ -5,6 +5,7 @@
 
 ; Copyright (C) 2019, Regents of the University of Texas
 ; All rights reserved.
+; Copyright (C) 2022 Intel Corporation
 
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are
@@ -122,9 +123,10 @@
              :in-theory (e/d (is-lambda is-lambda-strict lambda-exp-free-p LAMBDA-EXP-FREE-LISTP )
                              ())))))
 
-(defthm rp-termp-dumb-negate-lit2
+(defret rp-termp-dumb-negate-lit2
   (implies (rp-termp term)
-           (rp-termp (dumb-negate-lit2 term)))
+           (rp-termp new-term))
+  :fn dumb-negate-lit2
   :hints (("goal" :in-theory (enable rp-term-listp
                                      dumb-negate-lit2))))
 
@@ -763,20 +765,20 @@
                 (not (rp-rule-metap rule)))
            (and
             (weak-custom-rewrite-rule-p rule)
-            (rp-termp (rp-hyp rule))
+            (rp-term-listp (rp-hyp rule))
             (rp-termp (rp-lhs rule))
             (rp-termp (rp-rhs rule))
             ;; (rp-syntaxp (rp-lhs rule))
             (not (include-fnc (rp-lhs rule) 'rp))
-            (not (include-fnc (rp-hyp rule) 'rp))
+            (not (include-fnc-subterms (rp-hyp rule) 'rp))
             ;;(rp-syntaxp (rp-rhs rule))
             (not (include-fnc (rp-rhs rule) 'falist))
-            (not (include-fnc (rp-hyp rule) 'falist))
+            (not (include-fnc-subterms (rp-hyp rule) 'falist))
             ;;(not (include-fnc (rp-lhs rule) 'if))
             (not (include-fnc (rp-lhs rule) 'synp))
             #|(no-free-variablep rule)|#
             (not (include-fnc (rp-lhs rule) 'list))
-            (not (include-fnc (rp-hyp rule) 'list))
+            (not (include-fnc-subterms (rp-hyp rule) 'list))
             (not (include-fnc (rp-rhs rule) 'list))))
   :rule-classes (:rewrite :forward-chaining)
   :hints (("Goal" :in-theory (enable rule-syntaxp))))
@@ -1149,3 +1151,183 @@
                             RP-TERMP-EX-FROM-RP
                             RP-TERMP-CONS-CAR-TERM-SUBTERMS
                             )))))
+
+(defthm-ex-from-rp-all2
+    (defthm ex-from-rp-all2-not-include-rp
+        (implies (rp-termp term)
+                 (not (include-fnc (ex-from-rp-all2 term) 'rp)))
+      :flag ex-from-rp-all2)
+    (defthm ex-from-rp-all2-lst-not-include-rp
+        (implies (rp-term-listp lst)
+                 (not (include-fnc-subterms (ex-from-rp-all2-lst lst) 'rp)))
+      :flag ex-from-rp-all2-lst)
+  :hints (("Goal"
+           :do-not-induct t
+           :expand (RP-TERMP (EX-FROM-RP TERM))
+           :in-theory (e/d (
+                            EX-FROM-RP-ALL2
+                            IS-RP-LOOSE
+                            is-rp
+                            ;;rp-termp-ex-from-rp-all2-lemma
+                            ex-from-rp-all2-lst
+                            )
+                           (ex-from-rp
+                            ;;FALIST-CONSISTENT
+                            RP-TERMP-EX-FROM-RP
+                            RP-TERMP-CONS-CAR-TERM-SUBTERMS
+                            )))))
+
+
+(defthmd rp-termp-single-step
+  (implies (is-rp term)
+           (and (equal (rp-termp (list (car term)
+                                       (cadr term)
+                                       rest))
+                       (rp-termp rest))
+                (equal (rp-termp term)
+                       (rp-termp (caddr term)))))
+  :hints (("Goal"
+           :in-theory (e/d (is-rp) ()))))
+
+(defthm rp-termp-single-step-2
+  (implies (is-rp term)
+           (equal (rp-termp (list (car term)
+                                  (cadr term)
+                                  rest))
+                  (rp-termp rest)))
+  :hints (("Goal"
+           :in-theory (e/d (is-rp) ()))))
+
+(defthm rp-termp-single-step-3
+  (implies (and (is-rp term)
+                (rp-termp term))
+           (rp-termp (caddr term)))
+  :hints (("Goal"
+           :in-theory (e/d (is-rp
+                            rp-termp-single-step) ()))))
+
+(defthm rp-term-listp-of-rev
+  (implies (rp-term-listp x)
+           (rp-term-listp (rev x)))
+  :hints (("Goal"
+           :in-theory (e/d (rev) ()))))
+
+
+(progn
+  (define binary-or**/and**-guard-meta-aux (term)
+    (cond
+     ((atom term)
+      term)
+     ((atom (cdr term))
+      term)
+     ((atom (cddr term))
+      (case-match term
+        (('hide x)
+         (binary-or**/and**-guard-meta-aux x))
+        (& term)))
+     ((atom (cdddr term))
+      (case-match term
+        (('acl2::binary-or* x y)
+         `(binary-or** ,(binary-or**/and**-guard-meta-aux x)
+                       ,(binary-or**/and**-guard-meta-aux y)))
+        (('acl2::binary-and* x y)
+         `(binary-and** ,(binary-or**/and**-guard-meta-aux x)
+                        ,(binary-or**/and**-guard-meta-aux y)))
+        (('binary-or** x y)
+         `(binary-or** ,(binary-or**/and**-guard-meta-aux x)
+                       ,(binary-or**/and**-guard-meta-aux y)))
+        (('binary-and** x y)
+         `(binary-and** ,(binary-or**/and**-guard-meta-aux x)
+                        ,(binary-or**/and**-guard-meta-aux y)))
+        (('equal x y)
+         (b* ((x (binary-or**/and**-guard-meta-aux x))
+              (y (binary-or**/and**-guard-meta-aux y)))
+           (if (equal x y)
+               ''t
+             `(equal ,x ,y))))
+        (& term)))
+     ((atom (cddddr term))
+      (case-match term
+        (('RETURN-LAST & & x)
+         (binary-or**/and**-guard-meta-aux x))
+      
+        (('if x x y)
+         `(binary-or** ,(binary-or**/and**-guard-meta-aux x)
+                       ,(binary-or**/and**-guard-meta-aux y)))
+        (('if x y ''nil)
+         `(binary-and** ,(binary-or**/and**-guard-meta-aux x)
+                        ,(binary-or**/and**-guard-meta-aux y)))
+        (& term)))
+     (t term)))
+                   
+
+  (define binary-or**/and**-guard-meta (term)
+    (case-match term
+      (('equal & ('hide &))
+       (binary-or**/and**-guard-meta-aux
+        (beta-search-reduce term *big-number*)))
+      (('equal ('hide &) &)
+       (binary-or**/and**-guard-meta-aux
+        (beta-search-reduce term *big-number*)))
+      (& term)))
+
+  (defevaluator binary-or**/and**-guard-meta-eval
+    binary-or**/and**-guard-meta-eval-lst
+    ((acl2::binary-or* x y)
+     (binary-or** x y)
+     (acl2::binary-and* x y)
+     (binary-and** x y)
+     (hide x)
+     (equal x y)
+     (if x y z)
+     (RETURN-LAST x y z))
+    :namedp t)
+
+  (defthm binary-or**/and**-guard-meta-eval-beta-search-reduce
+    (implies
+     (pseudo-termp term)
+     (equal (binary-or**/and**-guard-meta-eval (beta-search-reduce term limit) a)
+            (binary-or**/and**-guard-meta-eval term a)))
+    :hints (("Goal"
+             :use ((:functional-instance
+                    eval-of-beta-search-reduce
+                    (acl2::beta-eval binary-or**/and**-guard-meta-eval)
+                    (acl2::beta-eval-list binary-or**/and**-guard-meta-eval-lst)))
+             :in-theory (e/d (binary-or**/and**-guard-meta-eval-of-fncall-args) ()))))
+
+  (defthm binary-or**/and**-guard-meta-aux-correct
+    (implies t
+             (equal (binary-or**/and**-guard-meta-eval
+                     (binary-or**/and**-guard-meta-aux term) a)
+                    (binary-or**/and**-guard-meta-eval
+                     term a)))
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((:free (x) (hide x)))
+             :induct (binary-or**/and**-guard-meta-aux term)
+             :in-theory (e/d (binary-or**/and**-guard-meta-aux
+                              BINARY-AND**
+                              acl2::BINARY-AND*
+                              BINARY-or**
+                              acl2::BINARY-or*)
+                             ()))))
+
+  (defthm binary-or**/and**-guard-meta-correct
+    (implies (pseudo-termp term)
+             (equal (binary-or**/and**-guard-meta-eval term a)
+                    (binary-or**/and**-guard-meta-eval
+                     (binary-or**/and**-guard-meta term) a)))
+    :rule-classes ((:meta :trigger-fns (equal)))
+    :hints (("Goal"                 
+             :do-not-induct t
+             :in-theory (e/d (binary-or**/and**-guard-meta)
+                             ())))))
+
+  
+#|(defthm binary-and**-of-nil/t
+  (and (equal (binary-and** nil a)
+              nil)
+       (equal (binary-and** t a)
+              a))
+  :hints (("Goal"
+           :in-theory (e/d (binary-and**) ()))))|#

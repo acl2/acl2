@@ -5,6 +5,7 @@
 
 ; Copyright (C) 2019, Regents of the University of Texas
 ; All rights reserved.
+; Copyright (C) 2022 Intel Corporation
 
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are
@@ -57,23 +58,7 @@
 (local
  (in-theory (enable rule-syntaxp)))
 
-(defun custom-rewrite-from-formula (formula)
-  (declare (xargs :guard t))
-  (case-match formula
-    (('implies hyp conc)
-     (case-match conc
-       (('equal lhs rhs)
-        (mv nil hyp lhs rhs))
-       (&
-        (mv t hyp conc ''t;`(nonnil-fix ,conc)
-            ))))
-    (&
-     (case-match formula
-       (('equal lhs rhs)
-        (mv nil ''t lhs rhs))
-       (&
-        (mv t ''t formula ''t;`(nonnil-fix ,formula)
-            ))))))
+
 
 
 #|(mutual-recursion
@@ -101,6 +86,24 @@
      (cons a
            (if-to-and-list b)))
     (& (cons if-form nil))))
+
+(defun custom-rewrite-from-formula (formula)
+  (declare (xargs :guard t))
+  (case-match formula
+    (('implies hyp conc)
+     (case-match conc
+       (('equal lhs rhs)
+        (mv nil hyp lhs rhs))
+       (&
+        (mv t hyp conc ''t;`(nonnil-fix ,conc)
+            ))))
+    (&
+     (case-match formula
+       (('equal lhs rhs)
+        (mv nil ''t lhs rhs))
+       (&
+        (mv t ''t formula ''t;`(nonnil-fix ,formula)
+            ))))))
 
 (defun sc-rule-p (formula sc-formula)
   (declare (xargs :guard t
@@ -234,7 +237,7 @@
          
          (rule (make custom-rewrite-rule
                      :rune rune
-                     :hyp hyp
+                     :hyp (if-to-and-list hyp)
                      :flg flg
                      :lhs/trig-fnc lhs
                      :rhs/meta-fnc rhs))
@@ -290,22 +293,30 @@
 
 
 
-(defund extract-from-force (term)
-  (declare (xargs :guard t))
-  (case-match term
-    (('force$ ('if x ''t ''nil) & &)
-     x)
-    (('force ('if x ''t ''nil))
-     x)
-    (('force$ x & &)
-     x)
-    (('force x)
-     x)
-    (('if x y z)
-     `(if ,(extract-from-force x)
-          ,(extract-from-force y)
-        ,(extract-from-force z)))
-    (& term)))
+(progn
+  (defund extract-from-force (term)
+    (declare (xargs :guard t))
+    (case-match term
+      (('force$ ('if x ''t ''nil) & &)
+       x)
+      (('force ('if x ''t ''nil))
+       x)
+      (('force$ x & &)
+       x)
+      (('force x)
+       x)
+      (('if x y z)
+       `(if ,(extract-from-force x)
+            ,(extract-from-force y)
+          ,(extract-from-force z)))
+      (& term)))
+
+  (defund extract-from-force-lst (lst)
+    (declare (xargs :guard t))
+    (if (atom lst)
+        nil
+      (cons (extract-from-force (car lst))
+            (extract-from-force-lst (cdr lst))))))
 
 #|(local
  (defthm true-listp-of-extract-from-force-lst
@@ -328,7 +339,7 @@
     (case-match sc-formula
       (('implies scp q)
        (b* (((when (not (subsetp-equal (if-to-and-list (extract-from-force scp))
-                                       (if-to-and-list (extract-from-force (rp-hyp rule))))))
+                                       (extract-from-force-lst (rp-hyp rule)))))
              (or (hard-error 'side-condition-check
                              "hypothesis of side-condition rule should be a subset ~
   of the original rule ~%" nil)
@@ -573,7 +584,7 @@
   (declare (xargs :guard (meta-rune-p rune)))
   (make custom-rewrite-rule
                       :meta-rulep t
-                      :hyp ''nil ;; hyp nil will make the rule always correct without
+                      :hyp (list ''nil) ;; hyp nil will make the rule always correct without
                       ;; having to identify it as a special meta rule.
                       :rune rune
                       :lhs/trig-fnc (cddr rune)  
@@ -727,12 +738,13 @@
 
 
 (progn
-  (defund e/d-rp-rules-fn (rules state e/d)
-    (declare (xargs :stobjs (state)))
+  (defund e/d-rp-rules-fn (rules ruleset state e/d)
+    (declare (xargs :stobjs (state)
+                    :guard (symbolp ruleset)))
     (if (atom rules)
         nil
       (b* ((rule (car rules))
-           (rest (e/d-rp-rules-fn (cdr rules) state e/d))
+           (rest (e/d-rp-rules-fn (cdr rules) ruleset state e/d))
            ((mv given-type name)
             (case-match rule ((type name . &) (mv type name)) (& (mv nil rule))))
            ((unless (symbolp name))
@@ -742,7 +754,7 @@
            (rune (get-rune-name name state))
            (rune (if given-type rule rune))
            (rest
-            (if (not (consp (hons-assoc-equal rune (table-alist 'rp-rules (w state)))))
+            (if (not (consp (hons-assoc-equal rune (table-alist ruleset (w state)))))
                 (progn$
                  (and (or (atom rune)
                           (and (not (equal (car rune) ':definition))
@@ -752,10 +764,10 @@
                           rune))
                  (if (or (atom rune)
                          (not (equal (car rune) ':executable-counterpart)))
-                     (cons `(table rp-rules ',rune '(:inside-out . t)) rest)
+                     (cons `(table ,ruleset ',rune '(:inside-out . t)) rest)
                    rest))
               rest))
-           (rune-entry-value (cdr (hons-assoc-equal rune (table-alist 'rp-rules
+           (rune-entry-value (cdr (hons-assoc-equal rune (table-alist ruleset
                                                                       (w state)))))
            (both (case-match rune-entry-value
                    ((':both . &) t)
@@ -770,23 +782,25 @@
                    `(disable-exc-counterpart ,name))
                  rest))
           (&
-           (cons `(table rp-rules ',rune ',(cond
+           (cons `(table ,ruleset ',rune ',(cond
                                             (both `(:both . ,e/d))
                                             (outside-in `(:outside-in . ,e/d))
                                             (t `(:inside-out . ,e/d))))
                  rest))))))
 
-  (defmacro enable-rules (rules)
+  (defmacro enable-rules (rules &key
+                                (ruleset 'rp-rules))
     `(make-event
       `(with-output
          :off :all
-         (progn ,@(e/d-rp-rules-fn ,rules state t)))))
+         (progn ,@(e/d-rp-rules-fn ,rules ',ruleset state t)))))
 
-  (defmacro disable-rules (rules)
+  (defmacro disable-rules (rules &key
+                                (ruleset 'rp-rules))
     `(make-event
       `(with-output
          :off :all
-         (progn ,@(e/d-rp-rules-fn ,rules state nil)))))
+         (progn ,@(e/d-rp-rules-fn ,rules ',ruleset state nil)))))
 
   (defmacro disable-all-rules ()
     `(make-event
@@ -1107,11 +1121,12 @@ making it the least prioritized rule. </p>
               :in-theory (e/d (get-enabled-rules-from-table-aux) ())))))
 
 
-  (define get-enabled-rules-from-table (state)
+  (define get-enabled-rules-from-table (state &key
+                                              (ruleset ''rp-rules))
     (declare (xargs :stobjs (state)
-                    :guard t))
+                    :guard (symbolp ruleset)))
     (b* ((world (w state))
-         (rp-rules (table-alist 'rp-rules world))
+         (rp-rules (table-alist ruleset world))
          ((mv rules-inside-out rules-outside-in)
           (get-enabled-rules-from-table-aux rp-rules))
          (rp-exc-rules (table-alist 'rp-exc-rules world))
@@ -1170,7 +1185,11 @@ making it the least prioritized rule. </p>
                              runes-outside-in
                              (new-synps alistp)
                              rp-state
-                             state)
+                             state
+                             &key
+                             (ruleset ''rp-rules)
+                             )
+  :guard (symbolp ruleset)
   :verify-guards nil
   (b* ((- (and runes-outside-in (not runes-inside-out)
                    (cw "WARNING: You passed some values for runes-outside-in
@@ -1183,7 +1202,7 @@ values will cause runes to be not retrieved from the table.~%")))
                 (mv runes-inside-out runes-outside-in
                     (get-disabled-exc-rules-from-table
                      (table-alist 'rp-exc-rules (w state))))
-              (get-enabled-rules-from-table state)))
+              (get-enabled-rules-from-table state :ruleset ruleset)))
        
        (rules-alist-inside-out (get-rules runes-inside-out state :new-synps new-synps))
        (rules-alist-outside-in (get-rules runes-outside-in state :new-synps

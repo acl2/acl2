@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "elements")
-(include-book "classes")
+;; (include-book "classes")
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc parse-packages
@@ -223,7 +223,7 @@
                                                                  :vl-import
                                                                  ;; :vl-fwdtypedef -- not allowed
                                                                  ;; :vl-modport    -- not allowed
-
+                                                                 :vl-letdecl
                                                                  ;; Don't get confused by assertion_item_declaration;
                                                                  ;; :vl-assertion is not allowed and
                                                                  ;; :vl-cassertion is not allowed either.
@@ -231,6 +231,7 @@
                                                                  :vl-dpiimport
                                                                  :vl-dpiexport
                                                                  :vl-class
+                                                                 :vl-property
                                                                  )))
                           (warnings
                            (if (not bad-item)

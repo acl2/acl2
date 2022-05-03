@@ -75,9 +75,10 @@
                                   (mv-nth 1 (rp-ex-counterpart term rp-state
                                                                state))))))
            :in-theory (e/d (rp-ex-counterpart
-                            INCREMENT-RW-STACK-SIZE
-                            RP-STAT-ADD-TO-RULES-USED
-                            valid-rp-state-syntaxp)
+                            ;;INCREMENT-RW-STACK-SIZE
+                            ;;RP-STAT-ADD-TO-RULES-USED
+                            ;;valid-rp-state-syntaxp
+                            )
                            (rp-statep
                             RULES-USED-PUT
                             UPDATE-RW-STACK-SIZE
@@ -107,8 +108,6 @@
                                                                state))))))
            :in-theory (e/d (rp-ex-counterpart
                             valid-rp-statep
-                            INCREMENT-RW-STACK-SIZE
-                            RP-STAT-ADD-TO-RULES-USED
                             valid-rp-state-syntaxp)
                            (rp-statep
                             UPDATE-RW-STACK-SIZE

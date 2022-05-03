@@ -59,8 +59,7 @@
 (fty::defprod vl-define
   :parents (preprocessor)
   :short "Internal representation of a @('`define') directive."
-  ((name    stringp :rule-classes :type-prescription)
-   (formals vl-define-formallist-p
+  ((formals vl-define-formallist-p
             "Formal arguments to the text macro, if any.")
    (body    stringp :rule-classes :type-prescription
             "Macro text associated with this definition. Note that we generally
@@ -74,45 +73,39 @@
              treat command-line @('+define') options; see the @('defines')
              cosim for more details.")))
 
-(fty::deflist vl-defines
-  :parents (preprocessor)
-  :elt-type vl-define)
+(fty::defoption vl-maybe-define vl-define)
 
-(defprojection vl-defines->names ((x vl-defines-p))
-  :returns (names string-listp)
-  (vl-define->name x))
+(fty::defmap vl-defines
+  :parents (preprocessor)
+  :key-type stringp :val-type vl-maybe-define
+  :true-listp t)
+
+(define vl-defines->names ((x vl-defines-p))
+  :returns (names string-listp
+                  :hints(("Goal" :in-theory (enable vl-defines-fix))))
+  (strip-cars (vl-defines-fix x)))
 
 (define vl-find-define
   :short "Look up a definition in the defines list."
   ((name stringp)
    (x    vl-defines-p))
   :returns (guts (iff (vl-define-p guts) guts))
-  (cond ((atom x)
-         nil)
-        ((equal (string-fix name) (vl-define->name (car x)))
-         (vl-define-fix (car x)))
-        (t
-         (vl-find-define name (cdr x)))))
+  (cdr (hons-get (string-fix name) (vl-defines-fix x))))
 
 (define vl-delete-define
   :short "Delete an entry from the defines list, if it exists."
   ((name stringp)
    (x    vl-defines-p))
   :returns (new-x vl-defines-p)
-  (cond ((atom x)
-         nil)
-        ((equal (string-fix name) (vl-define->name (car x)))
-         (vl-delete-define name (cdr x)))
-        (t
-         (cons (vl-define-fix (car x))
-               (vl-delete-define name (cdr x))))))
+  (hons-acons (string-fix name) nil (vl-defines-fix x)))
 
 (define vl-add-define
   :short "Add a definition to the defines list."
-  ((a vl-define-p)
+  ((name stringp)
+   (a vl-define-p)
    (x vl-defines-p))
   :returns (new-x vl-defines-p)
-  (cons (vl-define-fix a) (vl-defines-fix x)))
+  (hons-acons (string-fix name)  (vl-define-fix a) (vl-defines-fix x)))
 
 (define vl-make-initial-defines ((x string-listp)
                                  &key (stickyp booleanp))
@@ -121,12 +114,13 @@
 of names to @('1')."
   (if (atom x)
       nil
-    (cons (make-vl-define :name (car x)
-                          :formals nil
-                          :body "1"
-                          :loc *vl-fakeloc*
-                          :stickyp stickyp)
-          (vl-make-initial-defines (cdr x) :stickyp stickyp))))
+    (vl-add-define (car x)
+                   (make-vl-define
+                    :formals nil
+                    :body "1"
+                    :loc *vl-fakeloc*
+                    :stickyp stickyp)
+                   (vl-make-initial-defines (cdr x) :stickyp stickyp))))
 
 
 (local (defthm position-type
@@ -140,6 +134,7 @@ of names to @('1')."
                                  (loc vl-location-p)
                                  (stickyp booleanp))
   :returns (mv (okp booleanp :rule-classes :type-prescription)
+               (name (iff (stringp name) okp))
                (def (iff (vl-define-p def) okp)))
   :short "Essentially treats @('\"foo\"') like @('`define foo'), or
 @('\"foo=3\"') like @('`define foo 3`')."
@@ -147,20 +142,19 @@ of names to @('1')."
   (b* ((x (string-fix x))
        (pos (position #\= x))
        ((unless pos)
-        (mv t (make-vl-define :name x
-                              :formals nil
-                              :body ""
-                              :loc loc
-                              :stickyp stickyp)))
+        (mv t x (make-vl-define :formals nil
+                                :body ""
+                                :loc loc
+                                :stickyp stickyp)))
        ((unless (< (+ 1 pos) (length x)))
-        (mv nil nil))
+        (mv nil nil nil))
        (name (subseq x 0 pos))
        (body (subseq x (+ 1 pos) nil)))
-    (mv t (make-vl-define :name name
-                          :formals nil
-                          :body body
-                          :loc loc
-                          :stickyp stickyp))))
+    (mv t  name
+        (make-vl-define :formals nil
+                        :body body
+                        :loc loc
+                        :stickyp stickyp))))
 
 ;(vl-parse-cmdline-define "foo" *vl-fakeloc* nil)
 ;(vl-parse-cmdline-define "foo=" *vl-fakeloc* nil)
@@ -173,12 +167,12 @@ of names to @('1')."
                (defs vl-defines-p))
   (b* (((when (atom x))
         (mv nil nil))
-       ((mv okp first)
+       ((mv okp name first)
         (vl-parse-cmdline-define (car x) loc stickyp))
        ((mv warnings rest)
         (vl-parse-cmdline-defines-aux (cdr x) loc stickyp))
        ((when okp)
-        (mv warnings (cons first rest))))
+        (mv warnings (vl-add-define name first rest))))
     (mv (fatal :type :vl-bad-define
                :msg "Error parsing command-line define: ~s0"
                :args (list (string-fix (car x))))

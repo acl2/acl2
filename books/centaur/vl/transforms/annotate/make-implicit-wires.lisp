@@ -610,7 +610,8 @@ Our version of VCS says this isn't yet implemented.</li>
        (name (case (tag x)
                (:vl-vardecl   (vl-vardecl->name x))
                (:vl-paramdecl (vl-paramdecl->name x))
-               (otherwise     (vl-typedef->name x))))
+               (:vl-typedef     (vl-typedef->name x))
+               (t   (vl-letdecl->name x))))
        (decls (hons-acons name nil (vl-implicitst->decls st)))
        (st    (change-vl-implicitst st :decls decls)))
     (mv (ok) st)))
@@ -770,6 +771,7 @@ Our version of VCS says this isn't yet implemented.</li>
                   ;; SystemVerilog-2012 Section 25.5 (page 718): "modport
                   ;; declarations shall not implicitly declare new ports"
                   (eq tag :vl-modport)
+                  (eq tag :vl-letdecl)
                   ))
         ;; These have their own names but there's no additional implicit wires to
         ;; be introduced by them, so just extend decls.
@@ -784,7 +786,8 @@ Our version of VCS says this isn't yet implemented.</li>
                          (:vl-typedef    (vl-typedef->name item))
                          (:vl-fwdtypedef (vl-fwdtypedef->name item))
                          (:vl-genvar     (vl-genvar->name item))
-                         (:vl-modport    (vl-modport->name item))))
+                         (:vl-modport    (vl-modport->name item))
+                         (:vl-letdecl    (vl-letdecl->name item))))
              (decls    (hons-acons name nil (vl-implicitst->decls st)))
              (st       (change-vl-implicitst st :decls decls)))
           (mv (ok) st impitems))))
@@ -1423,6 +1426,8 @@ before we create scopestacks for shadowchecking.</p>")
   (b* (((vl-module x))
        (x.loaditems (and x.parse-temps
                          (append (vl-modelementlist->genelements
+                                  (vl-parse-temps->imports x.parse-temps))
+                                 (vl-modelementlist->genelements
                                   (vl-parse-temps->paramports x.parse-temps))
                                  (vl-parse-temps->loaditems x.parse-temps))))
        ((mv warnings rev-flatitems)
@@ -1451,6 +1456,8 @@ before we create scopestacks for shadowchecking.</p>")
   (b* (((vl-interface x))
        (x.loaditems (and x.parse-temps
                          (append (vl-modelementlist->genelements
+                                  (vl-parse-temps->imports x.parse-temps))
+                                 (vl-modelementlist->genelements
                                   (vl-parse-temps->paramports x.parse-temps))
                                  (vl-parse-temps->loaditems x.parse-temps))))
        (ifports (vl-collect-interface-ports x.ports))
@@ -1472,8 +1479,7 @@ before we create scopestacks for shadowchecking.</p>")
   :returns (new-x vl-interfacelist-p)
   (vl-interface-make-implicit-wires x ss))
 
-
-(define vl-design-make-implicit-wires ((x vl-design-p))
+(define vl-design-make-implicit-wires-aux ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* (((vl-design x))
 
@@ -1485,9 +1491,13 @@ before we create scopestacks for shadowchecking.</p>")
                                      :mods mods
                                      :interfaces interfaces))
        (-     (vl-scopestacks-free)))
+    new-x))
 
-    ;; Part 2 -- Check for tricky shadowing, sane imports, etc.
-    (vl-shadowcheck-design new-x)))
+
+(define vl-design-make-implicit-wires ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  ;; Part 2 -- Check for tricky shadowing, sane imports, etc.
+  (vl-shadowcheck-design (vl-design-make-implicit-wires-aux x)))
 
 
 

@@ -66,7 +66,8 @@
           ;; definition rule take  care of it so we don't  try working with big
           ;; terms.
           (context (rp-extract-context p))
-          (q (attach-sc-from-context context q)))
+          (q (attach-sc-from-context context q))
+          )
        (mv `(if ,p (if ,q 't 'nil) 't)
            `(nil ,(dont-rw-car (dont-rw-cdr dont-rw))
                  (nil ,(dont-rw-car (dont-rw-cdr (dont-rw-cdr dont-rw))) t t)
@@ -98,7 +99,7 @@
 
 (local
  (defret rp-evlt-of-<fn>
-   (implies t
+   (implies (rp-termp term)
             (and (equal (rp-evlt res-term a)
                         (rp-evlt term a))))
    :fn implies-meta
@@ -119,9 +120,12 @@
                              is-falist))))))
 
 
-(rp::add-meta-rule
+;; Since rp-check-context attaches side-conditions on the go, this is not
+;; necessary anymore. 
+
+#|(rp::add-meta-rule
  :meta-fnc implies-meta
  :trig-fnc implies
  :valid-syntaxp t
  :outside-in t
- :returns (mv term dont-rw))
+ :returns (mv term dont-rw))|#

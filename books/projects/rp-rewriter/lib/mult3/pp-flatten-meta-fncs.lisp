@@ -3,6 +3,7 @@
 
 ; Copyright (C) 2019, Regents of the University of Texas
 ; All rights reserved.
+; Copyright (C) 2022 Intel Corporation
 
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are
@@ -57,23 +58,34 @@
  (in-theory (enable pp)))
 
 (define and-list-hash-aux (lst)
-  :returns (mv (hash integerp)
-               (rest-size natp))
+  :returns (mv (hash )
+               (rest-size ))
+  :verify-guards nil
+  :prepwork
+  ((local
+    (use-arith-5 t)))
   (if (atom lst)
       (mv 0 0)
     (b* (((mv rest rest-size) (and-list-hash-aux (cdr lst)))
          (cur (ex-from-rp (car lst))))
       (case-match cur
         (('bit-of & ('quote x))
-         (mv (logapp rest-size rest (+ 5 (ifix x)))
-             (+ 14 rest-size)))
+         (mv (+ rest (* (+ 5 rest-size) (+ 1 (ifix x))))
+             (+ 55 rest-size)))
         (('s ('quote x) & &)
          (mv (+ rest (ifix x))
-             (+ 14 rest-size)))
+             (+ 6 rest-size)))
         (('c ('quote x) & & &)
          (mv (+ rest (ifix x))
-             (+ 14 rest-size)))
-        (& (mv rest rest-size))))))
+             (+ 8 rest-size)))
+        (& (mv rest rest-size)))))
+  ///
+  (defret result-type-of-of-<fn>
+    (and (natp rest-size)
+         (acl2-numberp rest-size)
+         (integerp hash)
+         (acl2-numberp hash)))
+  (verify-guards and-list-hash-aux))
 
       ;; (if (equal rest 0)
       ;;     cur
@@ -83,7 +95,7 @@
   :returns (hash integerp)
   (b* (((mv hash &)
         (and-list-hash-aux lst)))
-    hash
+    (logapp 4 (len lst) hash)
     ))
   #|(if (atom lst)
       0
@@ -892,7 +904,8 @@
                                              ;;`(and-list (list ))
                                              ))
                          ((atom (cddr cur)) (create-and-list-instance cur))
-                         (t (create-and-list-instance cur)))))
+                         (t (create-and-list-instance cur))))
+              )
            (if (caar lst)
                (cons `(-- ,cur)
                      (pp-lists-to-term-pp-lst (cdr lst)))
@@ -962,57 +975,6 @@
             term-))
           (t term))))
 
-(defthm rp-term-listp-of-append-wog
-  (implies (and (rp-term-listp lst1)
-                (rp-term-listp lst2))
-           (rp-term-listp (append-wog lst1 lst2)))
-  :hints (("Goal"
-           :induct (append-wog lst1 lst2)
-           :do-not-induct t
-           :in-theory (e/d (append-wog) ()))))
-
-(define ex-from-pp-lst ((pp-lst rp-term-listp))
-  :returns (mv (s-lst rp-term-listp :hyp (rp-term-listp pp-lst))
-               (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
-               (c-lst rp-term-listp :hyp (rp-term-listp pp-lst)))
-  :verify-guards :after-returns
-  (if (atom pp-lst)
-      (mv nil nil nil)
-    (b* ((cur (car pp-lst))
-         (cur-orig cur)
-         ((mv cur signed)
-          (case-match cur
-            (('-- x) (mv x t))
-            (& (mv cur nil))))
-         ((mv s-lst rest-pp-lst c-lst)
-          (ex-from-pp-lst (cdr pp-lst))))
-      (case-match cur
-        (('and-list & ('list x))
-         (b* (((unless (has-bitp-rp x))
-               (mv s-lst
-                   (cons-with-hint cur-orig rest-pp-lst pp-lst)
-                   c-lst))
-              (x-extracted (ex-from-rp x)))
-           (case-match x-extracted
-             (('s & & &)
-              (mv (cons (if signed `(-- ,x) x) s-lst)
-                  rest-pp-lst
-                  c-lst))
-             (('c & & & &)
-              (mv s-lst rest-pp-lst
-                  (cons (if signed `(-- ,x) x) c-lst)))
-             (('s-c-res s pp c)
-              (mv (append-wog (negate-lst (list-to-lst s)  signed) s-lst)
-                  (append-wog (negate-lst (list-to-lst pp) signed) rest-pp-lst)
-                  (append-wog (negate-lst (list-to-lst c)  signed) c-lst)))
-             (& (mv s-lst
-                    (cons-with-hint cur-orig
-                                    rest-pp-lst
-                                    pp-lst)
-                    c-lst)))))
-        (& (mv s-lst
-               (cons-with-hint cur-orig rest-pp-lst pp-lst)
-               c-lst))))))
 
 (define pp-flatten ((term pp-term-p)
                     (sign booleanp)
@@ -1039,6 +1001,89 @@
                   #|(result (If pp-lists (cons 'list result) ''nil))||#
                   )
                pp-lst)))))
+
+;; (define pp-flatten ((term pp-term-p)
+;;                     (sign booleanp)
+;;                     &key
+;;                     (disabled 'nil))
+;;   :returns pp-lst
+;;   (pp-flatten-aux term sign disabled))
+
+;; :i-am-here
+
+
+;; (define nat-valued-alistp (x)
+;;   :enabled t
+;;   (COND ((ATOM x) (EQ x NIL))
+;;         (T (AND (CONSP (CAR x))
+;;                 (NATP (CdR (CAR x)))
+;;                 (nat-valued-alistp (CDR x)))))
+;;   ///
+;;   (defthm natp-of-assoc-equal-of-nat-valued-alistp
+;;     (implies (and (assoc-equal key x)
+;;                   (nat-valued-alistp x))
+;;              (and (natp (cdr (assoc-equal key x)))
+;;                   (integerp (cdr (assoc-equal key x))))))
+;;   (defthm nat-valued-alistp-of-assoc-equal-of-nat-valued-alistp
+;;     (implies (nat-valued-alistp x)
+;;              (nat-valued-alistp (remove-assoc-equal ket x))))
+;;   (defthm nat-valued-alistp-implies-alistp
+;;     (implies (nat-valued-alistp x)
+;;              (alistp x)))) 
+
+;; (define find-min-indices-for-pp-flatten-merge ((lst1 nat-valued-alistp)
+;;                                                (lst2 nat-valued-alistp))
+;;   :returns (res nat-valued-alistp :hyp (and (nat-valued-alistp lst1)
+;;                                             (nat-valued-alistp lst2)))
+;;   :verify-guards :after-returns
+;;   (if (atom lst1)
+;;       lst2
+;;     (b* ((cur (car lst1))
+;;          (other (assoc-equal (car cur) lst2))
+;;          ((unless other)
+;;           (cons cur (find-min-indices-for-pp-flatten-merge (cdr lst1) lst2)))
+;;          (other-val (cdr other)))
+;;       (acons (car cur)
+;;              (if (< other-val (cdr cur)) other-val (cdr cur))
+;;              (find-min-indices-for-pp-flatten-merge (cdr lst1)
+;;                                                     (remove-assoc-equal (car cur) lst2))))))
+
+;; (define find-min-indices-for-pp-flatten ((term pp-term-p))
+;;   :measure (cons-count term)
+;;   :hints (("Goal"
+;;            :in-theory (e/d (measure-lemmas) ())))
+;;   :returns (res nat-valued-alistp)
+;;   :verify-guards :after-returns
+;;   (b* ((term (ex-from-rp term)))
+;;     (cond ((binary-not-p term)
+;;            (find-min-indices-for-pp-flatten (cadr term)))
+;;           ((or (binary-and-p term)
+;;                (binary-xor-p term)
+;;                (binary-or-p term))
+;;            (b* ((lst1 (find-min-indices-for-pp-flatten (cadr term)))
+;;                 (lst2 (find-min-indices-for-pp-flatten (caddr term)))
+;;                 (merged (find-min-indices-for-pp-flatten-merge lst1 lst2)))
+;;              merged))
+;;           ((binary-?-p term)
+;;            (b* ((lst1 (find-min-indices-for-pp-flatten (cadr term)))
+;;                 (lst2 (find-min-indices-for-pp-flatten (caddr term)))
+;;                 (lst3 (find-min-indices-for-pp-flatten (cadddr term)))
+;;                 (merged (find-min-indices-for-pp-flatten-merge lst1 lst2))
+;;                 (merged (find-min-indices-for-pp-flatten-merge merged lst3)))
+;;              merged))
+;;           ((bit-of-p term)
+;;            (if (and (quotep (caddr term))
+;;                     (consp (cdr (caddr term)))
+;;                     (natp (unquote (caddr term))))
+;;                `((,(ex-from-rp (cadr term)) . ,(unquote (caddr term))))
+;;              nil))
+;;           (t nil))))
+
+;; (define adjust-indices-for-pp-flatten 
+
+;; (find-min-indices-for-pp-flatten `(binary-not (binary-or (bit-of a '1) (bit-of a '2))))
+
+
 
 (define pp-flatten-memoized ((term pp-term-p)
                              (sign booleanp))
@@ -1169,13 +1214,41 @@
                   (implies valid
                            (pp-lists-p pp-lists))))
 
+  (define sort-sum-meta-aux2 (term)
+    :returns (mv valid pp-lists)
+    :verify-guards nil
+    :measure (cons-count term)
+    :hints (("Goal"
+             :in-theory (e/d (measure-lemmas)
+                             ())))
+    (b* ((?term-orig term)
+         (term (ex-from-rp term)))
+      (case-match term
+        (('binary-sum cur rest)
+         (b* (((unless (pp-term-p cur))
+               (mv nil nil))
+              (pp-lists1 (pp-term-to-pp-lists cur nil))
+              ((mv rest-valid pp-lists2)
+               (sort-sum-meta-aux2 rest))
+              ((unless rest-valid)
+               (mv nil nil)))
+           (mv t (merge-sorted-pp-lists pp-lists1 pp-lists2))))
+        (& (if (pp-term-p term-orig)
+               (mv t (pp-term-to-pp-lists term-orig nil))
+             (mv nil nil)))))
+    ///
+    (acl2::defret pp-lists-p-of-<fn>
+                  (implies valid
+                           (pp-lists-p pp-lists)))
+    (verify-guards sort-sum-meta-aux2))
+
   (define sort-sum-meta (term)
     :returns (mv result
                  (dont-rw dont-rw-syntaxp))
     (case-match term
       (('sort-sum x)
-       (b* (((mv valid pp-lists)
-             (sort-sum-meta-aux x))
+       (b* (((mv valid pp-lists) 
+             (sort-sum-meta-aux2 x))
             ((unless valid)
              (progn$ (cw "sort-sum-meta got an unexpected term ~p0 ~%"
                          term)
@@ -1195,6 +1268,7 @@
                    term)
                (hard-error 'sort-sum-meta "" nil)
                (mv term t))))))
+
 
 (value-triple (hons-clear t))
 
@@ -1378,6 +1452,26 @@
                             (:definition true-listp)
                             (:rewrite is-if-rp-termp)
 ;;                            (:rewrite acl2::o-p-o-infp-car)
+                            (:rewrite is-rp-pseudo-termp)
+                            (:rewrite atom-rp-termp-is-symbolp)
+                            falist-consistent
+                            (:definition subsetp-equal))))))
+
+(defthm rp-term-list-listp-strip-cdrs-sort-sum-meta-aux2
+  (implies (rp-termp term)
+           (rp-term-list-listp (strip-cdrs (mv-nth 1 (sort-sum-meta-aux2
+                                                      term)))))
+  :hints (("goal"
+           :in-theory (e/d (sort-sum-meta-aux2)
+                           ((:definition acl2::apply$-badgep)
+                            (:linear acl2::apply$-badgep-properties . 1)
+                            (:rewrite rp-termp-implies-cdr-listp)
+                            (:definition member-equal)
+                            (:rewrite rp-term-listp-is-true-listp)
+                            (:linear acl2::apply$-badgep-properties . 2)
+                            (:definition true-listp)
+                            (:rewrite is-if-rp-termp)
+                            (:rewrite acl2::o-p-o-infp-car)
                             (:rewrite is-rp-pseudo-termp)
                             (:rewrite atom-rp-termp-is-symbolp)
                             falist-consistent

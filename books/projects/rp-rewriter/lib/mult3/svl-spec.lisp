@@ -3,6 +3,7 @@
 
 ; Copyright (C) 2019, Regents of the University of Texas
 ; All rights reserved.
+; Copyright (C) 2022 Intel Corporation
 
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are
@@ -138,9 +139,9 @@
                               SVL::4VEC-PART-SELECT-IS-BITS)))))
 
   (defthm bits-is-bit-of
-    (implies (and (integerp num)
-                  (natp start)
-                  (syntaxp (atom (ex-from-rp num))))
+    (implies (and (syntaxp (atom (ex-from-rp num)))
+                  (integerp num)
+                  (natp start))
              (equal (svl::bits num start 1)
                     (bit-of num start)))
     :hints (("Goal"
@@ -508,7 +509,6 @@
                            (nfix loghead
                                  loghead-of-*-is-mult-final-spec)))))
 
-
 (def-rp-rule loghead-of-*-is-svl-mult-final-spec-2 ;;for signed multiplication.
   (implies (and (integerp mult)
                 (integerp mcand)
@@ -774,10 +774,11 @@
   (equal (bits-to-bit-of x)
          x))
 
+;; this should never be used because of (:rewrite bits-is-bit-of)?
 (def-rp-rule bits-to-bit-of-with-wrapper
-  (implies (and (integerp num)
-                (natp start)
-                (syntaxp (atom (ex-from-rp num))))
+  (implies (and (syntaxp (atom (ex-from-rp num)))
+                (integerp num)
+                (natp start))
            (equal (bits-to-bit-of (svl::bits num start 1))
                   (bit-of num start))))
 
@@ -847,3 +848,288 @@
                               +-is-SUM
                               mod2-is-m2
                               floor2-if-f2))))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(Local
+ (defthm *-of-bits-lemma-for-*-of-bits
+   (not (< x x))))
+
+(progn
+  (defun unsigned-byte-p-recursive (size x)
+    (and (natp size)
+         (if (zp size)
+             (equal x 0)
+           (and (integerp x)
+                (unsigned-byte-p-recursive  (1- size)
+                                            (acl2::logcdr x))))))
+
+  (defthmd unsigned-byte-p-redef-to-recursive
+    (implies t
+             (equal (unsigned-byte-p size x)
+                    (unsigned-byte-p-recursive size x)))
+    :hints (("Goal"
+             :expand ((UNSIGNED-BYTE-P SIZE X)
+                      (UNSIGNED-BYTE-P 0 X))
+             :induct (unsigned-byte-p-recursive size x)
+             :do-not-induct t
+             :in-theory (e/d ()
+                             (unsigned-byte-p)))))
+
+  (defthm unsigned-byte-p-recursive-implies-integerp
+    (implies (unsigned-byte-p-recursive size x)
+             (and (natp size)
+                  (integerp x)))
+    :rule-classes :forward-chaining)
+
+  (defthm unsigned-byte-p-redef-to-recursive-of-minus-1
+    (not (UNSIGNED-BYTE-P-RECURSIVE size -1))))
+
+(encapsulate
+  nil
+  (local
+   (use-arithmetic-5 t))
+
+  (progn
+    (defun *-recursive (x y)
+      (declare (xargs
+                :hints (("Goal"
+                         :in-theory (e/d () (+-IS-SUM))))))
+      (if (or (not (integerp x))
+              (equal x 0))
+          0
+        (if (equal x -1)
+            (- y)
+          (+ (if (acl2::logbitp 0 x) y 0)
+             (* 2 (*-recursive (acl2::logcdr x) y))))))
+    (local
+     (defthmd *-to-recursive-redef-lemma
+       (implies (and (integerp x)
+                     (syntaxp (equal x 'x)))
+                (equal (* x y)
+                       (if (LOGBITP 0 X)
+                           (* (1+ (* 2 (acl2::logcdr x))) y)
+                         (* (* 2 (acl2::logcdr x)) y))))
+       :hints (("Goal"
+                :in-theory (e/d (
+                                 oddp evenp LOGBITP)
+                                (+-IS-SUM))))))
+
+    (defthmd *-to-recursive-redef
+      (implies (and (integerp x)
+                    (integerp y))
+               (equal (* x y)
+                      (*-recursive x y)))
+      :hints (("Goal"
+               :in-theory (e/d (*-to-recursive-redef-lemma)
+                               (ACL2::LOGCDR$INLINE
+                                +-IS-SUM)))))
+
+
+    (defthm integerp-of-*-recursive
+      (implies (and (integerp x)
+                    (integerp y))
+               (integerp (*-recursive x y))))))
+
+(encapsulate
+  nil
+  (local
+   (use-arithmetic-5 t))
+
+  (progn
+    (defun *-recursive2 (x y)
+      (declare (xargs
+                :hints (("Goal"
+                         :in-theory (e/d () (+-IS-SUM))))))
+      (if (zp x)
+          0
+        (+ y (*-recursive2 (1- x) y))))
+    
+    
+
+    (defthmd *-to-recursive2-redef
+      (implies (and (natp x)
+                    (natp y))
+               (equal (* x y)
+                      (*-recursive2 x y)))
+      :hints (("Goal"
+               :in-theory (e/d ()
+                               (ACL2::LOGCDR$INLINE
+                                +-IS-SUM)))))
+
+
+    (defthm integerp-of-*-recursive2
+      (implies (and (integerp x)
+                    (integerp y))
+               (integerp (*-recursive2 x y))))))
+
+
+
+
+(encapsulate
+  nil
+  (local
+   (use-arithmetic-5 t))
+
+  (local
+   (defthm +-boundry-lemma1
+     (implies (and (natp x)
+                   (natp y)
+                   (< x u1)
+                   (< y u2))
+              (< (+ x y) (+ u1 u2)))))
+
+  (local
+   (use-arithmetic-5 nil))
+
+  (local
+   (in-theory (disable +-IS-SUM)))
+
+  (local
+   (defun dec-dec-induct (n m)
+     (if (or (zp n) (zp m))
+         nil (dec-dec-induct (- n 1) (- m 1))))) 
+  
+  (Local
+   (defthm *-boundry-lemma1
+     (implies (and (natp x)
+                   (natp y)
+                   (natp u1)
+                   (natp u2)
+                   (< x u1)
+                   (< y u2))
+              (< (* x y) (* u1 u2)))
+     :hints (("Goal"
+              :induct (dec-dec-induct x u1)
+              :do-not-induct t
+              :in-theory (e/d (*-to-recursive2-redef
+                               *-RECURSIVE)
+                              (+-IS-SUM
+                               ACL2::LOGCDR))))))
+
+  (local
+   (use-arithmetic-5 t))
+
+  (local
+   (defthm split-expt-2-lemma
+     (Implies (and (natp size1)
+                   (natp size2))
+              (equal (EXPT 2 (+ SIZE1 SIZE2))
+                     (* (expt 2 size1)
+                        (expt 2 size2))))))
+
+  (local
+   (defthm LOGCDR-of-*recursive-*
+     (Implies (integerp x)
+              (equal (ACL2::LOGCDR (*-RECURSIVE 2 x))
+                     x))
+     :hints (("Goal"
+              :expand ((*-RECURSIVE 2 X)
+                       (*-RECURSIVE 1 X))
+              :in-theory (e/d () (FLOOR2-IF-F2))))))
+
+  (defthm unsigned-byte-p-of-*
+    (implies (and (unsigned-byte-p size1 x)
+                  (unsigned-byte-p size2 y))
+             (unsigned-byte-p (+ size1 size2)
+                              (* x y)))
+    :hints (("Goal"
+             #| :induct (and (unsigned-byte-p-recursive (+ size1 size2)
+             (* x y)) ;
+             (unsigned-byte-p-recursive siz21 ;
+             x) ;
+             (unsigned-byte-p-recursive size2 ;
+             y)) ;
+             :do-not-induct t ;
+             :expand ((UNSIGNED-BYTE-P-RECURSIVE (+ SIZE1 SIZE2) ;
+             (* X Y)) ;
+             (UNSIGNED-BYTE-P-RECURSIVE ;
+             (+ SIZE1 SIZE2) ;
+             (*-RECURSIVE 2 (*-RECURSIVE (ACL2::LOGCDR X) Y))) ;
+             (UNSIGNED-BYTE-P-RECURSIVE ;
+             (+ SIZE1 SIZE2) ;
+             (+ Y ;
+             (*-RECURSIVE 2 (*-RECURSIVE (ACL2::LOGCDR X) Y)))))|#
+             :in-theory (e/d (;;unsigned-byte-p-redef-to-recursive
+                              ;;*-to-recursive-redef
+                              )
+                             (+-is-SUM
+                              ACL2::NORMALIZE-FACTORS-GATHER-EXPONENTS
+                              FLOOR2-IF-F2
+                              ACL2::LOGCDR$INLINE))))))
+
+(encapsulate
+  nil
+  (Local
+   (use-arithmetic-5 t))
+  (local
+   (defthm bits-when-unsiged-byte-p
+     (implies (and (natp size)
+                   (unsigned-byte-p size x))
+              (equal (svl::bits x 0 size)
+                     x))
+     :hints (("Goal"
+              :do-not-induct t
+              :in-theory (e/d (svl::bits
+                               SV::4VEC->UPPER
+                               SV::4VEC->LOWER
+                               SV::4VEC-CONCAT
+                               SVL::4VEC-CONCAT$
+                               SV::4VEC-PART-SELECT)
+                              (LOGAPP-IS-4VEC-CONCAT$
+                               LOGHEAD-IS-LOGAPP))))))
+
+  (def-rp-rule unsigned-byte-p-of-bits
+    (implies (and ;;(natp size1)
+              (natp size2)
+              ;;(<= size2 size1)
+              (integerp x)
+              (natp start))
+             (unsigned-byte-p size2 (svl::bits x start size2)))
+    :hints (("Goal"
+             :in-theory (e/d (SVL::BITS
+                              SV::4VEC->UPPER
+                              SV::4VEC->lower
+                              SV::4VEC-RSH
+                              SV::4VEC-CONCAT
+                              SV::4VEC-SHIFT-CORE
+                              SV::4VEC-PART-SELECT
+                              SV::4VEC)
+                             (+-is-SUM)))))
+
+  (def-rp-rule *-of-bits
+    (implies (and (natp start1)
+                  (natp start2)
+                  (natp size1)
+                  (natp size2)
+                  (integerp x)
+                  (integerp y))
+             (equal (* (svl::bits x start1 size1)
+                       (svl::bits y start2 size2))
+                    (svl-mult-final-spec (svl::bits x start1 size1)
+                                         (svl::bits y start2 size2)
+                                         (+ size1 size2))))
+    :hints (("Goal"
+             :use ((:instance bits-*-IS-MULT-FINAL-SPEC
+                              (mult (svl::bits x start1 size1))
+                              (mcand (svl::bits y start2 size2))
+                              (out-size (+ size1 size2))))
+             :in-theory (e/d () (bits-*-IS-MULT-FINAL-SPEC
+                                 svl-mult-final-spec
+                                 +-is-SUM)))))
+
+  (defthm *-of-known-sized-vecs
+    (implies (and (unsigned-byte-p size1 x)
+                  (unsigned-byte-p size2 y))
+             (equal (* x y)
+                    (svl-mult-final-spec x y
+                                         (+ size1 size2))))
+    :hints (("Goal"
+             :use ((:instance bits-*-IS-MULT-FINAL-SPEC
+                              (mult x)
+                              (mcand y)
+                              (out-size (+ size1 size2))))
+             :in-theory (e/d () (bits-*-IS-MULT-FINAL-SPEC
+                                 svl-mult-final-spec
+                                 +-is-SUM))))))

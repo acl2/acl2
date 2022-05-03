@@ -1,10 +1,6 @@
 ; VL Verilog Toolkit
 ; Copyright (C) 2008-2014 Centaur Technology
-;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+; Copyright (C) 2022 Intel Corporation
 ;
 ; License: (An MIT/X11-style license)
 ;
@@ -29,10 +25,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "datatypes")
+(include-book "expressions")
 (include-book "paramdecls")
 (include-book "imports")
-(include-book "classes") ;; just for vl-maybe-parse-lifetime
+;; (include-book "classes") ;; just for vl-maybe-parse-lifetime
 (include-book "../descriptions")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "tools/do-not" :dir :system))
@@ -368,6 +364,27 @@ out some duplication and indirection:</p>
        (return ret)))
 
 
+
+
+(defparser vl-maybe-parse-lifetime ()
+  :parents (parser)
+  :short "Match an optional @('lifetime') for SystemVerilog-2012."
+  :long "<p>Grammar:</p>
+         @({
+              lifetime ::= 'static' | 'automatic'
+         })"
+  :result (vl-lifetime-p val)
+  :resultp-of-nil t
+  :fails gracefully
+  :count strong-on-value
+  (seq tokstream
+        (when (vl-is-token? :vl-kwd-static)
+          (:= (vl-match))
+          (return :vl-static))
+        (when (vl-is-token? :vl-kwd-automatic)
+          (:= (vl-match))
+          (return :vl-automatic))
+        (return nil)))
 
 ; -------------------------------------------------------------------------
 ;
@@ -712,6 +729,68 @@ out some duplication and indirection:</p>
                (vl-parse-error "Block item declarations are not allowed to have initial values.")
              (mv nil elements tokstream))))))
 
+
+(defparser vl-parse-1+-let-ports ()
+  :result (vl-portdecllist-p val)
+  :true-listp t
+  :elementp-of-nil t
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (atts := (vl-parse-0+-attribute-instances))
+       (type := (if (and (vl-is-token? :vl-idtoken)
+                         (vl-lookahead-is-some-token? '(:vl-comma :vl-rparen :vl-equalsign)
+                                                      (cdr (vl-tokstream->tokens))))
+                    (mv nil *vl-plain-old-logic-type* ;; might be wrong
+                        tokstream)
+                  (vl-parse-datatype-or-implicit)))
+       (id := (vl-match-token :vl-idtoken))
+       (when (vl-is-token? :vl-equalsign)
+         (expr := (vl-parse-expression)))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-1+-let-ports)))
+       (return (cons (make-vl-portdecl :name (vl-idtoken->name id)
+                                       :loc (vl-token->loc id)
+                                       :dir :vl-input
+                                       :type type
+                                       :default expr
+                                       :atts atts)
+                     rest))))
+
+(defparser vl-parse-0+-let-ports ()
+  :result (vl-portdecllist-p val)
+  :true-listp t
+  :elementp-of-nil t
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (when (vl-is-token? :vl-rparen)
+         (return nil))
+       (return-raw (vl-parse-1+-let-ports))))
+
+
+(defparser vl-parse-let-declaration (atts)
+  :guard (vl-atts-p atts)
+  :result (vl-letdecl-p val)
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (:= (vl-match-token :vl-kwd-let))
+       (name := (vl-match-token :vl-idtoken))
+       (when (vl-is-token? :vl-lparen)
+         (:= (vl-match))
+         (ports := (vl-parse-0+-let-ports))
+         (:= (vl-match-token :vl-rparen)))
+       (:= (vl-match-token :vl-equalsign))
+       (expr := (vl-parse-expression))
+       (return (make-vl-letdecl :name (vl-idtoken->name name)
+                                :portdecls ports
+                                :expr expr
+                                :atts atts
+                                :loc (vl-token->loc name)))))
+
+                           
 (defparser vl-2012-parse-block-item-declaration-noatts (atts)
   :short "Match a whole @('block_item_declaration'), except for any attributes,
           for SystemVerilog-2012."
@@ -749,8 +828,6 @@ out some duplication and indirection:</p>
   (seq tokstream
         (when (vl-is-token? :vl-kwd-bind)
           (return-raw (vl-parse-error "overload declarations (\"bind ...\") are not yet supported")))
-        (when (vl-is-token? :vl-kwd-let)
-          (return-raw (vl-parse-error "let declarations are not yet supported")))
         (when (vl-is-some-token? '(:vl-kwd-localparam :vl-kwd-parameter))
           ;; Do not eat the token.
           (elems := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-localparam :vl-kwd-parameter)))
@@ -777,6 +854,10 @@ out some duplication and indirection:</p>
           (return-raw (if (eq (tag ans) :vl-typedef)
                           (mv nil (list ans) tokstream)
                         (vl-parse-error "Not implemented: forward typedefs as block items."))))
+
+        (when (vl-is-token? :vl-kwd-let)
+          (ans := (vl-parse-let-declaration atts))
+          (return (list ans)))
 
           ;; Otherwise, we are presumably in the data_declaration case.  Eventually we will
         ;; need to extend this to handle typedefs, etc., but for now we'll at least
