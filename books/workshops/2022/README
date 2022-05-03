@@ -1,8 +1,9 @@
-Below is a list of all papers accepted for ACL2 Workshop 2022,
-together with the corresponding subdirectory, which either contains
-supporting materials or a README that explains where they may be
-found.  (When the subdirectory is missing, it means that neither
-supporting materials nor README have yet been included.)
+Below is a list of all papers accepted for ACL2 Workshop 2022, each
+associated (or, to be associated) with the corresponding directory
+containing supporting materials.  Directories starting with "[books]"
+are the indicated subdirectories of the community books; the others
+are subdirectories of this README's directory, i.e., of
+[books]/workshops/2022/.
 
 ------------------------------
 
@@ -67,7 +68,7 @@ kaufmann-moore/
 
 Matt Kaufmann, Rob Sumners and Sol Swords. Extended Abstract: Stobj-tables
 
-Community book demos/stobj-table-examples.lisp
+[books]/demos/stobj-table-examples.lisp
 and also subdirectory of this directory,
 stobj-tables/
 
@@ -88,9 +89,13 @@ russinoff-calendar/
 Mertcan Temel. Verified Implementation of an Efficient Term-Rewriting
 Algorithm for Multiplier Verification on ACL2
 
+[books]/projects/rp-rewriter/lib/mult3
+
 ------------------------------
 
 Andrew Walter and Panagiotis Manolios. ACL2s Systems Programming
+
+walter-manolios/
 
 ------------------------------
 
