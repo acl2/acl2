@@ -1,5 +1,6 @@
 ; VL Verilog Toolkit
 ; Copyright (C) 2008-2014 Centaur Technology
+; Copyright (C) 2022 Intel Corporation
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -761,19 +762,35 @@ expression in the parens without any edge specifier.</li>
                  (:vl-poundequal :vl-prop-fat-follows)
                  (otherwise (progn$ (impossible) :vl-prop-thin-implies))))))
 
-
+(defconst *lower-precedence-unary-operators*
+  '(:vl-atsign
+    :vl-kwd-always
+    :vl-kwd-s_always
+    :vl-kwd-s_eventually
+    :vl-kwd-eventually
+    :vl-kwd-accept_on
+    :vl-kwd-reject_on
+    :vl-kwd-sync_accept_on
+    :vl-kwd-sync_reject_on
+    :vl-kwd-if
+    :vl-kwd-case))
 
 (defparsers parse-property-expr
   :verify-guards nil
   :flag-local nil
+  ;; :ruler-extenders :all
   ;; :measure-debug t
 
   ;; NOTE NOTE NOTE --- See notes/properties.txt to understand the grammar that
   ;; we are implementing here!!
 
-  (defparser vl-parse-property-expr ()
-    :short "Match @('property_expr')."
-    :measure (two-nats-measure (vl-tokstream-measure) 200)
+  (defparser vl-parse-property-low-prec-unary ()
+    :short "Match a property expr beginning with a low precedence unary operator 
+            -- i.e. those with lower precedence than impl operators such as @('|->')"
+    ;; NOTE: Before this change (and the user of this below in vl-parse-not-property-expr)
+    ;; we could't parse e.g.  'foo |-> s_eventually bar'.
+    :measure (two-nats-measure (vl-tokstream-measure) 0)
+    :guard (vl-is-some-token? *lower-precedence-unary-operators*)
     (cond ((vl-is-token? :vl-atsign)
            ;; property_expr ::= clocking_event property_expr
            (seq tokstream
@@ -859,9 +876,16 @@ expression in the parens without any edge specifier.</li>
                 (:= (vl-match-token :vl-kwd-endcase))
                 (return (make-vl-propcase :condition condition :cases cases))))
 
-          (t
-           ;; property_expr ::= impl_pe
-           (vl-parse-impl-property-expr))))
+          (t (prog2$ (impossible)
+                     (vl-parse-error "not a low-precedence unary op in property expr")))))
+            
+  (defparser vl-parse-property-expr ()
+    :short "Match @('property_expr')."
+    :measure (two-nats-measure (vl-tokstream-measure) 200)
+    (if (vl-is-some-token? *lower-precedence-unary-operators*)
+        (vl-parse-property-low-prec-unary)
+      ;; property_expr ::= impl_pe
+      (vl-parse-impl-property-expr)))
 
 
   (defparser vl-parse-property-case-item ()
@@ -1006,17 +1030,7 @@ expression in the parens without any edge specifier.</li>
            ;; Horrible godwaful hack to try to handle things like `not always
            ;; r1 until r2` parse like they do in NCVerilog.  See "Handling of
            ;; Not" in notes/properties.txt for additional discussion.
-           '(:vl-atsign
-             :vl-kwd-always
-             :vl-kwd-s_always
-             :vl-kwd-s_eventually
-             :vl-kwd-eventually
-             :vl-kwd-accept_on
-             :vl-kwd-reject_on
-             :vl-kwd-sync_accept_on
-             :vl-kwd-sync_reject_on
-             :vl-kwd-if
-             :vl-kwd-case)))
+           *lower-precedence-unary-operators*))
       (cond ((vl-is-token? :vl-kwd-not)
              ;; not_pe ::= 'not' not_pe
              (seq tokstream
@@ -1044,9 +1058,11 @@ expression in the parens without any edge specifier.</li>
                                                            (:vl-kwd-s_nexttime t))
                                                 :expr expr
                                                 :prop prop))))
-          (t
-           ;; not_pe ::= strength_pe
-           (vl-parse-strength-property-expr)))))
+            ((vl-is-some-token? lower-precedence-unary-operators)
+             (vl-parse-property-low-prec-unary))
+            (t
+             ;; not_pe ::= strength_pe
+             (vl-parse-strength-property-expr)))))
 
   (defparser vl-parse-strength-property-expr ()
     :short "Match @('strength_pe')."
@@ -1491,6 +1507,7 @@ experimentation.  This language is so awful...</p>"
 (make-event
  `(defthm-parse-property-expr-flag vl-parse-property-expr-when-error
     ;; Whenever there's an error, the main return value is NIL.
+    ,(vl-val-when-error-claim vl-parse-property-low-prec-unary)
     ,(vl-val-when-error-claim vl-parse-property-expr)
     ,(vl-val-when-error-claim vl-parse-property-case-item)
     ,(vl-val-when-error-claim vl-parse-1+-property-case-items)
@@ -1524,6 +1541,7 @@ experimentation.  This language is so awful...</p>"
 
 (make-event
  `(defthm-parse-property-expr-flag vl-parse-property-expr-warning
+    ,(vl-warning-claim vl-parse-property-low-prec-unary)
     ,(vl-warning-claim vl-parse-property-expr)
     ,(vl-warning-claim vl-parse-property-case-item)
     ,(vl-warning-claim vl-parse-1+-property-case-items)
@@ -1557,6 +1575,7 @@ experimentation.  This language is so awful...</p>"
 
 (make-event
  `(defthm-parse-property-expr-flag vl-parse-property-expr-progress
+    ,(vl-progress-claim vl-parse-property-low-prec-unary)
     ,(vl-progress-claim vl-parse-property-expr)
     ,(vl-progress-claim vl-parse-property-case-item)
     ,(vl-progress-claim vl-parse-1+-property-case-items)
@@ -1616,6 +1635,7 @@ experimentation.  This language is so awful...</p>"
 
 (make-event
  `(defthm-parse-property-expr-flag vl-parse-property-expr-value
+    ,(vl-propexpr-claim vl-parse-property-low-prec-unary :propexpr)
     ,(vl-propexpr-claim vl-parse-property-expr :propexpr)
     ,(vl-propexpr-claim vl-parse-property-case-item :caseitem)
     ,(vl-propexpr-claim vl-parse-1+-property-case-items :caseitems)
@@ -1650,7 +1670,8 @@ experimentation.  This language is so awful...</p>"
 (verify-guards vl-parse-property-expr-fn
   ;; :guard-debug t
   :hints ((and stable-under-simplificationp
-               '(:in-theory (enable vl-type-of-matched-token)))))
+               '(:in-theory (enable vl-type-of-matched-token
+                                    vl-is-token?)))))
 
 
 (defparser vl-parse-property-spec ()

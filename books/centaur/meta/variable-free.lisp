@@ -101,7 +101,7 @@
                               (or (symbolp fn-or-fns)
                                   (symbol-listp fn-or-fns)))
                   :mode :program))
-  `(defthm ,thmname
+  `(defthmd ,thmname
     (implies (and (pseudo-termp x)
                   (alistp a)
                   (acl2::mextract-ev-global-facts))

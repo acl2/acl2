@@ -472,3 +472,13 @@ preserve-current-theory) </p>
        (progn
          ,(preserve-current-theory-step1 event)
          ,(preserve-current-theory-step2)))))
+
+
+(defmacro cwe (acl2::str &rest args)
+  (cons 'fmt-to-comment-window
+        (cons acl2::str
+              (cons (cons 'pairlis2
+                          (cons 'acl2::*base-10-chars*
+                                (cons (cons 'list args) 'nil)))
+                    (cons '0
+                          (cons ''(nil 6 7 nil) (cons 'nil 'nil)))))))

@@ -5,6 +5,7 @@
 
 ; Copyright (C) 2019, Regents of the University of Texas
 ; All rights reserved.
+; Copyright (C) 2022 Intel Corporation
 
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are
@@ -331,7 +332,7 @@ nothing to bump!" nil)))
              (table rp-rules ',rune ',(cdr entry))
              )))))
 
-  (defmacro bump-down-rule (rule-name/rune)
+  (defmacro bump-down-rule (rule-name/rune &key (ruleset 'rp-rules))
     `(with-output
        :off :all
        :gag-mode nil
@@ -341,7 +342,7 @@ nothing to bump!" nil)))
                      ((& . &) rule-name/rune)
                      (& (get-rune-name rule-name/rune state))))
              (entry (hons-assoc-equal rune (table-alist
-                                            'rp-rules (w state))))
+                                            ',ruleset (w state))))
              (- (and (not (consp entry))
                      (hard-error 'bump-rule
                                  "This rule is not added with add-rp-rule There is
@@ -351,7 +352,7 @@ nothing to bump!" nil)))
              ;; (cur-table (append cur-table (list entry)))
              )
           `(progn
-             (table rp-rules nil (append (remove-assoc-equal ',rune (table-alist 'rp-rules acl2::world))
+             (table ,',ruleset nil (append (remove-assoc-equal ',rune (table-alist ',',ruleset acl2::world))
                                          (list ',entry))
                     :clear)
              ;;(table rp-rules ',rune ',(cdr entry))
@@ -371,7 +372,8 @@ nothing to bump!" nil)))
                                    (disabled 'nil)
                                    (beta-reduce 'nil)
                                    (hints 'nil)
-                                   (outside-in 'nil))
+                                   (outside-in 'nil)
+                                   (ruleset 'rp-rules))
 
     (b* ((rw-direction
           (cond ((or (equal outside-in ':inside-out)
@@ -403,7 +405,7 @@ nothing to bump!" nil)))
                        (disabled ,,disabled)
                        (- (get-rules `(,rune) state :warning :err)))
                     `(progn
-                       (table rp-rules
+                       (table ,',',ruleset
                               ',rune
                               (cons ,,',rw-direction
                                     ,(not disabled)))))))))
@@ -643,11 +645,13 @@ RP-Rewriter will throw an eligible error.</p>"
 
 (defmacro rp-cl (&key (new-synps 'nil)
                       (runes 'nil)
-                      (RUNES-OUTSIDE-IN 'nil)) ;
+                      (runes-outside-in 'nil)
+                      (cases 'nil)) ;
   `(rp-rewriter
     clause
     (make rp-cl-hints
-          :runes-outside-in ',RUNES-OUTSIDE-IN
+          :cases ,cases
+          :runes-outside-in ',runes-outside-in
           :runes ',runes #|,(if rules-override
           rules-override
           `(append (let ((world (w state))) (current-theory :here))
@@ -655,6 +659,14 @@ RP-Rewriter will throw an eligible error.</p>"
           )||#
           :new-synps ,new-synps)
     rp-state state))
+
+(defun untranslate-lst (lst iff-flg world)
+  (declare (xargs :mode :program))
+  (if (atom lst)
+      nil
+    (cons (untranslate (car lst) iff-flg world)
+          (untranslate-lst (cdr lst) iff-flg world))))
+
 
 (defmacro def-rp-thm (name term
                            &key
@@ -668,9 +680,12 @@ RP-Rewriter will throw an eligible error.</p>"
                            (runes 'nil)
                            (runes-outside-in 'nil);; when nil, runes will be read from
                            ;; rp-rules table
+                           (cases 'nil)
                            )
   `(make-event
-    (b* ((- (check-if-clause-processor-up-to-date (w state)))
+    (b* ((world (w state))
+         (- (check-if-clause-processor-up-to-date world))
+         (cases ',cases #|(untranslate-lst ',cases t world)|#)
          (body `(with-output
                   :stack :pop
                   :on (acl2::summary acl2::event acl2::error)
@@ -678,14 +693,15 @@ RP-Rewriter will throw an eligible error.</p>"
                   :summary-off (:other-than acl2::time acl2::rules)
                   (def-rp-rule ,',name ,',term
                     :rule-classes ,',rule-classes
-                    :hints (("Goal"
+                    :hints (("goal"
                              :do-not-induct t
                              :rw-cache-state nil
                              :do-not '(preprocess generalize fertilize)
                              :clause-processor
                              (rp-cl :runes ,,runes
                                     :runes-outside-in ,,runes-outside-in
-                                    :new-synps ,',new-synps)))))))
+                                    :new-synps ,',new-synps
+                                    :cases ',cases)))))))
       ,(if (or disable-meta-rules
                enable-meta-rules
                enable-rules

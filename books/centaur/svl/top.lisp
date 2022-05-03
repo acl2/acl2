@@ -38,6 +38,6 @@
 
 (include-book "top-bare")
 
-(rp::attach-meta-fncs with-svl-metas)
+;;(rp::attach-meta-fncs with-svl-metas)
 
 

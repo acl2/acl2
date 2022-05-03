@@ -1,3 +1,41 @@
+; RP-REWRITER
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2019, Regents of the University of Texas
+; All rights reserved.
+; Copyright (C) 2022 Intel Corporation
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Mertcan Temel         <mert@utexas.edu>
 
 (in-package "RP")
 
@@ -138,6 +176,37 @@
              :expand ((VALID-SC TERM A))
              :in-theory (e/d (is-rp-implies-fc
                               is-if-implies-fc)
+                             ()))))
+
+  (defthm valid-sc-single-step-2
+    (implies (and ;(rp-termp term)
+                  (is-rp term))
+             (equal (valid-sc (list 'rp (cadr term) other) a)
+                    (and (rp-evlt `(,(cadr (cadr term)) ,other)  a)
+                         (valid-sc other a))))
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((VALID-SC TERM A))
+              
+             :in-theory (e/d (is-rp-implies-fc
+                              is-rp
+                              valid-sc-single-step
+                              is-if-implies-fc)
+                             ()))))
+
+  (defthm valid-sc-single-step-3
+    (implies (and (valid-sc term a)
+                  (is-rp term))
+             (valid-sc (caddr term) a))
+    :rule-classes :forward-chaining
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((VALID-SC TERM A))
+              
+             :in-theory (e/d (is-rp-implies-fc
+                              is-rp
+                              valid-sc-single-step
+                              is-if-implies-fc)
                              ())))))
 
 
@@ -156,12 +225,13 @@
   (IMPLIES (AND
             (CONSP term)
             (Not (EQUAL (CAR term) 'if))
-            (Not (EQUAL (CAR term) 'rp))
+            ;;(Not (EQUAL (CAR term) 'rp))
             (Not (EQUAL (CAR term) 'quote))
             (CONSP (CDR term))
             (VALID-SC TERM A))
            (VALID-SC (CADR term) A))
   :hints (("Goal"
+           :expand ((VALID-SC TERM A))
            :in-theory (e/d (ex-from-rp
                             is-if
                             is-rp) ()))))
@@ -169,15 +239,18 @@
 (defthm valid-sc-caddr
   (IMPLIES (AND
             (CONSP term)
-            (Not (EQUAL (CAR term) 'if))
-            (Not (EQUAL (CAR term) 'rp))
+            (not (EQUAL (CAR term) 'if))
+            ;;(Not (EQUAL (CAR term) 'rp))
             (Not (EQUAL (CAR term) 'quote))
             (CONSP (CDR term))
             (CONSP (CDdR term))
             (VALID-SC TERM A))
            (VALID-SC (CADdR term) A))
   :hints (("Goal"
+           :cases ((is-rp term))
+           :expand ((VALID-SC TERM A))
            :in-theory (e/d (ex-from-rp
+                            valid-sc-single-step
                             is-if
                             is-rp) ()))))
 
@@ -185,14 +258,15 @@
   (IMPLIES (AND
             (CONSP term)
             (Not (EQUAL (CAR term) 'if))
-            (Not (EQUAL (CAR term) 'rp))
+            ;;(Not (EQUAL (CAR term) 'rp))
             (Not (EQUAL (CAR term) 'quote))
             (CONSP (CDR term))
             (CONSP (CDdR term))
             (CONSP (CDddR term))
             (VALID-SC TERM A))
-           (VALID-SC (CAdDdR term) A))
+           (valid-sc (cadddr term) A))
   :hints (("Goal"
+           :expand ((VALID-SC TERM A))
            :in-theory (e/d (ex-from-rp
                             is-if
                             is-rp) ()))))
@@ -200,8 +274,8 @@
 (defthm valid-sc-caddddr
   (IMPLIES (AND
             (CONSP term)
-            (Not (EQUAL (CAR term) 'if))
-            (Not (EQUAL (CAR term) 'rp))
+            ;;(Not (EQUAL (CAR term) 'if))
+            ;;(Not (EQUAL (CAR term) 'rp))
             (Not (EQUAL (CAR term) 'quote))
             (CONSP (CDR term))
             (CONSP (CDdR term))
@@ -210,6 +284,7 @@
             (VALID-SC TERM A))
            (VALID-SC (CAr (cddDdR term)) A))
   :hints (("Goal"
+           :expand ((VALID-SC TERM A))
            :in-theory (e/d (ex-from-rp
                             is-if
                             is-rp) ()))))
@@ -239,3 +314,19 @@
                         (rp-evlt-lst (cdr acl2::x-lst)
                                      acl2::a))))
   :hints (("goal" :expand ((rp-trans acl2::x-lst)))))
+
+(defthm valid-sc-of-openly-quoted
+  (valid-sc (list 'quote x) a)
+  :hints (("Goal"
+           :expand (valid-sc (list 'quote x) a)
+           :in-theory (e/d (is-rp is-if) ()))))
+
+
+(defthm rp-evlt-of-rp
+  (implies (is-rp (cons 'rp rest))
+           (equal (rp-evlt (cons 'rp rest) a)
+                  (rp-evlt (cadr rest) a)))
+  :hints (("Goal"
+           :Expand ((rp-trans (cons 'rp rest)))
+           :in-theory (e/d () ()))))
+

@@ -32,7 +32,7 @@
 (include-book "strengths")
 (include-book "delays")
 (include-book "assignments") ;; for net_lvalue
-(include-book "datatypes") ;; bozo a bit heavy just for unpacked-dimension
+(include-book "expressions")
 (include-book "../../mlib/expr-tools")
 (include-book "../../mlib/port-tools")
 (local (include-book "../../util/arithmetic"))

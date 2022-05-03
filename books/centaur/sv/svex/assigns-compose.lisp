@@ -102,18 +102,10 @@ the original namespace.</li>
 
 
 
-(define svex-assigns-compose-phase1 ((x svex-alist-p)
-                                                &key (rewrite 't))
+(define svex-assigns-compose-phase1 ((x svex-alist-p))
   :returns (new-x svex-alist-p)
   (b* ((xvals (svex-alist-vals x))
        (- (cw "Initial count: ~x0~%" (svexlist-opcount xvals)))
-       ;;; Rewriting here at first presumably won't disrupt decompositions
-       ;;; because the expressions should be relatively small and independent,
-       ;;; to first approximation.
-       ;; (- (sneaky-save 'orig-assigns x))
-       (xvals (if rewrite (cwtime (svexlist-rewrite-top xvals :verbosep t) :mintime 0) xvals))
-       (x (pairlis$ (svex-alist-keys x) xvals))
-       (- (cw "Count after initial rewrite: ~x0~%" (svexlist-opcount xvals)))
        (updates (cwtime (svex-compose-assigns x) :mintime 0))
        ;; (updates (cwtime (svex-alist-rewrite-top updates :verbosep t) :mintime 0))
        (- (cw "Updates count: ~x0~%" (svexlist-opcount (svex-alist-vals updates)))))
@@ -356,7 +348,9 @@ the original namespace.</li>
   :returns (mv err (new-x svex-alist-p) (splittab svar-splittab-p))
   (b* ((x-vals (svex-alist-vals x))
        (vars (append (svex-alist-keys x) (svexlist-collect-vars x-vals)))
-       ((mv splittab bitcount) (cwtime (svex-compose-splittab x masks) :mintime 0))
+       ((mv splittab bitcount)
+        (acl2::with-fast-alist masks
+                               (cwtime (svex-compose-splittab x masks) :mintime 0)))
        (- (cw "Care bits remaining: ~x0~%" bitcount))
        ((unless splittab)
         (mv nil (svex-alist-fix x) splittab))
@@ -649,7 +643,7 @@ the original namespace.</li>
   :parents (svex-composition)
   :short "Given an alist mapping variables to assigned expressions, compose them together into full update functions."
   :returns (mv err (xx svex-alist-p))
-  (b* ((phase1 (svex-assigns-compose-phase1 x :rewrite rewrite))
+  (b* ((phase1 (svex-assigns-compose-phase1 x))
        ((mv masks phase2) (svex-assigns-compose-phase2 phase1 :simpconf (mbe :logic (if* rewrite 20 t)
                                                                              :exec (if rewrite 20 t))))
        ((mv err phase3 splittab) (svex-assigns-compose-phase3 phase2 masks))

@@ -39,3 +39,7 @@
 (include-book "svtv-stobj-export")
 (include-book "svtv-stobj-pipeline-thm")
 (include-book "svtv-stobj-decomp")
+(include-book "svtv-stobj-pipeline-monotonicity")
+(include-book "svtv-fsm-override")
+(include-book "svtv-override-fact")
+(local (include-book "svtv-fsm-override-fgl-theory"))

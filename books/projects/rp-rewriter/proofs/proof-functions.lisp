@@ -124,7 +124,7 @@
        nil)
       ((is-if term)
        (b* ((if-context (cadr term));(ex-from-rp (cadr term)))
-            (not-if-context (dumb-negate-lit2 if-context)))
+            ((mv not-if-context &) (dumb-negate-lit2 if-context)))
          (append
           (ext-side-conditions (cadr term)
                                context)
@@ -174,7 +174,7 @@
           (valid-sc-subterms subterms a)))
 
 (defun valid-rulep-sk-body (rule a)
-  (implies (rp-evl (rp-hyp rule) a)
+  (implies (eval-and-all-nt (rp-hyp rule) a)
            (and (if (rp-iff-flag rule)
                     (iff (rp-evl (rp-lhs rule) a)
                          (rp-evl (rp-rhs rule) a))

@@ -299,8 +299,8 @@
              (svex-identity-subst statevars)
            (svex-x-subst statevars)))))
     (make-pipeline-setup :probes probes
-                         :inputs inputs
-                         :overrides override-tests
+                         :inputs (make-fast-alists inputs)
+                         :overrides (make-fast-alists override-tests)
                          :initst initst))
   ///
   (defret initst-keys-of-<fn>
@@ -442,6 +442,7 @@
 
        ((mv err svtv-data)
         (svtv-data-defcycle-core x.design phases svtv-data
+                                 :rewrite-assigns x.pre-simplify
                                  :rewrite-phases x.pre-simplify
                                  :rewrite-cycle x.pre-simplify
                                  :cycle-simp x.cycle-simp

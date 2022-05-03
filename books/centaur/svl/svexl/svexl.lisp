@@ -208,6 +208,7 @@
   :inline t
   (b* ((reuse-stats-entry (hons-get svex reuse-stats)))
     (and reuse-stats-entry
+         (rp::cons-count-compare svex 20)
          (> (cdr reuse-stats-entry) 1))))
 
 (acl2::defines
@@ -477,12 +478,13 @@
       (svexl-node-case
        x
        :var x
-       :quote x.val
+       :quote (hons-copy x.val)
        :node (b* ((node (hons-get x.node-id reverse-nodesdb)))
-               (if node
-                   (cdr node)
-                   (sv::4vec-x)))
-       :call (cons
+               (hons-copy
+                (if node
+                    (cdr node)
+                  (sv::4vec-x))))
+       :call (hons
               x.fn
               (svexl-nodelist-to-svexlist x.args
                                           reverse-nodesdb))))
@@ -494,7 +496,7 @@
       :measure (svexl-nodelist-count lst)
       (if (atom lst)
           nil
-          (cons (svexl-node-to-svex (car lst) reverse-nodesdb)
+          (hons (svexl-node-to-svex (car lst) reverse-nodesdb)
                 (svexl-nodelist-to-svexlist (cdr lst) reverse-nodesdb))))
 
     ///

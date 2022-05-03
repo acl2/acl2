@@ -1,10 +1,6 @@
 ; Centaur SV Hardware Verification Tutorial
 ; Copyright (C) 2016 Centaur Technology
-;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+; Copyright (C) 2022 Intel Corporation
 ;
 ; License: (An MIT/X11-style license)
 ;
@@ -415,9 +411,15 @@
                   (svtv-data-obj->flatten-validp x)
                   (svtv-data-obj->flatnorm-validp x))
              (b* (((mv ?err ?res ?moddb ?aliases)
-                   (svtv-design-flatten (svtv-data-obj->design x) :moddb nil :aliases nil)))
-               (equal (svtv-data-obj->flatnorm x)
-                      (svtv-normalize-assigns res aliases (svtv-data-obj->flatnorm-setup x)))))
+                   (svtv-design-flatten (svtv-data-obj->design x) :moddb nil
+                                        :aliases nil))
+                  ((flatnorm-res flatnorm) (svtv-data-obj->flatnorm x))
+                  ((flatnorm-res spec) (svtv-normalize-assigns res aliases
+                                                               (svtv-data-obj->flatnorm-setup
+                                                                x))))
+               (and (svex-alist-eval-equiv flatnorm.assigns spec.assigns)
+                    (equal flatnorm.delays spec.delays)
+                    (equal flatnorm.constraints spec.constraints))))
     :Hints(("Goal" :in-theory (enable svtv-data$ap
                                       svtv-data$c-flatten-okp
                                       svtv-data$c-flatnorm-okp))))
@@ -557,3 +559,67 @@
 
 (defmacro def-svtv-data-export/import (name &key (stobj 'svtv-data))
   (def-svtv-data-export/import-fn name stobj))
+
+
+(defxdoc def-svtv-data-export
+  :parents (svtv-data)
+  :short "Copy the contents of a @(see svtv-data) stobj into a constant."
+  :long "
+<p>Usage:</p>
+@({
+ (def-svtv-data-export export-name
+                       :stobj stobj-name)  ;; default: sv::svtv-data
+ })
+
+<p>This copies the contents of svtv-data (or another stobj congruent to it, if
+specified) into a constant and 0-ary function satisfying @('svtv-data-obj-p'),
+and proves that the 0-ary function satisfies
+@('(svtv-data$ap (svtv-data-obj-to-stobj-logic (export)))'), i.e. if converted
+back to stobj form it still satisfies the @('svtv-data$ap') invariant.  This
+has important implications, e.g. see theorems such as
+@('cycle-fsm-validp-of-svtv-data-obj'): if the data object has its
+@('cycle-fsm-validp') and @('flatten-validp') fields set, then the
+@('cycle-fsm') field has a certain relationship to the @('phase-fsm') field.</p>
+
+<p>See also @(see def-svtv-data-import) which defines a function to put the
+exported object back into a stobj, and @(see def-svtv-data-export/import) which
+simply combines the two events.</p>")
+
+
+(defxdoc def-svtv-data-import
+  :parents (svtv-data)
+  :short "Define a function that imports a particular svtv data object (such as created by @(see def-svtv-data-export)) into a @(see svtv-data) stobj."
+  :long "
+<p>Usage:</p>
+@({
+ (def-svtv-data-import <export-name>)
+ })
+<p>where @('<export-name>') is the name of a 0-ary function such as produced by
+@(see def-svtv-data-export).  This creates a function called
+@('svtv-data-import-<export-name>') (in the package of @('<export-name>'))
+which sets the contents of an @(see svtv-data) stobj to those of the export object,
+and (crucially) verifies its guards, showing that it preserves the invariant of
+the svtv-data stobj.</p>
+
+<p>See also @(see def-svtv-data-export/import) which simply combines the export
+and import events.</p>")
+
+
+(defxdoc def-svtv-data-export/import
+  :parents (svtv-data)
+  :short "Combines @(see def-svtv-data-export) and @(see def-svtv-data-import)."
+  :long "
+
+<p>Usage:</p>
+@({
+ (def-svtv-data-export/import
+   export-name
+   :stobj stobj-name)  ;; default: sv::svtv-data
+ })
+
+<p>This just does @(see def-svtv-data-export) followed by @(see
+def-svtv-data-import), i.e. defines a constant and 0-ary function
+@('export-name') containing the current contents of the given @(see svtv-data)
+stobj, and subsequently defines a function that copies those contents back into
+such a stobj.</p>")
+

@@ -1,5 +1,6 @@
 ; Centaur SV Hardware Verification Tutorial
 ; Copyright (C) 2016 Centaur Technology
+; Copyright (C) 2022 Intel Corporation
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -32,6 +33,7 @@
 (in-package "SV")
 
 (include-book "svtv-stobj")
+(include-book "svtv-stobj-cycle")
 (include-book "clause-processors/meta-extract-user" :dir :System)
 (include-book "clause-processors/pseudo-term-fty" :dir :System)
 (include-book "centaur/meta/replace" :dir :System)
@@ -81,6 +83,7 @@
      :outputs (("out" out2)))))
 
 (def-pipeline-thm my-svtv)
+(def-cycle-thm my-svtv)
 
 ;; (make-event
 ;;  `(defund my-cycle ()
@@ -183,7 +186,29 @@
     :hints(("Goal" :in-theory (enable svtv-data$ap
                                       svtv-fsm-run-is-base-fsm-run)))))
 
-(local (in-theory (disable svtv-pipeline-correct)))
+(define svtv-cycle-correct ((phase-fsm base-fsm-p)
+                            (cycle-phases svtv-cyclephaselist-p)
+                            (cycle-fsm base-fsm-p))
+  :guard (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate phase-fsm))))
+  :enabled t
+  (b* (((base-fsm phase-fsm))
+       ((mv values nextstate)
+        (svtv-cycle-compile (svex-identity-subst
+                             (svex-alist-keys phase-fsm.nextstate))
+                            cycle-phases phase-fsm nil))) ;; simp is irrelevant under base-fsm-eval-equiv
+    (base-fsm-eval-equiv (make-base-fsm :values values :nextstate nextstate) cycle-fsm))
+  ///
+  (defthm svtv-cycle-correct-when-svtv-data$ap
+    (implies (and (svtv-datap svtv-data)
+                  (svtv-data->cycle-fsm-validp svtv-data))
+             (svtv-cycle-correct (svtv-data$c->phase-fsm svtv-data)
+                                 (svtv-data$c->cycle-phases svtv-data)
+                                 (svtv-data$c->cycle-fsm svtv-data)))
+    :hints(("Goal" :in-theory (enable svtv-data$ap
+                                      cycle-fsm-okp-implies-cycle-compile-values-equiv)))))
+
+(local (in-theory (disable svtv-pipeline-correct
+                           svtv-cycle-correct)))
 
 
 
@@ -200,6 +225,7 @@
    ;; (svtv-data$c->pipeline-setup$inline svtvdat)
    ;; (svtv-data$c->namemap$inline svtvdat)
    (svtv-pipeline-correct cycle namemap setup pipeline env)
+   (svtv-cycle-correct phase-fsm cycle-phases cycle-fsm)
    )
   :namedp t)
 
@@ -372,22 +398,39 @@
         (meta-extract-const-value cycle-term state))
        ((when (or cycle-term-err
                   (not (equal cycle-val (svtv-data->cycle-fsm svtv-data)))))
-        (mv "bad cycle value" nil))
+        (mv (msg "The cycle term given, ~x0, ~@1"
+                 cycle-term
+                 (if cycle-term-err
+                     "failed to evaluate."
+                   "does not equal the cycle FSM currently stored in the given svtv-data stobj."))
+            nil))
        ((mv namemap-term-err namemap-val)
         (meta-extract-const-value namemap-term state))
        ((when (or namemap-term-err
                   (not (equal namemap-val (svtv-data->namemap svtv-data)))))
-        (mv "bad namemap value" nil))
+        (mv (msg "The namemap term given, ~x0, ~@1"
+                 (if namemap-term-err
+                     "failed to evaluate."
+                   "does not equal the namemap currently stored in the given svtv-data stobj."))
+            nil))
        ((mv pipeline-setup-term-err pipeline-setup-val)
         (meta-extract-const-value pipeline-setup-term state))
        ((when (or pipeline-setup-term-err
                   (not (equal pipeline-setup-val (svtv-data->pipeline-setup svtv-data)))))
-        (mv "bad pipeline-setup value" nil))
+        (mv (msg "The pipeline-setup term given, ~x0, ~@1"
+                 (if pipeline-setup-term-err
+                     "failed to evaluate."
+                   "does not equal the pipeline-setup currently stored in the given svtv-data stobj."))
+            nil))
        ((mv pipeline-term-err pipeline-val)
         (meta-extract-const-value pipeline-term state))
        ((when (or pipeline-term-err
                   (not (equal pipeline-val (svtv-data->pipeline svtv-data)))))
-        (mv "bad pipeline value" nil)))
+        (mv (msg "The pipeline term given, ~x0, ~@1"
+                 (if pipeline-term-err
+                     "failed to evaluate."
+                   "does not equal the pipeline currently stored in the given svtv-data stobj."))
+            nil)))
     (mv nil
         `(((svtv-data$c->cycle-fsm$inline svtv-data$c) . ,(acl2::pseudo-term-fix cycle-term))
           ((svtv-data$c->namemap$inline svtv-data$c) . ,(acl2::pseudo-term-fix namemap-term))
@@ -479,6 +522,9 @@
              ))
 
     :rule-classes :clause-processor))
+
+
+
 
 
 
@@ -611,6 +657,207 @@ event. (The cycle function doesn't need to be created if a previous
  (def-pipeline-thm svtv-name
                    ;; optional, in case cycle was introduced previously
                    :cycle-name cycle-name)
+ })
+
+")
+
+
+
+(define cycle-okp-hint-subst ((hints pseudo-term-listp)
+                                 svtv-data
+                                 state)
+  :returns (mv err (subst cmr::pseudo-term-mapping-p))
+  :prepwork ((local (in-theory (disable nth))))
+  (b* (((acl2::nths phase-term cycle-phases-term cycle-term) hints)
+       ((mv cycle-term-err cycle-val)
+        (meta-extract-const-value cycle-term state))
+       ((when (or cycle-term-err
+                  (not (equal cycle-val (svtv-data->cycle-fsm svtv-data)))))
+        (mv "bad cycle value" nil))
+       ((mv phase-term-err phase-val)
+        (meta-extract-const-value phase-term state))
+       ((when (or phase-term-err
+                  (not (equal phase-val (svtv-data->phase-fsm svtv-data)))))
+        (mv "bad phase-fsm value" nil))
+       ((mv cycle-phases-term-err cycle-phases-val)
+        (meta-extract-const-value cycle-phases-term state))
+       ((when (or cycle-phases-term-err
+                  (not (equal cycle-phases-val (svtv-data->cycle-phases svtv-data)))))
+        (mv "bad cycle-phases value" nil)))
+    (mv nil
+        `(((svtv-data$c->cycle-fsm$inline svtv-data$c) . ,(acl2::pseudo-term-fix cycle-term))
+          ((svtv-data$c->phase-fsm$inline svtv-data$c) . ,(acl2::pseudo-term-fix phase-term))
+          ((svtv-data$c->cycle-phases$inline svtv-data$c) . ,(acl2::pseudo-term-fix cycle-phases-term)))))
+  ///
+  ;; (defret <fn>-correct
+  ;;   (implies (and (not err)
+  ;;                 (svtvpipe-ev-meta-extract-global-facts)
+  ;;                 (equal (cdr (assoc-equal 'svtv-data$c env)) svtv-data)
+  ;;                 (equal (cdr (assoc-equal 'results env)) (svtv-data->pipeline svtv-data)))
+  ;;            (svtvpipe-ev-pseudo-term-mapping-correct-p subst env))
+  ;;   :hints(("Goal" :in-theory (enable svtvpipe-ev-pseudo-term-mapping-correct-p))))
+  )
+
+
+(define svtv-cycle-clause-proc (clause hints svtv-data state)
+  ;; hints are: (phase-term cycle-phases-term cycle-term)
+  (b* (((unless (mbt (svtv-datap svtv-data)))
+        (mv "impossible" nil))
+       ((unless (svtv-data->cycle-fsm-validp svtv-data))
+        (mv "svtv-data cycle not valid" nil))
+       ((unless (and (pseudo-term-listp hints)
+                     (eql (len hints) 3)))
+        (mv "bad hints" nil))
+       ((mv hints-err ?subst) (cycle-okp-hint-subst hints svtv-data state))
+       ((when hints-err)
+        (mv hints-err nil))
+       ((acl2::nths phase-term cycle-phases-term cycle-term) hints)
+       ;; ((mv impl-err impl-term) (pipeline-okp-implicant-term (w state)))
+       ;; ((when impl-err)
+       ;;  (mv impl-err nil))
+       ;; (impl-term-beta (cmr::lazy-beta-reduce impl-term))
+       ;; (impl-term-subst (cmr::term-replace impl-term-beta subst))
+       ;; ((when (cmr::member-term-vars 'results impl-term-subst))
+       ;;  (mv "programming error: result was in added term" nil))
+       ;; ((when (cmr::member-term-vars 'svtv-data$c impl-term-subst))
+       ;;  (mv "svtv-data$c was still free in term, check def of svtv-data$c-pipeline-okp" nil))
+       )
+    ;; (mv nil (list (cons `(not ,impl-term-subst) clause)))
+    (mv nil (list (cons `(not (svtv-cycle-correct ,phase-term ,cycle-phases-term ,cycle-term)) clause))))
+  ///
+  (defthm svtv-cycle-clause-proc-correct
+    (implies (and (pseudo-term-listp clause)
+                  (alistp a)
+                  (svtvpipe-ev-meta-extract-global-facts)
+                  (svtvpipe-ev (acl2::conjoin-clauses
+                                (acl2::clauses-result (svtv-cycle-clause-proc
+                                                       clause hints svtv-data state)))
+                               ;; `((svtv-data$c . ,svtv-data)
+                               ;;   (results . ,(svtv-data->cycle svtv-data)))
+                               a))
+             (svtvpipe-ev (disjoin clause) a))
+    :hints (("goal" :do-not-induct t 
+             :in-theory (e/d (cycle-okp-hint-subst)
+                             (nth))
+             ;; :use ((:instance svtvpipe-ev-term-replace-correct
+             ;;        (x (CMR::LAZY-BETA-REDUCE (MV-NTH 1
+             ;;                        (CYCLE-OKP-IMPLICANT-TERM (W STATE)))))
+             ;;        (map (MV-NTH 1
+             ;;                     (CYCLE-OKP-HINT-SUBST HINTS SVTV-DATA state)))
+             ;;        (env
+             ;;         `((svtv-data$c . ,svtv-data)
+             ;;           (results . ,(svtv-data->cycle svtv-data))
+             ;;           . ,a))))
+             ))
+
+    :rule-classes :clause-processor))
+
+
+
+(defun def-cycle-thm-fn (svtv-name
+                         cycle-name
+                         phase-name
+                         define-cycle
+                         define-phase
+                         stobj-name)
+  (declare (xargs :mode :program))
+  (b* ((define-cycle (or (not cycle-name) define-cycle))
+       (cycle-name (or cycle-name
+                       (intern-in-package-of-symbol
+                        (concatenate 'string (symbol-name svtv-name) "-CYCLE")
+                        svtv-name)))
+       (cycle-events (and define-cycle
+                          `((make-event
+                             `(define ,',cycle-name ()
+                                :no-function t
+                                :returns (fsm base-fsm-p)
+                                ',(svtv-data->cycle-fsm ,stobj-name))))))
+       (define-phase (or (not phase-name) define-phase))
+       (phase-name (or phase-name
+                       (intern-in-package-of-symbol
+                        (concatenate 'string (symbol-name svtv-name) "-PHASE")
+                        svtv-name)))
+       (phase-events (and define-phase
+                          `((make-event
+                             `(define ,',phase-name ()
+                                :no-function t
+                                :returns (fsm base-fsm-p)
+                                ',(svtv-data->phase-fsm ,stobj-name))))))
+       (cycle-phases-name (intern-in-package-of-symbol
+                           (concatenate 'string (symbol-name svtv-name) "-CYCLE-PHASES")
+                           svtv-name))
+       (thmname (intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name svtv-name) "-CYCLE-CORRECT")
+                 svtv-name)))
+    `(progn ,@cycle-events
+            ,@phase-events
+            (make-event
+             `(define ,',cycle-phases-name ()
+                :no-function t
+                :returns (cycle-phases svtv-cyclephaselist-p)
+                ',(svtv-data->cycle-phases ,stobj-name)))
+            (in-theory (disable ,@(and define-cycle `((,cycle-name)))
+                                ,@(and define-phase `((,phase-name)))))
+            (defthmd ,thmname
+              (b* (((base-fsm phase-fsm) (,phase-name))
+                   ((mv values nextstate)
+                    (svtv-cycle-compile (svex-identity-subst
+                                         (svex-alist-keys phase-fsm.nextstate))
+                                        (,cycle-phases-name) phase-fsm nil)))
+                (base-fsm-eval-equiv (,cycle-name)
+                                     (make-base-fsm :values values :nextstate nextstate)))
+              :hints (("goal" :clause-processor (svtv-cycle-clause-proc
+                                                 clause
+                                                 '((,phase-name)
+                                                   (,cycle-phases-name)
+                                                   (,cycle-name))
+                                                 ,stobj-name state)
+                       :in-theory (enable svtv-cycle-correct))))
+            (add-to-ruleset! svtv-cycle-thms ,thmname)
+            (add-to-ruleset! svtv-cycle-thm-constants '((:executable-counterpart ,cycle-phases-name))))))
+
+(defmacro def-cycle-thm (svtv-name
+                            &key
+                            cycle-name
+                            phase-name
+                            define-cycle
+                            define-phase
+                            (stobj-name 'svtv-data))
+  (def-cycle-thm-fn svtv-name cycle-name phase-name define-cycle define-phase stobj-name))
+
+
+(defxdoc def-cycle-thm
+  :parents (svex-stvs svtv-data)
+  :short "Prove that an SVTV cycle FSM an unrolling of the phase FSM that it's based on"
+  :long "
+
+<p>The @('def-cycle-thm') event uses this invariant of the @('svtv-data') stobj
+to prove that the cycle FSM is equivalent to the unrolling according to the
+cycle phases of the phase FSM.  This event requires that the @('svtv-data')
+stobj was not disrupted in such a way as to make its cycle FSM invalid since
+creating the cycle using @('defcycle') or @('defsvtv$'). It proves a theorem of
+the following form:</p>
+
+@({
+   (b* (((base-fsm phase-fsm) (phase-fsm))
+        ((mv values nextstate)
+         (svtv-cycle-compile (svex-identity-subst
+                              (svex-alist-keys phase-fsm.nextstate))
+                             (cycle-phases) phase-fsm nil)))
+     (base-fsm-eval-equiv (cycle-fsm)
+                          (make-base-fsm :values values :nextstate nextstate)))
+ })
+
+<p>The options for @('def-cycle-thm') are as follows:</p>
+
+@({
+ (def-cycle-thm svtv-name ;; used for default names
+                ;; optional, in case cycle was introduced previously
+                :cycle-name cycle-name
+                :phase-name phase-name
+                :define-cycle t
+                :define-phase t
+                :stobj-name svtv-data)
  })
 
 ")

@@ -62,13 +62,7 @@
     (cons (svex-alist-eval (car x) env)
           (svex-alistlist-eval (cdr x) env))))
 
-(define make-fast-alists (x)
-  :enabled t
-  (mbe :logic x
-       :exec (if (atom x)
-                 x
-               (cons (make-fast-alist (car x))
-                     (make-fast-alists (cdr x))))))
+
 
 
 
