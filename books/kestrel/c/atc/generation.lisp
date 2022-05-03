@@ -587,6 +587,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-taginfo-alist-to-recognizers
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (recognizers symbol-listp)
+  :short "Project the recognizers out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (recog (defstruct-info->recognizer (atc-tag-info->defstruct info)))
+       (recogs (atc-string-taginfo-alist-to-recognizers (cdr prec-tags))))
+    (cons recog recogs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-string-taginfo-alist-to-readers
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (readers symbol-listp)
+  :short "Project the readers out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (readers (defstruct-info->readers (atc-tag-info->defstruct info)))
+       (more-readers (atc-string-taginfo-alist-to-readers (cdr prec-tags))))
+    (append readers more-readers)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-string-taginfo-alist-to-reader-return-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -619,30 +643,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-string-taginfo-alist-to-recognizers
-  ((prec-tags atc-string-taginfo-alistp))
-  :returns (recognizers symbol-listp)
-  :short "Project the recognizers out of a tag information alist."
-  (b* (((when (endp prec-tags)) nil)
-       (info (cdar prec-tags))
-       (recog (defstruct-info->recognizer (atc-tag-info->defstruct info)))
-       (recogs (atc-string-taginfo-alist-to-recognizers (cdr prec-tags))))
-    (cons recog recogs)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-string-taginfo-alist-to-readers
-  ((prec-tags atc-string-taginfo-alistp))
-  :returns (readers symbol-listp)
-  :short "Project the readers out of a tag information alist."
-  (b* (((when (endp prec-tags)) nil)
-       (info (cdar prec-tags))
-       (readers (defstruct-info->readers (atc-tag-info->defstruct info)))
-       (more-readers (atc-string-taginfo-alist-to-readers (cdr prec-tags))))
-    (append readers more-readers)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-string-taginfo-alist-to-not-error-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -667,6 +667,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-taginfo-alist-to-valuep-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the @(tsee valuep) theorems out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->valuep-thm (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-valuep-thms (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-string-taginfo-alist-to-value-kind-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the @(tsee value-kind) theorems
+          out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->value-kind-thm (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-value-kind-thms (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-string-taginfo-alist-to-tag-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -679,6 +704,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-taginfo-alist-to-value-tag-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the value tag theorems out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->value-tag-thm (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-value-tag-thms (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-string-taginfo-alist-to-members-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -687,6 +724,18 @@
        (info (cdar prec-tags))
        (thm (defstruct-info->members-thm (atc-tag-info->defstruct info)))
        (thms (atc-string-taginfo-alist-to-members-thms (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-string-taginfo-alist-to-value-members-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the value member theorems out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->value-members-thm (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-value-members-thms (cdr prec-tags))))
     (cons thm thms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
