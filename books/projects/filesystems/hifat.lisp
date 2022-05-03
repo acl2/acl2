@@ -2096,6 +2096,46 @@
 (theory-invariant (incompatible (:rewrite fat32-filename-list-prefixp-alt)
                                 (:rewrite collapse-hifat-place-file-lemma-113)))
 
+;; There is a more general approach in prefixp-nthcdr-nthcdr.
+(defthm collapse-hifat-place-file-lemma-65
+  (implies (and (fat32-filename-list-prefixp x y)
+                (fat32-filename-list-prefixp x z))
+           (equal (fat32-filename-list-equiv (nthcdr (len x) y)
+                                             (nthcdr (len x) z))
+                  (fat32-filename-list-equiv y z)))
+  :hints (("goal" :in-theory (enable fat32-filename-list-equiv
+                                     fat32-filename-list-prefixp))))
+
+(defthm fat32-filename-list-prefixp-nthcdr-nthcdr
+  (implies (and (>= (len l2) n)
+                (fat32-filename-list-equiv (take n l1) (take n l2)))
+           (equal (fat32-filename-list-prefixp (nthcdr n l1) (nthcdr n l2))
+                  (fat32-filename-list-prefixp l1 l2)))
+  :hints (("goal" :in-theory (enable fat32-filename-list-prefixp
+                                     fat32-filename-list-equiv len))))
+
+
+(defthm
+  len-when-fat32-filename-list-prefixp
+  (implies (fat32-filename-list-prefixp x y)
+           (equal (< (len y) (len x)) nil))
+  :rule-classes
+  (:rewrite
+   (:linear
+    :corollary (implies (fat32-filename-list-prefixp x y)
+                        (<= (len x) (len y))))
+   :forward-chaining)
+  :hints
+  (("goal" :in-theory (enable fat32-filename-list-prefixp))))
+
+(defthm take-when-fat32-filename-list-prefixp
+  (implies (fat32-filename-list-prefixp x y)
+           (fat32-filename-list-equiv (take (len x) y)
+                                      x))
+  :hints
+  (("goal" :in-theory (enable fat32-filename-list-prefixp
+                              fat32-filename-list-equiv len))))
+
 ;; This function returns *ENOENT* when the root directory is asked for. There's
 ;; a simple reason: we want to return the whole file, including the directory
 ;; entry - and nowhere is there a directory entry for the root. Any
