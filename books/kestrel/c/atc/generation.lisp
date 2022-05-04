@@ -4844,7 +4844,8 @@
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
-       (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
+       (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (struct-reader-return-thms
@@ -4861,8 +4862,9 @@
        (type-prescriptions-struct-readers
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
-       (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
-       (members-thms (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (value-tag-thms (atc-string-taginfo-alist-to-value-tag-thms prec-tags))
+       (value-members-thms
+        (atc-string-taginfo-alist-to-value-members-thms prec-tags))
        (exec-memberp-thms
         (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (exec-asg-memberp-thms
@@ -4871,14 +4873,15 @@
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
                              '(,@not-error-thms
-                               ,@structp-thms
+                               ,@valuep-thms
+                               ,@value-kind-thms
                                not
                                ,fn
                                ,@result-thms
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
-                               ,@tag-thms
-                               ,@members-thms
+                               ,@value-tag-thms
+                               ,@value-members-thms
                                ,@exec-memberp-thms
                                ,@exec-asg-memberp-thms
                                ,@type-prescriptions-called
@@ -5736,7 +5739,8 @@
                       ,test-term))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
-       (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
+       (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
        (struct-reader-return-thms
         (atc-string-taginfo-alist-to-reader-return-thms prec-tags))
        (hints `(("Goal"
@@ -5745,7 +5749,8 @@
                              (theory 'atc-all-rules)
                              '(not
                                ,@not-error-thms
-                               ,@structp-thms
+                               ,@valuep-thms
+                               ,@value-kind-thms
                                ,@struct-reader-return-thms))
                  :use ((:instance (:guard-theorem ,fn)
                         :extra-bindings-ok ,@instantiation))
@@ -5872,7 +5877,8 @@
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
-       (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
+       (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (struct-reader-return-thms
@@ -5889,8 +5895,9 @@
        (type-prescriptions-struct-readers
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
-       (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
-       (members-thms (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (value-tag-thms (atc-string-taginfo-alist-to-value-tag-thms prec-tags))
+       (value-members-thms
+        (atc-string-taginfo-alist-to-value-members-thms prec-tags))
        (exec-memberp-thms
         (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (exec-asg-memberp-thms
@@ -5900,12 +5907,13 @@
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
                              '(,@not-error-thms
-                               ,@structp-thms
+                               ,@valuep-thms
+                               ,@value-kind-thms
                                not
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
-                               ,@tag-thms
-                               ,@members-thms
+                               ,@value-tag-thms
+                               ,@value-members-thms
                                ,@exec-memberp-thms
                                ,@exec-asg-memberp-thms
                                ,@type-prescriptions-called
@@ -6064,8 +6072,9 @@
        (type-prescriptions-struct-readers
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
-       (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
-       (members-thms (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (value-tag-thms (atc-string-taginfo-alist-to-value-tag-thms prec-tags))
+       (value-members-thms
+        (atc-string-taginfo-alist-to-value-members-thms prec-tags))
        (exec-memberp-thms
         (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (exec-asg-memberp-thms
@@ -6104,8 +6113,8 @@
                                      ,exec-stmt-while-for-fn
                                      ,@struct-reader-return-thms
                                      ,@struct-writer-return-thms
-                                     ,@tag-thms
-                                     ,@members-thms
+                                     ,@value-tag-thms
+                                     ,@value-members-thms
                                      ,@exec-memberp-thms
                                      ,@exec-asg-memberp-thms
                                      ,@type-prescriptions-called
@@ -6520,7 +6529,7 @@
                        (equal struct
                               (read-struct (pointer->address ptr) compst1))
                        (equal (pointer->reftype ptr)
-                              (type-struct (struct->tag struct)))
+                              (type-struct (value-struct->tag struct)))
                        (,recognizer struct))
                   (equal (exec-expr-asg e compst fenv limit)
                          (write-struct (pointer->address ptr)

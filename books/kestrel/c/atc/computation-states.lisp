@@ -663,7 +663,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-struct ((addr addressp) (compst compustatep))
-  :returns (struct struct-resultp)
+  :returns (struct value-resultp)
   :short "Read a structure in the computation state."
   :long
   (xdoc::topstring
@@ -681,14 +681,21 @@
        ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
        (obj (cdr addr+obj))
-       ((unless (structp obj))
+       ((unless (value-case obj :struct))
         (error (list :address-not-struct addr obj))))
     obj)
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret value-kind-of-read-struct
+    (implies (not (errorp struct))
+             (equal (value-kind struct)
+                    :struct))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-struct ((addr addressp) (struct structp) (compst compustatep))
+(define write-struct ((addr addressp) (struct valuep) (compst compustatep))
+  :guard (value-case struct :struct)
   :returns (new-compst compustate-resultp)
   :short "Write a structure in the computation state."
   :long
@@ -711,19 +718,21 @@
        ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
        (obj (cdr addr+obj))
-       ((unless (structp obj))
+       ((unless (value-case obj :struct))
         (error (list :address-not-struct addr obj)))
-       ((unless (equal (struct->tag struct)
-                       (struct->tag obj)))
+       ((unless (equal (value-struct->tag struct)
+                       (value-struct->tag obj)))
         (error (list :struct-tag-mismatch
-                     :old (struct->tag obj)
-                     :new (struct->tag struct))))
-       ((unless (equal (member-values-to-types (struct->members struct))
-                       (member-values-to-types (struct->members obj))))
+                     :old (value-struct->tag obj)
+                     :new (value-struct->tag struct))))
+       ((unless (equal (member-values-to-types (value-struct->members struct))
+                       (member-values-to-types (value-struct->members obj))))
         (error (list :struct-members-mismatch
-                     :old (member-values-to-types (struct->members obj))
-                     :new (member-values-to-types (struct->members struct)))))
-       (new-heap (omap::update addr (struct-fix struct) heap))
+                     :old (member-values-to-types
+                           (value-struct->members obj))
+                     :new (member-values-to-types
+                           (value-struct->members struct)))))
+       (new-heap (omap::update addr (value-fix struct) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)
   :hooks (:fix)

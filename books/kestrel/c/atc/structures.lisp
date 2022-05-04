@@ -61,7 +61,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define struct-read-member ((name identp) (struct structp))
+(define struct-read-member ((name identp) (struct valuep))
+  :guard (value-case struct :struct)
   :returns (val value-resultp)
   :short "Read a member of a structure."
   :long
@@ -70,7 +71,7 @@
     "We look up the members in order;
      given that the members have distinct names (see @(tsee struct),
      the search order is immaterial."))
-  (struct-read-member-aux name (struct->members struct))
+  (struct-read-member-aux name (value-struct->members struct))
   :hooks (:fix)
 
   :prepwork
@@ -87,8 +88,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define struct-write-member ((name identp) (val valuep) (struct structp))
-  :returns (new-struct struct-resultp)
+(define struct-write-member ((name identp) (val valuep) (struct valuep))
+  :guard (value-case struct :struct)
+  :returns (new-struct value-resultp)
   :short "Write a member of a structure."
   :long
   (xdoc::topstring
@@ -97,9 +99,10 @@
      given that the members have distinct names (see @(tsee struct)),
      the search order is immaterial.
      The new value must have the same type as the old value."))
-  (b* ((new-members (struct-write-member-aux name val (struct->members struct)))
+  (b* ((new-members
+        (struct-write-member-aux name val (value-struct->members struct)))
        ((when (errorp new-members)) new-members))
-    (change-struct struct :members new-members))
+    (change-value-struct struct :members new-members))
   :hooks (:fix)
 
   :prepwork
@@ -130,7 +133,14 @@
           ((when (errorp new-cdr-members)) new-cdr-members))
        (cons (member-value-fix (car members))
              new-cdr-members))
-     :hooks (:fix))))
+     :hooks (:fix)))
+
+  ///
+
+  (defret value-kind-of-struct-write-member
+    (implies (not (errorp new-struct))
+             (equal (value-kind new-struct)
+                    :struct))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
