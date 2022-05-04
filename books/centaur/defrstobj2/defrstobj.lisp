@@ -39,6 +39,7 @@
 (include-book "std/lists/nth" :dir :system)
 (include-book "std/lists/resize-list" :dir :system)
 (include-book "std/lists/len" :dir :system)
+(include-book "std/lists/repeat" :dir :system)
 
 
 (defsection defrstobj

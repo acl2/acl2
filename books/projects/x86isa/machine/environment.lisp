@@ -42,6 +42,7 @@
 (in-package "X86ISA")
 
 (include-book "top-level-memory" :ttags (:undef-flg))
+(local (include-book "std/alists/assoc" :dir :system))
 
 ;; ======================================================================
 

@@ -29,7 +29,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "defs")
+(include-book "std/strings/strprefixp" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
+(include-book "std/util/defalist" :dir :system)
+(include-book "defsort/duplicated-members" :dir :system)
+(include-book "fast-memberp")
+(include-book "string-fix")
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
 (local (include-book "arithmetic"))
