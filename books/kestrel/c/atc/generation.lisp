@@ -655,18 +655,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-string-taginfo-alist-to-structp-thms
-  ((prec-tags atc-string-taginfo-alistp))
-  :returns (thms symbol-listp)
-  :short "Project the @(tsee structp) theorems out of a tag information alist."
-  (b* (((when (endp prec-tags)) nil)
-       (info (cdar prec-tags))
-       (thm (defstruct-info->structp-thm (atc-tag-info->defstruct info)))
-       (thms (atc-string-taginfo-alist-to-structp-thms (cdr prec-tags))))
-    (cons thm thms)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-string-taginfo-alist-to-valuep-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -692,18 +680,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-string-taginfo-alist-to-tag-thms
-  ((prec-tags atc-string-taginfo-alistp))
-  :returns (thms symbol-listp)
-  :short "Project the tag theorems out of a tag information alist."
-  (b* (((when (endp prec-tags)) nil)
-       (info (cdar prec-tags))
-       (thm (defstruct-info->tag-thm (atc-tag-info->defstruct info)))
-       (thms (atc-string-taginfo-alist-to-tag-thms (cdr prec-tags))))
-    (cons thm thms)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-string-taginfo-alist-to-value-tag-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -712,18 +688,6 @@
        (info (cdar prec-tags))
        (thm (defstruct-info->value-tag-thm (atc-tag-info->defstruct info)))
        (thms (atc-string-taginfo-alist-to-value-tag-thms (cdr prec-tags))))
-    (cons thm thms)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-string-taginfo-alist-to-members-thms
-  ((prec-tags atc-string-taginfo-alistp))
-  :returns (thms symbol-listp)
-  :short "Project the member theorems out of a tag information alist."
-  (b* (((when (endp prec-tags)) nil)
-       (info (cdar prec-tags))
-       (thm (defstruct-info->members-thm (atc-tag-info->defstruct info)))
-       (thms (atc-string-taginfo-alist-to-members-thms (cdr prec-tags))))
     (cons thm thms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6054,7 +6018,6 @@
        (formula-thm `(b* (,@formals-bindings) (implies ,hyps ,concl-thm)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
-       (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (result-thms (cons fn-result-thm result-thms))
@@ -6108,7 +6071,6 @@
                                    *integer-value-disjoint-rules*
                                    *array-value-disjoint-rules*
                                    '(,@not-error-thms
-                                     ,@structp-thms
                                      not
                                      ,exec-stmt-while-for-fn
                                      ,@struct-reader-return-thms
