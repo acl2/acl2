@@ -6376,8 +6376,7 @@
                    ,reader
                    ,not-error-thm
                    ,fixer-recognizer-thm
-                   value-struct->tag
-                   struct->tag))))
+                   value-struct->tag))))
        ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints

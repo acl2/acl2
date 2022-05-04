@@ -32,35 +32,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod struct
-  :short "Fixtype of structures [C:6.2.5/20]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The members must have distinct names.
-     This requirement is currently not captured in this fixtype."))
-  ((tag ident)
-   (members member-value-list
-            :reqfix (if (consp members)
-                        members
-                      (list (member-value-fix :irrelevant)))))
-  :require (consp members)
-  :layout :list
-  :tag :struct
-  :pred structp
-  ///
-
-  (defrule valuep-when-structp
-    (implies (structp x)
-             (valuep x))
-    :enable (structp valuep)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult struct "structures")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define struct-read-member ((name identp) (struct valuep))
   :guard (value-case struct :struct)
   :returns (val value-resultp)

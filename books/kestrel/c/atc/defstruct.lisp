@@ -566,8 +566,8 @@
      We return the name of the theorem.")
    (xdoc::p
     "We also generate two theorems saying that the recognizer
-     implies specific values of @(tsee struct->tag)
-     and of @(tsee member-values-to-types) of @(tsee struct->members)."))
+     implies specific values of @(tsee value-struct->tag)
+     and of @(tsee member-values-to-types) of @(tsee value-struct->members)."))
   (b* ((not-errorp-when-struct-tag-p
         (packn-pos (list 'not-errorp-when- struct-tag-p)
                    struct-tag-p))
@@ -649,10 +649,10 @@
            :param x
            :body-fix (if (,struct-tag-p x)
                          x
-                       (make-struct :tag (ident ,(symbol-name tag))
-                                    :members
-                                    (list ,@(defstruct-gen-fixer-aux
-                                              members))))))
+                       (make-value-struct :tag (ident ,(symbol-name tag))
+                                          :members
+                                          (list ,@(defstruct-gen-fixer-aux
+                                                    members))))))
        (thm (packn-pos (list struct-tag-fix '-when- struct-tag-p)
                        struct-tag-fix)))
     (mv event thm))
@@ -736,13 +736,11 @@
                       (,typep (struct-read-member ',name struct)))
              :enable (,struct-tag-p
                       struct-read-member
-                      ,(packn-pos (list typep '-to-type-of-value) typep)
-                      struct->members
-                      value-struct->members)
+                      ,(packn-pos (list typep '-to-type-of-value) typep))
              :use (:instance defstruct-reader-lemma
                    (meminfos ',members)
                    (name ',name)
-                   (members (struct->members struct))))
+                   (members (value-struct->members struct))))
            (define ,struct-tag-read-name ((struct ,struct-tag-p))
              :returns (val ,typep)
              (struct-read-member (ident ,(ident->name name))
@@ -831,16 +829,13 @@
                       ,(packn-pos (list 'type-of-value-when- typep '-forward)
                                   'type-of-value)
                       value-struct->members
-                      struct->members
                       value-struct->tag
-                      struct->tag
-                      struct
                       valuep
                       value-kind)
              :use (:instance defstruct-writer-lemma
                    (meminfos ',members)
                    (name ',name)
-                   (members (struct->members struct))
+                   (members (value-struct->members struct))
                    (val val)))
            (define ,struct-tag-write-name ((val ,typep) (struct ,struct-tag-p))
              :returns (new-struct ,struct-tag-p)
