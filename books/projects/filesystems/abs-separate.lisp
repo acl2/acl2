@@ -1096,20 +1096,6 @@
          (abs-top-addrs fs))
   :hints (("goal" :in-theory (enable abs-top-addrs abs-fs-fix))))
 
-(defthm member-of-abs-top-addrs
-  (implies (natp x)
-           (iff (member-equal x (abs-top-addrs fs))
-                (member-equal x (abs-fs-fix fs))))
-  :hints (("goal" :in-theory (enable abs-top-addrs abs-fs-fix))))
-
-;; I'm not sure what to do with abs-fs-equiv...
-(fty::deffixtype abs-fs
-                 :pred abs-fs-p
-                 :fix abs-fs-fix
-                 :equiv abs-fs-equiv
-                 :define t
-                 :forward t)
-
 ;; This is a hack, but a long-lived one.
 (defthm
   no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1
@@ -1156,6 +1142,42 @@
           (atom
            (abs-addrs abs-file-alist)))
      (not (consp (abs-addrs (abs-fs-fix abs-file-alist))))))))
+
+(defthm
+  collapse-hifat-place-file-lemma-34
+  (implies (and (abs-file-contents-p abs-file-alist)
+                (atom (abs-addrs abs-file-alist)))
+           (not (consp (abs-addrs (abs-fs-fix abs-file-alist)))))
+  :hints
+  (("goal"
+    :in-theory (e/d (abs-file-contents-p abs-fs-fix)
+                    (no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1))
+    :use no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary (implies (and (abs-file-contents-p abs-file-alist)
+                             (atom (abs-addrs abs-file-alist)))
+                        (list-equiv (abs-addrs (abs-fs-fix abs-file-alist))
+                                    nil)))
+   (:rewrite :corollary (implies (and (abs-file-contents-p abs-file-alist)
+                                      (abs-complete abs-file-alist))
+                                 (abs-complete (abs-fs-fix abs-file-alist)))
+             :hints (("goal" :in-theory (enable abs-complete))))))
+
+(defthm member-of-abs-top-addrs
+  (implies (natp x)
+           (iff (member-equal x (abs-top-addrs fs))
+                (member-equal x (abs-fs-fix fs))))
+  :hints (("goal" :in-theory (enable abs-top-addrs abs-fs-fix))))
+
+;; I'm not sure what to do with abs-fs-equiv...
+(fty::deffixtype abs-fs
+                 :pred abs-fs-p
+                 :fix abs-fs-fix
+                 :equiv abs-fs-equiv
+                 :define t
+                 :forward t)
 
 ;; The abs-file-alist-p hypothesis is required because otherwise the fixing
 ;; could introduce a lot of (duplicate) zeros.
