@@ -1575,10 +1575,10 @@
       (let ((dups-check (no-duplicate-indices-checks-for-stobj-let-actuals
                          bound-vars actuals creators producer-vars stobj w)))
         (cond (dups-check
-               `(prog2$ (flet ((chk-no-stobj-array-index-aliasing
+               `(prog2$ (flet ((chk-no-stobj-index-aliasing
                                 (x1 x2)
                                 (,(*1*-symbol
-                                   'chk-no-stobj-array-index-aliasing)
+                                   'chk-no-stobj-index-aliasing)
                                  x1 x2)))
                           ,dups-check)
                         temp))
