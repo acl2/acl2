@@ -829,7 +829,8 @@
 (defund get-induced-type (nodenum parent-expr)
   (declare (xargs :guard (and (natp nodenum)
                               (dag-function-call-exprp parent-expr))
-                  :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0
+                  :guard-hints (("Goal" :in-theory (e/d (;car-becomes-nth-of-0
+                                                         dag-exprp
                                                          nth-of-cdr)
                                                         (myquotep))))))
   (let ((fn (ffn-symb parent-expr))

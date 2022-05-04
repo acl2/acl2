@@ -9,6 +9,8 @@ are subdirectories of this README's directory, i.e., of
 
 Jagadish Bapanapally and Ruben Gamboa. A Free Group of Rotations of Rank 2
 
+bapanapally-gamboa/
+
 ------------------------------
 
 Alessandro Coglio. A Complex Java Code Generator for ACL2 Based on a
@@ -36,10 +38,14 @@ Language for APT and ACL2
 Ruben Gamboa and Woodrow Gamboa. All Prime Numbers Have Primitive
 Roots
 
+gamboa-primitive-roots/
+
 ------------------------------
 
 Ruben Gamboa and Alicia Thoney. Using ACL2 To Teach Students About
 Software Testing
+
+gamboa-thoney-teaching-testing/
 
 ------------------------------
 

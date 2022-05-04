@@ -10633,7 +10633,9 @@
               (:rewrite abs-addrs-when-m1-file-alist-p)
               (:rewrite abs-addrs-when-m1-file-contents-p)
               (:linear len-when-prefixp)
-              (:rewrite m1-file-alist-p-of-abs-place-file-helper)))
+              (:rewrite m1-file-alist-p-of-abs-place-file-helper)
+              (:forward-chaining len-when-fat32-filename-list-prefixp)
+              (:linear len-when-fat32-filename-list-prefixp)))
         :expand
         ((:free (abs-file-alist1)
                 (abs-place-file-helper abs-file-alist1 path file))
@@ -10737,17 +10739,6 @@
                                              abs-file-alist2 x x-path)))))
     :hints (("goal" :in-theory (disable abs-addrs-of-ctx-app-2)
              :use abs-addrs-of-ctx-app-2)))
-
-  (defthm
-    collapse-hifat-place-file-lemma-34
-    (implies (and (abs-file-contents-p abs-file-alist)
-                  (atom (abs-addrs abs-file-alist)))
-             (not (consp (abs-addrs (abs-fs-fix abs-file-alist)))))
-    :hints
-    (("goal"
-      :in-theory (e/d (abs-file-contents-p abs-fs-fix)
-                      (no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1))
-      :use no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1)))
 
   (encapsulate
     ()
@@ -11924,12 +11915,6 @@
     :hints (("goal" :in-theory (enable fat32-filename-list-prefixp
                                        fat32-filename-list-equiv))))
 
-  ;; Move later.
-  (defthm take-when-fat32-filename-list-prefixp
-    (implies (fat32-filename-list-prefixp x y)
-             (fat32-filename-list-equiv (take (len x) y)
-                                        x)))
-
   (defthm
     collapse-hifat-place-file-lemma-68
     (implies
@@ -12177,19 +12162,6 @@
     painful-debugging-lemma-18
     (iff (< (+ x z) (+ y z)) (< x y))
     :rule-classes ((:rewrite :corollary (equal (< (+ x z) (+ y z)) (< x y)))))
-
-  (defthm
-    len-when-fat32-filename-list-prefixp
-    (implies (fat32-filename-list-prefixp x y)
-             (equal (< (len y) (len x)) nil))
-    :rule-classes
-    (:rewrite
-     (:linear
-      :corollary (implies (fat32-filename-list-prefixp x y)
-                          (<= (len x) (len y))))
-     :forward-chaining)
-    :hints
-    (("goal" :in-theory (enable fat32-filename-list-prefixp))))
 
   (defthm
     collapse-hifat-place-file-lemma-78

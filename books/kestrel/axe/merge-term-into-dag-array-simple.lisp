@@ -67,7 +67,9 @@
            (true-listp (nth 1 (nth 0 term))))
   :hints (("Goal" :expand (pseudo-termp term)
            :cases ((consp (nth 0 term)))
-           :in-theory (enable pseudo-termp))))
+           :in-theory (enable pseudo-termp
+                              nth-of-0
+                              nth-when-not-consp-cheap))))
 
 (defthm lookup-equal-forward-to-assoc-equal
   (implies (lookup-equal key alist)

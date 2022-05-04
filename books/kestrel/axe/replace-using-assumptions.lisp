@@ -17,9 +17,13 @@
 (include-book "axe-trees")
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "numeric-lists"))
+
+(local (in-theory (disable member-equal)))
 
  ;can we deprecate this?  or split for var terms and all others - could just add term to the dag and use the main routine
 ;do we need both this and the version for a nodenum?
@@ -149,7 +153,7 @@
                                        (:instance true-listp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple
                                                   (dag-array-name 'dag-array)
                                                   (n (nth 0 (dargs (aref1 'dag-array dag-array (nth 0 nodenums-to-assume-false)))))))
-                                 :in-theory (e/d (car-becomes-nth-of-0
+                                 :in-theory (e/d (
                                                   NATP-OF-+-OF-1)
                                                  (natp
                                                   true-listp-of-dargs-of-aref1-when-pseudo-dag-arrayp

@@ -88,7 +88,8 @@
                 (natp n)
                 (< n (thearray-length result-array-stobj)))
            (symbol-alistp (thearrayi n result-array-stobj)))
-  :hints (("Goal" :in-theory (enable result-alistp result-array-stobjp thearrayi thearrayp THEARRAY-LENGTH))))
+  :hints (("Goal" :in-theory (enable result-alistp result-array-stobjp thearrayi thearrayp THEARRAY-LENGTH
+                                     symbol-alistp-of-nth-when-thearrayp))))
 
 
 ;; (defthm symbol-alistp-of-car-when-thearrayp

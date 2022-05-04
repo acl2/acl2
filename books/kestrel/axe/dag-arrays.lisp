@@ -727,9 +727,11 @@
            ;; :expand ((PSEUDO-DAG-ARRAYP-AUX DAG-ARRAY-NAME DAG-ARRAY 0))
            :in-theory (e/d (<-of-nth-when-bounded-darg-listp)
                            (bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-helper
-                             bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux
-                             DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX
-                             BOUNDED-DARG-LISTP-OF-DARGS-OF-AREF1)))))
+                            bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux
+                            bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-gen ; todo: clean these up
+                            DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX
+                            BOUNDED-DARG-LISTP-OF-DARGS-OF-AREF1
+                            )))))
 
 (defthm eqlable-listp-when-integer-listp-cheap
   (implies (integer-listp x)
@@ -1747,7 +1749,7 @@
 
 (defthm not-<-of-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp-2
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (<= bound 0)
+                (<= bound 0) ; note this
                 (natp nodenum)
                 (< nodenum dag-len)
                 (natp n) ;drop?
@@ -1762,13 +1764,14 @@
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (natp nodenum)
                 (< nodenum dag-len)
-                (natp n) ;drop?
+                ;; (natp n)
                 ;; (< n (len (dargs (aref1 dag-array-name dag-array nodenum))))
                 (not (equal 'quote (car (aref1 dag-array-name dag-array nodenum)))) ;excludes the whole node from being a quotep
                 ;; (not (consp (nth n (dargs (aref1 dag-array-name dag-array nodenum)))))
                 )
            (<= 0 (nth n (dargs (aref1 dag-array-name dag-array nodenum)))))
-  :rule-classes (:rewrite :linear :forward-chaining)
+  :rule-classes (:rewrite :linear ; :forward-chaining
+                          )
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
 (defthm <=-of-0-and-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple
@@ -1776,11 +1779,12 @@
                 (not (equal 'quote (car (aref1 dag-array-name dag-array nodenum)))) ;excludes the whole node from being a quotep
                 ;; (not (consp (nth n (dargs (aref1 dag-array-name dag-array nodenum)))))
                 (natp nodenum)
-                (natp n) ;drop?
+                ;; (natp n)
                 ;; (< n (len (dargs (aref1 dag-array-name dag-array nodenum))))
                 )
            (<= 0 (nth n (dargs (aref1 dag-array-name dag-array nodenum)))))
-  :rule-classes (:rewrite :linear :forward-chaining)
+  :rule-classes (:rewrite :linear  ;:forward-chaining
+                          )
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
 (defthm equal-of-quote-and-car-of-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp
