@@ -557,17 +557,8 @@
     "This recognizes structures
      with the appropriate types, member names, and member types.")
    (xdoc::p
-    "We also generate a theorem saying that
-     if something satisfies this recognizer then it is not an error.
-     We return the name of the theorem.")
-   (xdoc::p
-    "We also generate a theorem saying that the recognizer
-     implies @(tsee structp).
-     We return the name of the theorem.")
-   (xdoc::p
-    "We also generate two theorems saying that the recognizer
-     implies specific values of @(tsee value-struct->tag)
-     and of @(tsee member-values-to-types) of @(tsee value-struct->members)."))
+    "We also generate several theorem;
+     see @(tsee defstruct-info)."))
   (b* ((not-errorp-when-struct-tag-p
         (packn-pos (list 'not-errorp-when- struct-tag-p)
                    struct-tag-p))
