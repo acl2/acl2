@@ -22,11 +22,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We introduce a model of structures (i.e. values of structure types).
-     A structure is modeled as consisting of a tag
-     and of a sequence of named members.
-     For now each member has one of the values in @(tsee value),
-     i.e. either an integer value or a pointer value."))
+    "Structures are modeled as the @(':struct') kind of @(tsee value).
+     Here we introduce some functions over structures."))
   :order-subtopics t
   :default-parent t)
 
@@ -67,7 +64,7 @@
   (xdoc::topstring
    (xdoc::p
     "We look up the members in order;
-     given that the members have distinct names (see @(tsee struct)),
+     given that the members have distinct names (see @(tsee value)),
      the search order is immaterial.
      The new value must have the same type as the old value."))
   (b* ((new-members
