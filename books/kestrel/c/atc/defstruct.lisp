@@ -173,8 +173,8 @@
    (not-error-thm symbolp)
    (valuep-thm symbolp)
    (value-kind-thm symbolp)
-   (value-tag-thm symbolp)
-   (value-members-thm symbolp)
+   (tag-thm symbolp)
+   (members-thm symbolp)
    (call pseudo-event-form))
   :pred defstruct-infop)
 
@@ -547,8 +547,8 @@
                (not-error-thm symbolp)
                (valuep-thm symbolp)
                (value-kind-thm symbolp)
-               (value-tag-thm symbolp)
-               (value-members-thm symbolp))
+               (tag-thm symbolp)
+               (members-thm symbolp))
   :short "Generate the recognizer of
           the structures defined by the @(tsee defstruct)."
   :long
@@ -924,8 +924,8 @@
               :not-error-thm not-errorp-when-struct-tag-p
               :valuep-thm valuep-when-struct-tag-p
               :value-kind-thm value-kind-when-struct-tag-p
-              :value-tag-thm value-struct->tag-when-struct-tag-p
-              :value-members-thm value-struct->members-when-struct-tag-p
+              :tag-thm value-struct->tag-when-struct-tag-p
+              :members-thm value-struct->members-when-struct-tag-p
               :call call))
        (table-event (defstruct-table-record-event (symbol-name tag) info)))
     `(progn
