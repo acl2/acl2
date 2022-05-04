@@ -109,6 +109,16 @@
                   (bvor size x y)))
   :hints (("Goal" :in-theory (enable bvor))))
 
+(defthm bvor-of-bvchop-same-arg2
+  (equal (bvor size (bvchop size x) y)
+         (bvor size x y))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+(defthm bvor-of-bvchop-same-arg3
+  (equal (bvor size x (bvchop size y))
+         (bvor size x y))
+  :hints (("Goal" :in-theory (enable bvor))))
+
 (defthm bvor-same
   (equal (bvor size x x)
          (bvchop size x))
