@@ -40,7 +40,8 @@
                      (:rewrite rational-listp-when-not-consp)
                      (:rewrite no-duplicatesp-of-member)
                      (:rewrite true-listp-when-string-list)
-                     not-intersectp-list-when-subsetp-2)))
+                     not-intersectp-list-when-subsetp-2
+                     (:rewrite subsetp-when-subsetp))))
 
 (local
  (in-theory (disable nth update-nth ceiling floor mod true-listp)))
@@ -408,7 +409,7 @@
   :hints
   (("goal"
     :in-theory (enable get-cc-contents
-                       fat32-build-index-list)
+                       fat32-build-index-list (:rewrite subsetp-when-subsetp))
     :induct (get-cc-contents fat32$c
                                        masked-current-cluster length)
     :expand ((get-cc-contents (update-fati i v fat32$c)
@@ -1988,7 +1989,8 @@
   (("goal"
     :induct (get-cc-contents fat32$c
                                        masked-current-cluster length)
-    :in-theory (e/d (get-cc-contents fat32-build-index-list)
+    :in-theory (e/d (get-cc-contents fat32-build-index-list
+                                     (:rewrite subsetp-when-subsetp))
                     (intersectp-is-commutative))
     :expand
     ((get-cc-contents
@@ -7571,7 +7573,11 @@
            ((:rewrite nth-of-nats=>chars)
             (:rewrite d-e-p-when-member-equal-of-d-e-list-p)
             (:rewrite fati-of-hifat-to-lofat-helper-disjoint-lemma-2)
-            (:definition induction-scheme)))
+            (:definition induction-scheme)
+            (:rewrite consp-of-find-n-free-clusters)
+            (:rewrite nth-when->=-n-len-l)
+            (:definition member-equal)
+            (:linear find-n-free-clusters-correctness-1)))
       :expand ((:free (y) (intersectp-equal nil y))
                (:free (x1 x2 y)
                       (intersectp-equal (list x1)
