@@ -11,7 +11,9 @@
 
 (in-package "C")
 
-(include-book "types")
+(include-book "errors")
+
+(include-book "../language/types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

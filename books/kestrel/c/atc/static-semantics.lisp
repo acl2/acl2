@@ -13,11 +13,11 @@
 
 (include-book "portable-ascii-identifiers")
 (include-book "integers")
-(include-book "types")
 (include-book "errors")
 (include-book "tag-environments")
 
 (include-book "../language/abstract-syntax-operations")
+(include-book "../language/types")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
