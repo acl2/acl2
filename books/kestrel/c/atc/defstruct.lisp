@@ -11,6 +11,7 @@
 
 (in-package "C")
 
+(include-book "abstract-syntax")
 (include-book "structures")
 (include-book "portable-ascii-identifiers")
 

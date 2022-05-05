@@ -11,8 +11,9 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax")
 (include-book "pretty-printing-options")
+
+(include-book "../language/abstract-syntax")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/strings/decimal" :dir :system)

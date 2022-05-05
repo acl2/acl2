@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax")
+(include-book "../language/abstract-syntax")
 
 (include-book "std/util/defprojection" :dir :system)
 
