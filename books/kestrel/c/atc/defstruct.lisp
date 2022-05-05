@@ -147,17 +147,17 @@
       then it is not an error.")
     (xdoc::li
      "The name of the theorem asserting that
-      the recognizer implies @(tsee structp).")
-    (xdoc::li
-     "The name of the theorem asserting that
       the recognizer implies @(tsee valuep).")
     (xdoc::li
      "The name of the theorem asserting that
-      the recognizer implies a specific value of @(tsee struct->tag).")
+      the recognizer implies that the @(tsee value-kind) is @(':struct').")
+    (xdoc::li
+     "The name of the theorem asserting that
+      the recognizer implies a specific value of @(tsee value-struct->tag).")
     (xdoc::li
      "The name of the theorem asserting that
       the recognizer implies a specific value of
-      @(tsee member-values-to-types) of @(tsee struct->members)."))
+      @(tsee member-values-to-types) of @(tsee value-struct->members)."))
    (xdoc::p
     "The call of @(tsee defstruct).
      This supports redundancy checking."))
@@ -171,8 +171,8 @@
    (reader-return-thms symbol-listp)
    (writer-return-thms symbol-listp)
    (not-error-thm symbolp)
-   (structp-thm symbolp)
    (valuep-thm symbolp)
+   (value-kind-thm symbolp)
    (tag-thm symbolp)
    (members-thm symbolp)
    (call pseudo-event-form))
@@ -545,8 +545,8 @@
                                   (members member-type-listp))
   :returns (mv (event pseudo-event-formp)
                (not-error-thm symbolp)
-               (structp-thm symbolp)
                (valuep-thm symbolp)
+               (value-kind-thm symbolp)
                (tag-thm symbolp)
                (members-thm symbolp))
   :short "Generate the recognizer of
@@ -557,31 +557,22 @@
     "This recognizes structures
      with the appropriate types, member names, and member types.")
    (xdoc::p
-    "We also generate a theorem saying that
-     if something satisfies this recognizer then it is not an error.
-     We return the name of the theorem.")
-   (xdoc::p
-    "We also generate a theorem saying that the recognizer
-     implies @(tsee structp).
-     We return the name of the theorem.")
-   (xdoc::p
-    "We also generate two theorems saying that the recognizer
-     implies specific values of @(tsee struct->tag)
-     and of @(tsee member-values-to-types) of @(tsee struct->members)."))
+    "We also generate several theorem;
+     see @(tsee defstruct-info)."))
   (b* ((not-errorp-when-struct-tag-p
         (packn-pos (list 'not-errorp-when- struct-tag-p)
-                   struct-tag-p))
-       (structp-when-struct-tag-p
-        (packn-pos (list 'structp-when- struct-tag-p)
                    struct-tag-p))
        (valuep-when-struct-tag-p
         (packn-pos (list 'valuep-when- struct-tag-p)
                    struct-tag-p))
-       (struct->tag-when-struct-tag-p
-        (packn-pos (list 'struct->tag-when- struct-tag-p)
+       (value-kind-when-struct-tag-p
+        (packn-pos (list 'value-kind-when- struct-tag-p)
                    struct-tag-p))
-       (struct->members-when-struct-tag-p
-        (packn-pos (list 'struct->members-when- struct-tag-p)
+       (value-struct->tag-when-struct-tag-p
+        (packn-pos (list 'value-struct->tag-when- struct-tag-p)
+                   struct-tag-p))
+       (value-struct->members-when-struct-tag-p
+        (packn-pos (list 'value-struct->members-when- struct-tag-p)
                    struct-tag-p))
        (event
         `(define ,struct-tag-p (x)
@@ -598,37 +589,30 @@
              (implies (,struct-tag-p x)
                       (not (errorp x)))
              :enable (errorp ,struct-tag-p valuep))
-           (defruled ,structp-when-struct-tag-p
-             (implies (,struct-tag-p x)
-                      (structp x))
-             :in-theory '(,struct-tag-p
-                          valuep
-                          value-kind
-                          structp))
            (defruled ,valuep-when-struct-tag-p
              (implies (,struct-tag-p x)
                       (valuep x))
              :in-theory '(,struct-tag-p))
-           (defruled ,struct->tag-when-struct-tag-p
+           (defruled ,value-kind-when-struct-tag-p
              (implies (,struct-tag-p x)
-                      (equal (struct->tag x)
+                      (equal (value-kind x) :struct))
+             :in-theory '(,struct-tag-p))
+           (defruled ,value-struct->tag-when-struct-tag-p
+             (implies (,struct-tag-p x)
+                      (equal (value-struct->tag x)
                              (ident ,(symbol-name tag))))
-             :in-theory '(,struct-tag-p
-                          struct->tag
-                          value-struct->tag))
-           (defruled ,struct->members-when-struct-tag-p
+             :in-theory '(,struct-tag-p))
+           (defruled ,value-struct->members-when-struct-tag-p
              (implies (,struct-tag-p x)
-                      (equal (member-values-to-types (struct->members x))
+                      (equal (member-values-to-types (value-struct->members x))
                              ',members))
-             :in-theory '(,struct-tag-p
-                          struct->members
-                          value-struct->members)))))
+             :in-theory '(,struct-tag-p)))))
     (mv event
         not-errorp-when-struct-tag-p
-        structp-when-struct-tag-p
         valuep-when-struct-tag-p
-        struct->tag-when-struct-tag-p
-        struct->members-when-struct-tag-p)))
+        value-kind-when-struct-tag-p
+        value-struct->tag-when-struct-tag-p
+        value-struct->members-when-struct-tag-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -656,10 +640,10 @@
            :param x
            :body-fix (if (,struct-tag-p x)
                          x
-                       (make-struct :tag (ident ,(symbol-name tag))
-                                    :members
-                                    (list ,@(defstruct-gen-fixer-aux
-                                              members))))))
+                       (make-value-struct :tag (ident ,(symbol-name tag))
+                                          :members
+                                          (list ,@(defstruct-gen-fixer-aux
+                                                    members))))))
        (thm (packn-pos (list struct-tag-fix '-when- struct-tag-p)
                        struct-tag-fix)))
     (mv event thm))
@@ -743,13 +727,11 @@
                       (,typep (struct-read-member ',name struct)))
              :enable (,struct-tag-p
                       struct-read-member
-                      ,(packn-pos (list typep '-to-type-of-value) typep)
-                      struct->members
-                      value-struct->members)
+                      ,(packn-pos (list typep '-to-type-of-value) typep))
              :use (:instance defstruct-reader-lemma
                    (meminfos ',members)
                    (name ',name)
-                   (members (struct->members struct))))
+                   (members (value-struct->members struct))))
            (define ,struct-tag-read-name ((struct ,struct-tag-p))
              :returns (val ,typep)
              (struct-read-member (ident ,(ident->name name))
@@ -836,18 +818,11 @@
              :enable (,struct-tag-p
                       struct-write-member
                       ,(packn-pos (list 'type-of-value-when- typep '-forward)
-                                  'type-of-value)
-                      value-struct->members
-                      struct->members
-                      value-struct->tag
-                      struct->tag
-                      struct
-                      valuep
-                      value-kind)
+                                  'type-of-value))
              :use (:instance defstruct-writer-lemma
                    (meminfos ',members)
                    (name ',name)
-                   (members (struct->members struct))
+                   (members (value-struct->members struct))
                    (val val)))
            (define ,struct-tag-write-name ((val ,typep) (struct ,struct-tag-p))
              :returns (new-struct ,struct-tag-p)
@@ -915,10 +890,10 @@
        (struct-tag-equiv (packn-pos (list struct-tag '-equiv) tag))
        ((mv recognizer-event
             not-errorp-when-struct-tag-p
-            structp-when-struct-tag-p
             valuep-when-struct-tag-p
-            struct->tag-when-struct-tag-p
-            struct->members-when-struct-tag-p)
+            value-kind-when-struct-tag-p
+            value-struct->tag-when-struct-tag-p
+            value-struct->members-when-struct-tag-p)
         (defstruct-gen-recognizer struct-tag-p tag members))
        ((mv fixer-event
             fixer-recognizer-thm)
@@ -932,21 +907,22 @@
        ((mv writer-events writer-names writer-return-thms)
         (defstruct-gen-writers
           struct-tag struct-tag-p struct-tag-fix members members wrld))
-       (info (make-defstruct-info :tag tag-ident
-                                  :members members
-                                  :recognizer struct-tag-p
-                                  :fixer struct-tag-fix
-                                  :readers reader-names
-                                  :writers writer-names
-                                  :fixer-recognizer-thm fixer-recognizer-thm
-                                  :reader-return-thms reader-return-thms
-                                  :writer-return-thms writer-return-thms
-                                  :not-error-thm not-errorp-when-struct-tag-p
-                                  :structp-thm structp-when-struct-tag-p
-                                  :valuep-thm valuep-when-struct-tag-p
-                                  :tag-thm struct->tag-when-struct-tag-p
-                                  :members-thm struct->members-when-struct-tag-p
-                                  :call call))
+       (info (make-defstruct-info
+              :tag tag-ident
+              :members members
+              :recognizer struct-tag-p
+              :fixer struct-tag-fix
+              :readers reader-names
+              :writers writer-names
+              :fixer-recognizer-thm fixer-recognizer-thm
+              :reader-return-thms reader-return-thms
+              :writer-return-thms writer-return-thms
+              :not-error-thm not-errorp-when-struct-tag-p
+              :valuep-thm valuep-when-struct-tag-p
+              :value-kind-thm value-kind-when-struct-tag-p
+              :tag-thm value-struct->tag-when-struct-tag-p
+              :members-thm value-struct->members-when-struct-tag-p
+              :call call))
        (table-event (defstruct-table-record-event (symbol-name tag) info)))
     `(progn
        ,recognizer-event

@@ -1429,3 +1429,311 @@ ACL2 !>
                (mv (s1-fld s1)
                    (s2-fld s2))
                (mv val1 val2 top)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Hash tables with stobj value types
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Below we modify some forms above to be for stobjs in hash tables where above
+; the stobjs are in arrays.  The suffix $ht is generally added in such cases
+; except when that doesn't make much sense (e.g., kid2-ar-field is changed to
+; kid2-ht-field below rather than to kid2-ar-field$ht).
+
+(defstobj mom$ht
+  (kid1-field$ht :type kid1)
+  (kid2-ht-field :type (hash-table eq nil kid2))
+  last-op$ht)
+
+#|
+(defthm kid2-ar-fieldp-forward-to-true-list-listp
+  (implies (kid2-ar-fieldp x)
+           (true-list-listp x))
+  :rule-classes :forward-chaining)
+
+(defthm true-listp-nth
+  (implies (true-list-listp x)
+           (true-listp (nth n x)))
+  :rule-classes ((:forward-chaining :trigger-terms ((nth n x)))))
+
+(defthm update-mom-guard-lemma-1
+  (implies (kid2-ar-fieldp kid2-ar)
+           (equal (cdr (nth index kid2-ar))
+                  nil)))
+
+(defthm update-mom-guard-lemma-2
+  (implies (and (kid2-ar-fieldp kid2-ar)
+                (natp index)
+                (< index (len kid2-ar)))
+           (consp (nth index kid2-ar))))
+|#
+
+; The next function takes a given index and a mom stobj, and swaps the value
+; stored in the stobj in mom's kid2-ar-field array at that index with the value
+; stored in the stobj in mom's kid1-field field.
+
+(defun mom$ht-swap-fields (key mom$ht)
+  (declare (xargs :stobjs mom$ht
+                  :guard (symbolp key)))
+  (stobj-let
+   ((kid1 (kid1-field$ht mom$ht))
+    (kid2 (kid2-ht-field-get key mom$ht)))
+   (kid1 kid2)
+   (let* ((val1 (fld1 kid1))
+          (val2 (fld2 kid2))
+          (kid1 (update-fld1 val2 kid1))
+          (kid2 (update-fld2 val1 kid2)))
+     (mv kid1 kid2))
+   (update-last-op$ht 'swap mom$ht)))
+
+; Function mom$ht.kid1-fld1 stores a given value in the given mom's kid1-fld1
+; field.
+
+(defun mom$ht.kid1-fld1 (val mom$ht)
+  (declare (xargs :stobjs mom$ht))
+  (stobj-let
+   ((kid1 (kid1-field$ht mom$ht)))
+   (kid1)
+   (update-fld1 val kid1)
+   (update-last-op$ht val mom$ht)))
+
+; (Update-mom$ht op mom$ht) calls mom$ht-swap-fields or mom$ht.kid1-fld1,
+; according to op, as is clear from the body of update-mom$ht.
+
+(defun update-mom$ht (op mom$ht)
+  (declare (xargs :stobjs mom$ht))
+  (cond ((and (consp op)
+              (eq (car op) 'swap)
+              (symbolp (cdr op)))
+         (mom$ht-swap-fields (cdr op) mom$ht))
+        (t (mom$ht.kid1-fld1 op mom$ht))))
+
+; We define a function that checks kid1-field of stobj mom$ht against expected
+; value val1, checks the value at the given index of kid1-ar-field of stobj
+; mom$ht against expected value val2, and checks the value of the last-op field
+; against expected value last-op.
+
+(local-test
+ :defs
+ ((defun check-update-mom$ht (key val1 val2 last-op mom$ht)
+    (declare (xargs :stobjs mom$ht
+                    :mode :program
+                    :guard
+                    (symbolp key)))
+    (and (equal (last-op$ht mom$ht) last-op)
+         (stobj-let
+          ((kid1 (kid1-field$ht mom$ht))
+           (kid2 (kid2-ht-field-get key mom$ht)))
+          (val)
+          (and (equal val1 (fld1 kid1))
+               (equal val2 (fld2 kid2)))
+          val))))
+ :run
+ (let* ((mom$ht ; set mom$ht to (3 (x0 x1 x2 x3 x4))
+         (update-mom$ht 'three mom$ht))
+        (mom$ht ; set mom$ht to (x1 (x0 3 x2 x3 x4))
+         (update-mom$ht '(swap . one) mom$ht))
+        (mom$ht ; set mom$ht to (7 (x0 3 x2 x3 x4))
+         (update-mom$ht 'seven mom$ht))
+        (mom$ht ; set mom$ht to (x0 (7 3 x2 x3 x4))
+         (update-mom$ht '(swap . zero) mom$ht))
+        (mom$ht ; set mom$ht to (5 (7 3 x2 x3 x4))
+         (update-mom$ht 'five mom$ht))
+        (mom$ht ; set mom$ht to (7 (5 3 x2 x3 x4))
+         (update-mom$ht '(swap . zero) mom$ht)))
+   mom$ht)
+ :check
+ (and (check-update-mom$ht 'zero 'seven 'five 'swap mom$ht)
+      (check-update-mom$ht 'one 'seven 'three 'swap mom$ht)))
+
+(defun mom$ht-swap-indices (key1 key2 mom$ht)
+  (declare (xargs :stobjs mom$ht
+                  :guard (and (symbolp key1)
+                              (symbolp key2)
+                              (not (equal key1 key2)))))
+  (stobj-let
+   ((kid2 (kid2-ht-field-get key1 mom$ht))
+    (kid2a (kid2-ht-field-get key2 mom$ht)))
+   (kid2 kid2a)
+   (let* ((val2 (fld2 kid2))
+          (val2a (fld2 kid2a))
+          (kid2 (update-fld2 val2a kid2))
+          (kid2a (update-fld2 val2 kid2a)))
+     (mv kid2 kid2a))
+   mom$ht))
+
+(local-test
+ :defs
+ ((defun check-update-mom$ht-2 (i j val-i val-j mom$ht)
+    (declare (xargs :stobjs mom$ht
+                    :mode :program
+                    :guard (and (symbolp i)
+                                (symbolp j)
+                                (not (equal i j)))))
+    (stobj-let
+     ((kid2 (kid2-ht-field-get i mom$ht))
+      (kid2a (kid2-ht-field-get j mom$ht)))
+     (val)
+     (and (equal (fld2 kid2) val-i)
+          (equal (fld2a kid2a) val-j))
+     val)))
+ :run
+ (let* ((mom$ht ; set mom$ht to (10 (x0 x1 x2 x3 x4))
+         (update-mom$ht 'ten mom$ht))
+        (mom$ht ; set mom$ht to (x1 (x0 10 x2 x3 x4))
+         (update-mom$ht '(swap . 'one) mom$ht))
+        (mom$ht ; set mom$ht to (20 (x0 10 x2 x3 x4))
+         (update-mom$ht 'twenty mom$ht))
+        (mom$ht ; set mom$ht to (x0 (20 10 x2 x3 x4))
+         (update-mom$ht '(swap . 'zero) mom$ht))
+        (mom$ht ; set mom$ht to (30 (20 10 x2 x3 x4))
+         (update-mom$ht 'thirty mom$ht))
+        (mom$ht ; set mom$ht to (20 (30 10 x2 x3 x4))
+         (update-mom$ht '(swap . 'zero) mom$ht)))
+   mom$ht)
+ :check
+ (check-update-mom$ht-2 'zero 'one 'thirty 'ten mom$ht))
+
+;;; Now for hash-table analogues of a-arr etc....
+
+(encapsulate () (local (progn
+
+(defstobj a (a-fld))
+(defstobj b (b-fld))
+
+(defstobj d
+  (d-a :type a)
+  (d-b :type b))
+
+(defstobj dd
+  (dd-a :type a)
+  (dd-b :type b)
+  :congruent-to d)
+
+(defun access-dd-as-d (dd)
+  (declare (xargs :stobjs dd))
+  (stobj-let
+   ((a (d-a dd))
+    (b (d-b dd)))
+   (x)
+   (list (a-fld a) (b-fld b))
+   x))
+
+(defun update-dd-as-d (dd)
+  (declare (xargs :stobjs dd))
+  (stobj-let
+   ((a (d-a dd))
+    (b (d-b dd)))
+   (a b)
+   (let* ((afld (a-fld a))
+          (bfld (b-fld b))
+          (a (update-a-fld bfld a))
+          (b (update-b-fld (not afld) b)))
+     (mv a b))
+   dd))
+
+;; want these both to remain illegal
+(must-fail
+ (defun access-dd-as-both (dd)
+   (declare (xargs :stobjs dd))
+   (stobj-let
+    ((a (d-a dd))
+     (b (dd-b dd)))
+    (x)
+    (list (a-fld a) (b-fld b))
+    x))
+ :with-output-off nil)
+
+(defstobj aa (aa-fld) :congruent-to a)
+
+(must-fail
+ (defun access-dd-as-both-aliasing (dd)
+   (declare (xargs :stobjs dd))
+   (stobj-let
+    ((a (d-a dd))
+     (aa (dd-a dd)))
+    (x)
+    (list (a-fld a) (a-fld aa))
+    x))
+ :with-output-off nil)
+
+;; want this to remain legal
+
+(defstobj a-ht
+  (as$ht :type (hash-table eql nil a)))
+
+(defun access-a-ht (n m a-ht)
+  (declare (xargs :stobjs a-ht
+                  :guard (and (natp n)
+                              (natp m)
+                              (< n 2)
+                              (< m 2)
+                              (not (eql n m)))))
+  (stobj-let
+   ((a (as$ht-get n a-ht))
+    (aa (as$ht-get m a-ht)))
+   (x)
+   (list (a-fld a) (a-fld aa))
+   x))
+
+;; want this to be legal
+(defstobj aa-ht
+  (aas$ht :type (hash-table eql nil a))
+  :congruent-to a-ht)
+
+(defun access-aa-ht-as-a-ht (n m aa-ht)
+  (declare (xargs :stobjs aa-ht
+                  :guard (and (natp n)
+                              (natp m)
+                              (< n 2)
+                              (< m 2)
+                              (not (eql n m)))))
+  (stobj-let
+   ((a (as$ht-get n aa-ht))
+    (aa (as$ht-get m aa-ht)))
+   (x)
+   (list (a-fld a) (a-fld aa))
+   x))
+
+;; This formerly failed its guard verification because aliasing in array
+;; accesses is possible when n = m.  But starting in May 2021 (at the same time
+;; that ACL2 was changed to support stobj fields of abstract stobjs), such
+;; aliasing is permitted provided there is no updating involved.
+(defun access-aa-ht-as-a-ht-with-possible-aliasing (n m aa-ht)
+  (declare (xargs :stobjs aa-ht
+                  :guard (and (natp n)
+                              (natp m)
+                              (< n 2)
+                              (< m 2))))
+  (stobj-let
+   ((a (as$ht-get n aa-ht))
+    (aa (as$ht-get m aa-ht)))
+   (x)
+   (list (a-fld a) (a-fld aa))
+   x))
+
+(defstobj scal-and-ht
+  (saht-sc1 :type a)
+  (saht-sc2 :type a)
+  (saht-ht :type (hash-table eql nil a)))
+
+(defstobj aaa (aaa-fld) :congruent-to a)
+(defstobj aaaa (aaaa-fld) :congruent-to a)
+
+(defun update-scal-and-ht (n m scal-and-ht)
+  (declare (xargs :stobjs scal-and-ht
+                  :guard (and (natp n)
+                              (natp m)
+                              (< n 4)
+                              (< m 4)
+                              (not (eql n m)))))
+  (stobj-let
+   ((a (saht-ht-get n scal-and-ht))
+    (aa (saht-sc1 scal-and-ht))
+    (aaa (saht-ht-get m scal-and-ht))
+    (aaaa (saht-sc2 scal-and-ht) update-saht-sc2))
+   (x aaaa)
+   (let ((aaaa (update-a-fld (not (a-fld aaaa)) aaaa)))
+     (mv (list (a-fld a) (a-fld aa) (a-fld aaa)) aaaa))
+   (mv x scal-and-ht)))
+
+)))

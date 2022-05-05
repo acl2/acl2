@@ -31,6 +31,8 @@
 (in-package "BIGMEM")
 (include-book "concrete")
 (include-book "centaur/defrstobj2/def-multityped-record" :dir :system)
+(include-book "std/lists/repeat" :dir :system)
+(include-book "std/stobjs/absstobjs" :dir :system)
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

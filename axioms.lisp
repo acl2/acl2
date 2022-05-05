@@ -8517,16 +8517,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (t ; (equal test 'equal)
     `(intersectp-equal ,x ,y))))
 
-(defun chk-no-stobj-array-index-aliasing (producers others)
+(defun chk-no-stobj-index-aliasing (producers others)
 
 ; This function is used in the implementation of stobj-let.  Do not modify it
-; without seeing where it is used and understand the implications of the
+; without seeing where it is used and understanding the implications of the
 ; change.
 
-  (declare (xargs :guard (and (eqlable-listp producers)
-                              (no-duplicatesp producers)
-                              (eqlable-listp others)
-                              (not (intersectp producers others))))
+; At one time we checked that producers and others satisfy eqlable-listp,
+; presumably because we also used no-duplicatesp and intersectp in place of
+; no-duplicatesp-equal and intersectp-equal, respectively.  But that was when
+; hash-tables did not contain stobjs, so that indexed accesses in stobj-let
+; were only for array indices, which are numbers, not hash-table indices, which
+; might be arbitrary.
+
+  (declare (xargs :guard (and (true-listp producers)
+                              (no-duplicatesp-equal producers)
+                              (true-listp others)
+                              (not (intersectp-equal producers others))))
            (ignore producers others))
   nil)
 

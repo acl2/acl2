@@ -7,12 +7,19 @@ ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
  (TIME STEPS)
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
  (PROOF-TREE)
-ACL2 !>>(DEFSTOBJ SUB1 SUB1-FLD1)
+ACL2 !>>(DEFSTOBJ SUB1 SUB1-FLD)
 
 Summary
 Form:  ( DEFSTOBJ SUB1 ...)
 Rules: NIL
  SUB1
+ACL2 !>>(DEFSTOBJ SUB2 SUB2-FLD
+                  :CONGRUENT-TO SUB1)
+
+Summary
+Form:  ( DEFSTOBJ SUB2 ...)
+Rules: NIL
+ SUB2
 ACL2 !>>(DEFSTOBJ TOP1 (TOP1-FLD :TYPE SUB1)
                   :RENAMING ((UPDATE-TOP1-FLD !TOP1-FLD)))
 
@@ -24,7 +31,7 @@ ACL2 !>>(DEFUN F1 (X TOP1)
                (DECLARE (XARGS :STOBJS TOP1))
                (STOBJ-LET ((SUB1 (TOP1-FLD TOP1)))
                           (SUB1)
-                          (UPDATE-SUB1-FLD1 X SUB1)
+                          (UPDATE-SUB1-FLD X SUB1)
                           TOP1))
 
 
@@ -32,7 +39,7 @@ ACL2 Error [Translate] in ( DEFUN F1 ...):  The stobj-let bindings
 have specified implicitly that the stobj field updater corresponding
 to accessor TOP1-FLD is UPDATE-TOP1-FLD, but the actual corresponding
 updater is !TOP1-FLD.  The form 
-(STOBJ-LET ((SUB1 (TOP1-FLD TOP1))) (SUB1) (UPDATE-SUB1-FLD1 X SUB1) TOP1)
+(STOBJ-LET ((SUB1 (TOP1-FLD TOP1))) (SUB1) (UPDATE-SUB1-FLD X SUB1) TOP1)
 is thus illegal.  See :DOC stobj-let.
 
 
@@ -47,7 +54,7 @@ ACL2 !>>(DEFUN F1 (X TOP1)
                (DECLARE (XARGS :STOBJS TOP1))
                (STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
                           (SUB1)
-                          (UPDATE-SUB1-FLD1 X SUB1)
+                          (UPDATE-SUB1-FLD X SUB1)
                           TOP1))
 
 
@@ -57,7 +64,7 @@ TOP1-FLD is UPDATE-TOP1-FLD, but the actual corresponding updater is
 !TOP1-FLD.  The form 
 (STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
            (SUB1)
-           (UPDATE-SUB1-FLD1 X SUB1)
+           (UPDATE-SUB1-FLD X SUB1)
            TOP1)
 is thus illegal.  See :DOC stobj-let.
 
@@ -73,7 +80,7 @@ ACL2 !>>(DEFUN F1 (TOP1)
                (DECLARE (XARGS :STOBJS TOP1))
                (STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
                           (VAL)
-                          (SUB1-FLD1 SUB1)
+                          (SUB1-FLD SUB1)
                           VAL))
 
 
@@ -85,7 +92,7 @@ binding, (SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD), by (SUB1 (TOP1-FLD TOP1)).)
 The form 
 (STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
            (VAL)
-           (SUB1-FLD1 SUB1)
+           (SUB1-FLD SUB1)
            VAL)
 is thus illegal.  See :DOC stobj-let.
 
@@ -101,7 +108,7 @@ ACL2 !>>(DEFUN F1 (TOP1)
                (DECLARE (XARGS :STOBJS TOP1))
                (STOBJ-LET ((SUB1 (TOP1-FLD TOP1)))
                           (VAL)
-                          (SUB1-FLD1 SUB1)
+                          (SUB1-FLD SUB1)
                           VAL))
 
 Since F1 is non-recursive, its admission is trivial.  We could deduce
@@ -118,4 +125,466 @@ Summary
 Form:  ( DEFUN F1 ...)
 Rules: NIL
  F1
+ACL2 !>>(DEFSTOBJ ST1 (HT1 :TYPE (HASH-TABLE EQ 70 T)))
+
+Summary
+Form:  ( DEFSTOBJ ST1 ...)
+Rules: NIL
+ ST1
+ACL2 !>>(ASSERT-EVENT (EQUAL (HT1-GET 'A ST1) NIL))
+ :PASSED
+ACL2 !>>(HT1-PUT 'A 17 ST1)
+<st1>
+ACL2 !>>(ASSERT-EVENT (EQUAL (HT1-GET 'A ST1) 17))
+ :PASSED
+ACL2 !>>(HT1-GET 3 ST1)
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (HT1-GET K ST1),
+which is (AND (ST1P ST1) (SYMBOLP K)), is violated by the arguments
+in the call (HT1-GET 3 ST1).
+This error will be reported even if guard-checking is turned off, because
+a stobj argument of HT1-GET is the ``live'' ST1 and ACL2 does not support
+non-compliant live stobj manipulation.  To debug see :DOC print-gv,
+see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(DEFSTOBJ ST2
+                  (HT2 :TYPE (HASH-TABLE EQ NIL INTEGER)))
+
+
+ACL2 Error in ( DEFSTOBJ ST2 ...):  The value specified by the :initially
+keyword, namely NIL, fails to satisfy the declared type INTEGER in
+the hash-table specification for the HT2 field of ST2.
+
+
+Summary
+Form:  ( DEFSTOBJ ST2 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFSTOBJ ST2 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFSTOBJ ST2
+                  (HT2 :TYPE (HASH-TABLE = NIL INTEGER)
+                       :INITIALLY 0))
+
+
+ACL2 Error in ( DEFSTOBJ ST2 ...):  A hash-table test must be EQ, EQL,
+HONS-EQUAL or EQUAL.  The test given was =.  See :DOC defstobj.
+
+
+
+Summary
+Form:  ( DEFSTOBJ ST2 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFSTOBJ ST2 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFSTOBJ ST2
+                  (HT2 :TYPE (HASH-TABLE EQ NIL INTEGER)
+                       :INITIALLY 0))
+
+Summary
+Form:  ( DEFSTOBJ ST2 ...)
+Rules: NIL
+ ST2
+ACL2 !>>(ASSERT-EVENT (EQUAL (HT2-GET 'A ST2) 0))
+ :PASSED
+ACL2 !>>(HT2-PUT 'A 'B ST2)
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (HT2-PUT K V ST2),
+which is (AND (ST2P ST2) (SYMBOLP K) (INTEGERP V)), is violated by
+the arguments in the call (HT2-PUT 'A 'B ST2).
+This error will be reported even if guard-checking is turned off, because
+a stobj argument of HT2-PUT is the ``live'' ST2 and ACL2 does not support
+non-compliant live stobj manipulation.  To debug see :DOC print-gv,
+see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(ASSERT-EVENT (MV-LET (VAL BOUNDP)
+                              (HT2-GET? 'A ST2)
+                              (AND (EQUAL VAL 0) (EQUAL BOUNDP NIL))))
+ :PASSED
+ACL2 !>>(HT2-PUT 'A 17 ST2)
+<st2>
+ACL2 !>>(ASSERT-EVENT (EQUAL (HT2-GET 'A ST2) 17))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (MV-LET (VAL BOUNDP)
+                              (HT2-GET? 'A ST2)
+                              (AND (EQUAL VAL 17) (EQUAL BOUNDP T))))
+ :PASSED
+ACL2 !>>(DEFSTOBJ ST3
+                  (HT3 :TYPE (HASH-TABLE EQ NIL INTEGER)
+                       :INITIALLY 0)
+                  :CONGRUENT-TO ST2)
+
+Summary
+Form:  ( DEFSTOBJ ST3 ...)
+Rules: NIL
+ ST3
+ACL2 !>>(HT2-PUT 'A 23 ST3)
+<st3>
+ACL2 !>>(ASSERT-EVENT (EQUAL (HT2-GET 'A ST3) 23))
+ :PASSED
+ACL2 !>>(HT2-CLEAR ST3)
+<st3>
+ACL2 !>>(ASSERT-EVENT (EQUAL (HT2-GET 'A ST3) 0))
+ :PASSED
+ACL2 !>>(DEFSTOBJ ST4
+                  (HT4 :TYPE (HASH-TABLE EQ NIL SUB1)
+                       :INITIALLY NIL))
+
+
+ACL2 Error in ( DEFSTOBJ ST4 ...):  The :initially keyword must be
+omitted for a :type specified as an array of stobjs or a hash-table
+of stobjs.  But for :type (HASH-TABLE EQ NIL SUB1), :initially is specified
+as NIL for the HT4 field of ST4.
+
+
+Summary
+Form:  ( DEFSTOBJ ST4 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFSTOBJ ST4
+                  (HT4 :TYPE (HASH-TABLE EQ NIL SUB1)))
+
+Summary
+Form:  ( DEFSTOBJ ST4 ...)
+Rules: NIL
+ ST4
+ACL2 !>>(HT4-GET 'A ST4)
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  It is illegal to call HT4-GET
+because it is a stobj updater or accessor for a field of stobj type.
+For a way to generate such a call, see :DOC stobj-let.  Note:  this
+error occurred in the context (HT4-GET 'A ST4).
+
+ACL2 !>>(HT4-PUT 'A 17 ST4)
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  It is illegal to call HT4-PUT
+because it is a stobj updater or accessor for a field of stobj type.
+For a way to generate such a call, see :DOC stobj-let.  Note:  this
+error occurred in the context (HT4-PUT 'A 17 ST4).
+
+ACL2 !>>(DEFUN UPDATE-SUB1-FLD-IN-HT4 (KEY VAL ST4)
+               (DECLARE (XARGS :GUARD T :STOBJS ST4))
+               (STOBJ-LET ((SUB1 (HT4-GET KEY ST4)))
+                          (SUB1)
+                          (UPDATE-SUB1-FLD VAL SUB1)
+                          ST4))
+
+Since UPDATE-SUB1-FLD-IN-HT4 is non-recursive, its admission is trivial.
+We observe that the type of UPDATE-SUB1-FLD-IN-HT4 is described by
+the theorem (CONSP (UPDATE-SUB1-FLD-IN-HT4 KEY VAL ST4)).  We used
+the :type-prescription rule HT4-PUT.
+
+(UPDATE-SUB1-FLD-IN-HT4 * * ST4) => ST4.
+
+Computing the guard conjecture for UPDATE-SUB1-FLD-IN-HT4....
+
+The non-trivial part of the guard conjecture for UPDATE-SUB1-FLD-IN-HT4
+is
+
+Goal
+(IMPLIES (ST4P ST4) (SYMBOLP KEY)).
+Goal'
+
+Splitter note (see :DOC splitter) for Goal' (2 subgoals).
+  if-intro: ((:DEFINITION NTH))
+
+Subgoal 2
+Subgoal 2'
+Subgoal 2''
+
+([ A key checkpoint:
+
+Subgoal 2
+(IMPLIES (AND (TRUE-LISTP ST4)
+              (EQUAL (LEN ST4) 1)
+              (CONSP ST4)
+              (HT4P (CAR ST4)))
+         (SYMBOLP KEY))
+
+*1 (Subgoal 2'') is pushed for proof by induction:
+(IMPLIES (AND (TRUE-LISTP ST6)
+              (TRUE-LISTP (CONS ST5 ST6))
+              (EQUAL (+ 1 (LEN ST6)) 1)
+              (HT4P ST5))
+         (SYMBOLP KEY)).
+
+])
+Subgoal 1
+Subgoal 1'
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  Subsumption reduces that number to two.
+One of these has a score higher than the other.  
+
+We will induct according to a scheme suggested by (LEN ST6).  This
+suggestion was produced using the :induction rules LEN and TRUE-LISTP.
+If we let (:P KEY ST5 ST6) denote *1 above then the induction scheme
+we'll use is
+(AND (IMPLIES (NOT (CONSP ST6))
+              (:P KEY ST5 ST6))
+     (IMPLIES (AND (CONSP ST6) (:P KEY ST5 (CDR ST6)))
+              (:P KEY ST5 ST6))).
+This induction is justified by the same argument used to admit LEN.
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/4''
+Subgoal *1/4'''
+
+([ A key checkpoint while proving *1 (descended from Subgoal 2):
+
+Subgoal *1/4''
+(IMPLIES (HT4P ST5) (SYMBOLP KEY))
+
+A goal of NIL, Subgoal *1/4''', has been generated!  Obviously, the
+proof attempt has failed.
+
+])
+
+
+ACL2 Error in ( DEFUN UPDATE-SUB1-FLD-IN-HT4 ...):  The proof of the
+guard conjecture for UPDATE-SUB1-FLD-IN-HT4 has failed.  You may wish
+to avoid specifying a guard, or to supply option :VERIFY-GUARDS NIL
+with the :GUARD.  Otherwise, you may wish to specify :GUARD-DEBUG T;
+see :DOC verify-guards.
+
+
+
+Summary
+Form:  ( DEFUN UPDATE-SUB1-FLD-IN-HT4 ...)
+Rules: ((:DEFINITION LEN)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:DEFINITION ST4P)
+        (:DEFINITION TRUE-LISTP)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART HT4P)
+        (:EXECUTABLE-COUNTERPART LEN)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART TRUE-LISTP)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION LEN)
+        (:INDUCTION TRUE-LISTP)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION HT4-PUT))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION NTH))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Subgoal 2
+(IMPLIES (AND (TRUE-LISTP ST4)
+              (EQUAL (LEN ST4) 1)
+              (CONSP ST4)
+              (HT4P (CAR ST4)))
+         (SYMBOLP KEY))
+
+*** Key checkpoint under a top-level induction
+    before generating a goal of NIL (see :DOC nil-goal): ***
+
+Subgoal *1/4''
+(IMPLIES (HT4P ST5) (SYMBOLP KEY))
+
+ACL2 Error [Failure] in ( DEFUN UPDATE-SUB1-FLD-IN-HT4 ...):  The proof
+of the guard conjecture for UPDATE-SUB1-FLD-IN-HT4 has failed; see
+the discussion above about :VERIFY-GUARDS and :GUARD-DEBUG.  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN UPDATE-SUB1-FLD-IN-HT4 (KEY VAL ST4)
+               (DECLARE (XARGS :GUARD (SYMBOLP KEY)
+                               :STOBJS ST4))
+               (STOBJ-LET ((SUB1 (HT4-GET KEY ST4)))
+                          (SUB1)
+                          (UPDATE-SUB1-FLD VAL SUB1)
+                          ST4))
+
+Since UPDATE-SUB1-FLD-IN-HT4 is non-recursive, its admission is trivial.
+We observe that the type of UPDATE-SUB1-FLD-IN-HT4 is described by
+the theorem (CONSP (UPDATE-SUB1-FLD-IN-HT4 KEY VAL ST4)).  We used
+the :type-prescription rule HT4-PUT.
+
+(UPDATE-SUB1-FLD-IN-HT4 * * ST4) => ST4.
+
+Computing the guard conjecture for UPDATE-SUB1-FLD-IN-HT4....
+
+The guard conjecture for UPDATE-SUB1-FLD-IN-HT4 is trivial to prove.
+UPDATE-SUB1-FLD-IN-HT4 is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN UPDATE-SUB1-FLD-IN-HT4 ...)
+Rules: ((:TYPE-PRESCRIPTION HT4-PUT))
+ UPDATE-SUB1-FLD-IN-HT4
+ACL2 !>>(DEFUN READ-SUB1-FLD-IN-HT4 (KEY ST4)
+               (DECLARE (XARGS :GUARD (SYMBOLP KEY)
+                               :STOBJS ST4))
+               (STOBJ-LET ((SUB1 (HT4-GET KEY ST4)))
+                          (KEY)
+                          (SUB1-FLD SUB1)
+                          KEY))
+
+
+ACL2 Error [Translate] in ( DEFUN READ-SUB1-FLD-IN-HT4 ...):  The index
+expression, KEY, used for array or hash-table access in the stobj-
+let binding of variable SUB1, is illegal because KEY is also a producer
+variable.  The form 
+(STOBJ-LET ((SUB1 (HT4-GET KEY ST4))) (KEY) (SUB1-FLD SUB1) KEY) is
+thus illegal.  See :DOC stobj-let.
+
+
+Summary
+Form:  ( DEFUN READ-SUB1-FLD-IN-HT4 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN READ-SUB1-FLD-IN-HT4 ...):  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN READ-SUB1-FLD-IN-HT4 (KEY ST4)
+               (DECLARE (XARGS :GUARD T :STOBJS ST4))
+               (STOBJ-LET ((SUB1 (HT4-GET (AND (SYMBOLP KEY) KEY) ST4)))
+                          (F)
+                          (SUB1-FLD SUB1)
+                          F))
+
+
+ACL2 Error [Translate] in ( DEFUN READ-SUB1-FLD-IN-HT4 ...):  The index
+expression, (AND (SYMBOLP KEY) KEY), used for array or hash-table access
+in the stobj-let binding of variable SUB1, is illegal because that
+index expression is not a symbol, a natural number, or a quoted constant.
+The form (STOBJ-LET ((SUB1 (HT4-GET (AND # KEY) ST4))) (F) (SUB1-FLD SUB1) F)
+is thus illegal.  See :DOC stobj-let.
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+
+Summary
+Form:  ( DEFUN READ-SUB1-FLD-IN-HT4 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN READ-SUB1-FLD-IN-HT4 ...):  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN READ-SUB1-FLD-IN-HT4 (KEY ST4)
+               (DECLARE (XARGS :GUARD (SYMBOLP KEY)
+                               :STOBJS ST4))
+               (STOBJ-LET ((SUB1 (HT4-GET KEY ST4)))
+                          (F)
+                          (SUB1-FLD SUB1)
+                          F))
+
+Since READ-SUB1-FLD-IN-HT4 is non-recursive, its admission is trivial.
+We could deduce no constraints on the type of READ-SUB1-FLD-IN-HT4.
+
+(READ-SUB1-FLD-IN-HT4 * ST4) => *.
+
+Computing the guard conjecture for READ-SUB1-FLD-IN-HT4....
+
+The guard conjecture for READ-SUB1-FLD-IN-HT4 is trivial to prove.
+READ-SUB1-FLD-IN-HT4 is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN READ-SUB1-FLD-IN-HT4 ...)
+Rules: NIL
+ READ-SUB1-FLD-IN-HT4
+ACL2 !>>(ASSERT-EVENT (EQUAL (READ-SUB1-FLD-IN-HT4 'A ST4)
+                             NIL))
+ :PASSED
+ACL2 !>>(UPDATE-SUB1-FLD-IN-HT4 'B 10 ST4)
+<st4>
+ACL2 !>>(ASSERT-EVENT (EQUAL (READ-SUB1-FLD-IN-HT4 'B ST4)
+                             10))
+ :PASSED
+ACL2 !>>(DEFUN SWAP-SUB1-FLDS-IN-HT4 (KEY1 KEY2 ST4)
+               (DECLARE (XARGS :GUARD (AND (SYMBOLP KEY1)
+                                           (SYMBOLP KEY2)
+                                           (NOT (EQ KEY1 KEY2)))
+                               :STOBJS ST4))
+               (STOBJ-LET ((SUB1 (HT4-GET KEY1 ST4))
+                           (SUB2 (HT4-GET KEY2 ST4)))
+                          (SUB1 SUB2)
+                          (SWAP-STOBJS SUB1 SUB2)
+                          ST4))
+
+Since SWAP-SUB1-FLDS-IN-HT4 is non-recursive, its admission is trivial.
+We observe that the type of SWAP-SUB1-FLDS-IN-HT4 is described by the
+theorem (CONSP (SWAP-SUB1-FLDS-IN-HT4 KEY1 KEY2 ST4)).  We used the
+:type-prescription rule HT4-PUT.
+
+(SWAP-SUB1-FLDS-IN-HT4 * * ST4) => ST4.
+
+Computing the guard conjecture for SWAP-SUB1-FLDS-IN-HT4....
+
+The non-trivial part of the guard conjecture for SWAP-SUB1-FLDS-IN-HT4,
+given the :executable-counterpart of TRUE-LISTP and primitive type
+reasoning, is
+
+Goal
+(AND (IMPLIES (AND (NOT (EQUAL KEY1 KEY2))
+                   (SYMBOLP KEY2)
+                   (SYMBOLP KEY1)
+                   (ST4P ST4))
+              (NOT (INTERSECTP-EQUAL (LIST KEY1 KEY2)
+                                     NIL)))
+     (IMPLIES (AND (NOT (EQUAL KEY1 KEY2))
+                   (SYMBOLP KEY2)
+                   (SYMBOLP KEY1)
+                   (ST4P ST4))
+              (NO-DUPLICATESP-EQUAL (LIST KEY1 KEY2)))).
+Subgoal 2
+Subgoal 1
+
+Q.E.D.
+
+That completes the proof of the guard theorem for SWAP-SUB1-FLDS-IN-HT4.
+SWAP-SUB1-FLDS-IN-HT4 is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN SWAP-SUB1-FLDS-IN-HT4 ...)
+Rules: ((:DEFINITION INTERSECTP-EQUAL)
+        (:DEFINITION LENGTH)
+        (:DEFINITION MEMBER-EQUAL)
+        (:DEFINITION NO-DUPLICATESP-EQUAL)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:DEFINITION ST4P)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART INTERSECTP-EQUAL)
+        (:EXECUTABLE-COUNTERPART NO-DUPLICATESP-EQUAL)
+        (:EXECUTABLE-COUNTERPART TRUE-LISTP)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION HT4-PUT))
+ SWAP-SUB1-FLDS-IN-HT4
+ACL2 !>>(SWAP-SUB1-FLDS-IN-HT4 'A 'B ST4)
+<st4>
+ACL2 !>>(ASSERT-EVENT (EQUAL (READ-SUB1-FLD-IN-HT4 'A ST4)
+                             10))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (READ-SUB1-FLD-IN-HT4 'B ST4)
+                             NIL))
+ :PASSED
 ACL2 !>>Bye.
