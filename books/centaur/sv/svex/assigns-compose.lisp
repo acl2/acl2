@@ -601,8 +601,9 @@ the original namespace.</li>
                                      (split svex-alist-p)
                                      (splittab svar-splittab-p))
   :returns (new-x svex-alist-p)
-  (b* ((re-unsplit (svex-alist-from-split split splittab)))
-    (fast-alist-fork (svex-alist-fix unsplit) (make-fast-alist re-unsplit)))
+  (b* ((re-unsplit (make-fast-alist (svex-alist-from-split split splittab)))
+       (unsplit-comp (svex-alist-compose unsplit re-unsplit)))
+    (fast-alist-fork unsplit-comp re-unsplit))
   ///
   (defret netcomp-p-of-<fn>
     (implies (and (netcomp-p split (svex-alist-to-split unsplit splittab))
