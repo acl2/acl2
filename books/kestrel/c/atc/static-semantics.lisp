@@ -11,12 +11,13 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax-operations")
 (include-book "portable-ascii-identifiers")
 (include-book "integers")
 (include-book "types")
 (include-book "errors")
 (include-book "tag-environments")
+
+(include-book "../language/abstract-syntax-operations")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)

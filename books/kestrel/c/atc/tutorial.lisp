@@ -1088,7 +1088,7 @@
     the AST of the generated C program.
     More precisely, it is the AST of the generated translation unit,
     which is a value of the fixtype @(tsee transunit) in "
-   (xdoc::seetopic "atc-abstract-syntax" "ATC's abstract syntax of C")
+   (xdoc::seetopic "abstract-syntax" "the abstract syntax of C")
    ". The translation unit is the content of the generated file:
     the AST is "
    (xdoc::seetopic "atc-pretty-printer" "pretty-printed")
