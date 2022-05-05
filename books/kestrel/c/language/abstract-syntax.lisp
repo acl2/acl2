@@ -170,6 +170,13 @@
   :tag :iconst
   :pred iconstp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption iconst-option
+  iconst
+  :short "Fixtype of optional integer constants."
+  :pred iconst-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum const
@@ -343,8 +350,13 @@
      and (recursively) an object declarator; and
      (iii) an array (direct) declarator consisting of
      an object declarator (recursively)
-     and the array notation @('[]') without anything inside.
-     Note that we can represent sequences of pointer notations @('* ... *')
+     and the array notation @('[]') with
+     either nothing in it (i.e. unspecified size)
+     or an integer constant in it (i.e. specified size).
+     Using an integer constant as size is less general than [C] allows,
+     but it suffices for now.")
+   (xdoc::p
+    "Note that we can represent sequences of pointer notations @('* ... *')
      by nesting the @(':pointer') constructor.
      Note also that a direct declarator may be a (parenthesized) declarator,
      but in our abstract syntax we just have declarators,
@@ -352,7 +364,8 @@
      so we do not need to represent parentheses explicitly."))
   (:ident ((get ident)))
   (:pointer ((to obj-declor)))
-  (:array ((of obj-declor)))
+  (:array ((of obj-declor)
+           (size iconst-option)))
   :pred obj-declorp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -383,7 +396,8 @@
      explained just above."))
   (:none ())
   (:pointer ((to obj-adeclor)))
-  (:array ((of obj-adeclor)))
+  (:array ((of obj-adeclor)
+           (size iconst-option)))
   :pred obj-adeclorp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
