@@ -112,9 +112,9 @@
    declor
    :ident (mv declor.get (obj-adeclor-none))
    :pointer (b* (((mv id sub) (obj-declor-to-ident+adeclor declor.to)))
-              (mv id (obj-adeclor-pointer sub)))
+              (mv id (make-obj-adeclor-pointer :to sub)))
    :array (b* (((mv id sub) (obj-declor-to-ident+adeclor declor.of)))
-            (mv id (obj-adeclor-array sub))))
+            (mv id (make-obj-adeclor-array :of sub :size declor.size))))
   :measure (obj-declor-count declor)
   :verify-guards :after-returns
   :hooks (:fix))
@@ -132,8 +132,11 @@
   (obj-adeclor-case
    adeclor
    :none (obj-declor-ident id)
-   :pointer (obj-declor-pointer (ident+adeclor-to-obj-declor id adeclor.to))
-   :array (obj-declor-array (ident+adeclor-to-obj-declor id adeclor.of)))
+   :pointer (make-obj-declor-pointer
+             :to (ident+adeclor-to-obj-declor id adeclor.to))
+   :array (make-obj-declor-array
+           :of (ident+adeclor-to-obj-declor id adeclor.of)
+           :size adeclor.size))
   :measure (obj-adeclor-count adeclor)
   :verify-guards :after-returns
   :hooks (:fix)

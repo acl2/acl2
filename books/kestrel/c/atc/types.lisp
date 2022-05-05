@@ -292,7 +292,10 @@
       declor
       :none (tyspecseq-to-type tyspec)
       :pointer (type-pointer (tyname-to-type-aux tyspec declor.to))
-      :array (type-array (tyname-to-type-aux tyspec declor.of)))
+      :array (if declor.size
+                 (prog2$ (raise "Not supported array size: ~x0" declor.size)
+                         (irr-type))
+               (type-array (tyname-to-type-aux tyspec declor.of))))
      :measure (obj-adeclor-count declor)
      :verify-guards :after-returns
      :hooks (:fix))))
@@ -340,9 +343,10 @@
       :ullong (mv (tyspecseq-ullong nil) (obj-adeclor-none))
       :struct (mv (tyspecseq-struct type.tag) (obj-adeclor-none))
       :pointer (b* (((mv tyspec declor) (type-to-tyname-aux type.to)))
-                 (mv tyspec (obj-adeclor-pointer declor)))
+                 (mv tyspec (make-obj-adeclor-pointer :to declor)))
       :array (b* (((mv tyspec declor) (type-to-tyname-aux type.of)))
-               (mv tyspec (obj-adeclor-array declor))))
+               (mv tyspec (make-obj-adeclor-array :of declor
+                                                  :size nil))))
      :measure (type-count type)
      :verify-guards :after-returns
      :hooks (:fix))))

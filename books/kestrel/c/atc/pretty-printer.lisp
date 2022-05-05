@@ -339,8 +339,16 @@
    :pointer (msg "*~@0" (pprint-obj-declor declor.to))
    :array (b* ((sub (pprint-obj-declor declor.of)))
             (if (obj-declor-case declor.of :pointer)
-                (msg "(~@0)[]" sub)
-              (msg "~@0[]" sub))))
+                (msg "(~@0)[~@1]"
+                     sub
+                     (if declor.size
+                         (pprint-iconst declor.size)
+                       ""))
+              (msg "~@0[~@1]"
+                   sub
+                   (if declor.size
+                       (pprint-iconst declor.size)
+                     "")))))
   :measure (obj-declor-count declor)
   :hooks (:fix))
 
@@ -363,8 +371,16 @@
    :pointer (msg "*~@0" (pprint-obj-adeclor declor.to))
    :array (b* ((sub (pprint-obj-adeclor declor.of)))
             (if (obj-adeclor-case declor.of :array)
-                (msg "(~@0)[]" sub)
-              (msg "~@0[]" sub))))
+                (msg "(~@0)[~@1]"
+                     sub
+                     (if declor.size
+                         (pprint-iconst declor.size)
+                       ""))
+              (msg "~@0[~@1]"
+                   sub
+                   (if declor.size
+                       (pprint-iconst declor.size)
+                     "")))))
   :measure (obj-adeclor-count declor)
   :hooks (:fix))
 
