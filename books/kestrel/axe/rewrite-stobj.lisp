@@ -18,6 +18,7 @@
   (known-booleans :type (satisfies symbol-listp) :initially nil)
   (monitored-symbols :type (satisfies symbol-listp) :initially nil)
   (print :type (satisfies axe-print-levelp) :initially nil)
+  (normalize-xors :type (satisfies booleanp) :initially nil)
   :inline t
   :renaming ((known-booleans get-known-booleans)
              (update-known-booleans put-known-booleans)
@@ -25,4 +26,6 @@
              (update-monitored-symbols put-monitored-symbols)
              (common-lisp::printp printp)
              (common-lisp::print get-print)
-             (common-lisp::update-print put-print)))
+             (common-lisp::update-print put-print)
+             (normalize-xors get-normalize-xors)
+             (update-normalize-xors put-normalize-xors)))

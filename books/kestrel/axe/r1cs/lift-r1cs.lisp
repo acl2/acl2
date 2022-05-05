@@ -144,7 +144,7 @@
                              monitor
                              memoizep
                              count-hits
-                             ;; nil                             ;simplify-xorsp
+                             nil ; normalize-xors
                              print
                              whole-form
                              state)))
