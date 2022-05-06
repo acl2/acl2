@@ -74,8 +74,9 @@
    :sllong '(type-sllong)
    :ullong '(type-ullong)
    :struct `(type-struct (ident ,(ident->name (type-struct->tag type))))
-   :pointer `(type-pointer ,(type-to-maker (type-pointer->to type)))
-   :array `(type-array ,(type-to-maker (type-array->of type))))
+   :pointer `(make-type-pointer :to ,(type-to-maker (type-pointer->to type)))
+   :array `(make-type-array :of ,(type-to-maker (type-array->of type))
+                            :size ,(type-array->size type)))
   :measure (type-count type)
   :hooks (:fix))
 
