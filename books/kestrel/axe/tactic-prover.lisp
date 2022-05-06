@@ -21,7 +21,7 @@
 ;; TODO: Make a lighter-weight version that does not depend on skip-proofs.
 
 (include-book "prune")
-(include-book "rewriter") ; for simp-dag
+(include-book "rewriter") ; for simp-dag and simplify-terms-using-each-other
 (include-book "dag-size")
 (include-book "equivalent-dags")
 (include-book "dagify") ;todo
@@ -461,12 +461,12 @@
  (defun apply-proof-tactics-to-problem (problem tactics rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts call-stp-when-pruning info-acc state)
    (declare (xargs :stobjs (state)
                    :mode :program
-                   :guard (and (or (null max-conflicts)
+                   :guard (and (proof-problemp problem)
+                               (tacticsp tactics)
+                               (or (null max-conflicts)
                                    (natp max-conflicts))
-                               (proof-problemp problem)
                                (rule-alistp rule-alist)
                                (interpreted-function-alistp interpreted-function-alist)
-                               (tacticsp tactics)
                                (booleanp call-stp-when-pruning)
                                (booleanp normalize-xors))))
    ;; TODO: What if the DAG is a constant?
@@ -512,12 +512,12 @@
                                              state)
    (declare (xargs :stobjs (state)
                    :mode :program
-                   :guard (and (or (null max-conflicts)
+                   :guard (and (proof-problemsp problems)
+                               (tacticsp tactics)
+                               (or (null max-conflicts)
                                    (natp max-conflicts))
-                               (proof-problemsp problems)
                                (rule-alistp rule-alist)
                                (interpreted-function-alistp interpreted-function-alist)
-                               (tacticsp tactics)
                                (booleanp call-stp-when-pruning)
                                (booleanp normalize-xors))))
    (if (endp problems)
@@ -593,7 +593,7 @@
                             simplify-assumptions
                             ;;types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                             print
-                            ;debug
+                            ;; debug
                             max-conflicts ;a number of conflicts, or nil for no max
                             call-stp-when-pruning
                             rules
@@ -601,19 +601,16 @@
                             monitor
                             normalize-xors
                             type
-                            state
-                            ;;rand
-                           )
-  (declare (xargs :stobjs (state ;rand
-                          )
-                  :mode :program
-                  :guard (and ;(natp tests) ;TODO: add to guard
+                            state)
+  (declare (xargs :guard (and ;(natp tests) ;TODO: add to guard
                           (or (null max-conflicts)
                               (natp max-conflicts))
                           (booleanp simplify-assumptions)
                           (symbol-listp rules)
                           (booleanp call-stp-when-pruning)
-                          (booleanp normalize-xors))))
+                          (booleanp normalize-xors))
+                  :mode :program
+                  :stobjs state))
   (b* (((when (not (tacticsp tactics)))
         (er hard 'prove-with-tactics-fn "Illegal tactics: ~x0. See TACTICP." tactics)
         (mv *error* nil nil nil state))
@@ -629,7 +626,7 @@
             (if (endp (rest assumptions))
                 (cw "(1 assumption given.)~%")
               (cw "(~x0 assumptions given.)~%" (len assumptions)))))
-       (assumptions (translate-terms assumptions 'prove-with-tactics-fn (w state))) ;throws an error on bad input
+       (assumptions (translate-terms assumptions 'apply-tactic-prover (w state))) ;throws an error on bad input
        ((mv erp dag assumptions2)
         ;; TODO: Or do we want to leave the assumptions so they can get rewritten?
         ;; Also translates the term:
@@ -674,13 +671,8 @@
                               rule-classes
                               type
                               whole-form
-                              state
-                              ;rand
-                             )
-  (declare (xargs :stobjs (state ;rand
-                          )
-                  :mode :program
-                  :guard (and ;(natp tests) ;TODO: add to guard
+                              state)
+  (declare (xargs :guard (and (tacticsp tactics)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (booleanp simplify-assumptions)
@@ -688,7 +680,9 @@
                               (symbol-listp rules)
                               (symbol-listp interpreted-fns)
                               (booleanp call-stp-when-pruning)
-                              (booleanp normalize-xors))))
+                              (booleanp normalize-xors))
+                  :mode :program
+                  :stobjs state))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
        ((mv result info-acc actual-dag assumptions-given state)
@@ -704,12 +698,10 @@
                              monitor
                              normalize-xors
                              type
-                             state
-                             ))
+                             state))
        ;; todo: move into apply-tactic-prover?:
-       (state (if debug
-                  state
-                (maybe-remove-temp-dir state))))
+       ;; Remove the temp dir unless debug is set:
+       (state (if debug state (maybe-remove-temp-dir state))))
     (if (eq result *valid*)
         (b* ((- (cw "Proof of theorem succeeded.~%")) ; todo: move into apply-tactic-prover?
              ;; make the theorem:
@@ -779,8 +771,7 @@
                                       ',rule-classes
                                       ',type
                                       ',whole-form
-                                      state ; rand
-                                     )))
+                                      state)))
 
 ;;
 ;; prove-equivalence2
@@ -789,7 +780,7 @@
 ;returns (mv erp event state)
 ;TODO: Auto-generate the name
 ;TODO: Build the types from the assumptions or vice versa (types for testing may have additional restrictions to avoid huge inputs)
-;; This could be called prove-equivalence-with-tactics.
+;; This could be called prove-equivalence-with-tactics-fn.
 (defun prove-equivalence2-fn (dag-or-term1
                               dag-or-term2
                               ;tests ;a natp indicating how many tests to run
@@ -798,7 +789,7 @@
                               ;types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                               name
                               print
-                              ;debug
+                              debug
                               max-conflicts
                               call-stp-when-pruning
                               rules
@@ -808,12 +799,12 @@
                               different-vars-ok
                               whole-form
                               state)
-  (declare (xargs :guard (and ;(natp tests) ;TODO: add to guard
+  (declare (xargs :guard (and (tacticsp tactics)
+                              (booleanp debug)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (symbol-listp rules)
                               (symbol-listp interpreted-fns)
-                              (tacticsp tactics)
                               (booleanp call-stp-when-pruning)
                               (booleanp normalize-xors))
                   :mode :program
@@ -838,15 +829,19 @@
         (mv (hard-error 'prove-equivalence2-fn "The two dags have different variables." nil)
             nil state ;rand
            ))
+       ;; Make the equality DAG to be proved:
        ((mv erp dag) (make-equality-dag dag1 dag2))
        ((when erp) (mv erp nil state))
+       ;; Make the rule-alist:
        ((mv erp rule-alist) (make-rule-alist rules (w state)))
        ((when erp) (mv erp nil state))
+       ;; TODO: Call apply-tactic-prover here?:
        ((mv result info-acc state)
         (apply-proof-tactics-to-problem
          (make-problem dag assumptions)
          tactics rule-alist (make-interpreted-function-alist interpreted-fns (w state)) monitor normalize-xors print max-conflicts call-stp-when-pruning nil state))
-       (state (maybe-remove-temp-dir state)))
+       ;; Remove the temp dir unless debug is set:
+       (state (if debug state (maybe-remove-temp-dir state))))
     (if (eq result *valid*)
         (b* ((- (cw "Proof of equivalence succeeded.~%"))
              ;; make the theorem:
@@ -893,6 +888,7 @@
 
 ;todo: allow :rule-classes
 ;; todo: get doc from kestrel-acl2/axe/doc.lisp
+;; This could be called prove-equivalence-with-tactics.
 (defmacro prove-equivalence2 (&whole
                               whole-form
                               dag-or-term1
@@ -907,12 +903,12 @@
                               ;;(tests '100) ;defaults to 100, 0 is used if :tactic is :rewrite
                               ;;(types 'nil) ;gives types to the vars so we can generate tests for sweeping
                               (call-stp-when-pruning 't)
+                              (debug 'nil)
                               (max-conflicts '*default-stp-max-conflicts*)
                               (normalize-xors 't)
                               ;; Options for debugging:
-                              (name 'nil) ;the name of the miter, if we care to give it one.  also used for the name of the theorem
+                              (name 'nil) ;the name of the miter, if we care to give it one.  also used for the name of the theorem ; todo: call choose-miter-name
                               (print ':brief)
-                              ;;(debug 'nil)
                               (monitor 'nil)
                               (different-vars-ok 'nil))
   `(make-event (prove-equivalence2-fn ,dag-or-term1
@@ -923,7 +919,7 @@
                                       ;; ,types
                                       ,name
                                       ',print
-                                      ;;  ,debug
+                                      ,debug
                                       ,max-conflicts
                                       ,call-stp-when-pruning
                                       ,rules
