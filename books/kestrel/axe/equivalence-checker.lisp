@@ -84,6 +84,7 @@
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
+(local (include-book "kestrel/utilities/explode-atom" :dir :system))
 
 (local (in-theory (disable acl2-count)))
 
