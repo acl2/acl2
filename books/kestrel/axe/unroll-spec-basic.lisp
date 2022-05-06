@@ -15,8 +15,6 @@
 ;; See also unroll-spec.lisp.
 ;; See also def-simplified.lisp.
 
-;;TODO: What about xor simplification?  maybe ok to delay?
-
 (include-book "rewriter-basic")
 (include-book "rule-lists")
 (include-book "choose-rules")
