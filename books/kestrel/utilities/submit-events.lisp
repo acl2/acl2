@@ -90,13 +90,17 @@
                 ;; todo: inhibit more output if print is nil?
                 (additional-output-types-to-inhibit (if (eq print :verbose)
                                                         nil
-                                                      '(event))))
+                                                      '(prove warning event summary observation))))
             (mv-let (erp result state)
               ;;this magic incantation comes from :doc with-output:
               (state-global-let*
                ((inhibit-output-lst
                  (union-eq (f-get-global 'inhibit-output-lst state)
-                           additional-output-types-to-inhibit)))
+                           additional-output-types-to-inhibit))
+                (print-clause-ids (if print t nil)) ; compare to what set-gag-mode-fn does
+                (gag-mode (if print nil t)) ; compare to what set-gag-mode-fn does
+                (saved-output-token-lst (if print nil :all)) ; compare to what set-gag-mode-fn does
+                )
                (trans-eval-error-triple event
                                         'submit-event-helper ;todo: pass in a better context
                                         state))
