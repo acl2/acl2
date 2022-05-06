@@ -2754,6 +2754,62 @@ proved.</p>")
                              (svex-env-<<=-necc))))))
 
 
+(encapsulate nil
+  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+  (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+  (local (defthm logbitp-of-logeqv
+           (equal (logbitp n (logeqv x y))
+                  (iff (logbitp n x) (logbitp n y)))))
+  (local (in-theory (disable logeqv)))
+  
+  (local (defthm loghead-lemma
+           (implies (and (equal -1 (logior (logand xu (lognot xl))
+                                           (logand (logeqv xl yl)
+                                                   (logeqv xu yu))))
+                         (equal (loghead w (logtail lsb xl))
+                                (loghead w (logtail lsb xu))))
+                    (and (equal (loghead w (logtail lsb yl))
+                                (loghead w (logtail lsb xl)))
+                         (equal (loghead w (logtail lsb yu))
+                                (loghead w (logtail lsb xu)))))
+           :hints ((bitops::logbitp-reasoning :prune-examples nil))))
+
+  (local (defthm loghead-logapp-vs-ash-lemma
+           (implies (posp w2)
+                    (equal (equal (loghead w (logapp w2 -1 x))
+                                  (loghead w (ash y w2)))
+                           (zp w)))
+           :hints (("goal" :expand ((:free (x) (loghead w x)))))))
+  
+  (defthmd part-select-equal-when-4vec-<<=-and-2vec-p
+    (implies (and (4vec-<<= x y)
+                  (sv::2vec-p (sv::4vec-part-select lsb w x)))
+             (equal (sv::4vec-part-select lsb w y)
+                    (sv::4vec-part-select lsb w x)))
+    :hints(("Goal" :in-theory (e/d (sv::4vec-part-select 4vec-zero-ext 4vec-rsh 4vec-shift-core 4vec-concat 4vec-<<=))
+            :do-not-induct t))
+    :otf-flg t)
+
+  (defthmd part-select-equal-when-4vec-<<=-and-integerp
+    (implies (and (4vec-<<= x y)
+                  (integerp (sv::4vec-part-select lsb w x)))
+             (equal (sv::4vec-part-select lsb w y)
+                    (sv::4vec-part-select lsb w x)))
+    :hints(("Goal" :in-theory (e/d (4vec->upper 4vec->lower 4vec-fix))
+            :use part-select-equal-when-4vec-<<=-and-2vec-p)))
+
+
+  (defthmd part-select-of-svex-env-lookup-when-integerp-and-<<=
+    (implies (and (svex-env-<<= env1 env2)
+                  (integerp (sv::4vec-part-select lsb w (svex-env-lookup k env1))))
+             (equal (sv::4vec-part-select lsb w (svex-env-lookup k env2))
+                    (sv::4vec-part-select lsb w (svex-env-lookup k env1))))
+    :hints (("goal" :use ((:instance svex-env-<<=-necc
+                           (x env1) (y env2) (var k)))
+             :in-theory (e/d (part-select-equal-when-4vec-<<=-and-integerp)
+                             (svex-env-<<=-necc))))))
+
+
 
 #!sv
 (cmr::def-force-execute member-equal-force-execute

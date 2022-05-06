@@ -3552,6 +3552,41 @@
          ;;      '(:in-theory (enable bool->bit)))
          ))
 
+(local (defthm logapp-lognot-logapp-redundant
+         (Equal (logapp n (lognot x) (logapp m (lognot (logtail n x)) y))
+                (logapp (+ (nfix n) (nfix m)) (lognot x) y))
+         :hints ((bitops::logbitp-reasoning))))
+
+(encapsulate nil
+  (local (defthm logand-of-logtail
+           (equal (logand (logtail n x) (logtail n y))
+                  (logtail n (logand x y)))))
+  (local (defthm logior-of-logtail
+           (equal (logior (logtail n x) (logtail n y))
+                  (logtail n (logior x y)))))
+  (local (in-theory (disable bitops::logtail-of-logior
+                             bitops::logtail-of-logand)))
+  
+  (def-svex-rewrite concat-bitnot-concat-redundant
+    :lhs (concat n (bitnot x) (concat m (bitnot (rsh n x)) y))
+    :checks ((svex-quoted-index-p n)
+             (svex-quoted-index-p m)
+             (bind sum (svex-quote (2vec (+ (2vec->val (svex-quote->val n))
+                                            (2vec->val (svex-quote->val m)))))))
+    :rhs (concat sum (bitnot x) y)
+    :hints(("Goal" :in-theory (enable svex-apply
+                                      4vec-concat
+                                      4vec-rsh
+                                      4vec-shift-core
+                                      4vec-index-p
+                                      4vec-mask
+                                      4vec-bitnot 3vec-bitnot 3vec-fix))
+           (sv::svex-generalize-lookups)
+;          (bitops::logbitp-reasoning)
+           ;; (and stable-under-simplificationp
+           ;;      '(:in-theory (enable bool->bit)))
+           )))
+
 (local (defthm logapp-logtail-logapp-redundant
          (implies (equal (nfix sh2) (+ (nfix sh1) (nfix n)))
                   (equal (logapp n (logtail sh1 x) (logapp m (logtail sh2 x) y))
@@ -3583,6 +3618,49 @@
          ;; (and stable-under-simplificationp
          ;;      '(:in-theory (enable bool->bit)))
          ))
+
+(local (defthm logapp-lognot-logtail-logapp-redundant
+         (implies (equal (nfix sh2) (+ (nfix sh1) (nfix n)))
+                  (equal (logapp n (lognot (logtail sh1 x)) (logapp m (lognot (logtail sh2 x)) y))
+                         (logapp (+ (nfix n) (nfix m)) (lognot (logtail sh1 x)) y)))
+         :hints (("goal" :use ((:instance logapp-logapp-redundant
+                                (x (lognot (logtail sh1 x)))))
+                  :in-theory (disable logapp-logapp-redundant)))))
+
+
+(encapsulate nil
+  (local (defthm logand-of-logtail
+           (equal (logand (logtail n x) (logtail n y))
+                  (logtail n (logand x y)))))
+  (local (defthm logior-of-logtail
+           (equal (logior (logtail n x) (logtail n y))
+                  (logtail n (logior x y)))))
+  (local (in-theory (disable bitops::logtail-of-logior
+                             bitops::logtail-of-logand)))
+  
+  (def-svex-rewrite concat-bitnot-rsh-concat-redundant
+    :lhs (concat n (bitnot (rsh sh1 x)) (concat m (bitnot (rsh sh2 x)) y))
+    :checks ((svex-quoted-index-p n)
+             (svex-quoted-index-p m)
+             (svex-quoted-index-p sh1)
+             (svex-quoted-index-p sh2)
+             (equal (2vec->val (svex-quote->val sh2))
+                    (+ (2vec->val (svex-quote->val sh1))
+                       (2vec->val (svex-quote->val n))))
+             (bind sum (svex-quote (2vec (+ (2vec->val (svex-quote->val n))
+                                            (2vec->val (svex-quote->val m)))))))
+    :rhs (concat sum (bitnot (rsh sh1 x)) y)
+    :hints(("Goal" :in-theory (enable svex-apply
+                                      4vec-concat
+                                      4vec-rsh
+                                      4vec-shift-core
+                                      4vec-index-p
+                                      4vec-mask
+                                      4vec-bitnot 3vec-bitnot 3vec-fix))
+           ;; (bitops::logbitp-reasoning)
+           ;; (and stable-under-simplificationp
+           ;;      '(:in-theory (enable bool->bit)))
+           )))
 
 
 
@@ -4893,7 +4971,7 @@
   (b* ((xeval (svex-s4xeval (svex-call fn args)))
        ((when (s4vec-xfree-under-mask xeval mask))
         (mv t (svex-quote (s4vec->4vec (s4vec-mask-to-zero mask xeval))) nil)))
-    nil
+    ; nil
     (svex-rewrite-cases mask
                         (mbe :logic (fnsym-fix fn) :exec fn)
                         args
