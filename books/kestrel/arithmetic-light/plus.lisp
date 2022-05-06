@@ -166,10 +166,15 @@
 ;; One rule may suffice here since equal can match either way.  In rare cases,
 ;; this can cause problems, e.g., when we have a rule for (equal x ...), or
 ;; want to substitute for x, since in the RHS, x is not equated to anything.
+;; Without the (not (symbolp x)) below, we observed the following loop with EQUAL-OF---WHEN-VARIABLE:
+;; (equal (+ 1 x) (- y)) -> (equal (+ -1 (- x)) y) -> (equal (- x) (+ 1 y)) -> (equal x (+ -1 (- y))) -> (equal (+ 1 x) (- y))
 (defthm equal-of-+-when-negative-constant
-  (implies (and (syntaxp (quotep k))
-                (< k 0) ;; not logically necessary
-                )
+  (implies (syntaxp (and (quotep k)
+                         (< (unquote k) 0)
+                         (if (symbolp x)
+                             ;; if x is a var, don't apply unless y is also a var
+                             (symbolp y)
+                           t)))
            (equal (equal x (+ k y))
                   (and (equal (+ (- k) x) (fix y))
                        (acl2-numberp x)))))
