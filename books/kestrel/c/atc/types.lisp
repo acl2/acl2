@@ -11,8 +11,7 @@
 
 (in-package "C")
 
-(include-book "errors")
-
+(include-book "../language/errors")
 (include-book "../language/types")
 (include-book "../language/abstract-syntax-operations")
 

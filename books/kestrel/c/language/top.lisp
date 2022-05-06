@@ -18,6 +18,7 @@
 (include-book "abstract-syntax-operations")
 (include-book "types")
 (include-book "portable-ascii-identifiers")
+(include-book "errors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

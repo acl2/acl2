@@ -11,9 +11,8 @@
 
 (in-package "C")
 
-(include-book "errors")
-
 (include-book "../language/abstract-syntax-operations")
+(include-book "../language/errors")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 
