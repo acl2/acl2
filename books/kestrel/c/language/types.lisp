@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "abstract-syntax")
+(include-book "errors")
 
 (include-book "kestrel/fty/pos-option" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
@@ -110,6 +111,14 @@
   :elt-type type-option
   :elementp-of-nil t
   :pred type-option-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult type "types")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult type-list "lists of types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

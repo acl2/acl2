@@ -11,7 +11,6 @@
 
 (in-package "C")
 
-(include-book "../language/errors")
 (include-book "../language/types")
 (include-book "../language/abstract-syntax-operations")
 
@@ -30,14 +29,6 @@
     " from the language formalization for various purposes."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult type "types")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult type-list "lists of types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
