@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,9 +13,8 @@
 
 (include-book "../language/keywords")
 
-(include-book "std/strings/coerce" :dir :system)
-(include-book "std/util/define" :dir :system)
-(include-book "std/util/deflist" :dir :system)
+(include-book "kestrel/std/strings/letter-digit-uscore-chars" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,27 +32,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-letter/digit/uscore-char-p ((ch characterp))
-  :returns (yes/no booleanp)
-  :short "Check if an ACL2 character is an ASCII letter, digit, or underscore."
-  (or (and (standard-char-p ch)
-           (alpha-char-p ch))
-      (and (digit-char-p ch)
-           t)
-      (eql ch #\_)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist atc-letter/digit/uscore-char-listp (x)
-  (atc-letter/digit/uscore-char-p x)
-  :guard (character-listp x)
-  :short "Check if a list of ACL2 characters
-          only consists of ASCII letters, digits, and underscores."
-  :true-listp t
-  :elementp-of-nil nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
 (define atc-ident-char-listp ((chs character-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of ACL2 characters is not empty,
@@ -65,10 +43,10 @@
     may be portable ASCII C identifiers,
     provided they are distinct from C keywords.")
   (and (consp chs)
-       (atc-letter/digit/uscore-char-listp chs)
-       (not (digit-char-p (car chs)))))
+       (str::letter/digit/uscore-charlist-p chs)
+       (not (str::dec-digit-char-p (car chs)))))
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-ident-stringp ((str stringp))
   :returns (yes/no booleanp)
