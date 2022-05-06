@@ -13,6 +13,14 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/utilities/intern-in-package-of-symbol" :dir :system))
+(local (include-book "kestrel/utilities/coerce" :dir :system))
+(local (include-book "kestrel/utilities/explode-atom" :dir :system))
+(local (include-book "kestrel/utilities/explode-nonnegative-integer" :dir :system))
+(local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/nth" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/utilities/channels" :dir :system))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
@@ -77,3 +85,31 @@
                 (state-p state))
            (state-p (mv-nth 1 (open-input-channel file-name typ state))))
   :hints (("Goal" :in-theory (enable state-p))))
+
+;; See the guard of close-input-channel
+(defthm not-equal-standard-character-input-0-and-mv-nth-0-of-open-input-channel
+  (implies (state-p state)
+           (not (equal 'acl2-input-channel::standard-character-input-0 (mv-nth 0 (open-input-channel file-name typ state)))))
+  :hints (("Goal" :in-theory (enable ;state-p1
+                              open-input-channel
+                              equal-of-intern-in-package-of-symbol
+                              explode-atom
+                              equal-of-append))))
+
+;; See the guard of close-input-channel
+(defthm not-equal-standard-object-input-0-and-mv-nth-0-of-open-input-channel
+  (implies (state-p state)
+           (not (equal 'acl2-input-channel::standard-object-input-0 (mv-nth 0 (open-input-channel file-name typ state)))))
+  :hints (("Goal" :in-theory (enable ;state-p1
+                              open-input-channel
+                              equal-of-intern-in-package-of-symbol
+                              explode-atom
+                              equal-of-append))))
+
+;; See the guard of close-input-channel
+(defthm not-member-equal-of--mv-nth-0-of-open-input-channel
+  (implies (state-p state)
+           (not (member-equal (mv-nth 0 (open-input-channel file-name typ state))
+                              '(acl2-input-channel::standard-character-input-0
+                                acl2-input-channel::standard-object-input-0))))
+  :hints (("Goal" :in-theory (enable member-equal))))
