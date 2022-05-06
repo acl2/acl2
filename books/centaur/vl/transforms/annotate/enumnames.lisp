@@ -1,5 +1,6 @@
 ; VL Verilog Toolkit
 ; Copyright (C) 2008-2014 Centaur Technology
+; Copyright (C) 2022 Intel Corporation
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -465,6 +466,8 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
   :returns (new-x vl-modulelist-p)
   (vl-module-add-enumname-declarations x))
 
+
+
 (define vl-interface-add-enumname-declarations ((x vl-interface-p))
   :returns (new-x vl-interface-p)
   (b* (((vl-interface x) (vl-interface-fix x))
@@ -501,6 +504,26 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
   :returns (new-x vl-packagelist-p)
   (vl-package-add-enumname-declarations x))
 
+(define vl-class-add-enumname-declarations ((x vl-class-p))
+  :returns (new-x vl-class-p)
+  (b* (((vl-class x) (vl-class-fix x))
+       (seen nil)
+       ((mv typedefs warnings1 decls1 seen) (vl-typedeflist-enumname-declarations x.typedefs seen))
+       ((mv vardecls warnings2 decls2 seen) (vl-vardecllist-enumname-declarations x.vardecls seen))
+       ((mv paramdecls warnings3 decls3 seen) (vl-paramdecllist-enumname-declarations x.paramdecls seen))
+       (- (fast-alist-free seen))
+       (decls (remove-duplicates-equal (append-without-guard decls1 decls2 (list-fix decls3)))))
+    (change-vl-class
+     x
+     :typedefs typedefs
+     :vardecls vardecls
+     :paramdecls (append decls paramdecls)
+     :warnings (append-without-guard warnings1 warnings2 warnings3 x.warnings))))
+
+(defprojection vl-classlist-add-enumname-declarations ((x vl-classlist-p))
+  :returns (new-x vl-classlist-p)
+  (vl-class-add-enumname-declarations x))
+
 
 (define vl-design-add-enumname-declarations ((x vl-design-p))
   :returns (new-x vl-design-p)
@@ -518,6 +541,7 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
                       :mods       (vl-modulelist-add-enumname-declarations x.mods)
                       :interfaces (vl-interfacelist-add-enumname-declarations x.interfaces)
                       :packages   (vl-packagelist-add-enumname-declarations x.packages)
+                      :classes    (vl-classlist-add-enumname-declarations x.classes)
                       :warnings   (append-without-guard warnings1 warnings2 warnings3 x.warnings))))
 
 

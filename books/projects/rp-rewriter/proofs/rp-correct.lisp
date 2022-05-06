@@ -5,6 +5,7 @@
 
 ; Copyright (C) 2019, Regents of the University of Texas
 ; All rights reserved.
+; Copyright (C) 2022 Intel Corporation
 
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are
@@ -260,6 +261,36 @@
             (and (rp-evlt term a)
                  (rp-evl term a)))))
 
+(local
+ (defthm rp-evlt-of-CASESPLIT-FROM-CONTEXT-TRIG
+   (and (equal (rp-evlt `(CASESPLIT-FROM-CONTEXT-TRIG ,x) a)
+               (rp-evlt x a))
+        (equal (rp-evl `(CASESPLIT-FROM-CONTEXT-TRIG ,x) a)
+               (rp-evl x a)))
+   :hints (("Goal"
+            :in-theory (e/d (CASESPLIT-FROM-CONTEXT-TRIG) ())))))
+
+
+
+
+
+(local
+ (defthm rp-termp-with-casesplit-from-context-trig
+   (iff (RP-TERMP (LIST 'CASESPLIT-FROM-CONTEXT-TRIG x))
+        (rp-termp x))
+   :hints (("Goal"
+            :in-theory (e/d (rp-termp) ())))))
+
+(local
+ (defthm valid-sc-with-casesplit-from-context-trig
+   (equal (valid-sc (LIST 'CASESPLIT-FROM-CONTEXT-TRIG x) a)
+          (valid-sc x a))
+   :hints (("Goal"
+            :in-theory (e/d (valid-sc
+                             is-rp
+                             is-if)
+                            ())))))
+   
 
 (local
  (encapsulate
@@ -382,6 +413,12 @@
                                RP-TERMP
                                TRUE-LISTP
                                beta-search-reduce))))
+
+   (defthm valid-sc-subterms-nil
+     (VALID-SC-SUBTERMS NIL A)
+     :hints (("Goal"
+              :expand (VALID-SC-SUBTERMS nil a)
+              :in-theory (e/d () ()))))
     
 
    (defthm preprocess-then-rp-rw-is-correct-lemma
@@ -553,10 +590,12 @@
              (iff (rp-evl (mv-nth 0 (preprocess-then-rp-rw term rp-state state)) a)
                   (rp-evl term a)))
     :hints (("Goal"
+             :use ((:instance preprocess-then-rp-rw-is-correct-lemma))
              :do-not-induct t
-             :in-theory (e/d ()
+             :in-theory (e/d (not-include-rp-means-valid-sc)
                              (rp-rw
                               preprocess-then-rp-rw
+                              preprocess-then-rp-rw-is-correct-lemma
                               valid-rules-alistp
                               valid-termp
                               remove-return-last

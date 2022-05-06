@@ -1152,7 +1152,12 @@ because... (BOZO)</p>
                     :msg "Ignoring delay control on statment ~a0"
                     :args (list x))
               substmts))
-
+        :vl-assertstmt
+        (mv t
+            (warn :type :vl-assertstmt-unsupported
+                  :msg "Ignoring assert stmt: ~a0~%"
+                  :args (list x))
+            nil)
         :otherwise
         (fail (warn :type :vl-stmt-unsupported
                     :msg "Statement type not supported: ~a0"
@@ -1980,8 +1985,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                                   :args (list (sv::svex-quote (sv::2vec (sparseint-val mask)))
                                               rhs
                                               (svex-z)))))
-           (cons lhs
-                 (make-driver :value (svex-x) :strength 0))
+           ;; (cons lhs
+           ;;       (make-driver :value (svex-x) :strength 0))
            (svex-alist->assigns (cdr x) sizes masks)))
   ///
 

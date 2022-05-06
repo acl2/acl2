@@ -10,6 +10,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Added by Matt K. to avoid ACL2(r) failure in the proof of
+; complex-unguarded-correct:
+; cert_param: (non-acl2r)
+
 (in-package "ACL2")
 
 ;; This book defines functions that are equivalent to ACL2 primitive functions

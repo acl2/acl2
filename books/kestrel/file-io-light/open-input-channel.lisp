@@ -69,3 +69,11 @@
                                    readable-files-p
                                    writeable-files-p
                                    written-files-p)))))
+
+(defthm state-p-of-mv-nth-1-of-open-input-channel
+  (implies (and ;; (mv-nth 0 (open-input-channel file-name typ state)) ;no error
+                (member-eq typ '(:character :byte :object))
+                (stringp file-name)
+                (state-p state))
+           (state-p (mv-nth 1 (open-input-channel file-name typ state))))
+  :hints (("Goal" :in-theory (enable state-p))))

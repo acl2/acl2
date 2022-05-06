@@ -64,11 +64,10 @@
              (update-bar my-update-bar)))
 
 ;; In this one, the field is in a different package and we use more exotic names:
-;; TODO: Need to fix the generation of names (see TODO in defstobj-plus.lisp):
-;; (defstobj+ foo3 (print :type atom)
-;;   :renaming ((common-lisp::print my-get-print)
-;;              (common-lisp::printp my-printp)
-;;              (common-lisp::update-print put-print)))
+(defstobj+ foo3 (print :type atom)
+  :renaming ((common-lisp::print my-get-print)
+             (common-lisp::printp my-printp)
+             (common-lisp::update-print put-print)))
 
 ;; todo: uncomment/fix (evenp may not be legal below)
 ;; Test with some scalar types
@@ -79,7 +78,7 @@
 ;;   (evenf :type (satisfies evenp) :initially 250) ; some theorems get suppressed since :type is t
 ;;   ))
 
-(defstobj+ foo3
+(defstobj+ foo4
   (f1 :type atom :initially nil)
   (bar :type (integer 200 300) :initially 250)
   (baz :type t :initially 250) ; some theorems get suppressed since :type is t

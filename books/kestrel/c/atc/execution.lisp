@@ -183,15 +183,15 @@
     :enable (value-arithmeticp
              value-realp
              value-integerp
-             value-unsigned-integerp
-             value-signed-integerp))
+             value-unsigned-integerp-alt-def
+             value-signed-integerp-alt-def))
 
   (defrule value-integerp-of-promote-value
     (equal (value-integerp (promote-value val))
            (value-integerp (value-fix val)))
     :enable (value-integerp
-             value-unsigned-integerp
-             value-signed-integerp)))
+             value-unsigned-integerp-alt-def
+             value-signed-integerp-alt-def)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,8 +215,8 @@
                  :in-theory (enable value-arithmeticp
                                     value-realp
                                     value-integerp
-                                    value-unsigned-integerp
-                                    value-signed-integerp)
+                                    value-unsigned-integerp-alt-def
+                                    value-signed-integerp-alt-def)
                  :use (:instance values-of-promote-value (val arg))))
   :hooks (:fix))
 
@@ -243,8 +243,8 @@
                  :in-theory (enable value-arithmeticp
                                     value-realp
                                     value-integerp
-                                    value-unsigned-integerp
-                                    value-signed-integerp)
+                                    value-unsigned-integerp-alt-def
+                                    value-signed-integerp-alt-def)
                  :use (:instance values-of-promote-value (val arg))))
   :hooks (:fix))
 
@@ -270,8 +270,8 @@
                  :in-theory (enable value-arithmeticp
                                     value-realp
                                     value-integerp
-                                    value-unsigned-integerp
-                                    value-signed-integerp)
+                                    value-unsigned-integerp-alt-def
+                                    value-signed-integerp-alt-def)
                  :use (:instance values-of-promote-value (val arg))))
   :hooks (:fix))
 
@@ -302,8 +302,8 @@
                                     value-arithmeticp
                                     value-realp
                                     value-integerp
-                                    value-unsigned-integerp
-                                    value-signed-integerp)
+                                    value-unsigned-integerp-alt-def
+                                    value-signed-integerp-alt-def)
                  :use (:instance values-of-promote-value (val arg))))
   :hooks (:fix))
 
@@ -468,8 +468,8 @@
                                            value-arithmeticp
                                            value-realp
                                            value-integerp
-                                           value-signed-integerp
-                                           value-unsigned-integerp)))
+                                           value-signed-integerp-alt-def
+                                           value-unsigned-integerp-alt-def)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -499,8 +499,8 @@
           ((sllongp arg) (sllong-integer-value arg))
           (t (prog2$ (impossible) 0))))
   :guard-hints (("Goal" :in-theory (enable value-integerp
-                                           value-unsigned-integerp
-                                           value-signed-integerp)))
+                                           value-unsigned-integerp-alt-def
+                                           value-signed-integerp-alt-def)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1429,13 +1429,11 @@
        ((when (errorp struct))
         (error (list :struct-not-found str (compustate-fix compst))))
        ((unless (equal reftype
-                       (type-struct (struct->tag struct))))
+                       (type-struct (value-struct->tag struct))))
         (error (list :mistype-struct-read
                      :pointer reftype
-                     :array (type-struct (struct->tag struct))))))
+                     :array (type-struct (value-struct->tag struct))))))
     (struct-read-member mem struct))
-  :guard-hints
-  (("Goal" :in-theory (enable structp-when-struct-resultp-and-not-errorp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1816,10 +1814,10 @@
               (struct (read-struct addr compst))
               ((when (errorp struct)) struct)
               ((unless (equal reftype
-                              (type-struct (struct->tag struct))))
+                              (type-struct (value-struct->tag struct))))
                (error (list :mistype-struct-read
                             :pointer reftype
-                            :array (type-struct (struct->tag struct)))))
+                            :array (type-struct (value-struct->tag struct)))))
               (new-struct (struct-write-member mem val struct))
               ((when (errorp new-struct)) new-struct))
            (write-struct addr new-struct compst)))

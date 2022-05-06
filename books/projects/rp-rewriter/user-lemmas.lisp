@@ -123,7 +123,7 @@
 (add-rp-rule endp)
 (add-rp-rule eql)
 (add-rp-rule not :outside-in t)
-(add-rp-rule implies :outside-in t)
+;;(add-rp-rule implies :outside-in t)
 (add-rp-rule eq)
 (add-rp-rule eql)
 (add-rp-rule cons-equal)
@@ -190,3 +190,5 @@ Forced term is ~p2 ~% "
 (add-rp-rule return-last-from-mbe :outside-in t)
 
 (add-rp-rule acl2::throw-nonexec-error :outside-in t)
+
+(add-rp-rule fmt-to-comment-window) 

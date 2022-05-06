@@ -286,6 +286,7 @@ the named blocks within any if/case/loop generate constructs.</p>"
         (:vl-blockscope nil)
         (:vl-design     nil)
         (:vl-package    nil)
+        (:vl-class      nil)
         (:vl-scopeinfo  nil)
         (otherwise      (impossible)))))
 
@@ -1436,7 +1437,9 @@ explicit declarations.</p>")
       (:vl-vardecl   (vl-shadowcheck-vardecl   x st warnings))
       (:vl-import    (vl-shadowcheck-import    x st warnings))
       (:vl-paramdecl (vl-shadowcheck-paramdecl x st warnings))
-      (otherwise     (vl-shadowcheck-typedef   x st warnings)))))
+      (:vl-typedef     (vl-shadowcheck-typedef   x st warnings))
+      (otherwise   ;; skip letdecl
+       (mv (vl-shadowcheck-state-fix st) (vl-warninglist-fix warnings))))))
 
 (define vl-shadowcheck-blockitemlist ((x        vl-blockitemlist-p)
                                       (st       vl-shadowcheck-state-p)
@@ -1758,7 +1761,7 @@ explicit declarations.</p>")
        ((when (eq tag :vl-class))      (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-covergroup)) (mv st warnings)) ;; BOZO figure out what we want to do here.
        ((when (eq tag :vl-elabtask))   (mv st warnings)) ;; BOZO figure out what we want to do here.
-       )
+       ((when (eq tag :vl-letdecl))    (mv st warnings)));; BOZO figure out what we want to do here.
     (impossible)
     (mv st warnings)))
 
@@ -1934,6 +1937,17 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-port (car x) st warnings)))
     (vl-shadowcheck-ports (cdr x) st warnings)))
 
+
+(define vl-shadowcheck-imports ((x        vl-importlist-p)
+                                (st       vl-shadowcheck-state-p)
+                                (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) (ok)))
+       ((mv st warnings) (vl-shadowcheck-import (car x) st warnings)))
+    (vl-shadowcheck-imports (cdr x) st warnings)))
+
 (define vl-shadowcheck-module ((x  vl-module-p)
                                (st vl-shadowcheck-state-p))
   :returns (mv (st    vl-shadowcheck-state-p)
@@ -1945,10 +1959,14 @@ explicit declarations.</p>")
   ;;     we're even getting everything in one coherent order yet
   ;;   - Figure out the whole ansi portdecl resolution affects all of this
   (b* (((vl-module x)    (vl-module-fix x))
-       (x.loaditems (and x.parse-temps (vl-parse-temps->loaditems x.parse-temps)))
+       (x.loaditems (and x.parse-temps
+                         (vl-parse-temps->loaditems x.parse-temps)))
+       (x.initial-imports
+        (and x.parse-temps (vl-parse-temps->imports x.parse-temps)))
        (- (vl-shadowcheck-debug "*** Shadowcheck module ~s0 ***~%" x.name))
        (warnings         x.warnings)
        ((mv st warnings) (vl-shadowcheck-push-scope x st warnings))
+       ((mv st warnings) (vl-shadowcheck-imports x.initial-imports st warnings))
        ((mv st warnings) (vl-shadowcheck-ports x.ports st warnings))
        ((mv st warnings) (vl-shadowcheck-genelementlist x.loaditems st warnings))
        (st               (vl-shadowcheck-pop-scope st))
@@ -2044,15 +2062,6 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-declare-name x1.name x1 st warnings)))
     (vl-shadowcheck-declare-typedefs (cdr x) st warnings)))
 
-(define vl-shadowcheck-imports ((x        vl-importlist-p)
-                                (st       vl-shadowcheck-state-p)
-                                (warnings vl-warninglist-p))
-  :returns (mv (st       vl-shadowcheck-state-p)
-               (warnings vl-warninglist-p))
-  (b* (((when (atom x))
-        (mv (vl-shadowcheck-state-fix st) (ok)))
-       ((mv st warnings) (vl-shadowcheck-import (car x) st warnings)))
-    (vl-shadowcheck-imports (cdr x) st warnings)))
 
 (define vl-shadowcheck-dpiimports ((x        vl-dpiimportlist-p)
                                    (st       vl-shadowcheck-state-p)

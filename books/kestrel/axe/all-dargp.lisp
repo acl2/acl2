@@ -129,8 +129,9 @@
 
 (defthmd not-<-of-0-and-nth-when-all-dargp
   (implies (and (all-dargp dargs)
-                (natp n)
-                (< n (len dargs)))
+                ;; (natp n)
+                ;; (< n (len dargs))
+                )
            (not (< (nth n dargs) 0)))
   :hints (("Goal" :in-theory (enable all-dargp nth))))
 

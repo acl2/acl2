@@ -1,10 +1,6 @@
 ; SV - Symbolic Vector Hardware Analysis Framework
 ; Copyright (C) 2014-2015 Centaur Technology
-;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+; Copyright (C) 2022 Intel Corporation
 ;
 ; License: (An MIT/X11-style license)
 ;
@@ -31,6 +27,7 @@
 (in-package "VL")
 (include-book "vl-svstmt")
 (include-book "centaur/fty/visitor" :dir :system)
+(include-book "centaur/vl/transforms/annotate/type-disamb-aux" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -166,7 +163,9 @@ information is stored in the elabindex before translating the expression.</p>")
               (vl-modinst vl-modinst-elaborate-aux)
               (vl-always vl-always-elaborate-aux)
               (vl-atts   :skip))
-    :type-fns ((vl-datatype vl-datatype-elaborate-fn)
+    :type-fns ((vl-class :skip) ;; don't bother with classes inside anything else for now
+               (vl-classlist :skip)
+               (vl-datatype vl-datatype-elaborate-fn)
                (vl-typedef vl-typedef-elaborate-fn)
                (vl-fundecl vl-fundecl-elaborate-fn)
                (vl-paramdecl vl-paramdecl-elaborate-fn)
@@ -200,7 +199,8 @@ information is stored in the elabindex before translating the expression.</p>")
     :field-fns ((atts :skip)
                 (mods :skip)
                 (interfaces :skip)
-                (packages :skip))
+                (packages :skip)
+                (classes :skip))
 
   :fnname-template <type>-elaborate)
 
@@ -271,10 +271,53 @@ information is stored in the elabindex before translating the expression.</p>")
         (equal x y))
    :hints(("Goal" :in-theory (enable acl2::member-of-cons)))))
 
+(local
+ (defret exprlist-count-of-call-type-disambiguate
+   (<= (vl-maybe-exprlist-count new-plainargs) (vl-maybe-exprlist-count
+                                                plainargs))
+   :hints(("Goal" :in-theory (enable vl-call-type-disambiguate)))
+   :rule-classes :linear
+   :fn vl-call-type-disambiguate))
+
+
+(local (include-book "centaur/meta/resolve-flag-cp" :dir :system))
+(local (defun big-mutrec-default-hint
+           #!acl2 (fnname id wait-til-stablep world)
+           (declare (xargs :mode :program))
+           ;; copied mostly from just-expand.lisp, just-expand-mrec-default-hint,
+           ;; added resolve-flags-cp and do-not-induct before expanding
+           #!acl2
+           (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
+                (equal '(1) (acl2::access acl2::clause-id id :pool-lst))
+                (let* ((fns (acl2::recursivep fnname t world))
+                       (flags (strip-cdrs (acl2::flag-alist fnname world)))
+                       (expand-hints (just-expand-cp-parse-hints
+                                      (just-expand-mrec-expanders fns world)
+                                      world)))
+                  `(:computed-hint-replacement
+                    ('(:clause-processor (mark-expands-cp clause '(t t ,expand-hints)))
+                     ;; (cmr::call-urewrite-clause-proc)
+                     ;; '(:clause-processor cmr::dumb-flatten-clause-proc)
+                     ;; '(:clause-processor (cmr::let-abstract-lits-clause-proc clause 'xxx))
+                     (and (or (not ',wait-til-stablep) stable-under-simplificationp)
+                          (expand-marked)))
+                    :in-theory (disable . ,fns)
+                    :do-not-induct t
+                    :clause-processor (cmr::resolve-flags-cp
+                                       clause
+                                       ',(cons 'vl::flag flags)))))))
+
+
+(local (table std::default-hints-table
+              'fty::deffixequiv-mutual
+              '((big-mutrec-default-hint 'fty::fnname id nil world))))
+
 (fty::defvisitor-multi vl-elaborate
   :defines-args (:ruler-extenders :all
                  ;; :measure-debug t
                  ;; :guard-debug t
+                 :flag-hints ((big-mutrec-default-hint 'vl-expr-elaborate-fn id nil world))
+                 :returns-hints ((big-mutrec-default-hint 'vl-expr-elaborate-fn id nil world))
                  )
 
   ;; Note about avoiding measure troubles in this mutual recursion.  Start here
@@ -844,7 +887,17 @@ information is stored in the elabindex before translating the expression.</p>")
           (mv (and* ok1 ok2) warnings new-x elabindex))
 
         :vl-call
-        (b* (((wmv ok1 warnings new-plainargs elabindex)
+        (b* (((wmv warnings x.typearg x.plainargs)
+              (vl-call-type-disambiguate x.systemp x.typearg x.plainargs
+                                         (vl-elabindex->ss)))
+             ;; check reclimit for typearg disambiguation case
+             ((when (zp reclimit))
+              (mv nil
+                  (fatal :type :vl-expr-elaborate-fail
+                         :msg "Recursion limit ran out processing ~a0 -- dependency loop?"
+                         :args (list x))
+                  x elabindex))
+             ((wmv ok1 warnings new-plainargs elabindex)
               ;; Heuristic decision: Resolve arguments to constants iff this is
               ;; a system call.  That way we get the dimension resolved for
               ;; things like $size.
@@ -855,7 +908,7 @@ information is stored in the elabindex before translating the expression.</p>")
               (vl-call-namedargs-elaborate x.namedargs elabindex :reclimit reclimit))
              ((wmv ok3 warnings new-typearg elabindex)
               (if x.typearg
-                  (vl-datatype-elaborate x.typearg elabindex :reclimit reclimit)
+                  (vl-datatype-elaborate x.typearg elabindex :reclimit (1- (lnfix reclimit)))
                 (mv t nil nil elabindex)))
              ((wmv ok4 warnings new-fnname elabindex)
               (vl-scopeexpr-elaborate x.name elabindex :reclimit reclimit))
@@ -1583,7 +1636,7 @@ information is stored in the elabindex before translating the expression.</p>")
 
 (fty::defvisitors vl-design-elaborate-aux-deps
   :template elaborate
-  :dep-types (vl-package vl-module vl-interface vl-design))
+  :dep-types (vl-package vl-module vl-class vl-interface vl-design))
 
 (fty::defvisitor vl-design-elaborate-aux
   :template elaborate

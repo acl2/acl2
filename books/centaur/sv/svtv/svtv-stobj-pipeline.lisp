@@ -47,20 +47,37 @@
 ;;                   (no-duplicatesp-equal (svex-alist-keys y)))
 ;;          :fn svtv-design-to-fsm))
 
-(local (defthm svtv-data$c-pipeline-okp-of-compile
-         (b* ((fsm (svtv-data$c->cycle-fsm svtv-data))
-              ((pipeline-setup setup) (svtv-data$c->pipeline-setup svtv-data))
-              (outvars (svtv-probealist-outvars setup.probes))
-              (outs (svtv-fsm-run-compile setup.inputs setup.overrides setup.initst
-                                                  (make-svtv-fsm :base-fsm fsm
-                                                                 :namemap (svtv-data$c->namemap svtv-data))
-                                                  outvars
-                                                  simp))
-              (result (svtv-probealist-extract-alist setup.probes outs)))
-           (implies (equal (svex-alist-keys setup.initst)
-                           (svex-alist-keys (base-fsm->nextstate fsm)))
-                    (svtv-data$c-pipeline-okp svtv-data result)))
-         :hints(("Goal" :in-theory (enable svtv-data$c-pipeline-okp)))))
+(defthm svtv-data$c-pipeline-okp-of-compile
+  (b* ((fsm (svtv-data$c->cycle-fsm svtv-data))
+       ((pipeline-setup setup) (svtv-data$c->pipeline-setup svtv-data))
+       (outvars (svtv-probealist-outvars setup.probes))
+       (outs (svtv-fsm-run-compile setup.inputs setup.overrides setup.initst
+                                   (make-svtv-fsm :base-fsm fsm
+                                                  :namemap (svtv-data$c->namemap svtv-data))
+                                   outvars
+                                   simp))
+       (result (svtv-probealist-extract-alist setup.probes outs)))
+    (implies (equal (svex-alist-keys setup.initst)
+                    (svex-alist-keys (base-fsm->nextstate fsm)))
+             (svtv-data$c-pipeline-okp svtv-data result)))
+  :hints(("Goal" :in-theory (enable svtv-data$c-pipeline-okp))))
+
+
+(defthmd svtv-data$c-pipeline-okp-implies-result-equivalent
+  (b* ((fsm (svtv-data$c->cycle-fsm svtv-data))
+       ((pipeline-setup setup) (svtv-data$c->pipeline-setup svtv-data))
+       (outvars (svtv-probealist-outvars setup.probes))
+       (outs (svtv-fsm-run-compile setup.inputs setup.overrides setup.initst
+                                   (make-svtv-fsm :base-fsm fsm
+                                                  :namemap (svtv-data$c->namemap svtv-data))
+                                   outvars
+                                   simp))
+       (result (svtv-probealist-extract-alist setup.probes outs)))
+    (implies (svtv-data$c-pipeline-okp svtv-data pipeline)
+             (svex-alist-eval-equiv result pipeline)))
+  :hints(("Goal" :in-theory (enable
+                             svex-alist-eval-equiv-in-terms-of-envs-equivalent
+                             svtv-data$c-pipeline-okp-necc))))
 
 
 (define svtv-data-compute-pipeline (svtv-data &key ((simp svex-simpconfig-p) 't))
@@ -75,18 +92,20 @@
                 (and stable-under-simplificationp
                      '(:in-theory (enable svtv-data$ap))))
   :returns new-svtv-data
-  (b* ((fsm (svtv-data->cycle-fsm svtv-data))
-       ((pipeline-setup setup) (svtv-data->pipeline-setup svtv-data))
-       (outvars (svtv-probealist-outvars setup.probes))
-       (outs (make-fast-alistlist (svtv-fsm-run-compile
-                                   setup.inputs setup.overrides setup.initst
-                                   (make-svtv-fsm :base-fsm fsm
-                                                  :namemap (svtv-data->namemap svtv-data))
-                                   outvars simp)))
-       (result (svtv-probealist-extract-alist setup.probes outs))
-       (- (fast-alistlist-clean outs))
-       (svtv-data (update-svtv-data->pipeline result svtv-data)))
-    (update-svtv-data->pipeline-validp t svtv-data))
+  (time$
+   (b* ((fsm (svtv-data->cycle-fsm svtv-data))
+        ((pipeline-setup setup) (svtv-data->pipeline-setup svtv-data))
+        (outvars (svtv-probealist-outvars setup.probes))
+        (outs (make-fast-alists (svtv-fsm-run-compile
+                                    setup.inputs setup.overrides setup.initst
+                                    (make-svtv-fsm :base-fsm fsm
+                                                   :namemap (svtv-data->namemap svtv-data))
+                                    outvars simp)))
+        (result (svtv-probealist-extract-alist setup.probes outs))
+        (- (fast-alistlist-clean outs))
+        (svtv-data (update-svtv-data->pipeline result svtv-data)))
+     (update-svtv-data->pipeline-validp t svtv-data))
+   :msg "; Svtv-data pipeline: ~st seconds, ~sa bytes.~%")
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))

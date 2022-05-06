@@ -213,3 +213,26 @@
            (assoc-equal channel (open-input-channels state)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable open-input-channel-p1))))
+
+(defthmd symbolp-when-assoc-equal-and-open-channels-p
+  (implies (and (assoc-equal channel channels)
+                (open-channels-p channels))
+           (symbolp channel))
+  :hints (("Goal" :in-theory (enable open-channels-p ordered-symbol-alistp))))
+
+(defthmd symbolp-when-assoc-equal-of-open-input-channels-and-state-p1
+  (implies (and (assoc-equal channel (open-input-channels state))
+                (state-p1 state))
+           (symbolp channel))
+  :hints (("Goal" :in-theory (e/d (symbolp-when-assoc-equal-and-open-channels-p state-p1)
+                                  (open-input-channels
+                                   all-boundp ; for speed
+                                   )))))
+
+(defthmd symbolp-when-assoc-equal-of-open-input-channels-and-state-p
+  (implies (and (assoc-equal channel (open-input-channels state))
+                (state-p state))
+           (symbolp channel))
+  :hints (("Goal" :in-theory (e/d (state-p
+                                   symbolp-when-assoc-equal-of-open-input-channels-and-state-p1)
+                                  (open-input-channels)))))

@@ -15,8 +15,6 @@
 ;; See also unroll-spec.lisp.
 ;; See also def-simplified.lisp.
 
-;;TODO: What about xor simplification?  maybe ok to delay?
-
 (include-book "rewriter-basic")
 (include-book "rule-lists")
 (include-book "choose-rules")
@@ -93,7 +91,7 @@
                               monitor
                               memoizep
                               count-hits
-                              ;; simplify-xorsp ;todo
+                              normalize-xors
                               produce-function
                               disable-function
                               function-type
@@ -115,8 +113,7 @@
                               (symbol-listp monitor)
                               (booleanp memoizep)
                               (booleanp count-hits)
-                              ;; (booleanp simplify-xorsp) ;todo: strengthen
-                              (booleanp produce-function)
+                              (booleanp normalize-xors)
                               (booleanp disable-function)
                               (member-eq function-type '(:term :lets :embedded-dag :auto))
                               (or (symbol-listp function-params)
@@ -214,9 +211,8 @@
                              memoizep
                              count-hits
                              print
-                             (w state)
-                             ;; :simplify-xorsp simplify-xorsp
-                             ))
+                             normalize-xors
+                             (w state)))
        ((when erp)
         (mv erp nil state))
        ((when (quotep dag))
@@ -306,7 +302,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                        ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
                                        (extra-rules 'nil) ; to add to the usual set of rules
                                        (remove-rules 'nil) ; to remove from to the usual set of rules
-                                       ;; (simplify-xorsp 't)
+                                       (normalize-xors 'nil)
                                        ;; Options that affect performance:
                                        (memoizep 't)
                                        ;; Options for debugging:
@@ -332,7 +328,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                                        ,monitor
                                                        ,memoizep
                                                        ,count-hits
-                                                       ;; ,simplify-xorsp
+                                                       ,normalize-xors
                                                        ,produce-function
                                                        ,disable-function
                                                        ,function-type
@@ -358,6 +354,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
          (monitor "Rules to monitor, a list of symbols.")
          (count-hits "Whether to count rule hits rewriting")
          (print "How much to print, a print-level")
+         (normalize-xors "Whether to normalize nests of calls of @('bvxor') and @('bitxor').")
          (produce-function "Whether to produce a function (in addition to a defconst).")
          (disable-function "Whether to disable the produced function.")
          (function-type "How to create a function for the DAG (:term, :embedded-dag, :lets, or :auto).")

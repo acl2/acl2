@@ -55,11 +55,12 @@ ACL2 !>>(DEFUN BAD (TOP)
 
 
 ACL2 Error [Translate] in ( DEFUN BAD ...):  The stobj-let binding
-of variable ST1 to expression (TBL-GET 'ST1 TOP) is illegal.  If a
-stobj-table access was intended, the stobj creator for ST1 should be
-called as a third argument of that expression; see :DOC stobj-table.
-The form (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP))) (VAL1) (FLD1 ST1) VAL1)
-is thus illegal.  See :DOC stobj-let.
+of variable ST1 to expression (TBL-GET 'ST1 TOP) is illegal.  Apparently
+a stobj-table access was intended.  In that case the stobj creator
+for ST1 should be called as a third argument of that expression; see
+:DOC stobj-table.  The form 
+(STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP))) (VAL1) (FLD1 ST1) VAL1) is thus
+illegal.  See :DOC stobj-let.
 
 ACL2 !>>(DEFUN UPDATE-1 (TOP)
                (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))

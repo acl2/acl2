@@ -132,28 +132,6 @@
                     (let ((x (base-fsm nil nextstate)))
                       <call>)))))
 
-(define svex-env-to-subst ((x svex-env-p))
-  :returns (subst svex-alist-p)
-  (if (atom x)
-      nil
-    (if (mbt (and (consp (car x))
-                  (svar-p (caar x))))
-        (cons (cons (caar x)
-                    (svex-quote (cdar x)))
-              (svex-env-to-subst (cdr x)))
-      (svex-env-to-subst (cdr x))))
-  ///
-  (defret eval-lookup-of-<fn>
-    (equal (svex-eval (svex-lookup key subst) env)
-           (svex-env-lookup key x))
-    :hints(("Goal" :in-theory (enable svex-env-lookup svex-lookup))))
-
-  (defret eval-of-<fn>
-    (equal (svex-alist-eval subst env)
-           (svex-env-fix x))
-    :hints(("Goal" :in-theory (enable svex-alist-eval svex-env-fix))))
-
-  (local (in-theory (enable svex-env-fix))))
        
 
 (define svtv-cycle-step-phase-exprs ((prev-st svex-alist-p)

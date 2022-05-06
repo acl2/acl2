@@ -1,0 +1,552 @@
+% GENERAL FORMAT OF EACH SLIDE
+% ----------------------------
+
+%\begin{frame}
+
+%\newlibtitle or \implibtitle % for new vs. improved libraries
+
+%\bookpath{path/to/the/library}: % directory or file, use macro for font
+% Short description of what this library is, 1-2 lines.
+%\begin{itemize}
+%\item
+% A highlight about this new or improved library.
+%\item
+% Another highlight.
+%\item
+% Say if it's described in a paper at this workshop,
+% in which case, there may be little to say here.
+%\end{itemize}
+
+%\separation % to separate the next entry, if any
+
+%\bookpath{another/path}: % as above
+
+%\end{frame}
+
+% ORDER OF THE SLIDES AND ENTRIES
+% -------------------------------
+
+% First all the new libraries, in alphabetical order.
+
+% Then all the improved libraries, in alphabetical order.
+
+% Then one or more slides with additional contributions.
+
+% Don't worry about adding your contributions in order:
+% Alessandro will quickly put them in order if needed,
+% and also fix any formatting issues.
+
+% TITLE SLIDE
+% -----------
+
+% Add your name as co-author, in alphabetical order of last name.
+
+% Add your organization, in alphabetical order.
+% Renumber the \inst{n} instances as needed
+% (both inside \author{...} and inside \institute{...}).
+
+% Or ask Alessandro to do this.
+
+% OTHER REMARKS
+% -------------
+
+% Use the \code{...} macro for code (i.e.\ fixed-width) font within the text.
+
+% If you want to show code block snippets,
+% use the verbatim environment,
+% and add [fragile] just after \begin{frame}.
+
+% For guidelines on content and level of detail,
+% please see existing entries.
+% The goal is to provide enough information to get possible users interested.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass{beamer}
+\usetheme{Singapore}
+\usecolortheme{orchid}
+\usepackage{inconsolata}
+
+\beamertemplatenavigationsymbolsempty
+
+\setbeamertemplate{footline}[frame number]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newenvironment{codeblock}{\begin{alltt}}{\end{alltt}}
+
+\newcommand{\bookpath}[1]{\textbf{\code{#1}}}
+
+\newcommand{\newlibtitle}{\frametitle{New Libraries}}
+\newcommand{\implibtitle}{\frametitle{Improved Libraries}}
+
+\newcommand{\separation}{\vspace*{1.5ex}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{What's New in the Community Books}
+
+\subtitle{Since the ACL2-2020 Workshop}
+
+\author{Alessandro Coglio\inst{1} (presenter),
+        Matt Kaufmann\inst{2}, \\
+        J Strother Moore\inst{2}}
+
+\institute{\inst{1}Kestrel Institute,
+           \inst{2}University of Texas at Austin}
+
+\date{ACL2-2022 Workshop}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame[noframenumbering,plain]{\titlepage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]
+
+\newlibtitle
+
+\bookpath{kestrel/acl2pl}:
+Preliminary model of the ACL2 programming (not logical) language.
+\begin{itemize}
+\item Abstract syntax consisting of translated terms, functions, and packages.
+\item Small-step evaluation semantics.
+\item Program-mode interpreter.
+\item Lifter from packages and functions in the world to the formal model.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/c}:
+Models, proofs, and tools for C (described in a paper at this workshop).
+\begin{itemize}
+\item ATC, the C code generator for ACL2.
+\item Deep embedding of C in ACL2.
+\item Shallow embedding of C in ACL2.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/crypto/pfcs}:
+Prime Field Constraint Systems (PFCS).
+\begin{itemize}
+\item Generalization of Rank-1 Constraint Systems (R1CS).
+\item Formal syntax and semantics.
+\item Preliminary reasoning support.
+\item Useful in zero-knowledge cryptographic proofs.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/isar}:
+Tools for Isar-style proofs in ACL2.
+\begin{itemize}
+\item Isar = Intelligible semi-automated reasoning
+      (proof language of the Isabelle theorem prover).
+\item Human-oriented (vs.\ machine-oriented) readable proofs.
+\item \code{:assume} ... \code{:let} ... \code{:derive} ... \code{:qed}.
+\item Useful, for instance, in proofs involving algebraic manipulations
+      that do not follow simple rewriting directions.
+\item This library is just a small start.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/json}:
+Models and tools for JSON.
+\begin{itemize}
+\item Abstract syntax of JSON.
+\item Converter from parser's abstract syntax to this abstract syntax.
+\item Can be extended with semantics and tools.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/simpl-imp}:
+A simple didactic programming language, Imp.
+\begin{itemize}
+\item Formal syntax and semantics.
+\item Useful for didactic purposes.
+\item Used in the literature.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/solidity}:
+Small start towards a model of Solidity,
+the main smart contract language for Ethereum.
+\begin{itemize}
+\item A model of (some) Solidity values.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/syntheto}:
+Models, proofs, and tools for Syntheto (described in a paper at this workshop).
+\begin{itemize}
+\item Surface language for APT and ACL2.
+\item Formalization of abstract syntax.
+\item Formalization of static semantics.
+\item Translation to ACL2 (Syntheto back end).
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/yul}:
+Models, proofs, and tools for Yul,
+an intermediate language used in the Solidity compiler.
+\begin{itemize}
+\item Concrete syntax and parser.
+\item Abstract syntax.
+\item Static semantics.
+\item Dynamic semantics.
+\item Static soundness proof.
+\item Covers all of `generic Yul'.
+\item Some verified Yul-to-Yul transformations (used in the Solidity compiler).
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/zcash}:
+Models and proofs for the Zcash blockchain.
+\begin{itemize}
+\item Formalization of some zero-knowledge-related operations.
+\item Formalization and verification of some R1CS gadgets.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{std/obags}:
+Ordered bags (obags).
+\begin{itemize}
+\item Similar to osets and omaps, for bags (i.e.\ multisets).
+\item Modeled as totally (non-strictly) ordered lists.
+\item Include operations and theorems.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/abnf}:
+Augmented Backus-Naur Form (ABNF).
+\begin{itemize}
+\item Refactored to move parser verification proof to separate file from parser.
+\item Refactored to collect parsing primitives usable in other parsers.
+\item Added preliminary parsing generation tools.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/apt}:
+Automated Program Transformations (APT).
+\begin{itemize}
+\item Added new \code{schemalg} transformation to apply algorithm schemas,
+      currently supporting divide-and-conquer schemas.
+\item Added new \code{solve} transformation to attempt to solve a specification,
+      currently supporting the ACL2 and Axe rewriters as solvers.
+\item Added new \code{expdata} transformation to refine data types
+      where each instance of the old data may be represented byte
+      multiple instances of the new data (i.e\ not isomorphic).
+\item Improved and extended existing
+      \code{isodata}, \code{restrict}, \code{simplify}, and \code{tailrec}
+      transformations.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{build}:
+Build system.
+\begin{itemize}
+\item Now \code{cert.pl} makes use of useless runes just as \code{make} does.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/crypto/ecurve}:
+Elliptic curve cryptography.
+\begin{itemize}
+\item Extended and improved formalization of short Weierstrass curves.
+\item Added formalization of twisted Edwards curves.
+\item Added formalization of Montgomery curves.
+\item Added formalization of birational equivalence between
+      Montgomery and twisted Edwards.
+\item Added formalization of Edwards BLS12 curve.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/event-macros}:
+Tools for event macros.
+\begin{itemize}
+\item Added utilities to create events from structured information.
+\item Added utility to set up a more controlled proof environment
+      for generating proofs designed to never fail.
+\item Other improvements.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/fty}:
+Fixtype library extensions in the Kestrel books.
+\begin{itemize}
+\item Mutual recursion (i.e.\ \code{deftypes})
+      now supports \code{defset} and \code{defomap}.
+\item Added a macro \code{defsubtype} for subtypes of existing fixtypes.
+\item Added a macro \code{defresult} for result types,
+      i.e.\ unions of good results and error results
+      (similar to Rust's \code{Result} type).
+\item Added several common fixtypes.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/java}:
+Models, proofs, and tools for Java.
+\begin{itemize}
+\item AIJ has been optimized,
+      and extended with more Java implementations of ACL2 built-in functions.
+\item ATJ has been extended and improved
+      (see the paper on ATJ at this Workshop).
+\item Extended the formalization of (some aspects of) the Java language.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/soft}:
+Second-Order Functions and Theorems (SOFT).
+\begin{itemize}
+\item Added macro \code{defsoft} to record already introduced functions
+      into the SOFT table for possible later instantiation.
+\item Added macros \code{define2}, \code{defund-sk2}, \code{define-sk2}
+      as second-order versions of the existing macros.
+\item Added macro \code{defequal} to introduce second-order equalities.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/std}:
+Standard library extensions in the Kestrel books.
+\begin{itemize}
+\item Added several system utilities.
+\item Added macro \code{defund-sk} that disables function and theorem.
+\item Added macros \code{defmapping}, \code{definj}, \code{defsurj}
+      to introduce and verify mappings between predicates.
+\item Added macro \code{tuple} to mimic \code{mv} return specifiers
+      inside components of \code{mv} return specifiers
+      (particularly, the value component of error triples).
+\item Added macro \code{defmin-int} to declaratively define
+      the minimum of a (possibly infinite) set of integers.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/utilities}:
+Utilities in the Kestrel books.
+\begin{itemize}
+\item Added macro \code{checkpoint-list},
+      which provides a programmatic, flexible interface
+      to the key checkpoint information.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{projects/x86isa}:
+X86ISA, the formal model of the x86 Instruction Set Architecture.
+\begin{itemize}
+\item Simplified the treatment of CPUID features.
+\item Added the \code{MOVD} and \code{MOVQ} instruction variants
+      that move data from/to the XMM registers.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{projects/apply}:
+\code{apply\$} and \code{loop\$} tools.
+\begin{itemize}
+\item Replaced \code{top.lisp} with:
+      \begin{itemize}
+      \item \code{apply.lisp}, to reason about \code{apply\$}.
+      \item \code{loop.lisp}, to reason about \code{loop\$}
+            (this also includes \code{apply.lisp}).
+      \item \code{top.lisp},
+            which includes \code{apply.lisp} and \code{loop.lisp},
+            and is thus the same as \code{loop.lisp}.
+      \end{itemize}
+\item Made the inclusion of certain supporting books local.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{std}:
+Standard library.
+\begin{itemize}
+\item Added macro \code{add-io-pairs} to speed up execution
+      using verified input/output pairs.
+\item Moved macro \code{define-sk} from the Kestrel books.
+\item Added several typed alists.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{tools}: Miscellaneous tools.
+\begin{itemize}
+\item Added macro \code{rewrite\$},
+      which provides a programmatic, flexible interface
+      to the ACL2 rewriter.
+\item Improved macro \code{prove\$},
+      which provides a programmatic, flexible interface
+      to the ACL2 prover.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

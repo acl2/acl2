@@ -288,7 +288,7 @@
                    :msg "; norm-concats main: ~st sec, ~sa bytes~%")))
     (clear-memoize-table 'svex-normalize-concats-aux)
     (fast-alist-free ctxalist)
-    (and verbosep (cw "opcount after norm-concats: ~x0~%" (svexlist-opcount x)))
+    (and verbosep (cw "opcount after norm-concats: ~x0~%" (svexlist-opcount res)))
     res)
   ///
   (defret svexlist-normalize-concats-correct

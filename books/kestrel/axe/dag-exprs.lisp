@@ -278,12 +278,11 @@
 
 (defthm not-<-of-0-and-nth-of-dargs
   (implies (and (dag-exprp expr)
-                (< n (len (dargs expr)))
-                (natp n)
+       ;         (< n (len (dargs expr)))
+        ;        (natp n)
                 (not (equal 'quote (car expr)))
                 )
-           (not (< (nth n (dargs expr)) 0)))
-  :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp))))
+           (not (< (nth n (dargs expr)) 0))))
 
 (defthm true-listp-of-cdr-of-nth-of-dargs
   (implies (and (dag-exprp expr)

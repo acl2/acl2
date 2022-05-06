@@ -873,15 +873,15 @@ constructed separately.)</p>"
                   (vl-datatype-fix y-type) (string-fix portname) (vl-expr-fix y-expr))
             nil nil nil))
        (arraysize (acl2::maybe-posp-fix arraysize))
-       ((unless arraysize)
-        ;; If we don't have an instarray, then x-type and y-type are the same
-        ;; and x has already been extended, if needed.
-        (mv nil nil y-size y-size))
        ((mv err x-size) (vl-datatype-size x-type))
        ((when (or err (not x-size) (eql 0 x-size)))
         (mv (vmsg "Couldn't size datatype ~a0 for ~s1 port expression ~a2"
                   (vl-datatype-fix x-type) (string-fix portname) (vl-expr-fix x-expr))
             nil nil nil))
+       ((unless arraysize)
+        ;; If we don't have an instarray, then we're just going to leave things
+        ;; alone.
+        (mv nil nil x-size y-size))
        (y-packed (vl-datatype-packedp y-type))
        (x-packed (vl-datatype-packedp x-type))
        ((when (and x-packed y-packed))
@@ -1261,79 +1261,6 @@ constructed separately.)</p>"
                :interfacep t))))
 
 
-          ;;    (x-lhs
-
-          ;;    (x-udims (vl-datatype->udims x-type))
-          ;;    ((when (consp (cdr x-udims)))
-          ;;     (fail (fatal :type :vl-plainarg->svex-fail
-          ;;                  :msg "Can't handle multidimensional interface port argument ~
-          ;;                        .~s0(~a1)"
-          ;;                  :args (list y.name x.expr))))
-          ;;    (x-array-resolved (or (atom x-udims)
-          ;;                          (b* ((dim (car x-udims)))
-          ;;                            (vl-dimension-case dim
-          ;;                              :range
-          ;;                              (vl-range-resolved-p dim.range)
-          ;;                              :otherwise nil))))
-          ;;    ((unless x-array-resolved)
-          ;;     (fail (fatal :type :vl-plainarg->svex-fail
-          ;;                  :msg "Bad array dimension on interface port argument ~
-          ;;                        .~s0(~a1) (type: ~a2)"
-          ;;                  :args (list y.name x.expr
-          ;;                              (make-vl-structmember
-          ;;                               :name "xx"
-          ;;                               :type x-type)))))
-
-          ;;    (x-range-size (and (consp x-udims)
-          ;;                       (vl-range->size (vl-dimension->range (car x-udims)))))
-
-          ;;    ;; At this point we have:
-          ;;    ;;   arraysize -- number of modinsts
-          ;;    ;;   x-range-size -- 
-
-          ;;    ((when (and arraysize
-          ;;                (atom (vl-datatype->udims x-type))))
-          ;;     (fail (fatal :type :vl-plainarg->svex-fail
-          ;;                  :msg ""
-          ;;                  :args (list y.name x.expr)))
-             
-
-          ;;    ((mv interface if-ss) (vl-scopestack-find-definition/ss y.ifname ss))
-          ;;    ((unless (and interface (vl-scopedef-interface-p interface)))
-          ;;     (fail (fatal :type :vl-plainarg->svex-fail
-          ;;               :msg "Interface ~s0 for interface port ~s1 not found"
-          ;;               :args (list y.ifname y.name))))
-             
-
-
-          ;;    ((mv err xvar) (vl-interfaceref-to-svar x.expr ss))
-          ;;    ((when err)
-          ;;     (fail (fatal :type :vl-plainarg->svex-fail
-          ;;                  :msg "Failed to resolve argument to interface port ~a0: ~@1"
-          ;;                  :args (list y err))))
-          ;;    (yvar (svex-var-from-name y.name))
-          ;;    ;; ((mv ok yvar) (svex-add-namespace instname yvar))
-          ;;    ;; (- (or ok (raise "Programming error: malformed variable in expression ~x0"
-          ;;    ;;                  yvar)))
-          ;;    ((wmv warnings ifwidth) (vl-interface-size interface if-ss))
-          ;;    (warnings (append-without-guard warnings (ok)))
-          ;;    (xsvex (sv::svex-concat ifwidth xvar (sv::svex-z)))
-          ;;    (ysvex (sv::Svex-concat ifwidth yvar (sv::svex-z)))
-          ;;    (xlhs (sv::svex->lhs xsvex))
-          ;;    (ylhs (sv::svex->lhs ysvex)))
-          ;; (mv (ok)
-          ;;     (make-vl-portinfo-interface
-          ;;      :portname y.name
-          ;;      :interface interface
-          ;;      :argindex argindex
-          ;;      :conn-expr x.expr
-          ;;      :port-lhs ylhs
-          ;;      :conn-lhs xlhs
-          ;;      :size ifwidth))))
-
-       ;; ((when (not y.name))
-       ;;  (cw "Warning! No name for port ~x0, module ~s1~%" y inst-modname)
-       ;;  (mv nil nil))
        ((vl-regularport y))
        (y.name (or y.name (cat "unnamed_port_" (natstr argindex))))
        (vttree nil)
@@ -1376,8 +1303,21 @@ constructed separately.)</p>"
                :port-size y-size
                :replicatedp (and arraysize t)))))
        ((vmv vttree x-svex x-type ?x-size type-err)
-        (vl-expr-to-svex-maybe-typed
-         x.expr (if arraysize nil y-type) ss scopes :compattype :assign))
+        ;; We used to pass y-type into the vl-expr-to-svex-maybe-typed form
+        ;; except in the case of an instance array.  But occasionally we find
+        ;; something like an expression x[1:0] connected to an output port
+        ;; y[3:0], and this would cause the connection expression to be
+        ;; extended to {2'b0, x[1:0]} which doesn't look like an LHS expression
+        ;; in svex-world.  Instead, we want to leave it self-determined.  But
+        ;; we'll hedge our bets for cases where either the connection
+        ;; expression needs type context or the port datatype is not packed.
+        (b* ((type-to-use (and (not arraysize)
+                               (or (not (eq x.dir :vl-output))
+                                   (vl-expr-needs-type-context x.expr)
+                                   (and y-type (not (vl-datatype-packedp y-type))))
+                               y-type)))
+          (vl-expr-to-svex-maybe-typed
+           x.expr type-to-use ss scopes :compattype :assign)))
        
        ((unless y.expr)
         (mv vttree
@@ -4893,14 +4833,16 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
     (b* ((vttree nil)
          (elabindex (vl-elabindex-push (vl-genblob-fix x)))
-         ((vl-genblob x))
          ((vl-simpconfig config))
-         ((wvmv ?ok vttree ?new-x elabindex)
-          ;; new-x isn't really relevant since we've already run
-          ;; unparameterization before; we're just doing this to generate the
-          ;; tables.
-          (vl-genblob-elaborate x elabindex
-                                :reclimit config.elab-limit))
+         (orig-generates (vl-genblob->generates x))
+         ;; ((wvmv ?ok vttree elab-x elabindex)
+         ;;  ;; new-x isn't really relevant since we've already run
+         ;;  ;; unparameterization before; we're just doing this to generate the
+         ;;  ;; tables.
+         ;;  (vl-genblob-elaborate (make -vl-genblob x :generates nil)
+         ;;                        elabindex
+         ;;                        :reclimit config.elab-limit))
+         ((vl-genblob x)) ;; elab-x)
          (elabindex (vl-elabindex-sync-scopes))
          (ss (vl-elabindex->ss))
          (scopes (vl-elabindex->scopes))
@@ -4938,7 +4880,7 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
 
          ((wvmv vttree modalist gen-insts gen-wires gen-aliases gen-width elabindex)
           (vl-generates->svex-modules
-           x.generates elabindex modname config modalist
+           orig-generates elabindex modname config modalist
            (maybe-nat interfacep (+ vars-width insts-width ifports-width))))
 
          (totalwidth (+ vars-width insts-width ifports-width gen-width))

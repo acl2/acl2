@@ -18382,6 +18382,80 @@
           (car names)
           (untranslate (guard (car names) nil wrld) t wrld)))))
 
+(defun chk-stobj-field-type-term (term type init field name type-string str
+                                       ctx wrld state)
+  (er-let* ((pair (simple-translate-and-eval term
+                                             (list (cons 'x init))
+                                             nil
+                                             (msg "The type ~x0" term)
+                                             ctx
+                                             wrld
+                                             state
+                                             nil)))
+
+; pair is (tterm . val), where tterm is a term and val is its value
+; under x<-init.
+
+    (er-progn
+     (chk-common-lisp-compliant-subfunctions
+      nil (list field) (list (car pair))
+      wrld str ctx state)
+     (chk-unrestricted-guards-for-type-spec-term
+      (all-fnnames (car pair))
+      wrld ctx state)
+     (cond
+      ((not (cdr pair))
+       (er soft ctx
+           "The value specified by the :initially keyword, namely ~x0, fails ~
+            to satisfy the declared type ~x1~@2 for the ~x3 field of ~x4."
+           init type type-string field name))
+      (t (value nil))))))
+
+(defun chk-stobj-field-etype (etype type field name initp init arrayp
+                                    non-memoizable
+                                    child-stobj-memoizable-error-string
+                                    ctx wrld state)
+  (let* ((stobjp (stobjp etype t wrld))
+         (etype-term        ; used only when (not stobjp)
+          (and (not stobjp) ; optimization
+               (translate-declaration-to-guard etype 'x wrld)))
+         (etype-error-string
+          "The element type specified for the ~x0 field of ~x1, namely ~x2, ~
+           is not recognized by ACL2 as a type-spec (see :DOC type-spec) or ~
+           as a user-defined stobj name."))
+    (cond
+     (stobjp
+
+; Defstobj-raw-init-fields depends on this check.  Also see the comment above
+; explaining how stobj-let depends on this check.
+
+      (cond ((eq etype 'state)
+             (er soft ctx
+                 etype-error-string
+                 field name etype))
+            ((and non-memoizable
+                  (not (getpropc etype 'non-memoizable nil wrld)))
+             (er soft ctx
+                 child-stobj-memoizable-error-string
+                 name etype))
+            ((null initp) (value nil))
+            (t (er soft ctx
+                   "The :initially keyword must be omitted for a :type ~
+                    specified as an array of stobjs or a hash-table of ~
+                    stobjs.  But for :type ~x0, :initially is specified as ~
+                    ~x1 for the ~x2 field of ~x3."
+                   type init field name))))
+     ((null etype-term)
+      (er soft ctx
+          etype-error-string
+          field name etype))
+     (t
+      (chk-stobj-field-type-term etype-term etype init field name
+                                 (msg " in the ~@0 specification"
+                                      (if arrayp "array" "hash-table"))
+                                 "auxiliary function"
+                                 ctx wrld state)))))
+
 (defun chk-stobj-field-descriptor (name field-descriptor non-memoizable
                                         ctx wrld state)
 
@@ -18465,15 +18539,7 @@
                type field name))
           (t (let* ((type0 (fix-stobj-array-type type wrld))
                     (etype (cadr type0))
-                    (stobjp (stobjp etype t wrld))
-                    (etype-term ; used only when (not stobjp)
-                     (and (not stobjp) ; optimization
-                          (translate-declaration-to-guard etype 'x wrld)))
-                    (n (car (caddr type0)))
-                    (etype-error-string
-                     "The element type specified for the ~x0 field of ~x1, ~
-                      namely ~x2, is not recognized by ACL2 as a type-spec ~
-                      (see :DOC type-spec) or as a user-defined stobj name."))
+                    (n (car (caddr type0))))
                (cond
                 ((not (natp n))
                  (er soft ctx
@@ -18482,63 +18548,11 @@
                       ~ The :type ~x0 for the ~x1 field of ~x2 is thus ~
                       illegal."
                      type0 field name))
-                (stobjp
-
-; Defstobj-raw-init-fields depends on this check.  Also see the comment above
-; explaining how stobj-let depends on this check.
-
-                 (cond ((eq etype 'state)
-                        (er soft ctx
-                            etype-error-string
-                            field name etype))
-                       ((and non-memoizable
-                             (not (getpropc etype 'non-memoizable nil wrld)))
-                        (er soft ctx
-                            child-stobj-memoizable-error-string
-                            name etype))
-                       ((null initp) (value nil))
-                       (t (er soft ctx
-                              "The :initially keyword must be omitted for a ~
-                               :type specified as an array of stobjs.  But ~
-                               for :type ~x0, :initially is specified as ~x1 ~
-                               for the ~x2 field of ~x3."
-                              type init field name))))
-                ((null etype-term)
-                 (er soft ctx
-                     etype-error-string
-                     field name etype))
                 (t
-                 (er-let*
-                     ((pair (simple-translate-and-eval etype-term
-                                                       (list (cons 'x init))
-                                                       nil
-                                                       (msg
-                                                        "The type ~x0"
-                                                        etype-term)
-                                                       ctx
-                                                       wrld
-                                                       state
-                                                       nil)))
-
-; pair is (tterm . val), where tterm is a term and val is its value
-; under x<-init.
-
-                   (er-progn
-                    (chk-common-lisp-compliant-subfunctions
-                     nil (list field) (list (car pair))
-                     wrld "auxiliary function" ctx state)
-                    (chk-unrestricted-guards-for-type-spec-term
-                     (all-fnnames (car pair))
-                     wrld ctx state)
-                    (cond
-                     ((not (cdr pair))
-                      (er soft ctx
-                          "The value specified by the :initially ~
-                           keyword, namely ~x0, fails to satisfy the ~
-                           declared type ~x1 in the array ~
-                           specification for the ~x2 field of ~x3."
-                          init etype field name))
-                     (t (value nil)))))))))))
+                 (chk-stobj-field-etype etype type field name initp init t
+                                        non-memoizable
+                                        child-stobj-memoizable-error-string
+                                        ctx wrld state)))))))
         ((assoc-keyword :resizable (cdr field-descriptor))
          (er soft ctx
              "The :resizable keyword is only legal for array types, hence is ~
@@ -18547,29 +18561,34 @@
         ((and (consp type)
               (eq (car type) 'hash-table))
          (cond ((not (and (true-listp type)
-                          (member (length type) '(2 3))))
+                          (member (length type) '(2 3 4))))
                 (er soft ctx
-                    "A hash-table type must be a true-list of length 2 or 3, ~
-                     interpreted as (HASH-TABLE TEST) or (HASH-TABLE TEST ~
-                     SIZE).  The type ~x0 is thus illegal.~%"
+                    "A hash-table type must be a true-list of length 2, 3, or ~
+                     4.  The type ~x0 is thus illegal.  See :DOC defstobj.~%"
                     type))
-               ((not (member (cadr type)
-                             '(eq eql equal hons-equal)))
-                (er soft ctx
-                    "A hash-table type must be specified as (HASH-TABLE TEST) ~
-                     or (HASH-TABLE TEST SIZE), where test is ~v0.  The test ~
-                     given was ~x1.~%"
-                    '(eq eql hons-equal equal)
-                    (and (consp (cdr type))
-                         (cadr type))))
-               ((and (cddr type)
-                     (not (natp (caddr type))))
-                (er soft ctx
-                    "A hash-table type of the form (HASH-TABLE TEST SIZE) ~
-                     must specify SIZE as a natural number  The type ~x0 is ~
-                     thus illegal.~%"
-                    type))
-               (t (value nil))))
+               (t (let ((test (stobj-hash-table-test type))
+                        (size (stobj-hash-table-init-size type))
+                        (etype (stobj-hash-table-element-type type)))
+                    (cond ((not (member-eq test '(eq eql equal hons-equal)))
+                           (er soft ctx
+                               "A hash-table test must be ~v0.  The test ~
+                                given was ~x1.  See :DOC defstobj.~%"
+                               '(eq eql hons-equal equal)
+                               test))
+                          ((and size
+                                (not (natp size)))
+                           (er soft ctx
+                               "A hash-table type must specify the size (the ~
+                                optional second argument) as nil or a natural ~
+                                number  The type ~x0 is thus illegal.  See ~
+                                :DOC defstobj.~%"
+                               type))
+                          ((not (eq etype t))
+                           (chk-stobj-field-etype
+                            etype type field name initp init nil non-memoizable
+                            child-stobj-memoizable-error-string ctx wrld
+                            state))
+                          (t (value nil)))))))
         ((and (consp type)
               (eq (car type) 'stobj-table))
          (cond ((not (and (true-listp type)
@@ -18588,7 +18607,7 @@
                     type))
                (t (value nil))))
         (t (let* ((stobjp (stobjp type t wrld))
-                  (type-term ; used only when (not stobjp)
+                  (type-term         ; used only when (not stobjp)
                    (and (not stobjp) ; optimization
                         (translate-declaration-to-guard type 'x wrld)))
                   (type-error-string
@@ -18622,35 +18641,8 @@
                    type-error-string
                    field name type))
               (t
-               (er-let* ((pair (simple-translate-and-eval type-term
-                                                          (list (cons 'x init))
-                                                          nil
-                                                          (msg
-                                                           "The type ~x0"
-                                                           type-term)
-                                                          ctx
-                                                          wrld
-                                                          state
-                                                          nil)))
-
-; pair is (tterm . val), where tterm is a term and val is its value
-; under x<-init.
-
-                 (er-progn
-                  (chk-common-lisp-compliant-subfunctions
-                   nil (list field) (list (car pair))
-                   wrld "body" ctx state)
-                  (chk-unrestricted-guards-for-type-spec-term
-                   (all-fnnames (car pair))
-                   wrld ctx state)
-                  (cond
-                   ((not (cdr pair))
-                    (er soft ctx
-                        "The value specified by the :initially keyword, ~
-                         namely ~x0, fails to satisfy the declared :type ~x1 ~
-                         for the ~x2 field of ~x3."
-                        init type field name))
-                   (t (value nil)))))))))))))))
+               (chk-stobj-field-type-term type-term type init field name ""
+                                          "body" ctx wrld state)))))))))))
 
 (defun chk-acceptable-defstobj-renaming
   (name field-descriptors renaming ctx state default-names)
@@ -19195,45 +19187,42 @@
    ((endp field-templates)
     nil)
    (t (let* ((field-template (car field-templates))
-             (type (access defstobj-field-template
-                           field-template
-                           :type))
+             (type (access defstobj-field-template field-template :type))
              (arrayp (and (consp type) (eq (car type) 'array)))
-             (init0 (access defstobj-field-template
-                            field-template
-                            :init))
-             (creator (get-stobj-creator (if arrayp (cadr type) type)
-                                         wrld))
+             (hashp (and (consp type) (eq (car type) 'hash-table)))
+             (init0 (access defstobj-field-template field-template :init))
+             (etype (cond (arrayp (cadr type))
+                          (hashp (stobj-hash-table-element-type type))
+                          (t nil)))
+             (creator (get-stobj-creator (or etype type) wrld))
              (init (if creator
                        `(non-exec (,creator))
-                     (kwote init0)))
-             (hashp (and (consp type) (eq (car type) 'hash-table)))
-             (hash-test (and hashp (cadr type)))
+                     (and init0 (kwote init0))))
+             (hash-test (and hashp (stobj-hash-table-test type)))
              (stobj-tablep (and (consp type) (eq (car type) 'stobj-table)))
-             (array-etype (and arrayp (cadr type)))
-             (stobj-formal
-              (cond (arrayp (and (not (eq array-etype 'state))
-                                 (stobjp array-etype t wrld)
-                                 array-etype))
+             (stobjp
+              (cond (etype (and (not (eq etype 'state))
+                                (stobjp etype t wrld)))
                     (t (and (not (eq type 'state))
-                            (stobjp type t wrld)
-                            type))))
+                            (stobjp type t wrld)))))
+             (stobj-formal (and stobjp (or etype type)))
              (v-formal (or stobj-formal 'v))
              (stobj-xargs (and stobj-formal
                                `(:stobjs ,stobj-formal)))
              (type-term         ; used in guard
-              (and (not arrayp) ; else type-term is not used
+              (and (not arrayp)
                    (not hashp)
                    (not stobj-tablep)
-                   (if (null wrld) ; called from raw Lisp, so guard is ignored
+                   (if (or (null wrld) ; called from raw Lisp, so guard ignored
+                           stobj-formal)
                        t
                      (translate-declaration-to-guard type v-formal wrld))))
-             (array-etype-term     ; used in guard
-              (and arrayp          ; else array-etype-term is not used
-                   (if (null wrld) ; called from raw Lisp, so guard is ignored
+             (etype-term               ; used in guard
+              (and (or arrayp hashp)   ; else etype-term is not used
+                   (if (or (null wrld) ; called from raw Lisp, so guard ignored
+                           stobj-formal)
                        t
-                     (translate-declaration-to-guard array-etype v-formal
-                                                     wrld))))
+                     (translate-declaration-to-guard etype v-formal wrld))))
              (array-length (and arrayp (car (caddr type))))
              (accessor-name (access defstobj-field-template
                                     field-template
@@ -19307,29 +19296,30 @@
 ; We avoid laying down the stobj recognizer twice for a child stobj (although
 ; that would nevertheless be removed by the use of stobj-optp).
 
-                                         ,@(and (not stobj-xargs)
-                                                (assert$
-                                                 array-etype-term
-                                                 (if (eq array-etype-term
-                                                         t)
-                                                     nil
-                                                   (list array-etype-term)))))
+                                         ,@(if (eq etype-term t)
+                                               nil
+                                             (list etype-term)))
                                     :verify-guards t
                                     ,@stobj-xargs))
-                            ,(if stobj-formal
-                                 `(non-exec
-                                   (update-nth-array ,n i ,v-formal ,var))
-                               `(update-nth-array ,n i ,v-formal ,var))))
+                            ,(let ((form
+                                    `(update-nth-array ,n i ,v-formal ,var)))
+                               (if stobj-formal `(non-exec ,form) form))))
            (defstobj-field-fns-axiomatic-defs
              top-recog var (+ n 1) (cdr field-templates) wrld)))
          ((or hashp stobj-tablep)
-          (flet ((common-guard (hash-test var top-recog)
+          (flet ((common-guard (hash-test var top-recog etype-term)
                                (cond ((eq hash-test 'eq)
                                       `(and (,top-recog ,var)
-                                            (symbolp k)))
+                                            (symbolp k)
+                                            ,@(and etype-term
+                                                   (not (eq etype-term t))
+                                                   (list etype-term))))
                                      ((eq hash-test 'eql)
                                       `(and (,top-recog ,var)
-                                            (eqlablep k)))
+                                            (eqlablep k)
+                                            ,@(and etype-term
+                                                   (not (eq etype-term t))
+                                                   (list etype-term))))
                                      (t
 
 ; This case includes the case of stobj-tablep.  Note that a stobj-table's
@@ -19338,45 +19328,63 @@
 ; should be a symbol, there is no need to complicate the guard with that
 ; requirement.
 
-                                      `(,top-recog ,var)))))
+                                      (if (and etype-term
+                                               (not (eq etype-term t)))
+                                          `(and (,top-recog ,var)
+                                                ,etype-term)
+                                        `(,top-recog ,var))))))
             (append
-             `(,(cond (hashp ; (not stobj-tablep)
+             `(,(cond (hashp
                        `(,accessor-name
                          (k ,var)
                          (declare (xargs :guard
-                                         ,(common-guard hash-test var top-recog)
+                                         ,(common-guard hash-test var top-recog
+                                                        nil)
                                          :verify-guards t))
-                         (cdr (hons-assoc-equal k (nth ,n ,var)))))
+                         ,(if (null init)
+                              `(cdr (hons-assoc-equal k (nth ,n ,var)))
+                            `(let ((pair (hons-assoc-equal k (nth ,n ,var))))
+                               (if pair (cdr pair) ,init)))))
                       (t
                        `(,accessor-name
 ; We use v for the default, since we know that v is not ,var.
                          (k ,var v)
                          (declare (xargs :guard
-                                         ,(common-guard hash-test var top-recog)
+                                         ,(common-guard hash-test var top-recog
+                                                        nil)
                                          :verify-guards t))
                          (let ((pair (hons-assoc-equal k (nth ,n ,var))))
                            (if pair (cdr pair) v)))))
                (,updater-name
                 (k ,v-formal ,var)
-                (declare (xargs :guard ,(common-guard hash-test var top-recog)
-                                :verify-guards t))
-                (update-nth ,n (cons (cons k ,v-formal) (nth ,n ,var)) ,var))
+                (declare (xargs :guard ,(common-guard hash-test var top-recog
+                                                      etype-term)
+                                :verify-guards t
+                                ,@stobj-xargs))
+                ,(let ((form
+                        `(update-nth ,n
+                                     (cons (cons k ,v-formal) (nth ,n ,var))
+                                     ,var)))
+                   (if stobj-formal `(non-exec ,form) form)))
                (,boundp-name
                 (k ,var)
-                (declare (xargs :guard ,(common-guard hash-test var top-recog)
+                (declare (xargs :guard ,(common-guard hash-test var top-recog
+                                                      nil)
                                 :verify-guards t))
                 (consp (hons-assoc-equal k (nth ,n ,var))))
                ,@(and hashp ; skip this for a stobj-table
                       `((,accessor?-name
                          (k ,var)
                          (declare (xargs :guard
-                                         ,(common-guard hash-test var top-recog)
+                                         ,(common-guard hash-test var top-recog
+                                                        nil)
                                          :verify-guards t))
                          (mv (,accessor-name k ,var)
                              (,boundp-name k ,var)))))
                (,remove-name
                 (k ,var)
-                (declare (xargs :guard ,(common-guard hash-test var top-recog)
+                (declare (xargs :guard ,(common-guard hash-test var top-recog
+                                                      nil)
                                 :verify-guards t))
                 (update-nth ,n (hons-remove-assoc k (nth ,n ,var)) ,var))
                (,count-name
@@ -19389,21 +19397,22 @@
                 (update-nth ,n nil ,var))
                (,init-name
                 (ht-size rehash-size rehash-threshold ,var)
-                (declare (xargs :guard (and (,top-recog ,var)
-                                            (or (natp ht-size)
-                                                (not ht-size))
-                                            (or (and (rationalp rehash-size)
-                                                     (<= 1 rehash-size))
-                                                (not rehash-size))
-                                            (or (and (rationalp rehash-threshold)
-                                                     (<= 0 rehash-threshold)
-                                                     (<= rehash-threshold 1))
-                                                (not rehash-threshold))))
+                (declare (xargs :guard
+                                (and (,top-recog ,var)
+                                     (or (natp ht-size)
+                                         (not ht-size))
+                                     (or (and (rationalp rehash-size)
+                                              (<= 1 rehash-size))
+                                         (not rehash-size))
+                                     (or (and (rationalp rehash-threshold)
+                                              (<= 0 rehash-threshold)
+                                              (<= rehash-threshold 1))
+                                         (not rehash-threshold))))
                          (ignorable ht-size rehash-size rehash-threshold))
                 (update-nth ,n nil ,var)))
              (defstobj-field-fns-axiomatic-defs
                top-recog var (+ n 1) (cdr field-templates) wrld))))
-         (t
+         (t ; scalar case
           (append
            `((,accessor-name (,var)
                              (declare (xargs :guard (,top-recog ,var)
@@ -19568,51 +19577,56 @@
                     upd-fn 'stobjs-out (list name) wrld)))))))))
           ((and (consp type)
                 (member-eq (car type) '(hash-table stobj-table)))
-           (putprop
-            init-fn 'stobjs-in (list nil nil nil name)
-            (putprop
-             init-fn 'stobjs-out (list name)
+           (let* ((etype (stobj-hash-table-element-type type))
+                  (stobj-flg (and (stobjp etype t wrld)
+                                  etype)))
              (putprop
-              clear-fn 'stobjs-in (list name)
+              init-fn 'stobjs-in (list nil nil nil name)
               (putprop
-               clear-fn 'stobjs-out (list name)
+               init-fn 'stobjs-out (list name)
                (putprop
-                count-fn 'stobjs-in (list name)
+                clear-fn 'stobjs-in (list name)
                 (putprop
-                 remove-fn 'stobjs-in (list nil name)
+                 clear-fn 'stobjs-out (list name)
                  (putprop
-                  remove-fn 'stobjs-out (list name)
+                  count-fn 'stobjs-in (list name)
                   (putprop
-                   boundp-fn 'stobjs-in (list nil name)
+                   remove-fn 'stobjs-in (list nil name)
                    (putprop
+                    remove-fn 'stobjs-out (list name)
+                    (putprop
+                     boundp-fn 'stobjs-in (list nil name)
+                     (putprop
 ; Note that 'stobjs-out for acc-fn in the stobj-table case is placed further
 ; below.
-                    acc-fn 'stobjs-in (if (eq (car type) 'hash-table)
-                                          (list nil name)
+                      acc-fn 'stobjs-in (if (eq (car type) 'hash-table)
+                                            (list nil name)
 
 ; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
-                                        (list nil name *stobj-table-stobj*))
-                    (putprop
-                     upd-fn 'stobjs-in
-                     (if (eq (car type) 'stobj-table)
+                                          (list nil name *stobj-table-stobj*))
+                      (putprop-unless
+                       acc-fn 'stobjs-out (list stobj-flg) '(nil)
+                       (putprop
+                        upd-fn 'stobjs-in
+                        (if (eq (car type) 'stobj-table)
 
 ; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
-                         (list nil *stobj-table-stobj* name)
-                       (list nil nil name))
-                     (putprop
-                      upd-fn 'stobjs-out (list name)
-                      (if (eq (car type) 'hash-table)
-                          (putprop
-                           accessor?-fn 'stobjs-in (list nil name)
-                           wrld)
+                            (list nil *stobj-table-stobj* name)
+                          (list nil stobj-flg name))
+                        (putprop
+                         upd-fn 'stobjs-out (list name)
+                         (if (eq (car type) 'hash-table)
+                             (putprop
+                              accessor?-fn 'stobjs-in (list nil name)
+                              wrld)
 
 ; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
-                        (putprop acc-fn 'stobjs-out
-                                 (list *stobj-table-stobj*)
-                                 wrld))))))))))))))
+                           (putprop acc-fn 'stobjs-out
+                                    (list *stobj-table-stobj*)
+                                    wrld))))))))))))))))
           (t
            (let ((stobj-flg (and (stobjp type t wrld)
                                  type)))
@@ -22967,9 +22981,10 @@
 ; Essay on Nested Stobjs
 
 ; After Version_6.1 we introduced a new capability: allowing fields of stobjs
-; to themselves be stobjs or arrays of stobjs.  Initially we resisted this idea
-; because of an aliasing problem, which we review now, as it is fundamental to
-; understanding our implementation.
+; to themselves be stobjs or arrays of stobjs.  (Hash-tables of stobjs were
+; added after Version_8.4.)  Initially we resisted this idea because of an
+; aliasing problem, which we review now, as it is fundamental to understanding
+; our implementation.
 
 ; Consider the following events.
 
@@ -23081,9 +23096,11 @@
 ; There are comments about aliasing in the definitions of translate11-let and
 ; translate11-mv-let.
 
-; In the bindings, an index in an array access must be a symbol or a (possibly
-; quoted) natural number -- after all, there would be a waste of computation
-; otherwise, since we do updates at the end.  For each index that is a
+; In the bindings, an index in an array access or a key in a hash-table access
+; must be a symbol, natural number, or quoted constant -- after all, there
+; could be a waste of computation otherwise when doing updates at the end.  (If
+; there are no updates involving the index or key then perhaps we can relax
+; this condition, but for now we leave it as is.)  For each index that is a
 ; variable, it must not be among the producer variables, to prevent its capture
 ; in the generated updater call.
 

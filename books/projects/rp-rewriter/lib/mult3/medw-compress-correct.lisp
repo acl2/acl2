@@ -206,9 +206,7 @@
      (equal (-- (sum x y))
             (sum (-- x) (-- y))))
 
-   (defthm --of---
-     (equal (-- (-- x))
-            (ifix x)))
+   
 
    (defthm equal-of-m2-dummy1
      (equal (equal (m2 (sum x a))
@@ -608,7 +606,7 @@
                                floor2-if-f2
                                +-IS-SUM)))))
 
-   (defthm d2-of-repeated
+   (defthm d2-of-repeated-1
      (and (equal (d2 (sum a a b))
                  (sum a (d2 b)))
           (equal (d2 (sum a a))

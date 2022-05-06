@@ -1483,17 +1483,20 @@
     bvmult-trim-arg2-dag-all  ;seemed to need this for rc6 decrypt
     ;; bvmult-trim-arg1-dag
     ;; bvmult-trim-arg2-dag
-    ;; todo: why are the minus rules here if the plus rule isn't?
-    bvminus-trim-arg1-dag ;this is an all rule..
-    bvminus-trim-arg2-dag ;this is an all rule (others in this list may be too)
+    bvminus-trim-arg1-dag-all
+    bvminus-trim-arg2-dag-all
+    bvplus-trim-arg1-dag-all
+    bvplus-trim-arg2-dag-all
     bvuminus-trim-dag-all
     bvnot-trim-dag-all
     bvxor-trim-arg1-dag
     bvxor-trim-arg2-dag
     bvor-trim-arg1-dag
     bvor-trim-arg2-dag
-    bvcat-trim-arg1-dag
-    bvcat-trim-arg2-dag
+    bvcat-trim-arg2-dag-all ;hope these are okay; seemed key for rc2 and maybe other proofs
+    bvcat-trim-arg1-dag-all
+    ;; bvcat-trim-arg1-dag
+    ;; bvcat-trim-arg2-dag
     bvif-trim-arg1-dag
     bvif-trim-arg2-dag
     bitxor-trim-arg1-dag-all
@@ -1543,10 +1546,9 @@
 
 (defun all-trim-rules ()
   (declare (xargs :guard t))
-  (append '(bvplus-trim-arg1-dag-all
-            bvplus-trim-arg2-dag-all
-            bvcat-trim-arg1-dag-all
-            bvcat-trim-arg2-dag-all)
+  (append '(;bvcat-trim-arg1-dag-all
+;bvcat-trim-arg2-dag-all
+            )
           (trim-rules)))
 
 (defun list-to-bv-array-rules ()
@@ -1607,8 +1609,6 @@
             max-constants-lemma ;bozo more like this?
             myif-not-myif-same  ;bozo more like this?
 
-            bvcat-trim-arg2-dag-all ;hope these are okay; seemed key for rc2 and maybe other proofs
-            bvcat-trim-arg1-dag-all
 
             leftrotate32-trim-amt-all ;move to trim rules?
 
@@ -1632,8 +1632,6 @@
 
             bitnot-of-getbit-0 ;bozo more like this
             bvnot-1-becomes-bitnot-better
-            bvplus-trim-arg1-dag-all ; FIXME move to trim-rules?
-            bvplus-trim-arg2-dag-all ; FIXME move to trim-rules?
             getbit-of-bvnot          ;bozo add a getbit trim -all rule instead
             getbit-of-bvplus         ;use trim?
 

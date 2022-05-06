@@ -5,6 +5,7 @@
 
 ; Copyright (C) 2019, Regents of the University of Texas
 ; All rights reserved.
+; Copyright (C) 2022 Intel Corporation
 
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are
@@ -68,7 +69,13 @@
   (verify-guards rp-equal)
   (verify-guards rp-equal-loose))
 
-(verify-guards rp-check-context)
+(verify-guards cons-count)
+
+(verify-guards RP-CHECK-CONTEXT-FN
+  :hints (("Goal"
+           :in-theory (e/d () ()))))
+
+
 
 (verify-guards rp-rw-relieve-synp-wrap)
 
@@ -379,11 +386,11 @@
 (local
  (defthm rp-rw-of-quotep-term
    (implies (quotep term)
-            (equal (equal (rp-rw term dont-rw context  iff-flg hyp-flg limit rp-state state)
+            (equal (equal (rp-rw term dont-rw context  iff-flg  limit rp-state state)
                           (list term rp-state))
                    t))
    :hints (("Goal"
-            :expand (rp-rw term dont-rw context iff-flg hyp-flg limit rp-state state)
+            :expand (rp-rw term dont-rw context iff-flg  limit rp-state state)
             :do-not-induct t
             :in-theory (e/d (rp-ex-counterpart
                              quotep
@@ -436,13 +443,13 @@
  (defthm lemma10
    (equal (consp (MV-NTH
                   0
-                  (RP-RW-SUBTERMS SUBTERMS DONT-RW CONTEXT hyp-flg
+                  (RP-RW-SUBTERMS SUBTERMS DONT-RW CONTEXT 
                                   LIMIT   rp-state STATE)))
           (consp subterms))
    :hints (("Goal"
             :induct (induct-1 subterms limit)
             :expand (RP-RW-SUBTERMS SUBTERMS DONT-RW CONTEXT
-                                    hyp-flg LIMIT  rp-state STATE)
+                                     LIMIT  rp-state STATE)
             :in-theory (e/d (RP-RW-SUBTERMS) (RP-RW))))))
 
 (local
@@ -467,10 +474,10 @@
    (implies (is-rp term)
             (equal (MV-NTH
                     0
-                    (rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG hyp-flg LIMIT rp-state STATE))
+                    (rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG  LIMIT rp-state STATE))
                    (cadr term)))
    :hints (("Goal"
-            :expand ((rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG hyp-flg LIMIT rp-state STATE))
+            :expand ((rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG  LIMIT rp-state STATE))
             :in-theory (e/d (is-rp) (rp-rw-subterms
                                      rp-rw))))))
 
@@ -605,10 +612,49 @@
 
 (verify-guards match-lhs-for-dont-rw)
 (verify-guards calculate-dont-rw$inline)
+(verify-guards calculate-dont-rw-lst$inline)
+
+(local
+ (defret unsigned-byte-p-of-GET-LIMIT-FOR-HYP-RW
+   (implies (and (unsigned-byte-p 58 limit)
+                 (not (zp limit))
+                 ;;(rp-statep rp-state)
+                 )
+            (unsigned-byte-p 58 res-limit))
+   :fn GET-LIMIT-FOR-HYP-RW
+   :hints (("Goal"
+            :in-theory (e/d (GET-LIMIT-FOR-HYP-RW
+                             RP-STATEP) ())))))
 
 
+(verify-guards create-if-instance$inline)
 
+(local
+ (defthm booleanp-of-RW-LIMIT-THROWS-ERROR
+   (implies (rp-statep rp-state)
+            (BOOLEANP (RW-LIMIT-THROWS-ERROR RP-STATE)))
+   :hints (("Goal"
+            :in-theory (e/d (rp-statep) ())))))
 
+(verify-guards rw-only-with-context
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (CONTEXT-SYNTAXP
+                            is-rp
+                            is-if)
+                           (FALIST-CONSISTENT
+                            rp-termp
+                            )))))
+
+(verify-guards RW-ONLY-WITH-CONTEXT-LST$IFF-FLG=T
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (CONTEXT-SYNTAXP
+                            is-rp
+                            is-if)
+                           (FALIST-CONSISTENT
+                            rp-termp
+                            )))))
 
 (verify-guards rp-rw
   :otf-flg nil
@@ -620,8 +666,10 @@
                         dont-rw-syntaxp
                         TRUE-LISTP
                         QUOTEP
-                        )
+                        is-rp-implies-fc)
                        (
+                        UPDATE-RW-LIMIT-THROWS-ERROR
+                        RW-LIMIT-THROWS-ERROR
                         rp-termp
                         rp-term-listp
                         (:DEFINITION VALID-RULESP)
@@ -631,7 +679,7 @@
                          VALID-RULES-ALISTP-IMPLIES-RULES-ALISTP)
                         (:DEFINITION VALID-RULES-ALISTP)
                         (:DEFINITION RP-EQUAL)
-                        (:DEFINITION RP-CHECK-CONTEXT)
+                        RP-CHECK-CONTEXT
                         (:REWRITE RP-EQUAL-IS-SYMMETRIC)
                         (:DEFINITION VALID-SC)
                         (:REWRITE RP-EQUAL-CNT-IS-RP-EQUAL)
@@ -694,6 +742,42 @@
                             rw-step-limitp)
                            ()))))
 
+
+
+(local
+ (defthm rp-evlt-of-CASESPLIT-FROM-CONTEXT-TRIG
+   (and (equal (rp-evlt `(CASESPLIT-FROM-CONTEXT-TRIG ,x) a)
+               (rp-evlt x a))
+        (equal (rp-evl `(CASESPLIT-FROM-CONTEXT-TRIG ,x) a)
+               (rp-evl x a)))
+   :hints (("Goal"
+            :in-theory (e/d (CASESPLIT-FROM-CONTEXT-TRIG) ())))))
+
+
+
+
+
+(local
+ (defthm rp-termp-with-casesplit-from-context-trig
+   (iff (RP-TERMP (LIST 'CASESPLIT-FROM-CONTEXT-TRIG x))
+        (rp-termp x))
+   :hints (("Goal"
+            :in-theory (e/d (rp-termp
+                             RP-TERM-LISTP)
+                            ())))))
+
+(local
+ (defthm valid-sc-with-casesplit-from-context-trig
+   (equal (valid-sc (LIST 'CASESPLIT-FROM-CONTEXT-TRIG x) a)
+          (valid-sc x a))
+   :hints (("Goal"
+            :in-theory (e/d (valid-sc
+                             is-rp
+                             is-if)
+                            ())))))
+   
+
+
 (verify-guards preprocess-then-rp-rw
   :otf-flg t
   :hints (("goal"
@@ -750,4 +834,4 @@
                  (:type-prescription symbol-alistp))))))
 
 
-(verify-guards rp-state-init-rules)
+(verify-guards rp-state-init-rules-fn)

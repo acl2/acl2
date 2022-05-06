@@ -209,7 +209,7 @@
     (implies t
              (equal  (sum b a c)
                      (sum a b c)))
-    
+
     :hints (("Goal"
              :in-theory (e/d (sum) ()))))
 
@@ -866,7 +866,6 @@
                    mod2-is-m2
                    floor2-if-f2))
 
-
 (defthm sum-of-negated-elements
   (implies (equal (-- a) b)
            (and (equal (sum a b) 0)
@@ -877,7 +876,6 @@
            :in-theory (e/d (sum --)
                            (+-IS-SUM)))))
 
-
 (defthmd f2-of-times2-reverse
   (implies (syntaxp (or (atom term)
                         (not (equal (car term) 'f2))))
@@ -887,3 +885,24 @@
                        (f2 (sum (times2 term) term2)))
                 (equal (sum term (f2 term2) other)
                        (sum other (f2 (sum (times2 term) term2)))))))
+
+(defthm --of---
+  (equal (-- (-- a))
+         (ifix a))
+  :hints (("Goal"
+           :in-theory (e/d (-- sum)
+                           (+-is-SUM)))))
+
+
+(defthm sumof-the-same-cancel-with--
+  (and (equal (sum (-- a) a)
+              0)
+       (equal (sum a (-- a))
+              0)
+       (equal (sum (-- a) a b)
+              (ifix b))
+       (equal (sum a (-- a) b)
+              (ifix b)))
+  :hints (("Goal"
+           :in-theory (e/d (-- sum)
+                           (+-is-SUM)))))

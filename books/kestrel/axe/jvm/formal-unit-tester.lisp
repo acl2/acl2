@@ -515,7 +515,7 @@
                                  monitor
                                  ;todo: think about these:
                                  assert-assumptions ;; nil ;user-assumptions
-                                 t ;simplify-xorsp
+                                 t ;normalize-xors
                                  :all ;'("java.lang.Object" "java.lang.System") ;classes-to-assume-initialized
                                  nil ;ignore-exceptions
                                  nil ;ignore-errors
@@ -606,7 +606,7 @@
                                                         remove-rules))
                              nil ;interpreted-fns
                              nil  ;monitor
-                             t ;simplify-xors (todo: try nil? or make an option?)
+                             t ;normalize-xors (todo: try nil? or make an option?)
                              :bit ;type
                              state
                             ))

@@ -5,6 +5,7 @@
 
 ; Copyright (C) 2019, Regents of the University of Texas
 ; All rights reserved.
+; Copyright (C) 2022 Intel Corporation
 
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are
@@ -55,6 +56,7 @@
   '(term
     dont-rw
     context
+    limit
     rp-state
     state))
 
@@ -67,8 +69,7 @@
 (defconst *acceptable-meta-rule-ret-vals*
   '(term
     dont-rw
-    rp-state
-    state))
+    rp-state))
 
 (defun fix-args/returns-package (lst)
   (declare (xargs :guard t))
@@ -111,7 +112,7 @@
                           *acceptable-meta-rule-args*)
            (hard-error 'add-meta-rule-guard
                        "The arguments of your function should be a subset of
-~p0 ~%"
+~p0 (names can be in any package)~%"
                        (list (cons #\0 *acceptable-meta-rule-args*))))
        (or (and (symbolp returns)
                 (equal (symbol-name returns) "TERM"))
@@ -242,6 +243,7 @@ but instead you passed ~p0~%"
                                       `((,formula-checks state)))
                                  (and (member-equal 'context args)
                                       `((valid-sc-subterms context a)
+                                        (eval-and-all context a)
                                         (rp-term-listp context)))
                                  (and (member-equal 'rp-state args)
                                       `((rp-statep rp-state)))))
@@ -253,7 +255,12 @@ but instead you passed ~p0~%"
                          (valid-sc term a))))
 
          ,@(append (and valid-syntaxp
-                        `((implies (rp-termp term)
+                        `((implies (and (rp-termp term)
+                                        ,@(append (and (true-listp args)
+                                                       (member-equal 'context
+                                                                     args)
+                                                       `((rp-term-listp context)))))
+                                        
                                    (b* ((term-input term)
                                         (,returns
                                          (,meta-fnc . ,args)))
@@ -372,6 +379,7 @@ with RP-Rewriter. ~%"
                                       `((,formula-checks state)))
                                  (and (member-equal 'context args)
                                       `((valid-sc-subterms context a)
+                                        (eval-and-all context a)
                                         (rp-term-listp context)))
                                  (and (member-equal 'rp-state args)
                                       `((rp-statep rp-state)))))
@@ -383,7 +391,11 @@ with RP-Rewriter. ~%"
                          (valid-sc term a))))
 
          ,@(append (and valid-syntaxp
-                        `((implies (rp-termp term)
+                        `((implies (and (rp-termp term)
+                                        ,@(append (and (member-equal 'context args)
+                                                       `((rp-term-listp context)))
+                                                  (and (member-equal 'rp-state args)
+                                                       `((rp-statep rp-state)))))
                                    (b* ((term-input term)
                                         (term
                                          (,processor-fnc . ,args)))
@@ -671,7 +683,7 @@ attach-meta-fncs) from being executed. </li>
 
 ;;(create-rp-rw-meta-rule-fn-aux2 (table-alist 'rp-rw-all-meta-rules (w state)))
 
-(defun create-rp-rw-meta-rule-fn (prefix world)
+(defun create-rp-rw-meta-rule-fn (prefix skip-cycle-checks world)
   (b* ((meta-fnc-name (sa prefix 'rp-rw-meta-rule))
        (preprocessor-fnc-name (sa prefix 'rp-rw-preprocessor))
        (postprocessor-fnc-name (sa prefix 'rp-rw-postprocessor))
@@ -705,15 +717,20 @@ attach-meta-fncs) from being executed. </li>
         (declare (xargs :stobjs (state)))
         ,formula-checks-fn-body)
 
-      (defun ,meta-fnc-name (term meta-fnc-name dont-rw context rp-state state )
-        (declare (xargs :guard (rp-termp term)
+      (defun ,meta-fnc-name (term meta-fnc-name dont-rw context limit rp-state state )
+        (declare (xargs :guard (and (rp-termp term)
+                                    (rp-term-listp context)
+                                    (symbolp meta-fnc-name)
+                                    (valid-rp-state-syntaxp rp-state)
+                                    (natp limit))
                         :stobjs (rp-state state)))
-        (declare (ignorable term meta-fnc-name dont-rw context rp-state state))
+        (declare (ignorable term meta-fnc-name dont-rw limit context rp-state state))
         (cond
          . ,new-meta-rule-fnc-body))
 
       (defun ,preprocessor-fnc-name (term context rp-state state )
-        (declare (xargs :guard (rp-termp term)
+        (declare (xargs :guard (and (rp-termp term)
+                                    (valid-rp-state-syntaxp rp-state))
                         :stobjs (rp-state state)))
         (declare (ignorable term context rp-state state))
         (b* (
@@ -721,12 +738,13 @@ attach-meta-fncs) from being executed. </li>
           term))
 
       (defun ,postprocessor-fnc-name (term context rp-state state )
-        (declare (xargs :guard (rp-termp term)
+        (declare (xargs :guard (and (rp-termp term)
+                                    (valid-rp-state-syntaxp rp-state))
                         :stobjs (rp-state state)))
         (declare (ignorable term context rp-state state))
         (b* (
              ,@new-postprocessor-body)
-         term))
+          term))
 
       (table rp-rw 'main-formula-checks-fnc-name ',formula-checks-fnc-name)
       (table rp-rw 'meta-rule-caller-fnc-name ',meta-fnc-name)
@@ -740,6 +758,8 @@ attach-meta-fncs) from being executed. </li>
       (table rp-rw 'added-postprocessors
              ',(table-alist 'rp-rw-all-postprocessors world))
 
+      ,@(and skip-cycle-checks `((defttag :skip-defattach-cycles-check)))
+      
       (defattach
         (rp-formula-checks ,formula-checks-fnc-name)
         (rp-rw-meta-rule ,meta-fnc-name)
@@ -757,18 +777,21 @@ attach-meta-fncs) from being executed. </li>
                                  rp-rw-all-preprocessors)
                               ,@(create-rp-rw-meta-rule-fn-aux3
                                  rp-rw-all-postprocessors)
-                              (:e dont-rw-syntaxp))))))))
+                              (:e dont-rw-syntaxp))))
+        ,@(and skip-cycle-checks `(:skip-checks :cycles)))
 
-(defun attach-meta-fncs-fn (prefix state)
+      ,@(and skip-cycle-checks `((defttag nil))))))
+
+(defun attach-meta-fncs-fn (prefix skip-cycle-checks state)
   (declare (xargs :stobjs (state)
                   :guard (symbolp prefix)
                   :verify-guards nil))
   `(progn
-     ,@(create-rp-rw-meta-rule-fn prefix (w state))))
+     ,@(create-rp-rw-meta-rule-fn prefix skip-cycle-checks (w state))))
 
-(defmacro attach-meta-fncs (prefix)
+(defmacro attach-meta-fncs (prefix &key (skip-cycle-checks 'nil))
   `(make-event
-    (attach-meta-fncs-fn ',prefix state)))
+    (attach-meta-fncs-fn ',prefix ',skip-cycle-checks state)))
 
 (defun is-rp-clause-processor-up-to-date (world)
   (declare (xargs :guard (and (PLIST-WORLDP world))

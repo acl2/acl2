@@ -1,5 +1,6 @@
 ; SVL - Listener-based Hierachical Symbolic Vector Hardware Analysis Framework
 ; Copyright (C) 2019 Centaur Technology
+; Copyright (C) 2022 Intel Corporation
 ;
 ; License: (An MIT/X11-style license)
 ;
@@ -27,9 +28,10 @@
 
 (include-book "meta/top")
 
-
 (defconst *svex-simplify-meta-rules*
-  '((:META SVL::4VEC-RSH-OF-META . SV::4VEC-RSH)
+  '(
+
+    (:META SVL::4VEC-RSH-OF-META . SV::4VEC-RSH)
     (:META SVL::SVEXL-NODE-EVAL-WOG-META-MAIN
            . SVL::SVEXL-NODE-EVAL-WOG)
     (:META SVL::SVEX-EVAL-WOG-META-MAIN
@@ -46,16 +48,88 @@
     (:META RP::FAST-ALIST-FREE-META . FAST-ALIST-FREE)
     (:META RP::HONS-ACONS-META . HONS-ACONS)))
 
+#|(defconst *svex-simplify-branch-meta-rules*
+  '((:META 4vec-branch-meta . sv::4vec-?* )
+    (:META 4vec-branch-meta . sv::4vec-?! )
+    (:META 4vec-branch-meta . sv::4vec-? )))|#
+
+
 (defconst *svex-simplify-meta-rules-outside-in*
-  'nil)
+  nil)
+
+#|(make-event
+ (b* ((events
+       (loop$ for rule in *svex-simplify-branch-meta-rules* collect
+              `(table svex-simplify-rules
+                             ',rule
+                             '(:inside-out . t)
+                             ;;'(:outside-in . t)
+                             ))))
+   `(progn ,@events)))|#
+
+#|(make-event
+ (b* ((events
+       (loop$ for rule in *svex-simplify-branch-meta-rules* collect
+              `(rp::bump-down-rule ,rule :ruleset svex-simplify-rules))))
+   `(progn ,@events)))|#
+
+
+
+(progn
+  (add-svex-simplify-rule 4vec-p-of-svex-env-fastlookup-wog)
+  (add-svex-simplify-rule svex-eval-wog_opener-error)
+  (add-svex-simplify-rule svexl-eval-is-svexl-eval-wog)
+  (add-svex-simplify-rule svexl-eval-wog-for-rp)
+  (add-svex-simplify-rule svexl-eval-aux-wog-nil)
+  (add-svex-simplify-rule svexl-eval-aux-wog-cons)
+  (add-svex-simplify-rule svexl-eval-aux-is-svexl-eval-aux-wog)
+  (add-svex-simplify-rule svexl-node-eval-is-svexl-node-eval-wog)
+  (add-svex-simplify-rule svexl-nodelist-eval-is-svexl-nodelist-eval-wog)
+  (add-svex-simplify-rule svex-apply-is-svex-apply-wog)
+  (add-svex-simplify-rule svex-env-lookup-is-svex-env-fastlookup-wog)
+  (add-svex-simplify-rule svexl-nodelist-eval-wog-of-nil)
+  (add-svex-simplify-rule svexl-nodelist-eval-wog-of-cons)
+  ;;(add-svex-simplify-rule svexl-eval-node-of-call)
+  ;;(add-svex-simplify-rule svexl-eval-node-of-quoted)
+  ;;(add-svex-simplify-rule svexl-eval-node-of-node)
+  ;;(add-svex-simplify-rule svexl-eval-node-of-var)
+  (add-svex-simplify-rule svexlist-eval-wog-nil-def)
+  (add-svex-simplify-rule svexlist-eval-wog-cons-def)
+  ;;(add-svex-simplify-rule svex-eval-wog-of-quoted)
+  ;;(add-svex-simplify-rule svex-eval-wog-of-var)
+  ;;(add-svex-simplify-rule svex-kind-wog-is-var)
+  (add-svex-simplify-rule svex-env-fastlookup-wog-def)
+
+  (add-svex-simplify-rule return-last)
+  (add-svex-simplify-rule cdr-cons)
+  (add-svex-simplify-rule car-cons)
+  )
+
+
+(define svexl-nodeids-eval-wog (node-ids node-array node-env env)
+  (if (atom node-ids)
+      node-env
+    (b* ((node (cdr (hons-get (car node-ids) node-array)))
+         (eval-res (svexl-node-eval-wog node node-env env))
+         (node-env (hons-acons (car node-ids) eval-res
+                               node-env))
+         (rest (svexl-nodeids-eval-wog (cdr node-ids)
+                                       node-array
+                                       node-env
+                                       env)))
+      rest))
+  ///
+  (rp::add-rp-rule svexl-nodeids-eval-wog)
+  (add-svex-simplify-rule svexl-nodeids-eval-wog))
+
+
 
 
 (progn
   (defconst *svex-simplify-rules*
-    '((:rewrite concat-of-rsh-with-0-to-bits)
-
+    '((:definition svexl-nodeids-eval-wog)
+      (:rewrite concat-of-rsh-with-0-to-bits)
       (:rewrite rp::force$-of-t)
-      
       (:rewrite 4vec-part-select-is-bits)
       (:rewrite equal-of-4vec-concat$)
       (:rewrite 4vec-p-of-all-4vec-fncs)
@@ -366,3 +440,14 @@
   (make-event
    `(deftheory svex-simplify-rules
       ',*svex-simplify-rules*))) 
+
+
+(make-event
+ (b* ((events
+       (loop$ for rule in *svex-simplify-meta-rules* collect
+              `(table svex-simplify-rules
+                      ',rule
+                      '(:inside-out . t)))))
+   `(progn ,@events)))
+
+

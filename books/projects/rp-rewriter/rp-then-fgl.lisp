@@ -97,6 +97,7 @@
                                   (runes-outside-in 'nil) ;; when nil, runes will be read from
                                   ;; rp-rules table
                                   (not-simplified-action ':none)
+                                  (cases 'nil)
                                   )
   `(encapsulate
      nil
@@ -115,7 +116,8 @@
                       ('(:clause-processor
                          (rp-cl :runes ,,runes
                                 :runes-outside-in ,,runes-outside-in
-                                :new-synps ,',new-synps))
+                                :new-synps ,',new-synps
+                                :cases ',',cases))
                        '(:clause-processor (cmr::let-abstract-full-clause-proc-exclude-hyps
                                             clause 'var))
                        '(:clause-processor fgl::expand-an-implies-cp)

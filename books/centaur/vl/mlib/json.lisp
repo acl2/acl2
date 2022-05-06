@@ -1516,7 +1516,9 @@ which could not hold such large values.</p>"
     (:vl-vardecl   (vl-jp-vardecl x))
     (:vl-paramdecl (vl-jp-paramdecl x))
     (:vl-import    (vl-jp-import x))
-    (otherwise     (vl-jp-typedef x))))
+    (:vl-typedef     (vl-jp-typedef x))
+    (otherwise     ;; skip letdecl
+     ps)))
 (add-json-encoder vl-blockitem-p vl-jp-blockitem)
 (def-vl-jp-list blockitem)
 
