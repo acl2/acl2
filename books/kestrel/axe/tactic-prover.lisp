@@ -789,6 +789,7 @@
 ;returns (mv erp event state)
 ;TODO: Auto-generate the name
 ;TODO: Build the types from the assumptions or vice versa (types for testing may have additional restrictions to avoid huge inputs)
+;; This could be called prove-equivalence-with-tactics.
 (defun prove-equivalence2-fn (dag-or-term1
                               dag-or-term2
                               ;tests ;a natp indicating how many tests to run
@@ -806,20 +807,17 @@
                               simplify-xors
                               different-vars-ok
                               whole-form
-                              state
-                              ;rand
-                             )
-  (declare (xargs :stobjs (state ;rand
-                          )
-                  :mode :program
-                  :guard (and ;(natp tests) ;TODO: add to guard
+                              state)
+  (declare (xargs :guard (and ;(natp tests) ;TODO: add to guard
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (symbol-listp rules)
                               (symbol-listp interpreted-fns)
                               (tacticsp tactics)
                               (booleanp call-stp-when-pruning)
-                              (booleanp simplify-xors))))
+                              (booleanp simplify-xors))
+                  :mode :program
+                  :stobjs state))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
        (assumptions (translate-terms assumptions 'prove-equivalence2-fn (w state))) ;throws an error on bad input

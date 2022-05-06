@@ -6364,6 +6364,8 @@
                           (or (eq :auto param-names)
                               (symbol-listp param-names) ;; todo: what else to check here?
                               )
+                          (or (booleanp prune-branches)
+                              (natp prune-branches))
                           (booleanp disable-loop-openers)
                           )
                   :mode :program))
