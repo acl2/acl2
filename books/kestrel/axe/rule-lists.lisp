@@ -542,6 +542,8 @@
      bvcat-of-bvchop-high
      bvcat-of-bvchop-low
      ;; TODO: More like this:
+     bvcat-of-getbit-arg2
+     bvcat-of-getbit-arg4
      bitxor-of-getbit-arg1
      bitxor-of-getbit-arg2
      bitor-of-getbit-arg1
@@ -658,6 +660,8 @@
      bvplus-of-bvif-arg3-safe
      equal-of-bvif-safe
 
+     bvcat-associative ;trying...
+     
      bvcat-of-bvcat-high-tighten ;bozo general rule?
      bvcat-of-getbit-high-tighten
      bvcat-of-bvchop-high-tighten ;gen the bvchop to any bv term
@@ -818,8 +822,6 @@
     myif-of-bvxor-becomes-bvif-arg2
 
     myif-of-myif-test
-
-    bvcat-associative ;trying...
 
     ;;well this didn't work, since other instances of g of g (ones which didn't correspond to get-field) got turned into get-fields:
     ;;    get-field-reassemble ;reintroduces get-field (will loop with :definition get-field)
