@@ -202,12 +202,6 @@
                             )
                            (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
-(defthm bvcat-when-lowsize-is-0
-  (equal (bvcat highsize highval 0 lowval)
-         (bvchop highsize highval))
-  :hints (("Goal" :cases ((integerp lowval))
-           :in-theory (e/d (bvcat) ()))))
-
 (defthm bvcat-of-bvchop-low
   (implies (and (<= lowsize n)
                 ;; (natp lowsize)
@@ -319,23 +313,27 @@
 
 ;was disabled (why?)
 ;; This does change the width of the BV.
-;; TODO: Rename bvcat-of-0-arg2
-(defthm bvcat-of-0
+(defthm bvcat-of-0-arg2
   (equal (bvcat highsize 0 lowsize lowval)
          (bvchop lowsize lowval))
-  :hints (("Goal" :in-theory (e/d (bvcat LOGAPP-0) ()))))
+  :hints (("Goal" :in-theory (enable bvcat LOGAPP-0))))
 
-(defthm bvcat-of-0-and-0
+(defthm bvcat-of-0-arg1
+  (equal (bvcat 0 highval lowsize lowval)
+         (bvchop lowsize lowval))
+  :hints (("Goal" :in-theory (enable bvcat))))
+
+(defthm bvcat-of-0-arg3
+  (equal (bvcat highsize highval 0 lowval)
+         (bvchop highsize highval))
+  :hints (("Goal" :in-theory (enable bvcat))))
+
+;drop?
+(defthmd bvcat-of-0-and-0
   (equal (bvcat highsize 0 lowsize 0)
          0)
   :hints (("Goal" :in-theory (e/d (bvcat) ()))))
 
-(defthm bvcat-when-highsize-is-0
-  (equal (bvcat 0 highval lowsize lowval)
-         (bvchop lowsize lowval))
-  :hints (("Goal" :cases ((integerp lowval))
-           :in-theory (e/d (bvcat LOGAPP-0 BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-                           ()))))
 
 (defthm bvcat-when-lowsize-is-not-posp
   (implies (not (posp lowsize))
@@ -1266,7 +1264,7 @@
                            (m size)
                            (n n))
            :in-theory (disable bvcat-of-bvchop-low bvcat-equal-rewrite-alt bvcat-equal-rewrite
-                               bvcat-of-0))))
+                               bvcat-of-0-arg2))))
 
 (defthmd bvcat-special-opener
   (implies (and (not (equal 0 (getbit 0 x)))

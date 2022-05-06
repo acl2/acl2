@@ -2138,8 +2138,8 @@
              ;;BITXOR-commutative-axe
              ;; BITXOR-commutative-2-axe
 
-             bvxor-of-bvcat     ;dangerous?
-             bvxor-of-bvcat-alt ;dangerous?
+             bvxor-of-bvcat-arg3     ;dangerous?
+             bvxor-of-bvcat-arg2 ;dangerous?
 
              bvxor-cancel-lemma1-bvchop-version
              bvxor-cancel-lemma1-bvchop-version-alt

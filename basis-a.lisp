@@ -6444,6 +6444,7 @@
 ; This function provides the value of the key2 argument of defstobj-fnname when
 ; it is not :top.
 
+  (declare (xargs :guard t))
   (if (consp type)
       (case (car type)
         (array :array)
@@ -6452,20 +6453,36 @@
         (t :scalar))
     :scalar))
 
+(defun doublet-listp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (equal x nil))
+        (t (and (true-listp (car x))
+                (eql (length (car x)) 2)
+                (doublet-listp (cdr x))))))
+
 (defun defstobj-fnname (root key1 key2 renaming-alist)
 
 ; Warning: Keep this in sync with stobj-updater-guess-from-accessor.
 
 ; This function generates the actual name we will use for a function generated
 ; by defstobj.  Root and renaming-alist are, respectively, a symbol and an
-; alist.  Key1 describes which function name we are to generate and is one of
-; :length, :resize, :recognizer, :accessor, :updater, or :creator.  Key2
-; describes the ``type'' of root.  It is :top if root is the name of the stobj
-; and it is otherwise either :array, :hash-table, :stobj-table, or :scalar (see
-; defstobj-fnname-key2).  Note that if renaming-alist is nil, then this
-; function returns the ``default'' name used.  If renaming-alist pairs some
-; default name with an illegal name, the result is, of course, an illegal name.
+; alist.  Key1 describes which function name we are to generate (:length,
+; :resize, :recognizer, etc.).  Key2 is irrelevant if key1 is :recognizer or
+; :creator; often key is :top in those cases, though this is not necessary.
+; Otherwise key2 describes the ``type'' of root. and is either :array,
+; :hash-table, :stobj-table, or :scalar (see defstobj-fnname-key2).  Note that
+; if renaming-alist is nil, then this function returns the ``default'' name
+; used.  If renaming-alist pairs some default name with an illegal name, the
+; result is, of course, an illegal name.
 
+  (declare (xargs :guard (and (symbolp root)
+                              (member-eq key1
+                                         '(:recognizer
+                                           :length :resize :accessor :updater
+                                           :creator :boundp :accessor? :remove
+                                           :count :clear :init))
+                              (symbolp key2)
+                              (doublet-listp renaming-alist))))
   (let* ((default-fnname
            (case key1
              (:recognizer

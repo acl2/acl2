@@ -49,6 +49,13 @@
          (bitor x (bitor y z)))
   :hints (("Goal" :in-theory (enable bitor bvor-commutative-2))))
 
+(defthmd bitor-commute-constant
+  (implies (syntaxp (quotep y))
+           (equal (bitor x y)
+                  (bitor y x)))
+  :hints (("Goal" :use (:instance bitor-commutative)
+           :in-theory (disable bitor-commutative))))
+
 ;drop once we commute
 (defthm bitor-of-1-arg2
   (equal (bitor x 1)
@@ -100,6 +107,20 @@
                 (syntaxp (quotep x)))
            (equal (bitor x (bitor y z))
                   (bitor (bitor x y) z))))
+
+(defthm bitor-of-constant-chop-arg1
+  (implies (and (syntaxp (quotep x))
+                (not (unsigned-byte-p 1 x)))
+           (equal (bitor x y)
+                  (bitor (getbit 0 x) y)))
+  :hints (("Goal" :in-theory (enable bitor))))
+
+(defthm bitor-of-constant-chop-arg2
+  (implies (and (syntaxp (quotep y))
+                (not (unsigned-byte-p 1 y)))
+           (equal (bitor x y)
+                  (bitor x (getbit 0 y))))
+  :hints (("Goal" :in-theory (enable bitor))))
 
 ;todo: rename to have 0 in the name
 (defthm bitor-of-getbit-arg1

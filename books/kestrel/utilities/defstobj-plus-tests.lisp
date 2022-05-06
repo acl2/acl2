@@ -43,3 +43,44 @@
   (my-scalar4 :type (and integer (satisfies posp)) :initially 100)
   my-scalar5
   )
+
+;; A test with a hash-table field (note that defstobj+ doesn't generate theorems about the operations on it yet):
+(defstobj+ my-stobj3
+  (an-array-field :type (array integer (10000)) :initially 0 :resizable t)
+  (a-scalar-field :type integer :initially 0)
+  (a-hash-table-field :type (hash-table equal 200))
+  )
+
+;; A test where the field name is in the common-lisp package
+(defstobj+ foo (print :type atom)
+  :renaming ((common-lisp::print get-print)
+             (common-lisp::printp printp)
+             (common-lisp::update-print update-print)))
+
+;; test of the renaming:
+(defstobj+ foo2 (bar :type atom)
+  :renaming ((bar get-bar)
+             (barp my-barp)
+             (update-bar my-update-bar)))
+
+;; In this one, the field is in a different package and we use more exotic names:
+(defstobj+ foo3 (print :type atom)
+  :renaming ((common-lisp::print my-get-print)
+             (common-lisp::printp my-printp)
+             (common-lisp::update-print put-print)))
+
+;; todo: uncomment/fix (evenp may not be legal below)
+;; Test with some scalar types
+;; (defstobj+ foo3
+;;   (f1 :type atom :initially nil)
+;;   (bar :type (integer 200 300) :initially 250)
+;;   (baz :type t :initially 250) ; some theorems get suppressed since :type is t
+;;   (evenf :type (satisfies evenp) :initially 250) ; some theorems get suppressed since :type is t
+;;   ))
+
+(defstobj+ foo4
+  (f1 :type atom :initially nil)
+  (bar :type (integer 200 300) :initially 250)
+  (baz :type t :initially 250) ; some theorems get suppressed since :type is t
+  (posf :type (satisfies posp) :initially 250) ; some theorems get suppressed since :type is t
+  )

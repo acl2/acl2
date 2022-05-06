@@ -688,20 +688,21 @@ all of the available binder forms.</p>
 for more details.</p>")
 
 (defmacro def-b*-binder (name &key
-                              (parents '(b*-binders))
+                              (parents 'nil parents-p)
                               (short 'nil short-p)
                               (long 'nil long-p)
                               decls
                               body)
   (let* ((macro-name (macro-name-for-patbind name))
-         (doc-p (or parents  ; Todo: Don't create doc if there is no short or long provided?
-                 short-p long-p))
+         (doc-p (or parents-p    ; Don't create doc if no parents, short, or long provided
+                    short-p long-p))
+         (parents (or parents '(b*-binders)))
          (short (if short-p
                     short
                   (and doc-p
                        (concatenate 'string
                                     "@(see acl2::b*) binder form @('" (symbol-name name)
-                                         "') (placeholder)."))))
+                                    "') (placeholder)."))))
          (long (if long-p
                    long
                  (and doc-p

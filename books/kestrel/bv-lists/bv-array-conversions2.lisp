@@ -96,7 +96,7 @@
                                        (+ I (- N))
                                        (NTHCDR N ARRAY)
                                        LST))
-           :in-theory (enable natp))))
+           :in-theory (enable natp equal-of-bv-array-write-of-1))))
 
 (defthm plus-of-minus-when-constant
   (implies (and (EQUAL x (+ k I))
@@ -120,9 +120,10 @@
                   (list-to-bv-array-aux2 element-size (- len n) 0 (nthcdr n array) (nthcdr (- n i) lst))))
   :hints (("Goal" :induct t
            :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (natp nthcdr) (;NTHCDR-OF-TAKE-BECOMES-SUBRANGE TAKE-OF-NTHCDR-BECOMES-SUBRANGE
-                                                                       ;NTHCDR-OF-LIST-TO-BV-ARRAY-AUX2
-                                                                       )))))
+           :in-theory (e/d (natp nthcdr equal-of-bv-array-write-of-1)
+                           ( ;;NTHCDR-OF-TAKE-BECOMES-SUBRANGE TAKE-OF-NTHCDR-BECOMES-SUBRANGE
+                            ;;NTHCDR-OF-LIST-TO-BV-ARRAY-AUX2
+                            )))))
 
 (defthm nthcdr-of-list-to-bv-array2
   (equal (nthcdr n (list-to-bv-array2 8 lst))

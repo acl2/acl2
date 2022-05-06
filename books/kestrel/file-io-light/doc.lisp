@@ -21,7 +21,13 @@
 ;; (depends-on "read-object-from-file.lisp")
 (acl2::gen-xdoc-for-file
  "read-object-from-file.lisp"
- ((read-object-from-file "Read an object from a file."))
+ ((read-object-from-file "Read an ACL2 object from a file."))
+ (io file-io-light))
+
+;; (depends-on "read-objects-from-file.lisp")
+(acl2::gen-xdoc-for-file
+ "read-objects-from-file.lisp"
+ ((read-objects-from-file "Read the ACL2 objects from a file."))
  (io file-io-light))
 
 ;; (depends-on "read-file-into-character-list.lisp")

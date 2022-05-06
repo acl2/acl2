@@ -28,6 +28,9 @@
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ceiling" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -826,7 +829,8 @@
 (defund get-induced-type (nodenum parent-expr)
   (declare (xargs :guard (and (natp nodenum)
                               (dag-function-call-exprp parent-expr))
-                  :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0
+                  :guard-hints (("Goal" :in-theory (e/d (;car-becomes-nth-of-0
+                                                         dag-exprp
                                                          nth-of-cdr)
                                                         (myquotep))))))
   (let ((fn (ffn-symb parent-expr))
@@ -2133,7 +2137,7 @@
                               (stringp base-filename)
                               (or (natp max-conflicts) (null max-conflicts))
                               (booleanp counterexamplep))
-                  :guard-hints (("Goal" :in-theory (e/d (integer-listp-when-nat-listp) (natp reverse-removal))))
+                  :guard-hints (("Goal" :in-theory (e/d (integer-listp-when-nat-listp) (natp))))
                   :stobjs state))
   (b* ((handled-node-array (make-empty-array 'handled-node-array
                                              (+ 1

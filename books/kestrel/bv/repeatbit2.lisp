@@ -23,11 +23,10 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 (defthm bvchop-of-repeatbit
-  (implies (and (<= n size)
-                (integerp n)
+  (implies (and (integerp n)
                 (integerp size))
            (equal (bvchop n (repeatbit size bit))
-                  (repeatbit n bit)))
+                  (repeatbit (min n size) bit)))
   :hints (("Goal" :in-theory (enable repeatbit))))
 
 (defthm logtail-of-repeatbit
@@ -40,12 +39,12 @@
                                      expt-of-+))))
 
 (defthm slice-of-repeatbit
-   (implies (and (< high size)
-                 (natp low)
+   (implies (and (natp low)
                  (natp high)
                  (integerp size))
             (equal (slice high low (repeatbit size bit))
-                   (repeatbit (+ 1 high (- low)) bit)))
+                   (repeatbit (+ (min size (+ 1 high))
+                                 (- low)) bit)))
    :hints (("Goal" :do-not '(preprocess)
             :use (:instance BVCHOP-OF-MASK-OTHER
                             (size2 (+ 1 HIGH (- LOW)))

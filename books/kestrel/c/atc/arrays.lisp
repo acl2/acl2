@@ -31,6 +31,12 @@
      We provide operations to read and write elements,
      essentially wrappers of @(tsee nth) and @(tsee update-nth).")
    (xdoc::p
+    "Besides the list of C values,
+     each array fixtype includes the type of the element.
+     This is redundant information,
+     but it is needed so that arrays thus modeled
+     can be a subset of an upcoming extension of the model of all values.")
+   (xdoc::p
     "This fairly simple model should suffice to generate C code
      that manipulates arrays in some interesting ways.
      It should suffice to represent C functions
@@ -94,7 +100,7 @@
     "[C:6.2.5/20] requires arrays to be non-empty,
      i.e. to contain at least one element,
      i.e. to have positive length.
-     As noted in @(see atc-arrays), arrays are indexed via integers.
+     As noted above, arrays are indexed via integers.
      [C] only provides minimum requirements for the sizes of integer types,
      not maximum requirements:
      other than practical considerations,
@@ -144,14 +150,19 @@
        (<type>p (pack <type> 'p))
        (<type>-fix (pack <type> '-fix))
        (<type>-list (pack <type> '-list))
+       (<type>-listp (pack <type> '-listp))
        (<type>-array (pack <type> '-array))
        (<type>-arrayp (pack <type>-array 'p))
+       (<type>-array-of (pack <type>-array '-of))
        (<type>-array-fix (pack <type>-array '-fix))
+       (<type>-array->elemtype (pack <type>-array '->elemtype))
        (<type>-array->elements (pack <type>-array '->elements))
        (<type>-array-length (pack <type>-array '-length))
        (<type>-array-index-okp (pack <type> '-array-index-okp))
        (<type>-array-read (pack <type>-array '-read))
        (<type>-array-write (pack <type>-array '-write))
+       (<type>-array-of-of-<type>-array->elements
+        (pack <type>-array-of '-of- <type>-array->elements))
        (len-of-<type>-array->elements-of-<type>-array-write
         (pack 'len-of- <type>-array->elements '-of- <type>-array-write))
        (<type>-array-length-of-<type>-array-write
@@ -168,12 +179,35 @@
          :short ,(str::cat "Fixtype of (ATC's model of) arrays of "
                            type-string
                            ".")
-         ((elements ,<type>-list :reqfix (if (consp elements)
+         ((elemtype type :reqfix (if (type-case elemtype ,(type-kind type))
+                                     elemtype
+                                   ,(type-to-maker type)))
+          (elements ,<type>-list :reqfix (if (consp elements)
                                              elements
                                            (list (,<type> 0)))))
-         :require (consp elements)
-         :tag ,(intern$ (symbol-name <type>-array) "KEYWORD")
+         :require (and (type-case elemtype ,(type-kind type))
+                       (consp elements))
+         :layout :list
+         :tag :array
          :pred ,<type>-arrayp)
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,<type>-array-of ((elements ,<type>-listp))
+         :guard (consp elements)
+         :returns (array ,<type>-arrayp)
+         :short ,(str::cat "Build an array of "
+                           type-string
+                           "from a list of its elements.")
+         (,<type>-array ,(type-to-maker type) elements)
+         :hooks (:fix)
+
+         ///
+
+         (defrule ,<type>-array-of-of-<type>-array->elements
+           (equal (,<type>-array-of (,<type>-array->elements array))
+                  (,<type>-array-fix array))
+           :enable ,<type>-array->elemtype))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -224,9 +258,9 @@
               (index (ifix index))
               (element (,<type>-fix element)))
            (if (mbt (,<type>-array-index-okp array index))
-               (,<type>-array (update-nth index
-                                          element
-                                          (,<type>-array->elements array)))
+               (,<type>-array-of (update-nth index
+                                             element
+                                             (,<type>-array->elements array)))
              array))
          :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
                                                   ,<type>-array-length)))
@@ -239,14 +273,16 @@
                         (,<type>-array-write array index element)))
                   (len (,<type>-array->elements array)))
            :enable (,<type>-array-index-okp
-                    ,<type>-array-length))
+                    ,<type>-array-length
+                    ,<type>-array-of))
 
          (defrule ,<type>-array-length-of-<type>-array-write
            (equal (,<type>-array-length
                    (,<type>-array-write array index element))
                   (,<type>-array-length array))
            :enable (,<type>-array-index-okp
-                    ,<type>-array-length)))
+                    ,<type>-array-length
+                    ,<type>-array-of)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,6 +1,6 @@
 ; VL Verilog Toolkit
 ; Copyright (C) 2008-2014 Centaur Technology
-; Copyright (C) 2022 Intel Corp.
+; Copyright (C) 2022 Intel Corporation
 ;
 ; License: (An MIT/X11-style license)
 ;

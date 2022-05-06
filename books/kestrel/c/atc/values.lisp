@@ -16,6 +16,8 @@
 
 (include-book "defthm-disjoint")
 
+(include-book "std/basic/two-nats-measure" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-values
@@ -33,9 +35,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection value-disjoint-rules
-  :short "Rules about disjointness of values."
-  (defthm-disjoint *value-disjoint-rules*
+(defsection integer-value-disjoint-rules
+  :short "Rules about disjointness of integer values."
+  (defthm-disjoint *integer-value-disjoint-rules*
     ucharp
     scharp
     ushortp
@@ -50,28 +52,132 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum value
-  :short "Fixtype of values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we only support the standard unsigned and signed integer values
-     (except @('_Bool') values),
-     as well as pointer values with any referenced type."))
-  (:uchar ((get uchar-integer)))
-  (:schar ((get schar-integer)))
-  (:ushort ((get ushort-integer)))
-  (:sshort ((get sshort-integer)))
-  (:uint ((get uint-integer)))
-  (:sint ((get sint-integer)))
-  (:ulong ((get ulong-integer)))
-  (:slong ((get slong-integer)))
-  (:ullong ((get ullong-integer)))
-  (:sllong ((get sllong-integer)))
-  (:pointer ((address? address-option)
-             (reftype type)))
-  :pred valuep
+(fty::deftypes values
+  :short "Fixtypes of values."
+
+  (fty::deftagsum value
+    :short "Fixtype of values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For now we only support the standard unsigned and signed integer values
+       (except @('_Bool') values),
+       pointer values with any referenced type,
+       arrays of values of any type,
+       and structures of member values of any type.")
+     (xdoc::p
+      "Array values are modeled as consisting of
+       the element type and a non-empty list of values.
+       [C:6.2.5/20] requires arrays to be non-empty.")
+     (xdoc::p
+      "Arrays are indexed via integers
+       [C] only provides minimum requirements for the sizes of integer types,
+       not maximum requirements.
+       Other than practical considerations,
+       nothing, mathematically, prevents some integer types
+       to consists of thousands or millions of bits.
+       So our model of arrays requires them to be non-empty,
+       but puts no maximum limits on their length.")
+     (xdoc::p
+      "This definition of arrays alone does not prevent arrays
+       from having values of different types.
+       That all the values have the element type
+       can and will be enforced in separate predicates.")
+     (xdoc::p
+      "Structures are modeled as consisting of a tag (identifier)
+       and a non-empty list of member values.
+       The tag is the one that identifies the structure type;
+       we only model structures with non-anonymous types.
+       [C:6.2.5/20] requires at least one member.
+       The member values must have distinct names;
+       we do not capture this requirement here, but we may in the future.")
+     (xdoc::p
+      "The requirement that the member values
+       match the members of the structure type
+       requires contextual information about the structure type.
+       So this requirement cannot be captured in this definition of values."))
+    (:uchar ((get uchar-integer)))
+    (:schar ((get schar-integer)))
+    (:ushort ((get ushort-integer)))
+    (:sshort ((get sshort-integer)))
+    (:uint ((get uint-integer)))
+    (:sint ((get sint-integer)))
+    (:ulong ((get ulong-integer)))
+    (:slong ((get slong-integer)))
+    (:ullong ((get ullong-integer)))
+    (:sllong ((get sllong-integer)))
+    (:pointer ((address? address-option)
+               (reftype type)))
+    (:array ((elemtype type)
+             (elements value-list
+                       :reqfix (if (consp elements)
+                                   elements
+                                 (list (value-fix :irrelevant)))))
+     :require (consp elements))
+    (:struct ((tag ident)
+              (members member-value-list
+                       :reqfix (if (consp members)
+                                   members
+                                 (list (member-value-fix :irrelevant)))))
+     :require (consp members))
+    :pred valuep
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  (fty::deflist value-list
+    :short "Fixtype of lists of values."
+    :elt-type value
+    :true-listp t
+    :elementp-of-nil nil
+    :pred value-listp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  (fty::defprod member-value
+    :short "Fixtype of member values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A member value consists of a name (identifier) and a value.
+       Member values are the constituents of structure values."))
+    ((name ident)
+     (value value))
+    :tag :member-value
+    :pred member-valuep
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::deflist member-value-list
+    :short "Fixtype of lists of member values."
+    :elt-type member-value
+    :true-listp t
+    :elementp-of-nil nil
+    :pred member-value-listp
+    :measure (two-nats-measure (acl2-count x) 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection member-value-list->name-list (x)
+  :guard (member-value-listp x)
+  :returns (names ident-listp)
+  :short "Lift @(tsee member-value->name) to lists."
+  (member-value->name x)
   ///
+  (fty::deffixequiv member-value-list->name-list
+    :args ((x member-value-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection member-value-list->value-list (x)
+  :guard (member-value-listp x)
+  :returns (values value-listp)
+  :short "Lift @(tsee member-value->value) to lists."
+  (member-value->value x)
+  ///
+  (fty::deffixequiv member-value-list->value-list
+    :args ((x member-value-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection value-theorems
+  :extension value
 
   (defrule valuep-possibilities
     (implies (valuep x)
@@ -85,7 +191,9 @@
                  (slongp x)
                  (ullongp x)
                  (sllongp x)
-                 (pointerp x)))
+                 (pointerp x)
+                 (value-case x :array)
+                 (value-case x :struct)))
     :enable (valuep
              ucharp
              scharp
@@ -97,7 +205,8 @@
              slongp
              ullongp
              sllongp
-             pointerp)
+             pointerp
+             value-kind)
     :rule-classes :forward-chaining)
 
   (defrule valuep-when-ucharp
@@ -157,41 +266,89 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult value "values"
-  :enable (errorp
-           valuep
-           ucharp
-           scharp
-           ushortp
-           sshortp
-           uintp
-           sintp
-           ulongp
-           slongp
-           ullongp
-           sllongp
-           pointerp))
+(defsection value-list-theorems
+  :extension value-list
 
-(defruled errorp-when-value-resultp-and-not-valuep
-  (implies (and (value-resultp x)
-                (not (valuep x)))
-           (errorp x)))
+  (defrule value-listp-when-uchar-listp
+    (implies (uchar-listp x)
+             (value-listp x))
+    :induct (len x)
+    :enable value-listp)
 
-(defrule value-resultp-possibilities
-  (implies (value-resultp x)
-           (or (valuep x)
-               (errorp x)))
-  :enable value-resultp
-  :rule-classes :forward-chaining)
+  (defrule value-listp-when-schar-listp
+    (implies (schar-listp x)
+             (value-listp x))
+    :induct (len x)
+    :enable value-listp)
+
+  (defrule value-listp-when-ushort-listp
+    (implies (ushort-listp x)
+             (value-listp x))
+    :induct (len x)
+    :enable value-listp)
+
+  (defrule value-listp-when-sshort-listp
+    (implies (sshort-listp x)
+             (value-listp x))
+    :induct (len x)
+    :enable value-listp)
+
+  (defrule value-listp-when-uint-listp
+    (implies (uint-listp x)
+             (value-listp x))
+    :induct (len x)
+    :enable value-listp)
+
+  (defrule value-listp-when-sint-listp
+    (implies (sint-listp x)
+             (value-listp x))
+    :induct (len x)
+    :enable value-listp)
+
+  (defrule value-listp-when-ulong-listp
+    (implies (ulong-listp x)
+             (value-listp x))
+    :induct (len x)
+    :enable value-listp)
+
+  (defrule value-listp-when-slong-listp
+    (implies (slong-listp x)
+             (value-listp x))
+    :induct (len x)
+    :enable value-listp)
+
+  (defrule value-listp-when-ullong-listp
+    (implies (ullong-listp x)
+             (value-listp x))
+    :induct (len x)
+    :enable value-listp)
+
+  (defrule value-listp-when-sllong-listp
+    (implies (sllong-listp x)
+             (value-listp x))
+    :induct (len x)
+    :enable value-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist value-list
-  :short "Fixtype of lists of values."
-  :elt-type value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred value-listp)
+(defresult value "values"
+  :enable (errorp
+           valuep))
+
+(defsection value-result-theorems
+  :extension value-result
+
+  (defruled errorp-when-value-resultp-and-not-valuep
+    (implies (and (value-resultp x)
+                  (not (valuep x)))
+             (errorp x)))
+
+  (defrule value-resultp-possibilities
+    (implies (value-resultp x)
+             (or (valuep x)
+                 (errorp x)))
+    :enable value-resultp
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -211,31 +368,104 @@
            value-optionp
            valuep))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult member-value-list "lists of member values")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-errorp-when-member-value-listp
+  (implies (member-value-listp x)
+           (not (errorp x)))
+  :enable (member-value-listp errorp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-array->length ((array valuep))
+  :guard (value-case array :array)
+  :returns (length posp)
+  :short "Length of an array."
+  (len (value-array->elements array))
+  :hooks (:fix)
+  :prepwork ((local (include-book "std/lists/len" :dir :system))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value-signed-integerp ((val valuep))
   :returns (yes/no booleanp)
   :short "Check if a value is a signed integer [C:6.2.5/4]."
-  (b* ((val (value-fix val)))
-    (or (scharp val)
-        (sshortp val)
-        (sintp val)
-        (slongp val)
-        (sllongp val)))
-  :hooks (:fix))
+  (or (value-case val :schar)
+      (value-case val :sshort)
+      (value-case val :sint)
+      (value-case val :slong)
+      (value-case val :sllong))
+  :hooks (:fix)
+  ///
+
+  (defruled value-signed-integerp-alt-def
+    (equal (value-signed-integerp val)
+           (b* ((val (value-fix val)))
+             (or (scharp val)
+                 (sshortp val)
+                 (sintp val)
+                 (slongp val)
+                 (sllongp val))))
+    :use (:instance lemma (val (value-fix val)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (valuep val)
+                (equal (value-signed-integerp val)
+                       (or (scharp val)
+                           (sshortp val)
+                           (sintp val)
+                           (slongp val)
+                           (sllongp val))))
+       :enable (valuep
+                value-kind
+                scharp
+                sshortp
+                sintp
+                slongp
+                sllongp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value-unsigned-integerp ((val valuep))
   :returns (yes/no booleanp)
   :short "Check if a value is an unsigned integer [C:6.2.5/6]."
-  (b* ((val (value-fix val)))
-    (or (ucharp val)
-        (ushortp val)
-        (uintp val)
-        (ulongp val)
-        (ullongp val)))
-  :hooks (:fix))
+  (or (value-case val :uchar)
+      (value-case val :ushort)
+      (value-case val :uint)
+      (value-case val :ulong)
+      (value-case val :ullong))
+  :hooks (:fix)
+  ///
+
+  (defruled value-unsigned-integerp-alt-def
+    (equal (value-unsigned-integerp val)
+           (b* ((val (value-fix val)))
+             (or (ucharp val)
+                 (ushortp val)
+                 (uintp val)
+                 (ulongp val)
+                 (ullongp val))))
+    :use (:instance lemma (val (value-fix val)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (valuep val)
+                (equal (value-unsigned-integerp val)
+                       (or (ucharp val)
+                           (ushortp val)
+                           (uintp val)
+                           (ulongp val)
+                           (ullongp val))))
+       :enable (valuep
+                value-kind
+                ucharp
+                ushortp
+                uintp
+                ulongp
+                ullongp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -292,7 +522,7 @@
              value-arithmeticp
              value-realp
              value-integerp
-             value-signed-integerp))
+             value-signed-integerp-alt-def))
 
   (defrule unsigned-integer-value-kinds
     (implies (or (ucharp x)
@@ -310,24 +540,13 @@
              value-arithmeticp
              value-realp
              value-integerp
-             value-unsigned-integerp))
+             value-unsigned-integerp-alt-def))
 
   (defrule not-errorp-when-valuep
     (implies (valuep x)
              (not (errorp x)))
     :rule-classes :tau-system
-    :enable (scharp
-             ucharp
-             sshortp
-             ushortp
-             sintp
-             uintp
-             slongp
-             ulongp
-             sllongp
-             ullongp
-             pointerp
-             valuep
+    :enable (valuep
              errorp))
 
   (defrule not-errorp-when-value-listp
@@ -358,7 +577,9 @@
               :slong (type-slong)
               :ullong (type-ullong)
               :sllong (type-sllong)
-              :pointer (type-pointer val.reftype))
+              :pointer (type-pointer val.reftype)
+              :array (type-array val.elemtype)
+              :struct (type-struct val.tag))
   :hooks (:fix)
   ///
 
@@ -376,50 +597,78 @@
                    ((ullongp val) (type-ullong))
                    ((sllongp val) (type-sllong))
                    ((pointerp val) (type-pointer (pointer->reftype val)))
+                   ((value-case val :array) (type-array
+                                             (value-array->elemtype val)))
+                   ((value-case val :struct) (type-struct
+                                              (value-struct->tag val)))
                    (t (prog2$ (impossible) (irr-type))))))
-    :enable (type-of-value
-             value-kind
-             value-fix
-             ucharp
-             scharp
-             ushortp
-             sshortp
-             uintp
-             sintp
-             ulongp
-             slongp
-             ullongp
-             sllongp
-             pointerp
-             pointer->reftype
-             value-pointer->reftype))
+    :use (:instance lemma (val (value-fix val)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (valuep val)
+                (equal (type-of-value val)
+                       (cond ((ucharp val) (type-uchar))
+                             ((scharp val) (type-schar))
+                             ((ushortp val) (type-ushort))
+                             ((sshortp val) (type-sshort))
+                             ((uintp val) (type-uint))
+                             ((sintp val) (type-sint))
+                             ((ulongp val) (type-ulong))
+                             ((slongp val) (type-slong))
+                             ((ullongp val) (type-ullong))
+                             ((sllongp val) (type-sllong))
+                             ((pointerp val)
+                              (type-pointer (pointer->reftype val)))
+                             ((value-case val :array)
+                              (type-array (value-array->elemtype val)))
+                             ((value-case val :struct)
+                              (type-struct (value-struct->tag val)))
+                             (t (prog2$ (impossible) (irr-type))))))
+       :enable (type-of-value
+                value-kind
+                value-fix
+                valuep
+                ucharp
+                scharp
+                ushortp
+                sshortp
+                uintp
+                sintp
+                ulongp
+                slongp
+                ullongp
+                sllongp
+                pointerp
+                pointer->reftype
+                value-pointer->reftype
+                value-array->elemtype))))
 
   (local (in-theory (e/d (type-of-value-alt-def) (type-of-value))))
 
   (defruled type-signed-integerp-of-type-of-signed-integer-value
     (implies (value-signed-integerp val)
              (type-signed-integerp (type-of-value val)))
-    :enable value-signed-integerp)
+    :enable value-signed-integerp-alt-def)
 
   (defruled type-unsigned-integerp-of-type-of-unsigned-integer-value
     (implies (value-unsigned-integerp val)
              (type-unsigned-integerp (type-of-value val)))
-    :enable value-unsigned-integerp)
+    :enable value-unsigned-integerp-alt-def)
 
   (defruled type-integerp-of-type-of-integer-value
     (implies (value-integerp val)
              (type-integerp (type-of-value val)))
     :enable (value-integerp
-             value-signed-integerp
-             value-unsigned-integerp))
+             value-signed-integerp-alt-def
+             value-unsigned-integerp-alt-def))
 
   (defruled type-realp-of-type-of-real-value
     (implies (value-realp val)
              (type-realp (type-of-value val)))
     :enable (value-realp
              value-integerp
-             value-signed-integerp
-             value-unsigned-integerp))
+             value-signed-integerp-alt-def
+             value-unsigned-integerp-alt-def))
 
   (defruled type-arithmeticp-of-type-of-arithmetic-value
     (implies (value-arithmeticp val)
@@ -427,8 +676,8 @@
     :enable (value-arithmeticp
              value-realp
              value-integerp
-             value-signed-integerp
-             value-unsigned-integerp))
+             value-signed-integerp-alt-def
+             value-unsigned-integerp-alt-def))
 
   (defruled type-scalarp-of-type-of-scalar-value
     (implies (value-scalarp val)
@@ -437,8 +686,8 @@
              value-arithmeticp
              value-realp
              value-integerp
-             value-signed-integerp
-             value-unsigned-integerp
+             value-signed-integerp-alt-def
+             value-unsigned-integerp-alt-def
              type-scalarp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

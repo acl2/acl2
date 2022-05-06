@@ -27,14 +27,25 @@
 (defthm natp-of-bvmult
   (natp (bvmult size x y)))
 
-(defthm bvmult-of-0
-  (equal (bvmult size 0 k)
+(defthm bvmult-of-0-arg1
+  (equal (bvmult 0 x y)
          0)
   :hints (("Goal" :in-theory (enable bvmult))))
 
-(defthm bvmult-of-1
-  (equal (bvmult size 1 k)
-         (bvchop size k))
+(defthm bvmult-of-0-arg2
+  (equal (bvmult size 0 y)
+         0)
+  :hints (("Goal" :in-theory (enable bvmult))))
+
+;; If we are not commuting constants forward
+(defthmd bvmult-of-0-arg3
+  (equal (bvmult size x 0)
+         0)
+  :hints (("Goal" :in-theory (enable bvmult))))
+
+(defthm bvmult-of-1-arg2
+  (equal (bvmult size 1 y)
+         (bvchop size y))
   :hints (("Goal" :in-theory (enable bvmult))))
 
 (defthm bvmult-of-bvchop-arg3
@@ -123,10 +134,10 @@
 
 ;this can't loop with x a constant, because then the bvmult would have been evaluated
 (defthmd bvmult-commute-constant
-  (implies (syntaxp (and (quotep k)
+  (implies (syntaxp (and (quotep y)
                          (quotep size)))
-           (equal (bvmult size x k)
-                  (bvmult size k x))))
+           (equal (bvmult size x y)
+                  (bvmult size y x))))
 
 
 (defthm bvmult-when-arg1-is-not-an-integer

@@ -16,6 +16,7 @@
 (include-book "bvchop-list")
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system)) ;for UNSIGNED-BYTE-P-INTEGER-LENGTH-ONE-LESS
 
@@ -150,3 +151,30 @@
            (equal (bv-array-write element-size len index val data)
                   nil))
   :hints (("Goal" :in-theory (enable bv-array-write))))
+
+;move
+(defthmd equal-of-bv-array-write-of-1
+  (equal (equal k (bv-array-write size 1 index val data))
+         (and (true-listp k)
+              (equal 1 (len k))
+              (equal (car k) (bvchop size val))))
+  :hints (("Goal" :do-not '(preprocess)
+           :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
+                           ( ;update-nth-becomes-update-nth2-extend-gen
+                            ;LIST::UPDATE-NTH-EQUAL-REWRITE
+                            ;LIST::UPDATE-NTH-EQUAL-UPDATE-NTH-REWRITE
+                            )))))
+
+;move
+(defthm equal-of-bv-array-write-of-1-constant-version
+  (implies (syntaxp (quotep k))
+           (equal (equal k (bv-array-write size 1 index val data))
+                  (and (true-listp k)
+                       (equal 1 (len k))
+                       (equal (car k) (bvchop size val)))))
+  :hints (("Goal" :do-not '(preprocess)
+           :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
+                           ( ;update-nth-becomes-update-nth2-extend-gen
+                            ;LIST::UPDATE-NTH-EQUAL-REWRITE
+                            ;LIST::UPDATE-NTH-EQUAL-UPDATE-NTH-REWRITE
+                            )))))

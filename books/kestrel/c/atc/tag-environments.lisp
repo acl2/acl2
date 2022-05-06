@@ -33,8 +33,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod member-info
-  :short "Fixtype of member information."
+(fty::defprod member-type
+  :short "Fixtype of member types."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -43,49 +43,53 @@
      This information consists of a name and a type.
      We do not capture bit fields (including anonymous ones)
      and we do not capture static assertions.
-     This information mirrors @(tsee struct-declon)."))
+     This information mirrors @(tsee struct-declon).")
+   (xdoc::p
+    "We call these `member types' because they are
+     the static counterpart of the member vaulues
+     captured by @(tsee member-value)."))
   ((name ident)
    (type type))
-  :tag :member-info
-  :pred member-infop)
+  :tag :member-type
+  :pred member-typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist member-info-list
-  :short "Fixtype of lists of member information."
-  :elt-type member-info
+(fty::deflist member-type-list
+  :short "Fixtype of lists of member types."
+  :elt-type member-type
   :true-listp t
   :elementp-of-nil nil
-  :pred member-info-listp)
+  :pred member-type-listp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection member-info-list->name-list (x)
-  :guard (member-info-listp x)
+(std::defprojection member-type-list->name-list (x)
+  :guard (member-type-listp x)
   :returns (names ident-listp)
-  :short "Lift @(tsee member-info->name) to lists."
-  (member-info->name x)
+  :short "Lift @(tsee member-type->name) to lists."
+  (member-type->name x)
   ///
-  (fty::deffixequiv member-info-list->name-list
-    :args ((x member-info-listp))))
+  (fty::deffixequiv member-type-list->name-list
+    :args ((x member-type-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum member-info-list-option
-  :short "Fixtype of optional lists of member information."
-  (:some ((val member-info-list)))
+(fty::deftagsum member-type-list-option
+  :short "Fixtype of optional lists of member types."
+  (:some ((val member-type-list)))
   (:none ())
-  :pred member-info-list-optionp)
+  :pred member-type-list-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult member-info-list "lists of member information")
+(defresult member-type-list "lists of member types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define member-info-lookup ((name identp) (members member-info-listp))
+(define member-type-lookup ((name identp) (members member-type-listp))
   :returns (type type-optionp)
-  :short "Look up a member by name in a list of member information."
+  :short "Look up a member by name in a list of member types."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -95,50 +99,50 @@
      We return the type of the member if the search is successful."))
   (b* (((when (endp members)) nil)
        ((when (equal (ident-fix name)
-                     (member-info->name (car members))))
-        (member-info->type (car members))))
-    (member-info-lookup name (cdr members)))
+                     (member-type->name (car members))))
+        (member-type->type (car members))))
+    (member-type-lookup name (cdr members)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define member-info-add-first ((name identp)
+(define member-type-add-first ((name identp)
                                (type typep)
-                               (members member-info-listp))
-  :returns (new-members member-info-list-optionp)
-  :short "Add a member at the beginning of a list of member information."
+                               (members member-type-listp))
+  :returns (new-members member-type-list-optionp)
+  :short "Add a member type at the beginning of a list of member types."
   :long
   (xdoc::topstring
    (xdoc::p
     "We check that the a member with the same name is not already in the list,
      to maintain the invariant mentioned in @(tsee tag-info)."))
-  (b* ((found (member-info-lookup name members))
-       ((when found) (member-info-list-option-none)))
-    (member-info-list-option-some
-     (cons (make-member-info :name name :type type)
+  (b* ((found (member-type-lookup name members))
+       ((when found) (member-type-list-option-none)))
+    (member-type-list-option-some
+     (cons (make-member-type :name name :type type)
            members)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define member-info-add-last ((name identp)
+(define member-type-add-last ((name identp)
                               (type typep)
-                              (members member-info-listp))
-  :returns (new-members member-info-list-optionp)
-  :short "Add a member at the end of a list of member information."
+                              (members member-type-listp))
+  :returns (new-members member-type-list-optionp)
+  :short "Add a member at the end of a list of member types."
   :long
   (xdoc::topstring
    (xdoc::p
     "We check that the a member with the same name is not already in the list,
      to maintain the invariant mentioned in @(tsee tag-info)."))
-  (b* ((found (member-info-lookup name members))
-       ((when found) (member-info-list-option-none)))
-    (member-info-list-option-some
-     (rcons (make-member-info :name name :type type)
+  (b* ((found (member-type-lookup name members))
+       ((when found) (member-type-list-option-none)))
+    (member-type-list-option-some
+     (rcons (make-member-type :name name :type type)
             members)))
   :guard-hints (("Goal" :in-theory (enable rcons)))
   ///
-  (fty::deffixequiv member-info-add-last
+  (fty::deffixequiv member-type-add-last
     :hints (("Goal" :in-theory (enable rcons)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -153,13 +157,13 @@
      we use placeholders for union and enumeration types.")
    (xdoc::p
     "The information about a structure type consists of
-     a list of member information (see @(see member-info)).
+     a list of member types (see @(see member-type)).
      This mirrors (the @(':struct') case of) @(tsee tag-declon).")
    (xdoc::p
     "The members must have unique names [C:6.2.3].
      There must be at least one member [C:6.2.5/20].
      Currently we do not capture these requirements in this fixtype."))
-  (:struct ((members member-info-list)))
+  (:struct ((members member-type-list)))
   (:union ())
   (:enum ())
   :pred tag-infop)

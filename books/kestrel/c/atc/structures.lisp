@@ -32,73 +32,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod member
-  :short "Fixtype of structure members."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A member consists of a name and a value."))
-  ((name ident)
-   (value value))
-  :tag :member
-  :pred memberp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist member-list
-  :short "Fixtype of lists of structure members."
-  :elt-type member
-  :true-listp t
-  :elementp-of-nil nil
-  :pred member-listp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection member-list->name-list (x)
-  :guard (member-listp x)
-  :returns (names ident-listp)
-  :short "Lift @(tsee member->name) to lists."
-  (member->name x)
-  ///
-  (fty::deffixequiv member-list->name-list
-    :args ((x member-listp))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection member-list->value-list (x)
-  :guard (member-listp x)
-  :returns (values value-listp)
-  :short "Lift @(tsee member->value) to lists."
-  (member->value x)
-  ///
-  (fty::deffixequiv member-list->value-list
-    :args ((x member-listp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult member-list "lists of structure members")
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-errorp-when-member-listp
-  (implies (member-listp x)
-           (not (errorp x)))
-  :enable (member-listp errorp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod struct
   :short "Fixtype of structures [C:6.2.5/20]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "There must be at least one member.
-     The members must have distinct names.
-     These requirements are currently not captured in this fixtype."))
+    "The members must have distinct names.
+     This requirement is currently not captured in this fixtype."))
   ((tag ident)
-   (members member-list))
+   (members member-value-list
+            :reqfix (if (consp members)
+                        members
+                      (list (member-value-fix :irrelevant)))))
+  :require (consp members)
+  :layout :list
   :tag :struct
-  :pred structp)
+  :pred structp
+  ///
+
+  (defrule valuep-when-structp
+    (implies (structp x)
+             (valuep x))
+    :enable (structp valuep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -119,12 +74,12 @@
   :hooks (:fix)
 
   :prepwork
-  ((define struct-read-member-aux ((name identp) (members member-listp))
+  ((define struct-read-member-aux ((name identp) (members member-value-listp))
      :returns (val value-resultp)
      :parents nil
      (b* (((when (endp members))
            (error (list :member-not-found (ident-fix name))))
-          ((member member) (car members))
+          ((member-value member) (car members))
           ((when (equal member.name (ident-fix name)))
            member.value))
        (struct-read-member-aux name (cdr members)))
@@ -150,52 +105,54 @@
   :prepwork
   ((define struct-write-member-aux ((name identp)
                                     (val valuep)
-                                    (members member-listp))
-     :returns (new-members
-               member-list-resultp
-               :hints
-               (("Goal"
-                 :in-theory
-                 (enable
-                  member-listp-when-member-list-resultp-and-not-errorp))))
+                                    (members member-value-listp))
+     :returns
+     (new-members
+      member-value-list-resultp
+      :hints
+      (("Goal"
+        :in-theory
+        (enable
+         member-value-listp-when-member-value-list-resultp-and-not-errorp))))
      :parents nil
      (b* (((when (endp members))
            (error (list :member-not-found (ident-fix name))))
-          ((member member) (car members))
+          ((member-value member) (car members))
           ((when (equal member.name (ident-fix name)))
            (if (equal (type-of-value member.value)
                       (type-of-value val))
-               (cons (make-member :name name :value val)
-                     (member-list-fix (cdr members)))
+               (cons (make-member-value :name name :value val)
+                     (member-value-list-fix (cdr members)))
              (error (list :mistype-member (ident-fix name)
                           :old-value member.value
                           :new-value (value-fix val)))))
           (new-cdr-members (struct-write-member-aux name val (cdr members)))
           ((when (errorp new-cdr-members)) new-cdr-members))
-       (cons (member-fix (car members))
+       (cons (member-value-fix (car members))
              new-cdr-members))
      :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define member-to-info ((member memberp))
-  :returns (meminfo member-infop)
-  :short "Turn a member into its information."
+(define member-value-to-type ((member member-valuep))
+  :returns (meminfo member-typep)
+  :short "Turn a member value into the corresponding member type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A @(tsee member-info) is the static counterpart of a @(tsee member)."))
-  (make-member-info :name (member->name member)
-                    :type (type-of-value (member->value member)))
+    "A @(tsee member-type) is the static counterpart of
+     a @(tsee member-value)."))
+  (make-member-type :name (member-value->name member)
+                    :type (type-of-value (member-value->value member)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection members-to-infos (x)
-  :guard (member-listp x)
-  :returns (infos member-info-listp)
-  :short "Lift @(tsee member-to-info) to lists."
-  (member-to-info x)
+(std::defprojection member-values-to-types (x)
+  :guard (member-value-listp x)
+  :returns (infos member-type-listp)
+  :short "Lift @(tsee member-value-to-type) to lists."
+  (member-value-to-type x)
   ///
-  (fty::deffixequiv members-to-infos
-    :args ((x member-listp))))
+  (fty::deffixequiv member-values-to-types
+    :args ((x member-value-listp))))

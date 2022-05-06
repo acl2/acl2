@@ -72,6 +72,15 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable axe-treep))))
 
+(defthmd len-of-car-when-axe-treep
+  (implies (axe-treep tree)
+           (equal (len (car tree))
+                  (if (consp (car tree)) ; check for lambda application
+                      3
+                    0)))
+  :hints (("Goal" :expand (AXE-TREEP TREE)
+           :in-theory (enable axe-treep))))
+
 (defthmd len-of-lambda-formals-when-axe-treep
   (implies (and (axe-treep tree)
                 (consp (car tree)) ;it's a lambda

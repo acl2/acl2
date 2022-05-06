@@ -35,3 +35,8 @@
               (merge-and-remove-dups lst1 (rest lst2) (cons item2 acc))
             ;;they are equal, so drop them both
             (merge-and-remove-dups (rest lst1) (rest lst2) acc)))))))
+
+(defthm true-listp-of-merge-and-remove-dups
+  (implies (true-listp acc)
+           (true-listp (merge-and-remove-dups lst1 lst2 acc)))
+  :hints (("Goal" :in-theory (enable merge-and-remove-dups))))

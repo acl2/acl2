@@ -144,10 +144,10 @@
 ; equiv-okp is nil, then no special treatment is given to equivalence relations
 ; other than equal, iff, and members of *equality-aliases*.
 
-  (cond ((variablep term) (mv 'iff term *t* nil))
-        ((fquotep term) (mv 'iff term *t* nil))
+  (cond ((variablep term) (mv 'iff term term *t* nil))
+        ((fquotep term) (mv 'iff term term *t* nil))
         ((member-eq (ffn-symb term) *equality-aliases*)
-         (mv 'equal (remove-lambdas (fargn term 1)) (fargn term 2) nil))
+         (mv 'equal (fargn term 1) (remove-lambdas (fargn term 1)) (fargn term 2) nil))
         ((flambdap (ffn-symb term))
          (interpret-term-as-rewrite-rule1
           (subcor-var (lambda-formals (ffn-symb term))
@@ -174,14 +174,14 @@
                                      (t (mv 'iff nil)))))
                             (t (mv 'iff nil)))))
                    (t (mv (ffn-symb term) nil)))
-             (mv equiv lhs (fargn term 2) ttree))))
+             (mv equiv (fargn term 1) lhs (fargn term 2) ttree))))
         ((eq (ffn-symb term) 'not)
-         (mv 'equal (remove-lambdas (fargn term 1)) *nil* nil))
+         (mv 'equal (fargn term 1) (remove-lambdas (fargn term 1)) *nil* nil))
         (t (mv-let (ts ttree)
              (type-set term nil nil nil ens wrld nil nil nil)
              (cond ((ts-subsetp ts *ts-boolean*)
-                    (mv 'equal (remove-lambdas term) *t* ttree))
-                   (t (mv 'iff (remove-lambdas term) *t* nil)))))))
+                    (mv 'equal term (remove-lambdas term) *t* ttree))
+                   (t (mv 'iff term (remove-lambdas term) *t* nil)))))))
 
 (defun interpret-term-as-rewrite-rule (qc-flg name hyps term ctx ens wrld)
 
@@ -192,16 +192,17 @@
 
 ; This function returns five values.  The first can be a msg for printing an
 ; error message.  Otherwise the first is nil, in which case the second is an
-; equivalence relation, eqv; the next two are terms, lhs and rhs, such that
-; (eqv lhs rhs) is propositionally equivalent to term; and the last is an
-; 'assumption-free ttree justifying the claim.
+; equivalence relation, eqv; the next three are terms -- lhs, lhs0 and rhs --
+; such that (eqv lhs0 rhs) is propositionally equivalent to term and lhs is the
+; result of removing lambdas from lhs0; and the last is an 'assumption-free
+; ttree justifying the claim.
 
 ; If ctx is non-nil, then print an observation, with that ctx, when we are
 ; avoiding the use of an equivalence relation.  Otherwise do not print that
 ; observation.
 
   (mv-let
-    (eqv lhs rhs ttree)
+    (eqv lhs0 lhs rhs ttree)
     (interpret-term-as-rewrite-rule1 term t ens wrld)
 
 ; Note that we are insensitive to the qc-flg in the above call.  We deconstruct
@@ -231,12 +232,12 @@
 ;      (my-equivp x x)))
 
         (mv-let
-          (eqv2 lhs2 rhs2 ttree2)
+          (eqv2 lhs20 lhs2 rhs2 ttree2)
           (interpret-term-as-rewrite-rule1 term nil ens wrld)
           (cond
            ((interpret-term-as-rewrite-rule2 qc-flg name hyps
                                              eqv2 lhs2 rhs2 wrld)
-            (mv msg eqv lhs rhs ttree))
+            (mv msg eqv lhs0 lhs rhs ttree))
            (t (prog2$
                (and ctx
                     (observation-cw ctx
@@ -254,8 +255,8 @@
                                     eqv2
                                     (untranslate lhs2 nil wrld)
                                     (untranslate rhs2 nil wrld)))
-               (mv nil eqv2 lhs2 rhs2 ttree2))))))
-       (t (mv nil eqv lhs rhs ttree))))))
+               (mv nil eqv2 lhs20 lhs2 rhs2 ttree2))))))
+       (t (mv nil eqv lhs0 lhs rhs ttree))))))
 
 ; We inspect the lhs and some hypotheses with the following functions to
 ; determine if non-recursive defuns will present a problem to the user.
@@ -446,14 +447,14 @@
 
 (defun loop-stopper (lhs rhs)
 
-; If lhs and rhs are variants (possibly after expanding lambdas in rhs; see
-; below), we return the "expansion" (see next paragraph) of the subset of the
-; unifying substitution containing those pairs (x . y) in which a variable
-; symbol (y) is being moved forward (to the position of x) in the print
-; representation of the term.  For example, suppose lhs is (foo x y z) and rhs
-; is (foo y z x).  Then both y and z are moved forward, so the loop-stopper is
-; the "expansion" of '((y . z) (x . y)).  This function exploits the fact that
-; all-vars returns the set of variables listed in reverse print-order.
+; If lhs and rhs are variants, we return the "expansion" (see next paragraph)
+; of the subset of the unifying substitution containing those pairs (x . y) in
+; which a variable symbol (y) is being moved forward (to the position of x) in
+; the print representation of the term.  For example, suppose lhs is (foo x y
+; z) and rhs is (foo y z x).  Then both y and z are moved forward, so the
+; loop-stopper is the "expansion" of '((y . z) (x . y)).  This function
+; exploits the fact that all-vars returns the set of variables listed in
+; reverse print-order.
 
 ; In the paragraph above, the "expansion" of a substitution ((x1 .  y1) ... (xn
 ; . yn)) is the list ((x1 y1 . fns-1) ... (xn yn .  fns-n)), where fns-i is the
@@ -470,13 +471,7 @@
 ; term-order, which is used in places besides permutative rewriting.
 
   (mv-let (ans unify-subst)
-    (variantp lhs
-
-; We expect lhs and rhs to be the left- and right-hand sides of rewrite rules.
-; Thus lhs was created by expanding lambdas, but not rhs.  We thus expand
-; lambdas here.
-
-              (remove-lambdas rhs))
+    (variantp lhs rhs)
     (cond (ans (loop-stopper1 unify-subst (all-vars lhs) lhs))
           (t nil))))
 
@@ -712,7 +707,7 @@
                                       :initial-element
                                       limit))))))))
 
-(defun create-rewrite-rule (qc-flg rune nume hyps equiv lhs rhs
+(defun create-rewrite-rule (qc-flg rune nume hyps equiv lhs0 lhs rhs
                                    loop-stopper-lst backchain-limit-lst
                                    match-free-value wrld)
 
@@ -726,7 +721,9 @@
                           (remove-irrelevant-loop-stopper-pairs
                            (cadr loop-stopper-lst)
                            (all-vars lhs))
-                          (loop-stopper lhs rhs))))
+                        (or (loop-stopper lhs rhs)
+                            (and (not (equal lhs0 lhs))
+                                 (loop-stopper lhs0 rhs))))))
     (make rewrite-rule
           :rune rune
           :nume nume
@@ -1715,14 +1712,15 @@
 ; sometimes depends on type-set information.
 
   (mv-let
-   (msg eqv lhs rhs ttree)
+   (msg eqv lhs0 lhs rhs ttree)
    (interpret-term-as-rewrite-rule qc-flg name hyps concl ctx ens wrld)
+   (declare (ignore lhs0))
    (cond
     (msg (er soft ctx "~@0" msg))
     (t (let ((rewrite-rule
               (create-rewrite-rule qc-flg
                                    *fake-rune-for-anonymous-enabled-rule*
-                                   nil hyps eqv lhs rhs nil nil nil wrld)))
+                                   nil hyps eqv lhs lhs rhs nil nil nil wrld)))
 
 ; The rewrite-rule record created above is used only for subsumption checking and
 ; then discarded.  The rune, nume, loop-stopper-lst, and match-free used are
@@ -1785,7 +1783,7 @@
 ; rune from the formula (IMPLIES (AND . hyps) concl).
 
   (mv-let
-   (msg eqv lhs rhs ttree)
+   (msg eqv lhs0 lhs rhs ttree)
    (interpret-term-as-rewrite-rule qc-flg
                                    (base-symbol rune)
                                    hyps concl nil ens wrld)
@@ -1839,7 +1837,7 @@
     (t
      (let* ((match-free-value (match-free-value match-free hyps lhs wrld))
             (rewrite-rule (create-rewrite-rule qc-flg rune nume hyps eqv
-                                               lhs rhs
+                                               lhs0 lhs rhs
                                                loop-stopper-lst
                                                backchain-limit-lst
                                                match-free-value

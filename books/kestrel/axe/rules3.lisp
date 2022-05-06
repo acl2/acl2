@@ -7751,7 +7751,8 @@
            (equal (equal x30 (bvplus '32 '2147483649 x6))
                   (and (equal 0 x30)
                        (equal 2147483647 x6))))
-  :hints (("Goal" :in-theory (e/d (bvplus)
+  :hints (("Goal" :in-theory (e/d (bvplus
+                                   bvchop-of-sum-cases)
                                   (anti-bvplus GETBIT-OF-+
                                    getbit-of-+
                                    plus-becomes-bvplus-free
@@ -15858,7 +15859,7 @@
  ;                           IF-BACKCHAIN-RULE2
                             BVCHOP-CHOP-LEADING-CONSTANT
                             GETBIT-WHEN-BVLT-OF-SMALL-HELPER
-                            BVPLUS-OF-0
+                            ;;BVPLUS-OF-0-arg2
                             BVPLUS-SUBST-VALUE
                             BVCHOP-OF-IF)))))
 

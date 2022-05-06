@@ -232,6 +232,25 @@
   :hints (("Goal" :in-theory (enable dag-or-quotep-size-fast))))
 
 ;;;
+;;; dag-size-less-thanp
+;;;
+
+;; Smashes the array named 'size-array.
+;; We could just compare to the result of dag-size-fast, but not if we optimize this to use the limit
+(defund dag-size-less-thanp (dag limit)
+  (declare (xargs :guard (and (and (pseudo-dagp dag)
+                                   (< (len dag) 2147483647))
+                              (natp limit))))
+  (if (<= limit (len dag)) ;todo: avoid doing the whole len once limit items are found
+      ;; Avoid any size computation for huge dags (assumes the dag is reduced
+      ;; in that non-supporters have been dropped) because we know the size
+      ;; exceeds the limit:
+      nil
+    ;; TODO: Consider passing in the limit and stopping as soon as a larger
+    ;; node is found (assumes the dag is reduced):
+    (< (dag-size-fast dag) limit)))
+
+;;;
 ;;; dag-or-quotep-size-less-thanp
 ;;;
 
@@ -244,11 +263,4 @@
                               (natp limit))))
   (if (quotep dag-or-quotep) ;size of a quotep is 1
       (< 1 limit)
-    (if (<= limit (len dag-or-quotep)) ;todo: avoid doing the whole len once limit items are found
-        ;; Avoid any size computation for huge dags (assumes the dag is reduced
-        ;; in that non-supporters have been dropped) because we know the size
-        ;; exceeds the limit:
-        nil
-      ;; TODO: Consider passing in the limit and stopping as soon as a larger
-      ;; node is found (assumes the dag is reduced):
-      (< (dag-size-fast dag-or-quotep) limit))))
+    (dag-size-less-thanp dag-or-quotep limit)))

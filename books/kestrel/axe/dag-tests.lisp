@@ -183,5 +183,5 @@
  '(BAR (LET* ((VAR-FOR-LET2 (BINARY-+ X Y)))
              (BINARY-* VAR-FOR-LET2 VAR-FOR-LET2))))
 
-;(make-term-into-dag-array 'x 'dag-array-name 'dag-parent-array-name nil)
-;(make-term-into-dag-array '(foo '3 x) 'dag-array-name 'dag-parent-array-name nil)
+;(make-term-into-dag-array 'x 'dag-array 'dag-parent-array nil)
+;(make-term-into-dag-array '(foo '3 x) 'dag-array 'dag-parent-array nil)

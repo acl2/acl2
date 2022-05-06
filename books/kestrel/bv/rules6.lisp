@@ -107,22 +107,6 @@
   :hints (("Goal" :use (:instance logand-of-minus-of-expt2 (n 5))
            :in-theory (e/d (logtail)( logand-of-minus-of-expt2)))))
 
-;use trim?
-(defthm bvand-logapp-lemma
-  (implies (and (< lowsize size1) ;bozo gen
-                (< size1 (+ lowsize highsize))
-                (natp size1)
-                (natp lowsize)
-                (natp highsize)
-                (integerp x)
-                (integerp y)
-                (integerp z))
-           (equal (bvand size1 x (bvcat highsize z lowsize y))
-                  (bvand size1 x (bvcat (- size1 lowsize) z lowsize y))))
-  :hints (("Goal" :in-theory (e/d (bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
-                                         BVCHOP-OF-LOGAPP-BIGGER)
-                                  ( )))))
-
 (defthm bvcat-of-bvxor-tighten-2
   (implies (and (< size1 size2)
                 (natp size1)
@@ -160,52 +144,6 @@
 
 (in-theory (disable bvxor-trim-arg2 bvxor-trim-arg1)) ;bozo
 
-(defthm bvxor-of-bvcat-gen
-  (implies (and (<= (+ -1 size2) size)
-                (< lowsize size2)
-                (< 0 lowsize)
-                (integerp x)
-                (integerp y)
-                (integerp z)
-                (natp size)
-                (natp size2)
-                (natp lowsize)
-                )
-           (equal (bvxor size2 (bvcat size y lowsize x) z)
-                  (bvcat (- size2 lowsize)
-                         (bvxor (- size2 lowsize) y (slice (+ -1 size2) lowsize z))
-                         lowsize
-                         (bvxor lowsize x z)))))
-
-
-;; ;use trim
-;; (defthm bvxor-of-bvcat-tighten-low
-;;   (implies (and (<= size lowsize)
-;;                 (natp size)
-;;                 (natp lowsize)
-;;                 (natp highsize)
-;;                 (integerp x)
-;;                 (integerp y)
-;;                 (integerp z))
-;;            (equal (bvxor size (bvcat highsize y lowsize x) z)
-;;                   (bvxor size x z)))
-;;   :hints (("Goal" :in-theory (e/d (bvxor)
-;;                                   (logxor-bvchop-bvchop)))))
-
-;; ;use trim
-;; (defthm bvxor-of-bvcat-tighten-low-alt
-;;   (implies (and (<= size lowsize)
-;;                 (natp size)
-;;                 (natp lowsize)
-;;                 (natp highsize)
-;;                 (integerp x)
-;;                 (integerp y)
-;;                 (integerp z))
-;;            (equal (bvxor size z (bvcat highsize y lowsize x))
-;;                   (bvxor size z x)))
-;;   :hints (("Goal" :in-theory (e/d (bvxor)
-;;                                   (logxor-bvchop-bvchop)))))
-
 ;do we trim logexts?
 (defthm bvxor-of-logext
   (implies (and (<= size1 size2)
@@ -230,15 +168,6 @@
            (equal (bvxor size1 y (logext size2 x))
                   (bvxor size1 x y)))
   :hints (("Goal" :in-theory (e/d (bvxor) (logxor-bvchop-bvchop)))))
-
-;bozo gen or change the name
-;move
-(defthm logapp-when-size-is-negative
-  (implies (and (< size 0)
-                (integerp x))
-           (equal (logapp size x 0)
-                  0))
-  :hints (("Goal" :in-theory (enable logapp))))
 
 (defthm bvand-of-slice-tighten-2
   (implies (and (< size (+ 1 high (- low)))
@@ -292,7 +221,7 @@
                   (BVXOR size (SLICE (+ low size -1) low x) y)))
   :hints (("Goal" :in-theory (e/d (bvxor) (LOGXOR-BVCHOP-BVCHOP)))))
 
-(in-theory (disable integer-length))
+(in-theory (disable integer-length)) ; todo
 
 (defthm getbit-of-bvmult-tighten
   (implies (and (< (+ 1 SIZE1) SIZE2)
@@ -419,32 +348,6 @@
                   (bvxor size z (bvor size x y))))
  :hints (("Goal" :in-theory (e/d (bvxor) (LOGXOR-BVCHOP-BVCHOP BVCHOP-1-BECOMES-GETBIT)))))
 
-(DEFTHM BVAND-OF-BVCAT-TIGHTEN-LOW
-  (IMPLIES (AND (<= SIZE LOWSIZE)
-                (NATP SIZE)
-                (NATP LOWSIZE)
-                (NATP HIGHSIZE)
-                (INTEGERP X)
-                (INTEGERP Y)
-                (INTEGERP Z))
-           (EQUAL (BVAND SIZE (bvcat HIGHSIZE Y LOWSIZE X)
-                         Z)
-                  (BVAND SIZE X Z)))
-  :HINTS (("Goal" :IN-THEORY (E/D (BVAND)
-                                  (LOGAND-OF-BVCHOP)))))
-
-(DEFTHM BVAND-OF-BVCAT-TIGHTEN-LOW-ALT
-  (IMPLIES (AND (<= SIZE LOWSIZE)
-                (NATP SIZE)
-                (NATP LOWSIZE)
-                (NATP HIGHSIZE)
-                (INTEGERP X)
-                (INTEGERP Y)
-                (INTEGERP Z))
-           (EQUAL (BVAND SIZE Z (bvcat HIGHSIZE Y LOWSIZE X))
-                  (BVAND SIZE Z X)))
-  :hints (("Goal" :use (:instance BVAND-OF-BVCAT-TIGHTEN-LOW)
-           :in-theory (disable BVAND-OF-BVCAT-TIGHTEN-LOW))))
 ;; (thm
 ;;  (implies (and (natp size)
 ;;                (integerp x)
@@ -491,35 +394,6 @@
                                            logtail-of-bvchop-becomes-slice
                                            bvchop-of-logtail-becomes-slice)))))
 
-(defthm bvor-of-bvcat-tighten-alt
-  (implies (and (< size (+ lowsize highsize))
-                (< lowsize size)
-                (natp size)
-                (natp lowsize)
-                (natp highsize)
-                ;;(integerp x)
-                ;;(integerp y)
-                ;;(integerp z)
-                )
-           (equal (bvor size z (bvcat highsize y lowsize x))
-                  (bvor size z
-                           (bvcat (- size lowsize)
-                                    y lowsize x))))
-  :hints (("Goal" :in-theory (enable bvor))))
-
-;use trim
-(defthm bvor-of-bvcat-tighten
-  (implies (and (< size (+ lowsize highsize))
-                (< lowsize size)
-                (natp size)
-                (natp lowsize)
-                (natp highsize))
-           (equal (bvor size (bvcat highsize y lowsize x)
-                           z)
-                  (bvor size
-                           (bvcat (- size lowsize) y lowsize x)
-                           z)))
-  :hints (("Goal" :in-theory (enable bvor))))
 
 ;use a more general rule?
 (defthm bvcat-tighten
@@ -684,7 +558,7 @@
                 )
            (equal (bvmult size x y)
                   (bvmult size (bvcat (- size newsize) 0 newsize x) y)))
-  :hints (("Goal" :in-theory (e/d (bvcat-of-0 bvchop-identity)
+  :hints (("Goal" :in-theory (e/d (bvchop-identity)
                                   ( ;add-bvchop-to-bvxor-1
                                    ;add-bvchop-to-bvxor-2
                                    )))))
@@ -700,7 +574,7 @@
                 )
            (equal (BVMULT size x y)
                   (bvmult size x (bvcat (- size newsize) 0 newsize y))))
-  :hints (("Goal" :in-theory (e/d (BVCAT-OF-0 bvchop-identity)
+  :hints (("Goal" :in-theory (e/d (bvchop-identity)
                                   ( ;ADD-BVCHOP-TO-BVXOR-1
                                    ;ADD-BVCHOP-TO-BVXOR-2
                                    )))))
@@ -716,7 +590,7 @@
                 (integerp newsize))
            (equal (bvmult size x y)
                   (bvmult size (bvchop size x) y)))
-  :hints (("Goal" :in-theory (e/d (bvcat-of-0)
+  :hints (("Goal" :in-theory (e/d ()
                                   (bvmult-pad-arg1
                                    bvmult-pad-arg2)))))
 
@@ -727,7 +601,7 @@
                 (integerp newsize))
            (equal (BVMULT size x y)
                   (bvmult size x (bvchop size y))))
-  :hints (("Goal" :in-theory (e/d (BVCAT-OF-0) (bvmult-pad-arg1
+  :hints (("Goal" :in-theory (e/d () (bvmult-pad-arg1
                                                 bvmult-pad-arg2)))))
 
 
@@ -754,8 +628,7 @@
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat
                            highsize highval lowsize (bvcat (- lowsize newsize) 0 newsize lowval))))
-  :hints (("Goal" :in-theory (e/d (bvcat-of-0
-                                   bvchop-identity
+  :hints (("Goal" :in-theory (e/d (bvchop-identity
                                    bvcat-of-bvchop-low)
                                   (bvmult-pad-arg1
                                    bvmult-pad-arg2
@@ -772,13 +645,8 @@
                 )
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat highsize (bvcat (- highsize newsize) 0 newsize highval) lowsize lowval)))
-  :hints (("Goal" :in-theory (e/d (bvcat-of-0
-                                   bvchop-identity
+  :hints (("Goal" :in-theory (e/d (bvchop-identity
                                    bvcat-of-bvchop-low) (bvmult-pad-arg1 bvmult-pad-arg2)))))
-
-
-
-
 
 (defthmd bvif-pad-arg-1-with-zeros
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
@@ -790,7 +658,7 @@
                 (natp size))
            (equal (bvif size test x y)
                   (bvif size test (bvcat (- size newsize) 0 newsize x) y)))
-  :hints (("Goal" :in-theory (e/d (bvcat-of-0 bvchop-identity)
+  :hints (("Goal" :in-theory (e/d (bvchop-identity)
                                   (bvmult-pad-arg1
                                    bvmult-pad-arg2)))))
 
@@ -804,7 +672,7 @@
                 (natp size))
            (equal (BVIF size test x y)
                   (bvif size test x (bvcat (- size newsize) 0 newsize y))))
-  :hints (("Goal" :in-theory (e/d (BVCAT-OF-0 bvchop-identity)
+  :hints (("Goal" :in-theory (e/d (bvchop-identity)
                                   (BVMULT-PAD-ARG1
                                    BVMULT-PAD-ARG2)))))
 
@@ -896,7 +764,7 @@
                 )
            (equal (bvxor size x y)
                   (bvxor size (bvcat (- size newsize) 0 newsize x) y)))
-  :hints (("Goal" :in-theory (e/d (bvcat-of-0 bvchop-identity)
+  :hints (("Goal" :in-theory (e/d (bvchop-identity)
                                   ( ;add-bvchop-to-bvxor-1
                                    bvcat-pad-low
                                    bvcat-pad-high
@@ -914,7 +782,7 @@
                 )
            (equal (bvxor size x y)
                   (bvxor size x (bvcat (- size newsize) 0 newsize y))))
-  :hints (("Goal" :in-theory (e/d (bvcat-of-0 bvchop-identity)
+  :hints (("Goal" :in-theory (e/d (bvchop-identity)
                                   ( ;add-bvchop-to-bvxor-1
                                    bvcat-pad-low
                                    bvcat-pad-high

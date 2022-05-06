@@ -1,7 +1,7 @@
 ; Alists from symbols to terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,10 +51,10 @@
            (symbolp (car (car x))))
   :hints (("Goal" :in-theory (enable symbol-term-alistp))))
 
-(defthm symbolp-of-car-of-car-when-symbol-term-alistp-type
+(defthm symbol-term-alistp-forward-to-symbolp-of-car-of-car
   (implies (symbol-term-alistp x)
            (symbolp (car (car x))))
-  :rule-classes :type-prescription
+  :rule-classes :forward-chaining
   :hints (("Goal" :by symbolp-of-car-of-car-when-symbol-term-alistp)))
 
 ;; TODO: Add a -cheap version and disable this one?

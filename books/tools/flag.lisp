@@ -895,12 +895,18 @@ one such form may affect what you might think of as the proof of another.</p>
        (thmname (intern-in-package-of-symbol
                  (concatenate 'string "THEOREM-FOR-" (symbol-name fnname))
                  fnname))
-       (hyp1 (intern-in-package-of-symbol "HYP1" fnname))
-       (hyp2 (intern-in-package-of-symbol "HYP2" fnname))
+       (fnguard (getprop fnname 'guard acl2::*t* 'current-acl2-world world))
+       (hyp (if (not (equal fnguard acl2::*t*))
+                ;; use the function's guard, since it's non-trivial:
+                (untranslate fnguard t world)
+              ;; use a placeholder hyp:
+              (let ((hyp1 (intern-in-package-of-symbol "HYP1" fnname))
+                    (hyp2 (intern-in-package-of-symbol "HYP2" fnname)))
+                `(and ,hyp1 ,hyp2))))
        (prop (intern-in-package-of-symbol "PROP" fnname))
        (fnargs  (get-formals fnname world))
        (mock-thm `(defthm ,thmname
-                    (implies (and ,hyp1 ,hyp2)
+                    (implies ,hyp
                              (,prop (,fnname . ,fnargs)))
                     :flag ,flag-symbol)))
     (cons mock-thm

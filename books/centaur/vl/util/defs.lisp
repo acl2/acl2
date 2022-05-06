@@ -46,6 +46,8 @@
 (include-book "std/strings/top" :dir :system)
 (include-book "std/system/non-parallel-book" :dir :system)
 (include-book "centaur/misc/starlogic" :dir :system)
+(include-book "string-fix")
+(include-book "fast-memberp")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 
@@ -151,75 +153,6 @@ VL !>
 
   (defmacro debuggable-and (&rest args)
     (debuggable-and-fn args)))
-
-
-
-(define make-lookup-alist (x)
-  :parents (utilities)
-  :short "Make a fast-alist for use with @(see fast-memberp)."
-
-  :long "<p>@(call make-lookup-alist) produces a fast-alist binding every
-member of @('x') to @('t').</p>
-
-<p>Constructing a lookup alist allows you to use @(see fast-memberp) in lieu of
-@(see member) or @(see member-equal), which may be quite a lot faster on large
-lists.</p>
-
-<p>Don't forget to free the alist after you are done using it, via @(see
-fast-alist-free).</p>"
-
-  (if (consp x)
-      (hons-acons (car x)
-                  t
-                  (make-lookup-alist (cdr x)))
-    nil)
-
-  :returns (ans alistp)
-
-  ///
-  (defrule hons-assoc-equal-of-make-lookup-alist
-    (iff (hons-assoc-equal a (make-lookup-alist x))
-         (member-equal a (double-rewrite x))))
-
-  (defrule consp-of-make-lookup-alist
-    (equal (consp (make-lookup-alist x))
-           (consp x)))
-
-  (defrule make-lookup-alist-under-iff
-    (iff (make-lookup-alist x)
-         (consp x)))
-
-  (defrule strip-cars-of-make-lookup-alist
-    (equal (strip-cars (make-lookup-alist x))
-           (list-fix x)))
-
-  (defrule alist-keys-of-make-lookup-alist
-    (equal (alist-keys (make-lookup-alist x))
-           (list-fix x))))
-
-
-
-(define fast-memberp (a
-                      x
-                      (alist (set-equiv (alist-keys alist)
-                                        (list-fix x))))
-  :parents (utilities)
-  :short "Fast list membership using @(see make-lookup-alist)."
-
-  :long "<p>In the logic, @(call fast-memberp) is just a list membership check;
-we leave @('fast-memberp') enabled and always reason about @('member-equal')
-instead.</p>
-
-<p>However, our guard requires that @('alist') is the result of running @(see
-make-lookup-alist) on @('x').  Because of this, in the execution, the call of
-@(see member-equal) call is instead carried out using @(see hons-get) on the
-alist, and hence is a hash table lookup.</p>"
-
-  :inline t
-  :enabled t
-
-  (mbe :logic (if (member-equal a x) t nil)
-       :exec (if (hons-get a alist) t nil)))
 
 
 
@@ -462,18 +395,6 @@ such that @('p') is a prefix of every list in @('x')."
     (prefix-of-eachp (longest-common-prefix-list x) x)))
 
 
-(define string-fix ((x stringp))
-  :parents (utilities)
-  :short "@(call string-fix) is the identity function for strings."
-  :long "<p>Note that we leave this function enabled.</p>"
-  :enabled t
-  :inline t
-  (mbe :logic (str-fix x)
-       :exec x)
-  ///
-  (defrule stringp-of-string-fix
-    (stringp (string-fix x))
-    :rule-classes :type-prescription))
 
 
 

@@ -2637,3 +2637,4 @@
 
 (defmacro definst (rootname args &rest rest)
   `(make-event (definst-fn ',rootname ',args ',rest state)))
+

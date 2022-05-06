@@ -443,8 +443,8 @@
 
     ;;todo: try core-runes-bv:
     acl2::slice-of-slice-gen-better ;figure out which bv rules to include
-    acl2::bvcat-when-lowsize-is-0
-    acl2::bvcat-when-highsize-is-0
+    acl2::bvcat-of-0-arg1
+    acl2::bvcat-of-0-arg3
 
     bitops::rotate-left-32$inline-constant-opener ;todo: gen to a full rewrite
     acl2::rotate-left-constant-opener
@@ -1024,7 +1024,7 @@
             x86isa::address-aligned-p-of-4-and-nil
 
             acl2::bvplus-trim-leading-constant
-            acl2::bvplus-of-0
+            acl2::bvplus-of-0-arg2
             acl2::bvchop-subst-constant
             x86isa::byte-listp-becomes-all-unsigned-byte-p
             acl2::lnfix$inline
@@ -1110,6 +1110,7 @@
      acl2::lookup-pe-symbol-base-1
      acl2::lookup-pe-symbol-base-2
      acl2::lookup-pe-symbol-unroll
+     acl2::subroutine-address-within-text-section-pe-64
 
      ;;     read64
 ;     read-becomes-mv-nth-1-of-rb

@@ -21,13 +21,20 @@
                            member-equal)))
 
 (defthm state-p1-of-mv-nth-2-of-read-object
-  (implies (and (symbolp channel)
+  (implies (and ;; (symbolp channel)
                 (state-p1 state))
            (state-p1 (mv-nth 2 (read-object channel state))))
+  :hints (("Goal" :in-theory (enable read-object
+                                     symbolp-when-assoc-equal-of-open-input-channels-and-state-p1))))
+
+(defthm state-p-of-mv-nth-2-of-read-object
+  (implies (and ;; (symbolp channel)
+                (state-p1 state))
+           (state-p (mv-nth 2 (read-object channel state))))
   :hints (("Goal" :in-theory (enable read-object))))
 
 (defthm open-input-channel-p1-of-mv-nth-2-of-read-object
-  (implies (and (symbolp channel)
+  (implies (and ;; (symbolp channel)
                 (state-p1 state)
                 (open-input-channel-p1 channel :object state))
            (open-input-channel-p1 channel :object (mv-nth 2 (read-object channel state))))
@@ -35,7 +42,7 @@
 
 ;; Because it's an open :object channel
 (defthm open-input-channel-any-p1-of-mv-nth-2-of-read-object
-  (implies (and (symbolp channel)
+  (implies (and ;; (symbolp channel)
                 (state-p1 state)
                 (open-input-channel-p1 channel :object state))
            (open-input-channel-any-p1 channel (mv-nth 2 (read-object channel state))))
@@ -43,7 +50,7 @@
                                   (open-input-channel-p1)))))
 
 (defthm open-input-channels-of-mv-nth-2-of-read-object
-  (implies (and (symbolp channel)
+  (implies (and ;; (symbolp channel)
                 (state-p1 state)
                 (open-input-channel-p1 channel :object state))
            (equal (open-input-channels (mv-nth 2 (read-object channel state)))

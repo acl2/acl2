@@ -183,15 +183,15 @@
     :enable (value-arithmeticp
              value-realp
              value-integerp
-             value-unsigned-integerp
-             value-signed-integerp))
+             value-unsigned-integerp-alt-def
+             value-signed-integerp-alt-def))
 
   (defrule value-integerp-of-promote-value
     (equal (value-integerp (promote-value val))
            (value-integerp (value-fix val)))
     :enable (value-integerp
-             value-unsigned-integerp
-             value-signed-integerp)))
+             value-unsigned-integerp-alt-def
+             value-signed-integerp-alt-def)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,8 +215,8 @@
                  :in-theory (enable value-arithmeticp
                                     value-realp
                                     value-integerp
-                                    value-unsigned-integerp
-                                    value-signed-integerp)
+                                    value-unsigned-integerp-alt-def
+                                    value-signed-integerp-alt-def)
                  :use (:instance values-of-promote-value (val arg))))
   :hooks (:fix))
 
@@ -243,8 +243,8 @@
                  :in-theory (enable value-arithmeticp
                                     value-realp
                                     value-integerp
-                                    value-unsigned-integerp
-                                    value-signed-integerp)
+                                    value-unsigned-integerp-alt-def
+                                    value-signed-integerp-alt-def)
                  :use (:instance values-of-promote-value (val arg))))
   :hooks (:fix))
 
@@ -270,8 +270,8 @@
                  :in-theory (enable value-arithmeticp
                                     value-realp
                                     value-integerp
-                                    value-unsigned-integerp
-                                    value-signed-integerp)
+                                    value-unsigned-integerp-alt-def
+                                    value-signed-integerp-alt-def)
                  :use (:instance values-of-promote-value (val arg))))
   :hooks (:fix))
 
@@ -302,8 +302,8 @@
                                     value-arithmeticp
                                     value-realp
                                     value-integerp
-                                    value-unsigned-integerp
-                                    value-signed-integerp)
+                                    value-unsigned-integerp-alt-def
+                                    value-signed-integerp-alt-def)
                  :use (:instance values-of-promote-value (val arg))))
   :hooks (:fix))
 
@@ -464,6 +464,12 @@
           ((sllongp arg) (boolean-from-sllong arg))
           ((pointerp arg) (not (pointer-nullp arg)))
           (t (error (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable value-scalarp
+                                           value-arithmeticp
+                                           value-realp
+                                           value-integerp
+                                           value-signed-integerp-alt-def
+                                           value-unsigned-integerp-alt-def)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -493,8 +499,8 @@
           ((sllongp arg) (sllong-integer-value arg))
           (t (prog2$ (impossible) 0))))
   :guard-hints (("Goal" :in-theory (enable value-integerp
-                                           value-unsigned-integerp
-                                           value-signed-integerp)))
+                                           value-unsigned-integerp-alt-def
+                                           value-signed-integerp-alt-def)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1308,6 +1314,8 @@
             :pointer todo
             :array todo))
           ((pointerp arg) todo)
+          ((value-case arg :array) todo)
+          ((value-case arg :struct) todo)
           (t (error (impossible)))))
   :hooks (:fix))
 
@@ -1337,10 +1345,10 @@
        (array (read-array addr compst))
        ((when (errorp array))
         (error (list :array-not-found arr (compustate-fix compst))))
-       ((unless (equal reftype (type-of-array-element array)))
+       ((unless (equal reftype (value-array->elemtype array)))
         (error (list :mistype-array-read
                      :pointer reftype
-                     :array (type-of-array-element array))))
+                     :array (value-array->elemtype array))))
        (sub (value-result-fix sub))
        ((when (errorp sub)) sub)
        ((unless (value-integerp sub)) (error
@@ -1392,13 +1400,8 @@
            (if (sllong-array-index-okp array index)
                (sllong-array-read array index)
              err))
-          (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use (:instance array-resultp-of-read-array
-                       (addr (pointer->address arr)))
-                 :in-theory (e/d (arrayp
-                                  array-resultp)
-                                 (array-resultp-of-read-array))))
+          (t (error (list :array-element-type-not-supported
+                          :element-type reftype)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1715,10 +1718,10 @@
               (reftype (pointer->reftype ptr))
               (array (read-array addr compst))
               ((when (errorp array)) array)
-              ((unless (equal reftype (type-of-array-element array)))
+              ((unless (equal reftype (value-array->elemtype array)))
                (error (list :mistype-array-read
                             :pointer reftype
-                            :array (type-of-array-element array))))
+                            :array (value-array->elemtype array))))
               (idx (exec-expr-pure sub compst))
               ((when (errorp idx)) idx)
               ((unless (value-integerp idx))
@@ -1793,7 +1796,8 @@
                     (write-array addr
                                  (sllong-array-write array index val)
                                  compst)))
-                 (t (error :impossible)))))
+                 (t (error (list :array-element-type-not-supported
+                                 :element-type reftype))))))
         (:memberp
          (b* ((str (expr-memberp->target left))
               (mem (expr-memberp->name left))

@@ -50,12 +50,34 @@
            (integerp (cadddr header)))
   :hints (("Goal" :in-theory (enable channel-headerp))))
 
+(defthm typed-io-listp-of-cdr-and-cadr-of-car
+  (implies (open-channel1 l)
+           (typed-io-listp (cdr l) (cadr (car l))))
+  :hints (("Goal" :in-theory (enable open-channel1))))
+
+;; matches better
+(defthm typed-io-listp-of-cdr-gen
+  (implies (and (open-channel1 l)
+                (equal typ (cadr (car l))))
+           (typed-io-listp (cdr l) typ)))
+
 ;; Avoid name clash with std
 (defthm open-channel-listp-of-add-pair-strong
   (implies (open-channel-listp l)
            (equal (open-channel-listp (add-pair key value l))
                   (open-channel1 value)))
   :hints (("Goal" :in-theory (enable open-channel-listp add-pair))))
+
+(defthm open-channel1-of-cdr-of-assoc-equal
+  (implies (and (assoc-equal channel channels)
+                (open-channel-listp channels))
+           (open-channel1 (cdr (assoc-equal channel channels))))
+  :hints (("Goal" :in-theory (enable open-channels-p open-channel-listp))))
+
+(local ; also in state.lisp
+ (defthm t-stack-of-update-open-input-channels
+   (equal (t-stack (update-open-input-channels x st))
+          (t-stack st))))
 
 (defthm ordered-symbol-alistp-of-add-pair
   (implies (ordered-symbol-alistp x)
@@ -80,16 +102,14 @@
                                      channel-headerp))))
 
 (defthm channel-headerp-of-cadr-of-assoc-equal-iff
-  (implies (and (symbolp channel)
-                (open-channel-listp channels))
+  (implies (open-channel-listp channels)
            (iff (channel-headerp (cadr (assoc-equal channel channels)))
                 (assoc-equal channel channels)))
   :hints (("Goal" :in-theory (enable open-channel-listp channel-headerp))))
 
 ;; different hyp
 (defthm channel-headerp-of-cadr-of-assoc-equal-iff-2
-  (implies (and (symbolp channel)
-                (open-channels-p channels))
+  (implies (open-channels-p channels)
            (iff (channel-headerp (cadr (assoc-equal channel channels)))
                 (assoc-equal channel channels)))
   :hints (("Goal" :in-theory (enable open-channels-p))))
@@ -114,8 +134,7 @@
            (equal (equal (add-pair channel value channels) channels)
                   (and (assoc-eq channel channels)
                        (equal value (cdr (assoc-eq channel channels))))))
-  :hints (("Goal" ;:induct (add-pair channel value channel)
-           :do-not '(generalize eliminate-destructors)
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable add-pair
                               open-channel-listp
                               open-channels-p))))
@@ -194,3 +213,26 @@
            (assoc-equal channel (open-input-channels state)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable open-input-channel-p1))))
+
+(defthmd symbolp-when-assoc-equal-and-open-channels-p
+  (implies (and (assoc-equal channel channels)
+                (open-channels-p channels))
+           (symbolp channel))
+  :hints (("Goal" :in-theory (enable open-channels-p ordered-symbol-alistp))))
+
+(defthmd symbolp-when-assoc-equal-of-open-input-channels-and-state-p1
+  (implies (and (assoc-equal channel (open-input-channels state))
+                (state-p1 state))
+           (symbolp channel))
+  :hints (("Goal" :in-theory (e/d (symbolp-when-assoc-equal-and-open-channels-p state-p1)
+                                  (open-input-channels
+                                   all-boundp ; for speed
+                                   )))))
+
+(defthmd symbolp-when-assoc-equal-of-open-input-channels-and-state-p
+  (implies (and (assoc-equal channel (open-input-channels state))
+                (state-p state))
+           (symbolp channel))
+  :hints (("Goal" :in-theory (e/d (state-p
+                                   symbolp-when-assoc-equal-of-open-input-channels-and-state-p1)
+                                  (open-input-channels)))))

@@ -46,9 +46,9 @@
            (equal (bvplus size x (bvplus size y z))
                   (bvplus size (bvplus size x y) z))))
 
-(defthm bvplus-of-0
-  (equal (bvplus size 0 x)
-         (bvchop size x))
+(defthm bvplus-of-0-arg2
+  (equal (bvplus size 0 y)
+         (bvchop size y))
   :hints (("Goal" :in-theory (enable bvplus))))
 
 ;gen?
