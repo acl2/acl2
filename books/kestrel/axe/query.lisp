@@ -67,7 +67,7 @@
                                         tactics rule-alist
                                         nil ; interpreted-function-alist ; todo: thread through
                                         monitor
-                                        t ;simplify-xors (todo: make this an option?)
+                                        t ;normalize-xors (todo: make this an option?)
                                         print max-conflicts call-stp-when-pruning nil state)))
     (if (eq *error* result)
         (prog2$ (er hard? 'query-fn "Error encountered in the tactic prover.")

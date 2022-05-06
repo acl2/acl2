@@ -46,7 +46,7 @@
                         term extra-rules remove-rules
                         rules
                         rule-alists
-                        assumptions monitor simplify-xorsp
+                        assumptions monitor normalize-xors
                         produce-function
                         disable-function
                         function-type
@@ -64,7 +64,7 @@
                               (symbol-listp rules)
                               ;; (pseudo-term-listp assumptions) ;; untranslated terms
                               (symbol-listp monitor)
-                              (booleanp simplify-xorsp) ;todo: strengthen
+                              (booleanp normalize-xors) ;todo: strengthen
                               (booleanp produce-function)
                               (booleanp disable-function)
                               (member-eq function-type '(:auto :lets))
@@ -106,7 +106,7 @@
                    :rule-alists rule-alists
                    :monitor monitor
                    :assumptions assumptions
-                   :simplify-xorsp simplify-xorsp
+                   :normalize-xors normalize-xors
                    :print print
                    :check-inputs nil))
        ((when erp)
@@ -192,7 +192,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         [:remove-rules]      ;; Rules to remove from the usual set of rules, Default: nil
         [:assumptions]       ;; Assumptions to use when unrolling, Default: nil
         [:monitor]           ;; List of rule names (symbols) to monitor, Default: nil
-        [:simplify-xorsp]    ;; Whether to apply special handling to nests of XORs, Default: t
+        [:normalize-xors]    ;; Whether to apply special handling to nests of XORs, Default: t
         [:produce-function]  ;; Whether to produce a function, in addition to a constant DAG, Default: nil
         [:disable-function]  ;; Whether to disable the function produced, Default: nil
         [:produce-theorem]   ;; Whether to produce a theorem (without proof), asserting that lifiting produces the given result, Default: nil
@@ -215,7 +215,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                               ;; TODO: Add support for rule-lists...
                               (assumptions 'nil)
                               (monitor 'nil)
-                              (simplify-xorsp 't)
+                              (normalize-xors 't)
                               (produce-function 'nil)
                               (disable-function 'nil) ;todo: consider making 't the default
                               (function-type ':auto)
@@ -230,7 +230,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                      ,rule-alists
                                      ,assumptions
                                      ,monitor
-                                     ,simplify-xorsp
+                                     ,normalize-xors
                                      ,produce-function
                                      ,disable-function
                                      ,function-type

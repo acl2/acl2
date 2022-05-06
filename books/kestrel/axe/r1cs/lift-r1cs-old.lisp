@@ -117,7 +117,7 @@
                                          ,monitor
                                          ,memoizep
                                          ,count-hits
-                                         ;; ,simplify-xorsp
+                                         ;; ,normalize-xors
                                          ,produce-function
                                          ,function-type
                                          ;; ,function-params

@@ -1,4 +1,4 @@
-; Tests of simplify-xors
+; Tests of normalize-xors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2020 Kestrel Institute
@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "simplify-xors")
+(include-book "normalize-xors")
 (include-book "make-term-into-dag-array-basic")
 (include-book "std/testing/assert-equal" :dir :system)
 
@@ -21,7 +21,7 @@
 ;; Returns (list constant non-constant-terms-in-nest)
 (defun bitxor-nest-leaves-of-term (term)
   (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-    (make-term-into-dag-array-basic term 'simplify-xors-old-array 'test-dag-parent-array nil ;interpreted-function-alist
+    (make-term-into-dag-array-basic term 'normalize-xors-old-array 'test-dag-parent-array nil ;interpreted-function-alist
                               )
     (declare (ignore dag-parent-array dag-constant-alist dag-variable-alist))
     (if erp
@@ -31,7 +31,7 @@
           (list (unquote nodenum-or-quotep) nil)
         (mv-let (acc acc-constant)
           (bitxor-nest-leaves-aux (list nodenum-or-quotep) dag-array dag-len nil 0)
-          (list acc-constant (dag-to-term-aux-lst-array 'simplify-xors-old-array dag-array acc)))))))
+          (list acc-constant (dag-to-term-aux-lst-array 'normalize-xors-old-array dag-array acc)))))))
 
 (assert-equal (bitxor-nest-leaves-of-term '(bitxor x y))
               '(0 (x y)))
@@ -107,7 +107,7 @@
 ;;               '(1 (W Y)))
 
 (assert-equal (mv-let (erp dag-lst-or-quotep changep)
-                (simplify-xors '((2 bvxor '64 1 0) (1 bvxor '32 0 0) (0 . y)) nil)
+                (normalize-xors '((2 bvxor '64 1 0) (1 bvxor '32 0 0) (0 . y)) nil)
                 (list erp dag-lst-or-quotep changep))
               (list (erp-nil)
                     '((1 BVCHOP '64 0) (0 . Y))

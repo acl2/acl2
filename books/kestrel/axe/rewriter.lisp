@@ -31,7 +31,7 @@
 (include-book "instantiate-hyp")
 (include-book "prover")
 (include-book "dag-to-term")
-(include-book "simplify-xors")
+(include-book "normalize-xors")
 (include-book "rule-limits")
 (include-book "tagged-rule-sets")
 (include-book "dag-array-printing2")
@@ -1359,7 +1359,7 @@
                 (prog2$ (and print (cw ")~%"))
                         (mv (erp-nil) dag limits state))))))))))
 
-;TODO: Try calling this (but what about rules that commute things based on node number? they may cause this to loop forever?!  what about simplify-xors?  can it commute based on node number -- maybe change that to use some notion of term size...)
+;TODO: Try calling this (but what about rules that commute things based on node number? they may cause this to loop forever?!  what about normalize-xors?  can it commute based on node number -- maybe change that to use some notion of term size...)
 ;;Call simplify-dag repeatedly until nothing changes (except perhaps node
 ;;numbering).  Multiple calls may be needed because internal contexts may be
 ;;simplified and then help other things get simplified (which may also be
@@ -1525,7 +1525,7 @@
                               ;;todo
                               )
                   :stobjs state))
-  (b* (((mv erp normalized-dag changep) (simplify-xors dag print)) ;now does both bitxors and bvxors (seemed important to do them both at the same time?)
+  (b* (((mv erp normalized-dag changep) (normalize-xors dag print)) ;now does both bitxors and bvxors (seemed important to do them both at the same time?)
        ;;(normalized-dag (simplify-bvxors normalized-dag print)) ;new!
        ((when erp) (mv erp nil nil state)))
     (if (quotep normalized-dag) ;if we reduced it to a constant we are done:
@@ -1563,7 +1563,7 @@
 ;;pass in a flag for whether the xors are normalized???
 ;;dag must not be a quotep
 ;; Returns (mv erp res limits state), where RES is a dag or a quotep.
-(defun simplify-and-normalize-xors-until-stable (dag rewriter-rule-alist slack-amount simplify-xorsp
+(defun simplify-and-normalize-xors-until-stable (dag rewriter-rule-alist slack-amount normalize-xors
                                                      refined-assumption-alist ;mentions nodenums in the context-array
                                                      equality-assumption-alist
                                                      print-interval print interpreted-function-alist
@@ -1585,7 +1585,7 @@
                                context-dag-constant-alist context-dag-variable-alist work-hard-when-instructedp tag exhaustivep limits state)
     (if erp
         (mv erp nil nil state)
-      (if (or (not simplify-xorsp) ;; if we are told to not simplify xors, we are done (TODO: Not necessarily!  make sure no change (except differences in node numbering - make a wrapper of simplify-dag that does that)
+      (if (or (not normalize-xors) ;; if we are told to not simplify xors, we are done (TODO: Not necessarily!  make sure no change (except differences in node numbering - make a wrapper of simplify-dag that does that)
               (quotep simplified-dag-or-quotep) ;if we reduced it to a constant we are done
               )
           (mv (erp-nil) simplified-dag-or-quotep limits state)
@@ -1607,7 +1607,7 @@
 ;;change this to print out the list of rules all at once?
 (defun simplify-with-rule-sets-aux (dag ;; must not be a quotep
                                     tagged-rule-sets ;; the tag of each rule set indicates whether it's a list of rules or a rule-alist
-                                    slack-amount simplify-xorsp
+                                    slack-amount normalize-xors
                                     refined-assumption-alist ;mentions nodenums in the context-array
                                     equality-assumption-alist ; use the context array for this?
                                     print-interval print
@@ -1654,7 +1654,7 @@
         ;;apply the first rule set:
         (simplify-and-normalize-xors-until-stable dag
                                                      rule-alist
-                                                     slack-amount simplify-xorsp refined-assumption-alist equality-assumption-alist
+                                                     slack-amount normalize-xors refined-assumption-alist equality-assumption-alist
                                                      print-interval print interpreted-function-alist monitored-symbols memoizep use-internal-contextsp
                                                      context-array-name
                                                      context-array
@@ -1670,7 +1670,7 @@
                     (prog2$ (and (member-eq print '(t :verbose :verbose!))
                                  (print-list dag-or-quotep))
                             ;;apply the rest of the rule sets:
-                            (simplify-with-rule-sets-aux dag-or-quotep (rest tagged-rule-sets) slack-amount simplify-xorsp refined-assumption-alist equality-assumption-alist
+                            (simplify-with-rule-sets-aux dag-or-quotep (rest tagged-rule-sets) slack-amount normalize-xors refined-assumption-alist equality-assumption-alist
                                                          print-interval print priorities
                                                          interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
                                                          (+ 1 rule-set-number) total-rule-set-count
@@ -1687,7 +1687,7 @@
 (defun simplify-with-rule-sets (dag-or-quotep
                                 tagged-rule-sets ;the tag of each rule set indicates whether it is a list of rules or a rule-alist
                                 slack-amount
-                                simplify-xorsp
+                                normalize-xors
                                 assumptions ;terms to be assumed non-nil (probably share most vars with the dag but may contain new vars?) - merge the handling of this with the context-array?
                                 print-interval
                                 print
@@ -1716,7 +1716,7 @@
                                   (myquotep dag-or-quotep))
                               (tagged-rule-setsp tagged-rule-sets)
                               (natp slack-amount)
-                              (booleanp simplify-xorsp)
+                              (booleanp normalize-xors)
                               (pseudo-term-listp assumptions)
                               (or (eq :default priorities)
                                   (alistp priorities))
@@ -1779,7 +1779,7 @@
               & ;limits
               state)
           (simplify-with-rule-sets-aux dag-or-quotep
-                                       tagged-rule-sets slack-amount simplify-xorsp refined-assumption-alist equality-assumption-alist print-interval print priorities
+                                       tagged-rule-sets slack-amount normalize-xors refined-assumption-alist equality-assumption-alist print-interval print priorities
                                        interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
                                        1 ;;rule-set-number; starts at 1 (saying rule set "0 of 3" looked odd)
                                        (len tagged-rule-sets)
@@ -1807,7 +1807,7 @@
                     rule-alist
                     rule-alists
                     slack-amount
-                    simplify-xorsp
+                    normalize-xors
                     assumptions
                     print-interval
                     print
@@ -1869,7 +1869,7 @@
     (simplify-with-rule-sets dag-or-quotep
                              tagged-rule-sets
                              slack-amount
-                             simplify-xorsp
+                             normalize-xors
                              assumptions
                              print-interval
                              print
@@ -1896,7 +1896,7 @@
                     (rule-alist ':none)
                     (rule-alists ':none)
                     (slack-amount '100) ;(slack-amount '1048576) ;must be at least 1048576 (only because we don't pass it into the memoization stuff now...) - can't the memo size be smaller? <-- old comment?
-                    (simplify-xorsp 't)
+                    (normalize-xors 't)
                     (assumptions 'nil)
                     (print-interval 'nil)
                     (print 'nil)
@@ -1919,7 +1919,7 @@
                 ,rule-alist
                 ,rule-alists
                 ,slack-amount
-                ,simplify-xorsp
+                ,normalize-xors
                 ,assumptions
                 ,print-interval
                 ,print
@@ -1949,7 +1949,7 @@
                      rule-alist
                      rule-alists
                      slack-amount
-                     simplify-xorsp
+                     normalize-xors
                      assumptions
                      print-interval
                      print
@@ -2021,7 +2021,7 @@
     (simplify-with-rule-sets dag-or-quotep
                              tagged-rule-sets
                              slack-amount
-                             simplify-xorsp
+                             normalize-xors
                              assumptions
                              print-interval
                              print
@@ -2052,7 +2052,7 @@
                      (rule-alist ':none)
                      (rule-alists ':none)
                      (slack-amount '100) ;(slack-amount '1048576) ;fffixme too big?!
-                     (simplify-xorsp 't)
+                     (normalize-xors 't)
                      (assumptions 'nil)
                      (print-interval 'nil)
                      (print 'nil)
@@ -2075,7 +2075,7 @@
                  ,rules
                  ,rule-alist
                  ,rule-alists
-                 ,slack-amount ,simplify-xorsp ,assumptions ,print-interval ,print
+                 ,slack-amount ,normalize-xors ,assumptions ,print-interval ,print
                  ,interpreted-function-alist
                  ,monitor
                  ,remove-duplicate-rulesp
@@ -2090,7 +2090,7 @@
 
 ;; It can happen that the rewriter and simplify xors repeatedly
 ;; interconvert between equivalent but not equal dags.  One might think that
-;; after simplify-xors, if no rules apply, the rewriter should return the
+;; after normalize-xors, if no rules apply, the rewriter should return the
 ;; dag unchanged.  but nodes may be reordered (high nodes may be placed at
 ;; lower numbers because they happen to equal low nodes created when rewriting
 ;; hyps on behalf of rewrites for lower terms).
@@ -2228,7 +2228,7 @@
                           rule-alist
                           rule-alists
                           slack-amount
-                          simplify-xorsp
+                          normalize-xors
                           assumptions
                           print-interval
                           print
@@ -2280,7 +2280,7 @@
     (simplify-with-rule-sets dag-or-quotep
                              tagged-rule-sets
                              (if (quotep dag-or-quotep) 0 (if slack-amount slack-amount (* 10 (len dag-or-quotep)))) ;think about this
-                             simplify-xorsp
+                             normalize-xors
                              assumptions
                              print-interval
                              print
@@ -2309,7 +2309,7 @@
                           (rule-alist ':none)
                           (rule-alists ':none)
                           (slack-amount 'nil) ;fixme think about this limit
-                          (simplify-xorsp 'nil)
+                          (normalize-xors 'nil)
                           (assumptions 'nil)
                           (print-interval 'nil)
                           (print 'nil)
@@ -2332,7 +2332,7 @@
                       ,rule-alist
                       ,rule-alists
                       ,slack-amount
-                      ,simplify-xorsp
+                      ,normalize-xors
                       ,assumptions
                       ,print-interval
                       ,print
@@ -2364,7 +2364,7 @@
                                             rule-alist
                                             rule-alists
                                             slack-amount
-                                            simplify-xorsp
+                                            normalize-xors
                                             assumptions
                                             print-interval
                                             print
@@ -2392,7 +2392,7 @@
                        rule-alist
                        rule-alists
                        slack-amount
-                       simplify-xorsp
+                       normalize-xors
                        assumptions
                        print-interval
                        print
@@ -2421,7 +2421,7 @@
                                             (rule-alist ':none)
                                             (rule-alists ':none)
                                             (slack-amount 'nil) ;fixme think about this limit
-                                            (simplify-xorsp 'nil)
+                                            (normalize-xors 'nil)
                                             (assumptions 'nil)
                                             (print-interval 'nil)
                                             (print 'nil)
@@ -2446,7 +2446,7 @@
                                         ,rule-alist
                                         ,rule-alists
                                         ,slack-amount
-                                        ,simplify-xorsp
+                                        ,normalize-xors
                                         ,assumptions
                                         ,print-interval
                                         ,print

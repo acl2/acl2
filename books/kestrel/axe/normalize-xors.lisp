@@ -392,15 +392,15 @@
 ;;
 
 (defund all-nodes-are-bitxorsp (nodenums dag-array)
-  (declare (xargs :guard (and (array1p 'simplify-xors-old-array dag-array)
+  (declare (xargs :guard (and (array1p 'normalize-xors-old-array dag-array)
                               (true-listp nodenums)
                               ;;combine these three things?
                               (true-listp nodenums)
                               (all-natp nodenums)
-                              (all-< nodenums (alen1 'simplify-xors-old-array dag-array)))))
+                              (all-< nodenums (alen1 'normalize-xors-old-array dag-array)))))
   (if (endp nodenums)
       t
-    (let ((expr (aref1 'simplify-xors-old-array dag-array (first nodenums))))
+    (let ((expr (aref1 'normalize-xors-old-array dag-array (first nodenums))))
       (and (consp expr)
            (eq 'bitxor (ffn-symb expr))
            (all-nodes-are-bitxorsp (rest nodenums) dag-array)))))
@@ -486,7 +486,7 @@
   (declare (xargs :guard (and (true-listp pending-list)
                               (all-natp pending-list)
                               (decreasingp pending-list)
-                              (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)
+                              (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
                               (all-< pending-list dag-len)
                               (integerp accumulated-constant))
                   :measure (if (endp pending-list)
@@ -499,13 +499,13 @@
   (if (or (endp pending-list)
           (not (mbt (all-natp pending-list)))
           (not (mbt (decreasingp pending-list))) ;for termination
-          (not (mbt (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)))
+          (not (mbt (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)))
           (not (mbt (natp dag-len)))
           (not (mbt (all-< pending-list dag-len)))
           )
       (mv acc accumulated-constant)
     (let* ((highest-node (first pending-list))
-           (expr (aref1 'simplify-xors-old-array dag-array highest-node)))
+           (expr (aref1 'normalize-xors-old-array dag-array highest-node)))
       (if (not (consp expr))
           ;;add the node to the result, since it's not a bitxor:
           (bitxor-nest-leaves-aux (rest pending-list) dag-array dag-len (cons highest-node acc) accumulated-constant)
@@ -592,7 +592,7 @@
   (implies (and (all-natp pending-list)
                 (decreasingp pending-list)
                 (all-< pending-list dag-len)
-                (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)
+                (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
 ;                (integerp accumulated-constant)
                 (all-<= acc bound)
                 (natp bound)
@@ -625,7 +625,7 @@
                 (all-natp acc)
                 (decreasingp pending-list)
                 (all-< pending-list dag-len)
-                (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)
+                (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
 ;                (integerp accumulated-constant)
                 (all-< acc bound)
                 (natp bound)
@@ -655,7 +655,7 @@
 ;fixme can this blowup?! maybe not
 (defund bitxor-nest-leaves (nodenum dag-array dag-len translation-array)
   (declare (xargs :guard (and (natp nodenum)
-                              (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)
+                              (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
                               (< nodenum dag-len)
                               (array1p 'translation-array translation-array)
                               (equal dag-len (alen1 'translation-array translation-array))
@@ -663,7 +663,7 @@
                   :guard-hints (("Goal" :in-theory (enable integer-listp-rewrite ALL-RATIONALP-WHEN-ALL-NATP ALL-INTEGERP-WHEN-ALL-NATP)))))
   (b* (;; Extract the xor leaves of this node from the old dag:
        ((mv nodenum-leaves combined-constant)
-        (bitxor-nest-leaves-aux (list nodenum) dag-array dag-len nil 0) ;;TODO: consider this: (bitxor-nest-leaves-for-node nodenum 'simplify-xors-old-array dag-array)
+        (bitxor-nest-leaves-aux (list nodenum) dag-array dag-len nil 0) ;;TODO: consider this: (bitxor-nest-leaves-for-node nodenum 'normalize-xors-old-array dag-array)
         )
        ;; Translate to get their nodenums in the dag we are constructing:
        ((mv nodenum-leaves combined-constant)
@@ -689,7 +689,7 @@
 
 (defthm bounded-darg-listp-of-bitxor-nest-leaves
   (implies (and (natp nodenum)
-                (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)
+                (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
                 (< nodenum dag-len)
                 (array1p 'translation-array translation-array)
                 (equal dag-len (alen1 'translation-array translation-array))
@@ -879,7 +879,7 @@
 
 ;keep in sync with bitxor version
 (defund all-nodes-are-bvxorsp (nodenums quoted-size dag-array dag-len)
-  (declare (xargs :guard (and (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
                               (true-listp nodenums)
                               ;;combine these three things?
                               (true-listp nodenums)
@@ -887,7 +887,7 @@
                               (all-< nodenums dag-len))))
   (if (endp nodenums)
       t
-    (let ((expr (aref1 'simplify-xors-old-array dag-array (first nodenums))))
+    (let ((expr (aref1 'normalize-xors-old-array dag-array (first nodenums))))
       (and (consp expr)
            (eq 'bvxor (ffn-symb expr))
            (consp (dargs expr))
@@ -935,7 +935,7 @@
   (declare (xargs :guard (and (true-listp pending-list)
                               (all-natp pending-list)
                               (decreasingp pending-list)
-                              (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)
+                              (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
                               (all-< pending-list dag-len)
                               (integerp accumulated-constant)
                               (natp size))
@@ -949,12 +949,12 @@
   (if (or (endp pending-list)
           (not (mbt (all-natp pending-list)))
           (not (mbt (decreasingp pending-list))) ;for termination
-          (not (mbt (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)))
+          (not (mbt (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)))
           (not (mbt (natp dag-len)))
           (not (mbt (all-< pending-list dag-len))))
       (mv acc accumulated-constant)
     (let* ((highest-node (first pending-list))
-           (expr (aref1 'simplify-xors-old-array dag-array highest-node)))
+           (expr (aref1 'normalize-xors-old-array dag-array highest-node)))
       (if (or (not (consp expr))
               (not (eq 'bvxor (ffn-symb expr)))
               (not (= 3 (len (dargs expr))))
@@ -1012,7 +1012,7 @@
   (implies (and (all-natp pending-list)
                 (decreasingp pending-list)
                 (all-< pending-list dag-len)
-                (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)
+                (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
 ;                (integerp accumulated-constant)
                 (all-<= acc bound)
                 (natp bound)
@@ -1029,7 +1029,7 @@
                 (all-natp acc)
                 (decreasingp pending-list)
                 (all-< pending-list dag-len)
-                (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)
+                (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
 ;                (integerp accumulated-constant)
                 (all-< acc bound)
                 (natp bound)
@@ -1049,7 +1049,7 @@
 ;; TODO: can this ever blow up?! maybe not..
 (defund bvxor-nest-leaves (nodenum size dag-array dag-len translation-array)
   (declare (xargs :guard (and (natp nodenum)
-                              (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)
+                              (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
                               (< nodenum dag-len)
                               (array1p 'translation-array translation-array)
                               (equal dag-len (alen1 'translation-array translation-array))
@@ -1080,7 +1080,7 @@
 
 (defthm bounded-darg-listp-of-bvxor-nest-leaves
   (implies (and (natp nodenum)
-                (pseudo-dag-arrayp 'simplify-xors-old-array dag-array dag-len)
+                (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
                 (< nodenum dag-len)
                 (array1p 'translation-array translation-array)
                 (equal (alen1 'translation-array translation-array) dag-len)
@@ -1093,7 +1093,7 @@
 ;returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)
 ;check this over..
 ;; TODO: Specialize to the standard array names.
-(defund simplify-xors-aux (n ;counts up
+(defund normalize-xors-aux (n ;counts up
                            ;;the DAG we are copying (and normalizing xor nests as we go):
                            old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name
                            ;;the new DAG (initially empty):
@@ -1106,12 +1106,12 @@
                               (natp old-dag-len)
                               (<= n old-dag-len)
                               ;;stuff about the old dag (can't use wf-dagp since dag-constant-alist and dag-variable-alist are missing):
-                              (pseudo-dag-arrayp 'simplify-xors-old-array old-dag-array old-dag-len)
+                              (pseudo-dag-arrayp 'normalize-xors-old-array old-dag-array old-dag-len)
                               (bounded-dag-parent-arrayp old-dag-parent-array-name old-dag-parent-array old-dag-len)
-                              (equal (alen1 'simplify-xors-old-array old-dag-array)
+                              (equal (alen1 'normalize-xors-old-array old-dag-array)
                                      (alen1 old-dag-parent-array-name old-dag-parent-array))
                               ;; stuff about the new dag:
-                              (wf-dagp 'simplify-xors-new-array dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                              (wf-dagp 'normalize-xors-new-array dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               ;; stuff about the renaming array:
                               (array1p 'translation-array translation-array)
                               (equal old-dag-len (alen1 'translation-array translation-array))
@@ -1124,7 +1124,7 @@
           (prog2$ (and print (eql 0 (mod n 1000)) (cw "XORs node ~x0...~%" n))
                   (>= n old-dag-len)))
       (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)
-    (let* ((expr (aref1 'simplify-xors-old-array old-dag-array n)))
+    (let* ((expr (aref1 'normalize-xors-old-array old-dag-array n)))
       (if (variablep expr)
           ;; If it's a variable, just add it to the new DAG and update the translation-array:
           (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1132,10 +1132,10 @@
                                                  dag-parent-array ;;just passed through
                                                  dag-constant-alist ;;just passed through
                                                  dag-variable-alist
-                                                 'simplify-xors-new-array dag-parent-array-name)
+                                                 'normalize-xors-new-array dag-parent-array-name)
             (if erp
                 (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)
-              (simplify-xors-aux (+ 1 n)
+              (normalize-xors-aux (+ 1 n)
                                  old-dag-array old-dag-len old-dag-parent-array
                                  old-dag-parent-array-name
                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name
@@ -1144,7 +1144,7 @@
         (let ((fn (ffn-symb expr)))
           (if (eq 'quote fn)
               ;; If it's a quoted constant just update the translation-array:
-              (simplify-xors-aux (+ 1 n)
+              (normalize-xors-aux (+ 1 n)
                                  old-dag-array old-dag-len old-dag-parent-array
                                  old-dag-parent-array-name
                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name
@@ -1162,7 +1162,7 @@
                                                   (darg1 expr)
                                                   old-dag-array old-dag-len))
                       ;; if all the node's parents are bvxors of the right size (and this isn't the top node), we drop the node for now (we'll handle it when we handle its parents)
-                      (simplify-xors-aux (+ 1 n)
+                      (normalize-xors-aux (+ 1 n)
                                          old-dag-array old-dag-len old-dag-parent-array
                                          old-dag-parent-array-name
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name
@@ -1181,9 +1181,9 @@
                           (add-bvxor-nest-to-dag-array-with-name rev-leaves
                                                                  (unquote (darg1 expr)) ;size
                                                                  (darg1 expr) ;quoted size
-                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'simplify-xors-new-array dag-parent-array-name))
+                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'normalize-xors-new-array dag-parent-array-name))
                          ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)))
-                      (simplify-xors-aux (+ 1 n)
+                      (normalize-xors-aux (+ 1 n)
                                          old-dag-array old-dag-len old-dag-parent-array
                                          old-dag-parent-array-name
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name
@@ -1195,7 +1195,7 @@
                     (if (and (not (eql n (+ -1 old-dag-len))) ;special case for the top node (avoid checking this each time?)
                              (all-nodes-are-bitxorsp (aref1 old-dag-parent-array-name old-dag-parent-array n) old-dag-array))
                         ;; if all the node's parents are bitxors (and this isn't the top node), we drop the node for now (we'll handle it when we handle its parents)
-                        (simplify-xors-aux (+ 1 n)
+                        (normalize-xors-aux (+ 1 n)
                                            old-dag-array old-dag-len old-dag-parent-array
                                            old-dag-parent-array-name
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name
@@ -1212,9 +1212,9 @@
                            ;; (- (cw " (bitxor nest with ~x0 leaves.)~%" (len rev-leaves)))
                            ((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                             (add-bitxor-nest-to-dag-array-with-name rev-leaves
-                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'simplify-xors-new-array dag-parent-array-name))
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'normalize-xors-new-array dag-parent-array-name))
                            ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)))
-                        (simplify-xors-aux (+ 1 n)
+                        (normalize-xors-aux (+ 1 n)
                                            old-dag-array old-dag-len old-dag-parent-array
                                            old-dag-parent-array-name
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name
@@ -1224,10 +1224,10 @@
                   (let ((fixed-up-args (translate-args args translation-array)))
                     (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                       (add-function-call-expr-to-dag-array-with-name fn fixed-up-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                           'simplify-xors-new-array dag-parent-array-name)
+                                                                           'normalize-xors-new-array dag-parent-array-name)
                       (if erp
                           (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)
-                        (simplify-xors-aux (+ 1 n)
+                        (normalize-xors-aux (+ 1 n)
                                            old-dag-array old-dag-len old-dag-parent-array
                                            old-dag-parent-array-name
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name
@@ -1235,20 +1235,20 @@
                                            print)))))))))))))
 
 (def-dag-builder-theorems
-  (simplify-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name translation-array print)
+  (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name translation-array print)
   (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)
-  :dag-array-name 'simplify-xors-new-array
+  :dag-array-name 'normalize-xors-new-array
   :dag-parent-array-name dag-parent-array-name
   :expand (:free (old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name translation-array print) ;;everything but n
-                 (simplify-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name translation-array print))
+                 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name translation-array print))
   :dont-enable t ;led to loops?
   :hyps ((natp n)
           (natp old-dag-len)
           (<= n old-dag-len)
           ;;stuff about the old dag:
-          (pseudo-dag-arrayp 'simplify-xors-old-array old-dag-array old-dag-len)
+          (pseudo-dag-arrayp 'normalize-xors-old-array old-dag-array old-dag-len)
           (bounded-dag-parent-arrayp old-dag-parent-array-name old-dag-parent-array old-dag-len)
-          (equal (alen1 'simplify-xors-old-array old-dag-array)
+          (equal (alen1 'normalize-xors-old-array old-dag-array)
                  (alen1 old-dag-parent-array-name old-dag-parent-array))
           ;; stuff about the renaming array:
           (array1p 'translation-array translation-array)
@@ -1256,42 +1256,42 @@
           (bounded-translation-arrayp-aux (+ -1 old-dag-len) translation-array dag-len)
           ))
 
-(defthm type-of-simplify-xors-aux-other-params
+(defthm type-of-normalize-xors-aux-other-params
   (implies (and (natp n)
                 (natp old-dag-len)
                 (<= n old-dag-len)
                 ;;stuff about the old dag:
-                (pseudo-dag-arrayp 'simplify-xors-old-array old-dag-array old-dag-len)
+                (pseudo-dag-arrayp 'normalize-xors-old-array old-dag-array old-dag-len)
                 (bounded-dag-parent-arrayp old-dag-parent-array-name old-dag-parent-array old-dag-len)
-                (equal (alen1 'simplify-xors-old-array old-dag-array)
+                (equal (alen1 'normalize-xors-old-array old-dag-array)
                        (alen1 old-dag-parent-array-name old-dag-parent-array))
                 ;; stuff about the new dag:
-                (wf-dagp 'simplify-xors-new-array dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                (wf-dagp 'normalize-xors-new-array dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 ;; stuff about the renaming array:
                 (array1p 'translation-array translation-array)
                 (equal old-dag-len (alen1 'translation-array translation-array))
                 (bounded-translation-arrayp-aux (+ -1 old-dag-len) translation-array dag-len)
                 )
            (and (equal (alen1 'translation-array
-                              (mv-nth 6 (simplify-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name
+                              (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name translation-array print)))
                        old-dag-len)
                 (array1p 'translation-array
-                         (mv-nth 6 (simplify-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name
+                         (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name translation-array print)))
                 (bounded-translation-arrayp-aux (+ -1 old-dag-len)
-                                                (mv-nth 6 (simplify-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name
+                                                (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name
                                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name
                                                                              translation-array print))
-                                                (mv-nth 2 (simplify-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name
+                                                (mv-nth 2 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name
                                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name
                                                                              translation-array print)))
                 (translation-arrayp-aux (+ -1 old-dag-len)
-                                        (mv-nth 6 (simplify-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name
+                                        (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name
                                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name
                                                                      translation-array print)))))
-  :hints (("Goal" :induct (simplify-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name translation-array print)
-           :expand (simplify-xors-aux n old-dag-array
+  :hints (("Goal" :induct (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name translation-array print)
+           :expand (normalize-xors-aux n old-dag-array
                                       (alen1 'translation-array
                                              translation-array)
                                       old-dag-parent-array
@@ -1300,44 +1300,44 @@
                                       dag-constant-alist dag-variable-alist
                                       dag-parent-array-name
                                       translation-array print)
-           :in-theory (enable simplify-xors-aux))))
+           :in-theory (enable normalize-xors-aux))))
 
-(defthm type-of-simplify-xors-aux-other-params-gen-1
+(defthm type-of-normalize-xors-aux-other-params-gen-1
   (implies (and (natp n)
                 (natp old-dag-len)
                 (<= n old-dag-len)
                 ;;stuff about the old dag:
-                (pseudo-dag-arrayp 'simplify-xors-old-array old-dag-array old-dag-len)
+                (pseudo-dag-arrayp 'normalize-xors-old-array old-dag-array old-dag-len)
                 (bounded-dag-parent-arrayp old-dag-parent-array-name old-dag-parent-array old-dag-len)
-                (equal (alen1 'simplify-xors-old-array old-dag-array)
+                (equal (alen1 'normalize-xors-old-array old-dag-array)
                        (alen1 old-dag-parent-array-name old-dag-parent-array))
                 ;; stuff about the new dag:
-                (wf-dagp 'simplify-xors-new-array dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                (wf-dagp 'normalize-xors-new-array dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 ;; stuff about the renaming array:
                 (array1p 'translation-array translation-array)
                 (equal old-dag-len (alen1 'translation-array translation-array))
                 (bounded-translation-arrayp-aux (+ -1 old-dag-len) translation-array dag-len)
-                (<= (mv-nth 2 (simplify-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name translation-array print))
+                (<= (mv-nth 2 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name translation-array print))
                     bound)
                 (natp bound)
                 )
            (bounded-translation-arrayp-aux (+ -1 old-dag-len)
-                                           (mv-nth 6 (simplify-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name translation-array print))
+                                           (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name translation-array print))
                                            bound))
-  :hints (("Goal" :use (:instance type-of-simplify-xors-aux-other-params)
-           :in-theory (disable type-of-simplify-xors-aux-other-params natp))))
+  :hints (("Goal" :use (:instance type-of-normalize-xors-aux-other-params)
+           :in-theory (disable type-of-normalize-xors-aux-other-params natp))))
 
-(defthm type-of-simplify-xors-aux-other-params-gen-2
+(defthm type-of-normalize-xors-aux-other-params-gen-2
   (implies (and (natp n)
                 (natp old-dag-len)
                 (<= n old-dag-len)
                 ;;stuff about the old dag:
-                (pseudo-dag-arrayp 'simplify-xors-old-array old-dag-array old-dag-len)
+                (pseudo-dag-arrayp 'normalize-xors-old-array old-dag-array old-dag-len)
                 (bounded-dag-parent-arrayp old-dag-parent-array-name old-dag-parent-array old-dag-len)
-                (equal (alen1 'simplify-xors-old-array old-dag-array)
+                (equal (alen1 'normalize-xors-old-array old-dag-array)
                        (alen1 old-dag-parent-array-name old-dag-parent-array))
                 ;; stuff about the new dag:
-                (wf-dagp 'simplify-xors-new-array dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                (wf-dagp 'normalize-xors-new-array dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 ;; stuff about the renaming array:
                 (array1p 'translation-array translation-array)
                 (equal old-dag-len (alen1 'translation-array translation-array))
@@ -1345,18 +1345,18 @@
                 (integerp v)
                 (<= v (+ -1 old-dag-len)))
            (translation-arrayp-aux v
-                                   (mv-nth 6 (simplify-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name
+                                   (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array old-dag-parent-array-name
                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-parent-array-name
                                                                 translation-array print))))
-  :hints (("Goal" :use (:instance type-of-simplify-xors-aux-other-params)
+  :hints (("Goal" :use (:instance type-of-normalize-xors-aux-other-params)
            :cases ((Natp v))
-           :in-theory (disable type-of-simplify-xors-aux-other-params))))
+           :in-theory (disable type-of-normalize-xors-aux-other-params))))
 
 
 
 
 ;need a bound on the size?
-;; (defthm renaming-arrayp-aux-of-mv-nth-5-of-simplify-xors-aux
+;; (defthm renaming-arrayp-aux-of-mv-nth-5-of-normalize-xors-aux
 ;;   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
 ;;                 (pseudo-dag-arrayp new-dag-array-name new-dag-array new-dag-len)
 ;;                 (dag-parent-arrayp new-dag-parent-array-name new-dag-parent-array)
@@ -1368,13 +1368,13 @@
 ;;                                         new-dag-parent-array))
 ;;                 (natp n)
 ;;                 (natp dag-len))
-;;            (renaming-arrayp-aux 'translation-array (mv-nth 5 (simplify-xors-aux n dag-array dag-len dag-parent-array dag-parent-array-name new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-dag-array-name new-dag-parent-array-name translation-array print)) (+ -1 dag-len)))
-;;   :hints (("Goal" :in-theory (enable SIMPLIFY-XORS-AUX))))
+;;            (renaming-arrayp-aux 'translation-array (mv-nth 5 (normalize-xors-aux n dag-array dag-len dag-parent-array dag-parent-array-name new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-dag-array-name new-dag-parent-array-name translation-array print)) (+ -1 dag-len)))
+;;   :hints (("Goal" :in-theory (enable NORMALIZE-XORS-AUX))))
 
 ;TODO: Consider making a version that returns an array, to avoid the caller having to convert so much between lists and arrays.
 ;dag should not be a quotep or empty
 ;Returns (mv erp dag-or-quotep changep) where the result is either a new dag whose top node is equal to the top node of DAG, or a quotep equal to the top node of DAG
-(defund simplify-xors (dag print)
+(defund normalize-xors (dag print)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (<= (* 2 (len dag)) 2147483646) ;todo
                               )
@@ -1387,17 +1387,17 @@
     (let* ( ;;convert dag to an array:
            (old-dag-len (len dag))
            (old-top-nodenum (top-nodenum-of-dag dag))
-           (old-dag-array-name 'simplify-xors-old-array)
+           (old-dag-array-name 'normalize-xors-old-array)
            (old-dag-array (make-dag-into-array old-dag-array-name dag 0)) ; add slack space?
-           ;; Even though the old dag won't change, we need to check parents of nodes in simplify-xors-aux
-           (old-dag-parent-array-name 'simplify-xors-parent-array))
+           ;; Even though the old dag won't change, we need to check parents of nodes in normalize-xors-aux
+           (old-dag-parent-array-name 'normalize-xors-parent-array))
       (mv-let (old-dag-parent-array old-dag-constant-alist old-dag-variable-alist)
         (make-dag-indices old-dag-array-name old-dag-array old-dag-parent-array-name old-dag-len)
         (declare (ignore old-dag-constant-alist old-dag-variable-alist)) ;ffixme dont waste time computing these!
         (let* ((new-dag-size (* 2 old-dag-len)) ;none of the nodes are valid
-               (new-dag-array-name 'simplify-xors-new-array)
+               (new-dag-array-name 'normalize-xors-new-array)
                (new-dag-array (make-empty-array new-dag-array-name new-dag-size)) ;will get expanded if it needs to be bigger
-               (new-dag-parent-array-name 'simplify-xors-new-parent-array)
+               (new-dag-parent-array-name 'normalize-xors-new-parent-array)
                (new-dag-parent-array (make-empty-array new-dag-parent-array-name new-dag-size))
                (new-dag-constant-alist nil)
                (new-dag-variable-alist nil)
@@ -1406,7 +1406,7 @@
           (prog2$ (and print
                        (cw "(Simplifying xors (len is ~x0)...~%" old-dag-len))
                   (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist translation-array)
-                    (simplify-xors-aux 0 old-dag-array old-dag-len old-dag-parent-array
+                    (normalize-xors-aux 0 old-dag-array old-dag-len old-dag-parent-array
                                        old-dag-parent-array-name
                                        new-dag-array 0 ;;new-dag-len
                                        new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-dag-parent-array-name
@@ -1416,7 +1416,7 @@
                         (mv erp nil nil)
                       (let ((result (aref1 'translation-array translation-array old-top-nodenum)))
                         (if (null result)
-                            (prog2$ (er hard? 'simplify-xors "Unexpected missing node translation")
+                            (prog2$ (er hard? 'normalize-xors "Unexpected missing node translation")
                                     (mv (erp-t) nil nil))
                           (if (quotep result)
                               (prog2$ (and print
@@ -1425,7 +1425,7 @@
                             (b* ((new-dag (drop-non-supporters-array-with-name new-dag-array-name new-dag-array result print))
                                  ((when (<= 2147483646 (+ (len dag) ;;todo: this is for equivalent-dags below but that should be made more flexible (returning an erp)
                                                           (len new-dag))))
-                                  (er hard? 'simplify-xors "DAGs too large.")
+                                  (er hard? 'normalize-xors "DAGs too large.")
                                   (mv :dag-too-large nil nil))
                                  (changep (not (equivalent-dags dag new-dag))))
                               (progn$ (and (eq :verbose print)
@@ -1437,7 +1437,7 @@
                                            (cw ")~%")) ;matches "Simplifying xors ..."
                                       (mv (erp-nil) new-dag changep))))))))))))))
 
-;(simplify-xors '((2 bvxor '32 0 1) (1 . x) (0 . y)) t)
+;(normalize-xors '((2 bvxor '32 0 1) (1 . x) (0 . y)) t)
 
 ;;   (let* ((dag-len (len dag))
 ;;          (dag-array (make-into-array 'dag-array dag))

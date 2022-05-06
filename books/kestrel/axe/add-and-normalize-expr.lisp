@@ -52,7 +52,7 @@
   (if (and (eq fn 'bvxor)
            (consp (cdr (cdr simplified-args)))
            (quoted-natp (first simplified-args))
-           ;;simplify-xorsp
+           ;;normalize-xors
            )
       ;;it's a bvxor. note that since the args are simplified, if they are bvxor nests they are *normalized* bvxor nests
       (b* ((bvxor-width (unquote (first simplified-args)))
@@ -79,7 +79,7 @@
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
     (if  (and (eq fn 'bitxor)
               (consp (cdr simplified-args))
-              ;;simplify-xorsp
+              ;;normalize-xors
               )
         ;;it's a bitxor. note that since the args are simplified, if they are bitxor nests they are *normalized* bitxor nests
         (b* (;; get xors from arg1 (TODO: Consider memoizing):
