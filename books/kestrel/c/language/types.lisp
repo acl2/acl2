@@ -13,6 +13,7 @@
 
 (include-book "abstract-syntax")
 
+(include-book "kestrel/fty/pos-option" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -45,7 +46,12 @@
      In essence, this fixtype combines
      a subset of the cases of @(tsee tyspecseq)
      (abstracting away the flags that model different syntactic variants),
-     with the recursive structure of @(tsee obj-adeclor)."))
+     with the recursive structure of @(tsee obj-adeclor).")
+   (xdoc::p
+    "For array sizes, we use optional positive integers.
+     The size is absent for an array type of unspecified size.
+     If present, the size must not be 0 (this is why we use positive integers),
+     because arrays are never empty in C [C:6.2.5/20]."))
   (:void ())
   (:char ())
   (:schar ())
@@ -60,7 +66,8 @@
   (:ullong ())
   (:struct ((tag ident)))
   (:pointer ((to type)))
-  (:array ((of type)))
+  (:array ((of type)
+           (size pos-option)))
   :pred typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -235,7 +242,20 @@
      This ACL2 function returns the denoted type.
      As mentioned in @(tsee type),
      a semantic type is an abstraction of a type name:
-     this function reifies that abstraction."))
+     this function reifies that abstraction.")
+   (xdoc::p
+    "If an array declarator in the type name has no size,
+     we turn that into an array type with unspecified size.
+     If the size is present (as an integer constant),
+     we use its integer value as the array type size.
+     If the size is present but 0,
+     we cannot use that as the array type size, which must be positive;
+     in this case, we return an array type of unspecified size,
+     just to make this ACL2 function total,
+     but when this function is used,
+     other ACL2 code ensures that the integer constant is not 0.
+     We may revise this treatment of an integer constant 0 as array size,
+     at some point in the future."))
   (tyname-to-type-aux (tyname->tyspec tyname)
                       (tyname->declor tyname))
   :hooks (:fix)
@@ -249,9 +269,17 @@
       :none (tyspecseq-to-type tyspec)
       :pointer (type-pointer (tyname-to-type-aux tyspec declor.to))
       :array (if declor.size
-                 (prog2$ (raise "Not supported array size: ~x0" declor.size)
-                         (ec-call (type-fix :irrelevant)))
-               (type-array (tyname-to-type-aux tyspec declor.of))))
+                 (b* ((size (iconst->value declor.size)))
+                   (if (= size 0)
+                       (make-type-array :of (tyname-to-type-aux tyspec
+                                                                declor.of)
+                                        :size nil)
+                     (make-type-array :of (tyname-to-type-aux tyspec
+                                                              declor.of)
+                                      :size size)))
+               (make-type-array :of (tyname-to-type-aux tyspec
+                                                        declor.of)
+                                :size nil)))
      :measure (obj-adeclor-count declor)
      :verify-guards :after-returns
      :hooks (:fix))))
