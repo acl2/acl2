@@ -16,8 +16,6 @@
 
 ;; See also unroll-spec-basic.  That one involves skip-proofs but can embed the DAG in a function (and state a theorem).
 
-;; TODO: Consider adding xor simplification to this, as an option.
-
 ;; TODO: Add -basic to the name of this file and the things defined here.
 
 (include-book "rewriter-basic")
@@ -86,7 +84,7 @@
                             monitor
                             memoizep
                             count-hits
-                            ;; simplify-xorsp ;todo
+                            normalize-xors
                             print
                             whole-form
                             state)
@@ -105,7 +103,7 @@
                               (symbol-listp monitor)
                               (booleanp memoizep)
                               (booleanp count-hits)
-                              ;; (booleanp simplify-xorsp) ;todo: strengthen
+                              (booleanp normalize-xors)
                               )))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
@@ -126,9 +124,8 @@
                              memoizep
                              count-hits
                              print
-                             (w state)
-                             ;; :simplify-xorsp simplify-xorsp
-                             ))
+                             normalize-xors
+                             (w state)))
        ((when erp)
         (mv erp nil state)))
     (mv (erp-nil)
@@ -178,13 +175,13 @@
                                  (monitor 'nil)
                                  (memoizep 't)
                                  (count-hits 'nil)
-                                 ;; (simplify-xorsp 't)
+                                 (normalize-xors 't)
                                  (print 'nil))
   `(make-event-quiet (def-simplified-fn
                        ',defconst-name
                        ,term
                        ,rules
-                       ;,rule-lists
+                       ;;,rule-lists
                        ,extra-rules
                        ,remove-rules
                        ,assumptions
@@ -192,7 +189,7 @@
                        ,monitor
                        ,memoizep
                        ,count-hits
-                       ;; ,simplify-xorsp
+                       ,normalize-xors
                        ,print
                        ',whole-form
                        state)))

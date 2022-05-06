@@ -850,7 +850,7 @@ if ($success) {
     my $endtime = "";
     if (! $ENV{"CERT_PL_HIDE_ENDTIME"}) {
 	my $SCRIPT_END_TIME = mytime();
-	$endtime = sprintf(' at %s ', timestr($SCRIPT_END_TIME));
+	$endtime = sprintf(' at %s', timestr($SCRIPT_END_TIME));
     }
     printf("%sBuilt %s (%.3fs%s)%s%s\n", $color, $printgoal, $ELAPSED, $hostname, $endtime, $black);
 

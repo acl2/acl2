@@ -18,7 +18,7 @@
 (include-book "def-simplified-tests")
 (include-book "check-equivs-tests")
 (include-book "get-disjuncts-tests")
-(include-book "simplify-xors-tests")
+(include-book "normalize-xors-tests")
 (include-book "defthm-axe-basic-tests")
 (include-book "make-axe-rules-tests")
 (include-book "make-evaluator-simple-tests")

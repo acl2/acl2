@@ -236,7 +236,7 @@
 ;; can combine names like *foo-spec-dag* and *foo-java-dag*
 ;; (choose-miter-name '*foo-spec-dag* '*foo-java-dag*)
 ;todo: move up
-(defun choose-miter-name (name quoted-form1 quoted-form2 wrld)
+(defund choose-miter-name (name quoted-form1 quoted-form2 wrld)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))
                   :mode :program ; todo, because of fresh-name-in-world-with-$s
@@ -248,7 +248,7 @@
                                    (starts-and-ends-with-starsp quoted-form2))
                               ;; todo: remove "-dag" from the names here:
                               ;; todo: handle common parts of the names here, like foo in *foo-spec-dag* and *foo-java-dag*:
-                              (pack$ (strip-stars-from-name quoted-form1) '-and-  (strip-stars-from-name quoted-form2))
+                              (pack$ (strip-stars-from-name quoted-form1) '-and- (strip-stars-from-name quoted-form2))
                             ;; Just use a generic default name:
                             'main-miter)
                         ;; not :auto, so use the specified name:
@@ -10305,7 +10305,7 @@
                                         nil                        ;assumptions
                                         (lookup-rules) ;in case there is an embedded dag
                                         interpreted-function-alist
-                                        nil             ;simplify-xorsp
+                                        nil             ;normalize-xors
                                         nil             ;rule-classes
                                         state result-array-stobj)
         (if erp
@@ -10524,7 +10524,7 @@
   (declare (xargs :mode :program :stobjs (state result-array-stobj)))
   (if (and (pseudo-term-listp (strip-cars alist))
            (pseudo-term-listp (strip-cdrs alist)))
-      (rewrite-dag dag :runes (lookup-rules) :assumptions (make-equalities-from-alist alist) :simplify-xorsp nil)
+      (rewrite-dag dag :runes (lookup-rules) :assumptions (make-equalities-from-alist alist) :normalize-xors nil)
     (prog2$ (hard-error 'replace-in-dag "bad alist: ~x0." (acons #\0 alist nil))
             (mv (erp-t) nil state result-array-stobj))))
 
@@ -11637,7 +11637,7 @@
                    :print t                         ;fixme?
                    :monitor '() ;;sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger ;;sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger-alt
                    :assumptions nil ;;use something here?
-                   :simplify-xorsp nil
+                   :normalize-xors nil
                    :check-inputs nil))
        ((when erp)
         (mv erp nil nil nil nil nil state result-array-stobj))
@@ -12208,7 +12208,7 @@
                :rule-alist rule-alist
                :print print
                :assumptions facts-to-assume
-               :simplify-xorsp nil
+               :normalize-xors nil
                :check-inputs nil)
     (if erp
         (mv erp nil nil state result-array-stobj)
@@ -12622,7 +12622,7 @@
                              ;;sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger-alt
                              )
                            :assumptions better-proved-invars ;use the original invars?? maybe not, since this will push back the exit test if it mentions an unchanged var
-                           :simplify-xorsp nil
+                           :normalize-xors nil
                            :check-inputs nil)))
        ((when erp) (mv erp nil nil nil analyzed-function-table rand state result-array-stobj))
        (simplified-expanded-exit-test-expr (dag-to-term simplified-expanded-exit-test-expr))
@@ -14551,7 +14551,7 @@
 ;sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger-alt
                         )
                       :assumptions fn1-invars
-                      :simplify-xorsp nil
+                      :normalize-xors nil
                       :check-inputs nil)
            (if erp
                (mv erp nil nil rand state result-array-stobj)
@@ -14572,7 +14572,7 @@
 ;sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger-alt
                               )
                             :assumptions fn2-invars
-                            :simplify-xorsp nil
+                            :normalize-xors nil
                             :check-inputs nil)
                  (if erp
                      (mv erp nil nil rand state result-array-stobj)
@@ -17077,7 +17077,7 @@
                                :interpreted-function-alist interpreted-function-alist
                                :assumptions assumptions
                                :print print-for-rewriting
-                               :simplify-xorsp nil
+                               :normalize-xors nil
                                :memoizep nil ;does this make it faster?
                                :use-internal-contextsp use-context-when-miteringp
                                :check-inputs nil))
@@ -17093,7 +17093,7 @@
                                :interpreted-function-alist interpreted-function-alist
                                :assumptions assumptions
                                :print print-for-rewriting
-                               :simplify-xorsp nil
+                               :normalize-xors nil
                                :memoizep nil ;does this make it faster?
                                :use-internal-contextsp use-context-when-miteringp
                                :check-inputs nil))
@@ -17112,7 +17112,7 @@
                                ;;ffixme the new runes might not fire here (since they may rewrite equalities)
                                ;;may have to wait until we actually make the miter equalities... for that kind of generated rule, just use it in place?
                                :monitor monitored-symbols
-                               :simplify-xorsp nil
+                               :normalize-xors nil
                                :memoizep t ;(not use-context-when-miteringp) ;nil ;Fri May 14 10:08:50 2010
                                :use-internal-contextsp use-context-when-miteringp
                                :check-inputs nil))
@@ -17127,7 +17127,7 @@
                                :interpreted-function-alist interpreted-function-alist
                                :assumptions assumptions
                                :print print-for-rewriting
-                               :simplify-xorsp nil
+                               :normalize-xors nil
                                :memoizep nil ;for speed?
                                :use-internal-contextsp use-context-when-miteringp
                                :check-inputs nil))
@@ -17306,7 +17306,7 @@
                                                      monitored-symbols max-conflicts
                                                      sweep-count print
                                                      traced-nodes
-                                                     simplify-xorsp
+                                                     normalize-xors
                                                      proof-name miter-depth options
                                                      rand state result-array-stobj)
    (declare (xargs :stobjs (rand state result-array-stobj) :mode :program))
@@ -17366,7 +17366,7 @@
                                     :print print
                                     :interpreted-function-alist interpreted-function-alist
                                     :assumptions assumptions
-                                    :simplify-xorsp simplify-xorsp
+                                    :normalize-xors normalize-xors
 ;:monitor monitored-symbols
                                     :work-hard-when-instructedp nil
                                     :tag proof-name ;fixme add to this?
@@ -17381,7 +17381,7 @@
                                           :print print
                                           :use-internal-contextsp t ;new
                                           :memoizep nil
-                                          :simplify-xorsp simplify-xorsp
+                                          :normalize-xors normalize-xors
                                           :interpreted-function-alist interpreted-function-alist
                                           :assumptions assumptions
                                           :monitor nil ;;monitored-symbols ;this can print a lot if things fail (since we are not working hard)
@@ -17419,7 +17419,7 @@
                                                                                                  monitored-symbols max-conflicts
                                                                                                  (+ 1 sweep-count)
                                                                                                  print traced-nodes
-                                                                                                 simplify-xorsp
+                                                                                                 normalize-xors
                                                                                                  proof-name miter-depth options
                                                                                                  rand state result-array-stobj)
                                                   (mv nil dag-lst interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj)))))))))))))))))))))
@@ -17441,7 +17441,7 @@
                                           analyzed-function-table
                                           unroll
                                           monitored-symbols max-conflicts print
-                                          simplify-xorsp
+                                          normalize-xors
                                           proof-name ;fixme pass around as a string?
                                           miter-depth options
                                           rand state result-array-stobj)
@@ -17469,7 +17469,7 @@
                                                         0 ;sweep count
                                                         print
                                                         nil ;fffixme traced-nodes
-                                                        simplify-xorsp ;drop?
+                                                        normalize-xors ;drop?
                                                         proof-name miter-depth options rand state result-array-stobj)
            (if erp
                (mv erp nil interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj)
@@ -17492,7 +17492,7 @@
                               :use-internal-contextsp t
                               :memoizep nil
                               :monitor monitored-symbols ;new - fixme what other options?
-                              :simplify-xorsp simplify-xorsp
+                              :normalize-xors normalize-xors
                               :interpreted-function-alist interpreted-function-alist
                               :assumptions assumptions
                               :tag tag
@@ -17532,7 +17532,7 @@
                          max-conflicts
                          must-succeedp ;if non-nil, this means we'll increase max-conflictss forever (fixme only do it as long as something is timing out!)
                          pre-simplifyp
-                         simplify-xorsp
+                         normalize-xors
                          options
                          rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
@@ -17558,7 +17558,7 @@
                                                  extra-stuff
                                                  (firstn tests-per-case test-cases) ;fixme think about the firstn ;fixme chose the most interesting ones
                                                  analyzed-function-table unroll monitored-symbols max-conflicts print
-                                                 simplify-xorsp
+                                                 normalize-xors
                                                  miter-name
                                                  miter-depth options
                                                  rand state result-array-stobj)
@@ -17685,7 +17685,7 @@
                                                        tests-per-case
                                                        max-conflicts must-succeedp
                                                        pre-simplifyp
-                                                       simplify-xorsp
+                                                       normalize-xors
                                                        options
                                                        rand state result-array-stobj)
                                       (prog2$ (cw "End of proof attempt for ~x0)~%"  miter-name)
@@ -17755,7 +17755,7 @@
                                         (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
                                         unroll tests-per-case max-conflicts must-succeedp
                                         pre-simplifyp
-                                        simplify-xorsp
+                                        normalize-xors
                                         options
                                         rand state result-array-stobj))
                       ((when erp) (mv erp nil rand state result-array-stobj))
@@ -17800,7 +17800,7 @@
                                             use-context-when-miteringp
                                             (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
                                             unroll tests-per-case max-conflicts must-succeedp
-                                            pre-simplifyp simplify-xorsp options
+                                            pre-simplifyp normalize-xors options
                                             rand state result-array-stobj))
                           ((when erp) (mv erp nil rand state result-array-stobj))
                           (- (cw "End false case)~%")))
@@ -19626,7 +19626,7 @@
          (and (symbol-listp keys)
               (extra-stuff-okayp-aux keys extra-stuff)))))
 
-;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not mereley non-nil).
+;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not merely non-nil).
 ; Returns (mv erp provedp state rand result-array-stobj)
 ;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true type currently come in in ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
@@ -19653,7 +19653,7 @@
                          unroll
                          tests-per-case
                          max-conflicts
-                         simplify-xorsp ;fixme use the more, deeper in?
+                         normalize-xors ;fixme use the more, deeper in?
                          miter-name     ;the name of this proof
                          prove-constants
                          treat-as-purep
@@ -19727,7 +19727,7 @@
                                   :assumptions assumptions
                                   :print print ;;(and print :brief)
                                   :monitor monitored-symbols
-                                  :simplify-xorsp simplify-xorsp
+                                  :normalize-xors normalize-xors
                                   :memoizep (not use-context-when-miteringp)
                                   :use-internal-contextsp use-context-when-miteringp ;think about this..
                                   :work-hard-when-instructedp nil
@@ -19739,7 +19739,7 @@
                                     :assumptions assumptions
                                     :print print ;;(and print :brief)
                                     :monitor monitored-symbols
-                                    :simplify-xorsp simplify-xorsp
+                                    :normalize-xors normalize-xors
                                     :memoizep (not use-context-when-miteringp)
                                     :use-internal-contextsp use-context-when-miteringp ;think about this..
                                     :work-hard-when-instructedp nil
@@ -19751,7 +19751,7 @@
                                   :assumptions assumptions
                                   :print print ;;(and print :brief)
                                   :monitor monitored-symbols
-                                  :simplify-xorsp simplify-xorsp
+                                  :normalize-xors normalize-xors
                                   :memoizep (not use-context-when-miteringp)
                                   :use-internal-contextsp use-context-when-miteringp ;think about this..
                                   :work-hard-when-instructedp nil
@@ -19850,7 +19850,7 @@
                                  max-conflicts
                                  t ;must-succeedp=t
                                  pre-simplifyp
-                                 simplify-xorsp
+                                 normalize-xors
                                  options
                                  rand state result-array-stobj))
                ((when erp) (mv erp nil state rand result-array-stobj)))
@@ -19885,7 +19885,7 @@
                        unroll
                        tests-per-case
                        max-conflicts
-                       simplify-xorsp ;fixme use the more, deeper in?
+                       normalize-xors ;fixme use the more, deeper in?
                        miter-name     ;the name of this proof
                        prove-constants
                        treat-as-purep
@@ -19943,7 +19943,7 @@
                           unroll
                           tests-per-case
                           max-conflicts
-                          simplify-xorsp ;fixme use the more, deeper in?
+                          normalize-xors ;fixme use the more, deeper in?
                           miter-name
                           prove-constants
                           treat-as-purep
@@ -19998,14 +19998,14 @@
                                   (random-seed 'nil)
                                   (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
                                   (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
-                                  (simplify-xorsp 't)
+                                  (normalize-xors 't)
                                   (treat-as-purep 'nil)
                                   (debug 'nil) ;if t, the temp dir with STP files is not deleted
                                   (prove-constants 't) ;whether to attempt to prove probably-constant nodes
                                   )
   `(prove-miter-fn ,dag-or-quotep ,test-case-count ,var-type-alist ,print ,traced-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                    ,initial-rule-set ,initial-rule-sets ,assumptions ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                   ,random-seed ,unroll ,tests-per-case ,max-conflicts ,simplify-xorsp ,name
+                   ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name
                    ,prove-constants
                    ,treat-as-purep
                     ,debug
@@ -20770,7 +20770,7 @@
 ;;                                :monitor '(bvlt-of-two-less-than-max-when-not-max)
 ;;                                :print print
 ;;                                :assumptions facts-acc
-;;                                :simplify-xorsp nil)
+;;                                :normalize-xors nil)
 ;;                 (let ((result-term (dag-to-term result)))
 ;;                   (if (equal result-term *t*) ;skip any t..
 ;;                       (simplify-facts-aux (rest facts)
@@ -20876,7 +20876,7 @@
 ;;                           random-seed
 ;;                           unroll
 ;;                           max-conflicts
-;;                           simplify-xorsp
+;;                           normalize-xors
 ;;                           state rand RESULT-ARRAY-STOBJ)
 ;;   (declare (xargs :stobjs (state rand RESULT-ARRAY-STOBJ)
 ;;                   :mode :program))
@@ -20903,7 +20903,7 @@
 ;;                :random-seed random-seed
 ;;                :unroll unroll
 ;;                :max-conflicts max-conflicts
-;;                :simplify-xorsp simplify-xorsp))
+;;                :normalize-xors normalize-xors))
 
 ;; ;TODO: start by making sure we can call STP on a simple example..
 ;; ;TODO: does this export a theorem?
@@ -20934,7 +20934,7 @@
 ;;                                   ,(lookup-keyword :random-seed rest)
 ;;                                   ,(lookup-keyword :unroll rest)
 ;;                                   ,(lookup-keyword :max-conflicts rest)
-;;                                   ,(lookup-keyword :simplify-xorsp rest)
+;;                                   ,(lookup-keyword :normalize-xors rest)
 ;;                                   state rand RESULT-ARRAY-STOBJ)))
 
 ;todo: deprecate?  unlike prove-miter, this takes 2 terms.  unlike prove-equivalence, this supports all the exotic options to prove-miter.

@@ -2582,7 +2582,7 @@
            :slack-amount 1000 ;new
            :assumptions assumptions
            :interpreted-function-alist interpreted-function-alist ;Thu Jul 29 02:57:42 2010
-           :simplify-xorsp nil
+           :normalize-xors nil
            :remove-duplicate-rulesp nil
            :check-inputs nil))
          ((when erp) (mv erp nil nil state)))
@@ -2634,7 +2634,7 @@
            :slack-amount 1000                                     ;new
            :assumptions assumptions ;hope this is okay
            :monitor monitored-symbols
-           :simplify-xorsp nil
+           :normalize-xors nil
            :print nil ;print ;:verbose! ;todo reduce printing
            :remove-duplicate-rulesp nil
            :check-inputs nil))
@@ -2713,7 +2713,7 @@
                     :slack-amount 1000                                     ;new
                     :assumptions assumptions ;hope this is okay
                     :monitor monitored-symbols
-                    :simplify-xorsp nil
+                    :normalize-xors nil
                     :print print ;:verbose! ;todo reduce printing
                     :remove-duplicate-rulesp nil
                     :check-inputs nil))
@@ -4786,7 +4786,7 @@
          :monitor (append '(jvm::invoke-static-initializer-for-next-class-base) ;drop?
                           (g :monitor options))
          :assumptions hyps
-         :simplify-xorsp nil
+         :normalize-xors nil
          :print nil ;:brief
          :check-inputs nil
          ))
@@ -5515,7 +5515,7 @@
                                                new-state-dag)
                                :rule-alist *get-local-axe-rule-alist*
                                :remove-duplicate-rulesp nil
-                               :simplify-xorsp nil))
+                               :normalize-xors nil))
               ((when erp) (mv erp nil nil nil nil nil nil nil state))
               ;; (- (cw "New state dag: ~X01" new-state-dag nil))
               (exit-test-function-name (pack$ loop-function-name '-exit-test))
@@ -5988,7 +5988,7 @@
                              )
                            (g :monitor options))
           :assumptions hyps
-          :simplify-xorsp nil
+          :normalize-xors nil
           :print-interval 10000
           :print print ;;:print t
           :use-internal-contextsp t ;trying this... Wed Apr 29 16:32:19 2015 ;;this leads to occurrences of ':irrelevant
@@ -6227,7 +6227,7 @@
         (simp-dag ic-dag
                   :rules (append '(bool-fix$inline)
                                  (rule-list-1001))
-                  :simplify-xorsp nil
+                  :normalize-xors nil
                   :check-inputs nil))
        ((when erp) (mv erp nil nil nil nil nil state))
        (initialized-class-names (safe-unquote initialized-class-names))
@@ -6239,7 +6239,7 @@
         (simp-dag h-dag
                   :rules (append '(bool-fix$inline)
                                  (rule-list-1001))
-                  :simplify-xorsp nil
+                  :normalize-xors nil
                   :check-inputs nil))
        ((when erp) (mv erp nil nil nil nil nil state))
        ;;fixme i hope this is not too big:
@@ -6254,7 +6254,7 @@
         (simp-dag sfm-dag
          :rules (append '(bool-fix$inline)
                         (rule-list-1001))
-         :simplify-xorsp nil
+         :normalize-xors nil
          :check-inputs nil))
        ((when erp) (mv erp nil nil nil nil nil state))
        ;;fixme i hope this is not too big:
@@ -6364,6 +6364,8 @@
                           (or (eq :auto param-names)
                               (symbol-listp param-names) ;; todo: what else to check here?
                               )
+                          (or (booleanp prune-branches)
+                              (natp prune-branches))
                           (booleanp disable-loop-openers)
                           )
                   :mode :program))

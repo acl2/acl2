@@ -111,7 +111,7 @@
                               (symbol-listp monitored-rules)
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
-                              (or (member-eq call-stp '(t nil))
+                              (or (booleanp call-stp)
                                   (natp call-stp)))
                   :stobjs (state)))
   (b* ( ;; First apply the Axe Rewriter to the test:
@@ -132,6 +132,7 @@
                              nil ; memoizep
                              nil ; count-hits
                              nil ; print
+                             nil ; normalize-xors
                              (w state)))
        ((when erp) (mv erp nil state))
        ((when (quotep simplified-dag-or-quotep))
@@ -201,7 +202,7 @@
                                (symbol-listp monitored-rules)
                                (rule-alistp rule-alist)
                                (interpreted-function-alistp interpreted-function-alist)
-                               (or (member-eq call-stp '(t nil))
+                               (or (booleanp call-stp)
                                    (natp call-stp)))
                    :verify-guards nil ; done below
                    ))
@@ -389,7 +390,7 @@
                                (rule-alistp rule-alist)
                                (interpreted-function-alistp interpreted-function-alist)
                                (symbol-listp monitored-rules)
-                               (or (member-eq call-stp '(t nil))
+                               (or (booleanp call-stp)
                                    (natp call-stp)))))
    (if (endp terms)
        (mv (erp-nil) nil state)
@@ -450,7 +451,7 @@
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitored-rules)
-                              (or (member-eq call-stp '(t nil))
+                              (or (booleanp call-stp)
                                   (natp call-stp)))
                   :stobjs state))
   (b* ((- (cw "(Pruning branches in term (~x0 rules, ~x1 assumptions).~%" (count-rules-in-rule-alist rule-alist) (len assumptions)))
@@ -476,7 +477,7 @@
                 (rule-alistp rule-alist)
                 (interpreted-function-alistp interpreted-function-alist)
                 (symbol-listp monitored-rules)
-                (or (member-eq call-stp '(t nil))
+                (or (booleanp call-stp)
                     (natp call-stp)))
            (pseudo-termp (mv-nth 1 (prune-term-new term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))))
   :hints (("Goal" :in-theory (enable prune-term-new))))
@@ -492,7 +493,7 @@
 ;;                               (rule-alistp rule-alist)
 ;;                               (interpreted-function-alistp interpreted-function-alist)
 ;;                               (symbol-listp monitored-rules)
-;;                               (or (member-eq call-stp '(t nil))
+;;                               (or (booleanp call-stp)
 ;;                                   (natp call-stp)))
 ;;                   :mode :program ; because we call translate-terms
 ;;                   ))
@@ -512,7 +513,7 @@
 ;;                               ;;(pseudo-term-listp assumptions)
 ;;                               (symbol-listp rules)
 ;;                               (symbol-listp monitored-rules)
-;;                               (or (member-eq call-stp '(t nil))
+;;                               (or (booleanp call-stp)
 ;;                                   (natp call-stp)))
 ;;                   :mode :program))
 ;;   (prune-term-with-rule-alist term assumptions (make-rule-alist rules (w state)) monitored-rules call-stp state))
@@ -524,7 +525,7 @@
 ;;   (declare (xargs :guard (and (rule-alistp rule-alist)
 ;;                               (interpreted-function-alistp interpreted-function-alist)
 ;;                               (symbol-listp monitored-rules)
-;;                               (or (member-eq call-stp '(t nil))
+;;                               (or (booleanp call-stp)
 ;;                                   (natp call-stp)))
 ;;                   :mode :program
 ;;                   :stobjs state))
@@ -546,7 +547,7 @@
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitored-rules)
-                              (or (member-eq call-stp '(t nil))
+                              (or (booleanp call-stp)
                                   (natp call-stp)))
                   :stobjs state))
   (if (not (dag-fns-include-any dag '(if myif boolif bvif)))
@@ -568,7 +569,7 @@
 ;;                   :guard (and (symbol-listp rules)
 ;;                               (symbol-listp interpreted-fns)
 ;;                               (symbol-listp monitored-rules)
-;;                               (or (member-eq call-stp '(t nil))
+;;                               (or (booleanp call-stp)
 ;;                                   (natp call-stp)))
 ;;                   :mode :program))
 ;;   (b* (((mv erp rule-alist) (make-rule-alist rules (w state)))
@@ -586,7 +587,7 @@
                               (symbol-listp rules)
                               (symbol-listp interpreted-fns)
                               (symbol-listp monitored-rules)
-                              (or (member-eq call-stp '(t nil))
+                              (or (booleanp call-stp)
                                   (natp call-stp))
                               (ilks-plist-worldp (w state)))
                   :stobjs state))
@@ -605,7 +606,7 @@
 ;;                   :guard (and (symbol-listp rules)
 ;;                               (symbol-listp interpreted-fns)
 ;;                               (symbol-listp monitored-rules)
-;;                               (or (member-eq call-stp '(t nil))
+;;                               (or (booleanp call-stp)
 ;;                                   (natp call-stp)))
 ;;                   :mode :program))
 ;;   (let ((prune-branchesp (if (eq t prune-branches)
@@ -636,8 +637,7 @@
 ;; TODO: This can make the rule-alist each time it is called.
 (defund maybe-prune-dag-new (prune-branches ; t, nil, or a limit on the size
                              dag assumptions rules interpreted-fns monitored-rules call-stp state)
-  (declare (xargs :guard (and (or (eq nil prune-branches)
-                                  (eq t prune-branches)
+  (declare (xargs :guard (and (or (booleanp prune-branches)
                                   (natp prune-branches))
                               (pseudo-dagp dag)
                               (< (len dag) 2147483647) ;todo?
@@ -645,19 +645,16 @@
                               (symbol-listp rules)
                               (symbol-listp interpreted-fns)
                               (symbol-listp monitored-rules)
-                              (or (member-eq call-stp '(t nil))
+                              (or (booleanp call-stp)
                                   (natp call-stp))
                               (ilks-plist-worldp (w state)))
                   :stobjs state))
-  (let ((prune-branchesp (if (eq t prune-branches)
-                             t
-                           (if (eq nil prune-branches)
-                               nil
-                             (if (not (natp prune-branches))
-                                 (er hard 'maybe-prune-dag-new "Bad prune-branches option (~x0)." prune-branches)
-                               ;; todo: allow this to fail fast:
-                               (dag-or-quotep-size-less-thanp dag
-                                                              prune-branches))))))
+  (let ((prune-branchesp (if (booleanp prune-branches)
+                             prune-branches
+                           ;; prune-branches is a natp (a limit on the size):
+                           ;; todo: allow this to fail fast:
+                           (dag-or-quotep-size-less-thanp dag
+                                                          prune-branches))))
     (if prune-branchesp
         (b* ((size (dag-or-quotep-size-fast dag)) ;todo: also perhaps done above
              (- (cw "(Pruning branches in DAG (~x0 nodes, ~x1 unique)~%" size (len dag)))

@@ -102,7 +102,7 @@
                   :assumptions hyps
                   ;; :print t
                   ;; :print-interval 100000
-                  :simplify-xorsp nil
+                  :normalize-xors nil
                   :check-inputs nil))
        ((when erp) (mv erp nil state))
        (- (cw "Result: ~X01)" result nil))
@@ -148,7 +148,7 @@
                             ;;jvm::in-of-rkeys-when-g-rev
                             ))
          ;; :print t
-         :simplify-xorsp nil
+         :normalize-xors nil
          :assumptions hyps
          :check-inputs nil))
        ((when erp) (mv erp nil state))
