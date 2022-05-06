@@ -19626,7 +19626,7 @@
          (and (symbol-listp keys)
               (extra-stuff-okayp-aux keys extra-stuff)))))
 
-;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not mereley non-nil).
+;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not merely non-nil).
 ; Returns (mv erp provedp state rand result-array-stobj)
 ;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true type currently come in in ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
