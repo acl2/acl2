@@ -14,7 +14,7 @@
 % Another highlight.
 %\item
 % Say if it's described in a paper at this workshop,
-% in which case, there's little to say here at all.
+% in which case, there may be little to say here.
 %\end{itemize}
 
 %\separation % to separate the next entry, if any
@@ -113,7 +113,7 @@
 \newlibtitle
 
 \bookpath{kestrel/acl2pl}:
-A formalization of the ACL2 programming language:
+Preliminary model of the ACL2 programming (not logical) language.
 \begin{itemize}
 \item Abstract syntax consisting of translated terms, functions, and packages.
 \item Small-step evaluation semantics.
@@ -130,10 +130,11 @@ A formalization of the ACL2 programming language:
 \newlibtitle
 
 \bookpath{kestrel/c}:
-A library for C.
+Models, proofs, and tools for C (described in a paper at this workshop).
 \begin{itemize}
-\item ATC, the C code generator for ACL2, described in a paper at this Workshop.
-\item Formal model of a subset of C.
+\item ATC, the C code generator for ACL2.
+\item Deep embedding of C in ACL2.
+\item Shallow embedding of C in ACL2.
 \end{itemize}
 
 \end{frame}
@@ -148,7 +149,9 @@ A library for C.
 Prime Field Constraint Systems (PFCS).
 \begin{itemize}
 \item Generalization of Rank-1 Constraint Systems (R1CS).
-\item Useful in zero-knowledge proofs.
+\item Formal syntax and semantics.
+\item Preliminary reasoning support.
+\item Useful in zero-knowledge cryptographic proofs.
 \end{itemize}
 
 \end{frame}
@@ -160,7 +163,7 @@ Prime Field Constraint Systems (PFCS).
 \newlibtitle
 
 \bookpath{kestrel/isar}:
-A library for Isar-style proofs in ACL2.
+Tools for Isar-style proofs in ACL2.
 \begin{itemize}
 \item Isar = Intelligible semi-automated reasoning
       (proof language of the Isabelle theorem prover).
@@ -180,7 +183,7 @@ A library for Isar-style proofs in ACL2.
 \newlibtitle
 
 \bookpath{kestrel/json}:
-A library for JSON.
+Models and tools for JSON.
 \begin{itemize}
 \item Abstract syntax of JSON.
 \item Converter from parser's abstract syntax to this abstract syntax.
@@ -196,7 +199,7 @@ A library for JSON.
 \newlibtitle
 
 \bookpath{kestrel/simpl-imp}:
-A simple programming language, Imp.
+A simple didactic programming language, Imp.
 \begin{itemize}
 \item Formal syntax and semantics.
 \item Useful for didactic purposes.
@@ -212,10 +215,10 @@ A simple programming language, Imp.
 \newlibtitle
 
 \bookpath{kestrel/solidity}:
-A library for Solidity, the main smart contract language for Ethereum.
+Small start towards a model of Solidity,
+the main smart contract language for Ethereum.
 \begin{itemize}
 \item A model of (some) Solidity values.
-\item Small towards a formal model of Solidity.
 \end{itemize}
 
 \end{frame}
@@ -227,7 +230,7 @@ A library for Solidity, the main smart contract language for Ethereum.
 \newlibtitle
 
 \bookpath{kestrel/syntheto}:
-A library for Syntheto (described in a paper at this workshop).
+Models, proofs, and tools for Syntheto (described in a paper at this workshop).
 \begin{itemize}
 \item Surface language for APT and ACL2.
 \item Formalization of abstract syntax.
@@ -244,7 +247,8 @@ A library for Syntheto (described in a paper at this workshop).
 \newlibtitle
 
 \bookpath{kestrel/yul}:
-A library for Yul, an intermediate language used in the Solidity compiler.
+Models, proofs, and tools for Yul,
+an intermediate language used in the Solidity compiler.
 \begin{itemize}
 \item Concrete syntax and parser.
 \item Abstract syntax.
@@ -264,7 +268,7 @@ A library for Yul, an intermediate language used in the Solidity compiler.
 \newlibtitle
 
 \bookpath{kestrel/zcash}:
-A library for the Zcash blockchain.
+Models and proofs for the Zcash blockchain.
 \begin{itemize}
 \item Formalization of some zero-knowledge-related operations.
 \item Formalization and verification of some R1CS gadgets.
@@ -278,7 +282,7 @@ A library for the Zcash blockchain.
 \newlibtitle
 
 \bookpath{std/obags}:
-A library for ordered bags (obags).
+Ordered bags (obags).
 \begin{itemize}
 \item Similar to osets and omaps, for bags (i.e.\ multisets).
 \item Modeled as totally (non-strictly) ordered lists.
@@ -294,7 +298,7 @@ A library for ordered bags (obags).
 \implibtitle
 
 \bookpath{kestrel/abnf}:
-Augmented Backus-Naur Form (ABNF) library.
+Augmented Backus-Naur Form (ABNF).
 \begin{itemize}
 \item Refactored to move parser verification proof to separate file from parser.
 \item Refactored to collect parsing primitives usable in other parsers.
@@ -310,7 +314,7 @@ Augmented Backus-Naur Form (ABNF) library.
 \implibtitle
 
 \bookpath{kestrel/apt}:
-Automated Program Transformations (APT) library.
+Automated Program Transformations (APT).
 \begin{itemize}
 \item Added new \code{schemalg} transformation to apply algorithm schemas,
       currently supporting divide-and-conquer schemas.
@@ -333,7 +337,7 @@ Automated Program Transformations (APT) library.
 \implibtitle
 
 \bookpath{build}:
-Book build library.
+Build system.
 \begin{itemize}
 \item Now \code{cert.pl} makes use of useless runes just as \code{make} does.
 \end{itemize}
@@ -347,7 +351,7 @@ Book build library.
 \implibtitle
 
 \bookpath{kestrel/crypto/ecurve}:
-Elliptic curve cryptographic library.
+Elliptic curve cryptography.
 \begin{itemize}
 \item Extended and improved formalization of short Weierstrass curves.
 \item Added formalization of twisted Edwards curves.
@@ -366,7 +370,7 @@ Elliptic curve cryptographic library.
 \implibtitle
 
 \bookpath{kestrel/event-macros}:
-Event macro library.
+Tools for event macros.
 \begin{itemize}
 \item Added utilities to create events from structured information.
 \item Added utility to set up a more controlled proof environment
@@ -403,7 +407,7 @@ Fixtype library extensions in the Kestrel books.
 \implibtitle
 
 \bookpath{kestrel/java}:
-Library for Java.
+Models, proofs, and tools for Java.
 \begin{itemize}
 \item AIJ has been optimized,
       and extended with more Java implementations of ACL2 built-in functions.
@@ -421,7 +425,7 @@ Library for Java.
 \implibtitle
 
 \bookpath{kestrel/soft}:
-Second-Order Functions and Theorems (SOFT) library.
+Second-Order Functions and Theorems (SOFT).
 \begin{itemize}
 \item Added macro \code{defsoft} to record already introduced functions
       into the SOFT table for possible later instantiation.
@@ -477,7 +481,7 @@ Utilities in the Kestrel books.
 \implibtitle
 
 \bookpath{projects/x86isa}:
-X86ISA library.
+X86ISA, the formal model of the x86 Instruction Set Architecture.
 \begin{itemize}
 \item Simplified the treatment of CPUID features.
 \item Added the \code{MOVD} and \code{MOVQ} instruction variants
@@ -493,7 +497,7 @@ X86ISA library.
 \implibtitle
 
 \bookpath{projects/apply}:
-\code{apply\$} and \code{loop\$} libraries.
+\code{apply\$} and \code{loop\$} tools.
 \begin{itemize}
 \item Replaced \code{top.lisp} with:
       \begin{itemize}
@@ -532,7 +536,7 @@ Standard library.
 
 \implibtitle
 
-\bookpath{tools}: Tools library.
+\bookpath{tools}: Miscellaneous tools.
 \begin{itemize}
 \item Added macro \code{rewrite\$},
       which provides a programmatic, flexible interface
