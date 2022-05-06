@@ -68,7 +68,7 @@
                        step-increment
                        rule-alists
                        assumptions
-                       simplify-xorsp
+                       normalize-xors
                        rules-to-monitor
                        ;;use-internal-contextsp
                        print
@@ -86,7 +86,7 @@
                               ;; print
                               (booleanp memoizep)
                               (natp total-steps)
-                              (booleanp simplify-xorsp))
+                              (booleanp normalize-xors))
                   :mode :program ;; because we call simp-dag-fn and untranslate
                   :stobjs (state)
                   ))
@@ -103,7 +103,7 @@
                     :print print              ;(if monitored-rules t nil)
                     :print-interval print-interval
                     :monitor rules-to-monitor
-                    :simplify-xorsp simplify-xorsp
+                    :normalize-xors normalize-xors
                     :memoizep memoizep
                     ;;:exhaustivep (if chunkedp t nil)
                     :limits `((step-state-with-pc-and-call-stack-height-becomes-step-axe . ,steps-for-this-iteration))
@@ -137,7 +137,7 @@
                                      (cw "~X01)" dag nil)))))))
               (repeatedly-run dag
                               (- steps-left steps-for-this-iteration)
-                              step-increment rule-alists assumptions simplify-xorsp rules-to-monitor ; use-internal-contextsp
+                              step-increment rule-alists assumptions normalize-xors rules-to-monitor ; use-internal-contextsp
                               print
                               print-interval
                               memoizep
@@ -158,7 +158,7 @@
                                 rule-alists
                                 monitored-rules
                                 user-assumptions
-                                simplify-xorsp
+                                normalize-xors
                                 classes-to-assume-initialized
                                 ignore-exceptions
                                 ignore-errors
@@ -195,7 +195,7 @@
                                   (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
                               (booleanp error-on-incomplete-runsp)
-                              (booleanp simplify-xorsp))
+                              (booleanp normalize-xors))
                   :stobjs (state)
                   :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
                   ))
@@ -342,7 +342,7 @@
                         step-increment
                         rule-alists
                         all-assumptions
-                        simplify-xorsp
+                        normalize-xors
                         monitored-rules
                         print
                         print-interval
@@ -382,7 +382,7 @@
                              rule-alists
                              monitored-rules
                              user-assumptions
-                             simplify-xorsp
+                             normalize-xors
                              classes-to-assume-initialized
                              ignore-exceptions
                              ignore-errors
@@ -424,7 +424,7 @@
                               (or (eq :auto param-names)
                                   (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
-                              (booleanp simplify-xorsp))
+                              (booleanp normalize-xors))
                   :stobjs (state)
                   :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
                   ))
@@ -448,7 +448,7 @@
                                  rule-alists
                                  monitored-rules
                                  user-assumptions
-                                 simplify-xorsp
+                                 normalize-xors
                                  classes-to-assume-initialized
                                  ignore-exceptions
                                  ignore-errors
@@ -528,7 +528,7 @@
                                       (rule-alists 'nil) ;to completely replace the usual sets of rules
                                       (extra-rules 'nil) ; to add to the usual set of rules
                                       (remove-rules 'nil)
-                                      (simplify-xors 't)
+                                      (normalize-xors 't) ; todo: consider making nil the default, since it's better to normalize xors of the spec and code dags together
                                       (prune-branches 'nil) ;todo: make t the default
                                       (call-stp 'nil)
                                       ;; Options affecting performance:
@@ -552,7 +552,7 @@
                                      ,rule-alists
                                      ,monitor
                                      ,assumptions
-                                     ',simplify-xors
+                                     ',normalize-xors
                                      ,classes-to-assume-initialized
                                      ,ignore-exceptions
                                      ,ignore-errors
@@ -600,7 +600,7 @@
          (param-names "Names to use for the parameters (e.g., if no debugging information is available), or :auto.")
          (output                  "An indication of which state component to extract")
          (steps "A number of steps to run, or :auto, meaning run until the method returns. (Consider using :output :all when using :steps, especially if the computation may not complete after that many steps.)")
-         (simplify-xors           "Whether to normalize xor nests (t or nil)")
+         (normalize-xors           "Whether to normalize xor nests (t or nil)")
          (prune-branches          "whether to aggressively prune unreachable branches in the result")
          (call-stp                "whether to call STP when pruning (t, nil, or a number of conflicts before giving up)")
          (memoizep "Whether to memoize rewrites during unrolling (a boolean).")

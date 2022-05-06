@@ -587,6 +587,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-taginfo-alist-to-recognizers
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (recognizers symbol-listp)
+  :short "Project the recognizers out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (recog (defstruct-info->recognizer (atc-tag-info->defstruct info)))
+       (recogs (atc-string-taginfo-alist-to-recognizers (cdr prec-tags))))
+    (cons recog recogs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-string-taginfo-alist-to-readers
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (readers symbol-listp)
+  :short "Project the readers out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (readers (defstruct-info->readers (atc-tag-info->defstruct info)))
+       (more-readers (atc-string-taginfo-alist-to-readers (cdr prec-tags))))
+    (append readers more-readers)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-string-taginfo-alist-to-reader-return-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -619,30 +643,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-string-taginfo-alist-to-recognizers
-  ((prec-tags atc-string-taginfo-alistp))
-  :returns (recognizers symbol-listp)
-  :short "Project the recognizers out of a tag information alist."
-  (b* (((when (endp prec-tags)) nil)
-       (info (cdar prec-tags))
-       (recog (defstruct-info->recognizer (atc-tag-info->defstruct info)))
-       (recogs (atc-string-taginfo-alist-to-recognizers (cdr prec-tags))))
-    (cons recog recogs)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-string-taginfo-alist-to-readers
-  ((prec-tags atc-string-taginfo-alistp))
-  :returns (readers symbol-listp)
-  :short "Project the readers out of a tag information alist."
-  (b* (((when (endp prec-tags)) nil)
-       (info (cdar prec-tags))
-       (readers (defstruct-info->readers (atc-tag-info->defstruct info)))
-       (more-readers (atc-string-taginfo-alist-to-readers (cdr prec-tags))))
-    (append readers more-readers)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-string-taginfo-alist-to-not-error-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -655,14 +655,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-string-taginfo-alist-to-structp-thms
+(define atc-string-taginfo-alist-to-valuep-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
-  :short "Project the @(tsee structp) theorems out of a tag information alist."
+  :short "Project the @(tsee valuep) theorems out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
-       (thm (defstruct-info->structp-thm (atc-tag-info->defstruct info)))
-       (thms (atc-string-taginfo-alist-to-structp-thms (cdr prec-tags))))
+       (thm (defstruct-info->valuep-thm (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-valuep-thms (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-string-taginfo-alist-to-value-kind-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the @(tsee value-kind) theorems
+          out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->value-kind-thm (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-value-kind-thms (cdr prec-tags))))
     (cons thm thms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -670,7 +683,7 @@
 (define atc-string-taginfo-alist-to-tag-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
-  :short "Project the tag theorems out of a tag information alist."
+  :short "Project the value tag theorems out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
        (thm (defstruct-info->tag-thm (atc-tag-info->defstruct info)))
@@ -682,7 +695,7 @@
 (define atc-string-taginfo-alist-to-members-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
-  :short "Project the member theorems out of a tag information alist."
+  :short "Project the value member theorems out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
        (thm (defstruct-info->members-thm (atc-tag-info->defstruct info)))
@@ -4795,7 +4808,8 @@
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
-       (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
+       (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (struct-reader-return-thms
@@ -4813,7 +4827,8 @@
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
        (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
-       (members-thms (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (members-thms
+        (atc-string-taginfo-alist-to-members-thms prec-tags))
        (exec-memberp-thms
         (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (exec-asg-memberp-thms
@@ -4822,7 +4837,8 @@
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
                              '(,@not-error-thms
-                               ,@structp-thms
+                               ,@valuep-thms
+                               ,@value-kind-thms
                                not
                                ,fn
                                ,@result-thms
@@ -5687,7 +5703,8 @@
                       ,test-term))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
-       (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
+       (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
        (struct-reader-return-thms
         (atc-string-taginfo-alist-to-reader-return-thms prec-tags))
        (hints `(("Goal"
@@ -5696,7 +5713,8 @@
                              (theory 'atc-all-rules)
                              '(not
                                ,@not-error-thms
-                               ,@structp-thms
+                               ,@valuep-thms
+                               ,@value-kind-thms
                                ,@struct-reader-return-thms))
                  :use ((:instance (:guard-theorem ,fn)
                         :extra-bindings-ok ,@instantiation))
@@ -5823,7 +5841,8 @@
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
-       (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
+       (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (struct-reader-return-thms
@@ -5841,7 +5860,8 @@
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
        (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
-       (members-thms (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (members-thms
+        (atc-string-taginfo-alist-to-members-thms prec-tags))
        (exec-memberp-thms
         (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (exec-asg-memberp-thms
@@ -5851,7 +5871,8 @@
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
                              '(,@not-error-thms
-                               ,@structp-thms
+                               ,@valuep-thms
+                               ,@value-kind-thms
                                not
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
@@ -5997,7 +6018,6 @@
        (formula-thm `(b* (,@formals-bindings) (implies ,hyps ,concl-thm)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
-       (structp-thms (atc-string-taginfo-alist-to-structp-thms prec-tags))
        (result-thms
         (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
        (result-thms (cons fn-result-thm result-thms))
@@ -6016,7 +6036,8 @@
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
        (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
-       (members-thms (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (members-thms
+        (atc-string-taginfo-alist-to-members-thms prec-tags))
        (exec-memberp-thms
         (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (exec-asg-memberp-thms
@@ -6050,7 +6071,6 @@
                                    *integer-value-disjoint-rules*
                                    *array-value-disjoint-rules*
                                    '(,@not-error-thms
-                                     ,@structp-thms
                                      not
                                      ,exec-stmt-while-for-fn
                                      ,@struct-reader-return-thms
@@ -6355,9 +6375,7 @@
                    ,recognizer
                    ,reader
                    ,not-error-thm
-                   ,fixer-recognizer-thm
-                   value-struct->tag
-                   struct->tag))))
+                   ,fixer-recognizer-thm))))
        ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints
@@ -6471,7 +6489,7 @@
                        (equal struct
                               (read-struct (pointer->address ptr) compst1))
                        (equal (pointer->reftype ptr)
-                              (type-struct (struct->tag struct)))
+                              (type-struct (value-struct->tag struct)))
                        (,recognizer struct))
                   (equal (exec-expr-asg e compst fenv limit)
                          (write-struct (pointer->address ptr)

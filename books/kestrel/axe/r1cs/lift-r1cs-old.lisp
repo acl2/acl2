@@ -77,7 +77,7 @@
                                 monitor
                                 memoizep
                                 count-hits
-                                ;; nil                             ;simplify-xorsp
+                                nil ; normalize-xors (consider t?)
                                 produce-function
                                 (if produce-function
                                     t ; disable-function
@@ -117,7 +117,7 @@
                                          ,monitor
                                          ,memoizep
                                          ,count-hits
-                                         ;; ,simplify-xorsp
+                                         ;; ,normalize-xors
                                          ,produce-function
                                          ,function-type
                                          ;; ,function-params

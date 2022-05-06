@@ -1429,13 +1429,11 @@
        ((when (errorp struct))
         (error (list :struct-not-found str (compustate-fix compst))))
        ((unless (equal reftype
-                       (type-struct (struct->tag struct))))
+                       (type-struct (value-struct->tag struct))))
         (error (list :mistype-struct-read
                      :pointer reftype
-                     :array (type-struct (struct->tag struct))))))
+                     :array (type-struct (value-struct->tag struct))))))
     (struct-read-member mem struct))
-  :guard-hints
-  (("Goal" :in-theory (enable structp-when-struct-resultp-and-not-errorp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1816,10 +1814,10 @@
               (struct (read-struct addr compst))
               ((when (errorp struct)) struct)
               ((unless (equal reftype
-                              (type-struct (struct->tag struct))))
+                              (type-struct (value-struct->tag struct))))
                (error (list :mistype-struct-read
                             :pointer reftype
-                            :array (type-struct (struct->tag struct)))))
+                            :array (type-struct (value-struct->tag struct)))))
               (new-struct (struct-write-member mem val struct))
               ((when (errorp new-struct)) new-struct))
            (write-struct addr new-struct compst)))

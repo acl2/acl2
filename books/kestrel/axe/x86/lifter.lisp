@@ -1931,7 +1931,7 @@
                                       )
                                     rules-to-monitor)
                    :print print
-                   :simplify-xorsp nil
+                   :normalize-xors nil
                    :check-inputs nil))
         ((when erp) (mv erp nil nil nil state))
         ;; Check for problems:
@@ -2197,7 +2197,7 @@
                   :assumptions assumptions
                   :monitor rules-to-monitor
                   :print print
-                  :simplify-xorsp nil
+                  :normalize-xors nil
                   :check-inputs nil))
        ((when erp) (mv erp nil state))
        (output-term (dag-to-term output-dag))

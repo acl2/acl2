@@ -52,7 +52,7 @@
   (if (and (eq fn 'bvxor)
            (consp (cdr (cdr simplified-args)))
            (quoted-natp (first simplified-args))
-           ;;simplify-xorsp
+           ;;normalize-xors
            )
       ;;it's a bvxor. note that since the args are simplified, if they are bvxor nests they are *normalized* bvxor nests
       (b* ((bvxor-width (unquote (first simplified-args)))
@@ -79,7 +79,7 @@
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
     (if  (and (eq fn 'bitxor)
               (consp (cdr simplified-args))
-              ;;simplify-xorsp
+              ;;normalize-xors
               )
         ;;it's a bitxor. note that since the args are simplified, if they are bitxor nests they are *normalized* bitxor nests
         (b* (;; get xors from arg1 (TODO: Consider memoizing):
@@ -120,7 +120,7 @@
          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
          (bounded-darg-listp simplified-args dag-len)))
 
-(defthm dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
+(defthmd dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
   (implies (and (symbolp fn)
                 (not (eq 'quote fn))
                 ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
@@ -135,6 +135,24 @@
            (dargp-less-than (mv-nth 1 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                             (mv-nth 3 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
   :hints (("Goal" :in-theory (enable add-and-normalize-expr))))
+
+(defthm dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr-gen
+  (implies (and (<= (mv-nth 3 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)) bound)
+                (symbolp fn)
+                (not (eq 'quote fn))
+                ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                ;; (bounded-darg-listp args dag-len)
+                ;; (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                ;; (dag-constant-alistp dag-constant-alist)
+                ;; (equal (alen1 'dag-array dag-array)
+                ;;        (alen1 'dag-parent-array dag-parent-array)))
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (bounded-darg-listp simplified-args dag-len)
+                (not (mv-nth 0 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (dargp-less-than (mv-nth 1 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                            bound))
+  :hints (("Goal" :use (dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
+           :in-theory (disable dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr))))
 
 ;; Uses consp as the normal form
 (defthm myquotep-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
@@ -152,7 +170,8 @@
            (equal (myquotep (mv-nth 1 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
                   (consp (mv-nth 1 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
   :hints (("Goal" :use (:instance dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
-           :in-theory (disable dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr))))
+           :in-theory (disable dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
+                               dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr-gen))))
 
 ;; Uses consp as the normal form
 (defthm natp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
@@ -170,7 +189,8 @@
            (equal (natp (mv-nth 1 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
                   (not (consp (mv-nth 1 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))))
   :hints (("Goal" :use (:instance dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
-           :in-theory (disable dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr))))
+           :in-theory (disable dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
+                               dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr-gen))))
 
 (defthm <-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
   (implies (and (symbolp fn)
@@ -189,4 +209,25 @@
            (< (mv-nth 1 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
               (mv-nth 3 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
   :hints (("Goal" :use (:instance dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
-           :in-theory (disable dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr))))
+           :in-theory (disable dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
+                               dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr-gen))))
+
+(defthm <-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr-gen
+  (implies (and (<= (mv-nth 3 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)) bound)
+                (symbolp fn)
+                (not (eq 'quote fn))
+                ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                ;; (bounded-darg-listp args dag-len)
+                ;; (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                ;; (dag-constant-alistp dag-constant-alist)
+                ;; (equal (alen1 'dag-array dag-array)
+                ;;        (alen1 'dag-parent-array dag-parent-array)))
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (bounded-darg-listp simplified-args dag-len)
+                (not (mv-nth 0 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                (not (consp (mv-nth 1 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+                )
+           (< (mv-nth 1 (add-and-normalize-expr fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+              bound))
+  :hints (("Goal" :use <-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
+           :in-theory (disable <-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr))))

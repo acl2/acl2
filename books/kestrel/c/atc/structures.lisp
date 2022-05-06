@@ -22,55 +22,24 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We introduce a model of structures (i.e. values of structure types).
-     A structure is modeled as consisting of a tag
-     and of a sequence of named members.
-     For now each member has one of the values in @(tsee value),
-     i.e. either an integer value or a pointer value."))
+    "Structures are modeled as the @(':struct') kind of @(tsee value).
+     Here we introduce some functions over structures."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod struct
-  :short "Fixtype of structures [C:6.2.5/20]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The members must have distinct names.
-     This requirement is currently not captured in this fixtype."))
-  ((tag ident)
-   (members member-value-list
-            :reqfix (if (consp members)
-                        members
-                      (list (member-value-fix :irrelevant)))))
-  :require (consp members)
-  :layout :list
-  :tag :struct
-  :pred structp
-  ///
-
-  (defrule valuep-when-structp
-    (implies (structp x)
-             (valuep x))
-    :enable (structp valuep)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult struct "structures")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define struct-read-member ((name identp) (struct structp))
+(define struct-read-member ((name identp) (struct valuep))
+  :guard (value-case struct :struct)
   :returns (val value-resultp)
   :short "Read a member of a structure."
   :long
   (xdoc::topstring
    (xdoc::p
     "We look up the members in order;
-     given that the members have distinct names (see @(tsee struct),
+     given that the members have distinct names (see @(tsee value),
      the search order is immaterial."))
-  (struct-read-member-aux name (struct->members struct))
+  (struct-read-member-aux name (value-struct->members struct))
   :hooks (:fix)
 
   :prepwork
@@ -87,19 +56,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define struct-write-member ((name identp) (val valuep) (struct structp))
-  :returns (new-struct struct-resultp)
+(define struct-write-member ((name identp) (val valuep) (struct valuep))
+  :guard (value-case struct :struct)
+  :returns (new-struct value-resultp)
   :short "Write a member of a structure."
   :long
   (xdoc::topstring
    (xdoc::p
     "We look up the members in order;
-     given that the members have distinct names (see @(tsee struct)),
+     given that the members have distinct names (see @(tsee value)),
      the search order is immaterial.
      The new value must have the same type as the old value."))
-  (b* ((new-members (struct-write-member-aux name val (struct->members struct)))
+  (b* ((new-members
+        (struct-write-member-aux name val (value-struct->members struct)))
        ((when (errorp new-members)) new-members))
-    (change-struct struct :members new-members))
+    (change-value-struct struct :members new-members))
   :hooks (:fix)
 
   :prepwork
@@ -130,7 +101,14 @@
           ((when (errorp new-cdr-members)) new-cdr-members))
        (cons (member-value-fix (car members))
              new-cdr-members))
-     :hooks (:fix))))
+     :hooks (:fix)))
+
+  ///
+
+  (defret value-kind-of-struct-write-member
+    (implies (not (errorp new-struct))
+             (equal (value-kind new-struct)
+                    :struct))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

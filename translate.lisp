@@ -15489,7 +15489,7 @@
             (chk-flet-declare-form names (car declare-form-list) ctx)
             (chk-flet-declare-form-list names (cdr declare-form-list) ctx)))))
 
-(defun stobj-updater-guess-from-accessor (accessor tblp)
+(defun stobj-updater-guess-from-accessor (accessor)
 
 ; Warning: Keep the following in sync with defstobj-fnname.
 
@@ -15497,13 +15497,6 @@
 ; for that field.  We use it to supply a reasonable default when a stobj-let
 ; binding does not specify an updater, but ultimately we check it just as we
 ; would check a supplied updater name.
-
-; Tblp is non-nil when accessor is a stobj-table or hash-table access (though
-; as of this writing, we use this function only in stobj-let and thus
-; hash-table accesses aren't relevant here since there are no hash-table
-; accesses that return stobjs).  If the access isn't of the form PREFIXget for
-; some PREFIX (typically ending in a hyphen, consistently with
-; defstobj-fnname), then we pretend that tblp is nil.
 
 ; The following example shows why this is only a guess.
 
@@ -15515,14 +15508,13 @@
 ; ACL2::UPDATE-FLDI.
 
   (declare (xargs :guard (symbolp accessor)))
-  (or (and tblp
-           (let* ((name (symbol-name accessor))
-                  (len (length name)))
-             (and (< 3 len)
-                  (equal (subseq name (- len 3) len) "GET")
-                  (intern-in-package-of-symbol
-                   (concatenate 'string (subseq name 0 (- len 3)) "PUT")
-                   accessor))))
+  (or (let* ((name (symbol-name accessor))
+             (len (length name)))
+        (and (< 4 len)
+             (equal (subseq name (- len 4) len) "-GET")
+             (intern-in-package-of-symbol
+              (concatenate 'string (subseq name 0 (- len 3)) "PUT")
+              accessor)))
       (packn-pos (list "UPDATE-" accessor)
                  accessor)))
 
@@ -15637,8 +15629,7 @@
                   (if (member-eq s producer-vars)
                       (cons (list (or (car rest) ; update-fn
                                       (stobj-updater-guess-from-accessor
-                                       st-get
-                                       t))
+                                       st-get))
                                   (kwote s)
                                   s
                                   (caddr act))
@@ -15669,14 +15660,16 @@
                            stobj-table access."
                           s act)
                      nil nil nil nil))
-                (t (let ((arrayp (eql (length act) 3))) ; e.g. (fld3i 4 st+)
+                (t (let ((indexp ; e.g. (fld3i 4 st+) or (ht-get '(a b) st+)
+                          (eql (length act) 3)))
                      (cond
-                      ((and arrayp
+                      ((and indexp
                             (let ((index (cadr act)))
 
-; As discussed in the Essay on Nested Stobjs, the index must be a natural
-; number or else a symbol that is not among the producer variables.  We relax
-; the former condition to allow a quoted natural.
+; As discussed in the Essay on Nested Stobjs, the index must be a constant or
+; else a symbol that is not among the producer variables.  Perhaps this can be
+; relaxed if there are no corresponding updates, only accesses; but we defer
+; thinking about that until/unless it becomes an issue.
 
                               (not (or (and (symbolp index)
                                             (not (member-eq index
@@ -15685,20 +15678,19 @@
                                        (and (consp index)
                                             (consp (cdr index))
                                             (null (cddr index))
-                                            (eq (car index) 'quote)
-                                            (natp (cadr index)))))))
+                                            (eq (car index) 'quote))))))
                        (mv binding
-                           (if (unquoted-symbol (cadr act))
-                               (msg "The stobj-let binding of variable ~x0 to ~
-                                     expression ~x1 is illegal.  If a ~
-                                     stobj-table access was intended, the ~
-                                     stobj creator for ~x2 should be called ~
-                                     as a third argument of that expression; ~
-                                     see :DOC stobj-table."
-                                    s act (unquoted-symbol (cadr act)))
-                             (msg "Illegal array index, ~x0, in stobj-let ~
-                                   binding of variable ~x1."
-                                  (cadr act) s))
+                           (msg "The index expression, ~x0, used for array or ~
+                                 hash-table access in the stobj-let binding ~
+                                 of variable ~x1, is illegal because ~@2."
+                                (cadr act)
+                                s
+                                (cond ((member-eq (cadr act) producer-vars)
+                                       (msg "~x0 is also a producer variable"
+                                            (cadr act)))
+                                      (t "that index expression is not a ~
+                                          symbol, a natural number, or a ~
+                                          quoted constant")))
                            nil nil nil nil))
                       (t
                        (let ((accessor (car act))
@@ -15735,9 +15727,8 @@
                             stobj0
                             (cons (cons (or update-fn
                                             (stobj-updater-guess-from-accessor
-                                             accessor
-                                             nil))
-                                        (if arrayp
+                                             accessor))
+                                        (if indexp
                                             (list* (cadr act) ; index
                                                    s
                                                    (cddr act))
@@ -15811,7 +15802,7 @@
 ;       st+                                    ; stobj accessed above
 ;       (x st1 y st3)                          ; producer-vars
 ;       (producer st1 u st2 v st3)             ; producer (untranslated)
-;       ((update-fld1 st+)                     ; stobj updaters
+;       ((update-fld1 st1 st+)                 ; stobj updaters
 ;        (update-fld3i 4 st3 st+))
 ;       ((st1 (fld1 st+))                      ; bindings
 ;        (st2 (fld2 st+) update-fld2)
@@ -15901,13 +15892,13 @@
                     t
 
 ; The use below of with-guard-checking guarantees that the guard will be
-; checked by running chk-no-stobj-array-index-aliasing inside *1* code for
-; stobj-let.  We are relying on invariant-risk handling to ensure that the *1*
-; function is executed when there are updates, and hence those no-duplicatesp
-; checks will be performed.  Invariant-risk plays its usual role for
-; :program-mode wrappers, hence causes the no-duplicatesp checks to be
-; enforced.  Note that the no-duplicates checks are avoided when there are only
-; accesses but no updates.
+; checked by running chk-no-stobj-index-aliasing inside *1* code for stobj-let.
+; We are relying on invariant-risk handling to ensure that the *1* function is
+; executed when there are updates, and hence those no-duplicatesp checks will
+; be performed.  Invariant-risk plays its usual role for :program-mode
+; wrappers, hence causes the no-duplicatesp checks to be enforced.  Note that
+; the no-duplicates checks are avoided when there are only accesses but no
+; updates.
 
 ; We considered a simpler approach: (or (no-duplicatesp-eql-exec lst) (er hard
 ; ...)).  However, the error didn't occur during proofs, and as a result the
@@ -15917,11 +15908,11 @@
 ; cost of seeing lots of error messages during the proof.  Rather than think
 ; all that through, we reverted to the approach below, which relies on guard
 ; checking (which fails silently during proofs) to enforce the lack of
-; duplicate array indices; see chk-no-stobj-array-index-aliasing.  Note that
-; these checks are skipped in raw Lisp, since raw-Lisp stobj-let does not
-; include them.  But as noted above, we can rely on invariant-risk.
+; duplicate array indices; see chk-no-stobj-index-aliasing.  Note that these
+; checks are skipped in raw Lisp, since raw-Lisp stobj-let does not include
+; them.  But as noted above, we can rely on invariant-risk.
 
-                    (chk-no-stobj-array-index-aliasing
+                    (chk-no-stobj-index-aliasing
                      (list ,@producer-indices)
                      (list ,@other-indices)))
                   (no-duplicate-indices-checks-for-stobj-let-actuals/alist
@@ -16017,8 +16008,8 @@
     (bound-vars exprs creators producer-vars st wrld)
 
 ; This function is called in translate11, to lay down a prog2$ call whose first
-; argument is a call of chk-no-stobj-array-index-aliasing, which is a function
-; whose body is nil but whose guard insists that array indices from stobj-let
+; argument is a call of chk-no-stobj-index-aliasing, which is a function whose
+; body is nil but whose guard insists that array indices from stobj-let
 ; bindings are suitably distinct.
 
   (let ((tuples-lst (absstobj-tuples-lst st wrld)))
@@ -16336,10 +16327,21 @@
                     nil nil nil))
                (t (mv nil parent st-get s2)))))
            (t
-            (mv nil
-                (car (last actual))
-                (car actual)
-                (car (stobjs-out (car actual) wrld)))))
+            (let ((stobj-out (car (stobjs-out (car actual) wrld))))
+              (cond ((eq stobj-out *stobj-table-stobj*)
+                     (mv (msg "The stobj-let binding of variable ~x0 to ~
+                               expression ~x1 is illegal.  Apparently a ~
+                               stobj-table access was intended.  In that case ~
+                               the stobj creator for ~x0 should be called as ~
+                               a third argument of that expression; see :DOC ~
+                               stobj-table."
+                              var actual)
+                         nil nil nil))
+                    (t
+                     (mv nil
+                         (car (last actual))
+                         (car actual)
+                         stobj-out))))))
           (cond
            (msg)
            (t
@@ -16419,7 +16421,7 @@
         ((var actual . updater?)
          (mv-let (st-get stobj0 s2 s2-creator)
            (parse-stobj-let-actual actual)
-           (declare (ignore st-get s2 stobj0))
+           (declare (ignore st-get s2 stobj0 s2-creator))
            (let ((accessor (car actual)))
              (cond
               ((and (null updater?)
@@ -16428,8 +16430,7 @@
               (t (let* ((updater (if updater?
                                      (car updater?)
                                    (stobj-updater-guess-from-accessor
-                                    accessor
-                                    s2-creator)))
+                                    accessor)))
                         (accessor-tail (member-eq accessor lst))
                         (actual-updater (cadr accessor-tail)))
                    (assert$

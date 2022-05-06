@@ -7076,6 +7076,15 @@
             (remhash sym ht))
       (length bad-keys))))
 
+(defmacro stobj-hash-table-test (type)
+  `(cadr ,type))
+
+(defmacro stobj-hash-table-init-size (type)
+  `(caddr ,type))
+
+(defmacro stobj-hash-table-element-type (type)
+  `(or (cadddr ,type) t))
+
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
@@ -7088,11 +7097,13 @@
             (type (access defstobj-field-template field-template :type))
             (init (access defstobj-field-template field-template :init))
             (arrayp (and (consp type) (eq (car type) 'array)))
-            (array-etype0 (and arrayp (cadr type)))
             (hashp (and (consp type) (eq (car type) 'hash-table)))
+            (etype0 (cond (arrayp (cadr type))
+                          (hashp (stobj-hash-table-element-type type))
+                          (t nil)))
             (stobj-tablep (and (consp type) (eq (car type) 'stobj-table)))
             (hash-test (if hashp
-                           (cadr type)
+                           (stobj-hash-table-test type)
                          (and stobj-tablep 'eq)))
             (single-fieldp
 
@@ -7110,8 +7121,10 @@
             (fld (if single-fieldp
                      var
                    `(svref ,var ,n)))
-            (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
-                                              nil))
+            (stobj-creator ; only used in array and hash-table cases
+             (get-stobj-creator (and (or arrayp hashp)
+                                     etype0)
+                                nil))
             (scalar-type ; used only when arrayp = hashp = stobj-tablep = nil
              (if stobj-creator t type))
             (array-etype (and arrayp
@@ -7124,7 +7137,7 @@
 ; having a simple-vector element type declaration.
 
                                   t
-                                array-etype0)))
+                                etype0)))
             (simple-type (and arrayp
                               (simple-array-type array-etype (caddr type))))
             (array-length (and arrayp (car (caddr type))))
@@ -7164,7 +7177,9 @@
                           '(hons-copy k)
                         'k))))
            `((,accessor-name
-              ,@(cond (hashp ; (not stobj-tablep)
+              ,@(cond ((and hashp
+                            (null init)
+                            (not stobj-creator))
                        `((k ,var)
                          ,@(and inline (list *stobj-inline-declare*))
                          (values (gethash ,key (the hash-table ,fld)))))
@@ -7176,7 +7191,15 @@
                          (multiple-value-bind
                           (val boundp)
                           (gethash ,key (the hash-table ,fld))
-                          (if boundp val v))))))
+                          (if boundp
+                              val
+; Keep the following in sync with the accessor?-name case below.
+                            ,(cond (stobj-creator
+                                    (assert$ hashp `(,stobj-creator)))
+                                   (init
+                                    (assert$ hashp `(quote ,init)))
+                                   (t
+                                    (assert$ stobj-tablep 'v)))))))))
              (,updater-name
               (k v ,var)
               ,@(and inline (list *stobj-inline-declare*))
@@ -7193,13 +7216,19 @@
                                    (declare (ignore val))
                                    (if boundp t nil)))
              ,@(and hashp ; skip this for a stobj-table
+; Keep the following in sync with the accessor-name case above.
                     `((,accessor?-name
                        (k ,var)
                        ,@(and inline (list *stobj-inline-declare*))
-                       (multiple-value-bind (val boundp)
-                                            (gethash ,key
-                                                     (the hash-table ,fld))
-                                            (mv val (if boundp t nil))))))
+                       (multiple-value-bind
+                        (val boundp)
+                        (gethash ,key (the hash-table ,fld))
+                        (if boundp
+                            (mv val t)
+                          (mv ,(cond (stobj-creator `(,stobj-creator))
+                                     (init `(quote ,init))
+                                     (t nil))
+                              nil))))))
              (,remove-name
               (k ,var)
               ,@(and inline (list *stobj-inline-declare*))
@@ -7387,12 +7416,16 @@
                             (cadr type)
                           (and stobj-tablep 'eq)))
              (hash-init-size (if hashp
-                                 (caddr type)
+                                 (stobj-hash-table-init-size type)
                                (and stobj-tablep (cadr type))))
              (array-etype0 (and arrayp (cadr type)))
              (array-size (and arrayp (car (caddr type))))
-             (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
-                                               nil))
+             (stobj-creator
+; This variable is used only for initialization.  The initial hash-table is
+; nil, so we don't need the creator for hash-tables.
+              (and (not hashp) ; optimization (see comment above)
+                   (get-stobj-creator (if arrayp array-etype0 type)
+                                      nil)))
              (array-etype (and arrayp
 
 ; See comment for this binding in defstobj-field-fns-raw-defs.
@@ -7618,11 +7651,6 @@
           (type (access defstobj-field-template
                         (car field-templates)
                         :type)))
-
-; Below we simply append the def or defs for this field to those for
-; the rest.  We get two defs for each array field and one def for each
-; of the others.
-
       (cons (cond
              ((and (consp type)
                    (eq (car type) 'array))
@@ -7635,6 +7663,21 @@
                                 (and ,(translate-stobj-type-to-guard
                                        etype '(car x) wrld)
                                      (,recog-name (cdr x)))))))
+             ((and (consp type)
+                   (eq (car type) 'hash-table)
+                   (not (eq (stobj-hash-table-element-type type) t)))
+              `(,recog-name (x)
+                            (declare (xargs :guard t
+                                            :verify-guards t))
+                            (cond
+                             ((atom x) t)
+                             ((consp (car x))
+                              (and ,(translate-stobj-type-to-guard
+                                     (stobj-hash-table-element-type type)
+                                     '(cdar x)
+                                     wrld)
+                                   (,recog-name (cdr x))))
+                             (t (,recog-name (cdr x))))))
              ((and (consp type)
                    (or (eq (car type) 'hash-table)
                        (eq (car type) 'stobj-table)))
