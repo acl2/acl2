@@ -4301,6 +4301,8 @@
               ;;(and stable-under-simplificationp '(:cases (memoizep)))
               ))
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
     ;; Simplify a term and return an equivalent DAG.  Returns (mv erp dag-or-quotep).
     ;; TODO: add support for multiple rule-alists.
     (defund ,simplify-term-name (term
@@ -4468,6 +4470,8 @@
                (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld))))
       :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
     ;; Simplify a term and return a term (not a DAG).  Returns (mv erp term).
     (defund ,simp-term-name (term
                              assumptions
@@ -4518,6 +4522,8 @@
       :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name))
                :in-theory (e/d (,simp-term-name) (,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))))))
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
     ;; Simplify a list of terms, returning a list of the simplified terms
     ;; (not DAGs).  Returns (mv erp terms).
     (defun ,simp-terms-name (terms
@@ -5086,8 +5092,7 @@
                                          monitored-symbols
                                          normalize-xors
                                          memoize
-                                         state ; todo: just take wrld?
-                                         )
+                                         state)
       (declare (xargs :guard (and (symbolp name)
                                   (pseudo-dagp dag)
                                   (< (top-nodenum dag) 2147483646)
@@ -5106,16 +5111,16 @@
            ((mv erp rule-alist) (make-rule-alist rules (w state)))
            ((when erp) (mv erp nil state))
            ((mv erp dag-or-quotep) (,simplify-dag-name dag
-                                                      assumptions
-                                                      interpreted-function-alist
-                                                      limits
-                                                      rule-alist
-                                                      count-hits
-                                                      print
-                                                      known-booleans
-                                                      monitored-symbols
-                                                      normalize-xors
-                                                      memoize))
+                                                       assumptions
+                                                       interpreted-function-alist
+                                                       limits
+                                                       rule-alist
+                                                       count-hits
+                                                       print
+                                                       known-booleans
+                                                       monitored-symbols
+                                                       normalize-xors
+                                                       memoize))
            ((when erp) (mv erp nil state)))
         (mv (erp-nil)
             `(defconst ,name ',dag-or-quotep)

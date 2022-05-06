@@ -236,7 +236,7 @@
 ;; can combine names like *foo-spec-dag* and *foo-java-dag*
 ;; (choose-miter-name '*foo-spec-dag* '*foo-java-dag*)
 ;todo: move up
-(defun choose-miter-name (name quoted-form1 quoted-form2 wrld)
+(defund choose-miter-name (name quoted-form1 quoted-form2 wrld)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))
                   :mode :program ; todo, because of fresh-name-in-world-with-$s
@@ -248,7 +248,7 @@
                                    (starts-and-ends-with-starsp quoted-form2))
                               ;; todo: remove "-dag" from the names here:
                               ;; todo: handle common parts of the names here, like foo in *foo-spec-dag* and *foo-java-dag*:
-                              (pack$ (strip-stars-from-name quoted-form1) '-and-  (strip-stars-from-name quoted-form2))
+                              (pack$ (strip-stars-from-name quoted-form1) '-and- (strip-stars-from-name quoted-form2))
                             ;; Just use a generic default name:
                             'main-miter)
                         ;; not :auto, so use the specified name:
