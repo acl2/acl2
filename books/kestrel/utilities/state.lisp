@@ -112,6 +112,11 @@
            (file-clock-p (file-clock state)))
   :hints (("Goal" :in-theory (enable state-p1))))
 
+(defthm natp-of-file-clock
+  (implies (state-p1 state)
+           (natp (file-clock state)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable state-p1))))
 
 
 
