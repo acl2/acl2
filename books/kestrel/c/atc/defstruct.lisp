@@ -13,7 +13,8 @@
 
 (include-book "abstract-syntax")
 (include-book "structures")
-(include-book "portable-ascii-identifiers")
+
+(include-book "../language/portable-ascii-identifiers")
 
 (include-book "kestrel/fty/pseudo-event-form" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
@@ -375,7 +376,7 @@
                    but the first component of ~x0 is not a symbol."
                   member))
        (name (symbol-name name))
-       ((unless (atc-ident-stringp name))
+       ((unless (ident-stringp name))
         (er-soft+ ctx t nil
                   "Each input after the first one ~
                    must be a doublet (NAME TYPE) of symbols ~
@@ -452,7 +453,7 @@
                    but ~x0 is not."
                   tag))
        (tag-name (symbol-name tag))
-       ((unless (atc-ident-stringp tag-name))
+       ((unless (ident-stringp tag-name))
         (er-soft+ ctx t irrelevant
                   "The name ~x0 of the symbol ~x1 passed as first input, ~
                    which defines the name of the structure, ~
