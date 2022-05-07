@@ -1,7 +1,7 @@
 ; BV Lists Library: definition of packbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,10 +27,13 @@
 ;; are ignored.
 ;todo: make a wrapper that computes the itemcount from the items
 (defund packbv (itemcount itemsize items)
-  (declare (type (integer 0 *) itemsize)
-           (type (integer 0 *) itemcount)
-           (xargs :guard (and (true-listp items)
-                              (all-integerp items))))
+  (declare (xargs :guard (and (natp itemcount)
+                              (natp itemsize)
+                              (true-listp items)
+                              (all-integerp items))
+                  :split-types t)
+           (type (integer 0 *) itemsize)
+           (type (integer 0 *) itemcount))
   (if (zp itemcount)
       0
     (bvcat itemsize
