@@ -37,7 +37,7 @@
     "We define a model of the C standard signed and unsigned integer values,
      except @('_Bool') for now,
      based on their "
-    (xdoc::seetopic "atc-integer-formats" "format definitions")
+    (xdoc::seetopic "integer-formats" "format definitions")
     ". As mentioned there, the definitions of values we give here
      should still work if the format definitions are changed.")
    (xdoc::p
