@@ -4535,11 +4535,6 @@
                                    (frame frame-equiv))
                         dist-names-of-true-list-fix))))
 
-(defthm dist-names-of-ctx-app-lemma-2
-  (equal (names-at fs (nthcdr (len relpath) relpath))
-         (names-at fs nil))
-  :hints (("goal" :in-theory (enable names-at))))
-
 (defthm dist-names-of-ctx-app-lemma-3
   (implies (prefixp (frame-val->path (cdr (car frame)))
                     relpath)

@@ -1791,33 +1791,16 @@
                                                         (frame->frame frame)))))
          path)))
       *enoent*))
-    :instructions
-    ((:in-theory (disable lemma))
-     (:use lemma)
-     :split (:dive 1 2)
-     (:= (frame-val->path (cdr (assoc-equal (car indices)
-                                            (frame->frame frame))))
-         (frame-val->path
-          (cdr (assoc-equal (car indices)
-                            (frame->frame (partial-collapse frame path))))))
-     (:claim
-      (and
-       (consp (assoc-equal (car indices)
-                           (frame->frame (partial-collapse frame path))))
-       (equal
-        (mv-nth 1
-                (abs-find-file (frame->frame (partial-collapse frame path))
-                               path))
-        2)
-       (prefixp
-        (frame-val->path
-         (cdr (assoc-equal (car indices)
-                           (frame->frame (partial-collapse frame path)))))
-        (fat32-filename-list-fix path)))
-      :hints :none)
-     (:rewrite abs-find-file-correctness-lemma-14)
-     :top
-     :bash :bash)))
+    :hints
+    (("goal"
+      :do-not-induct t
+      :in-theory (disable (:rewrite abs-find-file-correctness-lemma-12)
+                          lemma)
+      :use
+      (lemma (:instance (:rewrite abs-find-file-correctness-lemma-12)
+                        (path path)
+                        (frame (frame->frame (partial-collapse frame path)))
+                        (x (car indices))))))))
 
 (defthm path-clear-partial-collapse-when-zp-src-lemma-15
   (implies (and (consp path)
