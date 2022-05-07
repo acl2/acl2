@@ -2236,7 +2236,9 @@
                     0))
     :hints (("goal" :do-not-induct t
              :in-theory (enable assoc-of-frame->frame)
-             :use (:instance lemma-2)))))
+             :use (:instance lemma-2)))
+    :rule-classes
+    (:rewrite :forward-chaining)))
 
 (defthm
   path-clear-partial-collapse-lemma-3
