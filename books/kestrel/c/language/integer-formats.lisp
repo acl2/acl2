@@ -42,7 +42,10 @@
      [C:5.2.4.2.1/1] [C:6.2.6.1/3],
      so we introduce a nullary function for the number of bits in a byte,
      i.e. in a @('char') (unsigned, signed, or plain).
-     We define it to be 8 for now, because that is the most frequent case.")
+     We define it to be 8 for now, because that is the most frequent case.
+     A step towards generalizing this is in @(see bytes),
+     which we plan to use for a future more general version of
+     our formalization of the integer formats.")
    (xdoc::p
     "We also introduce nullary functions for the number of bits that form
      (signed and unsigned)
