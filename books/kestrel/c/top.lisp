@@ -46,4 +46,5 @@
      These square-bracketed references may be used
      as nouns or parenthetically."))
   :order-subtopics (language
-                    atc))
+                    atc
+                    pack))
