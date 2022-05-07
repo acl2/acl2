@@ -11,8 +11,9 @@
 
 (in-package "C")
 
-(include-book "integer-formats")
 (include-book "types")
+
+(include-book "../language/integer-formats")
 
 (include-book "kestrel/fty/defbyte" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
