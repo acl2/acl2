@@ -2380,15 +2380,13 @@
     (implies
      (and
       (not
-       (equal
-        (nthcdr (len relpath)
-                (frame-val->path (cdr (assoc-equal (car l)
-                                                   (frame->frame frame)))))
-        (nthcdr (len relpath)
-                (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))))
-      (prefixp (frame-val->path (cdr (assoc-equal (car l)
-                                                  (frame->frame frame))))
-               (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
+       (fat32-filename-list-equiv
+        (frame-val->path (cdr (assoc-equal (car l)
+                                           (frame->frame frame))))
+        (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))
+      (fat32-filename-list-prefixp (frame-val->path (cdr (assoc-equal (car l)
+                                                                      (frame->frame frame))))
+                                   (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
       (not
        (member-equal
         (nth (len (frame-val->path (cdr (assoc-equal (car l)
@@ -2401,9 +2399,9 @@
          (nthcdr (len relpath)
                  (frame-val->path (cdr (assoc-equal (car l)
                                                     (frame->frame frame))))))))
-      (prefixp relpath
-               (frame-val->path (cdr (assoc-equal (car l)
-                                                  (frame->frame frame))))))
+      (fat32-filename-list-prefixp relpath
+                                   (frame-val->path (cdr (assoc-equal (car l)
+                                                                      (frame->frame frame))))))
      (equal
       (names-at
        (mv-nth 0
@@ -2468,22 +2466,20 @@
        (nthcdr (len relpath)
                (frame-val->path (cdr (assoc-equal (car l)
                                                   (frame->frame frame))))))
-      (prefixp relpath
-               (frame-val->path (cdr (assoc-equal (car l)
-                                                  (frame->frame frame)))))
+      (fat32-filename-list-prefixp relpath
+                                   (frame-val->path (cdr (assoc-equal (car l)
+                                                                      (frame->frame frame)))))
       (no-duplicatesp-equal (strip-cars (frame->frame frame)))
       (frame-p (frame->frame frame))
       (mv-nth 1 (collapse frame))
       (not
-       (equal
-        (nthcdr (len relpath)
-                (frame-val->path (cdr (assoc-equal (car l)
-                                                   (frame->frame frame)))))
-        (nthcdr (len relpath)
-                (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))))
-      (prefixp (frame-val->path (cdr (assoc-equal (car l)
-                                                  (frame->frame frame))))
-               (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
+       (fat32-filename-list-equiv
+        (frame-val->path (cdr (assoc-equal (car l)
+                                           (frame->frame frame))))
+        (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))
+      (fat32-filename-list-prefixp (frame-val->path (cdr (assoc-equal (car l)
+                                                                      (frame->frame frame))))
+                                   (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
       (not
        (member-equal
         (nth (len (frame-val->path (cdr (assoc-equal (car l)
@@ -2542,15 +2538,13 @@
     (implies
      (and
       (not
-       (equal
-        (nthcdr (len relpath)
-                (frame-val->path (cdr (assoc-equal (car l)
-                                                   (frame->frame frame)))))
-        (nthcdr (len relpath)
-                (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))))
-      (prefixp (frame-val->path (cdr (assoc-equal x (frame->frame frame))))
-               (frame-val->path (cdr (assoc-equal (car l)
-                                                  (frame->frame frame)))))
+       (fat32-filename-list-equiv
+        (frame-val->path (cdr (assoc-equal (car l)
+                                           (frame->frame frame))))
+        (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))
+      (fat32-filename-list-prefixp (frame-val->path (cdr (assoc-equal x (frame->frame frame))))
+                                   (frame-val->path (cdr (assoc-equal (car l)
+                                                                      (frame->frame frame)))))
       (<=
        0
        (+ (- (len relpath))
@@ -2641,16 +2635,14 @@
          (nthcdr (len relpath)
                  (frame-val->path (cdr (assoc-equal (car l)
                                                     (frame->frame frame))))))))
-      (prefixp relpath
-               (frame-val->path (cdr (assoc-equal (car l)
-                                                  (frame->frame frame)))))
+      (fat32-filename-list-prefixp relpath
+                                   (frame-val->path (cdr (assoc-equal (car l)
+                                                                      (frame->frame frame)))))
       (not
-       (equal
-        (nthcdr (len relpath)
-                (frame-val->path (cdr (assoc-equal (car l)
-                                                   (frame->frame frame)))))
-        (nthcdr (len relpath)
-                (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))))
+       (fat32-filename-list-equiv
+        (frame-val->path (cdr (assoc-equal (car l)
+                                           (frame->frame frame))))
+        (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))
       (not
        (intersectp-equal
         (names-at (final-val x frame) nil)
@@ -2661,8 +2653,8 @@
          (nthcdr
           (len relpath)
           (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))))
-      (prefixp relpath
-               (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))
+      (fat32-filename-list-prefixp relpath
+                                   (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))
      (not
       (intersectp-equal
        (names-at (final-val (car l) frame) nil)
@@ -2675,8 +2667,7 @@
     :hints
     (("goal"
       :in-theory
-      (e/d (fat32-filename-list-equiv$inline fat32-filename-list-prefixp-alt)
-           ((:rewrite names-at-of-ctx-app) collapse-hifat-place-file-lemma-113))
+      (disable (:rewrite names-at-of-ctx-app))
       :use
       (:instance
        (:rewrite names-at-of-ctx-app)
@@ -2720,8 +2711,10 @@
          (nthcdr
           (len relpath)
           (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))))
-      (prefixp relpath
-               (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))
+      (fat32-filename-list-prefixp
+       relpath
+       (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
+      (fat32-filename-list-p (true-list-fix relpath)))
      (and
       (absfat-equiv
        (ctx-app
@@ -2745,9 +2738,7 @@
     :hints
     (("goal"
       :in-theory
-      (e/d (ctx-app-list intersectp-equal
-                         fat32-filename-list-prefixp-alt
-                         fat32-filename-list-equiv)
+      (e/d (ctx-app-list intersectp-equal)
            ((:rewrite nthcdr-when->=-n-len-l)
             (:rewrite partial-collapse-correctness-lemma-2)
             (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
@@ -2759,8 +2750,7 @@
             (:rewrite nat-listp-if-fat32-masked-entry-list-p)
             (:linear position-when-member)
             (:linear position-equal-ac-when-member)
-            (:rewrite ctx-app-list-when-set-equiv-lemma-7)
-            collapse-hifat-place-file-lemma-113))))))
+            (:rewrite ctx-app-list-when-set-equiv-lemma-7)))))))
 
 (encapsulate
   ()
@@ -8093,11 +8083,11 @@
     :hints
     (("goal"
       :in-theory
-      (e/d (fat32-filename-list-prefixp-alt fat32-filename-list-equiv)
-           (prefixp-nthcdr-nthcdr collapse-hifat-place-file-lemma-113))
+      (e/d (fat32-filename-list-equiv)
+           (fat32-filename-list-prefixp-nthcdr-nthcdr))
       :use
       ((:instance
-        prefixp-nthcdr-nthcdr
+        fat32-filename-list-prefixp-nthcdr-nthcdr
         (n
          (len
           (frame-val->path
@@ -8109,7 +8099,7 @@
                                                (frame->frame frame)))))
         (l2 (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))
        (:instance
-        prefixp-nthcdr-nthcdr
+        fat32-filename-list-prefixp-nthcdr-nthcdr
         (n
          (len
           (frame-val->path

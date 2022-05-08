@@ -1331,7 +1331,7 @@
        (tag (defstruct-info->tag info))
        (members (defstruct-info->members info))
        (member (symbol-name member))
-       ((unless (atc-ident-stringp member)) (no))
+       ((unless (ident-stringp member)) (no))
        (member (ident member))
        (meminfo (member-type-lookup member members))
        ((unless meminfo) (no))
@@ -1400,7 +1400,7 @@
        (members (defstruct-info->members info))
        (tag (defstruct-info->tag info))
        (member (symbol-name member))
-       ((unless (atc-ident-stringp member)) (no))
+       ((unless (ident-stringp member)) (no))
        (member (ident member))
        (meminfo (member-type-lookup member members))
        ((unless meminfo) (no))
@@ -2712,7 +2712,7 @@
                               "The variable ~x0 in the function ~x1 ~
                                is already in scope and cannot be re-declared."
                               var fn))
-                   ((unless (atc-ident-stringp (symbol-name var)))
+                   ((unless (ident-stringp (symbol-name var)))
                     (er-soft+ ctx t irr
                               "The symbol name ~s0 of ~
                                the MV-LET variable ~x1 of the function ~x2 ~
@@ -3079,7 +3079,7 @@
                               "The variable ~x0 in the function ~x1 ~
                                is already in scope and cannot be re-declared."
                               var fn))
-                   ((unless (atc-ident-stringp (symbol-name var)))
+                   ((unless (ident-stringp (symbol-name var)))
                     (er-soft+ ctx t irr
                               "The symbol name ~s0 of ~
                                the LET variable ~x1 of the function ~x2 ~
@@ -3776,7 +3776,7 @@
             (info (defstruct-table-lookup tag wrld))
             ((unless info) nil)
             ((unless (eq recognizer (defstruct-info->recognizer info))) nil)
-            ((unless (atc-ident-stringp tag))
+            ((unless (ident-stringp tag))
              (raise "Internal error: tag ~x0 not valid identifier." tag)))
          (type-pointer (type-struct (ident tag)))))))
 
@@ -3940,7 +3940,7 @@
   (b* (((when (endp typed-formals)) (acl2::value nil))
        ((cons formal type) (car typed-formals))
        (name (symbol-name formal))
-       ((unless (atc-ident-stringp name))
+       ((unless (ident-stringp name))
         (er-soft+ ctx t nil
                   "The symbol name ~s0 of ~
                    the formal parameter ~x1 of the function ~x2 ~
@@ -5094,7 +5094,7 @@
      in the @(':compound') case,
      and then we use the limit for the block."))
   (b* ((name (symbol-name fn))
-       ((unless (atc-ident-stringp name))
+       ((unless (ident-stringp name))
         (er-soft+ ctx t nil
                   "The symbol name ~s0 of the function ~x1 ~
                    must be a portable ASCII C identifier, but it is not."

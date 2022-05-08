@@ -879,40 +879,13 @@
     must consist of ASCII characters.")
 
   (xdoc::p
-   "[C:6.4.2] allows the following characters in identifiers:")
-  (xdoc::ol
-   (xdoc::li
-    "The ten numeric digits (but not in the starting position).
-     These are ASCII characters, under the above assumption.")
-   (xdoc::li
-    "The 26 uppercase Latin letters,
-     the 26 lowercase Latin letter,
-     and the underscore.
-     These are ASCII characters, under the above assumption.")
-   (xdoc::li
-    "Some ranges of universal characters
-     (some of which cannot occur in the starting position).
-     These are Unicode characters that are not ASCII,
-     because their codes are above 127.")
-   (xdoc::li
-    "Other implementation-defined characters.
-     These may or may not be ASCII;
-     no constraints in that sense are imposed by [C].
-     More importantly, these characters are not portable,
-     because different implementations may make different choices."))
-  (xdoc::p
-   "While (1) and (2) are both ASCII and portable,
-    (3) is not ASCII, and (4) is not portable.
-    Thus, we call a `portable ASCII identifier'
-    a C identifier that consists only of 1 and 2 above.
-    This is the term used in "
+   "ATC generates C code with portable ASCII identifiers,
+    i.e. identifiers that are both ASCII and portable.
+    This notion is described and motivated in @(see portable-ascii-identifiers).
+    It is also stated in Section `Portable ASCII C Identifiers' of "
    (xdoc::seetopic "atc" "the ATC reference documentation")
-   ", in Section `Portable ASCII C Identifiers'.")
-
-  (xdoc::p
-   "ATC generates C code with portable ASCII identifiers.
-    These are represented, in ACL2, by symbols whose @(tsee symbol-name)s
-    are exactly the C identifiers.
+   ". Portable ASCII identifiers are represented, in ACL2,
+    by symbols whose @(tsee symbol-name)s are exactly the C identifiers.
     Since, as mentioned above, ACL2 characters are a superset of ASCII,
     any portable ASCII C identifier may be represented by some ACL2 symbol.
     The @(tsee symbol-package-name)s are ignored for this purpose:
@@ -1088,7 +1061,7 @@
     the AST of the generated C program.
     More precisely, it is the AST of the generated translation unit,
     which is a value of the fixtype @(tsee transunit) in "
-   (xdoc::seetopic "atc-abstract-syntax" "ATC's abstract syntax of C")
+   (xdoc::seetopic "abstract-syntax" "the abstract syntax of C")
    ". The translation unit is the content of the generated file:
     the AST is "
    (xdoc::seetopic "atc-pretty-printer" "pretty-printed")

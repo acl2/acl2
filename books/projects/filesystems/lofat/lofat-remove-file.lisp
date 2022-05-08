@@ -1295,7 +1295,7 @@
 ;; It looks like this theorem needs to have its hypothesis about
 ;; (mv-nth 3 (lofat-to-hifat-helper ...)) because it relies on
 ;; get-cc-contents-of-lofat-remove-file-coincident-lemma-5.
-(defthm
+(defthmd
   lofat-to-hifat-helper-of-lofat-remove-file-disjoint
   (implies
    (and
@@ -3809,7 +3809,8 @@
       :in-theory
       (e/d
        (stobj-disjoins-list lofat-to-hifat-helper-correctness-4
-                            not-intersectp-list)
+                            not-intersectp-list
+                            lofat-to-hifat-helper-of-lofat-remove-file-disjoint)
        ((:rewrite lofat-remove-file-correctness-lemma-25)
         (:linear nth-when-d-e-p)
         (:definition member-intersectp-equal)
@@ -4172,7 +4173,8 @@
       :do-not-induct t
       :in-theory
       (e/d
-       (stobj-disjoins-list lofat-to-hifat-helper-correctness-4)
+       (stobj-disjoins-list lofat-to-hifat-helper-correctness-4
+                            lofat-to-hifat-helper-of-lofat-remove-file-disjoint)
        ((:rewrite lofat-remove-file-correctness-lemma-25)
         (:rewrite d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-2))))))
 
@@ -4922,7 +4924,11 @@
                  . 1)
        (:rewrite member-intersectp-is-commutative)
        (:linear nth-when-d-e-p)
-       (:rewrite lofat-place-file-correctness-lemma-83)))
+       (:rewrite lofat-place-file-correctness-lemma-83)
+       lofat-place-file-correctness-lemma-59
+       remove-assoc-when-absent-1
+       lofat-find-file-correctness-lemma-1
+       lofat-place-file-correctness-lemma-83))
      (if (not stable-under-simplificationp)
          nil
        '(:do-not-induct t

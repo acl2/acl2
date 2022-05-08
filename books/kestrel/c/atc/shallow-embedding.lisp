@@ -29,7 +29,7 @@
      which ATC recognizes and translates to C,
      constitutes a shallow embedding of C in ACL2.
      In contrast, the "
-    (xdoc::seetopic "atc-abstract-syntax" "abstract syntax")
+    (xdoc::seetopic "abstract-syntax" "abstract syntax")
     ", "
     (xdoc::seetopic "atc-static-semantics" "static semantics")
     ", and "

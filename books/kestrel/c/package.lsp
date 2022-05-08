@@ -117,6 +117,7 @@
                packn
                packn-pos
                pos-listp
+               pos-option
                pseudo-event-form-listp
                pseudo-event-formp
                pseudo-event-form

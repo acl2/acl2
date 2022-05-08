@@ -120,7 +120,9 @@
                   (:rewrite effective-fat-of-clear-cc . 3)
                   (:rewrite d-e-cc-of-update-dir-contents)
                   (:rewrite d-e-cc-contents-of-update-dir-contents-disjoint)
-                  (:rewrite natp-of-car-when-nat-listp)))))
+                  (:rewrite natp-of-car-when-nat-listp)
+                  (:rewrite subsetp-when-subsetp)
+                  (:rewrite subsetp-of-append-when-subset-of-either)))))
 
 (local
  (defthm
@@ -11218,7 +11220,11 @@
     :hints
     (("goal"
       :in-theory (e/d (not-intersectp-list hifat-entry-count
-                                           lofat-to-hifat-helper-correctness-4))
+                                           lofat-to-hifat-helper-correctness-4)
+                      ((:rewrite lofat-place-file-correctness-lemma-52)
+                       (:rewrite
+                        lofat-to-hifat-helper-of-lofat-place-file-disjoint)
+                       (:rewrite member-intersectp-is-commutative)))
       :do-not-induct t
       :induct (induction-scheme d-e-list entry-limit fat32$c x)
       :expand ((:free (fat32$c entry-limit)
@@ -11233,7 +11239,11 @@
          ()
        '(:in-theory (e/d (not-intersectp-list hifat-entry-count
                                               lofat-to-hifat-helper-correctness-4
-                                              lofat-place-file-spec-1 find-d-e)))))
+                                              lofat-place-file-spec-1 find-d-e)
+                         ((:rewrite lofat-place-file-correctness-lemma-52)
+                          (:rewrite
+                           lofat-to-hifat-helper-of-lofat-place-file-disjoint)
+                          (:rewrite member-intersectp-is-commutative))))))
     :rule-classes
     ((:rewrite
       :corollary

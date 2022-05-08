@@ -578,7 +578,8 @@
               :ullong (type-ullong)
               :sllong (type-sllong)
               :pointer (type-pointer val.reftype)
-              :array (type-array val.elemtype)
+              :array (make-type-array :of val.elemtype
+                                      :size nil) ; for now
               :struct (type-struct val.tag))
   :hooks (:fix)
   ///
@@ -597,8 +598,9 @@
                    ((ullongp val) (type-ullong))
                    ((sllongp val) (type-sllong))
                    ((pointerp val) (type-pointer (pointer->reftype val)))
-                   ((value-case val :array) (type-array
-                                             (value-array->elemtype val)))
+                   ((value-case val :array) (make-type-array
+                                             :of (value-array->elemtype val)
+                                             :size nil))
                    ((value-case val :struct) (type-struct
                                               (value-struct->tag val)))
                    (t (prog2$ (impossible) (irr-type))))))
@@ -620,7 +622,8 @@
                              ((pointerp val)
                               (type-pointer (pointer->reftype val)))
                              ((value-case val :array)
-                              (type-array (value-array->elemtype val)))
+                              (make-type-array :of (value-array->elemtype val)
+                                               :size nil))
                              ((value-case val :struct)
                               (type-struct (value-struct->tag val)))
                              (t (prog2$ (impossible) (irr-type))))))
