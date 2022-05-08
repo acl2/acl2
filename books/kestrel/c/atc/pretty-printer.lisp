@@ -11,8 +11,9 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax")
 (include-book "pretty-printing-options")
+
+(include-book "../language/abstract-syntax")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
@@ -339,8 +340,16 @@
    :pointer (msg "*~@0" (pprint-obj-declor declor.to))
    :array (b* ((sub (pprint-obj-declor declor.of)))
             (if (obj-declor-case declor.of :pointer)
-                (msg "(~@0)[]" sub)
-              (msg "~@0[]" sub))))
+                (msg "(~@0)[~@1]"
+                     sub
+                     (if declor.size
+                         (pprint-iconst declor.size)
+                       ""))
+              (msg "~@0[~@1]"
+                   sub
+                   (if declor.size
+                       (pprint-iconst declor.size)
+                     "")))))
   :measure (obj-declor-count declor)
   :hooks (:fix))
 
@@ -363,8 +372,16 @@
    :pointer (msg "*~@0" (pprint-obj-adeclor declor.to))
    :array (b* ((sub (pprint-obj-adeclor declor.of)))
             (if (obj-adeclor-case declor.of :array)
-                (msg "(~@0)[]" sub)
-              (msg "~@0[]" sub))))
+                (msg "(~@0)[~@1]"
+                     sub
+                     (if declor.size
+                         (pprint-iconst declor.size)
+                       ""))
+              (msg "~@0[~@1]"
+                   sub
+                   (if declor.size
+                       (pprint-iconst declor.size)
+                     "")))))
   :measure (obj-adeclor-count declor)
   :hooks (:fix))
 

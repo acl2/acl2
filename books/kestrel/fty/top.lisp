@@ -59,6 +59,7 @@
 (include-book "nibble")
 (include-book "nibble-list")
 (include-book "pos-list")
+(include-book "pos-option")
 (include-book "pseudo-event-form")
 (include-book "set")
 (include-book "string-list-result")

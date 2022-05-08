@@ -11,12 +11,13 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax-operations")
-(include-book "portable-ascii-identifiers")
 (include-book "integers")
-(include-book "types")
-(include-book "errors")
 (include-book "tag-environments")
+
+(include-book "../language/abstract-syntax-operations")
+(include-book "../language/portable-ascii-identifiers")
+(include-book "../language/types")
+(include-book "../language/errors")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
@@ -303,7 +304,7 @@
    (xdoc::p
     "We check whether the underlying ACL2 string satisfies the conditions
      described in Section `Portable ASCII C identifiers' of @(tsee atc)."))
-  (if (atc-ident-stringp (ident->name id))
+  (if (ident-stringp (ident->name id))
       :wellformed
     (error (list :illegal/unsupported-ident (ident-fix id))))
   :hooks (:fix))

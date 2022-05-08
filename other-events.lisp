@@ -7886,16 +7886,21 @@
                            (not (package-entry-hidden-p a2-entry)))))
                 (known-package-alist-included-p (cdr a1) a2)))))
 
-(defun encapsulate-fix-known-package-alist (pass1-k-p-alist wrld)
+(defun encapsulate-fix-known-package-alist (pass1-k-p-alist pass2-k-p-alist
+                                                            wrld)
 
 ; Pass1-k-p-alist is the known-package-alist from the end of the first pass of
 ; an encapsulate, and we are now at the end of the second pass in the given
-; world, wrld.  The known-package-alist of wrld may be missing some
-; package-entries from pass1-k-p-alist because of defpkg events that were only
-; executed under locally included books in the first pass.  We return the
-; result of setting the known-package-alist of the given world by marking each
-; package-entry in pass1-k-p-alist that is missing in the current world's
-; known-package-alist with hidden-p equal to t.
+; world, wrld, where the known-package-alist is pass2-k-p-alist.  The latter
+; may be missing some package-entries from the former because of defpkg events
+; that were only executed under locally included books in the first pass.  We
+; return the result of setting the known-package-alist of the given world by
+; marking each package-entry in pass1-k-p-alist that is missing in the current
+; world's known-package-alist with hidden-p equal to t.
+
+; We only call this function when pass1-k-p-alist does not equal
+; pass2-k-p-alist.  We don't rely on that, but this assumption explains why we
+; don't optimize here by checking for equality.
 
 ; The call of known-package-alist-included-p below checks that the second pass
 ; does not introduce any packages beyond those introduced in the first pass,
@@ -7911,15 +7916,11 @@
 ; local events are all skipped and include-books are all local.  However, we do
 ; not rely on this belief.
 
-  (let ((pass2-k-p-alist (global-val 'known-package-alist wrld)))
-    (cond ((equal pass1-k-p-alist pass2-k-p-alist) ; optimize for a common case
-           wrld)
-          (t (assert$
-              (known-package-alist-included-p pass2-k-p-alist pass1-k-p-alist)
-              (global-set 'known-package-alist
-                          (mark-missing-as-hidden-p pass1-k-p-alist
-                                                    pass2-k-p-alist)
-                          wrld))))))
+  (assert$
+   (known-package-alist-included-p pass2-k-p-alist pass1-k-p-alist)
+   (global-set 'known-package-alist
+               (mark-missing-as-hidden-p pass1-k-p-alist pass2-k-p-alist)
+               wrld)))
 
 (defun subst-by-position1 (alist lst index acc)
 
@@ -8673,7 +8674,7 @@
                          (er-progn
                           (chk-acceptable-encapsulate2 insigs kwd-value-list-lst
                                                        wrld2 ctx state)
-                          (let* ((pass1-known-package-alist
+                          (let* ((pass1-kpa
                                   (global-val 'known-package-alist wrld2))
                                  (new-ev-lst
                                   (subst-by-position expansion-alist ev-lst 0))
@@ -8719,7 +8720,12 @@
                                            saved-proved-functional-instances-alist
                                            post-pass-1-proved-functional-instances-alist
                                            wrld3
-                                           nil))))
+                                           nil)))
+                                        (pass2-kpa
+                                         (global-val 'known-package-alist
+                                                     wrld3))
+                                        (eq-pass12-kpa
+                                         (equal pass1-kpa pass2-kpa)))
                                    (pprogn
                                     (print-encapsulate-msg3
                                      ctx insigs new-ev-lst exports
@@ -8748,9 +8754,11 @@
                                        nil nil
                                        t
                                        ctx
-                                       (let* ((wrld4 (encapsulate-fix-known-package-alist
-                                                      pass1-known-package-alist
-                                                      wrld3a))
+                                       (let* ((wrld4
+                                               (if eq-pass12-kpa
+                                                   wrld3a
+                                                 (encapsulate-fix-known-package-alist
+                                                  pass1-kpa pass2-kpa wrld3a)))
                                               (wrld5 (global-set?
                                                       'ttags-seen
                                                       post-pass-1-ttags-seen
@@ -8791,6 +8799,7 @@
                                                        wrld3)))
                                               (wrld10
                                                (if (and post-pass-1-cert-replay
+                                                        (not eq-pass12-kpa)
                                                         (not (global-val
                                                               'cert-replay
                                                               wrld3)))
@@ -8800,13 +8809,12 @@
 ; incompatibility check using include-book.  At one time we think we only
 ; intended to set cert-replay when locally including books, and we didn't set
 ; it here.  That led to a bug in handling hidden defpkg events: see the Essay
-; on Hidden Packages for relevant background, and see community books directory
-; misc/hidden-defpkg-checks/ for an example of a soundness bug in Version_7.1,
-; which is fixed by the global-set of 'cert-replay just below.
-
-; Perhaps we could take care of this in encapsulate-fix-known-package-alist,
-; which is called above; but the present approach, relying on the values of
-; 'cert-replay at various stages, seems most direct.
+; on Hidden Packages for relevant background, and see community books
+; directory misc/hidden-defpkg-checks/ for an example of a soundness bug
+; related to hidden defpkg events.  Notice though that there is no concern if
+; eq-pass12-kpa holds, i.e., if the known-package-alist is the same after the
+; first pass as after the second pass (i.e., no packages have become hidden or
+; disappeared with the second pass).
 
                                                    (global-set 'cert-replay t
                                                                wrld9)

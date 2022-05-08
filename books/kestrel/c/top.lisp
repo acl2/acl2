@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -45,4 +45,6 @@
      e.g. `[C:6.2.5/2]' references Paragraph 2 of Section 6.2.5.
      These square-bracketed references may be used
      as nouns or parenthetically."))
-  :order-subtopics t)
+  :order-subtopics (language
+                    atc
+                    pack))

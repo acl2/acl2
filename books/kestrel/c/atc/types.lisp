@@ -11,8 +11,8 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax-operations")
-(include-book "errors")
+(include-book "../language/types")
+(include-book "../language/abstract-syntax-operations")
 
 (include-book "std/util/defval" :dir :system)
 
@@ -20,98 +20,15 @@
 
 (defxdoc+ atc-types
   :parents (atc-implementation)
-  :short "A model of C types for ATC."
+  :short "C types for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Here we define the semantic notion of type,
-     which is related to, but distinct from,
-     the syntactic notion of type name [C:6.7.7].
-     Specifically, different type names may denote the same type,
-     if they use syntactically different but equivalent type specifier sequences
-     (e.g. @('int') and @('signed int'))."))
+    "ATC uses the "
+    (xdoc::seetopic "types" "model of C types")
+    " from the language formalization for various purposes."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum type
-  :short "Fixtype of types [C:6.2.5]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We model a subset of the types denoted by
-     the type names that we currently model;
-     see @(tsee tyspecseq), @(tsee obj-adeclor), and @(tsee tyname).
-     In essence, this fixtype combines
-     a subset of the cases of @(tsee tyspecseq)
-     (abstracting away the flags that model different syntactic variants),
-     with the recursive structure of @(tsee obj-adeclor)."))
-  (:void ())
-  (:char ())
-  (:schar ())
-  (:uchar ())
-  (:sshort ())
-  (:ushort ())
-  (:sint ())
-  (:uint ())
-  (:slong ())
-  (:ulong ())
-  (:sllong ())
-  (:ullong ())
-  (:struct ((tag ident)))
-  (:pointer ((to type)))
-  (:array ((of type)))
-  :pred typep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist type-list
-  :short "Fixtype of lists of types."
-  :elt-type type
-  :true-listp t
-  :elementp-of-nil nil
-  :pred type-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defset type-set
-  :short "Fixtype of osets of types."
-  :elt-type type
-  :elementp-of-nil nil
-  :pred type-setp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption type-option
-  type
-  :short "Fixtype of optional types."
-  :pred type-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist type-option-list
-  :short "Fixtype of lists of optional types."
-  :elt-type type-option
-  :true-listp t
-  :elementp-of-nil t
-  :pred type-option-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defset type-option-set
-  :short "Fixtype of sets of optional types."
-  :elt-type type-option
-  :elementp-of-nil t
-  :pred type-option-setp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult type "types")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult type-list "lists of types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -125,70 +42,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-signed-integerp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a signed integer type [C:6.2.5/4]."
-  (and (member-eq (type-kind type)
-                  '(:schar :sshort :sint :slong :sllong))
-       t)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-unsigned-integerp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is an unsigned integer type [C:6.2.5/6]."
-  (and (member-eq (type-kind type)
-                  '(:uchar :ushort :uint :ulong :ullong))
-       t)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-integerp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is an integer type [C:6.2.5/17]."
-  (or (type-case type :char)
-      (type-signed-integerp type)
-      (type-unsigned-integerp type))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist type-integer-listp (x)
-  :guard (type-listp x)
-  (type-integerp x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-realp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a real type [C:6.2.5/18]."
-  (type-integerp type)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-arithmeticp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is an arithmetic type [C:6.2.5/18]."
-  (type-realp type)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-scalarp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a scalar type [C:6.2.5/21]."
-  (or (type-arithmeticp type)
-      (type-case type :pointer))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define type-to-maker ((type typep))
   :returns (term "A term.")
   :short "Turn a type into a term that makes (evaluates to) it."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is somewhat meta."))
   (type-case
    type
    :void '(type-void)
@@ -204,107 +64,11 @@
    :sllong '(type-sllong)
    :ullong '(type-ullong)
    :struct `(type-struct (ident ,(ident->name (type-struct->tag type))))
-   :pointer `(type-pointer ,(type-to-maker (type-pointer->to type)))
-   :array `(type-array ,(type-to-maker (type-array->of type))))
+   :pointer `(make-type-pointer :to ,(type-to-maker (type-pointer->to type)))
+   :array `(make-type-array :of ,(type-to-maker (type-array->of type))
+                            :size ,(type-array->size type)))
   :measure (type-count type)
   :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define tyspecseq-to-type ((tyspec tyspecseqp))
-  :returns (type typep)
-  :short "Turn a type specifier sequence into a type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is a subroutine of @(tsee tyname-to-type).
-     A type specifier sequence already denotes a type (of certain kinds);
-     but in general it is type names that denote types (of all kidns)."))
-  (tyspecseq-case tyspec
-                  :void (type-void)
-                  :char (type-char)
-                  :schar (type-schar)
-                  :uchar (type-uchar)
-                  :sshort (type-sshort)
-                  :ushort (type-ushort)
-                  :sint (type-sint)
-                  :uint (type-uint)
-                  :slong (type-slong)
-                  :ulong (type-ulong)
-                  :sllong (type-sllong)
-                  :ullong (type-ullong)
-                  :bool (prog2$
-                         (raise "Internal error: ~
-                                            _Bool not supported yet.")
-                         (irr-type))
-                  :float (prog2$
-                          (raise "Internal error: ~
-                                             float not supported yet.")
-                          (irr-type))
-                  :double (prog2$
-                           (raise "Internal error: ~
-                                              double not supported yet.")
-                           (irr-type))
-                  :ldouble (prog2$
-                            (raise "Internal error: ~
-                                               long double not supported yet.")
-                            (irr-type))
-                  :struct (type-struct tyspec.tag)
-                  :union (prog2$
-                          (raise "Internal error: ~
-                                             union ~x0 not supported yet."
-                                 tyspec.tag)
-                          (irr-type))
-                  :enum (prog2$
-                         (raise "Internal error: ~
-                                            enum ~x0 not supported yet."
-                                tyspec.tag)
-                         (irr-type))
-                  :typedef (prog2$
-                            (raise "Internal error: ~
-                                               typedef ~x0 not supported yet."
-                                   tyspec.name)
-                            (irr-type)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define tyname-to-type ((tyname tynamep))
-  :returns (type typep)
-  :short "Turn a type name into a type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A type name denotes a type [C:6.7.7/2].
-     This ACL2 function returns the denoted type.
-     As mentioned in @(tsee type),
-     a semantic type is an abstraction of a type name:
-     this function reifies that abstraction."))
-  (tyname-to-type-aux (tyname->tyspec tyname)
-                      (tyname->declor tyname))
-  :hooks (:fix)
-
-  :prepwork
-  ((define tyname-to-type-aux ((tyspec tyspecseqp) (declor obj-adeclorp))
-     :returns (type typep)
-     :parents nil
-     (obj-adeclor-case
-      declor
-      :none (tyspecseq-to-type tyspec)
-      :pointer (type-pointer (tyname-to-type-aux tyspec declor.to))
-      :array (type-array (tyname-to-type-aux tyspec declor.of)))
-     :measure (obj-adeclor-count declor)
-     :verify-guards :after-returns
-     :hooks (:fix))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection type-name-list-to-type-list ((x tyname-listp))
-  :result-type type-listp
-  :short "Lift @(tsee tyname-to-type) to lists."
-  (tyname-to-type x)
-  ///
-  (fty::deffixequiv type-name-list-to-type-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -340,9 +104,10 @@
       :ullong (mv (tyspecseq-ullong nil) (obj-adeclor-none))
       :struct (mv (tyspecseq-struct type.tag) (obj-adeclor-none))
       :pointer (b* (((mv tyspec declor) (type-to-tyname-aux type.to)))
-                 (mv tyspec (obj-adeclor-pointer declor)))
+                 (mv tyspec (make-obj-adeclor-pointer :to declor)))
       :array (b* (((mv tyspec declor) (type-to-tyname-aux type.of)))
-               (mv tyspec (obj-adeclor-array declor))))
+               (mv tyspec (make-obj-adeclor-array :of declor
+                                                  :size nil))))
      :measure (type-count type)
      :verify-guards :after-returns
      :hooks (:fix))))
