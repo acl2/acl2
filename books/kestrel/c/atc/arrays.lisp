@@ -145,7 +145,7 @@
      We also generate the function that returns the length of an array,
      as an ACL2 integer."))
 
-  (b* ((type-string (atc-integer-type-xdoc-string type))
+  (b* ((type-string (integer-type-xdoc-string type))
        (<type> (integer-type-to-fixtype type))
        (<type>p (pack <type> 'p))
        (<type>-fix (pack <type> '-fix))
@@ -302,8 +302,8 @@
     "Here @('etype') is the type of the array elements,
      while @('itype') is the type of the array indices."))
 
-  (b* ((etype-string (atc-integer-type-xdoc-string etype))
-       (itype-string (atc-integer-type-xdoc-string itype))
+  (b* ((etype-string (integer-type-xdoc-string etype))
+       (itype-string (integer-type-xdoc-string itype))
        (<etype> (integer-type-to-fixtype etype))
        (<itype> (integer-type-to-fixtype itype))
        (<etype>p (pack <etype> 'p))

@@ -65,30 +65,6 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-integer-type-xdoc-string ((type typep))
-  :guard (type-integerp type)
-  :returns (string stringp)
-  :short "Documentation (sub)string that describes a C integer type."
-  (b* ((core (case (type-kind type)
-               (:char "char")
-               (:schar "signed char")
-               (:uchar "unsigned char")
-               (:sshort "signed short")
-               (:ushort "unsigned short")
-               (:sint "signed int")
-               (:uint "unsigned int")
-               (:slong "signed long")
-               (:ulong "unsigned long")
-               (:sllong "signed long long")
-               (:ullong "unsigned long long")
-               (t (prog2$ (impossible) "")))))
-    (str::cat "type @('" core "')"))
-  :guard-hints (("Goal" :in-theory (enable type-integerp
-                                           type-unsigned-integerp
-                                           type-signed-integerp))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-type-to-fixtype ((type typep))
@@ -146,7 +122,7 @@
   :returns (event pseudo-event-formp)
   :short "Event to generate the model of the values of a C integer type."
 
-  (b* ((type-string (atc-integer-type-xdoc-string type))
+  (b* ((type-string (integer-type-xdoc-string type))
        (minbits (atc-integer-type-minbits type))
        (signedp (type-signed-integerp type))
        (maxbound (if signedp

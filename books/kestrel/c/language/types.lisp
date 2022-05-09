@@ -322,3 +322,27 @@
         (type-ulong)
         (type-sllong)
         (type-ullong)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-type-xdoc-string ((type typep))
+  :guard (type-integerp type)
+  :returns (string stringp)
+  :short "Documentation (sub)string that describes a C integer type."
+  (b* ((core (case (type-kind type)
+               (:char "char")
+               (:schar "signed char")
+               (:uchar "unsigned char")
+               (:sshort "signed short")
+               (:ushort "unsigned short")
+               (:sint "signed int")
+               (:uint "unsigned int")
+               (:slong "signed long")
+               (:ulong "unsigned long")
+               (:sllong "signed long long")
+               (:ullong "unsigned long long")
+               (t (prog2$ (impossible) "")))))
+    (str::cat "type @('" core "')"))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-unsigned-integerp
+                                           type-signed-integerp))))
