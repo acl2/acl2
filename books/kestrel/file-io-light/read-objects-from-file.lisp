@@ -96,19 +96,12 @@
     (if (not channel)
         ;; Error:
         (mv `(:could-not-open-channel ,filename) nil state)
-      (if ;; This check is needed for the guard of close-input-channel (can
-          ;; this ever happen?):
-          (member-eq channel
-                     '(acl2-input-channel::standard-object-input-0
-                       acl2-input-channel::standard-character-input-0))
-          ;; Error:
-          (mv `(:bad-channel ,filename) nil state)
-        (mv-let (objects state)
-          (read-objects-from-channel channel state)
-          (let ((state (close-input-channel channel state)))
-            (mv nil ; no error
-                objects
-                state)))))))
+      (mv-let (objects state)
+        (read-objects-from-channel channel state)
+        (let ((state (close-input-channel channel state)))
+          (mv nil ; no error
+              objects
+              state))))))
 
 (defthm state-p-of-mv-nth-2-of-read-objects-from-file
   (implies (and (stringp filename)

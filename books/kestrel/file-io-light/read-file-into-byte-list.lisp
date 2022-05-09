@@ -112,19 +112,12 @@
     (if (not channel)
         ;; Error:
         (mv `(:could-not-open-channel ,filename) nil state)
-      (if ;; This check is needed for the guard of close-input-channel (can
-          ;; this ever happen?):
-          (member-eq channel
-                     '(acl2-input-channel::standard-character-input-0
-                       acl2-input-channel::standard-object-input-0))
-          ;; Error:
-          (mv `(:bad-channel ,filename) nil state)
-        (mv-let (bytes state)
-          (read-file-into-byte-list-aux channel nil state)
-          (let ((state (close-input-channel channel state)))
-            (mv nil ; no error
-                bytes
-                state)))))))
+      (mv-let (bytes state)
+        (read-file-into-byte-list-aux channel nil state)
+        (let ((state (close-input-channel channel state)))
+          (mv nil ; no error
+              bytes
+              state))))))
 
 (defthm unsigned-byte-listp-of-mv-nth-1-of-read-file-into-byte-list
   (unsigned-byte-listp 8 (mv-nth 1 (read-file-into-byte-list filename state)))

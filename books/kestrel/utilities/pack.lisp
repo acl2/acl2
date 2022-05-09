@@ -15,21 +15,12 @@
 
 (local (include-book "coerce"))
 (local (include-book "explode-nonnegative-integer"))
+(local (include-book "explode-atom"))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 
 ;; See also the built-in functions add-suffix and add-suffix-to-fn, which are
 ;; less general than pack$ but may suffice for many uses.
-
-;; Also in books/std/io/base.lisp, but that brings in too much stuff.
-(defthm character-listp-of-explode-nonnegative-integer
-  (equal (character-listp (explode-nonnegative-integer n base acc))
-         (character-listp acc))
-  :hints (("Goal" :in-theory (e/d (character-listp explode-nonnegative-integer) (floor mod digit-to-char)))))
-
-(defthm character-listp-of-explode-atom
-  (character-listp (explode-atom x print-base))
-  :hints (("Goal" :in-theory (enable explode-atom character-listp))))
 
 ;dup?
 ;Convert the natural N into a base-10 string representation.
