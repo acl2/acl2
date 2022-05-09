@@ -1,6 +1,6 @@
 ; A lightweight book about explode-nonnegative-integer
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -105,3 +105,22 @@
                     (explode-nonnegative-integer n2 print-base ans))
            :in-theory (e/d (explode-nonnegative-integer zp equal-when-equal-of-floors-and-equal-of-mods)
                            (floor)))))
+
+;; Also in books/std/io/base.lisp, but that brings in too much stuff.
+(defthm character-listp-of-explode-nonnegative-integer
+  (equal (character-listp (explode-nonnegative-integer n print-base ans))
+         (character-listp ans))
+  :hints (("Goal" :in-theory (e/d (character-listp explode-nonnegative-integer) (floor mod digit-to-char)))))
+
+(local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
+
+(defthm subsetp-equal-of-explode-nonnegative-integer-of-10-and-0-through-9
+  (implies (subsetp-equal ans '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
+           (subsetp-equal (explode-nonnegative-integer n 10 ans) '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
+  :hints (("Goal" :in-theory (enable EXPLODE-NONNEGATIVE-INTEGER DIGIT-TO-CHAR))))
+
+(defthm not-equal-explode-nonnegative-integer-when-not-subsetp-equal-of-0-through-9
+  (implies (and (syntaxp (quotep k))
+                (not (subsetp-equal k '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
+                (subsetp-equal ans '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
+           (not (equal k (explode-nonnegative-integer n 10 ans)))))
