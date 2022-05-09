@@ -1806,7 +1806,7 @@
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                     print interpreted-function-alist rewrite-stobj (+ -1 count))
-              ;; No rule fired, so no simplification can be done.  Add the expression to the dag:
+              ;; No rule fired, so no simplification can be done.  Add the expression to the dag, but perhaps normalize nests of certain functions:
               (b* (((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                     (if (get-normalize-xors rewrite-stobj)
                         (add-and-normalize-expr fn args ; can we often save consing FN onto ARGS in this?
@@ -2979,7 +2979,7 @@
         ;;            (dag-constant-alistp (mv-nth 5 ,call-of-try-to-apply-rules)))
         ;;   :hints (("Goal" :use ,(pack$ 'theorem-for-try-to-apply-rules- suffix '-corollary)
         ;;            :in-theory (disable ,(pack$ 'theorem-for-try-to-apply-rules- suffix '-corollary)))))
-        
+
        (defthm ,(pack$ 'bound-theorem-for-simplify-fun-call-and-add-to-dag- suffix)
          (implies (and (<= bound (alen1 'node-replacement-array node-replacement-array))
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -4302,7 +4302,7 @@
               ))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    
+
     ;; Simplify a term and return an equivalent DAG.  Returns (mv erp dag-or-quotep).
     ;; TODO: add support for multiple rule-alists.
     (defund ,simplify-term-name (term
@@ -4471,7 +4471,7 @@
       :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    
+
     ;; Simplify a term and return a term (not a DAG).  Returns (mv erp term).
     (defund ,simp-term-name (term
                              assumptions
@@ -4523,7 +4523,7 @@
                :in-theory (e/d (,simp-term-name) (,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    
+
     ;; Simplify a list of terms, returning a list of the simplified terms
     ;; (not DAGs).  Returns (mv erp terms).
     (defun ,simp-terms-name (terms
