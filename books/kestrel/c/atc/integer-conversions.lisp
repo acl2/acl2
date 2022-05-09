@@ -173,8 +173,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(progn ,@(atc-def-integer-conversions-loop-outer *atc-integer-types*
-                                                   *atc-integer-types*)))
+ `(progn ,@(atc-def-integer-conversions-loop-outer *integer-types*
+                                                   *integer-types*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

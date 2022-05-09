@@ -474,8 +474,8 @@
                                                                itypes)))))
 
   (defval *atc-array-length-write-rules*
-    (atc-array-length-write-rules-loop-atypes *atc-integer-types*
-                                              *atc-integer-types*)))
+    (atc-array-length-write-rules-loop-atypes *integer-types*
+                                              *integer-types*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -936,8 +936,8 @@
     :returns (event pseudo-event-formp)
     :parents nil
     (b* (((mv names events)
-          (atc-uaconvert-values-rules-gen-loop-ltypes *atc-integer-types*
-                                                      *atc-integer-types*)))
+          (atc-uaconvert-values-rules-gen-loop-ltypes *integer-types*
+                                                      *integer-types*)))
       `(progn
          (defsection atc-uaconvert-values-rules
            :short "Rules about @(tsee uaconvert-values)
@@ -1029,8 +1029,8 @@
     :returns (event pseudo-event-formp)
     :parents nil
     (b* (((mv names events)
-          (atc-exec-arrsub-rules-gen-loop-atypes *atc-integer-types*
-                                                 *atc-integer-types*)))
+          (atc-exec-arrsub-rules-gen-loop-atypes *integer-types*
+                                                 *integer-types*)))
       `(progn
          (defsection atc-exec-arrsub-rules
            :short "Rules for executing array subscript expressions."
@@ -1120,7 +1120,7 @@
                     (unop-bitnot)
                     (unop-lognot)))
          ((mv names events)
-          (atc-exec-unary-rules-gen-loop-ops ops *atc-integer-types*)))
+          (atc-exec-unary-rules-gen-loop-ops ops *integer-types*)))
       `(progn
          (defsection atc-exec-unary-rules
            :short "Rules for executing unary operations"
@@ -1214,8 +1214,8 @@
     :returns (event pseudo-event-formp)
     :parents nil
     (b* (((mv names events)
-          (atc-exec-cast-rules-gen-loop-dtypes *atc-integer-types*
-                                               *atc-integer-types*)))
+          (atc-exec-cast-rules-gen-loop-dtypes *integer-types*
+                                               *integer-types*)))
       `(progn
          (defsection atc-exec-cast-rules
            :short "Rules for executing casts."
@@ -1411,8 +1411,8 @@
                     (binop-bitior)))
          ((mv names events)
           (atc-exec-binary-rules-gen ops
-                                     *atc-integer-types*
-                                     *atc-integer-types*)))
+                                     *integer-types*
+                                     *integer-types*)))
       `(progn
          (defsection atc-exec-binary-strict-pure-rules
            :short "Rules for executing strict pure binary operations."
@@ -1963,8 +1963,8 @@
     :returns (event pseudo-event-formp)
     :parents nil
     (b* (((mv names events)
-          (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes *atc-integer-types*
-                                                          *atc-integer-types*)))
+          (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes *integer-types*
+                                                          *integer-types*)))
       `(progn
          (defsection atc-exec-expr-asg-arrsub-rules
            :short "Rules for executing assignment expressions to

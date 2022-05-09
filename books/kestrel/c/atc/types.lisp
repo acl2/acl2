@@ -135,7 +135,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atc-integer-types*
+(defval *integer-types*
   :short "List of the supported C integer types except plain @('char')."
   :long
   (xdoc::topstring
