@@ -14,8 +14,6 @@
 (include-book "../language/types")
 (include-book "../language/abstract-syntax-operations")
 
-(include-book "std/util/defval" :dir :system)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-types
@@ -132,23 +130,3 @@
      via the use of @(tsee type-to-tyname)."))
   (ident+tyname-to-tyspec+declor id (type-to-tyname type))
   :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *integer-types*
-  :short "List of the supported C integer types except plain @('char')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This list is used in code that generates functions and theorems
-     for different combinations of integer types."))
-  (list (type-schar)
-        (type-uchar)
-        (type-sshort)
-        (type-ushort)
-        (type-sint)
-        (type-uint)
-        (type-slong)
-        (type-ulong)
-        (type-sllong)
-        (type-ullong)))
