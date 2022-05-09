@@ -246,7 +246,7 @@
        (type (promote-type type1))
        (samep (equal type type1))
        (signedp (type-signed-integerp type))
-       (<type1>-bits (atc-integer-type-bits type1))
+       (<type1>-bits (integer-type-bits-nulfun type1))
        (<type1> (integer-type-to-fixtype type1))
        (<type1>p (pack <type1> 'p))
        (<type1>->get (pack <type1> '->get))

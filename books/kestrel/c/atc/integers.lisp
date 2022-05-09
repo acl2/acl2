@@ -80,7 +80,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-integer-type-bits ((type typep))
+(define integer-type-bits-nulfun ((type typep))
   :guard (type-integerp type)
   :returns (bits symbolp)
   :short "Name of the nullary function that defines
@@ -100,7 +100,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-integer-type-minbits ((type typep))
+(define integer-type-minbits ((type typep))
   :guard (type-integerp type)
   :returns (minbits posp :rule-classes :type-prescription)
   :short "Minimum number of bits that forms a value of a C integer type."
@@ -123,7 +123,7 @@
   :short "Event to generate the model of the values of a C integer type."
 
   (b* ((type-string (integer-type-xdoc-string type))
-       (minbits (atc-integer-type-minbits type))
+       (minbits (integer-type-minbits type))
        (signedp (type-signed-integerp type))
        (maxbound (if signedp
                      (1- (expt 2 (1- minbits)))
@@ -131,7 +131,7 @@
        (minbound (if signedp
                      (- (expt 2 (1- minbits)))
                    0))
-       (<type>-bits (atc-integer-type-bits type))
+       (<type>-bits (integer-type-bits-nulfun type))
        (<type> (integer-type-to-fixtype type))
        (<type>p (pack <type> 'p))
        (<type>-integer (pack <type> '-integer))
