@@ -187,6 +187,33 @@
       (type-case type :pointer))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-integer-nonbool-nonchar-p ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an integer type
+          but not @('_Bool') or the plain @('char') type."
+  (or (type-case type :uchar)
+      (type-case type :schar)
+      (type-case type :ushort)
+      (type-case type :sshort)
+      (type-case type :uint)
+      (type-case type :sint)
+      (type-case type :ulong)
+      (type-case type :slong)
+      (type-case type :ullong)
+      (type-case type :sllong))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist type-integer-nonbool-nonchar-listp (x)
+  :guard (type-listp x)
+  (type-integer-nonbool-nonchar-p x)
+  ///
+  (fty::deffixequiv type-integer-nonbool-nonchar-listp
+    :args ((x type-listp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tyspecseq-to-type ((tyspec tyspecseqp))
