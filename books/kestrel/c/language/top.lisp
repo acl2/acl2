@@ -21,6 +21,7 @@
 (include-book "errors")
 (include-book "integer-formats")
 (include-book "integer-ranges")
+(include-book "tag-environments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

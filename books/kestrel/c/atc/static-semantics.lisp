@@ -11,11 +11,10 @@
 
 (in-package "C")
 
-(include-book "tag-environments")
-
 (include-book "../language/abstract-syntax-operations")
 (include-book "../language/portable-ascii-identifiers")
 (include-book "../language/integer-ranges")
+(include-book "../language/tag-environments")
 (include-book "../language/errors")
 
 (include-book "kestrel/fty/defomap" :dir :system)
