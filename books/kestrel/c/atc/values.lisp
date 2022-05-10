@@ -12,8 +12,9 @@
 (in-package "C")
 
 (include-book "integers")
-(include-book "pointers")
 (include-book "types")
+
+(include-book "../language/pointers")
 
 (include-book "defthm-disjoint")
 

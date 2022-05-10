@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,19 +11,18 @@
 
 (in-package "C")
 
-(include-book "../language/types")
+(include-book "types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-pointers
-  :parents (atc-dynamic-semantics)
-  :short "A model of C pointers for ATC."
+(defxdoc+ pointers
+  :parents (language)
+  :short "A model of C pointers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we use a simple model of pointers,
-     which suffices for our current purposes.
-     A pointer in our model is either null or an address,
+    "For now we use a simple model of pointers:
+     a pointer in our model is either null or an address,
      where an address is an essentially opaque entity
      whose sole purpose is to identify an object (in the C sense)
      allocated in some (externally populated) memory."))
