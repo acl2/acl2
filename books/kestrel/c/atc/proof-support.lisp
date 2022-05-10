@@ -796,7 +796,8 @@
   :short "List of rewrite rules for the return types of
           models of C integer operations that involve one C integer type."
   (b* ((ops '(plus minus bitnot lognot)))
-    (atc-integer-ops-1-return-names-loop-ops ops *integer-types*))
+    (atc-integer-ops-1-return-names-loop-ops ops
+                                             *integer-nonbool-nonchar-types*))
 
   :prepwork
 
@@ -837,8 +838,8 @@
                   'lt 'gt 'le 'ge 'eq 'ne
                   'bitand 'bitxor 'bitior)))
     (atc-integer-ops-2-return-names-loop-ops ops
-                                             *integer-types*
-                                             *integer-types*))
+                                             *integer-nonbool-nonchar-types*
+                                             *integer-nonbool-nonchar-types*))
 
   :prepwork
 
@@ -915,8 +916,9 @@
 (defval *atc-integer-convs-return-rewrite-rules*
   :short "List of rewrite rules for the return types of
           models of C integer conversions."
-  (atc-integer-convs-return-names-loop-src-types *integer-types*
-                                                 *integer-types*)
+  (atc-integer-convs-return-names-loop-src-types
+   *integer-nonbool-nonchar-types*
+   *integer-nonbool-nonchar-types*)
 
   :prepwork
 
@@ -957,8 +959,8 @@
 (defval *atc-array-read-return-rewrite-rules*
   :short "List of rewrite rules for the return types of
           models of C array read operations."
-  (atc-array-read-return-names-loop-array-types *integer-types*
-                                                *integer-types*)
+  (atc-array-read-return-names-loop-array-types *integer-nonbool-nonchar-types*
+                                                *integer-nonbool-nonchar-types*)
 
   :prepwork
 
@@ -996,8 +998,9 @@
 (defval *atc-array-write-return-rewrite-rules*
   :short "List of rewrite rules for the return types of
           models of C array write operations."
-  (atc-array-write-return-names-loop-array-types *integer-types*
-                                                 *integer-types*)
+  (atc-array-write-return-names-loop-array-types
+   *integer-nonbool-nonchar-types*
+   *integer-nonbool-nonchar-types*)
 
   :prepwork
 
@@ -1106,7 +1109,9 @@
   :short "List of type prescription rules for the
           models of C integer operations that involve one C integer type."
   (b* ((ops '(plus minus bitnot lognot)))
-    (atc-integer-ops-1-type-presc-rules-loop-ops ops *integer-types*))
+    (atc-integer-ops-1-type-presc-rules-loop-ops
+     ops
+     *integer-nonbool-nonchar-types*))
 
   :prepwork
 
@@ -1145,9 +1150,10 @@
                   'shl 'shr
                   'lt 'gt 'le 'ge 'eq 'ne
                   'bitand 'bitxor 'bitior)))
-    (atc-integer-ops-2-type-presc-rules-loop-ops ops
-                                                 *integer-types*
-                                                 *integer-types*))
+    (atc-integer-ops-2-type-presc-rules-loop-ops
+     ops
+     *integer-nonbool-nonchar-types*
+     *integer-nonbool-nonchar-types*))
 
   :prepwork
 
@@ -1222,8 +1228,9 @@
 (defval *atc-integer-convs-type-prescription-rules*
   :short "List of type prescription rules for the
           models of C integer conversions."
-  (atc-integer-convs-type-presc-rules-loop-src-types *integer-types*
-                                                     *integer-types*)
+  (atc-integer-convs-type-presc-rules-loop-src-types
+   *integer-nonbool-nonchar-types*
+   *integer-nonbool-nonchar-types*)
 
   :prepwork
 
@@ -1266,8 +1273,9 @@
 (defval *atc-array-read-type-prescription-rules*
   :short "List of type prescription rules for the
           models of C array read operations."
-  (atc-array-read-type-presc-rules-loop-array-types *integer-types*
-                                                    *integer-types*)
+  (atc-array-read-type-presc-rules-loop-array-types
+   *integer-nonbool-nonchar-types*
+   *integer-nonbool-nonchar-types*)
 
   :prepwork
 

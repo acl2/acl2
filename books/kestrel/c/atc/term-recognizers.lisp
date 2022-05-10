@@ -51,7 +51,7 @@
 (defval *atc-boolean-from-type-fns*
   :short "List of the @('boolean-from-<type>') functions
           described in the user documentation."
-  (atc-boolean-from-type-fns-gen *integer-types*)
+  (atc-boolean-from-type-fns-gen *integer-nonbool-nonchar-types*)
 
   :prepwork
   ((defun atc-boolean-from-type-fns-gen (types)
@@ -64,7 +64,7 @@
 (defval *atc-type-base-const-fns*
   :short "List of the @('<type>-<base>-const') functions
           described in the user documentation."
-  (atc-type-base-const-fns-gen *integer-types*)
+  (atc-type-base-const-fns-gen *integer-nonbool-nonchar-types*)
 
   :prepwork
 
@@ -86,7 +86,7 @@
 (defval *atc-op-type-fns*
   :short "List of the @('<op>-<type>') functions
           described in the user documentation."
-  (atc-op-type-fns-gen *integer-types*)
+  (atc-op-type-fns-gen *integer-nonbool-nonchar-types*)
 
   :prepwork
 
@@ -109,7 +109,7 @@
 (defval *atc-op-type1-type2-fns*
   :short "List of the @('<op>-<type1>-<type2>') functions
           described in the user documentation."
-  (atc-op-type1-type2-fns-gen *integer-types*)
+  (atc-op-type1-type2-fns-gen *integer-nonbool-nonchar-types*)
 
   :prepwork
 
@@ -145,8 +145,9 @@
 
    (defun atc-op-type1-type2-fns-gen (type1s)
      (cond ((endp type1s) nil)
-           (t (append (atc-op-type1-type2-fns-gen-aux (car type1s)
-                                                      *integer-types*)
+           (t (append (atc-op-type1-type2-fns-gen-aux
+                       (car type1s)
+                       *integer-nonbool-nonchar-types*)
                       (atc-op-type1-type2-fns-gen (cdr type1s))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -154,7 +155,7 @@
 (defval *atc-type1-from-type2-fns*
   :short "List of the @('<type1>-from-<type2>') functions
           described in the user documentation."
-  (atc-type1-from-type2-fns-gen *integer-types*)
+  (atc-type1-from-type2-fns-gen *integer-nonbool-nonchar-types*)
 
   :prepwork
 
@@ -168,8 +169,9 @@
 
    (defun atc-type1-from-type2-fns-gen (type1s)
      (cond ((endp type1s) nil)
-           (t (append (atc-type1-from-type2-fns-gen-aux (car type1s)
-                                                        *integer-types*)
+           (t (append (atc-type1-from-type2-fns-gen-aux
+                       (car type1s)
+                       *integer-nonbool-nonchar-types*)
                       (atc-type1-from-type2-fns-gen (cdr type1s))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

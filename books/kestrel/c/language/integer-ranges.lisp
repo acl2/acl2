@@ -188,7 +188,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(progn ,@(def-integer-range-loop *integer-types*)))
+ `(progn ,@(def-integer-range-loop *integer-nonbool-nonchar-types*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

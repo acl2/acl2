@@ -345,13 +345,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *integer-types*
-  :short "List of the supported C integer types except plain @('char')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This list is used in code that generates functions and theorems
-     for different combinations of integer types."))
+(defval *integer-nonbool-nonchar-types*
+  :short "List of the C integer types except @('_Bool') and plain @('char')."
   (list (type-schar)
         (type-uchar)
         (type-sshort)
@@ -361,7 +356,18 @@
         (type-slong)
         (type-ulong)
         (type-sllong)
-        (type-ullong)))
+        (type-ullong))
+  ///
+
+  (local (include-book "std/lists/len" :dir :system))
+
+  (defruled member-integer-nonbool-nonchar-types-as-pred
+    (implies (typep type)
+             (iff (member-equal type *integer-nonbool-nonchar-types*)
+                  (type-integer-nonbool-nonchar-p type)))
+    :enable (type-integer-nonbool-nonchar-p
+             type-kind
+             typep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
