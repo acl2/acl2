@@ -54,8 +54,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes values
-  :short "Fixtypes of values."
+(fty::deftypes values/membervalues
+  :short "Fixtypes of values and member values."
 
   (fty::deftagsum value
     :short "Fixtype of values."
