@@ -364,6 +364,14 @@
               (rest (svtv-ovfact-translate-lst (cdr x) ctx w state)))
       (value (cons first rest)))))
 
+(define svtv-unsigned-byte-hyps ((x svar-boolmasks-p))
+  :hooks nil
+  (b* (((when (atom x)) nil)
+       ((unless (mbt (consp (car x)))) (svtv-unsigned-byte-hyps (cdr x)))
+       ((cons var mask) (car x)))
+    (cons `(unsigned-byte-p ,(integer-length mask) ,var)
+          (svtv-unsigned-byte-hyps (cdr x)))))
+
 (defun svtv-override-fact-fn (name args state)
   (declare (xargs :stobjs state))
   (b* ((defaults (table-alist 'svtv-override-fact-defaults (w state)))
@@ -378,6 +386,7 @@
          output-parts
          input-var-bindings
          enable
+         unsigned-byte-hyps
          (hyp 't)
          concl
          (lemma-defthm 'fgl::def-fgl-thm)
@@ -394,7 +403,16 @@
        ((when err) (er soft ctx "Couldn't evaluate ~x0" (list triples)))
        ((mv err trans-parts state) (svtv-ovfact-translate-lst output-parts ctx (w state) state))
        ((when err) (er soft ctx "Couldn't translate output-parts: ~@0~%" err))
-       (output-part-vars (all-vars1-lst trans-parts nil)))
+       (output-part-vars (all-vars1-lst trans-parts nil))
+       ((mv err svtv-val) (magic-ev-fncall svtv nil state t t))
+       ((when err) (er soft ctx "Couldn't evaluate ~x0" (list svtv)))
+       (hyp (if unsigned-byte-hyps
+                (b* ((inmasks (svtv->inmasks svtv-val))
+                     (inputs (append input-vars override-vars))
+                     (masks (acl2::fal-extract inputs inmasks)))
+                  `(and ,@(svtv-unsigned-byte-hyps masks) ,hyp))
+              hyp)))
+       
     (value
      (svtv-override-fact-events
       (make-svtv-override-fact
