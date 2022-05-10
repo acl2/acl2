@@ -1214,6 +1214,12 @@
    (xdoc::p
     "For now, we only allow simple assignment expressions.
      The left-hand side expression must be a pure lvalue.
+     Before checking that,
+     we perform an array-to-pointer conversion [C:6.3.2.1/3]:
+     in doing so, we also turn off the lvalue flag of the expression type,
+     as specified in [C:6.3.2.1/3];
+     this means that using something of an array type
+     as the left-hand side of assignment fails.
      The right-hand side must be a function call or a pure expression;
      we implicitly apply lvalue conversion to it
      (because @(tsee check-expr-call-or-pure) returns a plain type;
@@ -1240,6 +1246,11 @@
         (error (list :expr-asg-not-asg op)))
        (left-etype (check-expr-pure left vartab tagenv))
        ((when (errorp left-etype)) left-etype)
+       (left-type (expr-type->type left-etype))
+       (left-etype (if (type-case left-type :array)
+                       (make-expr-type :type (apconvert-type left-type)
+                                       :lvalue nil)
+                     left-etype))
        ((unless (expr-type->lvalue left-etype))
         (error (list :asg-left-not-lvalue (expr-fix e))))
        (left-type (expr-type->type left-etype))
