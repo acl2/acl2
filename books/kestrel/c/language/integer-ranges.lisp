@@ -67,7 +67,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define def-integer-range ((type typep))
-  :guard (type-integerp type)
+  :guard (type-integer-nonbool-nonchar-p type)
   :returns (event pseudo-event-formp)
   :short "Event to generate fixtypes, functions, and theorems
           for ranges of integer types."
@@ -92,9 +92,6 @@
        (<type>-min (pack <type> '-min)))
 
     `(progn
-
-       ,@(and (type-case type :char)
-              (raise "Type ~x0 not supported." type))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -179,7 +176,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define def-integer-range-loop ((types type-listp))
-  :guard (type-integer-listp types)
+  :guard (type-integer-nonbool-nonchar-listp types)
   :returns (events pseudo-event-form-listp)
   :short "Events to generate fixtypes, functions, and theorems
           for ranges of integer types."
