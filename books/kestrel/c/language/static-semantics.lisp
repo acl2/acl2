@@ -774,6 +774,17 @@
     (type-fix type))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection apconvert-type-list (x)
+  :guard (type-listp x)
+  :returns (types1 type-listp)
+  :short "Lift @(tsee apconvert-type) to lists."
+  (apconvert-type x)
+  ///
+  (fty::deffixequiv apconvert-type-list
+    :args ((x type-listp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-arrsub ((arr-expr exprp) (arr-type typep)
@@ -1126,20 +1137,35 @@
      and we compare the input types with the argument types;
      this is more restrictive than allowed in [C],
      but it is adequate for now.
-     We return the output type.
+     Prior to comparing the types,
+     we perform array-to-pointer conversions on
+     all parameter types:
+     this corresponds to the adjustment in [C:6.7.6.3/7];
+     it is also, perhaps more aptly,
+     consistent with the treatment of assignments
+     (namely that the left-hand side of assignment
+     is subjected to this conversion [C:6.3.2.1/3]),
+     given that argument passing is treated like assignment [C:6.5.2.2/2].
+     Note that @(tsee check-expr-pure-list)
+     already applies that conversion to the argument types,
+     so there is not need to do it here.
+     We return the output type as the type of the call.
      A function call is never an lvalue;
      thus, we return a plain type, not an expression type."))
   (b* ((fun (ident-fix fun))
        (args (expr-list-fix args))
-       (types (check-expr-pure-list args vartab tagenv))
-       ((when (errorp types))
-        (error (list :call-args-error fun args types)))
+       (arg-types (check-expr-pure-list args vartab tagenv))
+       ((when (errorp arg-types))
+        (error (list :call-args-error fun args arg-types)))
+       (arg-types (apconvert-type-list arg-types))
        (ftype (fun-table-lookup fun funtab))
        ((unless ftype) (error (list :fun-not-found fun)))
-       ((unless (equal (fun-type->inputs ftype) types))
+       (param-types (fun-type->inputs ftype))
+       (param-types (apconvert-type-list param-types))
+       ((unless (equal param-types arg-types))
         (error (list :call-args-mistype fun args
-                     :required (fun-type->inputs ftype)
-                     :supplied types))))
+                     :required param-types
+                     :supplied arg-types))))
     (fun-type->output ftype))
   :hooks (:fix))
 
