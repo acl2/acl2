@@ -203,7 +203,15 @@
       (type-case type :slong)
       (type-case type :ullong)
       (type-case type :sllong))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule type-integerp-when-type-integer-nonbool-nonchar-p
+    (implies (type-integer-nonbool-nonchar-p x)
+             (type-integerp x))
+    :enable (type-integerp
+             type-unsigned-integerp
+             type-signed-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
