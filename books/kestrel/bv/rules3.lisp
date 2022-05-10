@@ -1536,10 +1536,10 @@
                 (integerp size))
            (equal (bvplus 1 (bvplus size x y) z)
                   (bvplus 1 (bvplus 1 x y) z)))
-  :hints (("Goal" :use ((:instance bvplus-of-bvchop-arg1 (size 1)
+  :hints (("Goal" :use ((:instance bvplus-of-bvchop-arg2 (size 1)
                                    (x (bvplus size x y))
                                    (y z)))
-           :in-theory (disable bvplus-of-bvchop-arg1
+           :in-theory (disable bvplus-of-bvchop-arg2
                                EQUAL-OF-BITXOR-AND-BITXOR-SAME-6
                                EQUAL-OF-BITXOR-AND-BITXOR-SAME-ALT
                                bvchop-1-becomes-getbit))))
@@ -2618,7 +2618,7 @@
 ;                                                  BVLT-OF-PLUS-ARG2
 ;                                                 SLICE-OF-+ ; fixme looped with meta rule?
 ;                                                PLUS-BECOMES-BVPLUS
-                                                   BVPLUS-OF-BVCHOP-ARG2 ;fixme
+                                                   BVPLUS-OF-BVCHOP-ARG3 ;fixme
                                                    )))))
 
 ;gen

@@ -4114,8 +4114,8 @@
                             BVCHOP-SHIFT-GEN
                             ;BVCHOP-SHIFT-GEN-CONSTANT-VERSION
                             ;DISTRIBUTIVITY
+                            BVPLUS-OF-BVCHOP-ARG3
                             BVPLUS-OF-BVCHOP-ARG2
-                            BVPLUS-OF-BVCHOP-ARG1
                             anti-bvplus GETBIT-OF-+
                             BVLT-OF-PLUS-ARG1
                             BVLT-OF-PLUS-ARG2
@@ -8621,8 +8621,8 @@
     :IN-THEORY
     (E/D (BVCAT BVMULT LOGAPP BVPLUS bvlt)
          (PLUS-BECOMES-BVPLUS-FREE
-          BVCHOP-OF-* BVCHOP-SHIFT-GEN BVPLUS-OF-BVCHOP-ARG2
-          BVPLUS-OF-BVCHOP-ARG1
+          BVCHOP-OF-* BVCHOP-SHIFT-GEN BVPLUS-OF-BVCHOP-ARG3
+          BVPLUS-OF-BVCHOP-ARG2
           ANTI-BVPLUS GETBIT-OF-+
           BVLT-OF-PLUS-ARG1 BVLT-OF-PLUS-ARG2
           PLUS-BECOMES-BVPLUS
