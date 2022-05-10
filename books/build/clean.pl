@@ -170,7 +170,13 @@ sub consider_file
 
     if ($ext eq ".lsp")
     {
-	if ($file eq "temp-emacs-file.lsp") {
+        if ($file eq "Makefile-tmp.lsp") {
+            push(@rm, $what);
+        }
+        elsif ($file eq "Makefile-deps.lsp") {
+            push(@rm, $what);
+        }
+	elsif ($file eq "temp-emacs-file.lsp") {
 	    push(@rm, $what);
 	}
 	elsif ($file =~ /^(.*)\@expansion.lsp/) {
@@ -236,5 +242,3 @@ else {
 }
 
 exit(0);
-
-
