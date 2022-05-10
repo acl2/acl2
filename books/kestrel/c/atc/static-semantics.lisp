@@ -11,13 +11,11 @@
 
 (in-package "C")
 
-(include-book "integers")
 (include-book "tag-environments")
-(include-book "types")
 
 (include-book "../language/abstract-syntax-operations")
 (include-book "../language/portable-ascii-identifiers")
-(include-book "../language/types")
+(include-book "../language/integer-ranges")
 (include-book "../language/errors")
 
 (include-book "kestrel/fty/defomap" :dir :system)
@@ -547,7 +545,8 @@
      which is also the type of the result of
      a binary operator applied to operands of the two types."))
   (b* ((type1 (promote-type type1))
-       (type2 (promote-type type2)))
+       (type2 (promote-type type2))
+       ((acl2::fun (irr-type)) (ec-call (type-fix :irrelevant))))
     (case (type-kind type1)
       (:sllong (case (type-kind type2)
                  (:sllong (type-sllong))

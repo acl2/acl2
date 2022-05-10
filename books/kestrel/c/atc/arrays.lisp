@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "integer-operations")
+(include-book "types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
