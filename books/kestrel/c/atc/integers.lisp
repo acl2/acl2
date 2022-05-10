@@ -78,47 +78,6 @@
     (e.g. it is @('uchar') for @('(type-uchar)')).")
   (intern$ (symbol-name (type-kind type)) "C"))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define integer-type-bits-nulfun ((type typep))
-  :guard (type-integerp type)
-  :returns (bits symbolp)
-  :short "Name of the nullary function that defines
-          the size in bits of a C integer type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the name of one of the nullary functions
-     introduced in @(see integer-format).")
-   (xdoc::p
-    "We take the name of the kind,
-     remove the initial @('s') or @('u'),
-     and add @('-bits') at the end."))
-  (b* ((char/short/int/long/llong
-        (if (type-case type :char)
-            "CHAR"
-          (str::implode (cdr (str::explode (symbol-name (type-kind type))))))))
-    (pack char/short/int/long/llong '-bits))
-  :prepwork
-  ((local (include-book "std/typed-lists/character-listp" :dir :system))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define integer-type-minbits ((type typep))
-  :guard (type-integerp type)
-  :returns (minbits posp :rule-classes :type-prescription)
-  :short "Minimum number of bits that forms a value of a C integer type."
-  (case (type-kind type)
-    ((:char :schar :uchar) 8)
-    ((:sshort :ushort) 16)
-    ((:sint :uint) 16)
-    ((:slong :ulong) 32)
-    ((:sllong :ullong) 64)
-    (t (prog2$ (impossible) 1)))
-  :guard-hints (("Goal" :in-theory (enable type-integerp
-                                           type-unsigned-integerp
-                                           type-signed-integerp))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-values ((type typep))
