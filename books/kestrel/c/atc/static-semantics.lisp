@@ -13,6 +13,7 @@
 
 (include-book "integers")
 (include-book "tag-environments")
+(include-book "types")
 
 (include-book "../language/abstract-syntax-operations")
 (include-book "../language/portable-ascii-identifiers")

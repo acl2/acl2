@@ -13,6 +13,7 @@
 
 (include-book "integers")
 (include-book "pointers")
+(include-book "types")
 
 (include-book "defthm-disjoint")
 

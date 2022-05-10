@@ -20,6 +20,7 @@
 (include-book "portable-ascii-identifiers")
 (include-book "errors")
 (include-book "integer-formats")
+(include-book "integer-ranges")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
