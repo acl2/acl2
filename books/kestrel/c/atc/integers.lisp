@@ -86,10 +86,14 @@
   :short "Name of the nullary function that defines
           the size in bits of a C integer type."
   :long
-  (xdoc::topstring-p
-   "We take the name of the kind,
-    remove the initial @('s') or @('u'),
-    and add @('-bits') at the end.")
+  (xdoc::topstring
+   (xdoc::p
+    "This is the name of one of the nullary functions
+     introduced in @(see integer-format).")
+   (xdoc::p
+    "We take the name of the kind,
+     remove the initial @('s') or @('u'),
+     and add @('-bits') at the end."))
   (b* ((char/short/int/long/llong
         (if (type-case type :char)
             "CHAR"
