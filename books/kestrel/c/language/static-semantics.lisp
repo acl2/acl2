@@ -405,15 +405,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-obj-adeclor ((declor obj-adeclorp))
+  :returns (wf? wellformed-resultp)
+  :short "Check an abstract object declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This boils down to checking array sizes, if present."))
+  (obj-adeclor-case
+   declor
+   :none :wellformed
+   :pointer (check-obj-adeclor declor.to)
+   :array (b* ((wf? (check-obj-adeclor declor.of))
+               ((when (errorp wf?)) wf?)
+               ((unless declor.size) :wellformed)
+               (type? (check-iconst declor.size))
+               ((when (errorp type?)) type?))
+            :wellformed))
+  :measure (obj-adeclor-count declor)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-tyname ((tyname tynamep) (tagenv tag-envp))
   :returns (wf? wellformed-resultp)
   :short "Check a type name."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The underlying type specifier sequence must be well-formed.
-     There are no constraints on the declarator."))
-  (check-tyspecseq (tyname->tyspec tyname) tagenv)
+    "The underlying type specifier sequence and declarator
+     must be well-formed."))
+  (b* ((wf? (check-tyspecseq (tyname->tyspec tyname) tagenv))
+       ((when (errorp wf?)) wf?)
+       (wf? (check-obj-adeclor (tyname->declor tyname)))
+       ((when (errorp wf?)) wf?))
+    :wellformed)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -428,8 +454,7 @@
      the integer promotions that are applied to values:
      statically, they are applied to types.")
    (xdoc::p
-    "These only modify the character types
-     and the unsigned and signed @('short int') types;
+    "These only modify the character and short types;
      all the other types are unchanged.")
    (xdoc::p
     "If @('int') can represent all the values of the original type,
@@ -740,7 +765,7 @@
    (xdoc::p
     "Under certain circumstances,
      an array is converted to a pointer to the first element of the array
-     [C:6.2.3.1/3].
+     [C:6.3.2.1/3].
      Indeed, arrays are used like pointers most of the time.
      This conversion is captured, at the level of types, here.
      Non-array types are left unchanged."))
