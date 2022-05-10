@@ -157,7 +157,10 @@
 
 (std::deflist type-integer-listp (x)
   :guard (type-listp x)
-  (type-integerp x))
+  (type-integerp x)
+  ///
+  (fty::deffixequiv type-integer-listp
+    :args ((x type-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
