@@ -504,12 +504,12 @@
      a format that is easy to read by ACL2.  The new file is about
      4 MB, as compared with a freshly cloned ACL2 repo of about 1800 MB.
      If you wish to turn off this feature, you can set the
-     environment variable @('INHIBIT_DEPS_LSP') to any nonempty string
+     environment variable @('ACL2_INHIBIT_DEPS_LSP') to any nonempty string
      prior to invoking @('make').
      For example:")
 
    (xdoc::@{}
-    "INHIBIT_DEPS_LSP=1 make -j12 regression")
+    "ACL2_INHIBIT_DEPS_LSP=1 make -j12 regression")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

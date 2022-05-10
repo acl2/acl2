@@ -285,10 +285,12 @@ else
 	PCERT_OPT :=
 endif
 
-# Set the environment variable INHIBIT_DEPS_LSP
-# to a nonempty value to inhibit the generation of
-# the .lsp version of the dependencies file.
-ifndef INHIBIT_DEPS_LSP
+# If you want to turn off generating
+# the .lsp version of the dependencies file,
+# you can set the environment variable ACL2_INHIBIT_DEPS_LSP
+# to a nonempty value.
+#
+ifndef ACL2_INHIBIT_DEPS_LSP
 	SMAKE_OPT := "--smakefile"
 else
 	SMAKE_OPT :=
