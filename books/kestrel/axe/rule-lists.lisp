@@ -533,8 +533,8 @@
      bitor-of-bvchop-arg2
      bitxor-of-bvchop-arg1
      bitxor-of-bvchop-arg2
-     bvplus-of-bvchop-arg1 ;gen?
      bvplus-of-bvchop-arg2 ;gen?
+     bvplus-of-bvchop-arg3 ;gen?
      bvminus-of-bvchop-arg2
      bvminus-of-bvchop-arg3
      bvnot-of-bvchop
@@ -1602,7 +1602,7 @@
     array-reduction-when-all-same-improved2))
 
 ; despite the name, this also includes bv-array-rules and list rules!
-;todo: get rid of logext rules, etc. from this
+;; TODO: Remove non-bv stuff from this:
 (defun amazing-rules-bv ()
   (declare (xargs :guard t))
   (append ;; todo: a lot of cruft in here:
@@ -1610,7 +1610,6 @@
 
             max-constants-lemma ;bozo more like this?
             myif-not-myif-same  ;bozo more like this?
-
 
             leftrotate32-trim-amt-all ;move to trim rules?
 
@@ -1626,7 +1625,7 @@
 ;    bvxor-smaller-term-becomes-cat-arg1 ;yuck? Sat Jan 22 01:06:43 2011
 ;   bvxor-smaller-term-becomes-cat-arg2 ;yuck? Sat Jan 22 01:06:45 2011
 
-            logtail-becomes-slice-dag       ;drop?
+            ; logtail-becomes-slice-dag       ;drop?
 
             bvmult-of-2-gen
 ;trying these:
