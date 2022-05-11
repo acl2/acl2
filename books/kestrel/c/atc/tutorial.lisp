@@ -193,8 +193,7 @@
      the compile-time constraints prescribed by [C].
      In other words, the C code is compilable by compliant compilers.
      This is expressed via a "
-    (xdoc::seetopic "atc-static-semantics"
-                    "formal static semantics of C")
+    (xdoc::seetopic "static-semantics" "formal static semantics of C")
     ".")
    (xdoc::li
     "The generated C code is functionally equivalent
@@ -1082,8 +1081,8 @@
   (xdoc::p
    "ATC generates a theorem asserting that
     the generated C program is statically correct,
-    according to "
-   (xdoc::seetopic "atc-static-semantics" "ATC's static semantics of C")
+    according to the "
+   (xdoc::seetopic "static-semantics" "formal static semantics of C")
    ".")
 
   (xdoc::p

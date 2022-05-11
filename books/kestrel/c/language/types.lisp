@@ -14,8 +14,11 @@
 (include-book "abstract-syntax")
 (include-book "errors")
 
+(include-book "../pack")
+
 (include-book "kestrel/fty/pos-option" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
+(include-book "std/util/defval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,7 +157,10 @@
 
 (std::deflist type-integer-listp (x)
   :guard (type-listp x)
-  (type-integerp x))
+  (type-integerp x)
+  ///
+  (fty::deffixequiv type-integer-listp
+    :args ((x type-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -180,6 +186,41 @@
   (or (type-arithmeticp type)
       (type-case type :pointer))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-integer-nonbool-nonchar-p ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an integer type
+          but not @('_Bool') or the plain @('char') type."
+  (or (type-case type :uchar)
+      (type-case type :schar)
+      (type-case type :ushort)
+      (type-case type :sshort)
+      (type-case type :uint)
+      (type-case type :sint)
+      (type-case type :ulong)
+      (type-case type :slong)
+      (type-case type :ullong)
+      (type-case type :sllong))
+  :hooks (:fix)
+  ///
+
+  (defrule type-integerp-when-type-integer-nonbool-nonchar-p
+    (implies (type-integer-nonbool-nonchar-p x)
+             (type-integerp x))
+    :enable (type-integerp
+             type-unsigned-integerp
+             type-signed-integerp)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist type-integer-nonbool-nonchar-listp (x)
+  :guard (type-listp x)
+  (type-integer-nonbool-nonchar-p x)
+  ///
+  (fty::deffixequiv type-integer-nonbool-nonchar-listp
+    :args ((x type-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -301,3 +342,97 @@
   (tyname-to-type x)
   ///
   (fty::deffixequiv type-name-list-to-type-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *integer-nonbool-nonchar-types*
+  :short "List of the C integer types except @('_Bool') and plain @('char')."
+  (list (type-schar)
+        (type-uchar)
+        (type-sshort)
+        (type-ushort)
+        (type-sint)
+        (type-uint)
+        (type-slong)
+        (type-ulong)
+        (type-sllong)
+        (type-ullong))
+  ///
+
+  (local (include-book "std/lists/len" :dir :system))
+
+  (defruled member-integer-nonbool-nonchar-types-as-pred
+    (implies (typep type)
+             (iff (member-equal type *integer-nonbool-nonchar-types*)
+                  (type-integer-nonbool-nonchar-p type)))
+    :enable (type-integer-nonbool-nonchar-p
+             type-kind
+             typep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-type-xdoc-string ((type typep))
+  :guard (type-integerp type)
+  :returns (string stringp)
+  :short "Documentation (sub)string that describes a C integer type."
+  (b* ((core (case (type-kind type)
+               (:char "char")
+               (:schar "signed char")
+               (:uchar "unsigned char")
+               (:sshort "signed short")
+               (:ushort "unsigned short")
+               (:sint "signed int")
+               (:uint "unsigned int")
+               (:slong "signed long")
+               (:ulong "unsigned long")
+               (:sllong "signed long long")
+               (:ullong "unsigned long long")
+               (t (prog2$ (impossible) "")))))
+    (str::cat "type @('" core "')"))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-unsigned-integerp
+                                           type-signed-integerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-type-bits-nulfun ((type typep))
+  :guard (type-integerp type)
+  :returns (bits symbolp)
+  :short "Name of the nullary function that defines
+          the size in bits of a C integer type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the name of one of the nullary functions
+     introduced in @(see integer-formats).")
+   (xdoc::p
+    "We take the name of the kind,
+     remove the initial @('s') or @('u'),
+     and add @('-bits') at the end."))
+  (b* ((char/short/int/long/llong
+        (if (type-case type :char)
+            "CHAR"
+          (str::implode (cdr (str::explode (symbol-name (type-kind type))))))))
+    (pack char/short/int/long/llong '-bits))
+  :prepwork
+  ((local (include-book "std/typed-lists/character-listp" :dir :system)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-type-minbits ((type typep))
+  :guard (type-integerp type)
+  :returns (minbits posp :rule-classes :type-prescription)
+  :short "Minimum number of bits that forms a value of a C integer type."
+  (case (type-kind type)
+    ((:char :schar :uchar) 8)
+    ((:sshort :ushort) 16)
+    ((:sint :uint) 16)
+    ((:slong :ulong) 32)
+    ((:sllong :ullong) 64)
+    (t (prog2$ (impossible) 1)))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-unsigned-integerp
+                                           type-signed-integerp)))
+  :hooks (:fix))

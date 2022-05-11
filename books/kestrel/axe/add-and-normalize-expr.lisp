@@ -37,8 +37,8 @@
 ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; TODO: Don't pass through the dag-variable-alist?
 (defund add-and-normalize-expr (fn
-                               simplified-args
-                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                                simplified-args
+                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   (declare (xargs :guard (and (symbolp fn)
                               (not (eq 'quote fn))
                               ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
@@ -50,9 +50,9 @@
                               (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (bounded-darg-listp simplified-args dag-len))))
   (if (and (eq fn 'bvxor)
-           (consp (cdr (cdr simplified-args)))
-           (quoted-natp (first simplified-args))
-           ;;normalize-xors
+           ;; normalize-xors
+           (consp (cdr (cdr simplified-args))) ; for guards
+           (quoted-natp (first simplified-args)) ; relax?
            )
       ;;it's a bvxor. note that since the args are simplified, if they are bvxor nests they are *normalized* bvxor nests
       (b* ((bvxor-width (unquote (first simplified-args)))
@@ -65,24 +65,22 @@
            ;; Make the leaves of the new nest:
            (nodenum-leaves-decreasing (merge-and-remove-dups arg2-leaves-increasing arg3-leaves-increasing nil))
            (accumulated-constant (bvxor bvxor-width arg2-constant arg3-constant))
-           (rev-leaves (if (eql 0 accumulated-constant)
-                           (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it
-                         (revappend nodenum-leaves-decreasing
-                                    (list (enquote accumulated-constant)))))
-           (- (cw "(BVXOR nest with ~x0 leaves.)~%" (len rev-leaves)))
-           )
+           (leaves-increasing (if (eql 0 accumulated-constant)
+                                  (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it
+                                (revappend nodenum-leaves-decreasing
+                                           (list (enquote accumulated-constant)))))
+           (- (cw "(BVXOR nest with ~x0 leaves.)~%" (len leaves-increasing))))
         ;; Build the new nest: ;; TODO: handle the constant separately
-        ;;add-bvxor-nest-to-dag-array takes the list of items in *increasing* (reverse) order:
-        (add-bvxor-nest-to-dag-array rev-leaves
+        (add-bvxor-nest-to-dag-array leaves-increasing ; reverse of the order we want them in
                                      bvxor-width
                                      (enquote bvxor-width)
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-    (if  (and (eq fn 'bitxor)
-              (consp (cdr simplified-args))
-              ;;normalize-xors
-              )
+    (if (and (eq fn 'bitxor)
+             ;; normalize-xors
+             (consp (cdr simplified-args)) ; for guards
+             )
         ;;it's a bitxor. note that since the args are simplified, if they are bitxor nests they are *normalized* bitxor nests
-        (b* (;; get xors from arg1 (TODO: Consider memoizing):
+        (b* ( ;; get xors from arg1 (TODO: Consider memoizing):
              ((mv arg1-constant arg1-leaves-increasing)
               (leaves-of-normalized-bitxor-nest (first simplified-args) dag-array dag-len))
              ;; get xors from arg2 (TODO: Consider memoizing):
@@ -91,16 +89,15 @@
              ;; Make the leaves of the new nest:
              (nodenum-leaves-decreasing (merge-and-remove-dups arg1-leaves-increasing arg2-leaves-increasing nil))
              (accumulated-constant (bitxor arg1-constant arg2-constant))
-             (rev-leaves (if (eql 0 accumulated-constant)
-                             (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it
-                           (revappend nodenum-leaves-decreasing
-                                      (list (enquote accumulated-constant)))))
-             (- (cw "(BITXOR nest with ~x0 leaves.)~%" (len rev-leaves))))
+             (leaves-increasing (if (eql 0 accumulated-constant)
+                                    (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it
+                                  (revappend nodenum-leaves-decreasing
+                                             (list (enquote accumulated-constant)))))
+             (- (cw "(BITXOR nest with ~x0 leaves.)~%" (len leaves-increasing))))
           ;; Build the new nest: ;; TODO: handle the constant separately
-          ;;add-bitxor-nest-to-dag-array takes the list of items in *increasing* (reverse) order:
-          (add-bitxor-nest-to-dag-array rev-leaves
+          (add-bitxor-nest-to-dag-array leaves-increasing ; reverse of the order we want them in
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-      ;; Not an xor that we handle:
+      ;; Not a function that we handle specially:
       (b* (((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
             (add-function-call-expr-to-dag-array fn simplified-args ;(if any-arg-was-simplifiedp (cons fn args) tree) ;could put back the any-arg-was-simplifiedp trick to save this cons
                                                  dag-array dag-len dag-parent-array dag-constant-alist)))

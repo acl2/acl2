@@ -307,20 +307,6 @@
                   0))
   :hints (("Goal" :in-theory (enable getbit-too-high))))
 
-;BOZO we want to use update-nth2 for arrays, but not for locals (which shouldn't blow up, since we should always be able to resolve nths into the locals...)
-
-;BOZO build update-nth2 into the machine model?
-;newly disabled..
-(defthmd update-nth-becomes-update-nth2
-  (implies (and (true-listp lst)
-                (< key (len lst))
-                (natp key))
-           (equal (update-nth key val lst)
-                  (update-nth2 (len lst)
-                               key
-                               val lst)))
-  :hints (("Goal" :in-theory (enable update-nth2))))
-
 (DEFTHMd NTH2-BECOMES-BVNTH-8
   (IMPLIES (AND (all-unsigned-byte-p 8 vals)
                 ;;(ALL-NATP VALS)
@@ -461,34 +447,6 @@
 (defthm natp-means-non-neg
   (implies (natp n)
            (not (< n 0))))
-
-(defthmd update-nth2-of-update-nth2-diff
-  (implies (and (syntaxp (quotep i1))
-                (syntaxp (quotep i2))
-                (< i1 len)
-                (< i2 i1)
-                (natp i1)
-                (natp i2)
-                (natp len)
-                (true-listp l)
-                (equal len (len l))
-                )
-           (equal (update-nth2 len i1 v1 (update-nth2 len i2 v2 l))
-                  (update-nth2 len i2 v2 (update-nth2 len i1 v1 l))))
-  :hints (("Goal"
-           :in-theory (enable update-nth2 ;LIST::UPDATE-NTH-UPDATE-NTH-DIFF
-                              ))))
-
-(defthm update-nth2-of-update-nth2-same
-  (implies (and (< i len)
-                (natp i)
-                (natp len)
-                )
-           (equal (update-nth2 len i v1 (update-nth2 len i v2 l))
-                  (update-nth2 len i v1 l)))
-  :hints (("Goal"
-           :in-theory (enable update-nth2 ;LIST::UPDATE-NTH-UPDATE-NTH-DIFF
-                              ))))
 
 ;; ;fixme the same as append-of-cons?
 ;; (DEFTHM LIST::xAPPEND-OF-CONS-BETTER2
