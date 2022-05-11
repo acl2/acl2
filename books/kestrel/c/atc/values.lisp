@@ -326,7 +326,9 @@
                  ((pointerp val) (type-pointer (pointer->reftype val)))
                  ((value-case val :array) (make-type-array
                                            :of (value-array->elemtype val)
-                                           :size nil))
+                                           :size (len
+                                                  (value-array->elements
+                                                   val))))
                  ((value-case val :struct) (type-struct
                                             (value-struct->tag val)))
                  (t (prog2$ (impossible) (irr-type))))))
@@ -349,7 +351,9 @@
                             (type-pointer (pointer->reftype val)))
                            ((value-case val :array)
                             (make-type-array :of (value-array->elemtype val)
-                                             :size nil))
+                                             :size (len
+                                                    (value-array->elements
+                                                     val))))
                            ((value-case val :struct)
                             (type-struct (value-struct->tag val)))
                            (t (prog2$ (impossible) (irr-type))))))

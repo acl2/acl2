@@ -308,6 +308,12 @@
 (define type-of-value ((val valuep))
   :returns (type typep)
   :short "Type of a value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is straightforward, as values carry type information.
+     For an array value, we always return an array type with a size,
+     which is the length of the array, which is always positive."))
   (value-case val
               :uchar (type-uchar)
               :schar (type-schar)
@@ -321,9 +327,11 @@
               :sllong (type-sllong)
               :pointer (type-pointer val.reftype)
               :array (make-type-array :of val.elemtype
-                                      :size nil) ; for now
+                                      :size (len val.elements))
               :struct (type-struct val.tag))
+  :guard-hints (("Goal" :in-theory (enable acl2::pos-optionp)))
   :hooks (:fix)
+  :prepwork ((local (include-book "std/lists/len" :dir :system)))
   ///
 
   (defruled type-signed-integerp-of-type-of-signed-integer-value
