@@ -184,6 +184,120 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-type-of-value-rules
+  :short "Rules about @(tsee type-of-value)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These rules rewrite @(tsee type-of-value) to specific types
+     under hypotheses on different types of values
+     that occur during symbolic execution."))
+
+  (defruled type-of-value-when-ucharp
+    (implies (ucharp x)
+             (equal (type-of-value x)
+                    (type-uchar)))
+    :enable (type-of-value
+             value-kind
+             ucharp))
+
+  (defruled type-of-value-when-scharp
+    (implies (scharp x)
+             (equal (type-of-value x)
+                    (type-schar)))
+    :enable (type-of-value
+             value-kind
+             scharp))
+
+  (defruled type-of-value-when-ushortp
+    (implies (ushortp x)
+             (equal (type-of-value x)
+                    (type-ushort)))
+    :enable (type-of-value
+             value-kind
+             ushortp))
+
+  (defruled type-of-value-when-sshortp
+    (implies (sshortp x)
+             (equal (type-of-value x)
+                    (type-sshort)))
+    :enable (type-of-value
+             value-kind
+             sshortp))
+
+  (defruled type-of-value-when-uintp
+    (implies (uintp x)
+             (equal (type-of-value x)
+                    (type-uint)))
+    :enable (type-of-value
+             value-kind
+             uintp))
+
+  (defruled type-of-value-when-sintp
+    (implies (sintp x)
+             (equal (type-of-value x)
+                    (type-sint)))
+    :enable (type-of-value
+             value-kind
+             sintp))
+
+  (defruled type-of-value-when-ulongp
+    (implies (ulongp x)
+             (equal (type-of-value x)
+                    (type-ulong)))
+    :enable (type-of-value
+             value-kind
+             ulongp))
+
+  (defruled type-of-value-when-slongp
+    (implies (slongp x)
+             (equal (type-of-value x)
+                    (type-slong)))
+    :enable (type-of-value
+             value-kind
+             slongp))
+
+  (defruled type-of-value-when-ullongp
+    (implies (ullongp x)
+             (equal (type-of-value x)
+                    (type-ullong)))
+    :enable (type-of-value
+             value-kind
+             ullongp))
+
+  (defruled type-of-value-when-sllongp
+    (implies (sllongp x)
+             (equal (type-of-value x)
+                    (type-sllong)))
+    :enable (type-of-value
+             value-kind
+             sllongp))
+
+  (defruled type-of-value-when-pointerp
+    (implies (pointerp x)
+             (equal (type-of-value x)
+                    (type-pointer (pointer->reftype x))))
+    :enable (type-of-value
+             value-kind
+             value-pointer->reftype
+             pointerp
+             pointer->reftype))
+
+  (defval *atc-type-of-value-rules*
+    '(type-of-value-when-ucharp
+      type-of-value-when-scharp
+      type-of-value-when-ushortp
+      type-of-value-when-sshortp
+      type-of-value-when-uintp
+      type-of-value-when-sintp
+      type-of-value-when-ulongp
+      type-of-value-when-slongp
+      type-of-value-when-ullongp
+      type-of-value-when-sllongp
+      type-of-value-when-pointerp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-type-of-value-option-rules
   :short "Rules about @(tsee type-of-value-option)."
   :long
