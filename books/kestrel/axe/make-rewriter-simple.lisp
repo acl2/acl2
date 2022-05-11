@@ -67,6 +67,7 @@
 ;(include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system) ;drop?
 (include-book "kestrel/alists-light/strip-cdrs" :dir :system) ;need strip-cdrs-of-append for the generated proofs
 (include-book "kestrel/utilities/with-local-stobjs" :dir :system)
+(include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "renumbering-stobj")
 (include-book "rewrite-stobj")
 (include-book "cars-increasing-by-1")
@@ -1806,7 +1807,7 @@
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                     print interpreted-function-alist rewrite-stobj (+ -1 count))
-              ;; No rule fired, so no simplification can be done.  Add the expression to the dag:
+              ;; No rule fired, so no simplification can be done.  Add the expression to the dag, but perhaps normalize nests of certain functions:
               (b* (((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                     (if (get-normalize-xors rewrite-stobj)
                         (add-and-normalize-expr fn args ; can we often save consing FN onto ARGS in this?
@@ -2979,7 +2980,7 @@
         ;;            (dag-constant-alistp (mv-nth 5 ,call-of-try-to-apply-rules)))
         ;;   :hints (("Goal" :use ,(pack$ 'theorem-for-try-to-apply-rules- suffix '-corollary)
         ;;            :in-theory (disable ,(pack$ 'theorem-for-try-to-apply-rules- suffix '-corollary)))))
-        
+
        (defthm ,(pack$ 'bound-theorem-for-simplify-fun-call-and-add-to-dag- suffix)
          (implies (and (<= bound (alen1 'node-replacement-array node-replacement-array))
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -4302,7 +4303,7 @@
               ))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    
+
     ;; Simplify a term and return an equivalent DAG.  Returns (mv erp dag-or-quotep).
     ;; TODO: add support for multiple rule-alists.
     (defund ,simplify-term-name (term
@@ -4471,7 +4472,7 @@
       :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    
+
     ;; Simplify a term and return a term (not a DAG).  Returns (mv erp term).
     (defund ,simp-term-name (term
                              assumptions
@@ -4523,7 +4524,7 @@
                :in-theory (e/d (,simp-term-name) (,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    
+
     ;; Simplify a list of terms, returning a list of the simplified terms
     ;; (not DAGs).  Returns (mv erp terms).
     (defun ,simp-terms-name (terms
@@ -5079,7 +5080,6 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;; Returns an (mv erp event state).
-    ;; todo: redundancy
     ;; todo: check if name already exists
     (defund ,def-simplified-dag-fn-name (name ; the name of the constant to create
                                          dag
@@ -5092,6 +5092,7 @@
                                          monitored-symbols
                                          normalize-xors
                                          memoize
+                                         whole-form
                                          state)
       (declare (xargs :guard (and (symbolp name)
                                   (pseudo-dagp dag)
@@ -5105,9 +5106,13 @@
                                   (symbol-listp monitored-symbols)
                                   (booleanp normalize-xors)
                                   (booleanp memoize)
+                                  (consp whole-form)
+                                  (symbolp (car whole-form))
                                   (ilks-plist-worldp (w state)))
                       :stobjs state))
-      (b* ((known-booleans (known-booleans (w state)))
+      (b* (((when (command-is-redundantp whole-form state))
+            (mv nil '(value-triple :invisible) state))
+           (known-booleans (known-booleans (w state)))
            ((mv erp rule-alist) (make-rule-alist rules (w state)))
            ((when erp) (mv erp nil state))
            ((mv erp dag-or-quotep) (,simplify-dag-name dag
@@ -5123,11 +5128,13 @@
                                                        memoize))
            ((when erp) (mv erp nil state)))
         (mv (erp-nil)
-            `(defconst ,name ',dag-or-quotep)
+            `(progn (defconst ,name ',dag-or-quotep)
+                    (with-output :off :all (table ,',(pack$ def-simplified-dag-name '-table) ',whole-form ':fake)))
             state)))
 
     ;; Creates a constant named *name*.  TODO: Check for name clashes.
-    (defmacro ,def-simplified-dag-name (name
+    (defmacro ,def-simplified-dag-name (&whole whole-form
+                                        name
                                         dag
                                         &key
                                         (assumptions 'nil)
@@ -5139,7 +5146,7 @@
                                         (monitored-symbols 'nil)
                                         (normalize-xors 'nil)
                                         (memoize 't))
-      `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,interpreted-function-alist ,limits ,rules ,count-hits ,print ,monitored-symbols ,normalize-xors ,memoize state)))
+      `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,interpreted-function-alist ,limits ,rules ,count-hits ,print ,monitored-symbols ,normalize-xors ,memoize ',whole-form state)))
 
     )))
 
