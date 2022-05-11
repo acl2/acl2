@@ -12,7 +12,8 @@
 (in-package "C")
 
 (include-book "values")
-(include-book "tag-environments")
+
+(include-book "../language/tag-environments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

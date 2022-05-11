@@ -991,11 +991,11 @@
        (arg2 (value-fix arg2))
        ((unless (value-integerp arg1))
         (error (list :mistype-bitand
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg1)))
        ((unless (value-integerp arg2))
         (error (list :mistype-bitand
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
@@ -1021,11 +1021,11 @@
        (arg2 (value-fix arg2))
        ((unless (value-integerp arg1))
         (error (list :mistype-bitxor
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg1)))
        ((unless (value-integerp arg2))
         (error (list :mistype-bitxor
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
@@ -1051,11 +1051,11 @@
        (arg2 (value-fix arg2))
        ((unless (value-integerp arg1))
         (error (list :mistype-bitior
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg1)))
        ((unless (value-integerp arg2))
         (error (list :mistype-bitior
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
@@ -1560,7 +1560,9 @@
     "We go through formal parameters and actual arguments,
      pairing them up into the scope.
      We return an error if they do not match in number or types,
-     or if there are repeated parameters."))
+     or if there are repeated parameters.
+     We perform array-to-pointer conversion on both types
+     before comparing them."))
   (b* ((formals (param-declon-list-fix formals))
        (actuals (value-list-fix actuals))
        ((when (endp formals))
@@ -1574,8 +1576,8 @@
        (formal (car formals))
        (actual (car actuals))
        ((mv name tyname) (param-declon-to-ident+tyname formal))
-       (formal-type (tyname-to-type tyname))
-       (actual-type (type-of-value actual))
+       (formal-type (apconvert-type (tyname-to-type tyname)))
+       (actual-type (apconvert-type (type-of-value actual)))
        ((unless (equal formal-type actual-type))
         (error (list :formal-actual-mistype
                      :name name
