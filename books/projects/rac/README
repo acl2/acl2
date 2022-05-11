@@ -12,7 +12,7 @@ Documentation
   RAC is described in Chapter 15 of the book
 
     Russinoff, D.M., Formal Verification of Floating-Point Hardware Design:
-    A Mathematical Approach, Springer, 2018.
+    A Mathematical Approach, Springer, 2nd edition, 2022.
 
 Contents of this Directory
 --------------------------
@@ -75,12 +75,12 @@ Structure of a RAC Program
 
     #include <rac.h>
 
-  possibly preceded by one or both of the lines
+  possibly preceded by one of these two lines
 
     #include <ac_int.h>
     #include <ac_fixed.h>
 
-  as needed.  Note that this ordering is critical.
+  as needed.
 
   Every program must also contain the delimiting comments
 
