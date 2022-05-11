@@ -438,7 +438,7 @@
    (xdoc::h4 "Useless Runes Updates")
 
    (xdoc::p
-    "The <see topic='@(url build::cert.pl)'>cert.pl</see> shell command
+    "The <see topic='@(url build::cert.pl)'>cert.pl</see> perl script
      by default now makes use of @(see useless-runes) files when they
      are available.  It does that by binding the environment variable
      @('ACL2_USELESS_RUNES=-25') unless the environment variable is
@@ -477,6 +477,39 @@
      time of @(see books-certification) using @('make') has been removed, and
      ACL2(p) now works the same way as ACL2 for the @(see useless-runes)
      feature.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Book Dependencies in S-expression Form")
+
+   (xdoc::p
+    "The <see topic='@(url build::cert.pl)'>cert.pl</see> perl script
+     generally writes book dependency information in Makefile format
+     to the file @('Makefile-tmp'), or if specified, to the file named
+     after the flag @('-o').")
+
+   (xdoc::p
+    "Now @('cert.pl') has a new flag, @('--smakefile'), that causes cert.pl
+     to write book dependency information in S-expression format as well,
+     to a file named @('xxx.lsp'), where @('xxx') is where the Makefile
+     format dependency information is being written.")
+
+   (xdoc::p
+    "When you invoke the @('make') command to build the community books,
+     one of the things @('build/GNUmakefile') does is to scan the community
+     books for dependency information, using
+     <see topic='@(url build::cert.pl)'>cert.pl</see>.
+     Now the default is for that call to include the @('--smakefile')
+     flag, causing the dependency information to also be written in
+     a format that is easy to read by ACL2.  The new file is about
+     4 MB, as compared with a freshly cloned ACL2 repo of about 1800 MB.
+     If you wish to turn off this feature, you can set the
+     environment variable @('ACL2_INHIBIT_DEPS_LSP') to any nonempty string
+     prior to invoking @('make').
+     For example:")
+
+   (xdoc::@{}
+    "ACL2_INHIBIT_DEPS_LSP=1 make -j12 regression")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

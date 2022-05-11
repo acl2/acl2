@@ -285,6 +285,17 @@ else
 	PCERT_OPT :=
 endif
 
+# If you want to turn off generating
+# the .lsp version of the dependencies file,
+# you can set the environment variable ACL2_INHIBIT_DEPS_LSP
+# to a nonempty value.
+#
+ifndef ACL2_INHIBIT_DEPS_LSP
+	SMAKE_OPT := "--smakefile"
+else
+	SMAKE_OPT :=
+endif
+
 $(info Scanning for dependencies...)
 REBUILD_MAKEFILE_DEPS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-deps $(BUILD_DIR)/Makefile-deps.out; \
@@ -294,6 +305,7 @@ REBUILD_MAKEFILE_DEPS := $(shell \
           --print-relocs \
           $(PCERT_OPT) \
           --static-makefile $(BUILD_DIR)/Makefile-deps \
+          $(SMAKE_OPT) \
           --cache $(BUILD_DIR)/Makefile-cache \
           --acl2-books `pwd` \
           --targets $(BUILD_DIR)/Makefile-books \
@@ -1628,7 +1640,6 @@ centaur/getopt/demo2-test.ok: centaur/getopt/demo2 \
 	@ls -l centaur/getopt/demo2-test.ok
 
 regression: centaur/getopt/demo2-test.ok
-
 
 
 ##############################

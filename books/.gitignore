@@ -13,6 +13,8 @@ workxxx*
 *.acl2x
 Makefile-deps
 Makefile-tmp
+Makefile-deps.lsp
+Makefile-tmp.lsp
 *.data
 *.o
 *.sbin
