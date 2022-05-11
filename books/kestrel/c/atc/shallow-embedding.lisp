@@ -31,7 +31,7 @@
      In contrast, the "
     (xdoc::seetopic "abstract-syntax" "abstract syntax")
     ", "
-    (xdoc::seetopic "atc-static-semantics" "static semantics")
+    (xdoc::seetopic "static-semantics" "static semantics")
     ", and "
     (xdoc::seetopic "atc-dynamic-semantics" "dynamic semantics")
     " constitute a deep embedding of C in ACL2.
