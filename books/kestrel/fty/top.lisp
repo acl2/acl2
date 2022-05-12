@@ -68,6 +68,7 @@
 (include-book "hex-digit-char")
 (include-book "oct-digit-char")
 (include-book "bin-digit-char")
+(include-book "string-stringlist-alist")
 (include-book "symbol-pseudoterm-alist")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
