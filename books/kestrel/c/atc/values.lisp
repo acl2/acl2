@@ -309,201 +309,214 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled type-of-value-alt-def
-  :short "Alternative definition of @(tsee type-of-value)."
-  (equal (type-of-value val)
-         (b* ((val (value-fix val)))
-           (cond ((ucharp val) (type-uchar))
-                 ((scharp val) (type-schar))
-                 ((ushortp val) (type-ushort))
-                 ((sshortp val) (type-sshort))
-                 ((uintp val) (type-uint))
-                 ((sintp val) (type-sint))
-                 ((ulongp val) (type-ulong))
-                 ((slongp val) (type-slong))
-                 ((ullongp val) (type-ullong))
-                 ((sllongp val) (type-sllong))
-                 ((pointerp val) (type-pointer (pointer->reftype val)))
-                 ((value-case val :array) (make-type-array
-                                           :of (value-array->elemtype val)
-                                           :size (len
-                                                  (value-array->elements
-                                                   val))))
-                 ((value-case val :struct) (type-struct
-                                            (value-struct->tag val)))
-                 (t (prog2$ (impossible) (irr-type))))))
-  :use (:instance lemma (val (value-fix val)))
-  :prep-lemmas
-  ((defruled lemma
-     (implies (valuep val)
-              (equal (type-of-value val)
-                     (cond ((ucharp val) (type-uchar))
-                           ((scharp val) (type-schar))
-                           ((ushortp val) (type-ushort))
-                           ((sshortp val) (type-sshort))
-                           ((uintp val) (type-uint))
-                           ((sintp val) (type-sint))
-                           ((ulongp val) (type-ulong))
-                           ((slongp val) (type-slong))
-                           ((ullongp val) (type-ullong))
-                           ((sllongp val) (type-sllong))
-                           ((pointerp val)
-                            (type-pointer (pointer->reftype val)))
-                           ((value-case val :array)
-                            (make-type-array :of (value-array->elemtype val)
-                                             :size (len
-                                                    (value-array->elements
-                                                     val))))
-                           ((value-case val :struct)
-                            (type-struct (value-struct->tag val)))
-                           (t (prog2$ (impossible) (irr-type))))))
-     :enable (type-of-value
-              value-kind
-              value-fix
-              valuep
-              ucharp
-              scharp
-              ushortp
-              sshortp
-              uintp
-              sintp
-              ulongp
-              slongp
-              ullongp
-              sllongp
-              pointerp
-              pointer->reftype
-              value-pointer->reftype
-              value-array->elemtype))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection value-predicates-to-type-of-value-equalities
   :short "Rules that rewrite predicates for values
           to equalities of the types of the values."
-
-  (local (in-theory (enable type-of-value-alt-def)))
 
   (defruled ucharp-to-type-of-value
     (implies (valuep x)
              (equal (ucharp x)
                     (equal (type-of-value x)
-                           (type-uchar)))))
+                           (type-uchar))))
+    :enable (type-of-value
+             valuep
+             value-kind
+             ucharp))
 
   (defruled scharp-to-type-of-value
     (implies (valuep x)
              (equal (scharp x)
                     (equal (type-of-value x)
-                           (type-schar)))))
+                           (type-schar))))
+    :enable (type-of-value
+             valuep
+             value-kind
+             scharp))
 
   (defruled ushortp-to-type-of-value
     (implies (valuep x)
              (equal (ushortp x)
                     (equal (type-of-value x)
-                           (type-ushort)))))
+                           (type-ushort))))
+    :enable (type-of-value
+             valuep
+             value-kind
+             ushortp))
 
   (defruled sshortp-to-type-of-value
     (implies (valuep x)
              (equal (sshortp x)
                     (equal (type-of-value x)
-                           (type-sshort)))))
+                           (type-sshort))))
+    :enable (type-of-value
+             valuep
+             value-kind
+             sshortp))
 
   (defruled uintp-to-type-of-value
     (implies (valuep x)
              (equal (uintp x)
                     (equal (type-of-value x)
-                           (type-uint)))))
+                           (type-uint))))
+    :enable (type-of-value
+             valuep
+             value-kind
+             uintp))
 
   (defruled sintp-to-type-of-value
     (implies (valuep x)
              (equal (sintp x)
                     (equal (type-of-value x)
-                           (type-sint)))))
+                           (type-sint))))
+    :enable (type-of-value
+             valuep
+             value-kind
+             sintp))
 
   (defruled ulongp-to-type-of-value
     (implies (valuep x)
              (equal (ulongp x)
                     (equal (type-of-value x)
-                           (type-ulong)))))
+                           (type-ulong))))
+    :enable (type-of-value
+             valuep
+             value-kind
+             ulongp))
 
   (defruled slongp-to-type-of-value
     (implies (valuep x)
              (equal (slongp x)
                     (equal (type-of-value x)
-                           (type-slong)))))
+                           (type-slong))))
+    :enable (type-of-value
+             valuep
+             value-kind
+             slongp))
 
   (defruled ullongp-to-type-of-value
     (implies (valuep x)
              (equal (ullongp x)
                     (equal (type-of-value x)
-                           (type-ullong)))))
+                           (type-ullong))))
+    :enable (type-of-value
+             valuep
+             value-kind
+             ullongp))
 
   (defruled sllongp-to-type-of-value
     (implies (valuep x)
              (equal (sllongp x)
                     (equal (type-of-value x)
-                           (type-sllong)))))
+                           (type-sllong))))
+    :enable (type-of-value
+             valuep
+             value-kind
+             sllongp))
 
   (defruled pointerp-to-type-of-value
     (implies (valuep x)
              (equal (pointerp x)
                     (equal (type-of-value x)
-                           (type-pointer (pointer->reftype x)))))))
+                           (type-pointer (pointer->reftype x)))))
+    :enable (type-of-value
+             valuep
+             value-kind
+             value-pointer->reftype
+             pointerp
+             pointer->reftype)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection value-predicates-to-type-of-value-forward
-  :short "Forward-chaining rules from predicates for values
-          to equalities of the types of the values."
+(defsection type-of-value-under-value-predicates
+  :short "Rules that rewrite @(tsee type-of-value) to specific types
+          under hypotheses on different types of values."
 
-  (local (in-theory (enable type-of-value-alt-def)))
-
-  (defruled type-of-value-when-ucharp-forward
+  (defruled type-of-value-when-ucharp
     (implies (ucharp x)
              (equal (type-of-value x)
-                    (type-uchar))))
+                    (type-uchar)))
+    :enable (type-of-value
+             value-kind
+             ucharp))
 
-  (defruled type-of-value-when-scharp-forward
+  (defruled type-of-value-when-scharp
     (implies (scharp x)
              (equal (type-of-value x)
-                    (type-schar))))
+                    (type-schar)))
+    :enable (type-of-value
+             value-kind
+             scharp))
 
-  (defruled type-of-value-when-ushortp-forward
+  (defruled type-of-value-when-ushortp
     (implies (ushortp x)
              (equal (type-of-value x)
-                    (type-ushort))))
+                    (type-ushort)))
+    :enable (type-of-value
+             value-kind
+             ushortp))
 
-  (defruled type-of-value-when-sshortp-forward
+  (defruled type-of-value-when-sshortp
     (implies (sshortp x)
              (equal (type-of-value x)
-                    (type-sshort))))
+                    (type-sshort)))
+    :enable (type-of-value
+             value-kind
+             sshortp))
 
-  (defruled type-of-value-when-uintp-forward
+  (defruled type-of-value-when-uintp
     (implies (uintp x)
              (equal (type-of-value x)
-                    (type-uint))))
+                    (type-uint)))
+    :enable (type-of-value
+             value-kind
+             uintp))
 
-  (defruled type-of-value-when-sintp-forward
+  (defruled type-of-value-when-sintp
     (implies (sintp x)
              (equal (type-of-value x)
-                    (type-sint))))
+                    (type-sint)))
+    :enable (type-of-value
+             value-kind
+             sintp))
 
-  (defruled type-of-value-when-ulongp-forward
+  (defruled type-of-value-when-ulongp
     (implies (ulongp x)
              (equal (type-of-value x)
-                    (type-ulong))))
+                    (type-ulong)))
+    :enable (type-of-value
+             value-kind
+             ulongp))
 
-  (defruled type-of-value-when-slongp-forward
+  (defruled type-of-value-when-slongp
     (implies (slongp x)
              (equal (type-of-value x)
-                    (type-slong))))
+                    (type-slong)))
+    :enable (type-of-value
+             value-kind
+             slongp))
 
-  (defruled type-of-value-when-ullongp-forward
+  (defruled type-of-value-when-ullongp
     (implies (ullongp x)
              (equal (type-of-value x)
-                    (type-ullong))))
+                    (type-ullong)))
+    :enable (type-of-value
+             value-kind
+             ullongp))
 
-  (defruled type-of-value-when-sllongp-forward
+  (defruled type-of-value-when-sllongp
     (implies (sllongp x)
              (equal (type-of-value x)
-                    (type-sllong)))))
+                    (type-sllong)))
+    :enable (type-of-value
+             value-kind
+             sllongp))
+
+  (defruled type-of-value-when-pointerp
+    (implies (pointerp x)
+             (equal (type-of-value x)
+                    (type-pointer (pointer->reftype x))))
+    :enable (type-of-value
+             value-kind
+             value-pointer->reftype
+             pointerp
+             pointer->reftype)))

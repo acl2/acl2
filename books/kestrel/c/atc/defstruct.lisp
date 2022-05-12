@@ -819,7 +819,7 @@
                       (,struct-tag-p (struct-write-member ',name val struct)))
              :enable (,struct-tag-p
                       struct-write-member
-                      ,(packn-pos (list 'type-of-value-when- typep '-forward)
+                      ,(packn-pos (list 'type-of-value-when- typep)
                                   'type-of-value))
              :use (:instance defstruct-writer-lemma
                    (meminfos ',members)
