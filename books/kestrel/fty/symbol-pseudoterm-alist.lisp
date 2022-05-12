@@ -20,7 +20,7 @@
 (fty::defalist symbol-pseudoterm-alist
   :short "Fixtype of alists from symbols to pseudo-terms."
   :key-type symbol
-  :val-type acl2::pseudo-term
+  :val-type pseudo-term
   :true-listp t
   :keyp-of-nil t
   :valp-of-nil t
