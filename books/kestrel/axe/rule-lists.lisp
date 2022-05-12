@@ -661,7 +661,7 @@
      equal-of-bvif-safe
 
      bvcat-associative ;trying...
-     
+
      bvcat-of-bvcat-high-tighten ;bozo general rule?
      bvcat-of-getbit-high-tighten
      bvcat-of-bvchop-high-tighten ;gen the bvchop to any bv term
@@ -991,7 +991,8 @@
     nth-of-append ;may be bad if we can't resolve the if test?
     len-of-firstn ;sun feb  6 11:16:17 2011
     equal-cons-nil-1
-    equal-cons-nil-2))
+    equal-cons-nil-2
+    consp-of-myif-strong))
 
 ;; TODO: Move some of these into list-rules.
 (defun list-rules2 ()
@@ -1669,7 +1670,6 @@
 
             getbit-of-bvxor
 
-            consp-of-myif-strong
             myif-equal-nil-rewrite
             myif-becomes-boolif-t-arg1
             myif-becomes-boolif-t-arg2
@@ -1740,7 +1740,7 @@
 
 ;;normalize boolif nests that are really ands?
 
-;FIXME add lots more rules to this
+;; TODO: add lots more rules to this
 (defun arithmetic-rules ()
   (declare (xargs :guard t))
   '(fold-consts-in-+
@@ -2352,7 +2352,8 @@
 ;    nth-of-myif ;Tue Mar 16 00:57:56 2010 (could restrict to myifs of conses) ;bad? ;Sun May  9 21:51:07 2010
     ))
 
-;ffixme add more to this list!
+;; Only used in the equivalence checker
+;; todo: add more to this list!
 ;turn equal around... equal t and predicate...
 ;fixme consider adding *DEFINITION-MINIMAL-THEORY* to this, since acl2 will use those even when they are turned off?
 ;or avoid calling acl2 and all and just call prove-theorem?
@@ -2459,6 +2460,7 @@
      ;;EQUAL-OF-T-WHEN-BOOLEANP ;newer
      )))
 
+;; Only used in the equivalence checker
 ;we do seem to sometimes need these when verifying that the simplified exit tests are the same as the original exit tests
 (defun exit-test-simplification-proof-rules ()
   (declare (xargs :guard t))
@@ -2469,12 +2471,12 @@
           (boolean-rules)
           (exit-test-simplification-rules)))
 
-;fffixme add to this (and/or of constants, etc.)
-(defun rules-that-throw-stuff-away ()
-  (declare (xargs :guard t))
-  '(equal-same
-    nth-of-cons-constant-version
-    mv-nth-of-cons-alt))
+;; ;todo: add to this (and/or of constants, etc.)
+;; (defun rules-that-throw-stuff-away ()
+;;   (declare (xargs :guard t))
+;;   '(equal-same
+;;     nth-of-cons-constant-version
+;;     mv-nth-of-cons-alt))
 
 (defun reassemble-bv-rules ()
   (declare (xargs :guard t))
@@ -2492,11 +2494,10 @@
     bvcat-of-slice-and-x-adjacent-2
     bvcat-of-getbit-and-x-adjacent-2))
 
-;reprecate?
+;deprecate?
 (defun anti-blast-rules ()
   (declare (xargs :guard t))
   (reassemble-bv-rules))
-
 
 (defun strengthening-rules ()
   (declare (xargs :guard t))
