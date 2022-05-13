@@ -30,8 +30,6 @@
                         defxdoc+
                         nat
                         nat-resultp
-                        patbind-nat-result-err
-                        patbind-nat-result-ok
                         fty::err
                         fty::info
                         fty::ok

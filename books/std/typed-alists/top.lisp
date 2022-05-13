@@ -15,6 +15,7 @@
 (include-book "keyword-symbol-alistp")
 (include-book "keyword-truelist-alistp")
 (include-book "string-string-alistp")
+(include-book "string-stringlist-alistp")
 (include-book "string-symbol-alistp")
 (include-book "string-symbollist-alistp")
 (include-book "symbol-alistp")
