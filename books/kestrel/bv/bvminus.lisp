@@ -1,7 +1,7 @@
 ; A function to subtract two bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,8 +14,10 @@
 ;; TODO: Consider defining bvminus in terms of bvplus and bvuminus.
 
 (include-book "bvchop")
+(include-book "bvuminus")
 
 ;; Compute the (modular) difference of X and Y.
+;; TODO: Consider defining this in terms of bvplus and bvuminus.
 (defund bvminus (size x y)
   (declare (type (integer 0 *) size))
   (bvchop size (- (ifix x) (ifix y))))
@@ -122,4 +124,20 @@
                 )
            (equal (bvminus size k x)
                   (bvminus size (bvchop size k) x)))
+  :hints (("Goal" :in-theory (enable bvminus))))
+
+(defthm bvminus-of-bvuminus
+  (equal (bvminus size x (bvuminus size y))
+         (bvplus size x y))
+  :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer
+                                     bvchop-of-sum-cases
+                                     bvplus
+                                     bvuminus
+                                     bvminus))))
+
+;; Another rule may turn the RHS into a call of bvuminus.
+(defthm bvminus-when-arg1-is-not-an-integer
+  (implies (not (integerp x))
+           (equal (bvminus size x y)
+                  (bvminus size 0 y)))
   :hints (("Goal" :in-theory (enable bvminus))))

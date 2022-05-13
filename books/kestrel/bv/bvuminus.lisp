@@ -1,7 +1,7 @@
 ; Arithmetic negation of a bit-vector
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,19 +11,18 @@
 
 (in-package "ACL2")
 
-(include-book "bvminus")
 (include-book "bvplus")
+(include-book "bvchop")
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
-;; TODO: Consider defining bvminus in terms of bvuminus
-
 ;; "bit-vector unary minus"
-;; Compute the (modular) additive inverse of X.
+;; Compute the (modular) negation / additive inverse of X.
 (defund bvuminus (size x)
   (declare (type (integer 0 *) size))
-  (bvminus size 0 x))
+  ;; (bvminus size 0 x)
+  (bvchop size (- (ifix x))))
 
 (defthm integerp-of-bvuminus
   (integerp (bvuminus size x))
@@ -39,7 +38,7 @@
                 (>= size 0)
                 (integerp size1))
            (unsigned-byte-p size1 (bvuminus size i)))
-  :hints (("Goal" :in-theory (e/d (bvuminus) ()))))
+  :hints (("Goal" :in-theory (e/d (bvuminus unsigned-byte-p) (BVCHOP-OF-MINUS)))))
 
 (defthm bvuminus-when-arg-is-not-an-integer
   (implies (not (integerp x))
@@ -60,7 +59,7 @@
            (equal (equal k (bvuminus size x))
                   (and (unsigned-byte-p size k)
                        (equal (bvuminus size k) (bvchop size x)))))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p bvchop-of-sum-cases bvplus bvuminus bvminus))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p bvchop-of-sum-cases bvuminus))))
 
 ;0 is special, because its negation is always the same number (0 itself)
 (defthm equal-of-0-and-bvuminus
@@ -72,31 +71,15 @@
 (defthm bvuminus-of-bvuminus
   (equal (bvuminus size (bvuminus size x))
          (bvchop size x))
-  :hints (("Goal" :in-theory (enable BVCHOP-WHEN-I-IS-NOT-AN-INTEGER bvchop-of-sum-cases bvplus bvuminus bvminus))))
+  :hints (("Goal" :in-theory (enable BVCHOP-WHEN-I-IS-NOT-AN-INTEGER bvchop-of-sum-cases bvuminus))))
 
 (defthm bvuminus-of-0
   (equal (bvuminus size 0)
          0)
-  :hints (("Goal" :in-theory (e/d (bvuminus bvminus ;bozo
+  :hints (("Goal" :in-theory (e/d (bvuminus ;bvminus ;bozo
                                             bvchop-when-i-is-not-an-integer)
                                   (;bvminus-becomes-bvplus-of-bvuminus
                                    )))))
-
-(defthm bvminus-of-bvuminus
-  (equal (bvminus size x (bvuminus size y))
-         (bvplus size x y))
-  :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer
-                                     bvchop-of-sum-cases
-                                     bvplus
-                                     bvuminus
-                                     bvminus))))
-
-
-(defthm bvminus-when-arg1-is-not-an-integer
-  (implies (not (integerp x))
-           (equal (bvminus size x y)
-                  (bvuminus size y)))
-  :hints (("Goal" :in-theory (enable bvminus bvuminus))))
 
 (defthm bvuminus-when-bvchop-known-subst
   (implies (and (equal free (bvchop size x))
@@ -107,7 +90,7 @@
                   (bvuminus size free) ;gets computed if size is a constant
                   ))
   :hints (("Goal" :cases ((natp size))
-           :in-theory (enable bvuminus bvminus ;bozo
+           :in-theory (enable bvuminus ;bvminus ;bozo
                               bvchop-when-i-is-not-an-integer))))
 
 (defthm bvchop-of-bvuminus
@@ -116,13 +99,15 @@
                 (natp size2))
            (equal (bvchop size1 (bvuminus size2 x))
                   (bvuminus size1 x)))
-  :hints (("Goal" :in-theory (e/d (bvminus bvuminus ;bvchop-bvchop
+  :hints (("Goal" :in-theory (e/d (;bvminus
+                                   bvuminus ;bvchop-bvchop
                                            ) ( bvchop-of-minus)))))
 
 (defthm bvchop-of-bvuminus-same
   (equal (bvchop size (bvuminus size x))
          (bvuminus size x))
-  :hints (("Goal" :in-theory (e/d (bvminus bvuminus ;bvchop-bvchop
+  :hints (("Goal" :in-theory (e/d (;bvminus
+                                   bvuminus ;bvchop-bvchop
                                            ) ( bvchop-of-minus)))))
 
 (defthm bvuminus-of-bvchop-arg2
@@ -140,7 +125,9 @@
 (defthm bvplus-of-bvuminus-same
   (equal (bvplus size (bvuminus size x) x)
          0)
-  :hints (("Goal" :in-theory (enable bvplus bvminus bvuminus))))
+  :hints (("Goal" :in-theory (enable ;bvplus bvminus
+                              bvplus
+                              bvuminus))))
 
 (defthm bvplus-of-bvuminus-same-alt
   (equal (bvplus size x (bvuminus size x))
@@ -153,14 +140,16 @@
                 (bvchop size x))
          (or (equal 0 (bvchop size x))
              (equal (expt 2 (+ -1 size)) (bvchop size x))))
-  :hints (("Goal" :cases ((natp size)) :in-theory (enable bvuminus bvminus))))
+  :hints (("Goal" :cases ((natp size)) :in-theory (enable bvuminus ;bvminus
+                                                          ))))
 
 (defthm equal-of-bvchop-and-bvuminus-same
   (equal (equal (bvchop size x)
                 (bvuminus size x))
          (or (equal 0 (bvchop size x))
              (equal (expt 2 (+ -1 size)) (bvchop size x))))
-  :hints (("Goal" :cases ((natp size)) :in-theory (enable bvuminus bvminus))))
+  :hints (("Goal" :cases ((natp size)) :in-theory (enable bvuminus ;bvminus
+                                                          ))))
 
 (defthm unsigned-byte-p-of-bvuminus-bigger-simple
   (implies (and (< m n)
@@ -170,15 +159,19 @@
                   (or (equal 0 (bvchop n x))
                       (< (+ (expt 2 n) (- (expt 2 m)))
                          (bvchop n x)))))
-  :hints (("Goal" :in-theory (enable bvuminus bvminus unsigned-byte-p))))
+  :hints (("Goal" :in-theory (enable bvuminus ;bvminus
+                                     unsigned-byte-p))))
 
+;rename
 (defthm bvplus-of-bvuminus-same-2
   (implies (natp size)
            (equal (bvplus size x (bvplus size (bvuminus size x) y))
                   (bvchop size y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvminus bvuminus bvchop-when-i-is-not-an-integer)
+  :hints (("Goal" :in-theory (e/d (bvplus ;bvminus
+                                   bvuminus bvchop-when-i-is-not-an-integer)
                                   (bvchop-of-minus)))))
 
+;rename
 (defthm bvplus-of-bvuminus-same-2-alt
   (implies (natp size)
            (equal (bvplus size (bvuminus size x) (bvplus size x y))
