@@ -614,16 +614,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check whether the heap has an array at the address.
+    "We check whether the heap has an array at the address,
+     of the same type as the new array;
+     note that the types include the number of elements
+     (it should be an invariant, which we plan to prove,
+     that array values have elements
+     whose type is the element type of the array).
      If this checks succeed, we overwrite the array in the heap.")
    (xdoc::p
     "Note that this function writes the array as a whole;
      it does not write an array element.
      Functions like @(tsee uchar-array-write-sint)
-     can be used to write individual array elements.")
-   (xdoc::p
-    "Before overwriting the array,
-     we ensure that the new one has the same type and length."))
+     can be used to write individual array elements."))
   (b* ((addr (address-fix addr))
        (heap (compustate->heap compst))
        (addr+obj (omap::in addr heap))
@@ -632,16 +634,11 @@
        (obj (cdr addr+obj))
        ((unless (value-case obj :array))
         (error (list :address-not-array addr obj)))
-       ((unless (equal (value-array->elemtype array)
-                       (value-array->elemtype obj)))
+       ((unless (equal (type-of-value array)
+                       (type-of-value obj)))
         (error (list :array-type-mismatch
-                     :old (value-array->elemtype obj)
-                     :new (value-array->elemtype array))))
-       ((unless (equal (value-array->length array)
-                       (value-array->length obj)))
-        (error (list :array-length-mismatch
-                     :old (value-array->length obj)
-                     :new (value-array->length array))))
+                     :old (type-of-value obj)
+                     :new (type-of-value array))))
        (new-heap (omap::update addr (value-fix array) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)
