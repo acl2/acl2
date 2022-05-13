@@ -372,22 +372,22 @@
      bvplus-of-0-arg2
 
      bvand-of-0-arg2
-     bvand-of-0-arg3 ; could drop if commute constants forward
+     bvand-of-0-arg3 ; could drop if commuting constants forward
      bvor-of-0-arg2
-     bvor-of-0-arg3 ; could drop if commute constants forward
+     bvor-of-0-arg3 ; could drop if commuting constants forward
      bvxor-of-0-arg2
-     bvxor-of-0-arg3 ; could drop if commute constants forward
+     bvxor-of-0-arg3 ; could drop if commuting constants forward
 
      bitand-of-0-arg1
-     bitand-of-0-arg2 ; could drop if commute constants forward
+     bitand-of-0-arg2 ; could drop if commuting constants forward
      bitand-of-1-arg1
-     bitand-of-1-arg2 ; could drop if commute constants forward
+     bitand-of-1-arg2 ; could drop if commuting constants forward
      bitor-of-0-arg1
-     bitor-of-0-arg2 ; could drop if commute constants forward
+     bitor-of-0-arg2 ; could drop if commuting constants forward
      bitor-of-1-arg2
-     bitor-of-1-arg1 ; could drop if commute constants forward
+     bitor-of-1-arg1 ; could drop if commuting constants forward
      bitxor-of-0-arg1
-     bitxor-of-0-arg2 ;drop if we always commute
+     bitxor-of-0-arg2 ; could drop if commuting constants forward
      ;; bitxor-of-1-becomes-bitnot-arg2 ; best to keep the bitxor since we have special handling for bitxor nests
      ;; bitxor-of-1-becomes-bitnot-arg1 ; best to keep the bitxor since we have special handling for bitxor nests
 
@@ -548,6 +548,8 @@
      bitxor-of-getbit-arg2
      bitor-of-getbit-arg1
      bitor-of-getbit-arg2
+     bvif-of-getbit-arg3
+     bvif-of-getbit-arg4
 
      bvlt-self
      bvlt-of-bvmod-false
@@ -755,12 +757,10 @@
 
 ;    bvxor-all-ones ;do we want this? ;trying without...
 
-    bvif-of-getbit-arg1
-    bvif-of-getbit-arg2
     bvminus-becomes-bvplus-of-bvuminus ;trying...
 
     bvminus-bound-2
-    slice-of-logtail
+    ;; slice-of-logtail
 
     bound-when-usb2 ;uses the dag assumptions - huh? (expensive?)
 
@@ -867,7 +867,7 @@
     len-of-getbit-list
     all-unsigned-byte-p-of-getbit-list
 
-    logtail-of-bvchop-becomes-slice ;drop?
+    ;; logtail-of-bvchop-becomes-slice ;drop?
 
     equal-bvcat-0-left
     equal-bvcat-0-right
@@ -1102,7 +1102,7 @@
   (declare (xargs :guard t))
   '(all-unsigned-byte-p-of-update-nth
     bvchop-8-bvnth-8 ;gen
-    bvchop-of-logtail-becomes-slice
+    ;; bvchop-of-logtail-becomes-slice
     getbit-of-bvnth-when-getbit-is-always-0
     getbit-of-bvnth-when-getbit-is-always-1
     bvnth-of-bvchop
@@ -1627,7 +1627,7 @@
 ;    bvxor-smaller-term-becomes-cat-arg1 ;yuck? Sat Jan 22 01:06:43 2011
 ;   bvxor-smaller-term-becomes-cat-arg2 ;yuck? Sat Jan 22 01:06:45 2011
 
-            logtail-becomes-slice-dag       ;drop?
+            ;; logtail-becomes-slice-dag       ;drop?
 
             bvmult-of-2-gen
 ;trying these:
