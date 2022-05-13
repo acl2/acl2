@@ -6050,6 +6050,7 @@
                                    *atc-valuep-rules*
                                    *atc-value-listp-rules*
                                    *atc-value-optionp-rules*
+                                   *atc-type-of-value-rules*
                                    *atc-type-of-value-option-rules*
                                    *atc-value-array->elemtype-rules*
                                    *atc-array-length-rules*

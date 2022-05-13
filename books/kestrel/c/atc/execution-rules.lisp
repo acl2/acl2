@@ -184,6 +184,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection atc-type-of-value-rules
+  :short "Rules about @(tsee type-of-value)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These rules rewrite @(tsee type-of-value) to specific types
+     under hypotheses on different types of values
+     that occur during symbolic execution."))
+
+  (defval *atc-type-of-value-rules*
+    '(type-of-value-when-ucharp
+      type-of-value-when-scharp
+      type-of-value-when-ushortp
+      type-of-value-when-sshortp
+      type-of-value-when-uintp
+      type-of-value-when-sintp
+      type-of-value-when-ulongp
+      type-of-value-when-slongp
+      type-of-value-when-ullongp
+      type-of-value-when-sllongp
+      type-of-value-when-pointerp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-type-of-value-option-rules
   :short "Rules about @(tsee type-of-value-option)."
   :long

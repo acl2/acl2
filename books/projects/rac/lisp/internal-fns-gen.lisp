@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; March 2022
+;; May 2022
 
 ;; Direct reasoning about complex functions is often unachievable in most
 ;; existing verification tools.  Decomposition is a common technique for
@@ -700,8 +700,9 @@
                           (optimized 't)
                           (sub-pairs 'nil)
                           (body-sub 'nil)
-                          (preserved-vars 'nil)
                           (excluded-vars 'nil)
+                          (preserved-vars 'nil)
+                          (retained-vars 'nil)
                           (rules 'nil)
                           (inter-fns-enabledp 'nil))
   ;; Generate a set of constant functions from the bindings declared in the
@@ -716,8 +717,19 @@
   ;; 'sub-pairs' contains pairs of terms (mostly variables) that are used in
   ;; substitutions performed by function REPLACE-LIST-ALL.
 
+  ;; 'body-sub': like 'sub-pairs' but it applies only to the body of the
+  ;; function's top-level binding.
+
   ;; 'excluded-vars': a list of bounded variables that are excluded from
   ;; generating their corresponding constant functions.
+
+  ;; 'preserved-vars': a list of variables whose bindings are preserved, i.e.,
+  ;; CONST-FNS-GEN won't process those bindings.
+
+  ;; 'retained-vars': By default, CONST-FNS-GEN does not generate functions for
+  ;; variables that it deems redundant. The variables declared in
+  ;; 'retained-vars' will be treated as non-redundant, and hence, their
+  ;; functions will be generated if their bindings exist.
 
   ;; 'rules': a list of rules that will be enabled when proving the final
   ;; equivalence lemma.
@@ -758,7 +770,7 @@
                                     nil)))
        ;; Extract variables that are not used in 'new-fn'
        (redundant-vars
-        (remove-all (used-syms-extract (list preserved-vars shrunk-body)
+        (remove-all (used-syms-extract (list retained-vars shrunk-body)
                                        simplified-alist
                                        nil)
                     renamed-vars))
@@ -1091,8 +1103,9 @@
                          (base-cond 'nil)
                          (init-alist 'nil)
                          (sub-pairs 'nil)
-                         (preserved-vars 'nil)
                          (excluded-vars 'nil)
+                         (preserved-vars 'nil)
+                         (retained-vars 'nil)
                          (inter-fns-enabledp 't))
   ;; Generate a set of mutually recursive functions from the bindings declared
   ;; in the recursive definition of function 'fn'.  It is required that 'fn' is
@@ -1113,6 +1126,14 @@
 
   ;; 'excluded-vars': a list of bounded variables that are excluded from
   ;; generating their corresponding mutually recursive functions.
+
+  ;; 'preserved-vars': a list of variables whose bindings are preserved, i.e.,
+  ;; LOOP-FNS-GEN won't process those bindings.
+
+  ;; 'retained-vars': By default, LOOP-FNS-GEN does not generate functions for
+  ;; variables that it deems redundant. The variables declared in
+  ;; 'retained-vars' will be treated as non-redundant, and hence, their
+  ;; functions will be generated if their bindings exist.
 
   ;; If 'inter-fns-enabledp' is non-nil, the generated intermediate functions
   ;; will be enabled.
@@ -1145,7 +1166,7 @@
                                     nil)))
        ;; Extract variables that are not used in 'fn'
        (redundant-vars
-        (remove-all (used-syms-extract (list preserved-vars shrunk-body)
+        (remove-all (used-syms-extract (list retained-vars shrunk-body)
                                        simplified-alist
                                        nil)
                     renamed-vars))
