@@ -15,6 +15,7 @@
 (include-book "sbvdiv")
 (include-book "bvdiv")
 (include-book "bvuminus")
+(include-book "bvminus")
 (include-book "sbvlt") ;for sbvle
 (include-book "bitnot")
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
