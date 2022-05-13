@@ -80,6 +80,13 @@
            (unsigned-byte-listp width (nthcdr n x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp nthcdr))))
 
+;; Perhaps slightly better than the rule in std
+(defthm unsigned-byte-listp-of-take-2 ; avoid name clash
+  (implies (unsigned-byte-listp width x)
+           (equal (unsigned-byte-listp width (take n x))
+                  (<= (nfix n) (len x))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp nthcdr))))
+
 (defthm unsigned-byte-listp-of-butlast
   (implies (unsigned-byte-listp width x)
            (unsigned-byte-listp width (butlast x n)))
