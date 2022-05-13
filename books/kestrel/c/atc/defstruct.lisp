@@ -152,7 +152,11 @@
       the recognizer implies @(tsee valuep).")
     (xdoc::li
      "The name of the theorem asserting that
-      the recognizer implies that the @(tsee value-kind) is @(':struct').")
+      the recognizer implies that @(tsee value-kind) is @(':struct').")
+    (xdoc::li
+     "The name of the theorem asserting that
+      the recognizer implies that @(tsee type-of-value)
+      returns the struct type.")
     (xdoc::li
      "The name of the theorem asserting that
       the recognizer implies a specific value of @(tsee value-struct->tag).")
@@ -175,6 +179,7 @@
    (not-error-thm symbolp)
    (valuep-thm symbolp)
    (value-kind-thm symbolp)
+   (type-of-value-thm symbolp)
    (tag-thm symbolp)
    (members-thm symbolp)
    (call pseudo-event-form))
@@ -549,6 +554,7 @@
                (not-error-thm symbolp)
                (valuep-thm symbolp)
                (value-kind-thm symbolp)
+               (type-of-value-thm symbolp)
                (tag-thm symbolp)
                (members-thm symbolp))
   :short "Generate the recognizer of
@@ -569,6 +575,9 @@
                    struct-tag-p))
        (value-kind-when-struct-tag-p
         (packn-pos (list 'value-kind-when- struct-tag-p)
+                   struct-tag-p))
+       (type-of-value-when-struct-tag-p
+        (packn-pos (list 'type-of-value-when- struct-tag-p)
                    struct-tag-p))
        (value-struct->tag-when-struct-tag-p
         (packn-pos (list 'value-struct->tag-when- struct-tag-p)
@@ -599,6 +608,12 @@
              (implies (,struct-tag-p x)
                       (equal (value-kind x) :struct))
              :in-theory '(,struct-tag-p))
+           (defruled ,type-of-value-when-struct-tag-p
+             (implies (,struct-tag-p x)
+                      (equal (type-of-value x)
+                             (type-struct (ident ,(symbol-name tag)))))
+             :in-theory '(,struct-tag-p
+                          type-of-value))
            (defruled ,value-struct->tag-when-struct-tag-p
              (implies (,struct-tag-p x)
                       (equal (value-struct->tag x)
@@ -613,6 +628,7 @@
         not-errorp-when-struct-tag-p
         valuep-when-struct-tag-p
         value-kind-when-struct-tag-p
+        type-of-value-when-struct-tag-p
         value-struct->tag-when-struct-tag-p
         value-struct->members-when-struct-tag-p)))
 
@@ -893,6 +909,7 @@
             not-errorp-when-struct-tag-p
             valuep-when-struct-tag-p
             value-kind-when-struct-tag-p
+            type-of-value-when-struct-tag-p
             value-struct->tag-when-struct-tag-p
             value-struct->members-when-struct-tag-p)
         (defstruct-gen-recognizer struct-tag-p tag members))
@@ -921,6 +938,7 @@
               :not-error-thm not-errorp-when-struct-tag-p
               :valuep-thm valuep-when-struct-tag-p
               :value-kind-thm value-kind-when-struct-tag-p
+              :type-of-value-thm type-of-value-when-struct-tag-p
               :tag-thm value-struct->tag-when-struct-tag-p
               :members-thm value-struct->members-when-struct-tag-p
               :call call))
