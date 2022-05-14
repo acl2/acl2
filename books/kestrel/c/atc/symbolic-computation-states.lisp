@@ -146,29 +146,31 @@
      more general side effects, e.g. on the heap, as explained below.")
    (xdoc::p
     "A computation state has a heap,
-     whose arrays may be updated during the symbolic execution.
-     We represent these updates via the function @(tsee update-array),
-     which is similar to @(tsee write-array)
+     whose objects (particularly arrays and structures)
+     may be updated during the symbolic execution.
+     We represent these updates via the function @(tsee update-object),
+     which is similar to @(tsee write-array) and @(tsee write-struct)
      but always satisfies additional properties:
-     the relation between @(tsee update-array) and @(tsee write-array)
+     the relation between (i) @(tsee update-object) and
+     (ii) @(tsee write-array) and @(tsee write-struct)
      is similar to the one between @(tsee update-var) and @(tsee write-var)
      and to the one between @(tsee add-var) and @(tsee create-var),
      explained above.")
    (xdoc::p
-    "Arrays may be updated by C functions and C loops,
+    "Heap objects may be updated by C functions and C loops,
      so they need to be incorporated in both of
      the symbolic computation state representations described above.
-     We push the @(tsee update-array) past all the other functions,
+     We push the @(tsee update-object) past all the other functions,
      leading to states of the form")
    (xdoc::codeblock
-    "(... (add-frame (update-array ... (update-array ... <compst>)...)")
+    "(... (add-frame (update-object ... (update-object ... <compst>)...)")
    (xdoc::p
     "for C functions and of the form")
    (xdoc::codeblock
-    "(... (enter-scope (add-var ... (update-array ... <compst>)...)")
+    "(... (enter-scope (add-var ... (update-object ... <compst>)...)")
    (xdoc::p
     "for C loops.
-     We order the @(tsee update-array) calls
+     We order the @(tsee update-object) calls
      according to their first argument (i.e. the address).
      Note that for a C function this first argument is
      @(tsee pointer->address) applied to an ACL2 variable,
@@ -177,18 +179,12 @@
      These two kinds of first arguments never appear together,
      i.e. in the same theorem,
      because each theorem is for either a C function or a C loop.
-     We prove rules that order @(tsee update-array)s
+     We prove rules that order @(tsee update-object)s
      according to the symbols,
      which apply to proofs of theorems of C functions;
-     and we prove rules that order @(tsee update-array)s
+     and we prove rules that order @(tsee update-object)s
      according to the identifiers,
      which apply to proofs of theorems of C loops.")
-   (xdoc::p
-    "The treatment of structures is analogous to arrays.
-     We introduce a function @(tsee update-struct)
-     that replaces @(tsee write-struct) in symbolic execution.
-     We push calls of @(tsee update-struct) past all @(tsee update-array)s,
-     and we order them in the same way as @(tsee update-array)s.")
    (xdoc::p
     "After introducing the ACL2 functions
      that represent the canonical symbolic computation states,
@@ -305,59 +301,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define update-array ((addr addressp) (array valuep) (compst compustatep))
+(define update-object ((addr addressp) (val valuep) (compst compustatep))
   :returns (new-compst compustatep)
   :short (xdoc::topstring
-          "Update an array in a "
+          "Update an object in a "
           (xdoc::seetopic "atc-symbolic-computation-states"
                           "canonical representation of computation states")
           ".")
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like @(tsee write-array), but it does not return an error.
-     We update the heap with the new array regardless of
-     whether an old array at that address exists or not,
-     and whether, if it exists, its type and length match the new array.
-     This way, @(tsee update-array) always guarantees that
-     the array goes into the heap,
+    "This is like @(tsee write-array) and @(tsee write-struct),
+     but it does not return an error.
+     We update the heap with the new object regardless of
+     whether an old object at that address exists or not,
+     and whether, if it exists, its type matches the new object.
+     This way, @(tsee update-object) always guarantees that
+     the object goes into the heap,
      thus simplifying rules about it.
-     When we replace @(tsee write-array) with @(tsee update-array)
+     When we replace @(tsee write-array) and @(tsee write-struct)
+     with @(tsee update-object),
      we ensure that all the conditions mentioned above hold,
-     so in a way @(tsee update-array) caches the fact that
+     so in a way @(tsee update-object) caches the fact that
      those conditions are satisfied."))
   (b* ((heap (compustate->heap compst))
-       (new-heap (omap::update (address-fix addr) (value-fix array) heap))
-       (new-compst (change-compustate compst :heap new-heap)))
-    new-compst)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define update-struct ((addr addressp) (struct valuep) (compst compustatep))
-  :returns (new-compst compustatep)
-  :short (xdoc::topstring
-          "Update a structure in a "
-          (xdoc::seetopic "atc-symbolic-computation-states"
-                          "canonical representation of computation states")
-          ".")
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is like @(tsee write-struct), but it does not return an error.
-     We update the heap with the new structure regardless of
-     whether an old structure at that address exists or not,
-     and whether, if it exists,
-     its members and their types match the new structure.
-     This way, @(tsee update-struct) always guarantees that
-     the structure goes into the heap,
-     thus simplifying rules about it.
-     When we replace @(tsee write-struct) with @(tsee update-struct)
-     we ensure that all the conditions mentioned above hold,
-     so in a way @(tsee update-struct) caches the fact that
-     those conditions are satisfied."))
-  (b* ((heap (compustate->heap compst))
-       (new-heap (omap::update (address-fix addr) (value-fix struct) heap))
+       (new-heap (omap::update (address-fix addr) (value-fix val) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)
   :hooks (:fix))
@@ -632,11 +600,11 @@
        :enable (write-var-aux-okp
                 update-var-aux))))
 
-  (defruled write-var-okp-of-update-array
-    (equal (write-var-okp var val (update-array addr array compst))
+  (defruled write-var-okp-of-update-object
+    (equal (write-var-okp var val (update-object addr obj compst))
            (write-var-okp var val compst))
     :enable (write-var-okp
-             update-array
+             update-object
              top-frame))
 
   (defruled write-var-okp-when-valuep-of-read-var
@@ -682,7 +650,7 @@
       write-var-okp-of-enter-scope
       write-var-okp-of-add-var
       write-var-okp-of-update-var
-      write-var-okp-of-update-array
+      write-var-okp-of-update-object
       write-var-okp-when-valuep-of-read-var
       (:e typep))))
 
@@ -752,21 +720,12 @@
        :enable (read-var-aux
                 update-var-aux))))
 
-  (defruled read-var-of-update-array
+  (defruled read-var-of-update-object
     (implies (not (equal (compustate-frames-number compst) 0))
-             (equal (read-var var (update-array addr array compst))
+             (equal (read-var var (update-object addr obj compst))
                     (read-var var compst)))
     :enable (read-var
-             update-array
-             top-frame
-             compustate-frames-number))
-
-  (defruled read-var-of-update-struct
-    (implies (not (equal (compustate-frames-number compst) 0))
-             (equal (read-var var (update-struct addr struct compst))
-                    (read-var var compst)))
-    :enable (read-var
-             update-struct
+             update-object
              top-frame
              compustate-frames-number))
 
@@ -774,8 +733,7 @@
     '(read-var-of-enter-scope
       read-var-of-add-var
       read-var-of-update-var
-      read-var-of-update-array
-      read-var-of-update-struct)))
+      read-var-of-update-object)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -923,7 +881,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The theorem about @(tsee write-array) turns it into @(tsee update-array),
+    "The theorem about @(tsee write-array) turns it into @(tsee update-object),
      similarly to how @(tsee write-var) is turned into @(tsee update-var).
      The condition for the replacement is captured by @('write-array-okp'),
      for which we supply rules to go through all the computation state layers.
@@ -938,7 +896,7 @@
     "We include the rule saying that
      @(tsee pointer->address) returns an address,
      needed to discharge the @(tsee addressp) hypotheses
-     of the rule @('write-array-okp-of-update-array') below."))
+     of the rule @('write-array-okp-of-update-object') below."))
 
   (define write-array-okp ((addr addressp) (array valuep) (compst compustatep))
     :guard (value-case array :array)
@@ -987,19 +945,19 @@
              push-frame
              pop-frame))
 
-  (defruled write-array-okp-of-update-array
+  (defruled write-array-okp-of-update-object
     (implies
      (and (addressp addr)
           (addressp addr2)
           (value-case array :array)
           (value-case array2 :array))
-     (equal (write-array-okp addr array (update-array addr2 array2 compst))
+     (equal (write-array-okp addr array (update-object addr2 array2 compst))
             (if (equal addr addr2)
                 (equal (type-of-value array)
                        (type-of-value array2))
               (write-array-okp addr array compst))))
     :enable (write-array-okp
-             update-array))
+             update-object))
 
   (defruled write-array-okp-when-value-arrayp-of-read-array
     (implies (and (syntaxp (symbolp compst))
@@ -1011,19 +969,19 @@
                            (type-of-value old-array))))
     :enable (write-array-okp read-array))
 
-  (defruled write-array-to-update-array
+  (defruled write-array-to-update-object
     (implies (write-array-okp addr array compst)
              (equal (write-array addr array compst)
-                    (update-array addr array compst)))
-    :enable (write-array write-array-okp update-array))
+                    (update-object addr array compst)))
+    :enable (write-array write-array-okp update-object))
 
   (defval *atc-write-array-rules*
-    '(write-array-to-update-array
+    '(write-array-to-update-object
       write-array-okp-of-add-frame
       write-array-okp-of-enter-scope
       write-array-okp-of-add-var
       write-array-okp-of-update-var
-      write-array-okp-of-update-array
+      write-array-okp-of-update-object
       write-array-okp-when-value-arrayp-of-read-array
       addressp-of-pointer->address
       valuep-when-uchar-arrayp
@@ -1056,14 +1014,14 @@
    (xdoc::p
     "The theorems about @(tsee read-array)
      skip over all the functions that represent the computation states,
-     except for possibly @(tsee update-array):
+     except for possibly @(tsee update-object):
      this is similar to the interaction
      between @(tsee read-var) and @(tsee update-var).")
    (xdoc::p
     "We include the rule saying that
      @(tsee pointer->address) returns an address,
      needed to discharge the @(tsee addressp) hypotheses
-     of the rule @('read-array-of-update-array') below."))
+     of the rule @('read-array-of-update-object') below."))
 
   (defruled read-array-of-add-frame
     (equal (read-array addr (add-frame fun compst))
@@ -1094,170 +1052,23 @@
              pop-frame
              read-array))
 
-  (defruled read-array-of-update-array
+  (defruled read-array-of-update-object
     (implies (and (addressp addr)
                   (addressp addr2)
                   (value-case array :array))
-             (equal (read-array addr (update-array addr2 array compst))
+             (equal (read-array addr (update-object addr2 array compst))
                     (if (equal addr addr2)
                         (value-fix array)
                       (read-array addr compst))))
     :enable (read-array
-             update-array))
+             update-object))
 
   (defval *atc-read-array-rules*
     '(read-array-of-add-frame
       read-array-of-enter-scope
       read-array-of-add-var
       read-array-of-update-var
-      read-array-of-update-array
-      addressp-of-pointer->address)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection atc-update-array-rules
-  :short "Rules about @(tsee update-array)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We have rules to unconditionally push @(tsee update-array)
-     through all the layers
-     except @(tsee update-array) and @(tsee update-struct).")
-   (xdoc::p
-    "When @(tsee update-array) is applied to @(tsee update-array),
-     we have rules similar to the ones for @(tsee update-var).
-     If the two addresses are the same, we overwrite the array.
-     When the addresses differ,
-     we swap the @(tsee update-var)s
-     if the right pointer is smaller than the left one,
-     where smaller is a syntactic check:
-     when the two pointer arguments are symbols
-     (which happens in the proofs of C functions),
-     we compare the symbols;
-     when the two pointer arguments are @(tsee read-var) calls
-     (which happens in the proofs of C loops),
-     we compare the identifier terms,
-     which boils down to comparing the variable names.
-     Either way, we normalize the nests of @(tsee update-array) calls
-     by ordering them according to the pointer.
-     We are talking about pointers here, and not addresses,
-     because, as mentioned in @(see atc-symbolic-computation-states),
-     during symbolic execution the addresses in question
-     have the form @('(pointer->address <pointer>)'),
-     which is what the @(tsee syntaxp) hypotheses below are based on.")
-   (xdoc::p
-    "We also include a rule saying that
-     updating an array with the existing one is a no-op.
-     This is similar to @('update-var-of-read-var').
-     In particular, it uses two possibly different computation states,
-     for the reasons explained for @('update-var-of-read-var').")
-   (xdoc::p
-    "We include the rule saying that
-     @(tsee pointer->address) returns an address,
-     needed to discharge the @(tsee addressp) hypotheses
-     of the rule @('read-array-of-update-array') below."))
-
-  (defruled update-array-of-add-frame
-    (equal (update-array addr array (add-frame fun compst))
-           (add-frame fun (update-array addr array compst)))
-    :enable (update-array
-             add-frame
-             push-frame))
-
-  (defruled update-array-of-enter-scope
-    (equal (update-array addr array (enter-scope compst))
-           (enter-scope (update-array addr array compst)))
-    :enable (update-array
-             enter-scope
-             push-frame
-             pop-frame
-             top-frame))
-
-  (defruled update-array-of-add-var
-    (equal (update-array addr array (add-var var val compst))
-           (add-var var val (update-array addr array compst)))
-    :enable (update-array
-             add-var
-             push-frame
-             pop-frame
-             top-frame))
-
-  (defruled update-array-of-update-var
-    (equal (update-array addr array (update-var var val compst))
-           (update-var var val (update-array addr array compst)))
-    :enable (update-array
-             update-var
-             push-frame
-             pop-frame
-             top-frame))
-
-  (defruled update-array-of-update-array-same
-    (equal (update-array addr array (update-array addr array2 compst))
-           (update-array addr array compst))
-    :enable update-array)
-
-  (defruled update-array-of-update-array-less-symbol
-    (implies
-     (and (syntaxp (and (ffn-symb-p addr 'pointer->address)
-                        (ffn-symb-p addr2 'pointer->address)
-                        (b* ((ptr (fargn addr 1))
-                             (ptr2 (fargn addr2 1)))
-                          (and (symbolp ptr)
-                               (symbolp ptr2)
-                               (symbol< ptr2 ptr)))))
-          (addressp addr)
-          (addressp addr2)
-          (not (equal addr addr2)))
-     (equal (update-array addr array (update-array addr2 array2 compst))
-            (update-array addr2 array2 (update-array addr array compst))))
-    :enable update-array)
-
-  (defruled update-array-of-update-array-less-ident
-    (implies
-     (and (syntaxp (and (ffn-symb-p addr 'pointer->address)
-                        (ffn-symb-p addr2 'pointer->address)
-                        (b* ((ptr (fargn addr 1))
-                             (ptr2 (fargn addr2 1)))
-                          (and (ffn-symb-p ptr 'read-var)
-                               (ffn-symb-p ptr2 'read-var)
-                               (<< (fargn ptr2 1)
-                                   (fargn ptr 1))))))
-          (addressp addr)
-          (addressp addr2)
-          (not (equal addr addr2)))
-     (equal (update-array addr array (update-array addr2 array2 compst))
-            (update-array addr2 array2 (update-array addr array compst))))
-    :enable update-array)
-
-  (defruled update-array-of-read-array-same
-    (implies (and (syntaxp (symbolp compst))
-                  (addressp addr)
-                  (compustatep compst1)
-                  (valuep (read-array addr compst))
-                  (equal (read-array addr compst)
-                         (read-array addr compst1)))
-             (equal (update-array addr (read-array addr compst) compst1)
-                    compst1))
-    :enable (read-array
-             update-array
-             omap::update-of-cdr-of-in-when-in)
-    :prep-lemmas
-    ((defruled omap::update-of-cdr-of-in-when-in
-       (implies (consp (omap::in k m))
-                (equal (omap::update k (cdr (omap::in k m)) m)
-                       m))
-       :induct (omap::in k m)
-       :enable omap::in)))
-
-  (defval *atc-update-array-rules*
-    '(update-array-of-add-frame
-      update-array-of-enter-scope
-      update-array-of-add-var
-      update-array-of-update-var
-      update-array-of-update-array-same
-      update-array-of-update-array-less-symbol
-      update-array-of-update-array-less-ident
-      update-array-of-read-array-same
+      read-array-of-update-object
       addressp-of-pointer->address)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1270,7 +1081,7 @@
     "These are analogous to the rules for @(tsee write-array).")
    (xdoc::p
     "There is an additional rule for @('write-struct-okp')
-     to skip over @(tsee update-array).
+     to skip over @(tsee update-object).
      This needs the hypothesis that the two addresses are different,
      which is always present in the theorems generated by ATC."))
 
@@ -1323,31 +1134,17 @@
              push-frame
              pop-frame))
 
-  (defruled write-struct-okp-of-update-array
+  (defruled write-struct-okp-of-update-object
     (implies
      (and (addressp addr)
           (addressp addr2)
           (not (equal addr addr2)))
-     (equal (write-struct-okp addr struct (update-array addr2 array compst))
+     (equal (write-struct-okp addr struct (update-object addr2 obj compst))
             (write-struct-okp addr struct compst)))
     :enable (write-struct-okp
-             update-array
+             update-object
              push-frame
              pop-frame))
-
-  (defruled write-struct-okp-of-update-struct
-    (implies
-     (and (addressp addr)
-          (addressp addr2)
-          (value-case struct :struct)
-          (value-case struct2 :struct))
-     (equal (write-struct-okp addr struct (update-struct addr2 struct2 compst))
-            (if (equal addr addr2)
-                (equal (type-of-value struct)
-                       (type-of-value struct2))
-              (write-struct-okp addr struct compst))))
-    :enable (write-struct-okp
-             update-struct))
 
   (defruled write-struct-okp-when-value-structp-of-read-struct
     (implies (and (syntaxp (symbolp compst))
@@ -1359,20 +1156,19 @@
                            (type-of-value old-struct))))
     :enable (write-struct-okp read-struct))
 
-  (defruled write-struct-to-update-struct
+  (defruled write-struct-to-update-object
     (implies (write-struct-okp addr struct compst)
              (equal (write-struct addr struct compst)
-                    (update-struct addr struct compst)))
-    :enable (write-struct write-struct-okp update-struct))
+                    (update-object addr struct compst)))
+    :enable (write-struct write-struct-okp update-object))
 
   (defval *atc-write-struct-rules*
-    '(write-struct-to-update-struct
+    '(write-struct-to-update-object
       write-struct-okp-of-add-frame
       write-struct-okp-of-enter-scope
       write-struct-okp-of-add-var
       write-struct-okp-of-update-var
-      write-struct-okp-of-update-array
-      write-struct-okp-of-update-struct
+      write-struct-okp-of-update-object
       write-struct-okp-when-value-structp-of-read-struct
       addressp-of-pointer->address)))
 
@@ -1414,93 +1210,106 @@
              pop-frame
              read-struct))
 
-  (defruled read-struct-of-update-array
+  (defruled read-struct-of-update-object
     (implies (and (addressp addr)
                   (addressp addr2)
                   (not (equal addr addr2)))
-             (equal (read-struct addr (update-array addr2 array compst))
+             (equal (read-struct addr (update-object addr2 obj compst))
                     (read-struct addr compst)))
     :enable (read-struct
-             update-array))
-
-  (defruled read-struct-of-update-struct
-    (implies (and (addressp addr)
-                  (addressp addr2)
-                  (value-case struct :struct))
-             (equal (read-struct addr (update-struct addr2 struct compst))
-                    (if (equal addr addr2)
-                        (value-fix struct)
-                      (read-struct addr compst))))
-    :enable (read-struct
-             update-struct))
+             update-object))
 
   (defval *atc-read-struct-rules*
     '(read-struct-of-add-frame
       read-struct-of-enter-scope
       read-struct-of-add-var
       read-struct-of-update-var
-      read-struct-of-update-array
-      read-struct-of-update-struct
+      read-struct-of-update-object
       addressp-of-pointer->address)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-update-struct-rules
-  :short "Rules about @(tsee update-struct)."
+(defsection atc-update-object-rules
+  :short "Rules about @(tsee update-object)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are similar to the rules for @(tsee update-array)."))
+    "We have rules to unconditionally push @(tsee update-object)
+     through all the layers except @(tsee update-object).")
+   (xdoc::p
+    "When @(tsee update-object) is applied to @(tsee update-object),
+     we have rules similar to the ones for @(tsee update-var).
+     If the two addresses are the same, we overwrite the object.
+     When the addresses differ,
+     we swap the @(tsee update-var)s
+     if the right pointer is smaller than the left one,
+     where smaller is a syntactic check:
+     when the two pointer arguments are symbols
+     (which happens in the proofs of C functions),
+     we compare the symbols;
+     when the two pointer arguments are @(tsee read-var) calls
+     (which happens in the proofs of C loops),
+     we compare the identifier terms,
+     which boils down to comparing the variable names.
+     Either way, we normalize the nests of @(tsee update-object) calls
+     by ordering them according to the pointer.
+     We are talking about pointers here, and not addresses,
+     because, as mentioned in @(see atc-symbolic-computation-states),
+     during symbolic execution the addresses in question
+     have the form @('(pointer->address <pointer>)'),
+     which is what the @(tsee syntaxp) hypotheses below are based on.")
+   (xdoc::p
+    "We also include a rule saying that
+     updating an object with the existing one is a no-op.
+     This is similar to @('update-var-of-read-var').
+     In particular, it uses two possibly different computation states,
+     for the reasons explained for @('update-var-of-read-var').")
+   (xdoc::p
+    "We include the rule saying that
+     @(tsee pointer->address) returns an address,
+     needed to discharge the @(tsee addressp) hypotheses
+     of the rule @('read-array-of-update-object') below."))
 
-  (defruled update-struct-of-add-frame
-    (equal (update-struct addr struct (add-frame fun compst))
-           (add-frame fun (update-struct addr struct compst)))
-    :enable (update-struct
+  (defruled update-object-of-add-frame
+    (equal (update-object addr obj (add-frame fun compst))
+           (add-frame fun (update-object addr obj compst)))
+    :enable (update-object
              add-frame
              push-frame))
 
-  (defruled update-struct-of-enter-scope
-    (equal (update-struct addr struct (enter-scope compst))
-           (enter-scope (update-struct addr struct compst)))
-    :enable (update-struct
+  (defruled update-object-of-enter-scope
+    (equal (update-object addr obj (enter-scope compst))
+           (enter-scope (update-object addr obj compst)))
+    :enable (update-object
              enter-scope
              push-frame
              pop-frame
              top-frame))
 
-  (defruled update-struct-of-add-var
-    (equal (update-struct addr struct (add-var var val compst))
-           (add-var var val (update-struct addr struct compst)))
-    :enable (update-struct
+  (defruled update-object-of-add-var
+    (equal (update-object addr obj (add-var var val compst))
+           (add-var var val (update-object addr obj compst)))
+    :enable (update-object
              add-var
              push-frame
              pop-frame
              top-frame))
 
-  (defruled update-struct-of-update-var
-    (equal (update-struct addr struct (update-var var val compst))
-           (update-var var val (update-struct addr struct compst)))
-    :enable (update-struct
+  (defruled update-object-of-update-var
+    (equal (update-object addr obj (update-var var val compst))
+           (update-var var val (update-object addr obj compst)))
+    :enable (update-object
              update-var
              push-frame
              pop-frame
              top-frame))
 
-  (defruled update-struct-of-update-array
-    (implies
-     (and (addressp addr)
-          (addressp addr2)
-          (not (equal addr addr2)))
-     (equal (update-struct addr struct (update-array addr2 array compst))
-            (update-array addr2 array (update-struct addr struct compst))))
-    :enable (update-struct update-array))
+  (defruled update-object-of-update-object-same
+    (equal (update-object addr obj (update-object addr obj2 compst))
+           (update-object addr obj compst))
+    :enable update-object)
 
-  (defruled update-struct-of-update-struct-same
-    (equal (update-struct addr struct (update-struct addr struct2 compst))
-           (update-struct addr struct compst))
-    :enable update-struct)
-
-  (defruled update-struct-of-update-struct-less-symbol
+  (defruled update-object-of-update-object-less-symbol
     (implies
      (and (syntaxp (and (ffn-symb-p addr 'pointer->address)
                         (ffn-symb-p addr2 'pointer->address)
@@ -1512,11 +1321,11 @@
           (addressp addr)
           (addressp addr2)
           (not (equal addr addr2)))
-     (equal (update-struct addr struct (update-struct addr2 struct2 compst))
-            (update-struct addr2 struct2 (update-struct addr struct compst))))
-    :enable update-struct)
+     (equal (update-object addr obj (update-object addr2 obj2 compst))
+            (update-object addr2 obj2 (update-object addr obj compst))))
+    :enable update-object)
 
-  (defruled update-struct-of-update-struct-less-ident
+  (defruled update-object-of-update-object-less-ident
     (implies
      (and (syntaxp (and (ffn-symb-p addr 'pointer->address)
                         (ffn-symb-p addr2 'pointer->address)
@@ -1529,21 +1338,21 @@
           (addressp addr)
           (addressp addr2)
           (not (equal addr addr2)))
-     (equal (update-struct addr struct (update-struct addr2 struct2 compst))
-            (update-struct addr2 struct2 (update-struct addr struct compst))))
-    :enable update-struct)
+     (equal (update-object addr obj (update-object addr2 obj2 compst))
+            (update-object addr2 obj2 (update-object addr obj compst))))
+    :enable update-object)
 
-  (defruled update-struct-of-read-struct-same
+  (defruled update-object-of-read-array-same
     (implies (and (syntaxp (symbolp compst))
                   (addressp addr)
                   (compustatep compst1)
-                  (valuep (read-struct addr compst))
-                  (equal (read-struct addr compst)
-                         (read-struct addr compst1)))
-             (equal (update-struct addr (read-struct addr compst) compst1)
+                  (valuep (read-array addr compst))
+                  (equal (read-array addr compst)
+                         (read-array addr compst1)))
+             (equal (update-object addr (read-array addr compst) compst1)
                     compst1))
-    :enable (read-struct
-             update-struct
+    :enable (read-array
+             update-object
              omap::update-of-cdr-of-in-when-in)
     :prep-lemmas
     ((defruled omap::update-of-cdr-of-in-when-in
@@ -1553,16 +1362,36 @@
        :induct (omap::in k m)
        :enable omap::in)))
 
-  (defval *atc-update-struct-rules*
-    '(update-struct-of-add-frame
-      update-struct-of-enter-scope
-      update-struct-of-add-var
-      update-struct-of-update-var
-      update-struct-of-update-array
-      update-struct-of-update-struct-same
-      update-struct-of-update-struct-less-symbol
-      update-struct-of-update-struct-less-ident
-      update-struct-of-read-struct-same
+  (defruled update-object-of-read-struct-same
+    (implies (and (syntaxp (symbolp compst))
+                  (addressp addr)
+                  (compustatep compst1)
+                  (valuep (read-struct addr compst))
+                  (equal (read-struct addr compst)
+                         (read-struct addr compst1)))
+             (equal (update-object addr (read-struct addr compst) compst1)
+                    compst1))
+    :enable (read-struct
+             update-object
+             omap::update-of-cdr-of-in-when-in)
+    :prep-lemmas
+    ((defruled omap::update-of-cdr-of-in-when-in
+       (implies (consp (omap::in k m))
+                (equal (omap::update k (cdr (omap::in k m)) m)
+                       m))
+       :induct (omap::in k m)
+       :enable omap::in)))
+
+  (defval *atc-update-object-rules*
+    '(update-object-of-add-frame
+      update-object-of-enter-scope
+      update-object-of-add-var
+      update-object-of-update-var
+      update-object-of-update-object-same
+      update-object-of-update-object-less-symbol
+      update-object-of-update-object-less-ident
+      update-object-of-read-array-same
+      update-object-of-read-struct-same
       addressp-of-pointer->address)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1580,8 +1409,7 @@
      satisfy that condition
      (by design, for @(tsee add-var) and @(tsee update-var)).")
    (xdoc::p
-    "The last theorems serve to skip over
-     @(tsee update-array) and @(tsee update-struct) calls."))
+    "The last theorems serve to skip over @(tsee update-object) calls."))
 
   (defruled compustate-frames-number-of-add-frame-not-zero
     (not (equal (compustate-frames-number (add-frame fun compst)) 0))
@@ -1599,16 +1427,10 @@
     (not (equal (compustate-frames-number (update-var var val compst)) 0))
     :enable update-var)
 
-  (defruled compustate-frames-number-of-update-array
-    (equal (compustate-frames-number (update-array addr array compst))
+  (defruled compustate-frames-number-of-update-object
+    (equal (compustate-frames-number (update-object addr obj compst))
            (compustate-frames-number compst))
-    :enable (update-array
-             compustate-frames-number))
-
-  (defruled compustate-frames-number-of-update-struct
-    (equal (compustate-frames-number (update-struct addr struct compst))
-           (compustate-frames-number compst))
-    :enable (update-struct
+    :enable (update-object
              compustate-frames-number))
 
   (defval *atc-compustate-frames-number-rules*
@@ -1616,8 +1438,7 @@
       compustate-frames-number-of-enter-scope-not-zero
       compustate-frames-number-of-add-var-not-zero
       compustate-frames-number-of-update-var-not-zero
-      compustate-frames-number-of-update-array
-      compustate-frames-number-of-update-struct)))
+      compustate-frames-number-of-update-object)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1632,8 +1453,7 @@
           *atc-update-var-rules*
           *atc-write-array-rules*
           *atc-read-array-rules*
-          *atc-update-array-rules*
           *atc-write-struct-rules*
           *atc-read-struct-rules*
-          *atc-update-struct-rules*
+          *atc-update-object-rules*
           *atc-compustate-frames-number-rules*))
