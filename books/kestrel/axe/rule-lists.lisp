@@ -372,22 +372,22 @@
      bvplus-of-0-arg2
 
      bvand-of-0-arg2
-     bvand-of-0-arg3 ; could drop if commute constants forward
+     bvand-of-0-arg3 ; could drop if commuting constants forward
      bvor-of-0-arg2
-     bvor-of-0-arg3 ; could drop if commute constants forward
+     bvor-of-0-arg3 ; could drop if commuting constants forward
      bvxor-of-0-arg2
-     bvxor-of-0-arg3 ; could drop if commute constants forward
+     bvxor-of-0-arg3 ; could drop if commuting constants forward
 
      bitand-of-0-arg1
-     bitand-of-0-arg2 ; could drop if commute constants forward
+     bitand-of-0-arg2 ; could drop if commuting constants forward
      bitand-of-1-arg1
-     bitand-of-1-arg2 ; could drop if commute constants forward
+     bitand-of-1-arg2 ; could drop if commuting constants forward
      bitor-of-0-arg1
-     bitor-of-0-arg2 ; could drop if commute constants forward
+     bitor-of-0-arg2 ; could drop if commuting constants forward
      bitor-of-1-arg2
-     bitor-of-1-arg1 ; could drop if commute constants forward
+     bitor-of-1-arg1 ; could drop if commuting constants forward
      bitxor-of-0-arg1
-     bitxor-of-0-arg2 ;drop if we always commute
+     bitxor-of-0-arg2 ; could drop if commuting constants forward
      ;; bitxor-of-1-becomes-bitnot-arg2 ; best to keep the bitxor since we have special handling for bitxor nests
      ;; bitxor-of-1-becomes-bitnot-arg1 ; best to keep the bitxor since we have special handling for bitxor nests
 
@@ -548,6 +548,8 @@
      bitxor-of-getbit-arg2
      bitor-of-getbit-arg1
      bitor-of-getbit-arg2
+     bvif-of-getbit-arg3
+     bvif-of-getbit-arg4
 
      bvlt-self
      bvlt-of-bvmod-false
@@ -661,7 +663,7 @@
      equal-of-bvif-safe
 
      bvcat-associative ;trying...
-     
+
      bvcat-of-bvcat-high-tighten ;bozo general rule?
      bvcat-of-getbit-high-tighten
      bvcat-of-bvchop-high-tighten ;gen the bvchop to any bv term
@@ -755,12 +757,10 @@
 
 ;    bvxor-all-ones ;do we want this? ;trying without...
 
-    bvif-of-getbit-arg1
-    bvif-of-getbit-arg2
     bvminus-becomes-bvplus-of-bvuminus ;trying...
 
     bvminus-bound-2
-    slice-of-logtail
+    ;; slice-of-logtail
 
     bound-when-usb2 ;uses the dag assumptions - huh? (expensive?)
 
@@ -867,7 +867,7 @@
     len-of-getbit-list
     all-unsigned-byte-p-of-getbit-list
 
-    logtail-of-bvchop-becomes-slice ;drop?
+    ;; logtail-of-bvchop-becomes-slice ;drop?
 
     equal-bvcat-0-left
     equal-bvcat-0-right
@@ -991,7 +991,8 @@
     nth-of-append ;may be bad if we can't resolve the if test?
     len-of-firstn ;sun feb  6 11:16:17 2011
     equal-cons-nil-1
-    equal-cons-nil-2))
+    equal-cons-nil-2
+    consp-of-myif-strong))
 
 ;; TODO: Move some of these into list-rules.
 (defun list-rules2 ()
@@ -1101,7 +1102,7 @@
   (declare (xargs :guard t))
   '(all-unsigned-byte-p-of-update-nth
     bvchop-8-bvnth-8 ;gen
-    bvchop-of-logtail-becomes-slice
+    ;; bvchop-of-logtail-becomes-slice
     getbit-of-bvnth-when-getbit-is-always-0
     getbit-of-bvnth-when-getbit-is-always-1
     bvnth-of-bvchop
@@ -1626,7 +1627,7 @@
 ;    bvxor-smaller-term-becomes-cat-arg1 ;yuck? Sat Jan 22 01:06:43 2011
 ;   bvxor-smaller-term-becomes-cat-arg2 ;yuck? Sat Jan 22 01:06:45 2011
 
-            logtail-becomes-slice-dag       ;drop?
+            ;; logtail-becomes-slice-dag       ;drop?
 
             bvmult-of-2-gen
 ;trying these:
@@ -1669,7 +1670,6 @@
 
             getbit-of-bvxor
 
-            consp-of-myif-strong
             myif-equal-nil-rewrite
             myif-becomes-boolif-t-arg1
             myif-becomes-boolif-t-arg2
@@ -1740,7 +1740,7 @@
 
 ;;normalize boolif nests that are really ands?
 
-;FIXME add lots more rules to this
+;; TODO: add lots more rules to this
 (defun arithmetic-rules ()
   (declare (xargs :guard t))
   '(fold-consts-in-+
@@ -2352,7 +2352,8 @@
 ;    nth-of-myif ;Tue Mar 16 00:57:56 2010 (could restrict to myifs of conses) ;bad? ;Sun May  9 21:51:07 2010
     ))
 
-;ffixme add more to this list!
+;; Only used in the equivalence checker
+;; todo: add more to this list!
 ;turn equal around... equal t and predicate...
 ;fixme consider adding *DEFINITION-MINIMAL-THEORY* to this, since acl2 will use those even when they are turned off?
 ;or avoid calling acl2 and all and just call prove-theorem?
@@ -2459,6 +2460,7 @@
      ;;EQUAL-OF-T-WHEN-BOOLEANP ;newer
      )))
 
+;; Only used in the equivalence checker
 ;we do seem to sometimes need these when verifying that the simplified exit tests are the same as the original exit tests
 (defun exit-test-simplification-proof-rules ()
   (declare (xargs :guard t))
@@ -2469,12 +2471,12 @@
           (boolean-rules)
           (exit-test-simplification-rules)))
 
-;fffixme add to this (and/or of constants, etc.)
-(defun rules-that-throw-stuff-away ()
-  (declare (xargs :guard t))
-  '(equal-same
-    nth-of-cons-constant-version
-    mv-nth-of-cons-alt))
+;; ;todo: add to this (and/or of constants, etc.)
+;; (defun rules-that-throw-stuff-away ()
+;;   (declare (xargs :guard t))
+;;   '(equal-same
+;;     nth-of-cons-constant-version
+;;     mv-nth-of-cons-alt))
 
 (defun reassemble-bv-rules ()
   (declare (xargs :guard t))
@@ -2492,11 +2494,10 @@
     bvcat-of-slice-and-x-adjacent-2
     bvcat-of-getbit-and-x-adjacent-2))
 
-;reprecate?
+;deprecate?
 (defun anti-blast-rules ()
   (declare (xargs :guard t))
   (reassemble-bv-rules))
-
 
 (defun strengthening-rules ()
   (declare (xargs :guard t))
