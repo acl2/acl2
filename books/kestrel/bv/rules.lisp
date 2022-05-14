@@ -784,18 +784,6 @@
 
 ;fixme copy all bitxor thms for bitand and bitor
 
-;am i sure i want this?
-(defthm bvif-of-getbit-arg1
-  (equal (bvif 1 test (getbit 0 x) y)
-         (bvif 1 test x y))
-  :hints (("Goal" :in-theory (enable bvif))))
-
-;am i sure i want this?
-(defthm bvif-of-getbit-arg2
-  (equal (bvif 1 test x (getbit 0 y))
-         (bvif 1 test x y))
-  :hints (("Goal" :in-theory (enable bvif))))
-
 ;bbozo gen and add
 (defthmd 0-1-split
   (implies (and (not (< 1 x))

@@ -12,9 +12,9 @@
 
 (in-package "ACL2")
 
-;; Instead of this rewriter, consider using rewriter-basic or rewriter-jvm or
-;; another newer rewriter.  But note that xor simplification is built into this
-;; one in a deep way.
+;; Instead of this rewriter, consider using rewriter-basic or another newer
+;; rewriter.  But note that xor simplification is built into this one (and
+;; also now rewriter-basic) in a deep way.
 
 (include-book "rewriter-common")
 (include-book "equality-pairs")
