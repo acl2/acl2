@@ -739,10 +739,7 @@
                              bvxor-1-of-getbit-arg1
                              bvxor-1-of-getbit-arg2
                              bvand-1-of-getbit-arg1
-                             bvand-1-of-getbit-arg2
-                             bvif-of-getbit-arg1
-                             bvif-of-getbit-arg2
-))
+                             bvand-1-of-getbit-arg2))
 
 (defthm logext-trim-arg
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))

@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "length")
 (include-book "downcase")
 (include-book "upcase")
 (include-book "split-chars")
@@ -19,3 +20,4 @@
 (include-book "reverse")
 (include-book "parse-binary-digits")
 (include-book "parse-decimal-digits")
+(include-book "string-ends-inp")
