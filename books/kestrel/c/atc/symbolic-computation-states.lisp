@@ -306,7 +306,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define update-array ((addr addressp) (array valuep) (compst compustatep))
-  :guard (value-case array :array)
   :returns (new-compst compustatep)
   :short (xdoc::topstring
           "Update an array in a "
@@ -336,7 +335,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define update-struct ((addr addressp) (struct valuep) (compst compustatep))
-  :guard (value-case struct :struct)
   :returns (new-compst compustatep)
   :short (xdoc::topstring
           "Update a structure in a "
