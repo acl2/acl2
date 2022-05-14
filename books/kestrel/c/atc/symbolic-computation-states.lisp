@@ -899,7 +899,6 @@
      of the rule @('write-array-okp-of-update-object') below."))
 
   (define write-array-okp ((addr addressp) (array valuep) (compst compustatep))
-    :guard (value-case array :array)
     :returns (yes/no booleanp)
     :parents nil
     (b* ((addr (address-fix addr))
@@ -907,7 +906,6 @@
          (addr+obj (omap::in addr heap))
          ((unless (consp addr+obj)) nil)
          (obj (cdr addr+obj))
-         ((unless (value-case obj :array)) nil)
          ((unless (equal (type-of-value array)
                          (type-of-value obj)))
           nil))
@@ -948,9 +946,7 @@
   (defruled write-array-okp-of-update-object
     (implies
      (and (addressp addr)
-          (addressp addr2)
-          (value-case array :array)
-          (value-case array2 :array))
+          (addressp addr2))
      (equal (write-array-okp addr array (update-object addr2 array2 compst))
             (if (equal addr addr2)
                 (equal (type-of-value array)
@@ -962,8 +958,7 @@
   (defruled write-array-okp-when-value-arrayp-of-read-object
     (implies (and (syntaxp (symbolp compst))
                   (equal old-array (read-object addr compst))
-                  (valuep old-array)
-                  (value-case old-array :array))
+                  (valuep old-array))
              (equal (write-array-okp addr array compst)
                     (equal (type-of-value array)
                            (type-of-value old-array))))
@@ -1022,7 +1017,6 @@
   (define write-struct-okp ((addr addressp)
                             (struct valuep)
                             (compst compustatep))
-    :guard (value-case struct :struct)
     :returns (yes/no booleanp)
     :parents nil
     (b* ((addr (address-fix addr))
@@ -1030,7 +1024,6 @@
          (addr+obj (omap::in addr heap))
          ((unless (consp addr+obj)) nil)
          (obj (cdr addr+obj))
-         ((unless (value-case obj :struct)) nil)
          ((unless (equal (type-of-value struct)
                          (type-of-value obj)))
           nil))
@@ -1083,8 +1076,7 @@
   (defruled write-struct-okp-when-value-structp-of-read-object
     (implies (and (syntaxp (symbolp compst))
                   (equal old-struct (read-object addr compst))
-                  (valuep old-struct)
-                  (value-case old-struct :struct))
+                  (valuep old-struct))
              (equal (write-struct-okp addr struct compst)
                     (equal (type-of-value struct)
                            (type-of-value old-struct))))
@@ -1155,8 +1147,7 @@
 
   (defruled read-object-of-update-object
     (implies (and (addressp addr)
-                  (addressp addr2)
-                  (value-case array :array))
+                  (addressp addr2))
              (equal (read-object addr (update-object addr2 array compst))
                     (if (equal addr addr2)
                         (value-fix array)

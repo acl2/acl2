@@ -614,8 +614,6 @@
        ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
        (obj (cdr addr+obj))
-       ((unless (value-case obj :array))
-        (error (list :address-not-array addr obj)))
        ((unless (equal (type-of-value array)
                        (type-of-value obj)))
         (error (list :array-type-mismatch
@@ -665,8 +663,6 @@
        ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
        (obj (cdr addr+obj))
-       ((unless (value-case obj :struct))
-        (error (list :address-not-struct addr obj)))
        ((unless (equal (type-of-value struct)
                        (type-of-value obj)))
         (error (list :struct-type-mismatch
