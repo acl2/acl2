@@ -655,9 +655,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check whether the heap has a structure at that address.
-     If this check succeeds, we return the structure.")
-   (xdoc::p
     "Note that this function reads the structure as a whole;
      it does not read a structure member.
      The function @(tsee struct-read-member)
@@ -667,17 +664,9 @@
        (addr+obj (omap::in addr heap))
        ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
-       (obj (cdr addr+obj))
-       ((unless (value-case obj :struct))
-        (error (list :address-not-struct addr obj))))
+       (obj (cdr addr+obj)))
     obj)
-  :hooks (:fix)
-  ///
-
-  (defret value-kind-of-read-struct
-    (implies (not (errorp struct))
-             (equal (value-kind struct)
-                    :struct))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

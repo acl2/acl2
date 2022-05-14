@@ -1431,6 +1431,8 @@
        (struct (read-struct addr compst))
        ((when (errorp struct))
         (error (list :struct-not-found str (compustate-fix compst))))
+       ((unless (value-case struct :struct))
+        (error (list :not-struct str (compustate-fix compst))))
        ((unless (equal reftype
                        (type-struct (value-struct->tag struct))))
         (error (list :mistype-struct-read
@@ -1820,6 +1822,8 @@
               (reftype (pointer->reftype ptr))
               (struct (read-struct addr compst))
               ((when (errorp struct)) struct)
+              ((unless (value-case struct :struct))
+               (error (list :not-struct str (compustate-fix compst))))
               ((unless (equal reftype
                               (type-of-value struct)))
                (error (list :mistype-struct-read

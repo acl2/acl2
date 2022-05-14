@@ -6367,6 +6367,7 @@
                        (not (pointer-nullp ptr))
                        (equal struct
                               (read-struct (pointer->address ptr) compst))
+                       (value-case struct :struct)
                        (equal (pointer->reftype ptr)
                               (type-struct (ident ,(ident->name tag))))
                        (,recognizer struct))
@@ -6497,6 +6498,7 @@
                        (not (pointer-nullp ptr))
                        (equal struct
                               (read-struct (pointer->address ptr) compst1))
+                       (value-case struct :struct)
                        (equal (pointer->reftype ptr)
                               (type-of-value struct))
                        (,recognizer struct))
