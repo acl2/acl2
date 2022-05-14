@@ -590,7 +590,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define write-array ((addr addressp) (array valuep) (compst compustatep))
-  :guard (value-case array :array)
   :returns (new-compst compustate-resultp)
   :short "Write an array in the computation state."
   :long
@@ -643,7 +642,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define write-struct ((addr addressp) (struct valuep) (compst compustatep))
-  :guard (value-case struct :struct)
   :returns (new-compst compustate-resultp)
   :short "Write a structure in the computation state."
   :long
