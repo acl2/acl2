@@ -4444,58 +4444,33 @@
        (formal-ptr (add-suffix-to-fn formal "-PTR"))
        (formal-addr `(pointer->address ,formal-ptr))
        (formal-id `(ident ,(symbol-name formal)))
-       ((mv arrayp structp)
-        (if (type-case type :pointer)
-            (case (type-kind (type-pointer->to type))
-              ((:schar :uchar
-                :sshort :ushort
-                :sint :uint
-                :slong :ulong
-                :sllong :ullong)
-               (mv t nil))
-              (:struct (mv nil t))
-              (t (prog2$ (raise "Internal error: formal ~x0 has type ~x1."
-                                formal type)
-                         (mv nil nil))))
-          (mv nil nil)))
+       (pointerp (type-case type :pointer))
        (bindings
         (if fn-recursivep
-            (cond (arrayp
-                   (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                         `(,formal (read-object ,formal-addr ,compst-var))))
-                  (structp
-                   (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                         `(,formal (read-object ,formal-addr ,compst-var))))
-                  (t (list `(,formal (read-var ,formal-id ,compst-var)))))
-          (cond (arrayp
-                 (list `(,formal (read-object ,formal-addr ,compst-var))))
-                (structp
-                 (list `(,formal (read-object ,formal-addr ,compst-var))))
-                (t nil))))
-       (subst? (and (or arrayp structp)
+            (if pointerp
+                (list `(,formal-ptr (read-var ,formal-id ,compst-var))
+                      `(,formal (read-object ,formal-addr ,compst-var)))
+              (list `(,formal (read-var ,formal-id ,compst-var))))
+          (if pointerp
+              (list `(,formal (read-object ,formal-addr ,compst-var)))
+            nil)))
+       (subst? (and pointerp
                     (list (cons formal formal-ptr))))
-       (hyps (and (or arrayp structp)
+       (hyps (and pointerp
                   (list `(pointerp ,formal-ptr)
                         `(not (pointer-nullp ,formal-ptr))
                         `(equal (pointer->reftype ,formal-ptr)
                                 ,(type-to-maker (type-pointer->to type))))))
        (inst (if fn-recursivep
-                 (cond (arrayp
-                        (list `(,formal (read-object (pointer->address
-                                                     (read-var ,formal-id
-                                                               ,compst-var))
-                                                    ,compst-var))))
-                       (structp
-                        (list `(,formal (read-object (pointer->address
-                                                      (read-var ,formal-id
-                                                                ,compst-var))
-                                                     ,compst-var))))
-                       (t (list `(,formal (read-var ,formal-id ,compst-var)))))
-               (cond (arrayp
-                      (list `(,formal (read-object ,formal-addr ,compst-var))))
-                     (structp
-                      (list `(,formal (read-object ,formal-addr ,compst-var))))
-                     (t nil))))
+                 (if pointerp
+                     (list `(,formal (read-object (pointer->address
+                                                   (read-var ,formal-id
+                                                             ,compst-var))
+                                                  ,compst-var)))
+                   (list `(,formal (read-var ,formal-id ,compst-var))))
+               (if pointerp
+                   (list `(,formal (read-object ,formal-addr ,compst-var)))
+                 nil)))
        ((mv more-bindings more-hyps more-subst more-inst)
         (atc-gen-outer-bindings-and-hyps (cdr typed-formals)
                                          compst-var
