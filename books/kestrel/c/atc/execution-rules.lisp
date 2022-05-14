@@ -1118,6 +1118,7 @@
                          (not (pointer-nullp x))
                          (equal array
                                 (read-array (pointer->address x) compst))
+                         (value-case array :array)
                          (equal (pointer->reftype x)
                                 (value-array->elemtype array))
                          (,apred array)
@@ -2051,6 +2052,7 @@
                  (not (pointer-nullp ptr))
                  (equal array
                         (read-array (pointer->address ptr) compst1))
+                 (value-case array :array)
                  (equal (pointer->reftype ptr)
                         (value-array->elemtype array))
                  (,apred array)

@@ -1346,6 +1346,8 @@
        (array (read-array addr compst))
        ((when (errorp array))
         (error (list :array-not-found arr (compustate-fix compst))))
+       ((unless (value-case array :array))
+        (error (list :not-array arr (compustate-fix compst))))
        ((unless (equal reftype (value-array->elemtype array)))
         (error (list :mistype-array-read
                      :pointer reftype
@@ -1719,6 +1721,8 @@
               (reftype (pointer->reftype ptr))
               (array (read-array addr compst))
               ((when (errorp array)) array)
+              ((unless (value-case array :array))
+               (error (list :not-array arr (compustate-fix compst))))
               ((unless (equal reftype (value-array->elemtype array)))
                (error (list :mistype-array-read
                             :pointer reftype

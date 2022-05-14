@@ -581,9 +581,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check whether the heap has an array at the address.
-     If this check succeeds, we return the array.")
-   (xdoc::p
     "Note that this function reads the array as a whole;
      it does not read an array element.
      Functions like @(tsee uchar-array-read-sint)
@@ -593,17 +590,9 @@
        (addr+obj (omap::in addr heap))
        ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
-       (obj (cdr addr+obj))
-       ((unless (value-case obj :array))
-        (error (list :address-not-array addr obj))))
+       (obj (cdr addr+obj)))
     obj)
-  :hooks (:fix)
-  ///
-
-  (defret value-kind-of-read-array
-    (implies (not (errorp array))
-             (equal (value-kind array)
-                    :array))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
