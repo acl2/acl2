@@ -1288,11 +1288,8 @@
          ((unless (consp addr+obj)) nil)
          (obj (cdr addr+obj))
          ((unless (value-case obj :struct)) nil)
-         ((unless (equal (value-struct->tag struct)
-                         (value-struct->tag obj)))
-          nil)
-         ((unless (equal (member-values-to-types (value-struct->members struct))
-                         (member-values-to-types (value-struct->members obj))))
+         ((unless (equal (type-of-value struct)
+                         (type-of-value obj)))
           nil))
       t)
     :hooks (:fix))
@@ -1348,12 +1345,8 @@
           (value-case struct2 :struct))
      (equal (write-struct-okp addr struct (update-struct addr2 struct2 compst))
             (if (equal addr addr2)
-                (and (equal (value-struct->tag struct)
-                            (value-struct->tag struct2))
-                     (equal (member-values-to-types
-                             (value-struct->members struct))
-                            (member-values-to-types
-                             (value-struct->members struct2))))
+                (equal (type-of-value struct)
+                       (type-of-value struct2))
               (write-struct-okp addr struct compst))))
     :enable (write-struct-okp
              update-struct))
@@ -1364,13 +1357,8 @@
                   (valuep old-struct)
                   (value-case old-struct :struct))
              (equal (write-struct-okp addr struct compst)
-                    (and
-                     (equal (value-struct->tag struct)
-                            (value-struct->tag old-struct))
-                     (equal (member-values-to-types
-                             (value-struct->members struct))
-                            (member-values-to-types
-                             (value-struct->members old-struct))))))
+                    (equal (type-of-value struct)
+                           (type-of-value old-struct))))
     :enable (write-struct-okp read-struct))
 
   (defruled write-struct-to-update-struct

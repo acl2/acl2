@@ -615,12 +615,13 @@
   (xdoc::topstring
    (xdoc::p
     "We check whether the heap has an array at the address,
-     of the same type as the new array;
-     note that the types include the number of elements
-     (it should be an invariant, which we plan to prove,
+     of the same type as the new array.
+     Note that the types include the number of elements.
+     It should be an invariant, which we plan to prove,
      that array values have elements
-     whose type is the element type of the array).
-     If this checks succeed, we overwrite the array in the heap.")
+     whose type is the element type of the array.")
+   (xdoc::p
+    "If this checks succeed, we overwrite the array in the heap.")
    (xdoc::p
     "Note that this function writes the array as a whole;
      it does not write an array element.
@@ -698,17 +699,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check whether the heap has a structure at the address.
-     If this checks succeed, we overwrite the structure in the heap.")
+    "We check whether the heap has a structure at the address,
+     of the same type as the new structure.
+     It should be an invariant, which we plan to prove,
+     that structure values have member values
+     whose types are the member types of the structure type.")
+   (xdoc::p
+    "If this checks succeed, we overwrite the structure in the heap.")
    (xdoc::p
     "Note that this function writes the structure as a whole;
      it does not write a structure member.
      The functions @(tsee struct-write-member)
-     can be used to write individual structure members.")
-   (xdoc::p
-    "Before overwriting the structure,
-     we ensure that the new one has
-     the same tag, member names, and member types."))
+     can be used to write individual structure members."))
   (b* ((addr (address-fix addr))
        (heap (compustate->heap compst))
        (addr+obj (omap::in addr heap))
@@ -717,18 +719,11 @@
        (obj (cdr addr+obj))
        ((unless (value-case obj :struct))
         (error (list :address-not-struct addr obj)))
-       ((unless (equal (value-struct->tag struct)
-                       (value-struct->tag obj)))
-        (error (list :struct-tag-mismatch
-                     :old (value-struct->tag obj)
-                     :new (value-struct->tag struct))))
-       ((unless (equal (member-values-to-types (value-struct->members struct))
-                       (member-values-to-types (value-struct->members obj))))
-        (error (list :struct-members-mismatch
-                     :old (member-values-to-types
-                           (value-struct->members obj))
-                     :new (member-values-to-types
-                           (value-struct->members struct)))))
+       ((unless (equal (type-of-value struct)
+                       (type-of-value obj)))
+        (error (list :struct-type-mismatch
+                     :old (type-of-value obj)
+                     :new (type-of-value struct))))
        (new-heap (omap::update addr (value-fix struct) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)

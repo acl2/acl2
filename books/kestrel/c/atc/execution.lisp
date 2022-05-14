@@ -1817,10 +1817,10 @@
               (struct (read-struct addr compst))
               ((when (errorp struct)) struct)
               ((unless (equal reftype
-                              (type-struct (value-struct->tag struct))))
+                              (type-of-value struct)))
                (error (list :mistype-struct-read
                             :pointer reftype
-                            :array (type-struct (value-struct->tag struct)))))
+                            :array (type-of-value struct))))
               (new-struct (struct-write-member mem val struct))
               ((when (errorp new-struct)) new-struct))
            (write-struct addr new-struct compst)))
