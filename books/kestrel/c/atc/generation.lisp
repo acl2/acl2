@@ -4362,8 +4362,7 @@
      For each array or structure formal @('a') of @('fn'),
      we generate a pointer variable @('a-ptr') as explained,
      along with a binding
-     @('(a (read-array (pointer->address a-ptr) compst))') or
-     @('(a (read-struct (pointer->address a-ptr) compst))'):
+     @('(a (read-object (pointer->address a-ptr) compst))'):
      this binding relates the two variables,
      and lets us use the guard of @('fn') as hypothesis in the theorem,
      which uses @('a'),
@@ -4409,9 +4408,8 @@
     "If @('a') is an array or structure formal of a recursive @('fn'),
      we introduce an additional @('a-ptr') variable,
      similarly to the case of non-recursive @('fn').
-     We generate two bindings (i) @('(a-ptr (read-var <a> compst))')
-     and (ii) either @('(a (read-array (pointer->address a-ptr) compst))')
-     or @('(a (read-struct (pointer->address a-ptr) compst))'),
+     We generate two bindings @('(a-ptr (read-var <a> compst))')
+     and @('(a (read-object (pointer->address a-ptr) compst))'),
      in that order.
      The first binding serves to tie @('a-ptr')
      to the corresponding variable in the computation state,
@@ -4464,15 +4462,15 @@
         (if fn-recursivep
             (cond (arrayp
                    (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                         `(,formal (read-array ,formal-addr ,compst-var))))
+                         `(,formal (read-object ,formal-addr ,compst-var))))
                   (structp
                    (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                         `(,formal (read-struct ,formal-addr ,compst-var))))
+                         `(,formal (read-object ,formal-addr ,compst-var))))
                   (t (list `(,formal (read-var ,formal-id ,compst-var)))))
           (cond (arrayp
-                 (list `(,formal (read-array ,formal-addr ,compst-var))))
+                 (list `(,formal (read-object ,formal-addr ,compst-var))))
                 (structp
-                 (list `(,formal (read-struct ,formal-addr ,compst-var))))
+                 (list `(,formal (read-object ,formal-addr ,compst-var))))
                 (t nil))))
        (subst? (and (or arrayp structp)
                     (list (cons formal formal-ptr))))
@@ -4483,20 +4481,20 @@
                                 ,(type-to-maker (type-pointer->to type))))))
        (inst (if fn-recursivep
                  (cond (arrayp
-                        (list `(,formal (read-array (pointer->address
+                        (list `(,formal (read-object (pointer->address
                                                      (read-var ,formal-id
                                                                ,compst-var))
                                                     ,compst-var))))
                        (structp
-                        (list `(,formal (read-struct (pointer->address
+                        (list `(,formal (read-object (pointer->address
                                                       (read-var ,formal-id
                                                                 ,compst-var))
                                                      ,compst-var))))
                        (t (list `(,formal (read-var ,formal-id ,compst-var)))))
                (cond (arrayp
-                      (list `(,formal (read-array ,formal-addr ,compst-var))))
+                      (list `(,formal (read-object ,formal-addr ,compst-var))))
                      (structp
-                      (list `(,formal (read-struct ,formal-addr ,compst-var))))
+                      (list `(,formal (read-object ,formal-addr ,compst-var))))
                      (t nil))))
        ((mv more-bindings more-hyps more-subst more-inst)
         (atc-gen-outer-bindings-and-hyps (cdr typed-formals)
@@ -6366,7 +6364,7 @@
                        (pointerp ptr)
                        (not (pointer-nullp ptr))
                        (equal struct
-                              (read-struct (pointer->address ptr) compst))
+                              (read-object (pointer->address ptr) compst))
                        (value-case struct :struct)
                        (equal (pointer->reftype ptr)
                               (type-struct (ident ,(ident->name tag))))
@@ -6497,7 +6495,7 @@
                        (pointerp ptr)
                        (not (pointer-nullp ptr))
                        (equal struct
-                              (read-struct (pointer->address ptr) compst1))
+                              (read-object (pointer->address ptr) compst1))
                        (value-case struct :struct)
                        (equal (pointer->reftype ptr)
                               (type-of-value struct))
@@ -6563,7 +6561,7 @@
                                (target (expr-memberp->target left))
                                (ptr (read-var (c::expr-ident->get target)
                                               compst1))
-                               (struct (read-struct (pointer->address ptr)
+                               (struct (read-object (pointer->address ptr)
                                                     compst1)))
                             struct))))))
        ((mv event &) (evmac-generate-defthm thm-name

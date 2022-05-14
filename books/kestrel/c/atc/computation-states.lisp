@@ -575,16 +575,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-array ((addr addressp) (compst compustatep))
-  :returns (array value-resultp)
-  :short "Read an array in the computation state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Note that this function reads the array as a whole;
-     it does not read an array element.
-     Functions like @(tsee uchar-array-read-sint)
-     can be used to read individual array elements."))
+(define read-object ((addr addressp) (compst compustatep))
+  :returns (obj value-resultp)
+  :short "Read an object in the computation state."
   (b* ((addr (address-fix addr))
        (heap (compustate->heap compst))
        (addr+obj (omap::in addr heap))
@@ -646,27 +639,6 @@
              (equal (compustate-scopes-numbers new-compst)
                     (compustate-scopes-numbers compst)))
     :hints (("Goal" :in-theory (enable compustate-scopes-numbers)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define read-struct ((addr addressp) (compst compustatep))
-  :returns (struct value-resultp)
-  :short "Read a structure in the computation state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Note that this function reads the structure as a whole;
-     it does not read a structure member.
-     The function @(tsee struct-read-member)
-     can be used to read individual structure members."))
-  (b* ((addr (address-fix addr))
-       (heap (compustate->heap compst))
-       (addr+obj (omap::in addr heap))
-       ((unless (consp addr+obj))
-        (error (list :address-not-found addr)))
-       (obj (cdr addr+obj)))
-    obj)
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

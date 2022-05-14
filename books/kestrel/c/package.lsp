@@ -27,6 +27,7 @@
                                   member
                                   pi
                                   pprint-indent
+                                  read-object
                                   schar
                                   type
                                   typep

@@ -1117,7 +1117,7 @@
                          (pointerp x)
                          (not (pointer-nullp x))
                          (equal array
-                                (read-array (pointer->address x) compst))
+                                (read-object (pointer->address x) compst))
                          (value-case array :array)
                          (equal (pointer->reftype x)
                                 (value-array->elemtype array))
@@ -2051,7 +2051,7 @@
                  (pointerp ptr)
                  (not (pointer-nullp ptr))
                  (equal array
-                        (read-array (pointer->address ptr) compst1))
+                        (read-object (pointer->address ptr) compst1))
                  (value-case array :array)
                  (equal (pointer->reftype ptr)
                         (value-array->elemtype array))
