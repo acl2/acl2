@@ -29,7 +29,7 @@ This book is used to prove all the axioms in the
 
 (in-package "ACL2")
 
-(local (include-book "inequalities"))
+(local (include-book "inequalities")) ; no_port
 
 ;;;;;;;;;;;;;;;;;;;;
 ;; Nonneg-int-mod ;;

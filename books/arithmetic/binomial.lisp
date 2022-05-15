@@ -8,7 +8,7 @@
 
 (in-package "ACL2")
 
-(local (include-book "top"))
+(local (include-book "top")) ; no_port
 (include-book "factorial")
 (include-book "sumlist")
 
