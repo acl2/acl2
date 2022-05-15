@@ -1455,7 +1455,7 @@
    (progn (acl2-unwind *ld-level* t)
           (when (not *wormholep*)
 
-; This seems a reasonable placce to reset *trace-level* in case a throw has
+; This seems a reasonable place to reset *trace-level* in case a throw has
 ; been executed that leaves *trace-level* at an unfortunate value.  However, we
 ; don't want to mess with *trace-level* when reading forms inside a brr break
 ; or any other wormhole; hence the condition above.
