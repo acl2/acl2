@@ -1,6 +1,6 @@
 ; A function to write a sequence of objects to a file
 ;
-; Copyright (C) 2017-2021 Kestrel Institute
+; Copyright (C) 2017-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,25 +17,25 @@
 (local (include-book "kestrel/utilities/state" :dir :system))
 
 ;move
-(defthm get-serialize-character-of-mv-nth-1-of-open-output-channel
+(local
+ (defthm get-serialize-character-of-mv-nth-1-of-open-output-channel
   (equal (get-serialize-character (mv-nth 1 (open-output-channel filename typ state)))
          (get-serialize-character state))
   :hints (("Goal" :in-theory (enable get-serialize-character open-output-channel
                                      update-open-output-channels
                                      get-global
                                      global-table
-                                     update-file-clock
-                                     ))))
+                                     update-file-clock)))))
 
 ;; Writes the OBJECTS to file FILENAME, overwriting its previous contents.
 ;; Returns (mv erp state).
 (defun write-objects-to-file (objects filename ctx state)
-  (declare (xargs :stobjs state
-                  :guard (and (true-listp objects)
+  (declare (xargs :guard (and (true-listp objects)
                               (stringp filename)
                               ;; required by print-object$ (why?):
                               (member (get-serialize-character state)
-                                      '(nil #\Y #\Z)))))
+                                      '(nil #\Y #\Z)))
+                  :stobjs state))
   (mv-let (channel state)
     (open-output-channel filename :object state)
     (if (not channel)
@@ -43,4 +43,5 @@
                 (mv t state))
       (pprogn (write-objects-to-channel objects channel state)
               (close-output-channel channel state)
+              ;; no error:
               (mv nil state)))))

@@ -22,7 +22,7 @@
              (all-bytep (rest lst))))
     t))
 
-;; Write the elements of BYTES to CHANNEL.  Returns STATE.
+;; Writes the BYTES to CHANNEL.  Returns STATE.
 (defund write-bytes-to-channel (bytes channel state)
   (declare (xargs :stobjs state
                   :guard (and (all-bytep bytes)
