@@ -11,3 +11,5 @@
 (in-package "BITCOIN")
 
 (include-book "bip39-tests")
+
+(include-book "bech32-tests")
