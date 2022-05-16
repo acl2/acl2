@@ -296,7 +296,7 @@
     bitxor-of-constant-chop-arg1
     bitxor-of-constant-chop-arg2))
 
-;;includes rules from bv-rules-axe.lisp (bad?) and axerulescore.lisp and dagrulesmore.lisp and dagrules.lisp
+;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()
   (declare (xargs :guard t))
   (append
@@ -454,7 +454,10 @@
      bvcat-of-ifix-arg4
 
      bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
+
      getbit-too-high-cheap-free
+     getbit-too-high-is-0-bind-free
+
      bvplus-of-bvplus-of-bvuminus
      natp-when-unsigned-byte-p ;uses the dag assumptions, has a free var so should be cheap? (put last of the natp rules?) moved from yet-more-rules
 
@@ -544,10 +547,15 @@
      ;; TODO: More like this:
      bvcat-of-getbit-arg2
      bvcat-of-getbit-arg4
-     bitxor-of-getbit-arg1
-     bitxor-of-getbit-arg2
+     bitnot-of-getbit-0
+     bitand-of-getbit-arg1
+     bitand-of-getbit-arg2
      bitor-of-getbit-arg1
      bitor-of-getbit-arg2
+     bitxor-of-getbit-arg1
+     bitxor-of-getbit-arg2
+     bvif-of-getbit-arg1
+     bvif-of-getbit-arg2
 
      bvlt-self
      bvlt-of-bvmod-false
@@ -661,7 +669,7 @@
      equal-of-bvif-safe
 
      bvcat-associative ;trying...
-     
+
      bvcat-of-bvcat-high-tighten ;bozo general rule?
      bvcat-of-getbit-high-tighten
      bvcat-of-bvchop-high-tighten ;gen the bvchop to any bv term
@@ -672,11 +680,14 @@
 ;bvmult-of-bvcat-trim-arg2 handled by trim rules
 ;bvmult-of-bvcat-trim-arg1 handled by trim rules
      bvand-1-becomes-bitand
+     bvxor-1-becomes-bitxor
+     bvor-1-becomes-bitor
+
      bvand-with-mask-better-eric
      ;; trying without
 ;            bvor-appending-idiom-low
 ;           bvor-appending-idiom-low-alt
-     bvxor-1-becomes-bitxor
+
 ;dropping since we go to bitxor
 ;            bvxor-1-of-getbit-arg1 ;bozo analogues for other ops?
 ;           bvxor-1-of-getbit-arg2 ;bozo analogues for other ops?
@@ -693,7 +704,7 @@
 ;            bitxor-of-bvchop-arg1 ;done by trim rules and BVCHOP-1-BECOMES-GETBIT
 ;           bitxor-of-bvchop-arg2 ;done by trim rules and BVCHOP-1-BECOMES-GETBIT
      getbit-test-is-self ;make a myif version?
-     getbit-too-high-is-0-bind-free
+
      ;; high-getbit-of-getbit-is-0 handled by getbit-too-high-is-0-bind-free
      getbit-of-if
 ;            getbit-of-bvif ;could be expensive? newww
@@ -755,12 +766,10 @@
 
 ;    bvxor-all-ones ;do we want this? ;trying without...
 
-    bvif-of-getbit-arg1
-    bvif-of-getbit-arg2
     bvminus-becomes-bvplus-of-bvuminus ;trying...
 
     bvminus-bound-2
-    slice-of-logtail
+    ; slice-of-logtail ; trying without
 
     bound-when-usb2 ;uses the dag assumptions - huh? (expensive?)
 
@@ -791,9 +800,6 @@
     getbit-0-of-bvmult
     getbit-0-of-bvminus   ;better rhs?
     getbit-0-of-bvplus ;think about whether to push the getbits..
-
-    bvcat-of-getbit-arg2
-    bvcat-of-getbit-arg4
 
     myif-x-x-t-not-nil
 
@@ -844,9 +850,7 @@
 
     ;; bitor (what else?  trim args?):
 
-    bvor-1-becomes-bitor
-
-    getbit-of-bvif-too-high
+    ;; getbit-of-bvif-too-high ; trying without
 ;    unsigned-byte-p-of-bvif-gen
     signed-byte-p-of-bvif
 ;    inst-length-of-myif
@@ -861,13 +865,10 @@
     ;;     BVAND-TRIM-CONSTANT-3
     ;;     BVAND-TRIM-CONSTANT-2
 
-    bitand-of-getbit-arg1
-    bitand-of-getbit-arg2
-
     len-of-getbit-list
     all-unsigned-byte-p-of-getbit-list
 
-    logtail-of-bvchop-becomes-slice ;drop?
+    ; logtail-of-bvchop-becomes-slice ;drop?
 
     equal-bvcat-0-left
     equal-bvcat-0-right
@@ -934,6 +935,7 @@
     consp-of-take
     take-of-cons
     true-listp-of-take
+    take-of-take
     take-does-nothing ; introduces true-list-fix
     ;; rules about cdr:
     true-listp-of-cdr
@@ -1338,7 +1340,7 @@
      bv-array-read-non-negative
      bv-array-read-when-data-isnt-an-all-unsigned-byte-p
      bv-array-write-when-data-isnt-an-all-unsigned-byte-p
-     getbit-of-bv-array-read-too-high
+     getbit-of-bv-array-read-too-high ; drop?
      ;;getbit-of-bv-array-read-gen ; just blast the array read?
      equal-of-bvchop-of-nth-and-bv-array-read
      equal-of-bvchop-of-nth-and-bv-array-read-alt
@@ -1436,7 +1438,6 @@
 ;    bvor-logtail-arg2
 ;    bvxor-logtail-arg1
 ;    bvxor-logtail-arg2
-;    getbit-of-logtail
     ;; logtail-of-bvcat-when-extends-into-upper
     ;; logtail-of-bvcat-low
     ;; logtail-of-bvxor
@@ -1573,7 +1574,6 @@
   '(true-listp-of-myif
 
     bytes-to-bits-of-bv-array-write ;move
-    take-of-take ;move to list-rules
     integerp-of-myif
 
     bvchop-of-myif-consant-branches
@@ -1618,7 +1618,7 @@
             bvplus-commutative-2-axe ;seemed to fire a lot?! in rc4 example
             bvplus-associative
 
-            bvuminus-1
+            bvuminus-1 ; introduces getbit
             bvuminus-of-bvplus
 
             bvand-commutative-axe
@@ -1631,7 +1631,7 @@
 ;trying these:
             bitand-commutative-axe
 
-            bitnot-of-getbit-0 ;bozo more like this
+
             bvnot-1-becomes-bitnot-better
             getbit-of-bvnot          ;bozo add a getbit trim -all rule instead
             getbit-of-bvplus         ;use trim?
@@ -1739,7 +1739,7 @@
 
 ;;normalize boolif nests that are really ands?
 
-;FIXME add lots more rules to this
+;; TODO: add many more rules to this?
 (defun arithmetic-rules ()
   (declare (xargs :guard t))
   '(fold-consts-in-+
@@ -2693,8 +2693,6 @@
 
 ;; (defconst *super-rules*
 ;;   '(
-;; ;;;    BITXOR-OF-GETBIT-ARG1
-;; ;;;    BITXOR-OF-GETBIT-ARG2
 ;; ;   slice-of-bvplus-low
 ;; ;;;    bvplus-trim-arg1-dag
 ;;  ;;;   bvplus-trim-arg2-dag

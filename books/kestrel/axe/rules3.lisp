@@ -6856,7 +6856,7 @@
                            (bvdiv '31 (bvplus '31 '2147483647 x) '4)
                            1)))
   :hints (("Goal"
-           :in-theory (e/d (BVLT-ADD-TO-BOTH-SIDES-CONSTANT-LEMMA-ALT)
+           :in-theory (e/d (BVLT-ADD-TO-BOTH-SIDES-CONSTANT-LEMMA-ALT BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)
                            ( BVDIV-OF-SUBTRACT-4-BY-4))
            :use (:instance BVDIV-OF-SUBTRACT-4-BY-4
                            (size 31)
@@ -7993,6 +7993,7 @@
                                   (k2 (bvplus size k2 x)))
            :in-theory (disable equal-of-bvplus-move-bvminus))))
 
+;move
 (defthm equal-of-bvplus-and-bvplus-reduce-constants
   (implies (and (syntaxp (quotep k2))
                 (syntaxp (quotep k1))
@@ -8005,9 +8006,8 @@
                                   (x (bvchop size k1))
                                   (y (bvplus size (bvminus size k2 k1) x))
                                   (z y))
-           :in-theory (disable equal-of-bvplus-and-bvplus-cancel-arg1-arg1))))
-
-
+           :in-theory (e/d (bvminus-becomes-bvplus-of-bvuminus)
+                           (equal-of-bvplus-and-bvplus-cancel-arg1-arg1)))))
 
 ;bad idea - causes the sizes to differ
 (defthm bvplus-of-bvuminus-tighten2

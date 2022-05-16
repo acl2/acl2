@@ -2006,18 +2006,6 @@
 
 (in-theory (disable BITNOT-BECOMES-BITXOR-WITH-1))
 
-;is this true?  if not, redefine bvnot
-;; (DEFTHM GETBIT-OF-BVNOT-better
-;;   (IMPLIES (AND (< N M)
-;;                 (NATP N)
-;;                 (NATP M)
-;; ;                (INTEGERP X)
-;;                 )
-;;            (EQUAL (GETBIT N (BVNOT M X))
-;;                   (BVNOT 1 (GETBIT N X))))
-;;   :HINTS (("Goal" :IN-THEORY (E/D (BVNOT LOGNOT getbit)
-;;                                   (SLICE-BECOMES-GETBIT)))))
-
 ;bozo could go back and use something like this in the jvm model?
 (defthmd <-of-logext-when-signed-byte-p
   (implies (and (signed-byte-p 32 y))

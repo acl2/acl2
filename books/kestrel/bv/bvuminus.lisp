@@ -76,10 +76,7 @@
 (defthm bvuminus-of-0
   (equal (bvuminus size 0)
          0)
-  :hints (("Goal" :in-theory (e/d (bvuminus ;bvminus ;bozo
-                                            bvchop-when-i-is-not-an-integer)
-                                  (;bvminus-becomes-bvplus-of-bvuminus
-                                   )))))
+  :hints (("Goal" :in-theory (enable bvuminus bvchop-when-i-is-not-an-integer))))
 
 (defthm bvuminus-when-bvchop-known-subst
   (implies (and (equal free (bvchop size x))
@@ -90,8 +87,7 @@
                   (bvuminus size free) ;gets computed if size is a constant
                   ))
   :hints (("Goal" :cases ((natp size))
-           :in-theory (enable bvuminus ;bvminus ;bozo
-                              bvchop-when-i-is-not-an-integer))))
+           :in-theory (enable bvuminus bvchop-when-i-is-not-an-integer))))
 
 (defthm bvchop-of-bvuminus
   (implies (and (<= size1 size2)
@@ -99,16 +95,14 @@
                 (natp size2))
            (equal (bvchop size1 (bvuminus size2 x))
                   (bvuminus size1 x)))
-  :hints (("Goal" :in-theory (e/d (;bvminus
-                                   bvuminus ;bvchop-bvchop
-                                           ) ( bvchop-of-minus)))))
+  :hints (("Goal" :in-theory (e/d (bvuminus)
+                                  (bvchop-of-minus)))))
 
 (defthm bvchop-of-bvuminus-same
   (equal (bvchop size (bvuminus size x))
          (bvuminus size x))
-  :hints (("Goal" :in-theory (e/d (;bvminus
-                                   bvuminus ;bvchop-bvchop
-                                           ) ( bvchop-of-minus)))))
+  :hints (("Goal" :in-theory (e/d (bvuminus)
+                                  (bvchop-of-minus)))))
 
 (defthm bvuminus-of-bvchop-arg2
   (implies (and (<= size size1)
@@ -125,9 +119,7 @@
 (defthm bvplus-of-bvuminus-same
   (equal (bvplus size (bvuminus size x) x)
          0)
-  :hints (("Goal" :in-theory (enable ;bvplus bvminus
-                              bvplus
-                              bvuminus))))
+  :hints (("Goal" :in-theory (enable bvplus bvuminus))))
 
 (defthm bvplus-of-bvuminus-same-alt
   (equal (bvplus size x (bvuminus size x))
@@ -140,16 +132,14 @@
                 (bvchop size x))
          (or (equal 0 (bvchop size x))
              (equal (expt 2 (+ -1 size)) (bvchop size x))))
-  :hints (("Goal" :cases ((natp size)) :in-theory (enable bvuminus ;bvminus
-                                                          ))))
+  :hints (("Goal" :cases ((natp size)) :in-theory (enable bvuminus))))
 
 (defthm equal-of-bvchop-and-bvuminus-same
   (equal (equal (bvchop size x)
                 (bvuminus size x))
          (or (equal 0 (bvchop size x))
              (equal (expt 2 (+ -1 size)) (bvchop size x))))
-  :hints (("Goal" :cases ((natp size)) :in-theory (enable bvuminus ;bvminus
-                                                          ))))
+  :hints (("Goal" :cases ((natp size)) :in-theory (enable bvuminus))))
 
 (defthm unsigned-byte-p-of-bvuminus-bigger-simple
   (implies (and (< m n)
@@ -159,15 +149,14 @@
                   (or (equal 0 (bvchop n x))
                       (< (+ (expt 2 n) (- (expt 2 m)))
                          (bvchop n x)))))
-  :hints (("Goal" :in-theory (enable bvuminus ;bvminus
-                                     unsigned-byte-p))))
+  :hints (("Goal" :in-theory (enable bvuminus unsigned-byte-p))))
 
 ;rename
 (defthm bvplus-of-bvuminus-same-2
   (implies (natp size)
            (equal (bvplus size x (bvplus size (bvuminus size x) y))
                   (bvchop size y)))
-  :hints (("Goal" :in-theory (e/d (bvplus ;bvminus
+  :hints (("Goal" :in-theory (e/d (bvplus
                                    bvuminus bvchop-when-i-is-not-an-integer)
                                   (bvchop-of-minus)))))
 
@@ -178,3 +167,19 @@
                   (bvchop size y)))
   :hints (("Goal" :use (:instance bvplus-of-bvuminus-same-2)
            :in-theory (disable bvplus-of-bvuminus-same-2))))
+
+
+
+;; -(x+y) becomes -x + -y
+(defthm bvuminus-of-bvplus
+  (equal (bvuminus size (bvplus size x y))
+         (bvplus size (bvuminus size x) (bvuminus size y)))
+  :hints (("Goal" :in-theory (enable bvuminus bvplus))))
+
+(defthm bvuminus-1
+  (equal (bvuminus 1 x)
+         (getbit 0 x))
+  :hints (("Goal" :cases ((equal 0 x) (equal 1 x))
+           :in-theory (e/d (bvuminus getbit)
+                           (bvchop-1-becomes-getbit
+                            slice-becomes-getbit)))))
