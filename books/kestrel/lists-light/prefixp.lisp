@@ -182,7 +182,6 @@
 (encapsulate ()
   (local (include-book "nthcdr"))
   (local (include-book "take"))
-  (local (include-book "true-list-fix"))
   (local (include-book "append"))
   (local (include-book "len"))
   (local (include-book "nth"))

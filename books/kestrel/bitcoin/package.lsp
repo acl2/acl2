@@ -23,6 +23,10 @@
                             bit-listp
                             bits=>bebytes
                             bits=>beubyte11s
+                            bvand
+                            bvshl
+                            bvshr
+                            bvxor
                             byte
                             byte-fix
                             byte-list
@@ -65,6 +69,8 @@
                             ubyte8p
                             unsigned-byte-fix
                             unsigned-byte-list-fix
+                            unsigned-byte-listp
+                            unsigned-byte-p
                             crypto::hmac-sha-512
                             crypto::pbkdf2-hmac-sha-512
                             crypto::ripemd-160-bytes
