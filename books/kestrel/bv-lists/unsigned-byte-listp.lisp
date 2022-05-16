@@ -1,6 +1,6 @@
 ; A lightweight book connecting unsigned-byte-listp to all-unsigned-byte-p.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2022 Kestrel Institute
 ; For unsigned-byte-listp, see the copyright for books/std.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,6 +16,7 @@
 ;; functions.
 
 (include-book "all-unsigned-byte-p") ; todo: separate out?
+(include-book "kestrel/typed-lists-light/all-integerp" :dir :system) ; todo: separate out?
 (include-book "unsigned-byte-listp-def")
 (local (include-book "../utilities/equal-of-booleans"))
 
@@ -119,4 +120,9 @@
                 )
            (equal (unsigned-byte-p size (nth n list))
                   (< n (len list))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+(defthm all-integerp-when-unsigned-byte-listp
+  (implies (unsigned-byte-listp size x) ; size is a free var
+           (all-integerp x))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
