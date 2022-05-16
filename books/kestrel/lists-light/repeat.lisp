@@ -175,5 +175,4 @@
                   (repeat n1 x)))
   :hints (("Goal"
            :induct (sub1-sub1-induct n1 n2)
-           :in-theory (e/d (repeat take)
-                           ()))))
+           :in-theory (enable repeat take))))
