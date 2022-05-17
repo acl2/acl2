@@ -456,7 +456,7 @@
      bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
 
      getbit-too-high-cheap-free
-     getbit-too-high-is-0-bind-free
+     getbit-too-high-is-0-bind-free-axe
 
      bvplus-of-bvplus-of-bvuminus
      natp-when-unsigned-byte-p ;uses the dag assumptions, has a free var so should be cheap? (put last of the natp rules?) moved from yet-more-rules
@@ -705,10 +705,10 @@
 ;           bitxor-of-bvchop-arg2 ;done by trim rules and BVCHOP-1-BECOMES-GETBIT
      getbit-test-is-self ;make a myif version?
 
-     ;; high-getbit-of-getbit-is-0 handled by getbit-too-high-is-0-bind-free
+     ;; high-getbit-of-getbit-is-0 handled by getbit-too-high-is-0-bind-free-axe
      getbit-of-if
 ;            getbit-of-bvif ;could be expensive? newww
-;            GETBIT-OF-SLICE-TOO-HIGH ;handled by getbit-too-high-is-0-bind-free
+;            GETBIT-OF-SLICE-TOO-HIGH ;handled by getbit-too-high-is-0-bind-free-axe
 ;fixme do we want these?
 ; trying without these... todo: do we want these or not?:
      ;; getbit-of-bvor-eric
