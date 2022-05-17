@@ -30,7 +30,9 @@
      [C:6.3.2.3] specifies several things about pointers;
      in particular, it talks about null pointers.
      Thus, the picture is the following:
-     a pointer is either an address or a null pointer.
+     a pointer is either an object designator or a null pointer
+     (see the discussion in @(see object-designator)
+     about lower-level addresses vs. higher-level object designators).
      In our defensive dynamic semantics, where values are tagged by their types,
      we also include, as part of the pointer,
      the type of its referenced value."))
@@ -45,13 +47,13 @@
   (xdoc::topstring
    (xdoc::p
     "Thus, we define a pointer as consisting of
-     an optional address (i.e. object designator) and a type.
-     The address is absent for a null pointer;
+     an optional object designator and a type.
+     The object designator is absent for a null pointer;
      note that [C] does not prescribe 0 to represent a null pointer,
      even though 0 is used in null pointer constants [C:6.3.2.3/3].
      The type is not the pointer type, but the referenced type;
      this way, we avoid having to constrain the type to be a pointer type."))
-  ((address? address-option)
+  ((designator? objdesign-option)
    (reftype type))
   :tag :pointer
   :layout :list
@@ -62,7 +64,7 @@
 (define pointer-nullp ((ptr pointerp))
   :returns (yes/no booleanp)
   :short "Check if a pointer is null."
-  (not (pointer->address? ptr))
+  (not (pointer->designator? ptr))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -70,7 +72,7 @@
 (define pointer-null ((reftype typep))
   :returns (ptr pointerp)
   :short "Null pointer for a given referenced type."
-  (make-pointer :address? nil :reftype reftype)
+  (make-pointer :designator? nil :reftype reftype)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -79,6 +81,6 @@
   :guard (not (pointer-nullp ptr))
   :returns (address addressp)
   :short "Address of a non-null pointer."
-  (address-fix (pointer->address? ptr))
+  (address-fix (objdesign->get (pointer->designator? ptr)))
   :guard-hints (("Goal" :in-theory (enable pointer-nullp)))
   :hooks (:fix))

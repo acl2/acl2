@@ -91,7 +91,7 @@
     (:slong ((get slong-integer)))
     (:ullong ((get ullong-integer)))
     (:sllong ((get sllong-integer)))
-    (:pointer ((address? address-option)
+    (:pointer ((designator? objdesign-option)
                (reftype type)))
     (:array ((elemtype type)
              (elements value-list
