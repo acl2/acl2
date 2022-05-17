@@ -31,7 +31,7 @@
      in particular, it talks about null pointers.
      Thus, the picture is the following:
      a pointer is either an object designator or a null pointer
-     (see the discussion in @(see object-designator)
+     (see the discussion in @(see object-designators)
      about lower-level addresses vs. higher-level object designators).
      In our defensive dynamic semantics, where values are tagged by their types,
      we also include, as part of the pointer,
