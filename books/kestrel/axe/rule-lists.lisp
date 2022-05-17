@@ -694,6 +694,7 @@
 ;           bitxor-of-bvor-arg2 ;done by trim rules
 ;            bitxor-of-bvchop-arg1 ;done by trim rules and BVCHOP-1-BECOMES-GETBIT
 ;           bitxor-of-bvchop-arg2 ;done by trim rules and BVCHOP-1-BECOMES-GETBIT
+
      getbit-test-is-self ;make a myif version?
      getbit-too-high-is-0-bind-free
      ;; high-getbit-of-getbit-is-0 handled by getbit-too-high-is-0-bind-free
@@ -709,12 +710,13 @@
      ;; getbit-0-of-bvxor-eric
      ;; getbit-of-bvxor-eric-2
      getbit-identity-axe
+     ;; getbit-0-of-getbit ; not needed if we have getbit-identity-axe
      getbit-of-bitxor-all-cases ;covered by the too-high and identity rules if n is a constant
      getbit-of-bitor-all-cases ;covered by the too-high and identity rules if n is a constant
      getbit-of-bitand-all-cases ;covered by the too-high and identity rules if n is a constant
-;            getbit-0-of-getbit
      getbit-of-bvchop-too-high ;done by getbit-identity-axe uh, no!
      getbit-of-bvchop
+
      slice-out-of-order ;trying the real version
      slice-too-high-is-0-bind-free
 ;            slice-of-getbit-too-high see slice-too-high-is-0-bind-free
