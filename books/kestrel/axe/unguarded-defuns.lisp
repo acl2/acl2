@@ -433,7 +433,7 @@
 (defthm bvuminus-unguarded-correct
   (equal (bvuminus-unguarded size i)
          (bvuminus size i))
-  :hints (("Goal" :in-theory (e/d (bvuminus-unguarded bvuminus bvminus) ()))))
+  :hints (("Goal" :in-theory (enable bvuminus-unguarded bvminus))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
