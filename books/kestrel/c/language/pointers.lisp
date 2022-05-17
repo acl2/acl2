@@ -12,57 +12,13 @@
 (in-package "C")
 
 (include-book "types")
+(include-book "object-designators")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ pointers
   :parents (language)
   :short "A model of C pointers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we use a simple model of pointers:
-     a pointer in our model is either null or an address,
-     where an address is an essentially opaque entity
-     whose sole purpose is to identify an object (in the C sense)
-     allocated in some (externally populated) memory."))
-  :order-subtopics t
-  :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod address
-  :short "Fixtype of addresses."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Addresses are mentioned in several places in [C],
-     but there seems to be no specific place in [C] that defines them.
-     Nonetheless, based on how they are mentioned,
-     it is quite clear that an address is essentially a hardware address,
-     i.e. a number that identifies a memory location,
-     even though [C] does not prescribe a particular representation.")
-   (xdoc::p
-    "For now we treat addresses as essentially abstract entities,
-     whose only purpose is to identify objects in memory.
-     We model addresses as natural numbers,
-     but we do not use any properties of natural numbers.
-     This fixtype wraps these natural numbers, for better abstraction."))
-  ((number nat))
-  :tag :address
-  :pred addressp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption address-option
-  address
-  :short "Fixtype of optional addresses."
-  :pred address-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod pointer
-  :short "Fixtype of pointers."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -77,15 +33,24 @@
      a pointer is either an address or a null pointer.
      In our defensive dynamic semantics, where values are tagged by their types,
      we also include, as part of the pointer,
-     the type of its referenced value.")
+     the type of its referenced value."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod pointer
+  :short "Fixtype of pointers."
+  :long
+  (xdoc::topstring
    (xdoc::p
-    "Thus, we define a pointer as consisting of an optional address and a type.
+    "Thus, we define a pointer as consisting of
+     an optional address (i.e. object designator) and a type.
      The address is absent for a null pointer;
      note that [C] does not prescribe 0 to represent a null pointer,
      even though 0 is used in null pointer constants [C:6.3.2.3/3].
      The type is not the pointer type, but the referenced type;
-     this way, we avoid having to constrain the type to be a pointer type.
-     The type of the pointer is the type of pointer to the referenced type."))
+     this way, we avoid having to constrain the type to be a pointer type."))
   ((address? address-option)
    (reftype type))
   :tag :pointer
