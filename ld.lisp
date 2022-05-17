@@ -1323,70 +1323,75 @@
                               (mv nil nil nil '(verify) state)))
                             (t (ld-read-command state)))))
              (t (ld-read-command state))))
-     (cond
-      (eofp (cond ((ld-prompt state)
-                   (pprogn (princ$ "Bye." (standard-co state) state)
-                           (newline (standard-co state) state)
+     (let ((form (if (and (f-get-global 'in-local-flg state)
+                          (or (atom form)
+                              (not (eq (car form) 'local))))
+                     (list 'local form)
+                   form)))
+       (cond
+        (eofp (cond ((ld-prompt state)
+                     (pprogn (princ$ "Bye." (standard-co state) state)
+                             (newline (standard-co state) state)
 
 ; In versions before v2-8, typing ctrl-d (ctrl-c ctrl-d in Emacs) did not
 ; immediately kill the Lisp if the resulting eof condition was detected by BRR
 ; processing.  The code below fixes that; let's hope it doesn't "fix" anything
 ; else!
 
-                           (prog2$ (and (equal (standard-oi state) *standard-oi*)
-                                        (good-bye))
-                                   state)
-                           (mv :return :eof state)))
-                  (t (mv :return :eof state))))
-      (erp (ld-return-error state))
-      (t (pprogn
-          (ld-print-command keyp form col state)
-          (mv-let
-           (erp ans state)
-           (ld-filter-command form state)
-           (cond
-            (erp (ld-return-error state))
-            ((null ans) (mv :continue nil state))
-            ((eq ans :error) (mv :error nil state))
-            ((eq ans :return) (mv :return :filter state))
-            (t (assert$
-                (eq ans t)
-                (pprogn
-                 (cond ((<= (f-get-global 'ld-level state) 1)
-                        (prog2$ (initialize-accumulated-warnings)
-                                (initialize-timers state)))
-                       (t state))
-                 (f-put-global 'last-make-event-expansion nil state)
-                 (let* ((old-wrld (w state))
-                        (old-default-defun-mode
-                         (default-defun-mode old-wrld)))
-                   (mv-let
-                    (error-flg trans-ans state)
-                    (revert-world-on-error
-                     (mv-let (error-flg trans-ans state)
-                             (if (raw-mode-p state)
-                                 (acl2-raw-eval form state)
-                               (trans-eval-default-warning form 'top-level
-                                                           state t))
+                             (prog2$ (and (equal (standard-oi state) *standard-oi*)
+                                          (good-bye))
+                                     state)
+                             (mv :return :eof state)))
+                    (t (mv :return :eof state))))
+        (erp (ld-return-error state))
+        (t (pprogn
+            (ld-print-command keyp form col state)
+            (mv-let
+              (erp ans state)
+              (ld-filter-command form state)
+              (cond
+               (erp (ld-return-error state))
+               ((null ans) (mv :continue nil state))
+               ((eq ans :error) (mv :error nil state))
+               ((eq ans :return) (mv :return :filter state))
+               (t (assert$
+                   (eq ans t)
+                   (pprogn
+                    (cond ((<= (f-get-global 'ld-level state) 1)
+                           (prog2$ (initialize-accumulated-warnings)
+                                   (initialize-timers state)))
+                          (t state))
+                    (f-put-global 'last-make-event-expansion nil state)
+                    (let* ((old-wrld (w state))
+                           (old-default-defun-mode
+                            (default-defun-mode old-wrld)))
+                      (mv-let
+                        (error-flg trans-ans state)
+                        (revert-world-on-error
+                         (mv-let (error-flg trans-ans state)
+                           (if (raw-mode-p state)
+                               (acl2-raw-eval form state)
+                             (trans-eval-default-warning form 'top-level
+                                                         state t))
 
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx).
 
-                             (pprogn
-                              (extend-ld-history form error-flg trans-ans
-                                                 state)
-                              (cond
-                               (error-flg (mv t nil state))
-                               ((and (ld-error-triples state)
-                                     (equal (car trans-ans) *error-triple-sig*)
-                                     (car (cdr trans-ans)))
-                                (mv t nil state))
-                               (t (er-progn
-                                   (maybe-add-command-landmark
-                                    old-wrld
-                                    old-default-defun-mode
-                                    form
-                                    trans-ans state)
-                                   (mv nil trans-ans state)))))))
+                           (pprogn
+                            (extend-ld-history form error-flg trans-ans
+                                               state)
+                            (cond
+                             (error-flg (mv t nil state))
+                             ((and (ld-error-triples state)
+                                   (equal (car trans-ans) *error-triple-sig*)
+                                   (car (cdr trans-ans)))
+                              (mv t nil state))
+                             (t (er-progn
+                                 (maybe-add-command-landmark
+                                  old-wrld
+                                  old-default-defun-mode
+                                  form
+                                  trans-ans state)
+                                 (mv nil trans-ans state)))))))
 
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx) and we know
 ; that valx is not an erroneous error triple if we're paying attention to
@@ -1397,48 +1402,48 @@
 ; error triple and it signals an error.  Error-flg, now, is set to t
 ; iff we reverted.
 
-                    (cond
-                     (error-flg (ld-return-error state))
-                     ((and (equal (car trans-ans) *error-triple-sig*)
-                           (eq (cadr (cdr trans-ans)) :q))
-                      (mv :return :exit state))
-                     (t (pprogn
-                         (ld-print-results trans-ans state)
-                         (cond
-                          ((and (ld-error-triples state)
-                                (not (eq (ld-error-action state) :continue))
-                                (equal (car trans-ans) *error-triple-sig*)
-                                (let ((val (cadr (cdr trans-ans))))
-                                  (and (consp val)
-                                       (eq (car val) :stop-ld))))
-                           (mv :return
-                               (list* :stop-ld
-                                      (f-get-global 'ld-level state)
-                                      (cdr (cadr (cdr trans-ans))))
-                               state))
-                          (t
+                        (cond
+                         (error-flg (ld-return-error state))
+                         ((and (equal (car trans-ans) *error-triple-sig*)
+                               (eq (cadr (cdr trans-ans)) :q))
+                          (mv :return :exit state))
+                         (t (pprogn
+                             (ld-print-results trans-ans state)
+                             (cond
+                              ((and (ld-error-triples state)
+                                    (not (eq (ld-error-action state) :continue))
+                                    (equal (car trans-ans) *error-triple-sig*)
+                                    (let ((val (cadr (cdr trans-ans))))
+                                      (and (consp val)
+                                           (eq (car val) :stop-ld))))
+                               (mv :return
+                                   (list* :stop-ld
+                                          (f-get-global 'ld-level state)
+                                          (cdr (cadr (cdr trans-ans))))
+                                   state))
+                              (t
 
 ; We make the convention of checking the new-namep filter immediately after
 ; we have successfully eval'd a form (rather than waiting for the next form)
 ; so that if the user has set the filter up he gets a satisfyingly
 ; immediate response when he introduces the name.
 
-                           (let ((filter (ld-pre-eval-filter state)))
-                             (cond
-                              ((and (not (eq filter :all))
-                                    (not (eq filter :query))
-                                    (not (eq filter :illegal-state))
-                                    (not (new-namep filter
-                                                    (w state))))
-                               (er-progn
+                               (let ((filter (ld-pre-eval-filter state)))
+                                 (cond
+                                  ((and (not (eq filter :all))
+                                        (not (eq filter :query))
+                                        (not (eq filter :illegal-state))
+                                        (not (new-namep filter
+                                                        (w state))))
+                                   (er-progn
 
 ; We reset the filter to :all even though we are about to exit this LD
 ; with :return.  This just makes things work if "this LD" is the top-level
 ; one and LP immediately reenters.
 
-                                (set-ld-pre-eval-filter :all state)
-                                (mv :return :filter state)))
-                              (t (mv :continue nil state)))))))))))))))))))))))
+                                    (set-ld-pre-eval-filter :all state)
+                                    (mv :return :filter state)))
+                                  (t (mv :continue nil state))))))))))))))))))))))))
 
 (defun ld-loop (state)
 
@@ -1453,7 +1458,14 @@
    (ld-read-eval-print state)
    #-acl2-loop-only
    (progn (acl2-unwind *ld-level* t)
-          (setq *trace-level* 0)
+          (when (not *wormholep*)
+
+; This seems a reasonable place to reset *trace-level* in case a throw has
+; been executed that leaves *trace-level* at an unfortunate value.  However, we
+; don't want to mess with *trace-level* when reading forms inside a brr break
+; or any other wormhole; hence the condition above.
+
+            (setq *trace-level* 0))
           (setq *hcomp-loop$-alist* nil) ; could be modified in raw-mode
           (ld-read-eval-print state))
    (cond ((eq signal :continue)

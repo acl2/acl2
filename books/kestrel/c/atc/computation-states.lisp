@@ -575,176 +575,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-array ((addr addressp) (compst compustatep))
-  :returns (array value-resultp)
-  :short "Read an array in the computation state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We check whether the heap has an array at the address.
-     If this check succeeds, we return the array.")
-   (xdoc::p
-    "Note that this function reads the array as a whole;
-     it does not read an array element.
-     Functions like @(tsee uchar-array-read-sint)
-     can be used to read individual array elements."))
+(define read-object ((addr addressp) (compst compustatep))
+  :returns (obj value-resultp)
+  :short "Read an object in the computation state."
   (b* ((addr (address-fix addr))
        (heap (compustate->heap compst))
        (addr+obj (omap::in addr heap))
        ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
-       (obj (cdr addr+obj))
-       ((unless (value-case obj :array))
-        (error (list :address-not-array addr obj))))
+       (obj (cdr addr+obj)))
     obj)
-  :hooks (:fix)
-  ///
-
-  (defret value-kind-of-read-array
-    (implies (not (errorp array))
-             (equal (value-kind array)
-                    :array))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-array ((addr addressp) (array valuep) (compst compustatep))
-  :guard (value-case array :array)
+(define write-object ((addr addressp) (val valuep) (compst compustatep))
   :returns (new-compst compustate-resultp)
-  :short "Write an array in the computation state."
+  :short "Write an object in the computation state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check whether the heap has an array at the address.
-     If this checks succeed, we overwrite the array in the heap.")
+    "We check whether the heap has an object at the address,
+     of the same type as the new object.
+     Note that the types include the number of elements.")
    (xdoc::p
-    "Note that this function writes the array as a whole;
-     it does not write an array element.
-     Functions like @(tsee uchar-array-write-sint)
-     can be used to write individual array elements.")
-   (xdoc::p
-    "Before overwriting the array,
-     we ensure that the new one has the same type and length."))
+    "If this checks succeed, we overwrite the object in the heap."))
   (b* ((addr (address-fix addr))
        (heap (compustate->heap compst))
        (addr+obj (omap::in addr heap))
        ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
        (obj (cdr addr+obj))
-       ((unless (value-case obj :array))
-        (error (list :address-not-array addr obj)))
-       ((unless (equal (value-array->elemtype array)
-                       (value-array->elemtype obj)))
-        (error (list :array-type-mismatch
-                     :old (value-array->elemtype obj)
-                     :new (value-array->elemtype array))))
-       ((unless (equal (value-array->length array)
-                       (value-array->length obj)))
-        (error (list :array-length-mismatch
-                     :old (value-array->length obj)
-                     :new (value-array->length array))))
-       (new-heap (omap::update addr (value-fix array) heap))
+       ((unless (equal (type-of-value val)
+                       (type-of-value obj)))
+        (error (list :write-object-mistype
+                     :old (type-of-value obj)
+                     :new (type-of-value val))))
+       (new-heap (omap::update addr (value-fix val) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)
   :hooks (:fix)
   ///
 
-  (defret compustate-frames-number-of-write-array
+  (defret compustate-frames-number-of-write-object
     (implies (compustatep new-compst)
              (equal (compustate-frames-number new-compst)
                     (compustate-frames-number compst)))
     :hints (("Goal" :in-theory (enable compustate-frames-number))))
 
-  (defret compustate-scopes-numbers-of-write-array
-    (implies (compustatep new-compst)
-             (equal (compustate-scopes-numbers new-compst)
-                    (compustate-scopes-numbers compst)))
-    :hints (("Goal" :in-theory (enable compustate-scopes-numbers)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define read-struct ((addr addressp) (compst compustatep))
-  :returns (struct value-resultp)
-  :short "Read a structure in the computation state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We check whether the heap has a structure at that address.
-     If this check succeeds, we return the structure.")
-   (xdoc::p
-    "Note that this function reads the structure as a whole;
-     it does not read a structure member.
-     The function @(tsee struct-read-member)
-     can be used to read individual structure members."))
-  (b* ((addr (address-fix addr))
-       (heap (compustate->heap compst))
-       (addr+obj (omap::in addr heap))
-       ((unless (consp addr+obj))
-        (error (list :address-not-found addr)))
-       (obj (cdr addr+obj))
-       ((unless (value-case obj :struct))
-        (error (list :address-not-struct addr obj))))
-    obj)
-  :hooks (:fix)
-  ///
-
-  (defret value-kind-of-read-struct
-    (implies (not (errorp struct))
-             (equal (value-kind struct)
-                    :struct))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define write-struct ((addr addressp) (struct valuep) (compst compustatep))
-  :guard (value-case struct :struct)
-  :returns (new-compst compustate-resultp)
-  :short "Write a structure in the computation state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We check whether the heap has a structure at the address.
-     If this checks succeed, we overwrite the structure in the heap.")
-   (xdoc::p
-    "Note that this function writes the structure as a whole;
-     it does not write a structure member.
-     The functions @(tsee struct-write-member)
-     can be used to write individual structure members.")
-   (xdoc::p
-    "Before overwriting the structure,
-     we ensure that the new one has
-     the same tag, member names, and member types."))
-  (b* ((addr (address-fix addr))
-       (heap (compustate->heap compst))
-       (addr+obj (omap::in addr heap))
-       ((unless (consp addr+obj))
-        (error (list :address-not-found addr)))
-       (obj (cdr addr+obj))
-       ((unless (value-case obj :struct))
-        (error (list :address-not-struct addr obj)))
-       ((unless (equal (value-struct->tag struct)
-                       (value-struct->tag obj)))
-        (error (list :struct-tag-mismatch
-                     :old (value-struct->tag obj)
-                     :new (value-struct->tag struct))))
-       ((unless (equal (member-values-to-types (value-struct->members struct))
-                       (member-values-to-types (value-struct->members obj))))
-        (error (list :struct-members-mismatch
-                     :old (member-values-to-types
-                           (value-struct->members obj))
-                     :new (member-values-to-types
-                           (value-struct->members struct)))))
-       (new-heap (omap::update addr (value-fix struct) heap))
-       (new-compst (change-compustate compst :heap new-heap)))
-    new-compst)
-  :hooks (:fix)
-  ///
-
-  (defret compustate-frames-number-of-write-struct
-    (implies (compustatep new-compst)
-             (equal (compustate-frames-number new-compst)
-                    (compustate-frames-number compst)))
-    :hints (("Goal" :in-theory (enable compustate-frames-number))))
-
-  (defret compustate-scopes-numbers-of-write-struct
+  (defret compustate-scopes-numbers-of-write-object
     (implies (compustatep new-compst)
              (equal (compustate-scopes-numbers new-compst)
                     (compustate-scopes-numbers compst)))

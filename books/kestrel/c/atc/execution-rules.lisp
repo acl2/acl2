@@ -193,6 +193,106 @@
      under hypotheses on different types of values
      that occur during symbolic execution."))
 
+  (defruled type-of-value-when-uchar-arrayp
+    (implies (uchar-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-uchar)
+                                (value-array->length x))))
+    :enable (type-of-value
+             uchar-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-schar-arrayp
+    (implies (schar-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-schar)
+                                (value-array->length x))))
+    :enable (type-of-value
+             schar-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-ushort-arrayp
+    (implies (ushort-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-ushort)
+                                (value-array->length x))))
+    :enable (type-of-value
+             ushort-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-sshort-arrayp
+    (implies (sshort-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-sshort)
+                                (value-array->length x))))
+    :enable (type-of-value
+             sshort-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-uint-arrayp
+    (implies (uint-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-uint)
+                                (value-array->length x))))
+    :enable (type-of-value
+             uint-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-sint-arrayp
+    (implies (sint-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-sint)
+                                (value-array->length x))))
+    :enable (type-of-value
+             sint-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-ulong-arrayp
+    (implies (ulong-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-ulong)
+                                (value-array->length x))))
+    :enable (type-of-value
+             ulong-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-slong-arrayp
+    (implies (slong-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-slong)
+                                (value-array->length x))))
+    :enable (type-of-value
+             slong-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-ullong-arrayp
+    (implies (ullong-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-ullong)
+                                (value-array->length x))))
+    :enable (type-of-value
+             ullong-arrayp
+             value-array->elemtype
+             value-array->length))
+
+  (defruled type-of-value-when-sllong-arrayp
+    (implies (sllong-arrayp x)
+             (equal (type-of-value x)
+                    (type-array (type-sllong)
+                                (value-array->length x))))
+    :enable (type-of-value
+             sllong-arrayp
+             value-array->elemtype
+             value-array->length))
+
   (defval *atc-type-of-value-rules*
     '(type-of-value-when-ucharp
       type-of-value-when-scharp
@@ -204,7 +304,17 @@
       type-of-value-when-slongp
       type-of-value-when-ullongp
       type-of-value-when-sllongp
-      type-of-value-when-pointerp)))
+      type-of-value-when-pointerp
+      type-of-value-when-uchar-arrayp
+      type-of-value-when-schar-arrayp
+      type-of-value-when-ushort-arrayp
+      type-of-value-when-sshort-arrayp
+      type-of-value-when-uint-arrayp
+      type-of-value-when-sint-arrayp
+      type-of-value-when-ulong-arrayp
+      type-of-value-when-slong-arrayp
+      type-of-value-when-ullong-arrayp
+      type-of-value-when-sllong-arrayp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1007,7 +1117,8 @@
                          (pointerp x)
                          (not (pointer-nullp x))
                          (equal array
-                                (read-array (pointer->address x) compst))
+                                (read-object (pointer->address x) compst))
+                         (value-case array :array)
                          (equal (pointer->reftype x)
                                 (value-array->elemtype array))
                          (,apred array)
@@ -1940,7 +2051,8 @@
                  (pointerp ptr)
                  (not (pointer-nullp ptr))
                  (equal array
-                        (read-array (pointer->address ptr) compst1))
+                        (read-object (pointer->address ptr) compst1))
+                 (value-case array :array)
                  (equal (pointer->reftype ptr)
                         (value-array->elemtype array))
                  (,apred array)
@@ -1948,9 +2060,9 @@
                  (,ipred index)
                  (,atype-array-itype-index-okp array index))
             (equal (exec-expr-asg e compst fenv limit)
-                   (write-array (pointer->address ptr)
-                                (,atype-array-write-itype array index val)
-                                compst1))))
+                   (write-object (pointer->address ptr)
+                                 (,atype-array-write-itype array index val)
+                                 compst1))))
          (event `(defruled ,name
                    ,formula
                    :enable (exec-expr-asg

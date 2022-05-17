@@ -681,6 +681,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-taginfo-alist-to-type-of-value-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the @(tsee type-of-value) theorems
+          out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->type-of-value-thm (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-type-of-value-thms (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-string-taginfo-alist-to-tag-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -4349,8 +4362,7 @@
      For each array or structure formal @('a') of @('fn'),
      we generate a pointer variable @('a-ptr') as explained,
      along with a binding
-     @('(a (read-array (pointer->address a-ptr) compst))') or
-     @('(a (read-struct (pointer->address a-ptr) compst))'):
+     @('(a (read-object (pointer->address a-ptr) compst))'):
      this binding relates the two variables,
      and lets us use the guard of @('fn') as hypothesis in the theorem,
      which uses @('a'),
@@ -4396,9 +4408,8 @@
     "If @('a') is an array or structure formal of a recursive @('fn'),
      we introduce an additional @('a-ptr') variable,
      similarly to the case of non-recursive @('fn').
-     We generate two bindings (i) @('(a-ptr (read-var <a> compst))')
-     and (ii) either @('(a (read-array (pointer->address a-ptr) compst))')
-     or @('(a (read-struct (pointer->address a-ptr) compst))'),
+     We generate two bindings @('(a-ptr (read-var <a> compst))')
+     and @('(a (read-object (pointer->address a-ptr) compst))'),
      in that order.
      The first binding serves to tie @('a-ptr')
      to the corresponding variable in the computation state,
@@ -4433,58 +4444,33 @@
        (formal-ptr (add-suffix-to-fn formal "-PTR"))
        (formal-addr `(pointer->address ,formal-ptr))
        (formal-id `(ident ,(symbol-name formal)))
-       ((mv arrayp structp)
-        (if (type-case type :pointer)
-            (case (type-kind (type-pointer->to type))
-              ((:schar :uchar
-                :sshort :ushort
-                :sint :uint
-                :slong :ulong
-                :sllong :ullong)
-               (mv t nil))
-              (:struct (mv nil t))
-              (t (prog2$ (raise "Internal error: formal ~x0 has type ~x1."
-                                formal type)
-                         (mv nil nil))))
-          (mv nil nil)))
+       (pointerp (type-case type :pointer))
        (bindings
         (if fn-recursivep
-            (cond (arrayp
-                   (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                         `(,formal (read-array ,formal-addr ,compst-var))))
-                  (structp
-                   (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                         `(,formal (read-struct ,formal-addr ,compst-var))))
-                  (t (list `(,formal (read-var ,formal-id ,compst-var)))))
-          (cond (arrayp
-                 (list `(,formal (read-array ,formal-addr ,compst-var))))
-                (structp
-                 (list `(,formal (read-struct ,formal-addr ,compst-var))))
-                (t nil))))
-       (subst? (and (or arrayp structp)
+            (if pointerp
+                (list `(,formal-ptr (read-var ,formal-id ,compst-var))
+                      `(,formal (read-object ,formal-addr ,compst-var)))
+              (list `(,formal (read-var ,formal-id ,compst-var))))
+          (if pointerp
+              (list `(,formal (read-object ,formal-addr ,compst-var)))
+            nil)))
+       (subst? (and pointerp
                     (list (cons formal formal-ptr))))
-       (hyps (and (or arrayp structp)
+       (hyps (and pointerp
                   (list `(pointerp ,formal-ptr)
                         `(not (pointer-nullp ,formal-ptr))
                         `(equal (pointer->reftype ,formal-ptr)
                                 ,(type-to-maker (type-pointer->to type))))))
        (inst (if fn-recursivep
-                 (cond (arrayp
-                        (list `(,formal (read-array (pointer->address
-                                                     (read-var ,formal-id
-                                                               ,compst-var))
-                                                    ,compst-var))))
-                       (structp
-                        (list `(,formal (read-struct (pointer->address
-                                                      (read-var ,formal-id
-                                                                ,compst-var))
-                                                     ,compst-var))))
-                       (t (list `(,formal (read-var ,formal-id ,compst-var)))))
-               (cond (arrayp
-                      (list `(,formal (read-array ,formal-addr ,compst-var))))
-                     (structp
-                      (list `(,formal (read-struct ,formal-addr ,compst-var))))
-                     (t nil))))
+                 (if pointerp
+                     (list `(,formal (read-object (pointer->address
+                                                   (read-var ,formal-id
+                                                             ,compst-var))
+                                                  ,compst-var)))
+                   (list `(,formal (read-var ,formal-id ,compst-var))))
+               (if pointerp
+                   (list `(,formal (read-object ,formal-addr ,compst-var)))
+                 nil)))
        ((mv more-bindings more-hyps more-subst more-inst)
         (atc-gen-outer-bindings-and-hyps (cdr typed-formals)
                                          compst-var
@@ -4566,7 +4552,7 @@
      which the correctness theorem binds to the results of
      the ACL2 function that represents the C function.
      The modified computation state is expressed as
-     a nest of @(tsee write-array) and @(tsee write-struct) calls.
+     a nest of @(tsee write-object) calls.
      This ACL2 code here generates that nest.")
    (xdoc::p
     "The parameter @('affect') passed to this code
@@ -4579,7 +4565,7 @@
      Thus, we go through @('affect'),
      looking up the corresponding pointer variables in @('pointer-subst'),
      and we construct
-     each nested @(tsee write-array) or @(tsee write-struct) call,
+     each nested @(tsee write-object) call,
      which needs both a pointer and an array or structure;
      we distinguish between arrays and structures
      via the types of the formals.")
@@ -4598,25 +4584,17 @@
         (raise "Internal error: formal ~x0 not found." formal))
        ((unless (type-case type :pointer))
         (raise "Internal error: affected formal ~x0 has type ~x1."
-               formal type))
-       (write-array/struct
-        (case (type-kind (type-pointer->to type))
-          ((:schar :uchar
-            :sshort :ushort
-            :sint :uint
-            :slong :ulong
-            :sllong :uloong)
-           'write-array)
-          (:struct 'write-struct)
-          (t (raise "Internal error: affected formal ~x0 has type ~x1."
-                    formal type)))))
-    `(,write-array/struct (pointer->address
-                           ,(cdr (assoc-eq formal pointer-subst)))
-                          ,(add-suffix-to-fn formal "-NEW")
-                          ,(atc-gen-cfun-final-compustate (cdr affect)
-                                                          typed-formals
-                                                          pointer-subst
-                                                          compst-var))))
+               formal type)))
+    `(write-object (pointer->address ,(cdr (assoc-eq formal pointer-subst)))
+                   ,(add-suffix-to-fn formal "-NEW")
+                   ,(atc-gen-cfun-final-compustate (cdr affect)
+                                                   typed-formals
+                                                   pointer-subst
+                                                   compst-var)))
+  :prepwork
+  ((defrulel lemma
+     (implies (symbol-symbol-alistp x)
+              (alistp x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4827,9 +4805,8 @@
        (type-prescriptions-struct-readers
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
-       (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
-       (members-thms
-        (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (type-of-value-thms
+        (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
        (exec-memberp-thms
         (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (exec-asg-memberp-thms
@@ -4845,8 +4822,7 @@
                                ,@result-thms
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
-                               ,@tag-thms
-                               ,@members-thms
+                               ,@type-of-value-thms
                                ,@exec-memberp-thms
                                ,@exec-asg-memberp-thms
                                ,@type-prescriptions-called
@@ -5750,7 +5726,7 @@
      and which have corresponding named variables and heap arrays
      in the computation state.
      The modified computation state is expressed as
-     a nest of @(tsee write-var) and @(tsee write-array) calls.
+     a nest of @(tsee write-var) and @(tsee write-object) calls.
      This ACL2 code here generates that nest.")
    (xdoc::p
     "Note that, in the correctness theorem,
@@ -5764,11 +5740,11 @@
        (mod-var (car mod-vars))
        (ptr (cdr (assoc-eq mod-var pointer-subst))))
     (if ptr
-        `(write-array (pointer->address ,ptr)
-                      ,(add-suffix-to-fn mod-var "-NEW")
-                      ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                      pointer-subst
-                                                      compst-var))
+        `(write-object (pointer->address ,ptr)
+                       ,(add-suffix-to-fn mod-var "-NEW")
+                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                       pointer-subst
+                                                       compst-var))
       `(write-var (ident ,(symbol-name (car mod-vars)))
                   ,(add-suffix-to-fn (car mod-vars) "-NEW")
                   ,(atc-gen-loop-final-compustate (cdr mod-vars)
@@ -5860,9 +5836,8 @@
        (type-prescriptions-struct-readers
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
-       (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
-       (members-thms
-        (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (type-of-value-thms
+        (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
        (exec-memberp-thms
         (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (exec-asg-memberp-thms
@@ -5877,8 +5852,7 @@
                                not
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
-                               ,@tag-thms
-                               ,@members-thms
+                               ,@type-of-value-thms
                                ,@exec-memberp-thms
                                ,@exec-asg-memberp-thms
                                ,@type-prescriptions-called
@@ -6036,9 +6010,8 @@
        (type-prescriptions-struct-readers
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
-       (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
-       (members-thms
-        (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (type-of-value-thms
+        (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
        (exec-memberp-thms
         (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (exec-asg-memberp-thms
@@ -6077,8 +6050,7 @@
                                      ,exec-stmt-while-for-fn
                                      ,@struct-reader-return-thms
                                      ,@struct-writer-return-thms
-                                     ,@tag-thms
-                                     ,@members-thms
+                                     ,@type-of-value-thms
                                      ,@exec-memberp-thms
                                      ,@exec-asg-memberp-thms
                                      ,@type-prescriptions-called
@@ -6359,7 +6331,8 @@
                        (pointerp ptr)
                        (not (pointer-nullp ptr))
                        (equal struct
-                              (read-struct (pointer->address ptr) compst))
+                              (read-object (pointer->address ptr) compst))
+                       (value-case struct :struct)
                        (equal (pointer->reftype ptr)
                               (type-struct (ident ,(ident->name tag))))
                        (,recognizer struct))
@@ -6489,12 +6462,13 @@
                        (pointerp ptr)
                        (not (pointer-nullp ptr))
                        (equal struct
-                              (read-struct (pointer->address ptr) compst1))
+                              (read-object (pointer->address ptr) compst1))
+                       (value-case struct :struct)
                        (equal (pointer->reftype ptr)
-                              (type-struct (value-struct->tag struct)))
+                              (type-of-value struct))
                        (,recognizer struct))
                   (equal (exec-expr-asg e compst fenv limit)
-                         (write-struct (pointer->address ptr)
+                         (write-object (pointer->address ptr)
                                        (,writer val struct)
                                        compst1))))
        (hints `(("Goal"
@@ -6554,7 +6528,7 @@
                                (target (expr-memberp->target left))
                                (ptr (read-var (c::expr-ident->get target)
                                               compst1))
-                               (struct (read-struct (pointer->address ptr)
+                               (struct (read-object (pointer->address ptr)
                                                     compst1)))
                             struct))))))
        ((mv event &) (evmac-generate-defthm thm-name

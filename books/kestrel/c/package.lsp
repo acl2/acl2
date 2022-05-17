@@ -26,7 +26,9 @@
                                   error
                                   member
                                   pi
+                                  pointers
                                   pprint-indent
+                                  read-object
                                   schar
                                   type
                                   typep

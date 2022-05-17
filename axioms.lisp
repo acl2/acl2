@@ -717,7 +717,9 @@
 ; events in the context of a local include-book (much as we do for defaxiom),
 ; but that is too restrictive to be practical, especially since non-local
 ; include-book forms are prohibited inside encapsulate.  So instead we track
-; such "hidden" defpkg events; more on that below.
+; such "hidden" defpkg events; more on that below.  Also see the companion
+; Essay on Hidden Packages Added by Certify-book for how certify-book arranges
+; to track hidden defpkg events.
 
 ; Here is the example promised above.  The idea is to define a package "FOO"
 ; that does not import any symbol of name "A", so that the symbol FOO::A has
@@ -872,16 +874,9 @@
 ;   (1) Recall that when a book is successfully certified in an existing
 ;   certification world, we write the commands of that world to the book's
 ;   certificate, as so-called "portcullis commands."  We extend those
-;   portcullis commands with defpkg events in two ways.  First, we add a defpkg
-;   at the end of the portcullis commands for every known-package-alist entry
-;   that has hidden-p fields equal to t (for example, because of a local
-;   include-book in a top-level encapsulate), and hence is not an event in the
-;   certification world.  We will of course not count these extra defpkgs when
-;   checking against a numeric argument given to certify-book.  Second, for
-;   each package entry present in the known-package-alist at the end of the
-;   proof pass of certify-book that is not present at the end of the
-;   include-book pass, we add a corresponding defpkg event to the end of the
-;   portcullis commands.
+;   portcullis commands with hidden defpkg events as appropriate.  Of course,
+;   these extra hidden defpkg events are not counted when checking against a
+;   numeric argument supplied as the second argument of certify-book.
 
 ;   Each defpkg event added to the portcullis as described above will have a
 ;   :book-path argument derived from the book-path field of a package-entry in
@@ -894,7 +889,9 @@
 ;   package-entry can be used later when reporting an error during a package
 ;   conflict, so that the user can see the source of the defpkg that was added
 ;   to the portcullis under the hood.  Documentation topic hidden-death-package
-;   explains hidden defpkgs in detail, and is referenced during such errors.
+;   (or see :DOC hidden-defpkg, which is just a pointer to :DOC
+;   hidden-death-package) explains hidden defpkgs in detail, and is referenced
+;   during such errors.
 
 ;   In order to keep the certificate size under control, we will check whether
 ;   the body of a hidden defpkg event to be added to the portcullis is a term
@@ -925,7 +922,7 @@
 ; field to nil in the known-package-alist entry.  Other fields can be used for
 ; error reporting.  For example, if we attempt to introduce a defpkg when there
 ; is already a hidden defpkg conflicting with it, we can report the
-; include-book path to the defpkg.
+; include-book path of that existing hidden defpkg.
 
 ; Finally, we discuss how to ensure that :puff preserves the package invariant.
 ; Recall that the basic idea behind the implementation of :puff is the
@@ -934,7 +931,9 @@
 ; straightforward to find the hidden defpkg events that occur in the
 ; known-package-alist of the world just after the command but not just before,
 ; and add corresponding defpkg events to the front of the
-; puffed-command-sequence.  This preserves the invariant.
+; puffed-command-sequence.  This preserves the invariant.  (At least we think
+; so; but ultimately we do not rely on this for soundness, since :puff sets
+; world global 'skip-proofs-seen, which defeats certification.)
 
 ; End of Essay on Hidden Packages
 
