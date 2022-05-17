@@ -589,98 +589,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-array ((addr addressp) (array valuep) (compst compustatep))
+(define write-object ((addr addressp) (val valuep) (compst compustatep))
   :returns (new-compst compustate-resultp)
-  :short "Write an array in the computation state."
+  :short "Write an object in the computation state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check whether the heap has an array at the address,
-     of the same type as the new array.
-     Note that the types include the number of elements.
-     It should be an invariant, which we plan to prove,
-     that array values have elements
-     whose type is the element type of the array.")
+    "We check whether the heap has an object at the address,
+     of the same type as the new object.
+     Note that the types include the number of elements.")
    (xdoc::p
-    "If this checks succeed, we overwrite the array in the heap.")
-   (xdoc::p
-    "Note that this function writes the array as a whole;
-     it does not write an array element.
-     Functions like @(tsee uchar-array-write-sint)
-     can be used to write individual array elements."))
+    "If this checks succeed, we overwrite the object in the heap."))
   (b* ((addr (address-fix addr))
        (heap (compustate->heap compst))
        (addr+obj (omap::in addr heap))
        ((unless (consp addr+obj))
         (error (list :address-not-found addr)))
        (obj (cdr addr+obj))
-       ((unless (equal (type-of-value array)
+       ((unless (equal (type-of-value val)
                        (type-of-value obj)))
-        (error (list :array-type-mismatch
+        (error (list :write-object-mistype
                      :old (type-of-value obj)
-                     :new (type-of-value array))))
-       (new-heap (omap::update addr (value-fix array) heap))
+                     :new (type-of-value val))))
+       (new-heap (omap::update addr (value-fix val) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)
   :hooks (:fix)
   ///
 
-  (defret compustate-frames-number-of-write-array
+  (defret compustate-frames-number-of-write-object
     (implies (compustatep new-compst)
              (equal (compustate-frames-number new-compst)
                     (compustate-frames-number compst)))
     :hints (("Goal" :in-theory (enable compustate-frames-number))))
 
-  (defret compustate-scopes-numbers-of-write-array
-    (implies (compustatep new-compst)
-             (equal (compustate-scopes-numbers new-compst)
-                    (compustate-scopes-numbers compst)))
-    :hints (("Goal" :in-theory (enable compustate-scopes-numbers)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define write-struct ((addr addressp) (struct valuep) (compst compustatep))
-  :returns (new-compst compustate-resultp)
-  :short "Write a structure in the computation state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We check whether the heap has a structure at the address,
-     of the same type as the new structure.
-     It should be an invariant, which we plan to prove,
-     that structure values have member values
-     whose types are the member types of the structure type.")
-   (xdoc::p
-    "If this checks succeed, we overwrite the structure in the heap.")
-   (xdoc::p
-    "Note that this function writes the structure as a whole;
-     it does not write a structure member.
-     The functions @(tsee struct-write-member)
-     can be used to write individual structure members."))
-  (b* ((addr (address-fix addr))
-       (heap (compustate->heap compst))
-       (addr+obj (omap::in addr heap))
-       ((unless (consp addr+obj))
-        (error (list :address-not-found addr)))
-       (obj (cdr addr+obj))
-       ((unless (equal (type-of-value struct)
-                       (type-of-value obj)))
-        (error (list :struct-type-mismatch
-                     :old (type-of-value obj)
-                     :new (type-of-value struct))))
-       (new-heap (omap::update addr (value-fix struct) heap))
-       (new-compst (change-compustate compst :heap new-heap)))
-    new-compst)
-  :hooks (:fix)
-  ///
-
-  (defret compustate-frames-number-of-write-struct
-    (implies (compustatep new-compst)
-             (equal (compustate-frames-number new-compst)
-                    (compustate-frames-number compst)))
-    :hints (("Goal" :in-theory (enable compustate-frames-number))))
-
-  (defret compustate-scopes-numbers-of-write-struct
+  (defret compustate-scopes-numbers-of-write-object
     (implies (compustatep new-compst)
              (equal (compustate-scopes-numbers new-compst)
                     (compustate-scopes-numbers compst)))

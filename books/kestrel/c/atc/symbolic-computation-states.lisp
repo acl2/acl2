@@ -149,10 +149,9 @@
      whose objects (particularly arrays and structures)
      may be updated during the symbolic execution.
      We represent these updates via the function @(tsee update-object),
-     which is similar to @(tsee write-array) and @(tsee write-struct)
+     which is similar to @(tsee write-object)
      but always satisfies additional properties:
-     the relation between (i) @(tsee update-object) and
-     (ii) @(tsee write-array) and @(tsee write-struct)
+     the relation between @(tsee update-object) and @(tsee write-object)
      is similar to the one between @(tsee update-var) and @(tsee write-var)
      and to the one between @(tsee add-var) and @(tsee create-var),
      explained above.")
@@ -311,7 +310,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like @(tsee write-array) and @(tsee write-struct),
+    "This is like @(tsee write-object),
      but it does not return an error.
      We update the heap with the new object regardless of
      whether an old object at that address exists or not,
@@ -319,7 +318,7 @@
      This way, @(tsee update-object) always guarantees that
      the object goes into the heap,
      thus simplifying rules about it.
-     When we replace @(tsee write-array) and @(tsee write-struct)
+     When we replace @(tsee write-object)
      with @(tsee update-object),
      we ensure that all the conditions mentioned above hold,
      so in a way @(tsee update-object) caches the fact that
@@ -675,8 +674,7 @@
      if the two variables are the same, the value is returned;
      otherwise, we skip over the @(tsee update-var)
      in search for the variable.
-     The fourth and fifth theorems serve to move past
-     array and structure updates."))
+     The fourth and fifth theorems serve to move past object updates."))
 
   (defruled read-var-of-enter-scope
     (implies (not (equal (compustate-frames-number compst) 0))
@@ -876,19 +874,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-write-array-rules
-  :short "Rules about @(tsee write-array)."
+(defsection atc-write-object-rules
+  :short "Rules about @(tsee write-object)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The theorem about @(tsee write-array) turns it into @(tsee update-object),
+    "The theorem about @(tsee write-object) turns it into @(tsee update-object),
      similarly to how @(tsee write-var) is turned into @(tsee update-var).
-     The condition for the replacement is captured by @('write-array-okp'),
+     The condition for the replacement is captured by @('write-object-okp'),
      for which we supply rules to go through all the computation state layers.
      When the computation state (meta) variable is reached,
      it must be the case that there are hypotheses available
-     saying that reading the array
-     yields an array of appropriate type and length.
+     saying that reading the object
+     yields a value of appropriate type and length.
      The rule is used as last resort,
      only if the computation state is an ACL2 variable
      (as enforced by the @(tsee syntaxp) hypothesis).")
@@ -896,9 +894,9 @@
     "We include the rule saying that
      @(tsee pointer->address) returns an address,
      needed to discharge the @(tsee addressp) hypotheses
-     of the rule @('write-array-okp-of-update-object') below."))
+     of the rule @('write-object-okp-of-update-object') below."))
 
-  (define write-array-okp ((addr addressp) (array valuep) (compst compustatep))
+  (define write-object-okp ((addr addressp) (val valuep) (compst compustatep))
     :returns (yes/no booleanp)
     :parents nil
     (b* ((addr (address-fix addr))
@@ -906,78 +904,78 @@
          (addr+obj (omap::in addr heap))
          ((unless (consp addr+obj)) nil)
          (obj (cdr addr+obj))
-         ((unless (equal (type-of-value array)
+         ((unless (equal (type-of-value val)
                          (type-of-value obj)))
           nil))
       t)
     :hooks (:fix))
 
-  (defruled write-array-okp-of-add-frame
-    (equal (write-array-okp addr array (add-frame fun compst))
-           (write-array-okp addr array compst))
-    :enable (write-array-okp
+  (defruled write-object-okp-of-add-frame
+    (equal (write-object-okp addr val (add-frame fun compst))
+           (write-object-okp addr val compst))
+    :enable (write-object-okp
              add-frame
              push-frame))
 
-  (defruled write-array-okp-of-enter-scope
-    (equal (write-array-okp addr array (enter-scope compst))
-           (write-array-okp addr array compst))
-    :enable (write-array-okp
+  (defruled write-object-okp-of-enter-scope
+    (equal (write-object-okp addr val (enter-scope compst))
+           (write-object-okp addr val compst))
+    :enable (write-object-okp
              enter-scope
              push-frame
              pop-frame))
 
-  (defruled write-array-okp-of-add-var
-    (equal (write-array-okp addr array (add-var var val compst))
-           (write-array-okp addr array compst))
-    :enable (write-array-okp
+  (defruled write-object-okp-of-add-var
+    (equal (write-object-okp addr val (add-var var val2 compst))
+           (write-object-okp addr val compst))
+    :enable (write-object-okp
              add-var
              push-frame
              pop-frame))
 
-  (defruled write-array-okp-of-update-var
-    (equal (write-array-okp addr array (update-var var val compst))
-           (write-array-okp addr array compst))
-    :enable (write-array-okp
+  (defruled write-object-okp-of-update-var
+    (equal (write-object-okp addr val (update-var var val2 compst))
+           (write-object-okp addr val compst))
+    :enable (write-object-okp
              update-var
              push-frame
              pop-frame))
 
-  (defruled write-array-okp-of-update-object
+  (defruled write-object-okp-of-update-object
     (implies
      (and (addressp addr)
           (addressp addr2))
-     (equal (write-array-okp addr array (update-object addr2 array2 compst))
+     (equal (write-object-okp addr val (update-object addr2 val2 compst))
             (if (equal addr addr2)
-                (equal (type-of-value array)
-                       (type-of-value array2))
-              (write-array-okp addr array compst))))
-    :enable (write-array-okp
+                (equal (type-of-value val)
+                       (type-of-value val2))
+              (write-object-okp addr val compst))))
+    :enable (write-object-okp
              update-object))
 
-  (defruled write-array-okp-when-value-arrayp-of-read-object
+  (defruled write-object-okp-when-valuep-of-read-object
     (implies (and (syntaxp (symbolp compst))
-                  (equal old-array (read-object addr compst))
-                  (valuep old-array))
-             (equal (write-array-okp addr array compst)
-                    (equal (type-of-value array)
-                           (type-of-value old-array))))
-    :enable (write-array-okp read-object))
+                  (equal old-val (read-object addr compst))
+                  (valuep old-val))
+             (equal (write-object-okp addr val compst)
+                    (equal (type-of-value val)
+                           (type-of-value old-val))))
+    :enable (write-object-okp read-object))
 
-  (defruled write-array-to-update-object
-    (implies (write-array-okp addr array compst)
-             (equal (write-array addr array compst)
-                    (update-object addr array compst)))
-    :enable (write-array write-array-okp update-object))
+  (defruled write-object-to-update-object
+    (implies (write-object-okp addr val compst)
+             (equal (write-object addr val compst)
+                    (update-object addr val compst)))
+    :enable (write-object write-object-okp update-object))
 
-  (defval *atc-write-array-rules*
-    '(write-array-to-update-object
-      write-array-okp-of-add-frame
-      write-array-okp-of-enter-scope
-      write-array-okp-of-add-var
-      write-array-okp-of-update-var
-      write-array-okp-of-update-object
-      write-array-okp-when-value-arrayp-of-read-object
+  (defval *atc-write-object-rules*
+    '(write-object-to-update-object
+      write-object-okp-of-add-frame
+      write-object-okp-of-enter-scope
+      write-object-okp-of-add-var
+      write-object-okp-of-update-var
+      write-object-okp-of-update-object
+      write-object-okp-when-valuep-of-read-object
       addressp-of-pointer->address
       valuep-when-uchar-arrayp
       valuep-when-schar-arrayp
@@ -999,104 +997,6 @@
       value-kind-when-slong-arrayp
       value-kind-when-ullong-arrayp
       value-kind-when-sllong-arrayp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection atc-write-struct-rules
-  :short "Rules about @(tsee write-struct)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are analogous to the rules for @(tsee write-array).")
-   (xdoc::p
-    "There is an additional rule for @('write-struct-okp')
-     to skip over @(tsee update-object).
-     This needs the hypothesis that the two addresses are different,
-     which is always present in the theorems generated by ATC."))
-
-  (define write-struct-okp ((addr addressp)
-                            (struct valuep)
-                            (compst compustatep))
-    :returns (yes/no booleanp)
-    :parents nil
-    (b* ((addr (address-fix addr))
-         (heap (compustate->heap compst))
-         (addr+obj (omap::in addr heap))
-         ((unless (consp addr+obj)) nil)
-         (obj (cdr addr+obj))
-         ((unless (equal (type-of-value struct)
-                         (type-of-value obj)))
-          nil))
-      t)
-    :hooks (:fix))
-
-  (defruled write-struct-okp-of-add-frame
-    (equal (write-struct-okp addr struct (add-frame fun compst))
-           (write-struct-okp addr struct compst))
-    :enable (write-struct-okp
-             add-frame
-             push-frame))
-
-  (defruled write-struct-okp-of-enter-scope
-    (equal (write-struct-okp addr struct (enter-scope compst))
-           (write-struct-okp addr struct compst))
-    :enable (write-struct-okp
-             enter-scope
-             push-frame
-             pop-frame))
-
-  (defruled write-struct-okp-of-add-var
-    (equal (write-struct-okp addr struct (add-var var val compst))
-           (write-struct-okp addr struct compst))
-    :enable (write-struct-okp
-             add-var
-             push-frame
-             pop-frame))
-
-  (defruled write-struct-okp-of-update-var
-    (equal (write-struct-okp addr struct (update-var var val compst))
-           (write-struct-okp addr struct compst))
-    :enable (write-struct-okp
-             update-var
-             push-frame
-             pop-frame))
-
-  (defruled write-struct-okp-of-update-object
-    (implies
-     (and (addressp addr)
-          (addressp addr2)
-          (not (equal addr addr2)))
-     (equal (write-struct-okp addr struct (update-object addr2 obj compst))
-            (write-struct-okp addr struct compst)))
-    :enable (write-struct-okp
-             update-object
-             push-frame
-             pop-frame))
-
-  (defruled write-struct-okp-when-value-structp-of-read-object
-    (implies (and (syntaxp (symbolp compst))
-                  (equal old-struct (read-object addr compst))
-                  (valuep old-struct))
-             (equal (write-struct-okp addr struct compst)
-                    (equal (type-of-value struct)
-                           (type-of-value old-struct))))
-    :enable (write-struct-okp read-object))
-
-  (defruled write-struct-to-update-object
-    (implies (write-struct-okp addr struct compst)
-             (equal (write-struct addr struct compst)
-                    (update-object addr struct compst)))
-    :enable (write-struct write-struct-okp update-object))
-
-  (defval *atc-write-struct-rules*
-    '(write-struct-to-update-object
-      write-struct-okp-of-add-frame
-      write-struct-okp-of-enter-scope
-      write-struct-okp-of-add-var
-      write-struct-okp-of-update-var
-      write-struct-okp-of-update-object
-      write-struct-okp-when-value-structp-of-read-object
-      addressp-of-pointer->address)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1366,8 +1266,7 @@
           *atc-write-var-rules*
           *atc-read-var-rules*
           *atc-update-var-rules*
-          *atc-write-array-rules*
+          *atc-write-object-rules*
           *atc-read-object-rules*
-          *atc-write-struct-rules*
           *atc-update-object-rules*
           *atc-compustate-frames-number-rules*))

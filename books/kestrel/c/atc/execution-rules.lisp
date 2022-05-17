@@ -2060,9 +2060,9 @@
                  (,ipred index)
                  (,atype-array-itype-index-okp array index))
             (equal (exec-expr-asg e compst fenv limit)
-                   (write-array (pointer->address ptr)
-                                (,atype-array-write-itype array index val)
-                                compst1))))
+                   (write-object (pointer->address ptr)
+                                 (,atype-array-write-itype array index val)
+                                 compst1))))
          (event `(defruled ,name
                    ,formula
                    :enable (exec-expr-asg

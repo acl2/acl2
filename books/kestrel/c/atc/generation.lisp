@@ -4552,7 +4552,7 @@
      which the correctness theorem binds to the results of
      the ACL2 function that represents the C function.
      The modified computation state is expressed as
-     a nest of @(tsee write-array) and @(tsee write-struct) calls.
+     a nest of @(tsee write-object) calls.
      This ACL2 code here generates that nest.")
    (xdoc::p
     "The parameter @('affect') passed to this code
@@ -4565,7 +4565,7 @@
      Thus, we go through @('affect'),
      looking up the corresponding pointer variables in @('pointer-subst'),
      and we construct
-     each nested @(tsee write-array) or @(tsee write-struct) call,
+     each nested @(tsee write-object) call,
      which needs both a pointer and an array or structure;
      we distinguish between arrays and structures
      via the types of the formals.")
@@ -4584,25 +4584,17 @@
         (raise "Internal error: formal ~x0 not found." formal))
        ((unless (type-case type :pointer))
         (raise "Internal error: affected formal ~x0 has type ~x1."
-               formal type))
-       (write-array/struct
-        (case (type-kind (type-pointer->to type))
-          ((:schar :uchar
-            :sshort :ushort
-            :sint :uint
-            :slong :ulong
-            :sllong :uloong)
-           'write-array)
-          (:struct 'write-struct)
-          (t (raise "Internal error: affected formal ~x0 has type ~x1."
-                    formal type)))))
-    `(,write-array/struct (pointer->address
-                           ,(cdr (assoc-eq formal pointer-subst)))
-                          ,(add-suffix-to-fn formal "-NEW")
-                          ,(atc-gen-cfun-final-compustate (cdr affect)
-                                                          typed-formals
-                                                          pointer-subst
-                                                          compst-var))))
+               formal type)))
+    `(write-object (pointer->address ,(cdr (assoc-eq formal pointer-subst)))
+                   ,(add-suffix-to-fn formal "-NEW")
+                   ,(atc-gen-cfun-final-compustate (cdr affect)
+                                                   typed-formals
+                                                   pointer-subst
+                                                   compst-var)))
+  :prepwork
+  ((defrulel lemma
+     (implies (symbol-symbol-alistp x)
+              (alistp x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5734,7 +5726,7 @@
      and which have corresponding named variables and heap arrays
      in the computation state.
      The modified computation state is expressed as
-     a nest of @(tsee write-var) and @(tsee write-array) calls.
+     a nest of @(tsee write-var) and @(tsee write-object) calls.
      This ACL2 code here generates that nest.")
    (xdoc::p
     "Note that, in the correctness theorem,
@@ -5748,11 +5740,11 @@
        (mod-var (car mod-vars))
        (ptr (cdr (assoc-eq mod-var pointer-subst))))
     (if ptr
-        `(write-array (pointer->address ,ptr)
-                      ,(add-suffix-to-fn mod-var "-NEW")
-                      ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                      pointer-subst
-                                                      compst-var))
+        `(write-object (pointer->address ,ptr)
+                       ,(add-suffix-to-fn mod-var "-NEW")
+                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                       pointer-subst
+                                                       compst-var))
       `(write-var (ident ,(symbol-name (car mod-vars)))
                   ,(add-suffix-to-fn (car mod-vars) "-NEW")
                   ,(atc-gen-loop-final-compustate (cdr mod-vars)
@@ -6476,7 +6468,7 @@
                               (type-of-value struct))
                        (,recognizer struct))
                   (equal (exec-expr-asg e compst fenv limit)
-                         (write-struct (pointer->address ptr)
+                         (write-object (pointer->address ptr)
                                        (,writer val struct)
                                        compst1))))
        (hints `(("Goal"
