@@ -1343,9 +1343,11 @@
        ((when (pointer-nullp arr)) (error (list :null-pointer)))
        (addr (pointer->address arr))
        (reftype (pointer->reftype arr))
-       (array (read-array addr compst))
+       (array (read-object addr compst))
        ((when (errorp array))
         (error (list :array-not-found arr (compustate-fix compst))))
+       ((unless (value-case array :array))
+        (error (list :not-array arr (compustate-fix compst))))
        ((unless (equal reftype (value-array->elemtype array)))
         (error (list :mistype-array-read
                      :pointer reftype
@@ -1426,9 +1428,11 @@
        ((when (pointer-nullp str)) (error (list :null-pointer)))
        (addr (pointer->address str))
        (reftype (pointer->reftype str))
-       (struct (read-struct addr compst))
+       (struct (read-object addr compst))
        ((when (errorp struct))
         (error (list :struct-not-found str (compustate-fix compst))))
+       ((unless (value-case struct :struct))
+        (error (list :not-struct str (compustate-fix compst))))
        ((unless (equal reftype
                        (type-struct (value-struct->tag struct))))
         (error (list :mistype-struct-read
@@ -1717,8 +1721,10 @@
               ((when (pointer-nullp ptr)) (error (list :null-pointer)))
               (addr (pointer->address ptr))
               (reftype (pointer->reftype ptr))
-              (array (read-array addr compst))
+              (array (read-object addr compst))
               ((when (errorp array)) array)
+              ((unless (value-case array :array))
+               (error (list :not-array arr (compustate-fix compst))))
               ((unless (equal reftype (value-array->elemtype array)))
                (error (list :mistype-array-read
                             :pointer reftype
@@ -1740,63 +1746,63 @@
            (cond ((uchar-arrayp array)
                   (b* (((unless (ucharp val)) err-elem)
                        ((unless (uchar-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (uchar-array-write array index val)
-                                 compst)))
+                    (write-object addr
+                                  (uchar-array-write array index val)
+                                  compst)))
                  ((schar-arrayp array)
                   (b* (((unless (scharp val)) err-elem)
                        ((unless (schar-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (schar-array-write array index val)
-                                 compst)))
+                    (write-object addr
+                                  (schar-array-write array index val)
+                                  compst)))
                  ((ushort-arrayp array)
                   (b* (((unless (ushortp val)) err-elem)
                        ((unless (ushort-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (ushort-array-write array index val)
-                                 compst)))
+                    (write-object addr
+                                  (ushort-array-write array index val)
+                                  compst)))
                  ((sshort-arrayp array)
                   (b* (((unless (sshortp val)) err-elem)
                        ((unless (sshort-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (sshort-array-write array index val)
-                                 compst)))
+                    (write-object addr
+                                  (sshort-array-write array index val)
+                                  compst)))
                  ((uint-arrayp array)
                   (b* (((unless (uintp val)) err-elem)
                        ((unless (uint-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (uint-array-write array index val)
-                                 compst)))
+                    (write-object addr
+                                  (uint-array-write array index val)
+                                  compst)))
                  ((sint-arrayp array)
                   (b* (((unless (sintp val)) err-elem)
                        ((unless (sint-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (sint-array-write array index val)
-                                 compst)))
+                    (write-object addr
+                                  (sint-array-write array index val)
+                                  compst)))
                  ((ulong-arrayp array)
                   (b* (((unless (ulongp val)) err-elem)
                        ((unless (ulong-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (ulong-array-write array index val)
-                                 compst)))
+                    (write-object addr
+                                  (ulong-array-write array index val)
+                                  compst)))
                  ((slong-arrayp array)
                   (b* (((unless (slongp val)) err-elem)
                        ((unless (slong-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (slong-array-write array index val)
-                                 compst)))
+                    (write-object addr
+                                  (slong-array-write array index val)
+                                  compst)))
                  ((ullong-arrayp array)
                   (b* (((unless (ullongp val)) err-elem)
                        ((unless (ullong-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (ullong-array-write array index val)
-                                 compst)))
+                    (write-object addr
+                                  (ullong-array-write array index val)
+                                  compst)))
                  ((sllong-arrayp array)
                   (b* (((unless (sllongp val)) err-elem)
                        ((unless (sllong-array-index-okp array index)) err-idx))
-                    (write-array addr
-                                 (sllong-array-write array index val)
-                                 compst)))
+                    (write-object addr
+                                  (sllong-array-write array index val)
+                                  compst)))
                  (t (error (list :array-element-type-not-supported
                                  :element-type reftype))))))
         (:memberp
@@ -1814,16 +1820,18 @@
               ((when (pointer-nullp ptr)) (error (list :null-pointer)))
               (addr (pointer->address ptr))
               (reftype (pointer->reftype ptr))
-              (struct (read-struct addr compst))
+              (struct (read-object addr compst))
               ((when (errorp struct)) struct)
+              ((unless (value-case struct :struct))
+               (error (list :not-struct str (compustate-fix compst))))
               ((unless (equal reftype
-                              (type-struct (value-struct->tag struct))))
+                              (type-of-value struct)))
                (error (list :mistype-struct-read
                             :pointer reftype
-                            :array (type-struct (value-struct->tag struct)))))
+                            :array (type-of-value struct))))
               (new-struct (struct-write-member mem val struct))
               ((when (errorp new-struct)) new-struct))
-           (write-struct addr new-struct compst)))
+           (write-object addr new-struct compst)))
         (t (error (list :expr-asg-left-not-var-or-array-var-subscript left)))))
     :measure (nfix limit))
 
