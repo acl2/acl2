@@ -296,7 +296,7 @@
           ((slongp arg) (lognot-slong arg))
           ((ullongp arg) (lognot-ullong arg))
           ((sllongp arg) (lognot-sllong arg))
-          ((pointerp arg) (sint-from-boolean (pointer-nullp arg)))
+          ((pointerp arg) (sint-from-boolean (value-pointer-nullp arg)))
           (t (error (impossible)))))
   :guard-hints (("Goal"
                  :in-theory (enable value-scalarp
@@ -463,7 +463,7 @@
           ((slongp arg) (boolean-from-slong arg))
           ((ullongp arg) (boolean-from-ullong arg))
           ((sllongp arg) (boolean-from-sllong arg))
-          ((pointerp arg) (not (pointer-nullp arg)))
+          ((pointerp arg) (not (value-pointer-nullp arg)))
           (t (error (impossible)))))
   :guard-hints (("Goal" :in-theory (enable value-scalarp
                                            value-arithmeticp
@@ -1340,9 +1340,9 @@
        ((unless (pointerp arr)) (error (list :mistype-arrsub
                                              :required :pointer
                                              :supplied (type-of-value arr))))
-       ((when (pointer-nullp arr)) (error (list :null-pointer)))
-       (addr (pointer->address arr))
-       (reftype (pointer->reftype arr))
+       ((when (value-pointer-nullp arr)) (error (list :null-pointer)))
+       (addr (value-pointer->address arr))
+       (reftype (value-pointer->reftype arr))
        (array (read-object addr compst))
        ((when (errorp array))
         (error (list :array-not-found arr (compustate-fix compst))))
@@ -1405,6 +1405,7 @@
              err))
           (t (error (list :array-element-type-not-supported
                           :element-type reftype)))))
+  :guard-hints (("Goal" :in-theory (enable pointerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1425,9 +1426,9 @@
        ((unless (pointerp str)) (error (list :mistype-memberp
                                              :required :pointer
                                              :supplied (type-of-value str))))
-       ((when (pointer-nullp str)) (error (list :null-pointer)))
-       (addr (pointer->address str))
-       (reftype (pointer->reftype str))
+       ((when (value-pointer-nullp str)) (error (list :null-pointer)))
+       (addr (value-pointer->address str))
+       (reftype (value-pointer->reftype str))
        (struct (read-object addr compst))
        ((when (errorp struct))
         (error (list :struct-not-found str (compustate-fix compst))))
@@ -1439,6 +1440,7 @@
                      :pointer reftype
                      :array (type-struct (value-struct->tag struct))))))
     (struct-read-member mem struct))
+  :guard-hints (("Goal" :in-theory (enable pointerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1718,9 +1720,9 @@
                (error (list :mistype-array
                             :required :pointer
                             :supplied (type-of-value ptr))))
-              ((when (pointer-nullp ptr)) (error (list :null-pointer)))
-              (addr (pointer->address ptr))
-              (reftype (pointer->reftype ptr))
+              ((when (value-pointer-nullp ptr)) (error (list :null-pointer)))
+              (addr (value-pointer->address ptr))
+              (reftype (value-pointer->reftype ptr))
               (array (read-object addr compst))
               ((when (errorp array)) array)
               ((unless (value-case array :array))
@@ -1817,9 +1819,9 @@
                (error (list :mistype-struct
                             :required :pointer
                             :supplied (type-of-value ptr))))
-              ((when (pointer-nullp ptr)) (error (list :null-pointer)))
-              (addr (pointer->address ptr))
-              (reftype (pointer->reftype ptr))
+              ((when (value-pointer-nullp ptr)) (error (list :null-pointer)))
+              (addr (value-pointer->address ptr))
+              (reftype (value-pointer->reftype ptr))
               (struct (read-object addr compst))
               ((when (errorp struct)) struct)
               ((unless (value-case struct :struct))
@@ -2220,7 +2222,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards exec-stmt)
+  (verify-guards exec-stmt
+    :hints (("Goal" :in-theory (enable pointerp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

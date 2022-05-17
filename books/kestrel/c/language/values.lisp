@@ -12,7 +12,7 @@
 (in-package "C")
 
 (include-book "integer-ranges")
-(include-book "pointers")
+(include-book "object-designators")
 (include-book "types")
 
 (include-book "std/basic/two-nats-measure" :dir :system)

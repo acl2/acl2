@@ -4362,7 +4362,7 @@
      For each array or structure formal @('a') of @('fn'),
      we generate a pointer variable @('a-ptr') as explained,
      along with a binding
-     @('(a (read-object (pointer->address a-ptr) compst))'):
+     @('(a (read-object (value-pointer->address a-ptr) compst))'):
      this binding relates the two variables,
      and lets us use the guard of @('fn') as hypothesis in the theorem,
      which uses @('a'),
@@ -4409,7 +4409,7 @@
      we introduce an additional @('a-ptr') variable,
      similarly to the case of non-recursive @('fn').
      We generate two bindings @('(a-ptr (read-var <a> compst))')
-     and @('(a (read-object (pointer->address a-ptr) compst))'),
+     and @('(a (read-object (value-pointer->address a-ptr) compst))'),
      in that order.
      The first binding serves to tie @('a-ptr')
      to the corresponding variable in the computation state,
@@ -4442,7 +4442,7 @@
   (b* (((when (endp typed-formals)) (mv nil nil nil nil))
        ((cons formal type) (car typed-formals))
        (formal-ptr (add-suffix-to-fn formal "-PTR"))
-       (formal-addr `(pointer->address ,formal-ptr))
+       (formal-addr `(value-pointer->address ,formal-ptr))
        (formal-id `(ident ,(symbol-name formal)))
        (pointerp (type-case type :pointer))
        (bindings
@@ -4458,12 +4458,12 @@
                     (list (cons formal formal-ptr))))
        (hyps (and pointerp
                   (list `(pointerp ,formal-ptr)
-                        `(not (pointer-nullp ,formal-ptr))
-                        `(equal (pointer->reftype ,formal-ptr)
+                        `(not (value-pointer-nullp ,formal-ptr))
+                        `(equal (value-pointer->reftype ,formal-ptr)
                                 ,(type-to-maker (type-pointer->to type))))))
        (inst (if fn-recursivep
                  (if pointerp
-                     (list `(,formal (read-object (pointer->address
+                     (list `(,formal (read-object (value-pointer->address
                                                    (read-var ,formal-id
                                                              ,compst-var))
                                                   ,compst-var)))
@@ -4523,8 +4523,8 @@
   (b* (((when (endp pointer-vars)) nil)
        (var (car pointer-vars))
        (hyps (loop$ for var2 in (cdr pointer-vars)
-                    collect `(not (equal (pointer->address ,var)
-                                         (pointer->address ,var2)))))
+                    collect `(not (equal (value-pointer->address ,var)
+                                         (value-pointer->address ,var2)))))
        (more-hyps (atc-gen-diff-address-hyps (cdr pointer-vars))))
     (append hyps more-hyps))
   :prepwork ((local (in-theory (enable acl2::loop-book-theory)))))
@@ -4585,7 +4585,8 @@
        ((unless (type-case type :pointer))
         (raise "Internal error: affected formal ~x0 has type ~x1."
                formal type)))
-    `(write-object (pointer->address ,(cdr (assoc-eq formal pointer-subst)))
+    `(write-object (value-pointer->address ,(cdr (assoc-eq formal
+                                                           pointer-subst)))
                    ,(add-suffix-to-fn formal "-NEW")
                    ,(atc-gen-cfun-final-compustate (cdr affect)
                                                    typed-formals
@@ -5740,7 +5741,7 @@
        (mod-var (car mod-vars))
        (ptr (cdr (assoc-eq mod-var pointer-subst))))
     (if ptr
-        `(write-object (pointer->address ,ptr)
+        `(write-object (value-pointer->address ,ptr)
                        ,(add-suffix-to-fn mod-var "-NEW")
                        ,(atc-gen-loop-final-compustate (cdr mod-vars)
                                                        pointer-subst
@@ -6329,11 +6330,11 @@
        (formula
         `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                        (pointerp ptr)
-                       (not (pointer-nullp ptr))
+                       (not (value-pointer-nullp ptr))
                        (equal struct
-                              (read-object (pointer->address ptr) compst))
+                              (read-object (value-pointer->address ptr) compst))
                        (value-case struct :struct)
-                       (equal (pointer->reftype ptr)
+                       (equal (value-pointer->reftype ptr)
                               (type-struct (ident ,(ident->name tag))))
                        (,recognizer struct))
                   (equal (exec-memberp ptr
@@ -6460,15 +6461,16 @@
                        (,typep val)
                        (equal ptr (read-var (expr-ident->get target) compst1))
                        (pointerp ptr)
-                       (not (pointer-nullp ptr))
+                       (not (value-pointer-nullp ptr))
                        (equal struct
-                              (read-object (pointer->address ptr) compst1))
+                              (read-object (value-pointer->address ptr)
+                                           compst1))
                        (value-case struct :struct)
-                       (equal (pointer->reftype ptr)
+                       (equal (value-pointer->reftype ptr)
                               (type-of-value struct))
                        (,recognizer struct))
                   (equal (exec-expr-asg e compst fenv limit)
-                         (write-object (pointer->address ptr)
+                         (write-object (value-pointer->address ptr)
                                        (,writer val struct)
                                        compst1))))
        (hints `(("Goal"
@@ -6528,7 +6530,7 @@
                                (target (expr-memberp->target left))
                                (ptr (read-var (c::expr-ident->get target)
                                               compst1))
-                               (struct (read-object (pointer->address ptr)
+                               (struct (read-object (value-pointer->address ptr)
                                                     compst1)))
                             struct))))))
        ((mv event &) (evmac-generate-defthm thm-name

@@ -172,9 +172,10 @@
      We order the @(tsee update-object) calls
      according to their first argument (i.e. the address).
      Note that for a C function this first argument is
-     @(tsee pointer->address) applied to an ACL2 variable,
+     @(tsee value-pointer->address) applied to an ACL2 variable,
      while for a C loop it is
-     @(tsee pointer->address) applied to a @('(read-var <identifier> ...)').
+     @(tsee value-pointer->address) applied to
+     a @('(read-var <identifier> ...)').
      These two kinds of first arguments never appear together,
      i.e. in the same theorem,
      because each theorem is for either a C function or a C loop.
@@ -892,7 +893,7 @@
      (as enforced by the @(tsee syntaxp) hypothesis).")
    (xdoc::p
     "We include the rule saying that
-     @(tsee pointer->address) returns an address,
+     @(tsee value-pointer->address) returns an address,
      needed to discharge the @(tsee addressp) hypotheses
      of the rule @('write-object-okp-of-update-object') below."))
 
@@ -976,7 +977,7 @@
       write-object-okp-of-update-var
       write-object-okp-of-update-object
       write-object-okp-when-valuep-of-read-object
-      addressp-of-pointer->address
+      addressp-of-value-pointer->address
       valuep-when-uchar-arrayp
       valuep-when-schar-arrayp
       valuep-when-ushort-arrayp
@@ -1012,7 +1013,7 @@
      between @(tsee read-var) and @(tsee update-var).")
    (xdoc::p
     "We include the rule saying that
-     @(tsee pointer->address) returns an address,
+     @(tsee value-pointer->address) returns an address,
      needed to discharge the @(tsee addressp) hypotheses
      of the rule @('read-object-of-update-object') below."))
 
@@ -1061,7 +1062,7 @@
       read-object-of-add-var
       read-object-of-update-var
       read-object-of-update-object
-      addressp-of-pointer->address)))
+      addressp-of-value-pointer->address)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1092,7 +1093,7 @@
      We are talking about pointers here, and not addresses,
      because, as mentioned in @(see atc-symbolic-computation-states),
      during symbolic execution the addresses in question
-     have the form @('(pointer->address <pointer>)'),
+     have the form @('(value-pointer->address <pointer>)'),
      which is what the @(tsee syntaxp) hypotheses below are based on.")
    (xdoc::p
     "We also include a rule saying that
@@ -1102,7 +1103,7 @@
      for the reasons explained for @('update-var-of-read-var').")
    (xdoc::p
     "We include the rule saying that
-     @(tsee pointer->address) returns an address,
+     @(tsee value-pointer->address) returns an address,
      needed to discharge the @(tsee addressp) hypotheses
      of the rule @('read-object-of-update-object') below."))
 
@@ -1147,8 +1148,8 @@
 
   (defruled update-object-of-update-object-less-symbol
     (implies
-     (and (syntaxp (and (ffn-symb-p addr 'pointer->address)
-                        (ffn-symb-p addr2 'pointer->address)
+     (and (syntaxp (and (ffn-symb-p addr 'value-pointer->address)
+                        (ffn-symb-p addr2 'value-pointer->address)
                         (b* ((ptr (fargn addr 1))
                              (ptr2 (fargn addr2 1)))
                           (and (symbolp ptr)
@@ -1163,8 +1164,8 @@
 
   (defruled update-object-of-update-object-less-ident
     (implies
-     (and (syntaxp (and (ffn-symb-p addr 'pointer->address)
-                        (ffn-symb-p addr2 'pointer->address)
+     (and (syntaxp (and (ffn-symb-p addr 'value-pointer->address)
+                        (ffn-symb-p addr2 'value-pointer->address)
                         (b* ((ptr (fargn addr 1))
                              (ptr2 (fargn addr2 1)))
                           (and (ffn-symb-p ptr 'read-var)
@@ -1207,7 +1208,7 @@
       update-object-of-update-object-less-symbol
       update-object-of-update-object-less-ident
       update-object-of-read-object-same
-      addressp-of-pointer->address)))
+      addressp-of-value-pointer->address)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
