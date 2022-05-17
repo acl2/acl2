@@ -15,16 +15,16 @@
 (include-book "open-input-channel")
 (include-book "open-output-channel")
 (include-book "open-output-channel-bang")
-(include-book "read-byte-dollar")
-(include-book "read-char-dollar")
-(include-book "read-object")
-(include-book "write-byte-dollar")
-(include-book "princ-dollar")
-(include-book "print-object-dollar")
+(include-book "read-byte-dollar") ; reading a byte
+(include-book "read-char-dollar") ; reading a character
+(include-book "read-object") ; reading an object
+(include-book "write-byte-dollar") ; writing a byte
+(include-book "princ-dollar") ; writing an atom (e.g., a character)
+(include-book "print-object-dollar") ; writing an object
 
 ;; Functions defined in this library:
 
-(include-book "read-object-from-file")
+(include-book "read-object-from-file") ; reading a single object
 (include-book "read-objects-from-file")
 (include-book "read-file-into-byte-list")
 (include-book "read-file-into-character-list")
