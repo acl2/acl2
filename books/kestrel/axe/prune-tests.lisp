@@ -43,7 +43,7 @@
                                                        nil
                                                        nil
                                                        state)
-                           '(bool-fix x)
+                           '(bool-fix$inline x)
                            :stobjs (state))
 
 (assert-equal-with-stobjs2 (prune-term-new '(boolif 'nil x y)
@@ -53,7 +53,7 @@
                                                        nil
                                                        nil
                                                        state)
-                           '(bool-fix y)
+                           '(bool-fix$inline y)
                            :stobjs (state))
 
 ;; todo:
@@ -63,5 +63,5 @@
 ;;                                                        nil
 ;;                                                        nil
 ;;                                                        state)
-;;                            '(bool-fix x)
+;;                            '(bool-fix$inline x)
 ;;                            :stobjs (state))

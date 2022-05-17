@@ -240,10 +240,12 @@
                        (integerp (* 1/2 j)))))
   :hints (("Goal" :in-theory (enable logior))))
 
-(defthm unsigned-byte-p-of-logior
-  (implies (and (unsigned-byte-p n i)
-                (unsigned-byte-p n j))
-           (unsigned-byte-p n (logior i j)))
+(defthm unsigned-byte-p-of-logior-strong ; avoid name clash with bitops
+  (implies (and (integerp i)
+                (integerp j))
+           (equal (unsigned-byte-p n (logior i j))
+                  (and (unsigned-byte-p n i)
+                       (unsigned-byte-p n j))))
   :hints (("Goal"
            :use (:instance logand-lower-bound-negative-2-alt
                            (i (lognot i))

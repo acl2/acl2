@@ -76,6 +76,11 @@
          (bvchop size x))
   :hints (("Goal" :in-theory (enable bvminus))))
 
+(defthmd bvminus-of-0-arg2
+  (equal (bvminus size 0 y)
+         (bvuminus size y))
+  :hints (("Goal" :in-theory (enable bvminus bvuminus))))
+
 (defthm equal-of-0-and-bvminus
   (equal (equal 0 (bvminus size x y))
          (equal (bvchop size x)
@@ -141,3 +146,17 @@
            (equal (bvminus size x y)
                   (bvminus size 0 y)))
   :hints (("Goal" :in-theory (enable bvminus))))
+
+;; Should we leave this enabled?  Perhaps we should, so we only have to deal with addition and unary negation, not subtraction.
+(defthm bvminus-becomes-bvplus-of-bvuminus
+  (equal (bvminus size x y)
+         (bvplus size x (bvuminus size y)))
+  :hints (("Goal" :cases ((natp size))
+           :in-theory (e/d (natp bvminus bvplus bvuminus) (bvchop-of-minus  BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)))))
+
+(defthm bvminus-1-0
+  (equal (bvminus 1 0 x)
+         (getbit 0 x))
+  :hints (("Goal" :cases ((equal 0 x) (equal 1 x))
+           :in-theory (e/d (bvminus getbit bvchop-when-i-is-not-an-integer)
+                           (bvchop-1-becomes-getbit slice-becomes-getbit)))))

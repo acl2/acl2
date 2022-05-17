@@ -655,15 +655,14 @@
                   x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
-(defthmd getbit-too-high-is-0-bind-free
+(defthmd getbit-too-high-is-0-bind-free-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (<= xsize n)
                 (integerp n)
                 (unsigned-byte-p-forced xsize x))
            (equal (getbit n x)
                   0))
-  :hints (("Goal" :cases ((integerp n))
-           :in-theory (enable getbit-too-high unsigned-byte-p-forced))))
+  :hints (("Goal" :in-theory (enable getbit-too-high unsigned-byte-p-forced))))
 
 ;fixme ignore bitxor with 1?
 (defthmd bitand-commutative-axe
