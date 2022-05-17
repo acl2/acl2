@@ -200,9 +200,7 @@
            (equal (getbit n (bvxor size x y))
                   0))
   :hints (("Goal" :cases ((and (integerp n)(natp size))
-                          (and (not (integerp n))(natp size))
-                          )
-
+                          (and (not (integerp n))(natp size)))
            :in-theory (enable getbit-too-high))))
 
 ;When n=0, size=1, and x or y a huge bvxornest of size 1 (common after bit-blasting), this would push the getbits through the huge next.
@@ -218,7 +216,7 @@
                             bvchop-1-becomes-getbit
                             bvchop-of-logtail-becomes-slice)))))
 
-;if the size is 1 this rebuilds the term (bvxor 1 x y) - maybe be a bit innefficient
+;if the size is 1 this rebuilds the term (bvxor 1 x y) - may be a bit innefficient
 (defthm getbit-0-of-bvxor
   (implies (posp size)
            (equal (getbit 0 (bvxor size x y))
