@@ -358,7 +358,14 @@ book that depends on Glucose being installed.</p>")
 (include-book "centaur/memoize/old/profile" :dir :system)
 (include-book "centaur/memoize/old/watch" :dir :system)
 
-(include-book "acl2s/doc" :dir :system)
+; The following no_port was added by Matt K. when proper support was added for
+; local portcullis events after Version 8.4, in May 2022, to save execution
+; time.  For otherwise, cert.pl apparently loads a local portcullis event due
+; to a use of set-default-hints, which causes substantial world rollback into
+; the portcullis commands before re-evaluating the rolled-back commands and
+; then including the book.
+(include-book "acl2s/doc" :dir :system) ; no_port
+
 (include-book "projects/smtlink/top" :dir :system :ttags :all)
 
 (include-book "projects/doc" :dir :system)
