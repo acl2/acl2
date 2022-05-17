@@ -51,6 +51,30 @@
        standard unsigned or signed integer values [C:6.2.5/7];
        currently we do not cover plain @('char') values.")
      (xdoc::p
+      "Pointers are mentioned in several places in [C],
+       but there seems to be no specific place in [C] that defines them.
+       Nonetheless, we can get a precise picture from various places.
+       [C:6.2.5/20] says that pointer types describe objects
+       whose values provide references to entities.
+       [C:6.3.2.3] specifies several things about pointers;
+       in particular, it talks about null pointers.
+       Thus, the picture is the following:
+       a pointer is either an object designator or a null pointer
+       (see the discussion in @(see object-designator)
+       about lower-level addresses vs. higher-level object designators).
+       In our defensive dynamic semantics,
+       where values are tagged by their types,
+       we also include, as part of the pointer,
+       the type of its referenced value.")
+     (xdoc::p
+      "Thus, we define a pointer as consisting of
+       an optional object designator and a type.
+       The object designator is absent for a null pointer;
+       note that [C] does not prescribe 0 to represent a null pointer,
+       even though 0 is used in null pointer constants [C:6.3.2.3/3].
+       The type is not the pointer type, but the referenced type;
+       this way, we avoid having to constrain the type to be a pointer type.")
+     (xdoc::p
       "Array values are modeled as consisting of
        the element type and a non-empty list of values.
        [C:6.2.5/20] requires arrays to be non-empty.")
@@ -234,6 +258,37 @@
              (not (errorp x)))
     :rule-classes :tau-system
     :enable value-optionp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-pointer-nullp ((ptr valuep))
+  :guard (value-case ptr :pointer)
+  :returns (yes/no booleanp)
+  :short "Check if a pointer is null."
+  (not (value-pointer->designator? ptr))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-pointer-null ((reftype typep))
+  :returns (ptr valuep)
+  :short "Null pointer for a given referenced type."
+  (make-value-pointer :designator? nil :reftype reftype)
+  :hooks (:fix)
+  ///
+  (defret value-kind-of-value-pointer-null
+    (equal (value-kind ptr) :pointer)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-pointer->address ((ptr valuep))
+  :guard (and (value-case ptr :pointer)
+              (not (value-pointer-nullp ptr)))
+  :returns (address addressp)
+  :short "Address of a non-null pointer."
+  (address-fix (objdesign->get (value-pointer->designator? ptr)))
+  :guard-hints (("Goal" :in-theory (enable value-pointer-nullp)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
