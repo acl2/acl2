@@ -28,6 +28,7 @@
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "kestrel/bv/rules" :dir :system) ;drop?
 (include-book "kestrel/bv/rightrotate32" :dir :system)
+(include-book "known-booleans")
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system))
