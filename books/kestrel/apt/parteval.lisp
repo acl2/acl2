@@ -405,9 +405,8 @@
 
 (define parteval-transform-rec-args
   ((rec-args pseudo-term-listp "Arguments of a recursive call of @('old').")
-   (old$ symbolp)
    (yj...ym symbol-listp)
-   (wrld plist-worldp))
+   (rem-formals symbol-listp "Formals that haven't been removed yet."))
   :returns (new-rec-args "A @(tsee pseudo-term-listp).")
   :verify-guards nil
   :short "Transform the arguments of a recursive call of @('old')."
@@ -419,10 +418,10 @@
     This code performs the removal of these arguments.")
   (cond ((endp yj...ym) rec-args)
         (t (b* ((yj (car yj...ym))
-                (pos (position-eq yj (formals old$ wrld)))
+                (pos (position-eq yj rem-formals))
                 (rec-args (append (take pos rec-args)
                                   (nthcdr (1+ pos) rec-args))))
-             (parteval-transform-rec-args rec-args old$ (cdr yj...ym) wrld)))))
+             (parteval-transform-rec-args rec-args (cdr yj...ym) (remove-eq yj rem-formals))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -454,8 +453,7 @@
                                                                    wrld)))
                (cond ((eq fn/lambda old$)
                       (fcons-term new-name$
-                                  (parteval-transform-rec-args
-                                   new-args old$ y1...ym wrld)))
+                                  (parteval-transform-rec-args new-args y1...ym (formals old$ wrld))))
                      ((symbolp fn/lambda) (fcons-term fn/lambda new-args))
                      (t (make-lambda (lambda-formals fn/lambda)
                                      (parteval-transform-rec-calls-in-term
@@ -560,7 +558,7 @@
        (wfrel? (and (= case 2)
                     (well-founded-relation old$ wrld)))
        (measure? (and (= case 2)
-                      (untranslate (measure old$ wrld) nil wrld)))
+                      (untranslate (fsublis-var static$ (measure old$ wrld)) nil wrld)))
        (termination-hints? (and (= case 2)
                                 `(("Goal"
                                    :in-theory nil
