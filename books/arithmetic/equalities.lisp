@@ -14,7 +14,8 @@
 (defmacro real-listp (l)
   `(rational-listp ,l))
 
-(include-book "cowles/acl2-crg" :dir :system)
+(include-book "xdoc/top" :dir :system)
+(local (include-book "cowles/acl2-crg" :dir :system))
 
 (defsection fc
   :parents (arithmetic-1)
@@ -746,4 +747,3 @@ involving @('numerator') and @('denominator') terms.</p>"
                              (POW (+ -4 X)))))))
 
       |#
-

@@ -220,6 +220,8 @@ To certify this book, first, create a world with the following packages:
 	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
+(local (include-book "cowles/acl2-crg" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Axioms and convenient notation for
 ;;  the theory of an Euclidean Domain.
