@@ -1,6 +1,6 @@
 ; A function to write a sequence of strings to a channel
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,12 +13,12 @@
 (include-book "princ-dollar")
 (local (include-book "std/io/base" :dir :system)) ;for reasoning support
 
-;tail-recursive
+;; Returns state.
 (defund write-strings-to-channel (strings channel state)
-  (declare (xargs :stobjs state
-                  :guard (and (string-listp strings)
+  (declare (xargs :guard (and (string-listp strings)
                               (symbolp channel)
                               (open-output-channel-p channel :character state))
+                  :stobjs state
                   :guard-hints (("Goal" :in-theory (enable open-output-channel-p)))))
   (if (endp strings)
       state

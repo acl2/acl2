@@ -69,7 +69,7 @@
                     (open-input-channels state))))
   :hints (("Goal" :in-theory (enable read-char$))))
 
-;; Reading gives a non-nil value iff the channel contants are non-empty
+;; Reading gives a non-nil value iff the channel contents are non-empty
 (defthm mv-nth-0-of-read-char$-iff
   (implies (and (open-input-channel-p channel :character state)
                 (state-p1 state))
