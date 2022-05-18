@@ -86,6 +86,7 @@
                                   "libssl.so.0.9.8ze"
                                   "libssl.so.0.9.8"
                                   "libssl.so.10"
+                                  "libssl.so.3"
                                   "libssl.so.4"
                                   "libssl.so"))
   (:cygwin (:or "cygssl-1.1.dll" "cygssl-1.0.0.dll"))
