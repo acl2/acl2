@@ -1405,7 +1405,8 @@
              err))
           (t (error (list :array-element-type-not-supported
                           :element-type reftype)))))
-  :guard-hints (("Goal" :in-theory (enable pointerp)))
+  :guard-hints (("Goal" :in-theory (enable pointerp
+                                           value-pointer-addressp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1440,7 +1441,8 @@
                      :pointer reftype
                      :array (type-struct (value-struct->tag struct))))))
     (struct-read-member mem struct))
-  :guard-hints (("Goal" :in-theory (enable pointerp)))
+  :guard-hints (("Goal" :in-theory (enable pointerp
+                                           value-pointer-addressp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2223,7 +2225,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (verify-guards exec-stmt
-    :hints (("Goal" :in-theory (enable pointerp))))
+    :hints (("Goal" :in-theory (enable pointerp
+                                       value-pointer-addressp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

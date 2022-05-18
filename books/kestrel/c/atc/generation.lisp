@@ -3227,7 +3227,7 @@
                         "When generating C code for the function ~x0, ~
                          we encountered a term ~x1, ~
                          to which a LET variable is bound, ~
-                         tha is not wrapped by C::DECLAR or C::ASSIGN, ~
+                         that is not wrapped by C::DECLAR or C::ASSIGN, ~
                          and that is neither an IF or a loop function call. ~
                          This is disallowed."
                         fn val))
@@ -4369,7 +4369,7 @@
      which the binding replaces with the array or structure
      pointed to by @('a-ptr').
      Along with this binding, we also generate hypotheses saying that
-     @('a-ptr') is a non-null pointer of the appropriate type;
+     @('a-ptr') is a top-level pointer of the appropriate type;
      the type is determined from the type of the formal @('a').
      Along with the binding and the hypotheses,
      we also generate an alist element @('(a . a-ptr)'),
@@ -4458,7 +4458,7 @@
                     (list (cons formal formal-ptr))))
        (hyps (and pointerp
                   (list `(pointerp ,formal-ptr)
-                        `(not (value-pointer-nullp ,formal-ptr))
+                        `(value-pointer-addressp ,formal-ptr)
                         `(equal (value-pointer->reftype ,formal-ptr)
                                 ,(type-to-maker (type-pointer->to type))))))
        (inst (if fn-recursivep
@@ -6330,7 +6330,7 @@
        (formula
         `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                        (pointerp ptr)
-                       (not (value-pointer-nullp ptr))
+                       (value-pointer-addressp ptr)
                        (equal struct
                               (read-object (value-pointer->address ptr) compst))
                        (value-case struct :struct)
@@ -6348,6 +6348,7 @@
                    valuep-when-pointerp
                    value-resultp-when-valuep
                    value-result-fix-when-value-resultp
+                   not-value-pointer-nullp-when-value-pointer-addressp
                    ,recognizer
                    ,reader
                    ,not-error-thm
@@ -6461,7 +6462,7 @@
                        (,typep val)
                        (equal ptr (read-var (expr-ident->get target) compst1))
                        (pointerp ptr)
-                       (not (value-pointer-nullp ptr))
+                       (value-pointer-addressp ptr)
                        (equal struct
                               (read-object (value-pointer->address ptr)
                                            compst1))
@@ -6508,6 +6509,7 @@
                    slong-fix-when-slongp
                    ullong-fix-when-ullongp
                    sllong-fix-when-sllongp
+                   not-value-pointer-nullp-when-value-pointer-addressp
                    ,writer
                    ,not-error-thm
                    ,fixer-recognizer-thm)
