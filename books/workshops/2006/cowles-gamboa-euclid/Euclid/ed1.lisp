@@ -81,6 +81,8 @@ To certify this book, first, create a world with the following package:
 	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
+(local (include-book "cowles/acl2-crg" :dir :system))
+
 (encapsulate
  ; Signatures
  (((edp *) => *)          ; x is in Euclidean Domain iff (NOT (EQUAL (edp x) NIL)).
