@@ -89,6 +89,7 @@
 
             x86isa::sar-spec$inline
             x86isa::sar-spec-32-nice ;x86isa::sar-spec-32
+            x86isa::sar-spec-64-nice ;x86isa::sar-spec-32
             )
           *instruction-decoding-and-spec-rules*))
 
