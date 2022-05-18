@@ -884,4 +884,20 @@
        (1+ y)
      (f (cdr x) y)))
 
- (parteval f ((y 0))))
+ (parteval f ((y 0)))
+)
+
+(must-succeed*
+
+ (test-title "Test a recursive function with 2 unchanging static arguments.")
+
+ (defun f (x y z)
+   (declare (xargs :guard (and (true-listp x) (natp y) (natp z))))
+   (if (endp x)
+       (1+ y)
+     (* z (f (cdr x) y z))))
+
+ (parteval f ((y 0) (z 3)))
+
+ (parteval f ((z 3) (y 0)))
+)
