@@ -1934,19 +1934,17 @@
                    (equal 31 shift-amount))
            :in-theory (e/d (BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT) ()))))
 
-;fixme make rules like this for other ops!
-(defthmd bvsx-too-high-dag
+;todo: make rules like this for other ops!
+(defthmd bvsx-too-high-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (< xsize old-size)
+                (<= old-size new-size)
                 (integerp new-size)
-;               (natp xsize)
-                (< old-size new-size)
-                (posp old-size)
+                (integerp old-size)
                 (unsigned-byte-p-forced xsize x))
            (equal (bvsx new-size old-size x)
                   x))
-  :hints (("Goal" :in-theory (e/d (natp bvsx getbit-too-high) (;collect-constants-times-equal collect-constants-<-/
-                                                               )))))
+  :hints (("Goal" :in-theory (enable bvsx getbit-too-high))))
 
 ;gen
 (defthmd sbvlt-of-0-when-shorter2-axe

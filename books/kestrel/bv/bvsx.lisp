@@ -31,8 +31,9 @@
   (natp (bvsx a b c))
   :hints (("Goal" :in-theory (enable bvsx))))
 
+;; rename to bvchop-of-bvsx-low
 (defthm bvchop-of-bvsx2
-  (implies (and (< n old-size)
+  (implies (and (<= n old-size)
                 (< 0 old-size)
                 (<= old-size new-size)
                 (natp n)
@@ -41,6 +42,19 @@
            (equal (bvchop n (bvsx new-size old-size val))
                   (bvchop n val)))
   :hints (("Goal" :in-theory (enable bvsx))))
+
+(defthm bvchop-of-bvsx
+  (implies (and (< old-size n) ; could allow = but we prefer bvchop-of-bvsx2 in that case
+                (<= n new-size)
+                (< 0 old-size)
+                ;; (<= old-size new-size)
+                (natp n)
+                (natp new-size)
+                (natp old-size))
+           (equal (bvchop n (bvsx new-size old-size val))
+                  (bvsx n old-size val)))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
 
 ;gen to any bv
 (defthm <-of-bvsx-and-0
@@ -185,20 +199,6 @@
            (equal (equal (bvsx n lowsize x) (bvsx n lowsize y))
                   (equal (bvchop lowsize x)
                          (bvchop lowsize y))))
-  :hints (("Goal" :in-theory (enable bvsx))))
-
-;work on this:
-(defthm bvchop-of-bvsx
-  (implies (and (<= n new-size)
-;                (<= old-size new-size)
-                (<= old-size n)
-                (< 0 old-size)
-
-                (natp n)
-                (natp new-size)
-                (natp old-size))
-           (equal (bvchop n (bvsx new-size old-size val))
-                  (bvsx n old-size val)))
   :hints (("Goal" :in-theory (enable bvsx))))
 
 (defthm bvsx-same
