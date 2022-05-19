@@ -92,4 +92,9 @@
      as richer forms of object designators are introduced."))
   (not (equal (objdesign->get objdes1)
               (objdesign->get objdes2)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule object-disjointp-commutative
+    (equal (object-disjointp x y)
+           (object-disjointp y x))))
