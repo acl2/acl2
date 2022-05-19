@@ -315,18 +315,6 @@
              (not (value-pointer-nullp x)))
     :enable value-pointer-nullp))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define value-pointer->address ((ptr valuep))
-  :guard (and (value-case ptr :pointer)
-              (value-pointer-addressp ptr))
-  :returns (address addressp)
-  :short "Address of a top-level pointer."
-  (address-fix (objdesign->get (value-pointer->designator? ptr)))
-  :guard-hints (("Goal" :in-theory (enable value-pointer-addressp
-                                           value-pointer-nullp)))
-  :hooks (:fix))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value-array->length ((array valuep))
