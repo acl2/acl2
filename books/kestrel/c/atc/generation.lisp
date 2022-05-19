@@ -4482,10 +4482,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-diff-objdes-hyps ((pointer-vars symbol-listp))
+(define atc-gen-object-disjoint-hyps ((pointer-vars symbol-listp))
   :returns (hyps true-listp)
-  :short "Generate hypotheses saying that object designator in the pointers
-          are distinct."
+  :short "Generate hypotheses saying that the pointers
+          designate disjoint objects."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4514,19 +4514,14 @@
      by going through the pointer variables involved in
      the correctness theorem of the C function or loop.
      More precisely, we generate hypotheses saying that
-     the object designate in the pointers are distinct.
-     We need the object designate to be distinct,
-     so that they are two different arrays or structures
-     in our model of the heap.
-     The other component of a pointer (see @(tsee pointer)) is a type,
-     but that one is already independently constrained
-     by other hypotheses in the generated correctness theorems."))
+     the object designated by the pointers are pairwise disjoint."))
   (b* (((when (endp pointer-vars)) nil)
        (var (car pointer-vars))
        (hyps (loop$ for var2 in (cdr pointer-vars)
-                    collect `(not (equal (value-pointer->designator ,var)
-                                         (value-pointer->designator ,var2)))))
-       (more-hyps (atc-gen-diff-objdes-hyps (cdr pointer-vars))))
+                    collect `(object-disjointp
+                              (value-pointer->designator ,var)
+                              (value-pointer->designator ,var2))))
+       (more-hyps (atc-gen-object-disjoint-hyps (cdr pointer-vars))))
     (append hyps more-hyps))
   :prepwork ((local (in-theory (enable acl2::loop-book-theory)))))
 
@@ -4757,7 +4752,7 @@
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var nil))
        (diff-pointer-hyps
-        (atc-gen-diff-objdes-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
@@ -5796,7 +5791,7 @@
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (diff-pointer-hyps
-        (atc-gen-diff-objdes-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (equal ,fenv-var (init-fun-env ,prog-const))
@@ -5965,7 +5960,7 @@
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (diff-pointer-hyps
-        (atc-gen-diff-objdes-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (equal ,fenv-var (init-fun-env ,prog-const))

@@ -893,6 +893,12 @@
      only if the computation state is an ACL2 variable
      (as enforced by the @(tsee syntaxp) hypothesis).")
    (xdoc::p
+    "We include the rule for commutativity of @(tsee object-disjointp),
+     so it does not matter the order of the disjoint objects
+     in the hypotheses of the rules vs. the available hypothesis
+     during the symbolic execution
+     (i.e. commutativity normalizes them, via its loop stopper).")
+   (xdoc::p
     "We include the rule saying that
      @(tsee value-pointer->designator) returns an object designator,
      needed to discharge the @(tsee objdesignp) hypotheses
@@ -945,19 +951,18 @@
              push-frame
              pop-frame))
 
-  (defruled write-object-okp-of-update-object
+  (defruled write-object-okp-of-update-object-same
+    (equal (write-object-okp objdes val (update-object objdes val2 compst))
+           (equal (type-of-value val)
+                  (type-of-value val2)))
+    :enable (write-object-okp update-object))
+
+  (defruled write-object-okp-of-update-object-disjoint
     (implies
-     (and (objdesignp objdes)
-          (objdesignp objdes2))
+     (object-disjointp objdes objdes2)
      (equal (write-object-okp objdes val (update-object objdes2 val2 compst))
-            (if (equal objdes objdes2)
-                (equal (type-of-value val)
-                       (type-of-value val2))
-              (write-object-okp objdes val compst))))
-    :enable (write-object-okp
-             update-object
-             objdesignp
-             objdesign->get))
+            (write-object-okp objdes val compst)))
+    :enable (write-object-okp update-object object-disjointp))
 
   (defruled write-object-okp-when-valuep-of-read-object
     (implies (and (syntaxp (symbolp compst))
@@ -981,8 +986,10 @@
       write-object-okp-of-enter-scope
       write-object-okp-of-add-var
       write-object-okp-of-update-var
-      write-object-okp-of-update-object
+      write-object-okp-of-update-object-same
+      write-object-okp-of-update-object-disjoint
       write-object-okp-when-valuep-of-read-object
+      object-disjointp-commutative
       objdesignp-of-value-pointer->designator
       valuep-when-uchar-arrayp
       valuep-when-schar-arrayp
@@ -1052,25 +1059,25 @@
              pop-frame
              read-object))
 
-  (defruled read-object-of-update-object
-    (implies (and (objdesignp objdes)
-                  (objdesignp objdes2))
-             (equal (read-object objdes
-                                 (update-object objdes2 val compst))
-                    (if (equal objdes objdes2)
-                        (value-fix val)
-                      (read-object objdes compst))))
-    :enable (read-object
-             update-object
-             objdesignp
-             objdesign->get))
+  (defruled read-object-of-update-object-same
+    (equal (read-object objdes (update-object objdes val compst))
+           (value-fix val))
+    :enable (read-object update-object))
+
+  (defruled read-object-of-update-object-disjoint
+    (implies (object-disjointp objdes objdes2)
+             (equal (read-object objdes (update-object objdes2 val compst))
+                    (read-object objdes compst)))
+    :enable (read-object update-object object-disjointp))
 
   (defval *atc-read-object-rules*
     '(read-object-of-add-frame
       read-object-of-enter-scope
       read-object-of-add-var
       read-object-of-update-var
-      read-object-of-update-object
+      read-object-of-update-object-same
+      read-object-of-update-object-disjoint
+      object-disjointp-commutative
       objdesignp-of-value-pointer->designator)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1166,12 +1173,10 @@
                                (symbol< ptr2 ptr)))))
           (objdesignp objdes)
           (objdesignp objdes2)
-          (not (equal objdes objdes2)))
+          (object-disjointp objdes objdes2))
      (equal (update-object objdes obj (update-object objdes2 obj2 compst))
             (update-object objdes2 obj2 (update-object objdes obj compst))))
-    :enable (update-object
-             objdesignp
-             objdesign->get))
+    :enable (update-object object-disjointp))
 
   (defruled update-object-of-update-object-less-ident
     (implies
@@ -1185,12 +1190,10 @@
                                    (fargn ptr 1))))))
           (objdesignp objdes)
           (objdesignp objdes2)
-          (not (equal objdes objdes2)))
+          (object-disjointp objdes objdes2))
      (equal (update-object objdes obj (update-object objdes2 obj2 compst))
             (update-object objdes2 obj2 (update-object objdes obj compst))))
-    :enable (update-object
-             objdesignp
-             objdesign->get))
+    :enable (update-object object-disjointp))
 
   (defruled update-object-of-read-object-same
     (implies (and (syntaxp (symbolp compst))
@@ -1221,6 +1224,7 @@
       update-object-of-update-object-less-symbol
       update-object-of-update-object-less-ident
       update-object-of-read-object-same
+      object-disjointp-commutative
       objdesignp-of-value-pointer->designator)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
