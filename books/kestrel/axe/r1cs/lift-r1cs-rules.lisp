@@ -17,6 +17,7 @@
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
 (include-book "kestrel/prime-fields/bv-rules" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
+(include-book "kestrel/booleans/booland" :dir :system)
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
 (include-book "kestrel/arithmetic-light/ifix" :dir :system)

@@ -172,4 +172,4 @@
                 )
            (equal (bvand size mask y)
                   y))
-  :hints (("Goal" :use (:instance bvand-with-mask-better-eric (size2 size) (i y)))))
+  :hints (("Goal" :use (:instance bvand-with-mask-better-eric (size size) (i y)))))

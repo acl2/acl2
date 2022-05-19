@@ -106,8 +106,8 @@
 ;;   (include-book "jvm/jvm-rules-axe")
 ;;   (include-book "math-rules")
 ;;   (defthmd if-becomes-boolif-axe
-;;     (implies (and (axe-syntaxp (and (known-booleanp b dag-array)))
-;;;                  (axe-syntaxp (and (known-booleanp c dag-array)))
+;;     (implies (and (axe-syntaxp (and (syntactic-booleanp b dag-array)))
+;;;                  (axe-syntaxp (and (syntactic-booleanp c dag-array)))
 ;;                   (booleanp b)
 ;;                   (booleanp c))
 ;;              (equal (if a b c)

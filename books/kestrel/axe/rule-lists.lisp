@@ -649,7 +649,7 @@
      ;; rules about bvsx:
      equal-of-0-and-bvsx ;Wed Oct 14 13:28:17 2015
      equal-of-bvsx-and-bvsx
-     bvsx-too-high-dag
+     bvsx-too-high-axe
      bvsx-when-sizes-match
      getbit-of-bvsx
      ;; bvsx base cases?

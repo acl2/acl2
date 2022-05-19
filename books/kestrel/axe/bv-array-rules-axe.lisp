@@ -18,8 +18,12 @@
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "axe-syntax-functions-bv")
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
+(include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
+(include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 (include-book "list-rules") ;for EQUAL-OF-UPDATE-NTH
+(include-book "known-booleans")
+(local (include-book "kestrel/bv/bvlt" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
