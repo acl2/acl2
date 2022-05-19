@@ -60,6 +60,8 @@ To certify this book, first, create a world with the following packages:
 (local
  (include-book "../../../arithmetic/inequalities"))
 
+(local (include-book "cowles/acl2-crg" :dir :system))
+
 ; Note that the Abelian SemiGroup, Abelian Group, and Commutative Ring Books
 ;  are also temporarily available because they help certify the Arithmetic Book.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
