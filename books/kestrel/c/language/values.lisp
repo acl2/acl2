@@ -290,31 +290,6 @@
   :guard-hints (("Goal" :in-theory (enable value-pointer-nullp)))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define value-pointer-addressp ((ptr valuep))
-  :guard (value-case ptr :pointer)
-  :returns (yes/no booleanp)
-  :short "Check if a pointer contains an address."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now this is just the negation of @(tsee value-pointer-nullp),
-     but when we extend our model of object designators
-     with array elements and structure members,
-     this will recognize non-null ``top-level'' pointers,
-     i.e. pointers whose object designator are addresses,
-     and not array elements and structure members,
-     i.e. pointers to ``whole'' objects."))
-  (not (value-pointer-nullp ptr))
-  :hooks (:fix)
-  ///
-
-  (defrule not-value-pointer-nullp-when-value-pointer-addressp
-    (implies (value-pointer-addressp x)
-             (not (value-pointer-nullp x)))
-    :enable value-pointer-nullp))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value-array->length ((array valuep))
