@@ -4458,7 +4458,7 @@
                     (list (cons formal formal-ptr))))
        (hyps (and pointerp
                   (list `(pointerp ,formal-ptr)
-                        `(value-pointer-addressp ,formal-ptr)
+                        `(not (value-pointer-nullp ,formal-ptr))
                         `(equal (value-pointer->reftype ,formal-ptr)
                                 ,(type-to-maker (type-pointer->to type))))))
        (inst (if fn-recursivep
@@ -6326,7 +6326,7 @@
        (formula
         `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                        (pointerp ptr)
-                       (value-pointer-addressp ptr)
+                       (not (value-pointer-nullp ptr))
                        (equal struct
                               (read-object (value-pointer->designator ptr)
                                            compst))
@@ -6345,7 +6345,6 @@
                    valuep-when-pointerp
                    value-resultp-when-valuep
                    value-result-fix-when-value-resultp
-                   not-value-pointer-nullp-when-value-pointer-addressp
                    ,recognizer
                    ,reader
                    ,not-error-thm
@@ -6459,7 +6458,7 @@
                        (,typep val)
                        (equal ptr (read-var (expr-ident->get target) compst1))
                        (pointerp ptr)
-                       (value-pointer-addressp ptr)
+                       (not (value-pointer-nullp ptr))
                        (equal struct
                               (read-object (value-pointer->designator ptr)
                                            compst1))
@@ -6506,7 +6505,6 @@
                    slong-fix-when-slongp
                    ullong-fix-when-ullongp
                    sllong-fix-when-sllongp
-                   not-value-pointer-nullp-when-value-pointer-addressp
                    ,writer
                    ,not-error-thm
                    ,fixer-recognizer-thm)
