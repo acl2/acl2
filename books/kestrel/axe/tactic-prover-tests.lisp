@@ -174,3 +174,25 @@
 
 (deftest
   (must-fail (prove-with-tactics nil :rule-classes nil :tactics '(:stp))))
+
+;; tests involving contexts
+
+(deftest
+  (prove-equivalence2 '(if (equal x 3) (+ x 2) 5) 5 :rules '(if-same-branches) :different-vars-ok t))
+
+(deftest
+  (defstub f (x) t)
+  ;; fails because we don't have precise context info for the term (+ x 2) since it appears in both branches of the if.
+  (must-fail (prove-equivalence2 '(if (equal x 3) (+ x 2) (f (+ x 2)))
+                                 '(if (equal x 3) 5 (f (+ x 2)))
+                                 :rules '(if-same-branches +-commutative-2-axe minus-cancellation-on-left equal-same)
+                                 :different-vars-ok t)))
+
+(deftest
+  (defstub f (x) t)
+  ;; same goal as above but works because we call :rewrite-with-precise-contexts
+  (prove-equivalence2 '(if (equal x 3) (+ x 2) (f (+ x 2)))
+                      '(if (equal x 3) 5 (f (+ x 2)))
+                      :tactics '(:rewrite-with-precise-contexts)
+                      :rules '(if-same-branches +-commutative-2-axe minus-cancellation-on-left equal-same)
+                      :different-vars-ok t))
