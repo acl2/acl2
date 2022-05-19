@@ -23,7 +23,6 @@
 (include-book "integer-ranges")
 (include-book "tag-environments")
 (include-book "static-semantics")
-(include-book "pointers")
 (include-book "values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -36,8 +36,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pointerp (x)
+  :returns (yes/no booleanp)
+  :short "Recognize pointers."
+  (and (valuep x)
+       (value-case x :pointer)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection integer-value-disjoint-rules
   :short "Rules about disjointness of integer values."
+
+  (local (in-theory (enable value-kind)))
+
   (defthm-disjoint *integer-value-disjoint-rules*
     ucharp
     scharp
@@ -417,13 +428,9 @@
     (implies (valuep x)
              (equal (pointerp x)
                     (equal (type-of-value x)
-                           (type-pointer (pointer->reftype x)))))
+                           (type-pointer (value-pointer->reftype x)))))
     :enable (type-of-value
-             valuep
-             value-kind
-             value-pointer->reftype
-             pointerp
-             pointer->reftype)))
+             pointerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -514,9 +521,6 @@
   (defruled type-of-value-when-pointerp
     (implies (pointerp x)
              (equal (type-of-value x)
-                    (type-pointer (pointer->reftype x))))
+                    (type-pointer (value-pointer->reftype x))))
     :enable (type-of-value
-             value-kind
-             value-pointer->reftype
-             pointerp
-             pointer->reftype)))
+             pointerp)))

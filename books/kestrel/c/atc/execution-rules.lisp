@@ -1115,11 +1115,12 @@
                     (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                          ,(atc-syntaxp-hyp-for-expr-pure 'y)
                          (pointerp x)
-                         (not (pointer-nullp x))
+                         (not (value-pointer-nullp x))
                          (equal array
-                                (read-object (pointer->address x) compst))
+                                (read-object (value-pointer->designator x)
+                                             compst))
                          (value-case array :array)
-                         (equal (pointer->reftype x)
+                         (equal (value-pointer->reftype x)
                                 (value-array->elemtype array))
                          (,apred array)
                          (,ipred y)
@@ -2049,18 +2050,18 @@
                  (,epred val)
                  (equal ptr (read-var (expr-ident->get arr) compst1))
                  (pointerp ptr)
-                 (not (pointer-nullp ptr))
+                 (not (value-pointer-nullp ptr))
                  (equal array
-                        (read-object (pointer->address ptr) compst1))
+                        (read-object (value-pointer->designator ptr) compst1))
                  (value-case array :array)
-                 (equal (pointer->reftype ptr)
+                 (equal (value-pointer->reftype ptr)
                         (value-array->elemtype array))
                  (,apred array)
                  (equal index (exec-expr-pure sub compst1))
                  (,ipred index)
                  (,atype-array-itype-index-okp array index))
             (equal (exec-expr-asg e compst fenv limit)
-                   (write-object (pointer->address ptr)
+                   (write-object (value-pointer->designator ptr)
                                  (,atype-array-write-itype array index val)
                                  compst1))))
          (event `(defruled ,name
@@ -2120,7 +2121,8 @@
                (:e expr-binary->arg1)
                (:e expr-binary->arg2)
                (:e expr-ident->get)
-               (:e binop-kind))))))))
+               (:e binop-kind)
+               not-value-pointer-nullp-when-value-pointer-addressp)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

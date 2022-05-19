@@ -78,3 +78,23 @@
   objdesign
   :short "Fixtype of optional object designators."
   :pred objdesign-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define object-disjointp ((objdes1 objdesignp) (objdes2 objdesignp))
+  :returns (yes/no booleanp)
+  :short "Check if two designated objects are disjoint."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now this boils down to the addresses being different,
+     but this will be extended in the future,
+     as richer forms of object designators are introduced."))
+  (not (equal (objdesign->get objdes1)
+              (objdesign->get objdes2)))
+  :hooks (:fix)
+  ///
+
+  (defrule object-disjointp-commutative
+    (equal (object-disjointp x y)
+           (object-disjointp y x))))

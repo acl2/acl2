@@ -296,7 +296,7 @@
           ((slongp arg) (lognot-slong arg))
           ((ullongp arg) (lognot-ullong arg))
           ((sllongp arg) (lognot-sllong arg))
-          ((pointerp arg) (sint-from-boolean (pointer-nullp arg)))
+          ((pointerp arg) (sint-from-boolean (value-pointer-nullp arg)))
           (t (error (impossible)))))
   :guard-hints (("Goal"
                  :in-theory (enable value-scalarp
@@ -463,7 +463,7 @@
           ((slongp arg) (boolean-from-slong arg))
           ((ullongp arg) (boolean-from-ullong arg))
           ((sllongp arg) (boolean-from-sllong arg))
-          ((pointerp arg) (not (pointer-nullp arg)))
+          ((pointerp arg) (not (value-pointer-nullp arg)))
           (t (error (impossible)))))
   :guard-hints (("Goal" :in-theory (enable value-scalarp
                                            value-arithmeticp
@@ -1340,10 +1340,10 @@
        ((unless (pointerp arr)) (error (list :mistype-arrsub
                                              :required :pointer
                                              :supplied (type-of-value arr))))
-       ((when (pointer-nullp arr)) (error (list :null-pointer)))
-       (addr (pointer->address arr))
-       (reftype (pointer->reftype arr))
-       (array (read-object addr compst))
+       ((when (value-pointer-nullp arr)) (error (list :null-pointer)))
+       (objdes (value-pointer->designator arr))
+       (reftype (value-pointer->reftype arr))
+       (array (read-object objdes compst))
        ((when (errorp array))
         (error (list :array-not-found arr (compustate-fix compst))))
        ((unless (value-case array :array))
@@ -1405,6 +1405,7 @@
              err))
           (t (error (list :array-element-type-not-supported
                           :element-type reftype)))))
+  :guard-hints (("Goal" :in-theory (enable pointerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1425,10 +1426,10 @@
        ((unless (pointerp str)) (error (list :mistype-memberp
                                              :required :pointer
                                              :supplied (type-of-value str))))
-       ((when (pointer-nullp str)) (error (list :null-pointer)))
-       (addr (pointer->address str))
-       (reftype (pointer->reftype str))
-       (struct (read-object addr compst))
+       ((when (value-pointer-nullp str)) (error (list :null-pointer)))
+       (objdes (value-pointer->designator str))
+       (reftype (value-pointer->reftype str))
+       (struct (read-object objdes compst))
        ((when (errorp struct))
         (error (list :struct-not-found str (compustate-fix compst))))
        ((unless (value-case struct :struct))
@@ -1439,6 +1440,7 @@
                      :pointer reftype
                      :array (type-struct (value-struct->tag struct))))))
     (struct-read-member mem struct))
+  :guard-hints (("Goal" :in-theory (enable pointerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1718,10 +1720,10 @@
                (error (list :mistype-array
                             :required :pointer
                             :supplied (type-of-value ptr))))
-              ((when (pointer-nullp ptr)) (error (list :null-pointer)))
-              (addr (pointer->address ptr))
-              (reftype (pointer->reftype ptr))
-              (array (read-object addr compst))
+              ((when (value-pointer-nullp ptr)) (error (list :null-pointer)))
+              (objdes (value-pointer->designator ptr))
+              (reftype (value-pointer->reftype ptr))
+              (array (read-object objdes compst))
               ((when (errorp array)) array)
               ((unless (value-case array :array))
                (error (list :not-array arr (compustate-fix compst))))
@@ -1746,61 +1748,61 @@
            (cond ((uchar-arrayp array)
                   (b* (((unless (ucharp val)) err-elem)
                        ((unless (uchar-array-index-okp array index)) err-idx))
-                    (write-object addr
+                    (write-object objdes
                                   (uchar-array-write array index val)
                                   compst)))
                  ((schar-arrayp array)
                   (b* (((unless (scharp val)) err-elem)
                        ((unless (schar-array-index-okp array index)) err-idx))
-                    (write-object addr
+                    (write-object objdes
                                   (schar-array-write array index val)
                                   compst)))
                  ((ushort-arrayp array)
                   (b* (((unless (ushortp val)) err-elem)
                        ((unless (ushort-array-index-okp array index)) err-idx))
-                    (write-object addr
+                    (write-object objdes
                                   (ushort-array-write array index val)
                                   compst)))
                  ((sshort-arrayp array)
                   (b* (((unless (sshortp val)) err-elem)
                        ((unless (sshort-array-index-okp array index)) err-idx))
-                    (write-object addr
+                    (write-object objdes
                                   (sshort-array-write array index val)
                                   compst)))
                  ((uint-arrayp array)
                   (b* (((unless (uintp val)) err-elem)
                        ((unless (uint-array-index-okp array index)) err-idx))
-                    (write-object addr
+                    (write-object objdes
                                   (uint-array-write array index val)
                                   compst)))
                  ((sint-arrayp array)
                   (b* (((unless (sintp val)) err-elem)
                        ((unless (sint-array-index-okp array index)) err-idx))
-                    (write-object addr
+                    (write-object objdes
                                   (sint-array-write array index val)
                                   compst)))
                  ((ulong-arrayp array)
                   (b* (((unless (ulongp val)) err-elem)
                        ((unless (ulong-array-index-okp array index)) err-idx))
-                    (write-object addr
+                    (write-object objdes
                                   (ulong-array-write array index val)
                                   compst)))
                  ((slong-arrayp array)
                   (b* (((unless (slongp val)) err-elem)
                        ((unless (slong-array-index-okp array index)) err-idx))
-                    (write-object addr
+                    (write-object objdes
                                   (slong-array-write array index val)
                                   compst)))
                  ((ullong-arrayp array)
                   (b* (((unless (ullongp val)) err-elem)
                        ((unless (ullong-array-index-okp array index)) err-idx))
-                    (write-object addr
+                    (write-object objdes
                                   (ullong-array-write array index val)
                                   compst)))
                  ((sllong-arrayp array)
                   (b* (((unless (sllongp val)) err-elem)
                        ((unless (sllong-array-index-okp array index)) err-idx))
-                    (write-object addr
+                    (write-object objdes
                                   (sllong-array-write array index val)
                                   compst)))
                  (t (error (list :array-element-type-not-supported
@@ -1817,10 +1819,10 @@
                (error (list :mistype-struct
                             :required :pointer
                             :supplied (type-of-value ptr))))
-              ((when (pointer-nullp ptr)) (error (list :null-pointer)))
-              (addr (pointer->address ptr))
-              (reftype (pointer->reftype ptr))
-              (struct (read-object addr compst))
+              ((when (value-pointer-nullp ptr)) (error (list :null-pointer)))
+              (objdes (value-pointer->designator ptr))
+              (reftype (value-pointer->reftype ptr))
+              (struct (read-object objdes compst))
               ((when (errorp struct)) struct)
               ((unless (value-case struct :struct))
                (error (list :not-struct str (compustate-fix compst))))
@@ -1831,7 +1833,7 @@
                             :array (type-of-value struct))))
               (new-struct (struct-write-member mem val struct))
               ((when (errorp new-struct)) new-struct))
-           (write-object addr new-struct compst)))
+           (write-object objdes new-struct compst)))
         (t (error (list :expr-asg-left-not-var-or-array-var-subscript left)))))
     :measure (nfix limit))
 
@@ -2220,7 +2222,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards exec-stmt)
+  (verify-guards exec-stmt
+    :hints (("Goal" :in-theory (enable pointerp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

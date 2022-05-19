@@ -170,11 +170,12 @@
    (xdoc::p
     "for C loops.
      We order the @(tsee update-object) calls
-     according to their first argument (i.e. the address).
+     according to their first argument (i.e. the object designator).
      Note that for a C function this first argument is
-     @(tsee pointer->address) applied to an ACL2 variable,
+     @(tsee value-pointer->designator) applied to an ACL2 variable,
      while for a C loop it is
-     @(tsee pointer->address) applied to a @('(read-var <identifier> ...)').
+     @(tsee value-pointer->designator) applied to
+     a @('(read-var <identifier> ...)').
      These two kinds of first arguments never appear together,
      i.e. in the same theorem,
      because each theorem is for either a C function or a C loop.
@@ -300,7 +301,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define update-object ((addr addressp) (val valuep) (compst compustatep))
+(define update-object ((objdes objdesignp) (val valuep) (compst compustatep))
   :returns (new-compst compustatep)
   :short (xdoc::topstring
           "Update an object in a "
@@ -323,8 +324,9 @@
      we ensure that all the conditions mentioned above hold,
      so in a way @(tsee update-object) caches the fact that
      those conditions are satisfied."))
-  (b* ((heap (compustate->heap compst))
-       (new-heap (omap::update (address-fix addr) (value-fix val) heap))
+  (b* ((addr (objdesign->get objdes))
+       (heap (compustate->heap compst))
+       (new-heap (omap::update addr (value-fix val) heap))
        (new-compst (change-compustate compst :heap new-heap)))
     new-compst)
   :hooks (:fix))
@@ -600,7 +602,7 @@
                 update-var-aux))))
 
   (defruled write-var-okp-of-update-object
-    (equal (write-var-okp var val (update-object addr obj compst))
+    (equal (write-var-okp var val (update-object objdes obj compst))
            (write-var-okp var val compst))
     :enable (write-var-okp
              update-object
@@ -720,7 +722,7 @@
 
   (defruled read-var-of-update-object
     (implies (not (equal (compustate-frames-number compst) 0))
-             (equal (read-var var (update-object addr obj compst))
+             (equal (read-var var (update-object objdes obj compst))
                     (read-var var compst)))
     :enable (read-var
              update-object
@@ -891,15 +893,23 @@
      only if the computation state is an ACL2 variable
      (as enforced by the @(tsee syntaxp) hypothesis).")
    (xdoc::p
+    "We include the rule for commutativity of @(tsee object-disjointp),
+     so it does not matter the order of the disjoint objects
+     in the hypotheses of the rules vs. the available hypothesis
+     during the symbolic execution
+     (i.e. commutativity normalizes them, via its loop stopper).")
+   (xdoc::p
     "We include the rule saying that
-     @(tsee pointer->address) returns an address,
-     needed to discharge the @(tsee addressp) hypotheses
+     @(tsee value-pointer->designator) returns an object designator,
+     needed to discharge the @(tsee objdesignp) hypotheses
      of the rule @('write-object-okp-of-update-object') below."))
 
-  (define write-object-okp ((addr addressp) (val valuep) (compst compustatep))
+  (define write-object-okp ((objdes objdesignp)
+                            (val valuep)
+                            (compst compustatep))
     :returns (yes/no booleanp)
     :parents nil
-    (b* ((addr (address-fix addr))
+    (b* ((addr (objdesign->get objdes))
          (heap (compustate->heap compst))
          (addr+obj (omap::in addr heap))
          ((unless (consp addr+obj)) nil)
@@ -911,61 +921,63 @@
     :hooks (:fix))
 
   (defruled write-object-okp-of-add-frame
-    (equal (write-object-okp addr val (add-frame fun compst))
-           (write-object-okp addr val compst))
+    (equal (write-object-okp objdes val (add-frame fun compst))
+           (write-object-okp objdes val compst))
     :enable (write-object-okp
              add-frame
              push-frame))
 
   (defruled write-object-okp-of-enter-scope
-    (equal (write-object-okp addr val (enter-scope compst))
-           (write-object-okp addr val compst))
+    (equal (write-object-okp objdes val (enter-scope compst))
+           (write-object-okp objdes val compst))
     :enable (write-object-okp
              enter-scope
              push-frame
              pop-frame))
 
   (defruled write-object-okp-of-add-var
-    (equal (write-object-okp addr val (add-var var val2 compst))
-           (write-object-okp addr val compst))
+    (equal (write-object-okp objdes val (add-var var val2 compst))
+           (write-object-okp objdes val compst))
     :enable (write-object-okp
              add-var
              push-frame
              pop-frame))
 
   (defruled write-object-okp-of-update-var
-    (equal (write-object-okp addr val (update-var var val2 compst))
-           (write-object-okp addr val compst))
+    (equal (write-object-okp objdes val (update-var var val2 compst))
+           (write-object-okp objdes val compst))
     :enable (write-object-okp
              update-var
              push-frame
              pop-frame))
 
-  (defruled write-object-okp-of-update-object
+  (defruled write-object-okp-of-update-object-same
+    (equal (write-object-okp objdes val (update-object objdes val2 compst))
+           (equal (type-of-value val)
+                  (type-of-value val2)))
+    :enable (write-object-okp update-object))
+
+  (defruled write-object-okp-of-update-object-disjoint
     (implies
-     (and (addressp addr)
-          (addressp addr2))
-     (equal (write-object-okp addr val (update-object addr2 val2 compst))
-            (if (equal addr addr2)
-                (equal (type-of-value val)
-                       (type-of-value val2))
-              (write-object-okp addr val compst))))
-    :enable (write-object-okp
-             update-object))
+     (object-disjointp objdes objdes2)
+     (equal (write-object-okp objdes val (update-object objdes2 val2 compst))
+            (write-object-okp objdes val compst)))
+    :enable (write-object-okp update-object object-disjointp))
 
   (defruled write-object-okp-when-valuep-of-read-object
     (implies (and (syntaxp (symbolp compst))
-                  (equal old-val (read-object addr compst))
+                  (equal old-val (read-object objdes compst))
                   (valuep old-val))
-             (equal (write-object-okp addr val compst)
+             (equal (write-object-okp objdes val compst)
                     (equal (type-of-value val)
                            (type-of-value old-val))))
-    :enable (write-object-okp read-object))
+    :enable (write-object-okp
+             read-object))
 
   (defruled write-object-to-update-object
-    (implies (write-object-okp addr val compst)
-             (equal (write-object addr val compst)
-                    (update-object addr val compst)))
+    (implies (write-object-okp objdes val compst)
+             (equal (write-object objdes val compst)
+                    (update-object objdes val compst)))
     :enable (write-object write-object-okp update-object))
 
   (defval *atc-write-object-rules*
@@ -974,9 +986,11 @@
       write-object-okp-of-enter-scope
       write-object-okp-of-add-var
       write-object-okp-of-update-var
-      write-object-okp-of-update-object
+      write-object-okp-of-update-object-same
+      write-object-okp-of-update-object-disjoint
       write-object-okp-when-valuep-of-read-object
-      addressp-of-pointer->address
+      object-disjointp-commutative
+      objdesignp-of-value-pointer->designator
       valuep-when-uchar-arrayp
       valuep-when-schar-arrayp
       valuep-when-ushort-arrayp
@@ -1012,56 +1026,59 @@
      between @(tsee read-var) and @(tsee update-var).")
    (xdoc::p
     "We include the rule saying that
-     @(tsee pointer->address) returns an address,
-     needed to discharge the @(tsee addressp) hypotheses
+     @(tsee value-pointer->designator) returns an object designator,
+     needed to discharge the @(tsee objdesignp) hypotheses
      of the rule @('read-object-of-update-object') below."))
 
   (defruled read-object-of-add-frame
-    (equal (read-object addr (add-frame fun compst))
-           (read-object addr compst))
+    (equal (read-object objdes (add-frame fun compst))
+           (read-object objdes compst))
     :enable (add-frame push-frame read-object))
 
   (defruled read-object-of-enter-scope
-    (equal (read-object addr (enter-scope compst))
-           (read-object addr compst))
+    (equal (read-object objdes (enter-scope compst))
+           (read-object objdes compst))
     :enable (enter-scope
              push-frame
              pop-frame
              read-object))
 
   (defruled read-object-of-add-var
-    (equal (read-object addr (add-var var val compst))
-           (read-object addr compst))
+    (equal (read-object objdes (add-var var val compst))
+           (read-object objdes compst))
     :enable (add-var
              push-frame
              pop-frame
              read-object))
 
   (defruled read-object-of-update-var
-    (equal (read-object addr (update-var var val compst))
-           (read-object addr compst))
+    (equal (read-object objdes (update-var var val compst))
+           (read-object objdes compst))
     :enable (update-var
              push-frame
              pop-frame
              read-object))
 
-  (defruled read-object-of-update-object
-    (implies (and (addressp addr)
-                  (addressp addr2))
-             (equal (read-object addr (update-object addr2 array compst))
-                    (if (equal addr addr2)
-                        (value-fix array)
-                      (read-object addr compst))))
-    :enable (read-object
-             update-object))
+  (defruled read-object-of-update-object-same
+    (equal (read-object objdes (update-object objdes val compst))
+           (value-fix val))
+    :enable (read-object update-object))
+
+  (defruled read-object-of-update-object-disjoint
+    (implies (object-disjointp objdes objdes2)
+             (equal (read-object objdes (update-object objdes2 val compst))
+                    (read-object objdes compst)))
+    :enable (read-object update-object object-disjointp))
 
   (defval *atc-read-object-rules*
     '(read-object-of-add-frame
       read-object-of-enter-scope
       read-object-of-add-var
       read-object-of-update-var
-      read-object-of-update-object
-      addressp-of-pointer->address)))
+      read-object-of-update-object-same
+      read-object-of-update-object-disjoint
+      object-disjointp-commutative
+      objdesignp-of-value-pointer->designator)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1075,8 +1092,8 @@
    (xdoc::p
     "When @(tsee update-object) is applied to @(tsee update-object),
      we have rules similar to the ones for @(tsee update-var).
-     If the two addresses are the same, we overwrite the object.
-     When the addresses differ,
+     If the two object designators are the same, we overwrite the object.
+     When the object designators differ,
      we swap the @(tsee update-var)s
      if the right pointer is smaller than the left one,
      where smaller is a syntactic check:
@@ -1089,10 +1106,10 @@
      which boils down to comparing the variable names.
      Either way, we normalize the nests of @(tsee update-object) calls
      by ordering them according to the pointer.
-     We are talking about pointers here, and not addresses,
+     We are talking about pointers here, and not object designators,
      because, as mentioned in @(see atc-symbolic-computation-states),
-     during symbolic execution the addresses in question
-     have the form @('(pointer->address <pointer>)'),
+     during symbolic execution the object designators in question
+     have the form @('(value-pointer->designator <pointer>)'),
      which is what the @(tsee syntaxp) hypotheses below are based on.")
    (xdoc::p
     "We also include a rule saying that
@@ -1102,20 +1119,20 @@
      for the reasons explained for @('update-var-of-read-var').")
    (xdoc::p
     "We include the rule saying that
-     @(tsee pointer->address) returns an address,
-     needed to discharge the @(tsee addressp) hypotheses
+     @(tsee value-pointer->designator) returns an object designator,
+     needed to discharge the @(tsee objdesignp) hypotheses
      of the rule @('read-object-of-update-object') below."))
 
   (defruled update-object-of-add-frame
-    (equal (update-object addr obj (add-frame fun compst))
-           (add-frame fun (update-object addr obj compst)))
+    (equal (update-object objdes obj (add-frame fun compst))
+           (add-frame fun (update-object objdes obj compst)))
     :enable (update-object
              add-frame
              push-frame))
 
   (defruled update-object-of-enter-scope
-    (equal (update-object addr obj (enter-scope compst))
-           (enter-scope (update-object addr obj compst)))
+    (equal (update-object objdes obj (enter-scope compst))
+           (enter-scope (update-object objdes obj compst)))
     :enable (update-object
              enter-scope
              push-frame
@@ -1123,8 +1140,8 @@
              top-frame))
 
   (defruled update-object-of-add-var
-    (equal (update-object addr obj (add-var var val compst))
-           (add-var var val (update-object addr obj compst)))
+    (equal (update-object objdes obj (add-var var val compst))
+           (add-var var val (update-object objdes obj compst)))
     :enable (update-object
              add-var
              push-frame
@@ -1132,8 +1149,8 @@
              top-frame))
 
   (defruled update-object-of-update-var
-    (equal (update-object addr obj (update-var var val compst))
-           (update-var var val (update-object addr obj compst)))
+    (equal (update-object objdes obj (update-var var val compst))
+           (update-var var val (update-object objdes obj compst)))
     :enable (update-object
              update-var
              push-frame
@@ -1141,51 +1158,51 @@
              top-frame))
 
   (defruled update-object-of-update-object-same
-    (equal (update-object addr obj (update-object addr obj2 compst))
-           (update-object addr obj compst))
+    (equal (update-object objdes obj (update-object objdes obj2 compst))
+           (update-object objdes obj compst))
     :enable update-object)
 
   (defruled update-object-of-update-object-less-symbol
     (implies
-     (and (syntaxp (and (ffn-symb-p addr 'pointer->address)
-                        (ffn-symb-p addr2 'pointer->address)
-                        (b* ((ptr (fargn addr 1))
-                             (ptr2 (fargn addr2 1)))
+     (and (syntaxp (and (ffn-symb-p objdes 'value-pointer->designator)
+                        (ffn-symb-p objdes2 'value-pointer->designator)
+                        (b* ((ptr (fargn objdes 1))
+                             (ptr2 (fargn objdes2 1)))
                           (and (symbolp ptr)
                                (symbolp ptr2)
                                (symbol< ptr2 ptr)))))
-          (addressp addr)
-          (addressp addr2)
-          (not (equal addr addr2)))
-     (equal (update-object addr obj (update-object addr2 obj2 compst))
-            (update-object addr2 obj2 (update-object addr obj compst))))
-    :enable update-object)
+          (objdesignp objdes)
+          (objdesignp objdes2)
+          (object-disjointp objdes objdes2))
+     (equal (update-object objdes obj (update-object objdes2 obj2 compst))
+            (update-object objdes2 obj2 (update-object objdes obj compst))))
+    :enable (update-object object-disjointp))
 
   (defruled update-object-of-update-object-less-ident
     (implies
-     (and (syntaxp (and (ffn-symb-p addr 'pointer->address)
-                        (ffn-symb-p addr2 'pointer->address)
-                        (b* ((ptr (fargn addr 1))
-                             (ptr2 (fargn addr2 1)))
+     (and (syntaxp (and (ffn-symb-p objdes 'value-pointer->designator)
+                        (ffn-symb-p objdes2 'value-pointer->designator)
+                        (b* ((ptr (fargn objdes 1))
+                             (ptr2 (fargn objdes2 1)))
                           (and (ffn-symb-p ptr 'read-var)
                                (ffn-symb-p ptr2 'read-var)
                                (<< (fargn ptr2 1)
                                    (fargn ptr 1))))))
-          (addressp addr)
-          (addressp addr2)
-          (not (equal addr addr2)))
-     (equal (update-object addr obj (update-object addr2 obj2 compst))
-            (update-object addr2 obj2 (update-object addr obj compst))))
-    :enable update-object)
+          (objdesignp objdes)
+          (objdesignp objdes2)
+          (object-disjointp objdes objdes2))
+     (equal (update-object objdes obj (update-object objdes2 obj2 compst))
+            (update-object objdes2 obj2 (update-object objdes obj compst))))
+    :enable (update-object object-disjointp))
 
   (defruled update-object-of-read-object-same
     (implies (and (syntaxp (symbolp compst))
-                  (addressp addr)
+                  (objdesignp objdes)
                   (compustatep compst1)
-                  (valuep (read-object addr compst))
-                  (equal (read-object addr compst)
-                         (read-object addr compst1)))
-             (equal (update-object addr (read-object addr compst) compst1)
+                  (valuep (read-object objdes compst))
+                  (equal (read-object objdes compst)
+                         (read-object objdes compst1)))
+             (equal (update-object objdes (read-object objdes compst) compst1)
                     compst1))
     :enable (read-object
              update-object
@@ -1207,7 +1224,8 @@
       update-object-of-update-object-less-symbol
       update-object-of-update-object-less-ident
       update-object-of-read-object-same
-      addressp-of-pointer->address)))
+      object-disjointp-commutative
+      objdesignp-of-value-pointer->designator)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1243,7 +1261,7 @@
     :enable update-var)
 
   (defruled compustate-frames-number-of-update-object
-    (equal (compustate-frames-number (update-object addr obj compst))
+    (equal (compustate-frames-number (update-object objdes obj compst))
            (compustate-frames-number compst))
     :enable (update-object
              compustate-frames-number))

@@ -575,21 +575,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-object ((addr addressp) (compst compustatep))
+(define read-object ((objdes objdesignp) (compst compustatep))
   :returns (obj value-resultp)
   :short "Read an object in the computation state."
-  (b* ((addr (address-fix addr))
+  (b* ((addr (objdesign->get objdes))
        (heap (compustate->heap compst))
        (addr+obj (omap::in addr heap))
        ((unless (consp addr+obj))
-        (error (list :address-not-found addr)))
+        (error (list :object-designator-not-found (objdesign-fix objdes))))
        (obj (cdr addr+obj)))
     obj)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-object ((addr addressp) (val valuep) (compst compustatep))
+(define write-object ((objdes objdesignp) (val valuep) (compst compustatep))
   :returns (new-compst compustate-resultp)
   :short "Write an object in the computation state."
   :long
@@ -600,7 +600,7 @@
      Note that the types include the number of elements.")
    (xdoc::p
     "If this checks succeed, we overwrite the object in the heap."))
-  (b* ((addr (address-fix addr))
+  (b* ((addr (objdesign->get objdes))
        (heap (compustate->heap compst))
        (addr+obj (omap::in addr heap))
        ((unless (consp addr+obj))
