@@ -431,12 +431,24 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only capture the ones that take and return integers
-     (along with values of other types).
-     These are unary plus,
+    "We capture all of them:
+     address,
+     indirection,
+     unary plus,
      unary minus,
      bitwise negation/complement,
-     and logical negation/complement."))
+     and logical negation/complement.")
+   (xdoc::p
+    "Note that preincrement @('++') and predecrement @('--')
+     are not considered unary operators in the C grammar [C:6.5.3/1],
+     even though preincrement and predecrement expressions
+     are considered unary expressions,
+     along with others with the @('sizeof') and @('_Alignof') operators,
+     and even though the title of [C:6.5.3] is `Unary Operators'.
+     We may include all those operators into this fixtype,
+     since it makes sense from the point of view of the abstract syntax."))
+  (:address ())
+  (:indir ())
   (:plus ())
   (:minus ())
   (:bitnot ())

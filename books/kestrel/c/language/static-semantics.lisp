@@ -506,8 +506,12 @@
    (xdoc::p
     "For logical negation,
      the operand must be scalar
-     and the result is @('int') -- 0 or 1."))
+     and the result is @('int') -- 0 or 1.")
+   (xdoc::p
+    "We reject address and indirection for now."))
   (case (unop-kind op)
+    (:address (error :todo))
+    (:indir (error :todo))
     ((:plus :minus) (if (type-arithmeticp arg-type)
                         (promote-type arg-type)
                       (error (list :unary-mistype
