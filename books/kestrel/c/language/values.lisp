@@ -281,6 +281,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define value-pointer->designator ((ptr valuep))
+  :guard (and (value-case ptr :pointer)
+              (not (value-pointer-nullp ptr)))
+  :returns (design objdesignp)
+  :short "Object designator of a non-null pointer."
+  (objdesign-fix (value-pointer->designator? ptr))
+  :guard-hints (("Goal" :in-theory (enable value-pointer-nullp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define value-pointer-addressp ((ptr valuep))
   :guard (value-case ptr :pointer)
   :returns (yes/no booleanp)
