@@ -990,7 +990,6 @@
       write-object-okp-of-update-object-disjoint
       write-object-okp-when-valuep-of-read-object
       object-disjointp-commutative
-      objdesignp-of-value-pointer->designator
       valuep-when-uchar-arrayp
       valuep-when-schar-arrayp
       valuep-when-ushort-arrayp
@@ -1077,8 +1076,7 @@
       read-object-of-update-var
       read-object-of-update-object-same
       read-object-of-update-object-disjoint
-      object-disjointp-commutative
-      objdesignp-of-value-pointer->designator)))
+      object-disjointp-commutative)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
