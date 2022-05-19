@@ -1117,7 +1117,8 @@
                          (pointerp x)
                          (not (value-pointer-nullp x))
                          (equal array
-                                (read-object (value-pointer->address x) compst))
+                                (read-object (value-pointer->designator x)
+                                             compst))
                          (value-case array :array)
                          (equal (value-pointer->reftype x)
                                 (value-array->elemtype array))
@@ -2051,7 +2052,7 @@
                  (pointerp ptr)
                  (not (value-pointer-nullp ptr))
                  (equal array
-                        (read-object (value-pointer->address ptr) compst1))
+                        (read-object (value-pointer->designator ptr) compst1))
                  (value-case array :array)
                  (equal (value-pointer->reftype ptr)
                         (value-array->elemtype array))
@@ -2060,7 +2061,7 @@
                  (,ipred index)
                  (,atype-array-itype-index-okp array index))
             (equal (exec-expr-asg e compst fenv limit)
-                   (write-object (value-pointer->address ptr)
+                   (write-object (value-pointer->designator ptr)
                                  (,atype-array-write-itype array index val)
                                  compst1))))
          (event `(defruled ,name

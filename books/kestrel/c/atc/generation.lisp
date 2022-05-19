@@ -4362,7 +4362,7 @@
      For each array or structure formal @('a') of @('fn'),
      we generate a pointer variable @('a-ptr') as explained,
      along with a binding
-     @('(a (read-object (value-pointer->address a-ptr) compst))'):
+     @('(a (read-object (value-pointer->designator a-ptr) compst))'):
      this binding relates the two variables,
      and lets us use the guard of @('fn') as hypothesis in the theorem,
      which uses @('a'),
@@ -4409,7 +4409,7 @@
      we introduce an additional @('a-ptr') variable,
      similarly to the case of non-recursive @('fn').
      We generate two bindings @('(a-ptr (read-var <a> compst))')
-     and @('(a (read-object (value-pointer->address a-ptr) compst))'),
+     and @('(a (read-object (value-pointer->designator a-ptr) compst))'),
      in that order.
      The first binding serves to tie @('a-ptr')
      to the corresponding variable in the computation state,
@@ -4442,17 +4442,17 @@
   (b* (((when (endp typed-formals)) (mv nil nil nil nil))
        ((cons formal type) (car typed-formals))
        (formal-ptr (add-suffix-to-fn formal "-PTR"))
-       (formal-addr `(value-pointer->address ,formal-ptr))
+       (formal-objdes `(value-pointer->designator ,formal-ptr))
        (formal-id `(ident ,(symbol-name formal)))
        (pointerp (type-case type :pointer))
        (bindings
         (if fn-recursivep
             (if pointerp
                 (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                      `(,formal (read-object ,formal-addr ,compst-var)))
+                      `(,formal (read-object ,formal-objdes ,compst-var)))
               (list `(,formal (read-var ,formal-id ,compst-var))))
           (if pointerp
-              (list `(,formal (read-object ,formal-addr ,compst-var)))
+              (list `(,formal (read-object ,formal-objdes ,compst-var)))
             nil)))
        (subst? (and pointerp
                     (list (cons formal formal-ptr))))
@@ -4463,13 +4463,13 @@
                                 ,(type-to-maker (type-pointer->to type))))))
        (inst (if fn-recursivep
                  (if pointerp
-                     (list `(,formal (read-object (value-pointer->address
+                     (list `(,formal (read-object (value-pointer->designator
                                                    (read-var ,formal-id
                                                              ,compst-var))
                                                   ,compst-var)))
                    (list `(,formal (read-var ,formal-id ,compst-var))))
                (if pointerp
-                   (list `(,formal (read-object ,formal-addr ,compst-var)))
+                   (list `(,formal (read-object ,formal-objdes ,compst-var)))
                  nil)))
        ((mv more-bindings more-hyps more-subst more-inst)
         (atc-gen-outer-bindings-and-hyps (cdr typed-formals)
@@ -4482,9 +4482,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-diff-address-hyps ((pointer-vars symbol-listp))
+(define atc-gen-diff-objdes-hyps ((pointer-vars symbol-listp))
   :returns (hyps true-listp)
-  :short "Generate hypotheses saying that pointers are distinct."
+  :short "Generate hypotheses saying that object designator in the pointers
+          are distinct."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4513,8 +4514,8 @@
      by going through the pointer variables involved in
      the correctness theorem of the C function or loop.
      More precisely, we generate hypotheses saying that
-     the addresses in the pointers are distinct.
-     We need the addresses to be distinct,
+     the object designate in the pointers are distinct.
+     We need the object designate to be distinct,
      so that they are two different arrays or structures
      in our model of the heap.
      The other component of a pointer (see @(tsee pointer)) is a type,
@@ -4523,9 +4524,9 @@
   (b* (((when (endp pointer-vars)) nil)
        (var (car pointer-vars))
        (hyps (loop$ for var2 in (cdr pointer-vars)
-                    collect `(not (equal (value-pointer->address ,var)
-                                         (value-pointer->address ,var2)))))
-       (more-hyps (atc-gen-diff-address-hyps (cdr pointer-vars))))
+                    collect `(not (equal (value-pointer->designator ,var)
+                                         (value-pointer->designator ,var2)))))
+       (more-hyps (atc-gen-diff-objdes-hyps (cdr pointer-vars))))
     (append hyps more-hyps))
   :prepwork ((local (in-theory (enable acl2::loop-book-theory)))))
 
@@ -4585,8 +4586,8 @@
        ((unless (type-case type :pointer))
         (raise "Internal error: affected formal ~x0 has type ~x1."
                formal type)))
-    `(write-object (value-pointer->address ,(cdr (assoc-eq formal
-                                                           pointer-subst)))
+    `(write-object (value-pointer->designator ,(cdr (assoc-eq formal
+                                                              pointer-subst)))
                    ,(add-suffix-to-fn formal "-NEW")
                    ,(atc-gen-cfun-final-compustate (cdr affect)
                                                    typed-formals
@@ -4756,7 +4757,7 @@
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var nil))
        (diff-pointer-hyps
-        (atc-gen-diff-address-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-diff-objdes-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
@@ -5741,7 +5742,7 @@
        (mod-var (car mod-vars))
        (ptr (cdr (assoc-eq mod-var pointer-subst))))
     (if ptr
-        `(write-object (value-pointer->address ,ptr)
+        `(write-object (value-pointer->designator ,ptr)
                        ,(add-suffix-to-fn mod-var "-NEW")
                        ,(atc-gen-loop-final-compustate (cdr mod-vars)
                                                        pointer-subst
@@ -5795,7 +5796,7 @@
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (diff-pointer-hyps
-        (atc-gen-diff-address-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-diff-objdes-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (equal ,fenv-var (init-fun-env ,prog-const))
@@ -5964,7 +5965,7 @@
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (diff-pointer-hyps
-        (atc-gen-diff-address-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-diff-objdes-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (equal ,fenv-var (init-fun-env ,prog-const))
@@ -6332,7 +6333,8 @@
                        (pointerp ptr)
                        (value-pointer-addressp ptr)
                        (equal struct
-                              (read-object (value-pointer->address ptr) compst))
+                              (read-object (value-pointer->designator ptr)
+                                           compst))
                        (value-case struct :struct)
                        (equal (value-pointer->reftype ptr)
                               (type-struct (ident ,(ident->name tag))))
@@ -6464,14 +6466,14 @@
                        (pointerp ptr)
                        (value-pointer-addressp ptr)
                        (equal struct
-                              (read-object (value-pointer->address ptr)
+                              (read-object (value-pointer->designator ptr)
                                            compst1))
                        (value-case struct :struct)
                        (equal (value-pointer->reftype ptr)
                               (type-of-value struct))
                        (,recognizer struct))
                   (equal (exec-expr-asg e compst fenv limit)
-                         (write-object (value-pointer->address ptr)
+                         (write-object (value-pointer->designator ptr)
                                        (,writer val struct)
                                        compst1))))
        (hints `(("Goal"
@@ -6532,7 +6534,8 @@
                                (target (expr-memberp->target left))
                                (ptr (read-var (c::expr-ident->get target)
                                               compst1))
-                               (struct (read-object (value-pointer->address ptr)
+                               (struct (read-object (value-pointer->designator
+                                                     ptr)
                                                     compst1)))
                             struct))))))
        ((mv event &) (evmac-generate-defthm thm-name
