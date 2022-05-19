@@ -800,7 +800,7 @@
 (defthm clr-of-initialize-one-dim-array-same
   (equal (clr ad (jvm::initialize-one-dim-array ad type contents heap))
          (clr ad heap))
-  :hints (("Goal" :in-theory (e/d (JVM::INITIALIZE-ONE-DIM-ARRAY) ()))))
+  :hints (("Goal" :in-theory (enable jvm::initialize-one-dim-array))))
 
 (defopeners gen-init-bindings)
 

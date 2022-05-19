@@ -4369,6 +4369,7 @@
                   0))
   :hints (("Goal" :in-theory (enable getbit-too-high))))
 
+;; this is x AND NOT(x) = 0 when we represent the NOT as an XOR with ones
 (defthm bvand-of-bvxor-of-ones-same
   (implies (and (syntaxp (and (quotep k)            ;new
                               (quotep size)))
@@ -4378,6 +4379,7 @@
   :hints (("Goal" :in-theory (enable ;BVXOR-ALL-ONES-GEN
                               bvxor-all-ones-helper-alt))))
 
+;; this is NOT(x) AND x = 0 when we represent the NOT as an XOR with ones
 (defthm bvand-of-bvxor-of-ones-same-alt
   (implies (and (syntaxp (and (quotep k) ;new
                               (quotep size)))
@@ -7383,19 +7385,6 @@
   (equal (bvand size x (repeatbit size 1))
          (bvchop size x))
   :hints (("Goal" :in-theory (enable repeatbit))))
-
-;todo: compare to the other variants of this rule
-(defthm bvchop-of-bvsx3
-  (implies (and (<= n old-size)
-                (< 0 old-size)
-                (<= old-size new-size)
-                (natp n)
-                (natp new-size)
-                (natp old-size))
-           (equal (bvchop n (bvsx new-size old-size val))
-                  (bvchop n val)))
-  :hints (("Goal" :cases ((equal n old-size))
-           :in-theory (enable bvsx))))
 
 (defthmd equal-of-logext
   (implies (and ;(integerp x)

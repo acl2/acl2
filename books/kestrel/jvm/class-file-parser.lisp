@@ -715,9 +715,7 @@
                 (constant-pool-entryp val)
                 (constant-poolp constant-pool))
            (constant-poolp (update-entriesi index val constant-pool)))
-  :hints (("Goal" :in-theory (e/d (entries-length update-entriesi constant-poolp entriesp)
-                                  ()))))
-
+  :hints (("Goal" :in-theory (enable entries-length update-entriesi constant-poolp entriesp))))
 
 ;; (defthmd alistp-of-lookup-equal-when-constant-poolp
 ;;   (implies (constant-poolp cp)
@@ -3415,8 +3413,7 @@
   (implies (and (raw-method-infosp raw-method-infos)
                 (jvm::method-info-alistp acc))
            (jvm::method-info-alistp (make-method-info-alist raw-method-infos acc)))
-  :hints (("Goal" :in-theory (e/d (make-method-info-alist RAW-METHOD-INFOSP)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable make-method-info-alist RAW-METHOD-INFOSP))))
 
 ;;;
 ;;; make-class-info-from-raw-parsed-class

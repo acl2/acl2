@@ -819,7 +819,7 @@
   (implies (and (jvm-statep s)
                 (acl2::all-thread-designatorp sched))
            (jvm-statep (run sched s)))
-  :hints (("goal" :in-theory (e/d (run) ()))))
+  :hints (("goal" :in-theory (enable run))))
 
 ;move
 (defthm addressp-of-myif (equal (jvm::addressp (myif test tp ep)) (myif test (addressp tp) (addressp ep))) :hints (("Goal" :in-theory (enable myif))))
