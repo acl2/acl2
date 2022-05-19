@@ -897,12 +897,7 @@
      so it does not matter the order of the disjoint objects
      in the hypotheses of the rules vs. the available hypothesis
      during the symbolic execution
-     (i.e. commutativity normalizes them, via its loop stopper).")
-   (xdoc::p
-    "We include the rule saying that
-     @(tsee value-pointer->designator) returns an object designator,
-     needed to discharge the @(tsee objdesignp) hypotheses
-     of the rule @('write-object-okp-of-update-object') below."))
+     (i.e. commutativity normalizes them, via its loop stopper)."))
 
   (define write-object-okp ((objdes objdesignp)
                             (val valuep)
@@ -1024,10 +1019,11 @@
      this is similar to the interaction
      between @(tsee read-var) and @(tsee update-var).")
    (xdoc::p
-    "We include the rule saying that
-     @(tsee value-pointer->designator) returns an object designator,
-     needed to discharge the @(tsee objdesignp) hypotheses
-     of the rule @('read-object-of-update-object') below."))
+    "We include the rule for commutativity of @(tsee object-disjointp),
+     so it does not matter the order of the disjoint objects
+     in the hypotheses of the rules vs. the available hypothesis
+     during the symbolic execution
+     (i.e. commutativity normalizes them, via its loop stopper)."))
 
   (defruled read-object-of-add-frame
     (equal (read-object objdes (add-frame fun compst))
@@ -1116,10 +1112,11 @@
      In particular, it uses two possibly different computation states,
      for the reasons explained for @('update-var-of-read-var').")
    (xdoc::p
-    "We include the rule saying that
-     @(tsee value-pointer->designator) returns an object designator,
-     needed to discharge the @(tsee objdesignp) hypotheses
-     of the rule @('read-object-of-update-object') below."))
+    "We include the rule for commutativity of @(tsee object-disjointp),
+     so it does not matter the order of the disjoint objects
+     in the hypotheses of the rules vs. the available hypothesis
+     during the symbolic execution
+     (i.e. commutativity normalizes them, via its loop stopper)."))
 
   (defruled update-object-of-add-frame
     (equal (update-object objdes obj (add-frame fun compst))
@@ -1169,8 +1166,6 @@
                           (and (symbolp ptr)
                                (symbolp ptr2)
                                (symbol< ptr2 ptr)))))
-          (objdesignp objdes)
-          (objdesignp objdes2)
           (object-disjointp objdes objdes2))
      (equal (update-object objdes obj (update-object objdes2 obj2 compst))
             (update-object objdes2 obj2 (update-object objdes obj compst))))
@@ -1186,8 +1181,6 @@
                                (ffn-symb-p ptr2 'read-var)
                                (<< (fargn ptr2 1)
                                    (fargn ptr 1))))))
-          (objdesignp objdes)
-          (objdesignp objdes2)
           (object-disjointp objdes objdes2))
      (equal (update-object objdes obj (update-object objdes2 obj2 compst))
             (update-object objdes2 obj2 (update-object objdes obj compst))))
@@ -1195,7 +1188,6 @@
 
   (defruled update-object-of-read-object-same
     (implies (and (syntaxp (symbolp compst))
-                  (objdesignp objdes)
                   (compustatep compst1)
                   (valuep (read-object objdes compst))
                   (equal (read-object objdes compst)
@@ -1222,8 +1214,7 @@
       update-object-of-update-object-less-symbol
       update-object-of-update-object-less-ident
       update-object-of-read-object-same
-      object-disjointp-commutative
-      objdesignp-of-value-pointer->designator)))
+      object-disjointp-commutative)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
