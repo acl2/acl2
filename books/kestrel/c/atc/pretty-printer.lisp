@@ -410,6 +410,8 @@
   :returns (part msgp)
   :short "Pretty-print a unary operator."
   (unop-case op
+             :address "&"
+             :indir "*"
              :plus "+"
              :minus "-"
              :bitnot "~~" ; a single ~ is interpreted as a directive
