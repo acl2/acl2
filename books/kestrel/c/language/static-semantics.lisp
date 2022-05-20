@@ -767,15 +767,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-unary ((op unopp) (arg-expr exprp) (arg-type typep))
-  :returns (type type-resultp)
+(define check-unary ((op unopp) (arg-expr exprp) (arg-etype expr-typep))
+  :returns (etype expr-type-resultp)
   :short "Check the application of a unary operator to an expression."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check @('arg-type') against @('op');
+    "We check @('arg-etype') against @('op');
      @('arg-expr') is used just for errors.
      We return the type of the unary expression.")
+   (xdoc::p
+    "The operand of the address operator must be an lvalue [C:6.5.3.2/1].
+     The text in [C:6.5.3.2/1] talks about lvalues
+     but singles out postfix @('[]') expressions and unary @('*') expressions,
+     even though those are just special cases of lvalues;
+     perhaps this has to do with the restriction about
+     the bit-field and the @('register'),
+     but since none of these are covered in our current C model,
+     we can just say that, for us, the argument of @('&') must be an lvalue.
+     This is why this ACL2 function takes an expression type, not just a type,
+     for the argument:
+     it is so that we can check the @('&') operator;
+     checking the other operators only involves the type.
+     If the type of the argument is @('T'),
+     the type of the result is pointer to @('T')
+     [C:6.5.3.2/3];
+     the expression is not an lvalue.")
+   (xdoc::p
+    "The operand of the indirection operator must be a pointer [C:6.5.3.2/2].
+     The result has the referenced type,
+     and the expression is an lvalue
+     [C:6.5.3.2/4].
+     We return an expression type, not a type,
+     so that we can represent the fact that
+     an indirection expression is an lvalue.
+     All the other unary expressions are not lvalues.")
    (xdoc::p
     "For unary plus and minus,
      the operand must be arithmetic,
@@ -789,28 +815,54 @@
      the operand must be scalar
      and the result is @('int') -- 0 or 1.")
    (xdoc::p
-    "We reject address and indirection for now."))
+    "For all operators except @('&'), the argument is subjected to
+     lvalue conversion [C:6.3.2.1/2]
+     and array-to-pointer conversion [C:6.3.2.1/3].
+     In our static semantics, lvalue conversion just amounts to
+     ignoring the @('lvalue') flag of the expression type."))
   (case (unop-kind op)
-    (:address (error :todo))
-    (:indir (error :todo))
-    ((:plus :minus) (if (type-arithmeticp arg-type)
-                        (promote-type arg-type)
-                      (error (list :unary-mistype
-                               (unop-fix op) (expr-fix arg-expr)
-                               :required :arithmetic
-                               :supplied (type-fix arg-type)))))
-    (:bitnot (if (type-integerp arg-type)
-                 (promote-type arg-type)
-               (error (list :unary-mistype
-                        (unop-fix op) (expr-fix arg-expr)
-                        :required :integer
-                        :supplied (type-fix arg-type)))))
-    (:lognot (if (type-scalarp arg-type)
-                 (type-sint)
-               (error (list :unary-mistype
-                        (unop-fix op) (expr-fix arg-expr)
-                        :required :scalar
-                        :supplied (type-fix arg-type)))))
+    (:address (if (expr-type->lvalue arg-etype)
+                  (make-expr-type
+                   :type (type-pointer (expr-type->type arg-etype))
+                   :lvalue nil)
+                (error (list :unary-mistype
+                             (unop-fix op) (expr-fix arg-expr)
+                             :required :lvalue
+                             :supplied (expr-type-fix arg-etype)))))
+    (:indir (b* ((arg-type (expr-type->type arg-etype))
+                 (arg-type (apconvert-type arg-type)))
+              (if (type-case arg-type :pointer)
+                  (make-expr-type :type (type-pointer->to arg-type)
+                                  :lvalue nil)
+                (error (list :unary-mistype
+                             (unop-fix op) (expr-fix arg-expr)
+                             :required :pointer
+                             :supplied arg-type)))))
+    ((:plus :minus) (b* ((arg-type (expr-type->type arg-etype))
+                         (arg-type (apconvert-type arg-type)))
+                      (if (type-arithmeticp arg-type)
+                          (make-expr-type :type (promote-type arg-type)
+                                          :lvalue nil)
+                        (error (list :unary-mistype
+                                     (unop-fix op) (expr-fix arg-expr)
+                                     :required :arithmetic
+                                     :supplied (type-fix arg-type))))))
+    (:bitnot (b* ((arg-type (expr-type->type arg-etype))
+                  (arg-type (apconvert-type arg-type)))
+               (if (type-integerp arg-type)
+                   (make-expr-type :type (promote-type arg-type) :lvalue nil)
+                 (error (list :unary-mistype
+                              (unop-fix op) (expr-fix arg-expr)
+                              :required :integer
+                              :supplied (type-fix arg-type))))))
+    (:lognot (b* ((arg-type (expr-type->type arg-etype))
+                  (arg-type (apconvert-type arg-type)))
+               (if (type-scalarp arg-type)
+                   (make-expr-type :type (type-sint) :lvalue nil)
+                 (error (list :unary-mistype
+                              (unop-fix op) (expr-fix arg-expr)
+                              :required :scalar
+                              :supplied (type-fix arg-type))))))
     (t (error (impossible))))
   :hooks (:fix))
 
@@ -988,7 +1040,14 @@
      An array subscripting expression is always an lvalue;
      recall that it is like a form of the @('*') dereferencing expression.")
    (xdoc::p
-    "For unary and binary operators, we apply
+    "For unary operators,
+     we do not perform any lvalue or array-to-pointer conversion here,
+     because that is done in @(tsee check-unary).
+     We check the argument,
+     pass the expression type to @(tsee check-unary),
+     and forward the returned expression type (or error).")
+   (xdoc::p
+    "For binary operators, we apply
      both lvalue conversion and array-to-pointer conversion to the operand(s).
      The latter is needed because some operators work on scalars,
      and array-to-pointer conversion may produce a scalar.
@@ -1083,12 +1142,8 @@
      :predec (error (list :expr-non-pure e))
      :unary (b* ((arg-etype (check-expr-pure e.arg vartab tagenv))
                  ((when (errorp arg-etype))
-                  (error (list :unary-error arg-etype)))
-                 (arg-type (expr-type->type arg-etype))
-                 (arg-type (apconvert-type arg-type))
-                 (type (check-unary e.op e.arg arg-type))
-                 ((when (errorp type)) type))
-              (make-expr-type :type type :lvalue nil))
+                  (error (list :unary-error arg-etype))))
+              (check-unary e.op e.arg arg-etype))
      :cast (b* ((arg-etype (check-expr-pure e.arg vartab tagenv))
                 ((when (errorp arg-etype))
                  (error (list :cast-error arg-etype)))
