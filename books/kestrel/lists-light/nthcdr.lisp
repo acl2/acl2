@@ -207,18 +207,22 @@
   :hints (("Goal" :in-theory (enable nthcdr append))))
 
 ;There is already an NTHCDR-OF-CDR in std/lists/nthcdr.lisp.
-(defthm nthcdr-of-cdr-combine
+(defthmd nthcdr-of-cdr-combine
   (implies (natp n)
            (equal (nthcdr n (cdr lst))
                   (nthcdr (+ 1 n) lst)))
   :hints (("Goal" :in-theory (enable nthcdr))))
 
-(defthm nthcdr-of-cdr-combine-strong
+(theory-invariant (incompatible (:definition nthcdr) (:rewrite nthcdr-of-cdr-combine)))
+
+(defthmd nthcdr-of-cdr-combine-strong
   (equal (nthcdr n (cdr lst))
          (if (natp n)
              (nthcdr (+ 1 n) lst)
            (cdr lst)))
   :hints (("Goal" :in-theory (enable nthcdr))))
+
+(theory-invariant (incompatible (:definition nthcdr) (:rewrite nthcdr-of-cdr-combine-strong)))
 
 ;; The above may loop with (:definition nthcdr) ?
 

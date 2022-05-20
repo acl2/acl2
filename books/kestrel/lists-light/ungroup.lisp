@@ -111,7 +111,7 @@
            (equal (nthcdr n (ungroup m x))
                   (ungroup m (nthcdr (floor n m) x))))
   :hints (("Goal" :induct (ungroup-induct x n m)
-           :in-theory (enable posp ungroup)
+           :in-theory (enable posp ungroup nthcdr-of-cdr-combine-strong)
            :do-not '(generalize eliminate-destructors))))
 
 (defthm nth-of-ungroup

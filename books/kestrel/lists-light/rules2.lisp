@@ -319,7 +319,7 @@
            (equal (append (subrange start end lst) (nthcdr n lst))
                   (nthcdr (+ n -1 (- start end)) lst)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable take subrange nthcdr))))
+           :in-theory (enable take subrange nthcdr-of-cdr-combine-strong))))
 
 ;(include-book "../library-wrappers/bags") ;fixme break dependency on bags?
 
@@ -769,7 +769,7 @@
                 (natp end))
            (equal (SUBRANGE start end L)
                   (repeat (+ 1 end (- start)) nil)))
-  :hints (("Goal" :in-theory (e/d (SUBRANGE take) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
+  :hints (("Goal" :in-theory (e/d (SUBRANGE take nthcdr-of-cdr-combine) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
 
 ;seems expensive
 (defthmd nth-non-nil-rule
@@ -1679,7 +1679,7 @@
                 (natp start))
            (equal (subrange start end (update-nth n val lst))
                   (update-nth (- n start) val (subrange start end lst))))
-  :hints (("Goal" :in-theory (e/d (take update-nth-rewrite subrange)
+  :hints (("Goal" :in-theory (e/d (take update-nth-rewrite subrange nthcdr-of-cdr-combine)
                                   (NTHCDR-OF-TAKE-BECOMES-SUBRANGE
                                    CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                                    TAKE-OF-CDR-BECOMES-SUBRANGE

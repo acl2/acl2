@@ -392,8 +392,7 @@
     (e/d (update-subrange
           ;;subrange
           update-nth-of-update-subrange-diff-back natp
-          ;;NTHCDR
-          )
+          nthcdr)
          (update-nth-of-update-subrange-diff
           ;;anti-subrange
           )))))
