@@ -316,6 +316,8 @@
   (b* ((arg (value-result-fix arg))
        ((when (errorp arg)) arg))
     (unop-case op
+               :address (error :todo)
+               :indir (error :todo)
                :plus (exec-plus arg)
                :minus (exec-minus arg)
                :bitnot (exec-bitnot arg)
