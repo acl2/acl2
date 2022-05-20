@@ -111,7 +111,7 @@
                   :measure (nfix (+ 1 i))))
   (if (not (natp i))
       nil
-    (cons `(,i (bvcat ,(- width i) x ,i 0))
+    (cons `(,i (bvcat ,(- width i) x ,i 0)) ; or we could just put in a call of bvshl where the shift-amount is a constant, but then we'd need support for bvshl in the STP translation
           (bvshl-cases-term-fn-aux (+ -1 i) width))))
 
 (defund bvshl-cases-term-fn (width)
@@ -124,7 +124,8 @@
 
 ;pretty gross
 (defthmd bvshl-32-cases
-  (implies (and (natp shift-amount)
+  (implies (and (syntaxp (not (quotep shift-amount)))
+                (natp shift-amount)
                 (<= shift-amount 32))
            (equal (bvshl 32 x shift-amount)
                   (bvshl-cases-term 32)))
@@ -132,7 +133,8 @@
 
 ;pretty gross
 (defthmd bvshl-64-cases
-  (implies (and (natp shift-amount)
+  (implies (and (syntaxp (not (quotep shift-amount)))
+                (natp shift-amount)
                 (<= shift-amount 64))
            (equal (bvshl 64 x shift-amount)
                   (bvshl-cases-term 64)))

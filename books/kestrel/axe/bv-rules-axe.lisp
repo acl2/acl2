@@ -700,7 +700,7 @@
                   (+ y (+ x z))))
   :hints (("Goal" :in-theory (enable))))
 
-(defthmd myif-becomes-bvif
+(defthmd myif-becomes-bvif-1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced xsize x)
@@ -709,7 +709,7 @@
                   (bvif (max xsize ysize) test x y)))
   :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
 
-(defthmd myif-becomes-bvif-2
+(defthmd myif-becomes-bvif-2-axe
   (implies (and (unsigned-byte-p xsize x) ;xsize is a free variable
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced ysize y))
@@ -717,7 +717,7 @@
                   (bvif (max xsize ysize) test x y)))
   :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
 
-(defthmd myif-becomes-bvif-3
+(defthmd myif-becomes-bvif-3-axe
   (implies (and (unsigned-byte-p xsize x) ;xsize is a free variable
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced ysize y))
@@ -1617,6 +1617,7 @@
   :hints (("Goal" :use (:instance bvand-of-constant-tighten (newsize ksize))
            :in-theory (disable bvand-of-constant-tighten))))
 
+; not really and axe rule
 (defthmd bvshl-32-cases-dag ;just use the non-dag-version?
   (implies (and (syntaxp (not (quotep shift-amount)))
                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshl to chop its shift amount?
@@ -1724,6 +1725,7 @@
                                    ;UNSIGNED-BYTE-P-FROM-BOUNDS
 )))))
 
+; not really and axe rule
 (defthmd bvshr-32-cases-dag;just use the non-dag-version?
   (implies (and (syntaxp (not (quotep shift-amount)))
                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshr to chop its shift amount?
