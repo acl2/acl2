@@ -203,3 +203,8 @@
            (equal (update-nth key val lst)
                   (bv-array-write width (len lst) key val lst)))
   :hints (("Goal" :in-theory (enable bv-array-write-opener update-nth2))))
+
+(defthm bv-array-write-of-true-list-fix
+  (equal (bv-array-write elem-size len index val (true-list-fix lst))
+         (bv-array-write elem-size len index val lst))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))

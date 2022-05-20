@@ -2720,15 +2720,12 @@
 
 ;(local (in-theory (disable BVPLUS-RECOLLAPSE)))
 
-(defun indu (n start vals)
-  (if (endp vals)
-      (list n start vals)
-    (indu (+ -1 n) (+ 1 start) (cdr vals))))
+;; (defun indu (n start vals)
+;;   (if (endp vals)
+;;       (list n start vals)
+;;     (indu (+ -1 n) (+ 1 start) (cdr vals))))
 
 ;BOZO think about this
-(theory-invariant (incompatible (:definition nthcdr ) (:rewrite NTHCDR-OF-CDR-COMBINE)))
-
-
 
 ;bozo gen
 (defthm subrange-of-update-subrange-not-quite-skew
