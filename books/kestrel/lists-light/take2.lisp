@@ -132,6 +132,11 @@
   :hints (("Goal" :induct (double-sub1-induct n1 n2)
            :in-theory (enable take))))
 
+(defthm take-of-repeat-same
+  (equal (take n (repeat n x))
+         (repeat n x))
+  :hints (("Goal" :in-theory (enable take))))
+
 ;move
 (defthm take-cons-2
   (implies (not (zp n))

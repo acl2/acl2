@@ -217,7 +217,7 @@
                       (nthcdr (len x) z)))
     :hints (("goal" :do-not '(generalize eliminate-destructors)
              :induct (prefixp x z)
-             :in-theory (enable prefixp append)))))
+             :in-theory (enable prefixp append nthcdr)))))
 
   (local
    (defthmd prefixp-of-append-arg1-back
