@@ -578,7 +578,14 @@
 (define read-object ((objdes objdesignp) (compst compustatep))
   :returns (obj value-resultp)
   :short "Read an object in the computation state."
-  (b* ((addr (objdesign->get objdes))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only accept top-level object designators."))
+  (b* (((unless (objdesign-case objdes :address))
+        (error (list :non-top-level-object-designator-not-supported
+                     (objdesign-fix objdes))))
+       (addr (objdesign-address->get objdes))
        (heap (compustate->heap compst))
        (addr+obj (omap::in addr heap))
        ((unless (consp addr+obj))
@@ -595,12 +602,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "For now we only accept top-level object designators.")
+   (xdoc::p
     "We check whether the heap has an object at the address,
      of the same type as the new object.
-     Note that the types include the number of elements.")
+     Note that, for arrays, the type includes the number of elements.")
    (xdoc::p
     "If this checks succeed, we overwrite the object in the heap."))
-  (b* ((addr (objdesign->get objdes))
+  (b* (((unless (objdesign-case objdes :address))
+        (error (list :non-top-level-object-designator-not-supported
+                     (objdesign-fix objdes))))
+       (addr (objdesign-address->get objdes))
        (heap (compustate->heap compst))
        (addr+obj (omap::in addr heap))
        ((unless (consp addr+obj))
