@@ -16,6 +16,8 @@
 (include-book "dag-arrays")
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 
+;; NOTE: See new version in node-replacement-array3.lisp.
+
 ;; TODO: Speed up the known boolean checking (e.g., by using a property list world).
 
 ;;;
