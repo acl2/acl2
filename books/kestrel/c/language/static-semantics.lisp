@@ -248,6 +248,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define struct-member-lookup ((tag identp) (mem identp) (tagenv tag-envp))
+  :returns (type type-resultp)
+  :short "Look up a member in a structure type in the tag environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We first look up the tag, ensuring we find a structure type.
+     Then we look for the member in the structure type,
+     returning its type if successful.
+     We propagate errors.")
+   (xdoc::p
+    "This is used to check member expressions,
+     both the @('.') and the @('->') kind."))
+  (b* ((info (tag-env-lookup tag tagenv))
+       ((when (tag-info-option-case info :none))
+        (error (list :struct-not-found
+                     (ident-fix tag)
+                     (tag-env-fix tagenv))))
+       (info (tag-info-option-some->val info))
+       ((unless (tag-info-case info :struct))
+        (error (list :tag-not-struct
+                     (ident-fix tag)
+                     info)))
+       (members (tag-info-struct->members info))
+       (type (member-type-lookup mem members))
+       ((when (type-option-case type :none))
+        (error (list :member-not-found
+                     (ident-fix tag)
+                     (ident-fix mem)
+                     members))))
+    (type-option-some->val type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defunit wellformed
   :short "Fixtype of the well-formedness indicator."
   :long
@@ -265,6 +300,294 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defresult wellformed "the @(tsee wellformed) indicator")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod expr-type
+  :short "Fixtype of expression types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Certain C expressions are lvalues [C:6.3.2/1],
+     i.e. they evaluate to object designations rather than values [C:6.5/1].
+     In many cases, lvalue conversion [C:6.3.2/2]
+     turns an object designation into the value of the designated object,
+     but some operators (e.g. assignments) require lvalues.
+     Thus, the static semantics must calculate, for each expression,
+     not only its type, but also whether it is an lvalue or not.
+     This information is captured via a type and an lvalue flag.")
+   (xdoc::p
+    "Expressions may also evaluate to function designations [C:6.5/1].
+     We do not cover that case for now,
+     because our subset of C makes a limited use of functions;
+     in particular, it has no function pointers.
+     However, in the future this fixtype could be extended accordingly."))
+  ((type type)
+   (lvalue bool))
+  :tag :expr-type
+  :pred expr-typep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult expr-type "expression types")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod stmt-type
+  :short "Fixtype of statement types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here we use the word ``type'' in a broad sense,
+     namely to describe the information inferred by the static semantics
+     about a statement (or block item or block).
+     The information consists of:")
+   (xdoc::ul
+    (xdoc::li
+     "A non-empty set of types that describes
+      the possible values returned by the statement.
+      These are determined by the @('return') statements;
+      in the presence of conditionals,
+      the possible types in the two branches are merged (i.e. unioned).
+      The type @('void') is used to describe statements
+      that do not return a value,
+      but instead transfer control to the next statement (if any).")
+    (xdoc::li
+     "A possibly updated variable table.
+      This is updated by block items that are declarations.
+      We actually only need to return possibly updated variable tables
+      from the ACL2 function @(tsee check-block-item);
+      the ACL2 functions @(tsee check-stmt) and @(tsee check-block-item-list)
+      could just return a set of optional types (see above).
+      However, for uniformity we have all three functions
+      return also a possibly updated variable table.")))
+  ((return-types type-set :reqfix (if (set::empty return-types)
+                                      (set::insert (type-void) nil)
+                                    return-types))
+   (variables var-table))
+  :require (not (set::empty return-types))
+  :pred stmt-typep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult stmt-type "statement types")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule not-stmt-typep-of-error
+  (not (stmt-typep (error x)))
+  :enable (error stmt-typep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod funtab+tagenv
+  :short "Fixtype of pairs consisting of
+          a function table and a tag environment."
+  ((funs fun-tablep)
+   (tags tag-envp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult funtab+tagenv
+  "pairs consisting of a function table and a tag environment")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define promote-type ((type typep))
+  :returns (promoted-type typep)
+  :short "Apply the integer promotions to a type [C:6.3.1.1/2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the static counterpart of
+     the integer promotions that are applied to values:
+     statically, they are applied to types.")
+   (xdoc::p
+    "These only modify the character and short types;
+     all the other types are unchanged.")
+   (xdoc::p
+    "If @('int') can represent all the values of the original type,
+     the promotion is to @('int'):
+     this is always the case for @('signed char') and @('signed short'),
+     but not necessarily for @('char') (which may be signed or not),
+     @('unsigned char'), and @('unsigned short').
+     In the unlikely but allowed case that
+     a byte consists of 16 bits and that @('int') also consists of 16 bits,
+     some @('unsigned char') values are not representable in @('int').
+     Otherwise, the promotion is to @('unsigned int').")
+   (xdoc::p
+    "The plain @('char') type is not supported for now. It will be soon."))
+  (case (type-kind type)
+    (:char (prog2$ (raise "Internal error: plain char type not supported.")
+                   (type-sint)))
+    (:schar (type-sint))
+    (:uchar (if (<= (uchar-max) (sint-max)) (type-sint) (type-uint)))
+    (:sshort (type-sint))
+    (:ushort (if (<= (ushort-max) (sint-max)) (type-sint) (type-uint)))
+    (t (type-fix type)))
+  :hooks (:fix)
+  ///
+
+  (defrule type-integerp-of-promote-type
+    (equal (type-integerp (promote-type type))
+           (type-integerp type))
+    :enable (type-integerp type-unsigned-integerp type-signed-integerp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uaconvert-types ((type1 typep) (type2 typep))
+  :guard (and (type-arithmeticp type1)
+              (type-arithmeticp type2))
+  :returns (type typep)
+  :short "Apply the usual arithmetic conversions to two arithmetic types
+          [C:6.3.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These determine a common type from the two types,
+     which is also the type of the result of
+     a binary operator applied to operands of the two types."))
+  (b* ((type1 (promote-type type1))
+       (type2 (promote-type type2))
+       ((acl2::fun (irr-type)) (ec-call (type-fix :irrelevant))))
+    (case (type-kind type1)
+      (:sllong (case (type-kind type2)
+                 (:sllong (type-sllong))
+                 (:slong (type-sllong))
+                 (:sint (type-sllong))
+                 (:ullong (type-ullong))
+                 (:ulong (if (>= (sllong-max) (ulong-max))
+                             (type-sllong)
+                           (type-ullong)))
+                 (:uint (if (>= (sllong-max) (uint-max))
+                            (type-sllong)
+                          (type-ullong)))
+                 (t (prog2$ (impossible) (irr-type)))))
+      (:slong (case (type-kind type2)
+                (:sllong (type-sllong))
+                (:slong (type-slong))
+                (:sint (type-slong))
+                (:ullong (type-ullong))
+                (:ulong (type-ulong))
+                (:uint (if (>= (slong-max) (uint-max))
+                           (type-slong)
+                         (type-ulong)))
+                (t (prog2$ (impossible) (irr-type)))))
+      (:sint (case (type-kind type2)
+               (:sllong (type-sllong))
+               (:slong (type-slong))
+               (:sint (type-sint))
+               (:ullong (type-ullong))
+               (:ulong (type-ulong))
+               (:uint (type-uint))
+               (t (prog2$ (impossible) (irr-type)))))
+      (:ullong (case (type-kind type2)
+                 (:sllong (type-ullong))
+                 (:slong (type-ullong))
+                 (:sint (type-ullong))
+                 (:ullong (type-ullong))
+                 (:ulong (type-ullong))
+                 (:uint (type-ullong))
+                 (t (prog2$ (impossible) (irr-type)))))
+      (:ulong (case (type-kind type2)
+                (:sllong (if (>= (sllong-max) (ulong-max))
+                             (type-sllong)
+                           (type-ullong)))
+                (:slong (type-ulong))
+                (:sint (type-ulong))
+                (:ullong (type-ullong))
+                (:ulong (type-ulong))
+                (:uint (type-ulong))
+                (t (prog2$ (impossible) (irr-type)))))
+      (:uint (case (type-kind type2)
+               (:sllong (if (>= (sllong-max) (uint-max))
+                            (type-sllong)
+                          (type-ullong)))
+               (:slong (if (>= (slong-max) (uint-max))
+                           (type-slong)
+                         (type-ulong)))
+               (:sint (type-uint))
+               (:ullong (type-ullong))
+               (:ulong (type-ulong))
+               (:uint (type-uint))
+               (t (prog2$ (impossible) (irr-type)))))
+      (t (prog2$ (impossible) (irr-type)))))
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-realp
+                                           type-integerp
+                                           type-signed-integerp
+                                           type-unsigned-integerp
+                                           promote-type)))
+  :hooks (:fix)
+  ///
+
+  (defruled uaconvert-types-when-same
+    (implies (and (type-arithmeticp type1)
+                  (type-arithmeticp type2)
+                  (type-equiv type1 type2))
+             (equal (uaconvert-types type1 type2)
+                    (promote-type type1)))
+    :enable (type-arithmeticp
+             type-realp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp
+             promote-type))
+
+  (defruled uaconvert-types-symmetry
+    (implies (and (type-arithmeticp type1)
+                  (type-arithmeticp type2))
+             (equal (uaconvert-types type1 type2)
+                    (uaconvert-types type2 type1)))
+    :enable (type-arithmeticp
+             type-realp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp
+             promote-type))
+
+  (defrule type-integerp-of-uaconvert-types
+    (implies (and (type-arithmeticp type1)
+                  (type-arithmeticp type2))
+             (equal (type-integerp (uaconvert-types type1 type2))
+                    (and (type-integerp type1)
+                         (type-integerp type2))))
+    :enable (type-arithmeticp
+             type-realp
+             type-integerp
+             type-unsigned-integerp
+             type-signed-integerp
+             promote-type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define apconvert-type ((type typep))
+  :returns (type1 typep)
+  :short "Convert array type to pointer type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Under certain circumstances,
+     an array is converted to a pointer to the first element of the array
+     [C:6.3.2.1/3].
+     Indeed, arrays are used like pointers most of the time.
+     This conversion is captured, at the level of types, here.
+     Non-array types are left unchanged."))
+  (if (type-case type :array)
+      (type-pointer (type-array->of type))
+    (type-fix type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection apconvert-type-list (x)
+  :guard (type-listp x)
+  :returns (types1 type-listp)
+  :short "Lift @(tsee apconvert-type) to lists."
+  (apconvert-type x)
+  ///
+  (fty::deffixequiv apconvert-type-list
+    :args ((x type-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -444,48 +767,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define promote-type ((type typep))
-  :returns (promoted-type typep)
-  :short "Apply the integer promotions to a type [C:6.3.1.1/2]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are the static counterpart of
-     the integer promotions that are applied to values:
-     statically, they are applied to types.")
-   (xdoc::p
-    "These only modify the character and short types;
-     all the other types are unchanged.")
-   (xdoc::p
-    "If @('int') can represent all the values of the original type,
-     the promotion is to @('int'):
-     this is always the case for @('signed char') and @('signed short'),
-     but not necessarily for @('char') (which may be signed or not),
-     @('unsigned char'), and @('unsigned short').
-     In the unlikely but allowed case that
-     a byte consists of 16 bits and that @('int') also consists of 16 bits,
-     some @('unsigned char') values are not representable in @('int').
-     Otherwise, the promotion is to @('unsigned int').")
-   (xdoc::p
-    "The plain @('char') type is not supported for now. It will be soon."))
-  (case (type-kind type)
-    (:char (prog2$ (raise "Internal error: plain char type not supported.")
-                   (type-sint)))
-    (:schar (type-sint))
-    (:uchar (if (<= (uchar-max) (sint-max)) (type-sint) (type-uint)))
-    (:sshort (type-sint))
-    (:ushort (if (<= (ushort-max) (sint-max)) (type-sint) (type-uint)))
-    (t (type-fix type)))
-  :hooks (:fix)
-  ///
-
-  (defrule type-integerp-of-promote-type
-    (equal (type-integerp (promote-type type))
-           (type-integerp type))
-    :enable (type-integerp type-unsigned-integerp type-signed-integerp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define check-unary ((op unopp) (arg-expr exprp) (arg-type typep))
   :returns (type type-resultp)
   :short "Check the application of a unary operator to an expression."
@@ -532,132 +813,6 @@
                         :supplied (type-fix arg-type)))))
     (t (error (impossible))))
   :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define uaconvert-types ((type1 typep) (type2 typep))
-  :guard (and (type-arithmeticp type1)
-              (type-arithmeticp type2))
-  :returns (type typep)
-  :short "Apply the usual arithmetic conversions to two arithmetic types
-          [C:6.3.1.8]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These determine a common type from the two types,
-     which is also the type of the result of
-     a binary operator applied to operands of the two types."))
-  (b* ((type1 (promote-type type1))
-       (type2 (promote-type type2))
-       ((acl2::fun (irr-type)) (ec-call (type-fix :irrelevant))))
-    (case (type-kind type1)
-      (:sllong (case (type-kind type2)
-                 (:sllong (type-sllong))
-                 (:slong (type-sllong))
-                 (:sint (type-sllong))
-                 (:ullong (type-ullong))
-                 (:ulong (if (>= (sllong-max) (ulong-max))
-                             (type-sllong)
-                           (type-ullong)))
-                 (:uint (if (>= (sllong-max) (uint-max))
-                            (type-sllong)
-                          (type-ullong)))
-                 (t (prog2$ (impossible) (irr-type)))))
-      (:slong (case (type-kind type2)
-                (:sllong (type-sllong))
-                (:slong (type-slong))
-                (:sint (type-slong))
-                (:ullong (type-ullong))
-                (:ulong (type-ulong))
-                (:uint (if (>= (slong-max) (uint-max))
-                           (type-slong)
-                         (type-ulong)))
-                (t (prog2$ (impossible) (irr-type)))))
-      (:sint (case (type-kind type2)
-               (:sllong (type-sllong))
-               (:slong (type-slong))
-               (:sint (type-sint))
-               (:ullong (type-ullong))
-               (:ulong (type-ulong))
-               (:uint (type-uint))
-               (t (prog2$ (impossible) (irr-type)))))
-      (:ullong (case (type-kind type2)
-                 (:sllong (type-ullong))
-                 (:slong (type-ullong))
-                 (:sint (type-ullong))
-                 (:ullong (type-ullong))
-                 (:ulong (type-ullong))
-                 (:uint (type-ullong))
-                 (t (prog2$ (impossible) (irr-type)))))
-      (:ulong (case (type-kind type2)
-                (:sllong (if (>= (sllong-max) (ulong-max))
-                             (type-sllong)
-                           (type-ullong)))
-                (:slong (type-ulong))
-                (:sint (type-ulong))
-                (:ullong (type-ullong))
-                (:ulong (type-ulong))
-                (:uint (type-ulong))
-                (t (prog2$ (impossible) (irr-type)))))
-      (:uint (case (type-kind type2)
-               (:sllong (if (>= (sllong-max) (uint-max))
-                            (type-sllong)
-                          (type-ullong)))
-               (:slong (if (>= (slong-max) (uint-max))
-                           (type-slong)
-                         (type-ulong)))
-               (:sint (type-uint))
-               (:ullong (type-ullong))
-               (:ulong (type-ulong))
-               (:uint (type-uint))
-               (t (prog2$ (impossible) (irr-type)))))
-      (t (prog2$ (impossible) (irr-type)))))
-  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-realp
-                                           type-integerp
-                                           type-signed-integerp
-                                           type-unsigned-integerp
-                                           promote-type)))
-  :hooks (:fix)
-  ///
-
-  (defruled uaconvert-types-when-same
-    (implies (and (type-arithmeticp type1)
-                  (type-arithmeticp type2)
-                  (type-equiv type1 type2))
-             (equal (uaconvert-types type1 type2)
-                    (promote-type type1)))
-    :enable (type-arithmeticp
-             type-realp
-             type-integerp
-             type-signed-integerp
-             type-unsigned-integerp
-             promote-type))
-
-  (defruled uaconvert-types-symmetry
-    (implies (and (type-arithmeticp type1)
-                  (type-arithmeticp type2))
-             (equal (uaconvert-types type1 type2)
-                    (uaconvert-types type2 type1)))
-    :enable (type-arithmeticp
-             type-realp
-             type-integerp
-             type-signed-integerp
-             type-unsigned-integerp
-             promote-type))
-
-  (defrule type-integerp-of-uaconvert-types
-    (implies (and (type-arithmeticp type1)
-                  (type-arithmeticp type2))
-             (equal (type-integerp (uaconvert-types type1 type2))
-                    (and (type-integerp type1)
-                         (type-integerp type2))))
-    :enable (type-arithmeticp
-             type-realp
-             type-integerp
-             type-unsigned-integerp
-             type-signed-integerp
-             promote-type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -761,36 +916,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define apconvert-type ((type typep))
-  :returns (type1 typep)
-  :short "Convert array type to pointer type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Under certain circumstances,
-     an array is converted to a pointer to the first element of the array
-     [C:6.3.2.1/3].
-     Indeed, arrays are used like pointers most of the time.
-     This conversion is captured, at the level of types, here.
-     Non-array types are left unchanged."))
-  (if (type-case type :array)
-      (type-pointer (type-array->of type))
-    (type-fix type))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection apconvert-type-list (x)
-  :guard (type-listp x)
-  :returns (types1 type-listp)
-  :short "Lift @(tsee apconvert-type) to lists."
-  (apconvert-type x)
-  ///
-  (fty::deffixequiv apconvert-type-list
-    :args ((x type-listp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define check-arrsub ((arr-expr exprp) (arr-type typep)
                       (sub-expr exprp) (sub-type typep))
   :returns (type type-resultp)
@@ -820,71 +945,6 @@
                      :required :integer
                      :supplied (type-fix sub-type)))))
     (type-pointer->to arr-type))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod expr-type
-  :short "Fixtype of expression types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Certain C expressions are lvalues [C:6.3.2/1],
-     i.e. they evaluate to object designations rather than values [C:6.5/1].
-     In many cases, lvalue conversion [C:6.3.2/2]
-     turns an object designation into the value of the designated object,
-     but some operators (e.g. assignments) require lvalues.
-     Thus, the static semantics must calculate, for each expression,
-     not only its type, but also whether it is an lvalue or not.
-     This information is captured via a type and an lvalue flag.")
-   (xdoc::p
-    "Expressions may also evaluate to function designations [C:6.5/1].
-     We do not cover that case for now,
-     because our subset of C makes a limited use of functions;
-     in particular, it has no function pointers.
-     However, in the future this fixtype could be extended accordingly."))
-  ((type type)
-   (lvalue bool))
-  :tag :expr-type
-  :pred expr-typep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult expr-type "expression types")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define struct-member-lookup ((tag identp) (mem identp) (tagenv tag-envp))
-  :returns (type type-resultp)
-  :short "Look up a member in a structure type in the tag environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We first look up the tag, ensuring we find a structure type.
-     Then we look for the member in the structure type,
-     returning its type if successful.
-     We propagate errors.")
-   (xdoc::p
-    "This is used to check member expressions,
-     both the @('.') and the @('->') kind."))
-  (b* ((info (tag-env-lookup tag tagenv))
-       ((when (tag-info-option-case info :none))
-        (error (list :struct-not-found
-                     (ident-fix tag)
-                     (tag-env-fix tagenv))))
-       (info (tag-info-option-some->val info))
-       ((unless (tag-info-case info :struct))
-        (error (list :tag-not-struct
-                     (ident-fix tag)
-                     info)))
-       (members (tag-info-struct->members info))
-       (type (member-type-lookup mem members))
-       ((when (type-option-case type :none))
-        (error (list :member-not-found
-                     (ident-fix tag)
-                     (ident-fix mem)
-                     members))))
-    (type-option-some->val type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1309,53 +1369,6 @@
         :wellformed)
     (check-expr-asg e funtab vartab tagenv))
   :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod stmt-type
-  :short "Fixtype of statement types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Here we use the word ``type'' in a broad sense,
-     namely to describe the information inferred by the static semantics
-     about a statement (or block item or block).
-     The information consists of:")
-   (xdoc::ul
-    (xdoc::li
-     "A non-empty set of types that describes
-      the possible values returned by the statement.
-      These are determined by the @('return') statements;
-      in the presence of conditionals,
-      the possible types in the two branches are merged (i.e. unioned).
-      The type @('void') is used to describe statements
-      that do not return a value,
-      but instead transfer control to the next statement (if any).")
-    (xdoc::li
-     "A possibly updated variable table.
-      This is updated by block items that are declarations.
-      We actually only need to return possibly updated variable tables
-      from the ACL2 function @(tsee check-block-item);
-      the ACL2 functions @(tsee check-stmt) and @(tsee check-block-item-list)
-      could just return a set of optional types (see above).
-      However, for uniformity we have all three functions
-      return also a possibly updated variable table.")))
-  ((return-types type-set :reqfix (if (set::empty return-types)
-                                      (set::insert (type-void) nil)
-                                    return-types))
-   (variables var-table))
-  :require (not (set::empty return-types))
-  :pred stmt-typep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult stmt-type "statement types")
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule not-stmt-typep-of-error
-  (not (stmt-typep (error x)))
-  :enable (error stmt-typep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1824,19 +1837,6 @@
    :union (error (list :union-not-supported (tag-declon-fix declon)))
    :enum (error (list :enum-not-supported (tag-declon-fix declon))))
   :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod funtab+tagenv
-  :short "Fixtype of pairs consisting of
-          a function table and a tag environment."
-  ((funs fun-tablep)
-   (tags tag-envp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult funtab+tagenv
-  "pairs consisting of a function table and a tag environment")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
