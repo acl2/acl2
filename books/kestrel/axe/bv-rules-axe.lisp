@@ -1617,7 +1617,7 @@
   :hints (("Goal" :use (:instance bvand-of-constant-tighten (newsize ksize))
            :in-theory (disable bvand-of-constant-tighten))))
 
-; not really and axe rule
+; not really an axe rule
 (defthmd bvshl-32-cases-dag ;just use the non-dag-version?
   (implies (and (syntaxp (not (quotep shift-amount)))
                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshl to chop its shift amount?
@@ -1725,7 +1725,7 @@
                                    ;UNSIGNED-BYTE-P-FROM-BOUNDS
 )))))
 
-; not really and axe rule
+; not really an axe rule
 (defthmd bvshr-32-cases-dag;just use the non-dag-version?
   (implies (and (syntaxp (not (quotep shift-amount)))
                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshr to chop its shift amount?
