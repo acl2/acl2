@@ -42,12 +42,9 @@
          (bvchop width x))
   :hints (("Goal" :in-theory (enable bvshl))))
 
-;allow the widths to differ
+;; TODO: allow the widths to differ
 (defthm bvshl-of-bvchop
-  (implies (and (natp k)
-                (natp width)
-                (< k width) ;drop?
-                )
+  (implies (natp k)
            (equal (bvshl width (bvchop width x) k)
                   (bvshl width x k)))
   :hints (("Goal" :in-theory (enable bvshl))))
