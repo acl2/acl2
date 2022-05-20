@@ -313,6 +313,10 @@
    (xdoc::p
     "This is like @(tsee write-object),
      but it does not return an error.
+     We use the base address of the object designator,
+     which is the same (modulo the fixtype wrapping) as the address
+     when the designator is a top-level one,
+     as currently required by @(tsee write-object).
      We update the heap with the new object regardless of
      whether an old object at that address exists or not,
      and whether, if it exists, its type matches the new object.
@@ -324,7 +328,7 @@
      we ensure that all the conditions mentioned above hold,
      so in a way @(tsee update-object) caches the fact that
      those conditions are satisfied."))
-  (b* ((addr (objdesign->get objdes))
+  (b* ((addr (objdesign->base-address objdes))
        (heap (compustate->heap compst))
        (new-heap (omap::update addr (value-fix val) heap))
        (new-compst (change-compustate compst :heap new-heap)))
@@ -893,6 +897,10 @@
      only if the computation state is an ACL2 variable
      (as enforced by the @(tsee syntaxp) hypothesis).")
    (xdoc::p
+    "Since @(tsee update-object) takes the base address,
+     the rule @('write-object-okp-of-update-object-same')
+     needs the hypothesis that the object designator is a top-level one.")
+   (xdoc::p
     "We include the rule for commutativity of @(tsee object-disjointp),
      so it does not matter the order of the disjoint objects
      in the hypotheses of the rules vs. the available hypothesis
@@ -904,7 +912,8 @@
                             (compst compustatep))
     :returns (yes/no booleanp)
     :parents nil
-    (b* ((addr (objdesign->get objdes))
+    (b* (((unless (objdesign-case objdes :address)) nil)
+         (addr (objdesign-address->get objdes))
          (heap (compustate->heap compst))
          (addr+obj (omap::in addr heap))
          ((unless (consp addr+obj)) nil)
@@ -947,17 +956,24 @@
              pop-frame))
 
   (defruled write-object-okp-of-update-object-same
-    (equal (write-object-okp objdes val (update-object objdes val2 compst))
-           (equal (type-of-value val)
-                  (type-of-value val2)))
-    :enable (write-object-okp update-object))
+    (implies
+     (equal (objdesign-kind objdes) :address)
+     (equal (write-object-okp objdes val (update-object objdes val2 compst))
+            (equal (type-of-value val)
+                   (type-of-value val2))))
+    :enable (write-object-okp
+             update-object
+             objdesign->base-address))
 
   (defruled write-object-okp-of-update-object-disjoint
     (implies
      (object-disjointp objdes objdes2)
      (equal (write-object-okp objdes val (update-object objdes2 val2 compst))
             (write-object-okp objdes val compst)))
-    :enable (write-object-okp update-object object-disjointp))
+    :enable (write-object-okp
+             update-object
+             object-disjointp
+             objdesign->base-address))
 
   (defruled write-object-okp-when-valuep-of-read-object
     (implies (and (syntaxp (symbolp compst))
@@ -973,7 +989,10 @@
     (implies (write-object-okp objdes val compst)
              (equal (write-object objdes val compst)
                     (update-object objdes val compst)))
-    :enable (write-object write-object-okp update-object))
+    :enable (write-object
+             write-object-okp
+             update-object
+             objdesign->base-address))
 
   (defval *atc-write-object-rules*
     '(write-object-to-update-object
@@ -1055,15 +1074,21 @@
              read-object))
 
   (defruled read-object-of-update-object-same
-    (equal (read-object objdes (update-object objdes val compst))
-           (value-fix val))
-    :enable (read-object update-object))
+    (implies (equal (objdesign-kind objdes) :address)
+             (equal (read-object objdes (update-object objdes val compst))
+                    (value-fix val)))
+    :enable (read-object
+             update-object
+             objdesign->base-address))
 
   (defruled read-object-of-update-object-disjoint
     (implies (object-disjointp objdes objdes2)
              (equal (read-object objdes (update-object objdes2 val compst))
                     (read-object objdes compst)))
-    :enable (read-object update-object object-disjointp))
+    :enable (read-object
+             update-object
+             object-disjointp
+             objdesign->base-address))
 
   (defval *atc-read-object-rules*
     '(read-object-of-add-frame
@@ -1169,7 +1194,9 @@
           (object-disjointp objdes objdes2))
      (equal (update-object objdes obj (update-object objdes2 obj2 compst))
             (update-object objdes2 obj2 (update-object objdes obj compst))))
-    :enable (update-object object-disjointp))
+    :enable (update-object
+             object-disjointp
+             objdesign->base-address))
 
   (defruled update-object-of-update-object-less-ident
     (implies
@@ -1184,7 +1211,9 @@
           (object-disjointp objdes objdes2))
      (equal (update-object objdes obj (update-object objdes2 obj2 compst))
             (update-object objdes2 obj2 (update-object objdes obj compst))))
-    :enable (update-object object-disjointp))
+    :enable (update-object
+             object-disjointp
+             objdesign->base-address))
 
   (defruled update-object-of-read-object-same
     (implies (and (syntaxp (symbolp compst))
@@ -1196,6 +1225,7 @@
                     compst1))
     :enable (read-object
              update-object
+             objdesign->base-address
              omap::update-of-cdr-of-in-when-in)
     :prep-lemmas
     ((defruled omap::update-of-cdr-of-in-when-in

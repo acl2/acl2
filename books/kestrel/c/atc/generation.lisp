@@ -4459,6 +4459,9 @@
        (hyps (and pointerp
                   (list `(pointerp ,formal-ptr)
                         `(not (value-pointer-nullp ,formal-ptr))
+                        `(equal (objdesign-kind
+                                 (value-pointer->designator ,formal-ptr))
+                                :address)
                         `(equal (value-pointer->reftype ,formal-ptr)
                                 ,(type-to-maker (type-pointer->to type))))))
        (inst (if fn-recursivep
