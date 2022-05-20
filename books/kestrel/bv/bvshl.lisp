@@ -106,13 +106,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;todo: make this like the ones for bvshr and bvashr
 (defund bvshl-cases-term-fn-aux (i width)
   (declare (xargs :guard (integerp width)
                   :measure (nfix (+ 1 i))))
   (if (not (natp i))
       nil
-    (cons `(,i (bvcat ,(- width i) x ,i 0)) ; or we could just put in a call of bvshl where the shift-amount is a constant, but then we'd need support for bvshl in the STP translation
-          (bvshl-cases-term-fn-aux (+ -1 i) width))))
+    (cons ;`(,i (bvcat ,(- width i) x ,i 0)) ; or we could just put in a call of bvshl where the shift-amount is a constant, but then we'd need support for bvshl in the STP translation, or an opener rule
+     `(,i (bvshl ,width x ,i))
+     (bvshl-cases-term-fn-aux (+ -1 i) width))))
 
 (defund bvshl-cases-term-fn (width)
   (declare (xargs :guard (natp width)))
