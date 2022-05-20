@@ -2121,8 +2121,7 @@
                (:e expr-binary->arg1)
                (:e expr-binary->arg2)
                (:e expr-ident->get)
-               (:e binop-kind)
-               not-value-pointer-nullp-when-value-pointer-addressp)))))))
+               (:e binop-kind))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
