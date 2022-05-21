@@ -544,6 +544,9 @@
      bvuminus-of-bvchop-arg2
      bvcat-of-bvchop-high
      bvcat-of-bvchop-low
+     bvshl-of-bvchop ;gen?
+     bvshr-of-bvchop ;gen?
+     bvashr-of-bvchop ;gen?
      ;; TODO: More like this:
      bvcat-of-getbit-arg2
      bvcat-of-getbit-arg4
