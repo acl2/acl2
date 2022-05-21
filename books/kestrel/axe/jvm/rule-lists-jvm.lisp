@@ -2044,7 +2044,6 @@
              ;;                                      equal-of-bvxor-and-bvxor-same-7
              ;;                                      equal-of-bvxor-and-bvxor-same-8
              ;;                                      BVCAT-EQUAL-REWRITE
-             ;;                                      GETBIT-OF-LEFTROTATE32-HIGH
              ;;                                      BVMULT-OF-EXPT2-constant-version
              ;;end of new stuff
 

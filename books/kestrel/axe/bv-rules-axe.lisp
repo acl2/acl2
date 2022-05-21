@@ -725,10 +725,9 @@
                   (bvif (max xsize ysize) test y x)))
   :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
 
-(defthmd slice-too-high-is-0-bind-free
+(defthmd slice-too-high-is-0-bind-free-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (<= xsize low)
-                ;(natp xsize)
                 (natp low)
                 (unsigned-byte-p-forced xsize x))
            (equal (slice high low x)
