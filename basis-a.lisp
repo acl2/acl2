@@ -7121,9 +7121,10 @@
             (fld (if single-fieldp
                      var
                    `(svref ,var ,n)))
-            (stobj-creator ; only used in array and hash-table cases
-             (get-stobj-creator (and (or arrayp hashp)
-                                     etype0)
+            (stobj-creator
+             (get-stobj-creator (if (or arrayp hashp)
+                                    etype0
+                                  type)
                                 nil))
             (scalar-type ; used only when arrayp = hashp = stobj-tablep = nil
              (if stobj-creator t type))
