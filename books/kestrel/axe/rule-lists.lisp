@@ -544,6 +544,9 @@
      bvuminus-of-bvchop-arg2
      bvcat-of-bvchop-high
      bvcat-of-bvchop-low
+     bvshl-of-bvchop ;gen?
+     bvshr-of-bvchop ;gen?
+     bvashr-of-bvchop ;gen?
      ;; TODO: More like this:
      bvcat-of-getbit-arg2
      bvcat-of-getbit-arg4
@@ -783,9 +786,9 @@
     bvand-with-small-arg1
     bvand-with-small-arg2
 
-    myif-becomes-bvif ;bozo kill special case rules for this
-    myif-becomes-bvif-2
-    myif-becomes-bvif-3
+    myif-becomes-bvif-1-axe ; kill special case rules for this?
+    myif-becomes-bvif-2-axe
+    myif-becomes-bvif-3-axe
 
 ;    bvminus-of-bvplus-tighten ;now done by trim rules
 

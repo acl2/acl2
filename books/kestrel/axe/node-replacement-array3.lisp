@@ -16,15 +16,14 @@
 (include-book "dag-arrays")
 (include-book "contexts")
 (include-book "kestrel/utilities/forms" :dir :system)
-(include-book "kestrel/alists-light/alistp" :dir :system)
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 
 (local (in-theory (disable symbol-listp alistp member-equal natp)))
 
-;; pairs of updates to be made to the node-replacement-array, to undo changes made to it for true and else branches
-;; todo: add "bounded" to the name
-(defund undo-pairsp (pairs dag-len)
+;; pairs representing updates to be made to the node-replacement-array, to undo changes made to it for true and else branches
+(defund bounded-undo-pairsp (pairs dag-len)
   (declare (xargs :guard (natp dag-len)))
   (if (atom pairs)
       (null pairs)
@@ -36,51 +35,51 @@
                   ;; No bound needed on the index because we'll only apply undo-pairs whose indices are < node-replacement-count
                   ;; (< index node-replacement-count)
                   (bounded-node-replacement-valp val dag-len)
-                  (undo-pairsp (rest pairs) dag-len)))))))
+                  (bounded-undo-pairsp (rest pairs) dag-len)))))))
 
-(defthm undo-pairsp-of-nil
-  (undo-pairsp nil dag-len)
-  :hints (("Goal" :in-theory (enable undo-pairsp))))
+(defthm bounded-undo-pairsp-of-nil
+  (bounded-undo-pairsp nil dag-len)
+  :hints (("Goal" :in-theory (enable bounded-undo-pairsp))))
 
-(defthm undo-pairsp-forward-to-alistp
-  (implies (undo-pairsp pairs dag-len)
+(defthm bounded-undo-pairsp-forward-to-alistp
+  (implies (bounded-undo-pairsp pairs dag-len)
            (alistp pairs))
-  :hints (("Goal" :in-theory (enable undo-pairsp)))
+  :hints (("Goal" :in-theory (enable bounded-undo-pairsp)))
   :rule-classes :forward-chaining)
 
-(defthm bounded-node-replacement-valp-of-cdr-of-car-when-undo-pairsp
-  (implies (undo-pairsp undo-pairs dag-len)
+(defthm bounded-node-replacement-valp-of-cdr-of-car-when-bounded-undo-pairsp
+  (implies (bounded-undo-pairsp undo-pairs dag-len)
            (bounded-node-replacement-valp (cdr (car undo-pairs)) dag-len))
-  :hints (("Goal" :in-theory (enable undo-pairsp))))
+  :hints (("Goal" :in-theory (enable bounded-undo-pairsp))))
 
-(defthm natp-of-car-of-car-when-undo-pairsp
-  (implies (undo-pairsp undo-pairs dag-len)
+(defthm natp-of-car-of-car-when-bounded-undo-pairsp
+  (implies (bounded-undo-pairsp undo-pairs dag-len)
            (equal (natp (car (car undo-pairs)))
                   (consp undo-pairs)))
-  :hints (("Goal" :in-theory (enable undo-pairsp))))
+  :hints (("Goal" :in-theory (enable bounded-undo-pairsp))))
 
-(defthm node-replacement-valp-of-cdr-of-car-when-undo-pairsp
-  (implies (undo-pairsp undo-pairs dag-len)
+(defthm node-replacement-valp-of-cdr-of-car-when-bounded-undo-pairsp
+  (implies (bounded-undo-pairsp undo-pairs dag-len)
            (node-replacement-valp (cdr (car undo-pairs))))
-  :hints (("Goal" :in-theory (enable undo-pairsp))))
+  :hints (("Goal" :in-theory (enable bounded-undo-pairsp))))
 
-(defthm natp-of-car-of-car-when-undo-pairsp-forward
-  (implies (and (undo-pairsp undo-pairs dag-len)
+(defthm natp-of-car-of-car-when-bounded-undo-pairsp-forward
+  (implies (and (bounded-undo-pairsp undo-pairs dag-len)
                 (consp undo-pairs))
            (natp (car (car undo-pairs))))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable undo-pairsp))))
+  :hints (("Goal" :in-theory (enable bounded-undo-pairsp))))
 
-(defthm undo-pairsp-monotone
-  (implies (and (undo-pairsp pairs dag-len)
+(defthm bounded-undo-pairsp-monotone
+  (implies (and (bounded-undo-pairsp pairs dag-len)
                 (<= dag-len bound))
-           (undo-pairsp pairs bound))
-  :hints (("Goal" :in-theory (enable undo-pairsp))))
+           (bounded-undo-pairsp pairs bound))
+  :hints (("Goal" :in-theory (enable bounded-undo-pairsp))))
 
-(defthm undo-pairsp-of-cdr
-  (implies (undo-pairsp pairs dag-len)
-           (undo-pairsp (cdr pairs) dag-len))
-  :hints (("Goal" :in-theory (enable undo-pairsp))))
+(defthm bounded-undo-pairsp-of-cdr
+  (implies (bounded-undo-pairsp pairs dag-len)
+           (bounded-undo-pairsp (cdr pairs) dag-len))
+  :hints (("Goal" :in-theory (enable bounded-undo-pairsp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,13 +99,13 @@
                               (natp node-replacement-count)
                               (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                               (symbol-listp known-booleans)
-                              (undo-pairsp undo-pairs-acc dag-len))
+                              (bounded-undo-pairsp undo-pairs-acc dag-len))
                   :guard-hints (("Goal" :expand ((possibly-negated-nodenumsp possibly-negated-nodenums)
                                                  (strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
                                                  (ALL-DARGP (DARGS (CAR POSSIBLY-NEGATED-NODENUMS)))
                                                  (ALL-DARGP (CDR (DARGS (CAR POSSIBLY-NEGATED-NODENUMS)))))
                                  :in-theory (enable (:d strip-nots-from-possibly-negated-nodenums)
-                                                    undo-pairsp
+                                                    bounded-undo-pairsp
                                                     strip-not-from-possibly-negated-nodenum
                                                     possibly-negated-nodenump
                                                     CONSP-OF-CDR)))))
@@ -201,7 +200,7 @@
                 (natp node-replacement-count)
                 (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                 ;(symbol-listp known-booleans)
-                (undo-pairsp undo-pairs-acc dag-len))
+                (bounded-undo-pairsp undo-pairs-acc dag-len))
            (mv-let (node-replacement-array node-replacement-count undo-pairs)
              (update-node-replacement-array-for-assuming-possibly-negated-nodenums possibly-negated-nodenums
                                                                                    node-replacement-array node-replacement-count
@@ -211,13 +210,13 @@
              (and (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                   (natp node-replacement-count)
                   (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
-                  (undo-pairsp undo-pairs dag-len)
+                  (bounded-undo-pairsp undo-pairs dag-len)
                   )))
   :hints (("Goal" :expand ((POSSIBLY-NEGATED-NODENUMSP POSSIBLY-NEGATED-NODENUMS)
                            (STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS POSSIBLY-NEGATED-NODENUMS))
            :induct t
            :in-theory (enable UPDATE-NODE-REPLACEMENT-ARRAY-FOR-ASSUMING-POSSIBLY-NEGATED-NODENUMS
-                              undo-pairsp
+                              bounded-undo-pairsp
                               (:d STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS)
                               STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
                               POSSIBLY-NEGATED-NODENUMP))))
@@ -232,7 +231,7 @@
                 (natp node-replacement-count)
                 (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
 ;(symbol-listp known-booleans)
-                (undo-pairsp undo-pairs-acc dag-len))
+                (bounded-undo-pairsp undo-pairs-acc dag-len))
            (<= (alen1 'node-replacement-array node-replacement-array)
                (alen1 'node-replacement-array (mv-nth 0
                                                       (update-node-replacement-array-for-assuming-possibly-negated-nodenums possibly-negated-nodenums
@@ -244,7 +243,7 @@
                            (STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS POSSIBLY-NEGATED-NODENUMS))
            :induct t
            :in-theory (enable UPDATE-NODE-REPLACEMENT-ARRAY-FOR-ASSUMING-POSSIBLY-NEGATED-NODENUMS
-                              undo-pairsp
+                              bounded-undo-pairsp
                               (:d STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS)
                               STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
                               POSSIBLY-NEGATED-NODENUMP))))
@@ -287,7 +286,7 @@
              (and (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                   (natp node-replacement-count)
                   (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
-                  (undo-pairsp undo-pairs dag-len)
+                  (bounded-undo-pairsp undo-pairs dag-len)
                   )))
   :hints (("Goal" :in-theory (enable update-node-replacement-array-for-assuming-node))))
 
@@ -302,7 +301,7 @@
                 (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                 ;;(symbol-listp known-booleans)
                 )
-           (undo-pairsp (mv-nth 2 (update-node-replacement-array-for-assuming-node nodenum node-replacement-array node-replacement-count dag-array dag-len known-booleans)) bound))
+           (bounded-undo-pairsp (mv-nth 2 (update-node-replacement-array-for-assuming-node nodenum node-replacement-array node-replacement-count dag-array dag-len known-booleans)) bound))
   :hints (("Goal" :use (:instance update-node-replacement-array-for-assuming-node-return-type)
            :in-theory (disable update-node-replacement-array-for-assuming-node-return-type))))
 
@@ -378,7 +377,7 @@
              (and (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                   (natp node-replacement-count)
                   (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
-                  (undo-pairsp undo-pairs dag-len)
+                  (bounded-undo-pairsp undo-pairs dag-len)
                   )))
   :hints (("Goal" :in-theory (enable update-node-replacement-array-for-assuming-negation-of-node
                                      ALL-<-OF-STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS-WHEN-BOUNDED-AXE-CONJUNCTIONP))))
@@ -394,7 +393,7 @@
                 (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                 ;;(symbol-listp known-booleans)
                 )
-           (undo-pairsp (mv-nth 2 (update-node-replacement-array-for-assuming-negation-of-node nodenum node-replacement-array node-replacement-count dag-array dag-len known-booleans)) bound))
+           (bounded-undo-pairsp (mv-nth 2 (update-node-replacement-array-for-assuming-negation-of-node nodenum node-replacement-array node-replacement-count dag-array dag-len known-booleans)) bound))
   :hints (("Goal" :use (:instance update-node-replacement-array-for-assuming-negation-of-node-return-type)
            :in-theory (disable update-node-replacement-array-for-assuming-negation-of-node-return-type))))
 
@@ -433,15 +432,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns the node-replacement-array (node-replacement-count is unchanged)
-;; DAG-LEN is just passed so we can call undo-pairsp
+;; DAG-LEN is just passed so we can call bounded-undo-pairsp
 ;; The order of the undo-pairs may be critical.
 (defund undo-writes-to-node-replacement-array (undo-pairs node-replacement-array node-replacement-count dag-len)
   (declare (xargs :guard (and (natp dag-len)
-                              (undo-pairsp undo-pairs dag-len)
+                              (bounded-undo-pairsp undo-pairs dag-len)
                               (node-replacement-arrayp 'node-replacement-array node-replacement-array)
                               (natp node-replacement-count)
                               (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
-                  :guard-hints (("Goal" :in-theory (enable undo-pairsp)))))
+                  :guard-hints (("Goal" :in-theory (enable bounded-undo-pairsp)))))
   (if (endp undo-pairs)
       node-replacement-array
     (let* ((pair (first undo-pairs))
@@ -456,7 +455,7 @@
                                                dag-len)))))
 
 (defthm undo-writes-to-node-replacement-array-return-type
-  (implies (and (undo-pairsp undo-pairs dag-len)
+  (implies (and (bounded-undo-pairsp undo-pairs dag-len)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                 (natp node-replacement-count)
                 (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
@@ -464,13 +463,13 @@
                                             (undo-writes-to-node-replacement-array undo-pairs node-replacement-array node-replacement-count dag-len)
                                             dag-len))
   :hints (("Goal" :in-theory (e/d (undo-writes-to-node-replacement-array
-                                   ;undo-pairsp
+                                   ;bounded-undo-pairsp
                                    )
                                   (BOUNDED-NODE-REPLACEMENT-VALP)))))
 
 (defthm alen1-of-undo-writes-to-node-replacement-array
   (implies (and (natp dag-len)
-                (undo-pairsp undo-pairs dag-len)
+                (bounded-undo-pairsp undo-pairs dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
                 (natp node-replacement-count)
                 (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))

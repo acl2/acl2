@@ -410,11 +410,10 @@
 
 ;todo: rename
 (defthm not-equal-max-int-when-<=
-  (IMPLIES (AND (NOT (SBVLT 32 free x))
-                (NOT (EQUAL (BVCHOP 32 free)
-                            2147483647)))
-           (not (EQUAL 2147483647 (BVCHOP 32 x))))
-  :hints (("Goal" :in-theory (enable SBVLT))))
+  (implies (and (not (sbvlt 32 free x))
+                (not (equal (bvchop 32 free) 2147483647)))
+           (not (equal 2147483647 (bvchop 32 x))))
+  :hints (("Goal" :in-theory (enable sbvlt))))
 
 ;; Either x<y or y<x or they are equal.
 ;move

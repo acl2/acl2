@@ -42,12 +42,9 @@
          (bvchop width x))
   :hints (("Goal" :in-theory (enable bvshl))))
 
-;allow the widths to differ
+;; TODO: allow the widths to differ
 (defthm bvshl-of-bvchop
-  (implies (and (natp k)
-                (natp width)
-                (< k width) ;drop?
-                )
+  (implies (natp k)
            (equal (bvshl width (bvchop width x) k)
                   (bvshl width x k)))
   :hints (("Goal" :in-theory (enable bvshl))))
@@ -106,13 +103,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;todo: make this like the ones for bvshr and bvashr
 (defund bvshl-cases-term-fn-aux (i width)
   (declare (xargs :guard (integerp width)
                   :measure (nfix (+ 1 i))))
   (if (not (natp i))
       nil
-    (cons `(,i (bvcat ,(- width i) x ,i 0))
-          (bvshl-cases-term-fn-aux (+ -1 i) width))))
+    (cons ;`(,i (bvcat ,(- width i) x ,i 0)) ; or we could just put in a call of bvshl where the shift-amount is a constant, but then we'd need support for bvshl in the STP translation, or an opener rule
+     `(,i (bvshl ,width x ,i))
+     (bvshl-cases-term-fn-aux (+ -1 i) width))))
 
 (defund bvshl-cases-term-fn (width)
   (declare (xargs :guard (natp width)))
@@ -124,7 +123,8 @@
 
 ;pretty gross
 (defthmd bvshl-32-cases
-  (implies (and (natp shift-amount)
+  (implies (and (syntaxp (not (quotep shift-amount)))
+                (natp shift-amount)
                 (<= shift-amount 32))
            (equal (bvshl 32 x shift-amount)
                   (bvshl-cases-term 32)))
@@ -132,7 +132,8 @@
 
 ;pretty gross
 (defthmd bvshl-64-cases
-  (implies (and (natp shift-amount)
+  (implies (and (syntaxp (not (quotep shift-amount)))
+                (natp shift-amount)
                 (<= shift-amount 64))
            (equal (bvshl 64 x shift-amount)
                   (bvshl-cases-term 64)))
