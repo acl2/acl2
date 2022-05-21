@@ -96,14 +96,15 @@
   :hints (("Goal" :in-theory (enable repeatbit))))
 
 (defthm equal-of-repeatbit-and-constant
-  (implies (and (syntaxp (quotep k))
-                (posp n))
+  (implies (syntaxp (quotep k))
            (equal (equal k (repeatbit n bit))
-                  (if (equal k 0)
-                      (equal bit 0)
-                    (if (equal k (+ -1 (expt 2 n)))
-                        (not (equal bit 0))
-                      nil))))
+                  (if (not (posp n))
+                      (equal k 0)
+                    (if (equal k 0)
+                        (equal bit 0)
+                      (if (equal k (+ -1 (expt 2 n)))
+                          (not (equal bit 0))
+                        nil)))))
   :hints (("Goal" :in-theory (enable repeatbit))))
 
 ;; restrict to constant k?
@@ -113,4 +114,10 @@
                 (natp n))
            (equal (< (repeatbit n bit) k)
                   (equal bit 0)))
+  :hints (("Goal" :in-theory (enable repeatbit))))
+
+(defthm <-of-0-and-repeatbit
+  (equal (< 0 (repeatbit n bit))
+         (and (posp n)
+              (not (equal 0 bit))))
   :hints (("Goal" :in-theory (enable repeatbit))))

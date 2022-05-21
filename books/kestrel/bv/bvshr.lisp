@@ -79,3 +79,47 @@
   :hints (("Goal" :cases ((equal 0 width))
            :in-theory (enable bvshr))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund bvshr-cases-term-fn-aux (i width)
+  (declare (xargs :guard (integerp width)
+                  :measure (nfix (+ 1 i))))
+  (if (not (natp i))
+      nil
+    (cons `(,i (bvshr ,width x ,i))
+          (bvshr-cases-term-fn-aux (+ -1 i) width))))
+
+(defund bvshr-cases-term-fn (width)
+  (declare (xargs :guard (natp width)))
+  `(case shift-amount
+     ,@(bvshr-cases-term-fn-aux width width)))
+
+(defmacro bvshr-cases-term (width)
+  (bvshr-cases-term-fn width))
+
+;pretty gross
+(defthmd bvshr-16-cases
+  (implies (and (syntaxp (not (quotep shift-amount)))
+                (natp shift-amount)
+                (<= shift-amount 16))
+           (equal (bvshr 16 x shift-amount)
+                  (bvshr-cases-term 16)))
+  :hints (("Goal" :in-theory (enable bvshr))))
+
+;pretty gross
+(defthmd bvshr-32-cases
+  (implies (and (syntaxp (not (quotep shift-amount)))
+                (natp shift-amount)
+                (<= shift-amount 32))
+           (equal (bvshr 32 x shift-amount)
+                  (bvshr-cases-term 32)))
+  :hints (("Goal" :in-theory (enable bvshr))))
+
+;pretty gross
+(defthmd bvshr-64-cases
+  (implies (and (syntaxp (not (quotep shift-amount)))
+                (natp shift-amount)
+                (<= shift-amount 64))
+           (equal (bvshr 64 x shift-amount)
+                  (bvshr-cases-term 64)))
+  :hints (("Goal" :in-theory (enable bvshr))))

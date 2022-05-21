@@ -156,12 +156,38 @@
          (bvif 1 test 0 1))
   :hints (("Goal" :in-theory (enable myif bvif))))
 
+;bozo gross to guess the size is 1?
+;bozo see MYIF-BECOMES-BVIF-WHEN-SIZES-ARE-1
+(defthm if-becomes-bvif-1
+  (implies (and (unsigned-byte-p 1 x)
+                (unsigned-byte-p 1 y))
+           (equal (if test x y)
+                  (bvif 1 test x y)))
+  :rule-classes nil
+  :hints (("Goal" :in-theory (enable bvif))))
+
 (defthmd myif-becomes-bvif-when-sizes-are-1
   (implies (and (unsigned-byte-p 1 x)
                 (unsigned-byte-p 1 y))
            (equal (myif test x y)
                   (bvif 1 test x y)))
   :hints (("Goal" :in-theory (enable myif bvif))))
+
+;; Just guesses that the size is 32
+(defthmd myif-becomes-bvif-32
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (myif test y x)
+                  (bvif 32 test y x)))
+  :hints (("Goal" :in-theory (enable bvif myif))))
+
+;; Just guesses that the size is 64
+(defthmd myif-becomes-bvif-64
+  (implies (and (unsigned-byte-p 64 x)
+                (unsigned-byte-p 64 y))
+           (equal (myif test y x)
+                  (bvif 64 test y x)))
+  :hints (("Goal" :in-theory (enable bvif myif))))
 
 (defthmd bvif-becomes-myif
   (implies (and (unsigned-byte-p size x)
@@ -249,15 +275,7 @@
            (unsigned-byte-p m (bvif n test x y)))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
-;bozo gross to guess the size is 1?
-;bozo see MYIF-BECOMES-BVIF-WHEN-SIZES-ARE-1
-(defthm if-becomes-bvif-1
-  (implies (and (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y))
-           (equal (if test x y)
-                  (bvif 1 test x y)))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (e/d (bvif myif) (MYIF-BECOMES-BVIF-WHEN-SIZES-ARE-1)))))
+
 
 (defthm bvif-numeric-bound
   (implies (and (<= (expt 2 size) k)
@@ -463,20 +481,4 @@
                 (unsigned-byte-p ysize x))
            (equal (myif test x y)
                   (bvif ysize test x y)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
-
-;; Just guesses that the size is 32
-(defthmd myif-becomes-bvif-32
-  (implies (and (unsigned-byte-p 32 x)
-                (unsigned-byte-p 32 y))
-           (equal (myif test y x)
-                  (bvif 32 test y x)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
-
-;; Just guesses that the size is 64
-(defthmd myif-becomes-bvif-64
-  (implies (and (unsigned-byte-p 64 x)
-                (unsigned-byte-p 64 y))
-           (equal (myif test y x)
-                  (bvif 64 test y x)))
   :hints (("Goal" :in-theory (enable bvif myif))))

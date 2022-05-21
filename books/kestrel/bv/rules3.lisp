@@ -193,6 +193,7 @@
          (if test (getbit n a) (getbit n b))))
 
 ;for axe
+;rename
 (defthmd getbit-test-is-self
   (equal (if (equal 1 (getbit x n)) 1 0)
          (getbit x n)))
