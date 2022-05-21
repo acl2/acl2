@@ -211,6 +211,7 @@
 
 ;; no mod in rhs
 ;; todo: restrict to the case when we can resolve the (< n width) test?
+;; "Simple" because there is no mod in the RHS.
 (defthmd getbit-of-leftrotate-simple
   (implies (and (< amt width) ; avoids mod in rhs
                 (natp n)
@@ -218,7 +219,7 @@
                 (natp width))
            (equal (getbit n (leftrotate width amt x))
                   (if (< n width)
-                      (if (< n amt) ; this case
+                      (if (< n amt)
                           (getbit (+ width (- amt) n) x)
                         (getbit (- n amt) x))
                     0)))
