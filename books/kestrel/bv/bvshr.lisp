@@ -71,6 +71,14 @@
                   0))
   :hints (("Goal" :in-theory (enable bvshr))))
 
+(defthm bvshr-of-bvchop
+  (implies (and (natp width)
+                (natp shift-amount))
+           (equal (bvshr width (bvchop width x) shift-amount)
+                  (bvshr width x shift-amount)))
+  :hints (("Goal" :cases ((equal 0 width))
+           :in-theory (enable bvshr))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund bvshr-cases-term-fn-aux (i width)
