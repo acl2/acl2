@@ -35,9 +35,15 @@
 
 ;todo: gen
 (defthm bvchop-of-bvashr
-  (equal (bvchop '8 (bvashr '32 x '8))
-         (slice 15 8 x))
-  :hints (("Goal" :in-theory (enable ))))
+  (implies (and (<= (+ n shift-amount) width)
+                (natp shift-amount)
+                (natp width)
+                (natp n))
+           (equal (bvchop n (bvashr width x shift-amount))
+                  (slice (+ -1 n shift-amount)
+                         shift-amount
+                         x)))
+  :hints (("Goal" :in-theory (enable bvsx))))
 
 (defthmd bvashr-rewrite-for-constant-shift-amount
   (implies (and (syntaxp (quotep shift-amount))

@@ -203,7 +203,7 @@
                           (and (not (integerp n))(natp size)))
            :in-theory (enable getbit-too-high))))
 
-;When n=0, size=1, and x or y a huge bvxor nest of size 1 (common after bit-blasting), this would push the getbits through the huge nest.
+;When n=0, size=1, and x or y is a huge bvxor nest of size 1 (common after bit-blasting), this would push the getbits through the huge nest.
 (defthmd getbit-of-bvxor-core
   (implies (and (< n size)
                 (posp size))

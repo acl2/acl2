@@ -517,8 +517,8 @@
 
      bvplus-of-bvchop-and-bvshl ;new
      bvchop-of-bvsx2          ;new
-     bvchop-of-bvshr            ;new
-     bvchop-of-bvashr
+     bvchop-of-bvshr            ;new, introduces slice
+     bvchop-of-bvashr ; introduces slice
      bvchop-of-bvif
 
      ;; TODO: add all other rules like this!:
@@ -618,7 +618,7 @@
 ;this may be bad... trying without..
 ;                bvchop-of-bvxor-gen ;perhaps we could be a bit more efficient when n=size?
 ;    bvchop-of-bvxor-does-nothing ;this one seems safe..
-     bvchop-of-bvxor
+     bvchop-of-bvxor ; drop?
 
      ;; these replace the numeric bound rules
      <-lemma-for-known-operators-alt
@@ -1480,12 +1480,7 @@
 ;ffixme we shouldn't use these without the trim-helpers  - add them to this?
 (defun trim-rules ()
   (declare (xargs :guard t))
-  '(trim-of-repeatbit ;improve? -all and -non-all versions? ;move to trim-helper-rules?
-    bitnot-trim-dag-all
-    bvand-trim-arg1-dag-all
-    bvand-trim-arg2-dag-all
-;   bvand-trim-arg1-dag
-;    bvand-trim-arg2-dag
+  '(;; -all and -non-all versions?
     slice-trim-dag-all ;new
     getbit-trim-dag-all  ;new
     bvmult-trim-arg1-dag-all  ;seemed to need this for rc6 decrypt
@@ -1498,59 +1493,70 @@
     bvplus-trim-arg2-dag-all
     bvuminus-trim-dag-all
     bvnot-trim-dag-all
-    bvxor-trim-arg1-dag
-    bvxor-trim-arg2-dag
+    bvand-trim-arg1-dag-all
+    bvand-trim-arg2-dag-all
+    ;; bvand-trim-arg1-dag
+    ;; bvand-trim-arg2-dag
     bvor-trim-arg1-dag
     bvor-trim-arg2-dag
-    bvcat-trim-arg2-dag-all ;hope these are okay; seemed key for rc2 and maybe other proofs
-    bvcat-trim-arg1-dag-all
-    ;; bvcat-trim-arg1-dag
-    ;; bvcat-trim-arg2-dag
-    bvif-trim-arg1-dag
-    bvif-trim-arg2-dag
+    ;; bvor-trim-arg1-dag-all ; use instead?
+    ;; bvor-trim-arg2-dag-all ; use instead?
+    bvxor-trim-arg1-dag
+    bvxor-trim-arg2-dag
+    ;; bvxor-trim-arg1-dag-all ; use instead?
+    ;; bvxor-trim-arg2-dag-all ; use instead?
+    bitnot-trim-dag-all
     bitxor-trim-arg1-dag-all
     bitxor-trim-arg2-dag-all
     bitor-trim-arg1-dag-all
     bitor-trim-arg2-dag-all
     bitand-trim-arg1-dag-all
     bitand-trim-arg2-dag-all
+    bvcat-trim-arg2-dag-all ;hope these are okay; seemed key for rc2 and maybe other proofs
+    bvcat-trim-arg1-dag-all
+    ;; bvcat-trim-arg1-dag
+    ;; bvcat-trim-arg2-dag
+    bvif-trim-arg1-dag
+    bvif-trim-arg2-dag
+    ;; bvif-trim-arg1-dag-all ; use instead?
+    ;; bvif-trim-arg2-dag-all ; use instead?
     ))
 
 (defun trim-helper-rules ()
   (declare (xargs :guard t))
   '(bvchop-of-bvplus ;may not want these?  must have these if we have any of the -all trim rules?!
-    bvchop-of-bvmult
     bvchop-of-bvminus
     bvchop-of-bvuminus
-
-    bvchop-of-bvif ;need all of these if we are trimming (make sure we have the complete set for all ops we trim!)
+    bvchop-of-bvmult
+    bvchop-of-bvif
+    bvchop-of-bvnot
     bvchop-of-bvand
     bvchop-of-bvor
     bvchop-of-bvxor                 ;dup in core rules
 ;;    bvchop-of-bv-array-read ;;we are no longer trimming array reads
-    bvchop-of-bvnot
     bvchop-of-bvsx
     bvchop-of-slice-both
     bvchop-of-bvchop
     bvchop-of-bvcat-cases
 
     ;;need all of these if we are trimming (make sure we have the complete set for all ops we trim!)
+    trim-of-repeatbit ;improve?
     trim-of-bvplus ;may not want these?  must have these if we have any of the -all trim rules?!
     trim-of-bvmult
     trim-of-bvminus
     trim-of-bvuminus
     trim-of-bvif
+    trim-of-bvnot
     trim-of-bvand
     trim-of-bvor
     trim-of-bvxor
     trim-of-bv-array-read
-    trim-of-bvnot
     trim-of-bvsx
     trim-of-slice
     trim-of-bvchop
     trim-of-bvcat
-    trim-does-nothing-dag
     trim-of-1-and-leftrotate ; todo: add full trim support for rotate ops
+    trim-does-nothing-dag ; should not be needed?
     ))
 
 (defun all-trim-rules ()
@@ -1619,7 +1625,7 @@
 
             leftrotate32-trim-amt-all ;move to trim rules?
 
-            ;;bvplus rules:
+            ;; bvplus rules (can be expensive, perhaps try just bvplus-commutative-axe):
             bvplus-commutative-axe
             bvplus-commutative-2-axe ;seemed to fire a lot?! in rc4 example
             bvplus-associative
@@ -1636,7 +1642,6 @@
             bvmult-of-2-gen
 ;trying these:
             bitand-commutative-axe
-
 
             bvnot-1-becomes-bitnot-better
             getbit-of-bvnot          ;bozo add a getbit trim -all rule instead
@@ -1664,15 +1669,15 @@
             bvif-same-tests
 
             bvcat-tighten-upper-size-dag
-            ;;                                    bvif-with-small-arg1
-            ;;                                    bvif-with-small-arg2
+            ;; bvif-with-small-arg1
+            ;; bvif-with-small-arg2
             bvor-with-small-arg1
             bvor-with-small-arg2
 
             ;; ARRAY-REDUCTION-WHEN-ALL-SAME-IMPROVED ;trying without
             array-reduction-when-all-same-improved2 ;move
 
-            getbit-of-bvxor
+            getbit-of-bvxor ; perhaps move to bv-rules-core
 
             myif-equal-nil-rewrite
             myif-becomes-boolif-t-arg1
@@ -1700,7 +1705,7 @@
           (core-rules-non-bv) ;fixme remove these?
           (bvif-rules)
           (unsigned-byte-p-rules)
-;probably more stuff need to be added to this??  list stuff from more-rules / more-rules-yuck / jvm-rules-jvm?
+          ;; probably more stuff needs to be added to this??  list stuff from more-rules / more-rules-yuck / jvm-rules-jvm?
           ;; (logext-rules)
           (trim-rules)
           (trim-helper-rules)      ;many dups here with the above...
