@@ -75,8 +75,6 @@
 
 (ensure-rules-known (unroll-java-code-rules))
 
-
-
 ;; ;; Wrap initial-term in a list of calls to S, setting each class name to its corresponding class-info.
 ;; (defun make-class-table-term (class-alist initial-term)
 ;;   (if (endp class-alist)

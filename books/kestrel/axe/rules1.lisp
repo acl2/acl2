@@ -992,7 +992,7 @@
 
 (local (in-theory (enable myif)))
 
-(defthm bytes-to-bits-of-bv-array-write
+(defthmd bytes-to-bits-of-bv-array-write
   (implies (and (equal len (len lst))
                 (< n len)
                 (true-listp lst)
