@@ -1153,10 +1153,10 @@
     unsigned-byte-p-of-sbvdiv
     unsigned-byte-p-of-bvsx
     unsigned-byte-p-of-repeatbit
-    unsigned-byte-p-of-leftrotate ;gen
+    unsigned-byte-p-of-leftrotate
     unsigned-byte-p-of-leftrotate32
-    unsigned-byte-p-of-rightrotate ;gen
-    unsigned-byte-p-of-rightrotate32 ;gen
+    unsigned-byte-p-of-rightrotate
+    unsigned-byte-p-of-rightrotate32
     unsigned-byte-p-of-bv-array-read-gen ;todo name
     ))
 
