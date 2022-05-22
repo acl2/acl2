@@ -148,6 +148,7 @@
                   (bvplus 1 k y)))
   :hints (("Goal" :use (:instance bvplus-of-1-subst))))
 
+;avoid re-consing (bvplus size1 y z) when the sizes are equal?
 (defthm bvchop-of-bvplus
   (implies (and (<= size1 size2)
                 (natp size1)
