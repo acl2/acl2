@@ -528,7 +528,7 @@
                                       (rule-alists 'nil) ;to completely replace the usual sets of rules
                                       (extra-rules 'nil) ; to add to the usual set of rules
                                       (remove-rules 'nil)
-                                      (normalize-xors 't) ; todo: consider making nil the default, since it's better to normalize xors of the spec and code dags together
+                                      (normalize-xors 'nil) ; defaults to nil, since it's better to normalize the xors of the spec and code dags together
                                       (prune-branches 'nil) ;todo: make t the default
                                       (call-stp 'nil)
                                       ;; Options affecting performance:
