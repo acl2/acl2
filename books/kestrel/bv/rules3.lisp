@@ -624,12 +624,12 @@
 ;fixme we probably need a lot more rules like this to add sizes (we need sizes
 ;in the if nest, since there can be logexts to be gotten rid of at the leaves
 ;of the if nest)
-(defthm bvor-of-myif-arg2
+(defthm bvor-of-myif-arg3
   (equal (bvor n x (myif test a b))
          (bvor n x (bvif n test a b)))
   :hints (("Goal" :in-theory (enable myif bvif bvor))))
 
-(defthm bvor-of-myif-arg1
+(defthm bvor-of-myif-arg2
   (equal (bvor n (myif test a b) x)
          (bvor n (bvif n test a b) x))
   :hints (("Goal" :in-theory (enable myif bvif bvor))))
