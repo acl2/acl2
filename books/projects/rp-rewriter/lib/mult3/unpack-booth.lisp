@@ -332,8 +332,7 @@
                                            has-bitp)))
                (t term))))))
 
- (define unpack-booth-process-pp-arg ((pp-arg rp-termp)
-                                      &optional
+ (define unpack-booth-process-pp-arg ((pp-arg rp-termp) &optional
                                       ((limit natp) 'limit))
    :returns (mv (s-res-lst rp-term-listp
                            :hyp (rp-termp pp-arg))
@@ -349,10 +348,16 @@
        (b* ((pp-arg-lst (list-to-lst pp-arg))
             (pp-arg-lst (unpack-booth-buried-in-pp-lst pp-arg-lst))
             (pp-arg-lst (unpack-booth-for-pp-lst pp-arg-lst))
+
+            ((mv s-lst1 pp-arg-lst c-lst1) (ex-from-pp-lst pp-arg-lst))
+            ((mv s-lst2 pp-arg-lst c-lst2) (pp-radix8+-fix pp-arg-lst))
+            
             #|(- (and (not (pp-lst-orderedp pp-arg-lst))
                     (not (cw "in unpack-booth-process-pp-arg 
                          ~%"))))|#)
-         (pp-radix8+-fix pp-arg-lst)))))
+         (mv (s-sum-merge-aux s-lst1 s-lst2)
+             pp-arg-lst
+             (s-sum-merge-aux c-lst1 c-lst2))))))
 
  (define unpack-booth-buried-in-pp-lst ((lst rp-term-listp)
                                         &optional
