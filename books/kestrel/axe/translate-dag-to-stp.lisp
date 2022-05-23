@@ -51,7 +51,7 @@
 ;(include-book "dag-arrays")
 (include-book "depth-array")
 (include-book "known-predicates")
-(include-book "stp-counterexamples") ;brings in a bunch of the defs of bv functions...
+(include-book "stp-counterexamples")
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; for bv-array-if
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
