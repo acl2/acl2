@@ -426,32 +426,20 @@
            (unsigned-byte-p n (bvif size test x y)))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
-(defthm bvif-of-myif-1
-  (equal (bvif size test (myif a b c) d)
-         (bvif size test (bvif size a b c) d))
+(defthm bvif-of-myif-arg3
+  (equal (bvif size test (myif test2 x1 x2) y)
+         (bvif size test (bvif size test2 x1 x2) y))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
-(defthm bvif-of-myif-2
-  (equal (bvif size test d (myif a b c))
-         (bvif size test d (bvif size a b c)))
+(defthm bvif-of-myif-arg4
+  (equal (bvif size test x (myif test2 y1 y2))
+         (bvif size test x (bvif size test2 y1 y2)))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
 (defthm bvchop-of-myif
   (equal (bvchop size (myif test a b))
          (bvif size test a b))
   :hints (("Goal" :in-theory (enable bvif myif))))
-
-;same as bvif-of-myif-2?
-(defthm bvif-of-myif-arg2
-  (equal (bvif n test1 x (myif test a b))
-         (bvif n test1 x (bvif n test a b)))
-  :hints (("Goal" :in-theory (enable myif bvif bvif))))
-
-;same as bvif-of-myif-1?
-(defthm bvif-of-myif-arg1
-  (equal (bvif n test1 (myif test a b) x)
-         (bvif n test1 (bvif n test a b) x))
-  :hints (("Goal" :in-theory (enable myif bvif))))
 
 ;move
 (defthm myif-same-arg1-arg2-when-booleanp

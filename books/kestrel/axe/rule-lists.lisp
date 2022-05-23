@@ -161,6 +161,7 @@
             acl2-numberp-of-fix
             = ;Sun Dec  5 14:57:44 2010
             double-rewrite
+            eql ; can arise from CASE
             )
           (mv-nth-rules)
           (booleanp-rules)))
@@ -437,6 +438,11 @@
      sbvdiv-of-sbvdiv-arg2-combine-constants
      bvcat-combine-constants
 
+     bvshr-of-0-arg1
+     bvshr-of-0-arg2
+     bvshr-of-0-arg3
+
+     bvashr-of-0-arg2 ; todo: rules for arg1 and arg3?
 
      bvshl-of-0-arg2
      bvshl-of-0-arg3
@@ -517,7 +523,7 @@
 
      bvplus-of-bvchop-and-bvshl ;new
      bvchop-of-bvsx2          ;new
-     bvchop-of-bvshr            ;new, introduces slice
+     bvchop-of-bvshr            ;new, introduces slice ; todo: remove?? with bvshr we can split into cases easily.
      bvchop-of-bvashr ; introduces slice
      bvchop-of-bvif
 

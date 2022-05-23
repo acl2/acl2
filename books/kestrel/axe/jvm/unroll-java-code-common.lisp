@@ -37,8 +37,8 @@
 (defun unroll-java-code-rules ()
   (append '(nth-of-myif ;todo: drop? or add to amazing-rules - needed to handle myifs properly...  or should we instead use myif of 2 update-nth-locals terms?
             nth-becomes-bv-array-read ;why?
-            bvif-of-myif-arg1
-            bvif-of-myif-arg2
+            bvif-of-myif-arg3
+            bvif-of-myif-arg4
             getbit-of-myif
             not-equal-of-nil-and-s ;drop
             not-equal-nil-when-array-refp

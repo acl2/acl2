@@ -1008,7 +1008,7 @@
            (EQUAL (MYIF TEST z (bvxor SIZE x y))
                   (BVIF SIZE TEST z (bvxor SIZE x y))))
   :HINTS
-  (("Goal" :IN-THEORY (E/D (BVIF) (BVIF-OF-MYIF-ARG2)))))
+  (("Goal" :IN-THEORY (E/D (BVIF) (BVIF-OF-MYIF-ARG3 BVIF-OF-MYIF-ARG4)))))
 
 (DEFTHM MYIF-OF-bvxor-BECOMES-BVIF-ARG1
   (IMPLIES (AND (UNSIGNED-BYTE-P SIZE z)
@@ -1016,7 +1016,7 @@
            (EQUAL (MYIF TEST (bvxor SIZE x y) z)
                   (BVIF SIZE TEST (bvxor SIZE x y) z)))
   :HINTS
-  (("Goal" :IN-THEORY (E/D (BVIF) (BVIF-OF-MYIF-ARG2)))))
+  (("Goal" :IN-THEORY (E/D (BVIF) (BVIF-OF-MYIF-ARG3 BVIF-OF-MYIF-ARG4)))))
 
 (in-theory (disable bvminus)) ;bozo?
 
