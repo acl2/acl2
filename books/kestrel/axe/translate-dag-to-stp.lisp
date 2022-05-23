@@ -1600,7 +1600,7 @@
                    constant-array-info))
            (mv (erp-t) nil constant-array-info)))
         (bvle ;; (bvle size x y)
-         ;; TODO: Consider omitting this and instead introducing sbvlt through rewriting
+         ;; TODO: Consider omitting this and instead introducing bvlt through rewriting
          ;;fixme either drop this or add support for the other operators: bvge, etc. (same for the signed comparisons)
          (if (and (= 3 (len (dargs expr)))
                   (quoted-posp (darg1 expr))
