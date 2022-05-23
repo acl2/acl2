@@ -23450,7 +23450,7 @@
                                             "~@0 could not be evaluated."
                                             msg)))
                              (t (value (cons term val))))))
-                         (t (er-soft ctx "~@0" "Translate"
+                         (t (er-soft ctx "Translate" "~@0"
                                      (prohibition-of-loop$-and-lambda$-msg
                                       ancestral-lambda$s))))))))))
 

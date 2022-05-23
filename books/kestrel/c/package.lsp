@@ -26,7 +26,9 @@
                                   error
                                   member
                                   pi
+                                  pointers
                                   pprint-indent
+                                  read-object
                                   schar
                                   type
                                   typep
@@ -117,6 +119,7 @@
                packn
                packn-pos
                pos-listp
+               pos-option
                pseudo-event-form-listp
                pseudo-event-formp
                pseudo-event-form

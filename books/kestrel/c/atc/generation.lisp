@@ -13,13 +13,14 @@
 
 (include-book "abstract-syntax")
 (include-book "pretty-printer" :ttags ((:open-output-channel!)))
-(include-book "static-semantics")
 (include-book "dynamic-semantics")
 (include-book "shallow-embedding")
 (include-book "proof-support")
 (include-book "table")
 
 (include-book "fty-pseudo-terms")
+
+(include-book "../language/static-semantics")
 
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
@@ -680,6 +681,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-taginfo-alist-to-type-of-value-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the @(tsee type-of-value) theorems
+          out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->type-of-value-thm (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-type-of-value-thms (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-string-taginfo-alist-to-tag-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -1331,7 +1345,7 @@
        (tag (defstruct-info->tag info))
        (members (defstruct-info->members info))
        (member (symbol-name member))
-       ((unless (atc-ident-stringp member)) (no))
+       ((unless (ident-stringp member)) (no))
        (member (ident member))
        (meminfo (member-type-lookup member members))
        ((unless meminfo) (no))
@@ -1400,7 +1414,7 @@
        (members (defstruct-info->members info))
        (tag (defstruct-info->tag info))
        (member (symbol-name member))
-       ((unless (atc-ident-stringp member)) (no))
+       ((unless (ident-stringp member)) (no))
        (member (ident member))
        (meminfo (member-type-lookup member members))
        ((unless meminfo) (no))
@@ -2712,7 +2726,7 @@
                               "The variable ~x0 in the function ~x1 ~
                                is already in scope and cannot be re-declared."
                               var fn))
-                   ((unless (atc-ident-stringp (symbol-name var)))
+                   ((unless (ident-stringp (symbol-name var)))
                     (er-soft+ ctx t irr
                               "The symbol name ~s0 of ~
                                the MV-LET variable ~x1 of the function ~x2 ~
@@ -3079,7 +3093,7 @@
                               "The variable ~x0 in the function ~x1 ~
                                is already in scope and cannot be re-declared."
                               var fn))
-                   ((unless (atc-ident-stringp (symbol-name var)))
+                   ((unless (ident-stringp (symbol-name var)))
                     (er-soft+ ctx t irr
                               "The symbol name ~s0 of ~
                                the LET variable ~x1 of the function ~x2 ~
@@ -3213,7 +3227,7 @@
                         "When generating C code for the function ~x0, ~
                          we encountered a term ~x1, ~
                          to which a LET variable is bound, ~
-                         tha is not wrapped by C::DECLAR or C::ASSIGN, ~
+                         that is not wrapped by C::DECLAR or C::ASSIGN, ~
                          and that is neither an IF or a loop function call. ~
                          This is disallowed."
                         fn val))
@@ -3776,7 +3790,7 @@
             (info (defstruct-table-lookup tag wrld))
             ((unless info) nil)
             ((unless (eq recognizer (defstruct-info->recognizer info))) nil)
-            ((unless (atc-ident-stringp tag))
+            ((unless (ident-stringp tag))
              (raise "Internal error: tag ~x0 not valid identifier." tag)))
          (type-pointer (type-struct (ident tag)))))))
 
@@ -3940,7 +3954,7 @@
   (b* (((when (endp typed-formals)) (acl2::value nil))
        ((cons formal type) (car typed-formals))
        (name (symbol-name formal))
-       ((unless (atc-ident-stringp name))
+       ((unless (ident-stringp name))
         (er-soft+ ctx t nil
                   "The symbol name ~s0 of ~
                    the formal parameter ~x1 of the function ~x2 ~
@@ -4348,15 +4362,14 @@
      For each array or structure formal @('a') of @('fn'),
      we generate a pointer variable @('a-ptr') as explained,
      along with a binding
-     @('(a (read-array (pointer->address a-ptr) compst))') or
-     @('(a (read-struct (pointer->address a-ptr) compst))'):
+     @('(a (read-object (value-pointer->designator a-ptr) compst))'):
      this binding relates the two variables,
      and lets us use the guard of @('fn') as hypothesis in the theorem,
      which uses @('a'),
      which the binding replaces with the array or structure
      pointed to by @('a-ptr').
      Along with this binding, we also generate hypotheses saying that
-     @('a-ptr') is a non-null pointer of the appropriate type;
+     @('a-ptr') is a top-level pointer of the appropriate type;
      the type is determined from the type of the formal @('a').
      Along with the binding and the hypotheses,
      we also generate an alist element @('(a . a-ptr)'),
@@ -4395,9 +4408,8 @@
     "If @('a') is an array or structure formal of a recursive @('fn'),
      we introduce an additional @('a-ptr') variable,
      similarly to the case of non-recursive @('fn').
-     We generate two bindings (i) @('(a-ptr (read-var <a> compst))')
-     and (ii) either @('(a (read-array (pointer->address a-ptr) compst))')
-     or @('(a (read-struct (pointer->address a-ptr) compst))'),
+     We generate two bindings @('(a-ptr (read-var <a> compst))')
+     and @('(a (read-object (value-pointer->designator a-ptr) compst))'),
      in that order.
      The first binding serves to tie @('a-ptr')
      to the corresponding variable in the computation state,
@@ -4430,60 +4442,38 @@
   (b* (((when (endp typed-formals)) (mv nil nil nil nil))
        ((cons formal type) (car typed-formals))
        (formal-ptr (add-suffix-to-fn formal "-PTR"))
-       (formal-addr `(pointer->address ,formal-ptr))
+       (formal-objdes `(value-pointer->designator ,formal-ptr))
        (formal-id `(ident ,(symbol-name formal)))
-       ((mv arrayp structp)
-        (if (type-case type :pointer)
-            (case (type-kind (type-pointer->to type))
-              ((:schar :uchar
-                :sshort :ushort
-                :sint :uint
-                :slong :ulong
-                :sllong :ullong)
-               (mv t nil))
-              (:struct (mv nil t))
-              (t (prog2$ (raise "Internal error: formal ~x0 has type ~x1."
-                                formal type)
-                         (mv nil nil))))
-          (mv nil nil)))
+       (pointerp (type-case type :pointer))
        (bindings
         (if fn-recursivep
-            (cond (arrayp
-                   (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                         `(,formal (read-array ,formal-addr ,compst-var))))
-                  (structp
-                   (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                         `(,formal (read-struct ,formal-addr ,compst-var))))
-                  (t (list `(,formal (read-var ,formal-id ,compst-var)))))
-          (cond (arrayp
-                 (list `(,formal (read-array ,formal-addr ,compst-var))))
-                (structp
-                 (list `(,formal (read-struct ,formal-addr ,compst-var))))
-                (t nil))))
-       (subst? (and (or arrayp structp)
+            (if pointerp
+                (list `(,formal-ptr (read-var ,formal-id ,compst-var))
+                      `(,formal (read-object ,formal-objdes ,compst-var)))
+              (list `(,formal (read-var ,formal-id ,compst-var))))
+          (if pointerp
+              (list `(,formal (read-object ,formal-objdes ,compst-var)))
+            nil)))
+       (subst? (and pointerp
                     (list (cons formal formal-ptr))))
-       (hyps (and (or arrayp structp)
+       (hyps (and pointerp
                   (list `(pointerp ,formal-ptr)
-                        `(not (pointer-nullp ,formal-ptr))
-                        `(equal (pointer->reftype ,formal-ptr)
+                        `(not (value-pointer-nullp ,formal-ptr))
+                        `(equal (objdesign-kind
+                                 (value-pointer->designator ,formal-ptr))
+                                :address)
+                        `(equal (value-pointer->reftype ,formal-ptr)
                                 ,(type-to-maker (type-pointer->to type))))))
        (inst (if fn-recursivep
-                 (cond (arrayp
-                        (list `(,formal (read-array (pointer->address
-                                                     (read-var ,formal-id
-                                                               ,compst-var))
-                                                    ,compst-var))))
-                       (structp
-                        (list `(,formal (read-struct (pointer->address
-                                                      (read-var ,formal-id
-                                                                ,compst-var))
-                                                     ,compst-var))))
-                       (t (list `(,formal (read-var ,formal-id ,compst-var)))))
-               (cond (arrayp
-                      (list `(,formal (read-array ,formal-addr ,compst-var))))
-                     (structp
-                      (list `(,formal (read-struct ,formal-addr ,compst-var))))
-                     (t nil))))
+                 (if pointerp
+                     (list `(,formal (read-object (value-pointer->designator
+                                                   (read-var ,formal-id
+                                                             ,compst-var))
+                                                  ,compst-var)))
+                   (list `(,formal (read-var ,formal-id ,compst-var))))
+               (if pointerp
+                   (list `(,formal (read-object ,formal-objdes ,compst-var)))
+                 nil)))
        ((mv more-bindings more-hyps more-subst more-inst)
         (atc-gen-outer-bindings-and-hyps (cdr typed-formals)
                                          compst-var
@@ -4495,9 +4485,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-diff-address-hyps ((pointer-vars symbol-listp))
+(define atc-gen-object-disjoint-hyps ((pointer-vars symbol-listp))
   :returns (hyps true-listp)
-  :short "Generate hypotheses saying that pointers are distinct."
+  :short "Generate hypotheses saying that the pointers
+          designate disjoint objects."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4526,19 +4517,14 @@
      by going through the pointer variables involved in
      the correctness theorem of the C function or loop.
      More precisely, we generate hypotheses saying that
-     the addresses in the pointers are distinct.
-     We need the addresses to be distinct,
-     so that they are two different arrays or structures
-     in our model of the heap.
-     The other component of a pointer (see @(tsee pointer)) is a type,
-     but that one is already independently constrained
-     by other hypotheses in the generated correctness theorems."))
+     the object designated by the pointers are pairwise disjoint."))
   (b* (((when (endp pointer-vars)) nil)
        (var (car pointer-vars))
        (hyps (loop$ for var2 in (cdr pointer-vars)
-                    collect `(not (equal (pointer->address ,var)
-                                         (pointer->address ,var2)))))
-       (more-hyps (atc-gen-diff-address-hyps (cdr pointer-vars))))
+                    collect `(object-disjointp
+                              (value-pointer->designator ,var)
+                              (value-pointer->designator ,var2))))
+       (more-hyps (atc-gen-object-disjoint-hyps (cdr pointer-vars))))
     (append hyps more-hyps))
   :prepwork ((local (in-theory (enable acl2::loop-book-theory)))))
 
@@ -4565,7 +4551,7 @@
      which the correctness theorem binds to the results of
      the ACL2 function that represents the C function.
      The modified computation state is expressed as
-     a nest of @(tsee write-array) and @(tsee write-struct) calls.
+     a nest of @(tsee write-object) calls.
      This ACL2 code here generates that nest.")
    (xdoc::p
     "The parameter @('affect') passed to this code
@@ -4578,7 +4564,7 @@
      Thus, we go through @('affect'),
      looking up the corresponding pointer variables in @('pointer-subst'),
      and we construct
-     each nested @(tsee write-array) or @(tsee write-struct) call,
+     each nested @(tsee write-object) call,
      which needs both a pointer and an array or structure;
      we distinguish between arrays and structures
      via the types of the formals.")
@@ -4597,25 +4583,18 @@
         (raise "Internal error: formal ~x0 not found." formal))
        ((unless (type-case type :pointer))
         (raise "Internal error: affected formal ~x0 has type ~x1."
-               formal type))
-       (write-array/struct
-        (case (type-kind (type-pointer->to type))
-          ((:schar :uchar
-            :sshort :ushort
-            :sint :uint
-            :slong :ulong
-            :sllong :uloong)
-           'write-array)
-          (:struct 'write-struct)
-          (t (raise "Internal error: affected formal ~x0 has type ~x1."
-                    formal type)))))
-    `(,write-array/struct (pointer->address
-                           ,(cdr (assoc-eq formal pointer-subst)))
-                          ,(add-suffix-to-fn formal "-NEW")
-                          ,(atc-gen-cfun-final-compustate (cdr affect)
-                                                          typed-formals
-                                                          pointer-subst
-                                                          compst-var))))
+               formal type)))
+    `(write-object (value-pointer->designator ,(cdr (assoc-eq formal
+                                                              pointer-subst)))
+                   ,(add-suffix-to-fn formal "-NEW")
+                   ,(atc-gen-cfun-final-compustate (cdr affect)
+                                                   typed-formals
+                                                   pointer-subst
+                                                   compst-var)))
+  :prepwork
+  ((defrulel lemma
+     (implies (symbol-symbol-alistp x)
+              (alistp x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4776,7 +4755,7 @@
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var nil))
        (diff-pointer-hyps
-        (atc-gen-diff-address-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
                    (equal ,fenv-var (init-fun-env ,prog-const))
                    (integerp ,limit-var)
@@ -4826,9 +4805,8 @@
        (type-prescriptions-struct-readers
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
-       (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
-       (members-thms
-        (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (type-of-value-thms
+        (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
        (exec-memberp-thms
         (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (exec-asg-memberp-thms
@@ -4844,8 +4822,7 @@
                                ,@result-thms
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
-                               ,@tag-thms
-                               ,@members-thms
+                               ,@type-of-value-thms
                                ,@exec-memberp-thms
                                ,@exec-asg-memberp-thms
                                ,@type-prescriptions-called
@@ -5094,7 +5071,7 @@
      in the @(':compound') case,
      and then we use the limit for the block."))
   (b* ((name (symbol-name fn))
-       ((unless (atc-ident-stringp name))
+       ((unless (ident-stringp name))
         (er-soft+ ctx t nil
                   "The symbol name ~s0 of the function ~x1 ~
                    must be a portable ASCII C identifier, but it is not."
@@ -5749,7 +5726,7 @@
      and which have corresponding named variables and heap arrays
      in the computation state.
      The modified computation state is expressed as
-     a nest of @(tsee write-var) and @(tsee write-array) calls.
+     a nest of @(tsee write-var) and @(tsee write-object) calls.
      This ACL2 code here generates that nest.")
    (xdoc::p
     "Note that, in the correctness theorem,
@@ -5763,11 +5740,11 @@
        (mod-var (car mod-vars))
        (ptr (cdr (assoc-eq mod-var pointer-subst))))
     (if ptr
-        `(write-array (pointer->address ,ptr)
-                      ,(add-suffix-to-fn mod-var "-NEW")
-                      ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                      pointer-subst
-                                                      compst-var))
+        `(write-object (value-pointer->designator ,ptr)
+                       ,(add-suffix-to-fn mod-var "-NEW")
+                       ,(atc-gen-loop-final-compustate (cdr mod-vars)
+                                                       pointer-subst
+                                                       compst-var))
       `(write-var (ident ,(symbol-name (car mod-vars)))
                   ,(add-suffix-to-fn (car mod-vars) "-NEW")
                   ,(atc-gen-loop-final-compustate (cdr mod-vars)
@@ -5817,7 +5794,7 @@
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (diff-pointer-hyps
-        (atc-gen-diff-address-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (equal ,fenv-var (init-fun-env ,prog-const))
@@ -5859,9 +5836,8 @@
        (type-prescriptions-struct-readers
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
-       (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
-       (members-thms
-        (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (type-of-value-thms
+        (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
        (exec-memberp-thms
         (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (exec-asg-memberp-thms
@@ -5876,8 +5852,7 @@
                                not
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
-                               ,@tag-thms
-                               ,@members-thms
+                               ,@type-of-value-thms
                                ,@exec-memberp-thms
                                ,@exec-asg-memberp-thms
                                ,@type-prescriptions-called
@@ -5988,7 +5963,7 @@
        ((mv formals-bindings pointer-hyps pointer-subst instantiation)
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t))
        (diff-pointer-hyps
-        (atc-gen-diff-address-hyps (strip-cdrs pointer-subst)))
+        (atc-gen-object-disjoint-hyps (strip-cdrs pointer-subst)))
        (hyps `(and (compustatep ,compst-var)
                    (not (equal (compustate-frames-number ,compst-var) 0))
                    (equal ,fenv-var (init-fun-env ,prog-const))
@@ -6035,9 +6010,8 @@
        (type-prescriptions-struct-readers
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
-       (tag-thms (atc-string-taginfo-alist-to-tag-thms prec-tags))
-       (members-thms
-        (atc-string-taginfo-alist-to-members-thms prec-tags))
+       (type-of-value-thms
+        (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
        (exec-memberp-thms
         (atc-string-taginfo-alist-to-exec-memberp-thms prec-tags))
        (exec-asg-memberp-thms
@@ -6049,6 +6023,7 @@
                                    *atc-valuep-rules*
                                    *atc-value-listp-rules*
                                    *atc-value-optionp-rules*
+                                   *atc-type-of-value-rules*
                                    *atc-type-of-value-option-rules*
                                    *atc-value-array->elemtype-rules*
                                    *atc-array-length-rules*
@@ -6075,8 +6050,7 @@
                                      ,exec-stmt-while-for-fn
                                      ,@struct-reader-return-thms
                                      ,@struct-writer-return-thms
-                                     ,@tag-thms
-                                     ,@members-thms
+                                     ,@type-of-value-thms
                                      ,@exec-memberp-thms
                                      ,@exec-asg-memberp-thms
                                      ,@type-prescriptions-called
@@ -6355,10 +6329,12 @@
        (formula
         `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                        (pointerp ptr)
-                       (not (pointer-nullp ptr))
+                       (not (value-pointer-nullp ptr))
                        (equal struct
-                              (read-struct (pointer->address ptr) compst))
-                       (equal (pointer->reftype ptr)
+                              (read-object (value-pointer->designator ptr)
+                                           compst))
+                       (value-case struct :struct)
+                       (equal (value-pointer->reftype ptr)
                               (type-struct (ident ,(ident->name tag))))
                        (,recognizer struct))
                   (equal (exec-memberp ptr
@@ -6485,14 +6461,16 @@
                        (,typep val)
                        (equal ptr (read-var (expr-ident->get target) compst1))
                        (pointerp ptr)
-                       (not (pointer-nullp ptr))
+                       (not (value-pointer-nullp ptr))
                        (equal struct
-                              (read-struct (pointer->address ptr) compst1))
-                       (equal (pointer->reftype ptr)
-                              (type-struct (value-struct->tag struct)))
+                              (read-object (value-pointer->designator ptr)
+                                           compst1))
+                       (value-case struct :struct)
+                       (equal (value-pointer->reftype ptr)
+                              (type-of-value struct))
                        (,recognizer struct))
                   (equal (exec-expr-asg e compst fenv limit)
-                         (write-struct (pointer->address ptr)
+                         (write-object (value-pointer->designator ptr)
                                        (,writer val struct)
                                        compst1))))
        (hints `(("Goal"
@@ -6552,7 +6530,8 @@
                                (target (expr-memberp->target left))
                                (ptr (read-var (c::expr-ident->get target)
                                               compst1))
-                               (struct (read-struct (pointer->address ptr)
+                               (struct (read-object (value-pointer->designator
+                                                     ptr)
                                                     compst1)))
                             struct))))))
        ((mv event &) (evmac-generate-defthm thm-name

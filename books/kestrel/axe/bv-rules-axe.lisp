@@ -28,6 +28,7 @@
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "kestrel/bv/rules" :dir :system) ;drop?
 (include-book "kestrel/bv/rightrotate32" :dir :system)
+(include-book "known-booleans")
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system))
@@ -655,15 +656,14 @@
                   x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
-(defthmd getbit-too-high-is-0-bind-free
+(defthmd getbit-too-high-is-0-bind-free-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (<= xsize n)
                 (integerp n)
                 (unsigned-byte-p-forced xsize x))
            (equal (getbit n x)
                   0))
-  :hints (("Goal" :cases ((integerp n))
-           :in-theory (enable getbit-too-high unsigned-byte-p-forced))))
+  :hints (("Goal" :in-theory (enable getbit-too-high unsigned-byte-p-forced))))
 
 ;fixme ignore bitxor with 1?
 (defthmd bitand-commutative-axe
@@ -700,7 +700,7 @@
                   (+ y (+ x z))))
   :hints (("Goal" :in-theory (enable))))
 
-(defthmd myif-becomes-bvif
+(defthmd myif-becomes-bvif-1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced xsize x)
@@ -709,7 +709,7 @@
                   (bvif (max xsize ysize) test x y)))
   :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
 
-(defthmd myif-becomes-bvif-2
+(defthmd myif-becomes-bvif-2-axe
   (implies (and (unsigned-byte-p xsize x) ;xsize is a free variable
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced ysize y))
@@ -717,7 +717,7 @@
                   (bvif (max xsize ysize) test x y)))
   :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
 
-(defthmd myif-becomes-bvif-3
+(defthmd myif-becomes-bvif-3-axe
   (implies (and (unsigned-byte-p xsize x) ;xsize is a free variable
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced ysize y))
@@ -1617,6 +1617,7 @@
   :hints (("Goal" :use (:instance bvand-of-constant-tighten (newsize ksize))
            :in-theory (disable bvand-of-constant-tighten))))
 
+; not really an axe rule
 (defthmd bvshl-32-cases-dag ;just use the non-dag-version?
   (implies (and (syntaxp (not (quotep shift-amount)))
                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshl to chop its shift amount?
@@ -1724,6 +1725,7 @@
                                    ;UNSIGNED-BYTE-P-FROM-BOUNDS
 )))))
 
+; not really an axe rule
 (defthmd bvshr-32-cases-dag;just use the non-dag-version?
   (implies (and (syntaxp (not (quotep shift-amount)))
                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshr to chop its shift amount?
@@ -1935,19 +1937,17 @@
                    (equal 31 shift-amount))
            :in-theory (e/d (BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT) ()))))
 
-;fixme make rules like this for other ops!
-(defthmd bvsx-too-high-dag
+;todo: make rules like this for other ops!
+(defthmd bvsx-too-high-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (< xsize old-size)
+                (<= old-size new-size)
                 (integerp new-size)
-;               (natp xsize)
-                (< old-size new-size)
-                (posp old-size)
+                (integerp old-size)
                 (unsigned-byte-p-forced xsize x))
            (equal (bvsx new-size old-size x)
                   x))
-  :hints (("Goal" :in-theory (e/d (natp bvsx getbit-too-high) (;collect-constants-times-equal collect-constants-<-/
-                                                               )))))
+  :hints (("Goal" :in-theory (enable bvsx getbit-too-high))))
 
 ;gen
 (defthmd sbvlt-of-0-when-shorter2-axe

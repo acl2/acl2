@@ -1,7 +1,7 @@
 ; BV-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,7 +15,6 @@
 ;; This book contains bit-vector-related functions that support Axe
 ;; rules that call axe-syntaxp and axe-bind-free.
 
-(include-book "known-predicates")
 (include-book "axe-types") ;reduce?  we just need the bv-type stuff
 (include-book "dag-arrays")
 (include-book "kestrel/bv/bv-syntax" :dir :system)
@@ -39,21 +38,6 @@
            (consp (cdr x)))
       (unquote x)
     nil))
-
-;TODO: Would like to make this sensitive to the :known-booleans table, but that would require passing in wrld here, which axe-syntaxp doesn't yet support
-;TODO: move (not really boolean-related)?
-(defund known-booleanp (nodenum-or-quotep dag-array)
-  (declare (xargs :guard (or (myquotep nodenum-or-quotep)
-                             (and (natp nodenum-or-quotep)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
-  (if (quotep nodenum-or-quotep)
-      (let ((val (unquote nodenum-or-quotep)))
-        (if (eq t val)
-            t
-          (eq nil val)))
-    (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
-      (and (consp expr)
-           (member-eq (ffn-symb expr) *known-predicates-basic*)))))
 
 ;fixme are there other functions like this to deprecate?
 ;returns a bv-typep or nil (if we could not determine a type)

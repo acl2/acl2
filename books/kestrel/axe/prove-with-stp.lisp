@@ -223,8 +223,7 @@
                 (or key
                     (alistp alist)))
            (assoc-equal key alist))
-  :hints (("Goal" :in-theory (e/d (member-equal assoc-equal)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable member-equal assoc-equal))))
 
 ;instead of throwing an error when given a nodenum that has no type yet, this one may return (most-general-type)
 ;fixme combine with the non-safe version
@@ -389,7 +388,7 @@
                 (natp nodenum)
                 (axe-typep new-type))
            (nodenum-type-alistp (mv-nth 0 (improve-type nodenum new-type nodenum-type-alist))))
-  :hints (("Goal" :in-theory (e/d (improve-type) ()))))
+  :hints (("Goal" :in-theory (enable improve-type))))
 
 (defthm all-<-of-strip-cars-of-mv-nth-0-of-improve-type
   (implies (and (nodenum-type-alistp nodenum-type-alist)
@@ -400,7 +399,7 @@
                        DAG-LEN))
            (all-< (strip-cars (mv-nth 0 (improve-type nodenum new-type nodenum-type-alist)))
                   dag-len))
-  :hints (("Goal" :in-theory (e/d (improve-type) ()))))
+  :hints (("Goal" :in-theory (enable improve-type))))
 
 ;; (thm
 ;;  (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
@@ -1013,8 +1012,7 @@
                               (axe-typep type-acc)
                               (natp nodenum))
                   ;; todo: use rules instead of these hints
-                  :guard-hints (("Goal" :expand ()
-                                 :in-theory (enable BOUNDED-DAG-EXPRP)))))
+                  :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp)))))
   (if (endp parent-nodenums)
       type-acc
     (b* ((parent-nodenum (first parent-nodenums))

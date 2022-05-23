@@ -18,8 +18,12 @@
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "axe-syntax-functions-bv")
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
+(include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
+(include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 (include-book "list-rules") ;for EQUAL-OF-UPDATE-NTH
+(include-book "known-booleans")
+(local (include-book "kestrel/bv/bvlt" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
@@ -260,3 +264,16 @@
            (equal (myif test x y)
                   (bv-array-if element-sizex lenx test x y)))
   :hints (("Goal" :in-theory (enable bv-array-if))))
+
+;; todo: If val happens to be too narrow, we may need to widen the write later.
+(defthmd update-nth-becomes-bv-array-write-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe val 'width dag-array) '(width))
+                (all-unsigned-byte-p width lst)
+                (unsigned-byte-p-forced width val)
+                (< key (len lst))
+                (natp key)
+                (true-listp lst))
+           (equal (update-nth key val lst)
+                  (bv-array-write width (len lst) key val lst)))
+  :hints (("Goal" :use update-nth-becomes-bv-array-write
+           :in-theory (enable unsigned-byte-p-forced))))

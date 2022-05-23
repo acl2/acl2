@@ -73,8 +73,8 @@
      Some of the generated guards may be always true
      for certain choices of integer bit sizes."))
 
-  (b* ((stype-string (atc-integer-type-xdoc-string stype))
-       (dtype-string (atc-integer-type-xdoc-string dtype))
+  (b* ((stype-string (integer-type-xdoc-string stype))
+       (dtype-string (integer-type-xdoc-string dtype))
        (signedp (type-signed-integerp dtype))
        (guardp (and signedp
                     (case (type-kind dtype)
@@ -173,8 +173,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(progn ,@(atc-def-integer-conversions-loop-outer *atc-integer-types*
-                                                   *atc-integer-types*)))
+ `(progn ,@(atc-def-integer-conversions-loop-outer
+            *integer-nonbool-nonchar-types*
+            *integer-nonbool-nonchar-types*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

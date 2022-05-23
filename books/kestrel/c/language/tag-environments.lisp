@@ -12,12 +12,13 @@
 (in-package "C")
 
 (include-book "types")
+(include-book "errors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ tag-environments
-  :parents (atc-static-semantics atc-dynamic-semantics)
-  :short "C tag environments for ATC."
+  :parents (language)
+  :short "C tag environments."
   :long
   (xdoc::topstring
    (xdoc::p

@@ -17,7 +17,7 @@
 (include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/booleans/boolxor" :dir :system)
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
-(include-book "axe-syntax-functions-bv") ;for known-booleanp  -- todo
+(include-book "axe-syntax-functions-boolean") ;for syntactic-booleanp
 (include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "axe-syntax")
 (include-book "kestrel/utilities/myif" :dir :system)
@@ -30,8 +30,8 @@
 
 ;the axe-syntaxp is new
 (defthmd myif-becomes-boolif-axe
-  (implies (and (axe-syntaxp (known-booleanp b dag-array)) ;could be optimized with a single call to an axe-syntaxp function that checks both
-                (axe-syntaxp (known-booleanp c dag-array))
+  (implies (and (axe-syntaxp (syntactic-booleanp b dag-array)) ;could be optimized with a single call to an axe-syntaxp function that checks both
+                (axe-syntaxp (syntactic-booleanp c dag-array))
                 (booleanp b)
                 (booleanp c))
            (equal (myif a b c)
@@ -39,8 +39,8 @@
   :hints (("Goal" :in-theory (enable myif boolif))))
 
 (defthmd equal-of-booleans-axe
-  (implies (and (axe-syntaxp (known-booleanp x dag-array))
-                (axe-syntaxp (known-booleanp y dag-array))
+  (implies (and (axe-syntaxp (syntactic-booleanp x dag-array))
+                (axe-syntaxp (syntactic-booleanp y dag-array))
                 (booleanp x)
                 (booleanp y))
            (equal (equal x y)

@@ -454,14 +454,13 @@
                 (not (equal ad ad2)))
            (equal (array-contents2 ad (set-field ad2 pair val heap))
                   (array-contents2 ad heap)))
-  :hints (("Goal" :in-theory (e/d (array-contents2) ()))))
+  :hints (("Goal" :in-theory (enable array-contents2))))
 
 (defthm array-contents2-of-set-field-irrel2
   (implies (not (equal pair (array-contents-pair)))
            (equal (array-contents2 ad (set-field ad2 pair val heap))
                   (array-contents2 ad heap)))
-  :hints (("Goal" :in-theory (e/d (array-contents2) ()))))
-
+  :hints (("Goal" :in-theory (enable array-contents2))))
 
 (defthm array-elem-2d2-of-set-field-irrel
   (implies (and (not (memberp ad2 (array-contents ad heap)))
@@ -873,7 +872,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct (indh m n lst)
            :expand (NO-DUPLICATESP-EQUAL LST)
-           :in-theory (e/d (nthcdr car-becomes-nth-of-0) ()))))
+           :in-theory (enable nthcdr car-becomes-nth-of-0))))
 
 (local (defun indh22 (i) (if (zp i) i (indh22 (+ -1 i)))))
 
@@ -1713,9 +1712,7 @@
            (EQUAL (GETBIT N (BV-ARRAY-READ ELEMENT-SIZE LEN INDEX DATA))
                   (BV-ARRAY-READ 1 LEN INDEX (GETBIT-LIST N DATA))))
   :HINTS (("Goal" :use (:instance getbit-of-bv-array-read)
-           :IN-THEORY (E/D (GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER)
-                           ()))))
-
+           :IN-THEORY (Enable GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER))))
 
 ;useful when get-field gets opened (e.g., for baload)
 (defthm g-of-g-of-set-field-same

@@ -115,9 +115,7 @@
 (defthm getbit-of-bvnot
   (implies (and (< n m)
                 (natp n)
-                (natp m)
-                ;(integerp x)
-                )
+                (natp m))
            (equal (getbit n (bvnot m x))
                   (bvnot 1 (getbit n x))))
   :hints (("Goal"

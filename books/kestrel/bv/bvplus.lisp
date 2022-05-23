@@ -38,6 +38,12 @@
            :use ((:instance bvplus-associative)
                  (:instance bvplus-associative (x y) (y x))))))
 
+(defthmd bvplus-commute-constant
+  (implies (syntaxp (and (quotep k)
+                         (not (quotep x))))
+           (equal (bvplus size x k)
+                  (bvplus size k x))))
+
 ;; The (bvplus size x y) in the conclusion gets computed.
 (defthm bvplus-combine-constants
   (implies (syntaxp (and (quotep y) ;I put this one first to fail fast
@@ -51,14 +57,20 @@
          (bvchop size y))
   :hints (("Goal" :in-theory (enable bvplus))))
 
+;; Disabled since usually commute constants forward
+(defthmd bvplus-of-0-arg3
+  (equal (bvplus size x 0)
+         (bvchop size x))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
 ;gen?
-(defthm bvplus-of-bvchop-arg1
+(defthm bvplus-of-bvchop-arg2
   (equal (bvplus size (bvchop size x) y)
          (bvplus size x y))
   :hints (("Goal" :in-theory (enable bvplus bvchop-when-i-is-not-an-integer))))
 
 ;gen?
-(defthm bvplus-of-bvchop-arg2
+(defthm bvplus-of-bvchop-arg3
   (equal (bvplus size x (bvchop size y))
          (bvplus size x y))
   :hints (("Goal" :in-theory (enable bvplus bvchop-when-i-is-not-an-integer))))
@@ -136,6 +148,7 @@
                   (bvplus 1 k y)))
   :hints (("Goal" :use (:instance bvplus-of-1-subst))))
 
+;avoid re-consing (bvplus size1 y z) when the sizes are equal?
 (defthm bvchop-of-bvplus
   (implies (and (<= size1 size2)
                 (natp size1)
@@ -295,11 +308,7 @@
   :hints (("Goal" :use (:instance bvplus-when-equal-of-constant-and-bvchop-arg2)
            :in-theory (disable bvplus-when-equal-of-constant-and-bvchop-arg2))))
 
-(defthmd bvplus-commute-constant
-  (implies (syntaxp (and (quotep k)
-                         (not (quotep x))))
-           (equal (bvplus size x k)
-                  (bvplus size k x))))
+
 
 ;gen
 ;rename

@@ -171,6 +171,10 @@
       x
     (salsa20-n-times (+ -1 n) (salsa20 x))))
 
+;; Added by Matt K. to avoid stack overflow in Allegro CL (and perhaps other
+;; Lisps that don't compile on-the-fly):
+(comp t)
+
 ;; Takes about 3 minutes
 (acl2::assert-equal
  (salsa20-n-times 1000000

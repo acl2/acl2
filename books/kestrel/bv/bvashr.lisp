@@ -35,9 +35,15 @@
 
 ;todo: gen
 (defthm bvchop-of-bvashr
-  (equal (bvchop '8 (bvashr '32 x '8))
-         (slice 15 8 x))
-  :hints (("Goal" :in-theory (enable ))))
+  (implies (and (<= (+ n shift-amount) width)
+                (natp shift-amount)
+                (natp width)
+                (natp n))
+           (equal (bvchop n (bvashr width x shift-amount))
+                  (slice (+ -1 n shift-amount)
+                         shift-amount
+                         x)))
+  :hints (("Goal" :in-theory (enable bvsx))))
 
 (defthmd bvashr-rewrite-for-constant-shift-amount
   (implies (and (syntaxp (quotep shift-amount))
@@ -57,3 +63,56 @@
   (equal (unsigned-byte-p size (bvashr size x amt))
          (natp size))
   :hints (("Goal" :in-theory (enable bvshr))))
+
+(defthm bvashr-of-bvchop
+  (implies (and (natp width)
+                (natp shift-amount))
+           (equal (bvashr width (bvchop width x) shift-amount)
+                  (bvashr width x shift-amount)))
+  :hints (("Goal" :cases ((equal 0 width))
+           :in-theory (enable bvashr))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund bvashr-cases-term-fn-aux (i width)
+  (declare (xargs :guard (integerp width)
+                  :measure (nfix (+ 1 i))))
+  (if (not (natp i))
+      nil
+    (cons `(,i (bvashr ,width x ,i))
+          (bvashr-cases-term-fn-aux (+ -1 i) width))))
+
+(defund bvashr-cases-term-fn (width)
+  (declare (xargs :guard (natp width)))
+  `(case shift-amount
+     ,@(bvashr-cases-term-fn-aux width width)))
+
+(defmacro bvashr-cases-term (width)
+  (bvashr-cases-term-fn width))
+
+;pretty gross
+(defthmd bvashr-16-cases
+  (implies (and (syntaxp (not (quotep shift-amount)))
+                (natp shift-amount)
+                (<= shift-amount 16))
+           (equal (bvashr 16 x shift-amount)
+                  (bvashr-cases-term 16)))
+  :hints (("Goal" :in-theory (enable bvashr))))
+
+;pretty gross
+(defthmd bvashr-32-cases
+  (implies (and (syntaxp (not (quotep shift-amount)))
+                (natp shift-amount)
+                (<= shift-amount 32))
+           (equal (bvashr 32 x shift-amount)
+                  (bvashr-cases-term 32)))
+  :hints (("Goal" :in-theory (enable bvashr))))
+
+;pretty gross
+(defthmd bvashr-64-cases
+  (implies (and (syntaxp (not (quotep shift-amount)))
+                (natp shift-amount)
+                (<= shift-amount 64))
+           (equal (bvashr 64 x shift-amount)
+                  (bvashr-cases-term 64)))
+  :hints (("Goal" :in-theory (enable bvashr))))

@@ -35,6 +35,8 @@
 
 ;(local (in-theory (enable member-equal-becomes-memberp))) ;todo
 
+(local (in-theory (disable symbol-listp)))
+
 ;; (defthm pseudo-termp-when-memberp
 ;;   (implies (and (memberp a y)
 ;;                 (pseudo-term-listp y))
@@ -50,7 +52,9 @@
 ;; TODO: Add a bit-blasting tactic?
 (defun tacticp (tac)
   (declare (xargs :guard t))
-  (or (member-eq tac '(:rewrite :prune :prune-with-rules :acl2 :stp))
+  (or (member-eq tac '(:rewrite
+                       :rewrite-with-precise-contexts
+                       :prune :prune-with-rules :acl2 :stp))
       (and (consp tac)
            (eq :cases (car tac)))))
 
@@ -165,6 +169,46 @@
                   :check-inputs nil))
        ((when erp) (mv *error* nil state))
        (- (and print (cw "Done applying the Axe rewriter (term size: ~x0, DAG size: ~x1))~%"
+                         (dag-or-quotep-size new-dag)
+                         (if (quotep new-dag)
+                             1
+                           (len new-dag))))))
+    (make-tactic-result new-dag dag assumptions state)))
+
+;;
+;; The :rewrite-with-precise-contexts tactic
+;;
+
+;; Returns (mv result info state) where RESULT is a tactic-resultp.
+;; Could return the rules used as the INFO return value.
+;; WARNING: This can blow up for large DAGs, as it (currently) turns the DAG into a term.
+(defun apply-tactic-rewrite-with-precise-contexts (problem rule-alist interpreted-function-alist monitor normalize-xors print state)
+  (declare (xargs :guard (and (proof-problemp problem)
+                              (rule-alistp rule-alist)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (symbol-listp monitor)
+                              (booleanp normalize-xors)
+                              (axe-print-levelp print))
+                  :verify-guards nil ; todo first strengthen proof-problemp to require pseudp-dagp
+                  :stobjs state))
+  (b* ((dag (first problem))
+       (assumptions (second problem))
+       (- (and print (cw "(Applying the Axe rewriter with precise contexts~%")))
+       (term (dag-to-term dag))
+       ;; Call the rewriter:
+       ((mv erp new-dag)
+        (simplify-term-basic term
+                             assumptions
+                             rule-alist
+                             interpreted-function-alist
+                             monitor
+                             nil ; memoizep
+                             t ; count-hits ; todo: pass in
+                             print
+                             normalize-xors
+                             (w state)))
+       ((when erp) (mv *error* nil state))
+       (- (and print (cw "Done applying the Axe rewriter wiith contexts (term size: ~x0, DAG size: ~x1))~%"
                          (dag-or-quotep-size new-dag)
                          (if (quotep new-dag)
                              1
@@ -437,19 +481,21 @@
                               (booleanp normalize-xors))))
   (if (eq :rewrite tactic)
       (apply-tactic-rewrite problem rule-alist interpreted-function-alist monitor normalize-xors print state)
-    (if (eq :prune tactic) ;todo: deprecate in favor of :prune-with-rules?
-        (apply-tactic-prune problem print call-stp-when-pruning state)
-      (if (eq :prune-with-rules tactic)
-          (apply-tactic-prune-with-rules problem rule-alist interpreted-function-alist monitor print call-stp-when-pruning state)
-        (if (eq :acl2 tactic)
-            (apply-tactic-acl2 problem print state)
-          (if (eq :stp tactic)
-              (apply-tactic-stp problem print max-conflicts state)
-            (if (and (consp tactic)
-                     (eq :cases (car tactic)))
-                (apply-tactic-cases problem (fargs tactic) print state)
-              (prog2$ (er hard 'apply-proof-tactic "Unknown tactic: ~x0." tactic)
-                      (mv :error nil state)))))))))
+    (if (eq :rewrite-with-precise-contexts tactic)
+        (apply-tactic-rewrite-with-precise-contexts problem rule-alist interpreted-function-alist monitor normalize-xors print state)
+      (if (eq :prune tactic) ;todo: deprecate in favor of :prune-with-rules?
+          (apply-tactic-prune problem print call-stp-when-pruning state)
+        (if (eq :prune-with-rules tactic)
+            (apply-tactic-prune-with-rules problem rule-alist interpreted-function-alist monitor print call-stp-when-pruning state)
+          (if (eq :acl2 tactic)
+              (apply-tactic-acl2 problem print state)
+            (if (eq :stp tactic)
+                (apply-tactic-stp problem print max-conflicts state)
+              (if (and (consp tactic)
+                       (eq :cases (car tactic)))
+                  (apply-tactic-cases problem (fargs tactic) print state)
+                (prog2$ (er hard 'apply-proof-tactic "Unknown tactic: ~x0." tactic)
+                        (mv :error nil state))))))))))
 
 (defconst *unknown* :unknown)
 
@@ -826,7 +872,7 @@
                (cw "NOTE: The two dags have different variables.~%")))
        ((when (and different-varsp
                    (not different-vars-ok)))
-        (mv (hard-error 'prove-equivalence2-fn "The two dags have different variables." nil)
+        (mv (hard-error 'prove-equivalence2-fn "The two dags have different variables.  Consider supplying :DIFFERENT-VARS-OK t." nil)
             nil state ;rand
            ))
        ;; Make the equality DAG to be proved:

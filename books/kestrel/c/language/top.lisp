@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,6 +14,16 @@
 (include-book "keywords")
 (include-book "character-sets")
 (include-book "bytes")
+(include-book "abstract-syntax")
+(include-book "abstract-syntax-operations")
+(include-book "types")
+(include-book "portable-ascii-identifiers")
+(include-book "errors")
+(include-book "integer-formats")
+(include-book "integer-ranges")
+(include-book "tag-environments")
+(include-book "static-semantics")
+(include-book "values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -117,7 +117,7 @@
     (b* ((entry (first alist))
          (fn (car entry))
          (count (cdr entry))
-         (- (cw "  ~x0: ~t2~c1~%" fn (cons count 10) 20)))
+         (- (cw "  ~x0: ~t1~c2~%" fn 50 (cons count 10))))
       (print-function-counts (rest alist)))))
 
 ;res is an alist mapping functions in the dag to their occurrence counts

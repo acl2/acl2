@@ -17,9 +17,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-abstract-syntax-operations
-  :parents (atc-abstract-syntax)
-  :short "Operations on the C abstract syntax for ATC."
+(defxdoc+ abstract-syntax-operations
+  :parents (abstract-syntax)
+  :short "Operations on the C abstract syntax."
   :order-subtopics t
   :default-parent t)
 
@@ -105,16 +105,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This abstracts an object declarator to an abstract one,
+    "This abstracts an object declarator to an abstract object declarator,
      by removing the identifier and also returning it.
      See @(tsee obj-adeclor)."))
   (obj-declor-case
    declor
    :ident (mv declor.get (obj-adeclor-none))
    :pointer (b* (((mv id sub) (obj-declor-to-ident+adeclor declor.to)))
-              (mv id (obj-adeclor-pointer sub)))
+              (mv id (make-obj-adeclor-pointer :to sub)))
    :array (b* (((mv id sub) (obj-declor-to-ident+adeclor declor.of)))
-            (mv id (obj-adeclor-array sub))))
+            (mv id (make-obj-adeclor-array :of sub :size declor.size))))
   :measure (obj-declor-count declor)
   :verify-guards :after-returns
   :hooks (:fix))
@@ -132,8 +132,11 @@
   (obj-adeclor-case
    adeclor
    :none (obj-declor-ident id)
-   :pointer (obj-declor-pointer (ident+adeclor-to-obj-declor id adeclor.to))
-   :array (obj-declor-array (ident+adeclor-to-obj-declor id adeclor.of)))
+   :pointer (make-obj-declor-pointer
+             :to (ident+adeclor-to-obj-declor id adeclor.to))
+   :array (make-obj-declor-array
+           :of (ident+adeclor-to-obj-declor id adeclor.of)
+           :size adeclor.size))
   :measure (obj-adeclor-count adeclor)
   :verify-guards :after-returns
   :hooks (:fix)
@@ -162,9 +165,9 @@
   (xdoc::topstring
    (xdoc::p
     "We decompose the declarator into an identifier and an abstract declarator,
-     and we for a type name with the latter and the type specifier sequence.")
+     and we form a type name with the latter and the type specifier sequence.")
    (xdoc::p
-    "The name of this function does not mention @('obj') explicitly,
+    "The name of this ACL2 function does not mention @('obj') explicitly,
      but the fact that it deals with object declarators
      is implicit in the fact that it deals with type names.")
    (xdoc::p
@@ -190,7 +193,7 @@
     "Given an identifier and a type (name),
      this function provides the constituents for declaring it.")
    (xdoc::p
-    "This is the invers of @(tsee tyspec+declor-to-ident+tyname)."))
+    "This is the inverse of @(tsee tyspec+declor-to-ident+tyname)."))
   (b* (((tyname tyname) tyname))
     (mv tyname.tyspec (ident+adeclor-to-obj-declor id tyname.declor)))
   :hooks (:fix)

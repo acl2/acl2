@@ -14,6 +14,8 @@
 ;; STATUS: In-progress
 
 (local (include-book "take"))
+(local (include-book "true-list-fix"))
+(local (include-book "update-nth"))
 
 ;guaranteed to return a result of length len (actually (nfix len))
 (defund update-nth2 (len key val lst)
@@ -100,3 +102,40 @@
            (equal (nth n (update-nth2 m index val data))
                   nil))
   :hints (("Goal" :in-theory (e/d (update-nth2) (take-of-update-nth)))))
+
+;; Usually kept disabled
+(defthmd update-nth-becomes-update-nth2
+  (implies (and (true-listp lst)
+                (< key (len lst))
+                (natp key))
+           (equal (update-nth key val lst)
+                  (update-nth2 (len lst) key val lst)))
+  :hints (("Goal" :in-theory (enable update-nth2))))
+
+(defthmd update-nth2-of-update-nth2-diff
+  (implies (and (syntaxp (quotep i1))
+                (syntaxp (quotep i2))
+                (< i1 len)
+                (< i2 i1)
+                (natp i1)
+                (natp i2)
+                (natp len)
+                (true-listp l)
+                (equal len (len l))
+                )
+           (equal (update-nth2 len i1 v1 (update-nth2 len i2 v2 l))
+                  (update-nth2 len i2 v2 (update-nth2 len i1 v1 l))))
+  :hints (("Goal"
+           :in-theory (enable update-nth2 ;LIST::UPDATE-NTH-UPDATE-NTH-DIFF
+                              ))))
+
+(defthm update-nth2-of-update-nth2-same
+  (implies (and (< i len)
+                (natp i)
+                (natp len)
+                )
+           (equal (update-nth2 len i v1 (update-nth2 len i v2 l))
+                  (update-nth2 len i v1 l)))
+  :hints (("Goal"
+           :in-theory (enable update-nth2 ;LIST::UPDATE-NTH-UPDATE-NTH-DIFF
+                              ))))

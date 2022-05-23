@@ -357,12 +357,12 @@
                        (< (bvchop size y) (expt 2 i)))))
   :hints
   (("Goal"
-    :use (:instance unsigned-byte-p-of-logior
+    :use (:instance unsigned-byte-p-of-logior-strong
                     (i (bvchop size x))
                     (j (bvchop size y))
                     (n i))
     :in-theory (e/d (bvor unsigned-byte-p)
-                    (unsigned-byte-p-of-logior)))))
+                    (unsigned-byte-p-of-logior-strong)))))
 
 ;todo: gen to constant powers of 2
 (defthm bvor-bound-64-hack
@@ -436,3 +436,23 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvor (size 1))
            :in-theory (disable unsigned-byte-p-of-bvor
                                unsigned-byte-p-of-bvor-gen))))
+
+;bozo move hyps to conclusion?
+; a bit odd
+(defthm unsigned-byte-p-of-bvor2
+  (implies (and (unsigned-byte-p n a)
+                (unsigned-byte-p n b)
+                (natp n)
+                (natp size))
+           (unsigned-byte-p n (bvor size a b)))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+;kind of a weird rule..
+(defthm unsigned-byte-p-of-bvor3
+  (implies (and (< n size)
+                (natp n)
+                (natp size))
+           (equal (unsigned-byte-p n (bvor size a b))
+                  (and (unsigned-byte-p n (bvchop size a))
+                       (unsigned-byte-p n (bvchop size b)))))
+  :hints (("Goal" :in-theory (enable bvor))))

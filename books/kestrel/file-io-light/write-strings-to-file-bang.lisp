@@ -30,9 +30,6 @@
     (if (not channel)
         (prog2$ (er hard? ctx "Unable to open file ~s0 for :character output." filename)
                 (mv t state))
-      (if (eq channel 'acl2-output-channel::standard-character-output-0) ;todo: prove that this doesn't happen
-          (prog2$ (er hard? ctx "Unexpected output channel name: ~x0." channel)
-                  (mv t state))
-        (pprogn (write-strings-to-channel strings channel state)
-                (close-output-channel channel state)
-                (mv nil state))))))
+      (pprogn (write-strings-to-channel strings channel state)
+              (close-output-channel channel state)
+              (mv nil state)))))

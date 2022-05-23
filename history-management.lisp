@@ -4850,6 +4850,43 @@
   (and (not (f-get-global 'inside-skip-proofs state))
        (f-get-global 'skip-proofs-by-system state)))
 
+(defun set-cert-replay-p (wrld state)
+
+; Warning: Keep this in sync with the setting of 'cert-replay in encapsulate-fn.
+
+; The setting in encapsulate-fn is done when an encapsulate introduces a new
+; package in its first pass.  The present function, however, tells
+; install-event to set 'cert-replay in the following two cases (when it's not
+; already set):
+
+; - when certifying a book, for a local event (set-cert-replay-p = 'certify);
+; - when not certifying a book, for an event that either is local or for which
+;   guard-checking is relaxed (set-cert-replay-p = 'portcullis).
+; The latter case is used to inform any subsequent certify-book, for its local
+; incompatibility check, about where to rollback the world.
+
+; For efficiency (though this is probably overkill), since accessing state
+; globals is probably much faster than accessing world globals, we take some
+; care to evaluate the global-val calls below only when necessary.
+
+  (cond ((f-get-global 'in-local-flg state)
+         (and (not (global-val 'cert-replay wrld))
+              (if (f-get-global 'certify-book-info state)
+
+; If we are inside include-book in addition to being inside certify-book, then
+; don't change 'cert-replay.
+
+                  (and (not (global-val 'include-book-path wrld))
+                       'certify)
+                'portcullis)))
+        ((f-get-global 'certify-book-info state)
+         nil)
+        ((not (member-eq (f-get-global 'guard-checking-on state)
+                         '(t :nowarn :all)))
+         (and (not (global-val 'cert-replay wrld))
+              'portcullis))
+        (t nil)))
+
 (defun install-event (val form ev-type namex ttree cltl-cmd
                           chk-theory-inv-p ctx wrld state)
 
@@ -4941,13 +4978,24 @@
                            (and (atom namex) (not (symbolp namex))))
                        wrld
                      (install-proof-supporters namex ttree wrld)))
-            (wrld1a (if (and (f-get-global 'in-local-flg state)
-                             (f-get-global 'certify-book-info state)
-                             (not ; not inside include-book
-                              (global-val 'include-book-path wrld))
-                             (not (global-val 'cert-replay wrld)))
-                        (global-set 'cert-replay t wrld0)
-                      wrld0))
+            (wrld1a (case (set-cert-replay-p wrld state)
+                      (portcullis
+                       (global-set
+                        'cert-replay
+
+; We have found an event that will become the first portcullis event that is
+; local or is executed with relaxed guard-checking, if this world extends to a
+; certification world.
+
+; Warning: If you change the following, then make the corresponding change
+; where max-absolute-command-number is called in encapsulate-fn.
+
+                        (cons (cons (- (max-absolute-command-number wrld))
+                                    (f-get-global 'in-local-flg state))
+                              (scan-to-command wrld))
+                        wrld))
+                      (certify (global-set 'cert-replay t wrld0))
+                      (t wrld0)))
             (wrld1 (if new-proved-fnl-insts
                        (global-set
                         'proved-functional-instances-alist

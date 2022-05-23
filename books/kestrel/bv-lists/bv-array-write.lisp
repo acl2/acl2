@@ -178,3 +178,33 @@
                             ;LIST::UPDATE-NTH-EQUAL-REWRITE
                             ;LIST::UPDATE-NTH-EQUAL-UPDATE-NTH-REWRITE
                             )))))
+
+;; width is a free var
+(defthmd update-nth2-becomes-bv-array-write
+  (implies (and (all-unsigned-byte-p width lst)
+                (unsigned-byte-p width val)
+                ;;new:
+                (< key len)
+                (natp key)
+                (true-listp lst)
+                (equal len (len lst))
+                )
+           (equal (update-nth2 len key val lst)
+                  (bv-array-write width len key val lst)))
+  :hints (("Goal" :in-theory (enable bv-array-write-opener update-nth2))))
+
+;; width is a free var
+(defthmd update-nth-becomes-bv-array-write
+  (implies (and (all-unsigned-byte-p width lst)
+                (unsigned-byte-p width val)
+                (< key (len lst))
+                (natp key)
+                (true-listp lst))
+           (equal (update-nth key val lst)
+                  (bv-array-write width (len lst) key val lst)))
+  :hints (("Goal" :in-theory (enable bv-array-write-opener update-nth2))))
+
+(defthm bv-array-write-of-true-list-fix
+  (equal (bv-array-write elem-size len index val (true-list-fix lst))
+         (bv-array-write elem-size len index val lst))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))

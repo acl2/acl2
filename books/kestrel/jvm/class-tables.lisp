@@ -565,8 +565,8 @@
                 )
            (all-class-namesp (get-superclasses-aux class-name class-table n)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (get-superclasses-aux ;class-tablep
-                            bound-in-class-tablep) ()))))
+           :in-theory (enable get-superclasses-aux ;class-tablep
+                              bound-in-class-tablep))))
 
 ;returns the (proper) superclasses of class-name from most to least specific (ending with java.lang.Object)
 ;fixme really this should be called get-superclass-names
@@ -937,8 +937,7 @@
 (defthm string-in-class-table
   (implies (class-tablep class-table)
            (bound-in-class-tablep "java.lang.String" class-table))
-  :hints (("Goal" :in-theory (e/d (class-tablep bound-to-a-non-interfacep)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable class-tablep bound-to-a-non-interfacep))))
 
 (defthm string-not-interface-in-class-table
   (implies (class-tablep class-table)
