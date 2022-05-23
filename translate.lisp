@@ -216,17 +216,15 @@
          (let ((temp (assoc-eq (car stobjs-out) latches)))
            (cond
 
-; Suppose (car stobjs-out) is some stobj, $st, and (car vals) is the
-; new value, val.  We wish to bind '$st in latches to val.  It is an
-; error if we can't find a binding for '$st.  Otherwise, put-assoc-eq
-; will do the job.  But in the special, live, case, val is EQ to the
-; current binding of '$st in latches, because all the objects are
-; live.  In this case, we can avoid the put-assoc-eq and just leave
-; latches unchanged.  The clause below is safe whether val is a live
-; object or not: if it's the same thing as what is there, the
-; put-assoc-eq won't change latches anyway.  But the real intent of
-; this clause is make the final value of latches, in general, EQ to
-; the original value of latches.
+; Suppose (car stobjs-out) is some stobj, $st, and (car vals) is the new value,
+; val.  We wish to bind '$st in latches to val.  It is an error if we can't
+; find a binding for '$st.  Otherwise, put-assoc-eq will do the job.  But in
+; the special, live, case, val is often EQ to the current binding of '$st in
+; latches, because all the objects are live and modifications are usually
+; destructive (an exception being array resizing).  In this case, we can avoid
+; the put-assoc-eq and just leave latches unchanged.  The clause below is safe
+; whether val is a live object or not: if it's the same thing as what is there,
+; the put-assoc-eq won't change latches anyway.
 
 
             ((not temp)
@@ -243,10 +241,6 @@
                  (strip-cars latches)
                  (if latches 0 1)))
             ((eq (cdr temp) (car vals))
-
-; Two live stobjs are the same iff they are eq.  This is kind of a cheat; see
-; the comment about the use of rassoc-eq in actual-stobjs-out1.
-
              (latch-stobjs1 (cdr stobjs-out)
                             (cdr vals)
                             latches))
