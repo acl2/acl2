@@ -35,9 +35,6 @@
 (include-book "kestrel/lists-light/first-non-member" :dir :system)
 (include-book "kestrel/bv/defs" :dir :system) ;reduce?
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
-(include-book "kestrel/bv/bitnot" :dir :system)
-(include-book "kestrel/bv/bvshl" :dir :system)
-(include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; reduce?
