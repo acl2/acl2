@@ -51,3 +51,9 @@
                 (all-true-listp x))
            (true-listp a))
   :hints (("Goal" :in-theory (enable all-true-listp))))
+
+(defthm all-true-listp-of-nthcdr
+  (implies (all-true-listp x)
+           (equal (all-true-listp (nthcdr n x))
+                  t))
+  :hints (("Goal" :in-theory (enable nthcdr))))
