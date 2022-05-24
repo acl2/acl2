@@ -112,6 +112,21 @@
 
 \newlibtitle
 
+\bookpath{centaur/bigmem}:
+A library that defines a big array (up to 2$^{64}$ bytes)
+\begin{itemize}
+\item Offers the reasoning efficiency of records.
+\item Offers efficient execution via nested stobjs containing resizable arrays.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]
+
+\newlibtitle
+
 \bookpath{kestrel/acl2pl}:
 Preliminary model of the ACL2 programming (not logical) language.
 \begin{itemize}
@@ -281,12 +296,48 @@ Models and proofs for the Zcash blockchain.
 
 \newlibtitle
 
+\bookpath{projects/execloader}:
+
+\begin{itemize}
+\item Read in sections of ELF/Mach-O files into ACL2. An older version
+      of these books used to live in the \code{x86isa} library.
+\item Simplified \code{elf-reader}; ELF binary header, all section
+      headers, and all section contents are now stored in the \code{elf}
+      stobj. Previously, only a handful of commonly-used sections (e.g.,
+      \code{.text}, \code{.data}, \code{.rodata}, etc.) were parsed.
+\item Added support for getting information from ELF symbol table
+      using functions \code{get-symtab-entries} and
+      \code{get-label-address}.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
 \bookpath{std/obags}:
 Ordered bags (obags).
 \begin{itemize}
 \item Similar to osets and omaps, for bags (i.e.\ multisets).
 \item Modeled as totally (non-strictly) ordered lists.
 \item Include operations and theorems.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{centaur/defrstobj2}:
+Record-like Stobjs
+\begin{itemize}
+\item \code{defrstobj2} can now be used to define stobjs with child
+      stobj fields, i.e., fields based on another stobj.
 \end{itemize}
 
 \end{frame}
@@ -485,7 +536,10 @@ X86ISA, the formal model of the x86 Instruction Set Architecture.
 \begin{itemize}
 \item Simplified the treatment of CPUID features.
 \item Added the \code{MOVD} and \code{MOVQ} instruction variants
-      that move data from/to the XMM registers.
+  that move data from/to the XMM registers.
+\item Simplified state definition by using
+      \code{centaur/bigmem} and \code{centaur/defrstobj2}. See
+      \code{:doc x86isa-state-history} for details.
 \end{itemize}
 
 \end{frame}
