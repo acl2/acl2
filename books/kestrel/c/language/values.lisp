@@ -261,47 +261,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-pointer-null ((reftype typep))
-  :returns (ptr valuep)
-  :short "Null pointer for a given referenced type."
-  (make-value-pointer :designator? nil :reftype reftype)
-  :hooks (:fix)
-  ///
-  (defret value-kind-of-value-pointer-null
-    (equal (value-kind ptr) :pointer)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define value-pointer-nullp ((ptr valuep))
-  :guard (value-case ptr :pointer)
-  :returns (yes/no booleanp)
-  :short "Check if a pointer is null."
-  (not (value-pointer->designator? ptr))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define value-pointer->designator ((ptr valuep))
-  :guard (and (value-case ptr :pointer)
-              (not (value-pointer-nullp ptr)))
-  :returns (design objdesignp)
-  :short "Object designator of a non-null pointer."
-  (objdesign-fix (value-pointer->designator? ptr))
-  :guard-hints (("Goal" :in-theory (enable value-pointer-nullp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define value-array->length ((array valuep))
-  :guard (value-case array :array)
-  :returns (length posp)
-  :short "Length of an array."
-  (len (value-array->elements array))
-  :hooks (:fix)
-  :prepwork ((local (include-book "std/lists/len" :dir :system))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define value-signed-integerp ((val valuep))
   :returns (yes/no booleanp)
   :short "Check if a value is a signed integer [C:6.2.5/4]."
@@ -445,7 +404,32 @@
   (fty::deffixequiv type-list-of-value-list
     :args ((x value-listp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define member-type-of-member-value ((member member-valuep))
+  :returns (memtype member-typep)
+  :short "Member type of a member value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @(tsee member-type) is the static counterpart of
+     a @(tsee member-value)."))
+  (make-member-type :name (member-value->name member)
+                    :type (type-of-value (member-value->value member)))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection member-types-of-member-values (x)
+  :guard (member-value-listp x)
+  :returns (memtypes member-type-listp)
+  :short "Lift @(tsee member-type-of-member-value) to lists."
+  (member-type-of-member-value x)
+  ///
+  (fty::deffixequiv member-types-of-member-values
+    :args ((x member-value-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-of-value-option ((val? value-optionp))
   :returns (type typep)
