@@ -51,7 +51,7 @@
 ;move
 (defthmd myquotep-when-axe-disjunctionp
   (implies (axe-disjunctionp d)
-           (equal (MYQUOTEP d)
+           (equal (myquotep d)
                   (or (equal (true-disjunction) d)
                       (equal (false-disjunction) d))))
   :hints (("Goal" :in-theory (enable axe-disjunctionp))))
@@ -59,7 +59,7 @@
 ;move
 (defthmd quotep-when-axe-disjunctionp
   (implies (axe-disjunctionp d)
-           (equal (QUOTEP d)
+           (equal (quotep d)
                   (or (equal (true-disjunction) d)
                       (equal (false-disjunction) d))))
   :hints (("Goal" :in-theory (enable axe-disjunctionp))))
@@ -2236,7 +2236,7 @@
                                              base-filename print max-conflicts
                                              counterexamplep state))))))))
 
-;fixme move this to the translate-dag-to-stp book?
+;; TODO: move this to the translate-dag-to-stp book?
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; TODO: the cutting could look at shared nodes (don't cut above the shared node frontier)?
