@@ -24,6 +24,7 @@
 (include-book "tag-environments")
 (include-book "static-semantics")
 (include-book "values")
+(include-book "pointer-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -15,6 +15,7 @@
 (include-book "types")
 
 (include-book "../language/values")
+(include-book "../language/pointer-operations")
 
 (include-book "defthm-disjoint")
 

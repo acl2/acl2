@@ -261,37 +261,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-pointer-null ((reftype typep))
-  :returns (ptr valuep)
-  :short "Null pointer for a given referenced type."
-  (make-value-pointer :designator? nil :reftype reftype)
-  :hooks (:fix)
-  ///
-  (defret value-kind-of-value-pointer-null
-    (equal (value-kind ptr) :pointer)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define value-pointer-nullp ((ptr valuep))
-  :guard (value-case ptr :pointer)
-  :returns (yes/no booleanp)
-  :short "Check if a pointer is null."
-  (not (value-pointer->designator? ptr))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define value-pointer->designator ((ptr valuep))
-  :guard (and (value-case ptr :pointer)
-              (not (value-pointer-nullp ptr)))
-  :returns (design objdesignp)
-  :short "Object designator of a non-null pointer."
-  (objdesign-fix (value-pointer->designator? ptr))
-  :guard-hints (("Goal" :in-theory (enable value-pointer-nullp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define value-array->length ((array valuep))
   :guard (value-case array :array)
   :returns (length posp)
