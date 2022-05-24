@@ -24,11 +24,21 @@
 (include-book "rewriter") ; for simp-dag and simplify-terms-using-each-other
 (include-book "dag-size")
 (include-book "equivalent-dags")
-(include-book "dagify") ;todo
+;(include-book "dagify") ;todo
 (include-book "tools/prove-dollar" :dir :system)
+(include-book "kestrel/arithmetic-light/minus" :dir :system) ; for INTEGERP-OF--
+(include-book "kestrel/arithmetic-light/plus" :dir :system) ; for INTEGERP-OF-+
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
+(include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system) ; for extend-progn
+(include-book "kestrel/bv/bvashr" :dir :system)
+(include-book "bv-rules-axe0")
+(include-book "bv-rules-axe")
+(include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
+(include-book "kestrel/bv/sbvdiv" :dir :system)
+(include-book "kestrel/bv/sbvrem" :dir :system)
+(include-book "kestrel/bv/rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BVCHOP, etc?
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -326,15 +336,39 @@
 
 (verify-guards lookup-nodes-in-counterexample)
 
+;; Note that this gets supplemented with any rules that are passed to the tactic-prover for rewriting
+(defund pre-stp-rules ()
+  (declare (xargs :guard t))
+  (append
+   '(bvshl-rewrite-with-bvchop-for-constant-shift-amount ;introduces bvcat ; todo: replace with the definition of bvshl?
+     bvshr-rewrite-for-constant-shift-amount             ; introduces slice
+     bvashr-rewrite-for-constant-shift-amount            ;new, introduces bvsx
+     ;; todo: handle more cases.  a general solution?
+     bvshl-32-cases
+     bvshl-64-cases
+     bvshr-32-cases
+     bvshr-64-cases
+     bvashr-32-cases
+     bvashr-64-cases
+     ;; these are needed to resolve claims about the indiced being in bounds (todo: generalize the rules above):
+     <-lemma-for-known-operators    ; rename with axe in the name
+     <-lemma-for-known-operators-alt ; rename with axe in the name
+     eql ; introduced by case
+     )
+   (type-rules)
+   (unsigned-byte-p-forced-rules)))
+
+(ensure-rules-known (pre-stp-rules))
+
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 ;; A true counterexample returned in the info is fixed up to bind vars, not nodenums
-(defun apply-tactic-stp (problem print max-conflicts state)
-  (declare (xargs :stobjs (state)
-;                  :mode :program
-                  :guard (proof-problemp problem)
+(defun apply-tactic-stp (problem rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts state)
+  (declare (xargs :guard (proof-problemp problem)
+                  :stobjs (state)
                   :verify-guards nil ;todo: first verify guards for PROVE-DISJUNCTION-WITH-STP
                   ))
   (b* ((dag (first problem))
+       (assumptions (second problem))
        ((when (quotep dag))
         (if (unquote dag)
             ;; Non-nil constant:
@@ -344,7 +378,34 @@
           (prog2$
            (cw "Note: The DAG is the constant NIL.~%")
            (mv *invalid* nil state))))
-       (assumptions (second problem))
+       ;; Replace stuff that STP can't handle (todo: push this into the STP translation)?:
+       ((mv erp rule-alist) (add-to-rule-alist (pre-stp-rules) rule-alist (w state)))
+       ((when erp)
+        (er hard? 'apply-tactic-stp "ERROR making pre-stp rule-alist.~%")
+        (mv *error* nil state))
+       ((mv erp dag)
+        (simplify-dag-basic dag
+                            assumptions
+                            interpreted-function-alist
+                            nil ; limits
+                            rule-alist
+                            nil ; count-hits
+                            nil ; print
+                            (known-booleans (w state))
+                            monitor ; monitored-symbols
+                            normalize-xors
+                            nil ; memoize
+                            ))
+       ((when erp) (mv *error* nil state))
+       ((when (quotep dag))
+        (if (unquote dag)
+            ;; Non-nil constant:
+            (prog2$ (cw "Note: The DAG (after applying pre-STP rules) is the constant ~x0.~%" (unquote dag))
+                    (mv *valid* nil state))
+          ;; The dag is the constant nil:
+          (prog2$
+           (cw "Note: The DAG (after applying pre-STP rules) is the constant NIL.~%")
+           (mv *invalid* nil state))))
        (- (and print (cw "(Using ~x0 assumptions: ~X12.~%" (len assumptions) assumptions nil)))
        (dag-size (dag-size dag))
        (- (and print (cw " Calling STP to prove: ~x0.~%" (if (< dag-size 100) (dag-to-term dag) dag))))
@@ -490,7 +551,7 @@
           (if (eq :acl2 tactic)
               (apply-tactic-acl2 problem print state)
             (if (eq :stp tactic)
-                (apply-tactic-stp problem print max-conflicts state)
+                (apply-tactic-stp problem rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts state)
               (if (and (consp tactic)
                        (eq :cases (car tactic)))
                   (apply-tactic-cases problem (fargs tactic) print state)
