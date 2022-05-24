@@ -54,7 +54,7 @@
     (:id   (unsigned-byte-p 1 val))
     (otherwise nil)))
 
-;; See also !flgi in the mode, but that is a macro and cannot be called with a
+;; See also !flgi in the model, but that is a macro and cannot be called with a
 ;; variable as the flag..
 (defund set-flag (flag val x86)
   (declare (xargs :guard (flag-and-val-ok flag val)
