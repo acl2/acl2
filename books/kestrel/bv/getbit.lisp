@@ -566,3 +566,10 @@
                                    mod-of-*-of-2-and-expt)
                            (BVCHOP-1-BECOMES-GETBIT
                             slice-BECOMES-GETBIT)))))
+
+(defthm getbit-0-of--
+  (equal (getbit 0 (- x))
+         (getbit 0 x))
+  :hints (("Goal" :in-theory (e/d (getbit)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit)))))
