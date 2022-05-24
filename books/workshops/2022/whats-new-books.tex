@@ -89,10 +89,11 @@
 
 \subtitle{Since the ACL2-2020 Workshop}
 
-\author{Alessandro Coglio\inst{1}\inst{4}\inst{5} (presenter),
+\author{Jagadish Bapanapally\inst{7}\inst{4},
+        Alessandro Coglio\inst{1}\inst{4}\inst{5} (presenter),\\
         Cuong Chau\inst{2},
-        Shilpi Goel\inst{3},\\
-        Matt Kaufmann\inst{6},
+        Shilpi Goel\inst{3},
+        Matt Kaufmann\inst{6},\\
         J Strother Moore\inst{6},
         David Russinoff\inst{2}}
 
@@ -101,7 +102,8 @@
            \inst{3}Centaur,
            \inst{4}Kestrel Institute,
            \inst{5}Kestrel Technology,\\
-           \inst{6}University of Texas at Austin (retired)}
+           \inst{6}University of Texas at Austin (retired),
+           \inst{7}University of Wyoming}
 
 \date{ACL2-2022 Workshop}
 
@@ -482,6 +484,19 @@ Models, proofs, and tools for Java.
 
 \implibtitle
 
+\bookpath{kestrel/number-theory}:
+Number theory library.
+\begin{itemize}
+\item Verified Tonelli-Shanks algorithm for modular square roots.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{kestrel/soft}:
 Second-Order Functions and Theorems (SOFT).
 \begin{itemize}
@@ -528,6 +543,27 @@ Utilities in the Kestrel books.
 \item Added macro \code{checkpoint-list},
       which provides a programmatic, flexible interface
       to the key checkpoint information.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{nonstd}:
+Non-standard analysis.
+\begin{itemize}
+\item Formalization of Banach-Tarski paradox in ACL2(r),
+      at \code{nonstd/nsa/Banach-Tarski/}.
+\item Properties of 3D rotations
+      using the \code{array2p} data structure in ACL2(r),
+      at \code{nonstd/nsa/Banach-Tarski/rotations.lisp}.
+\item Integration by substitution in ACL2(r),
+      and proof of the area of a circle in ACL2(r),
+      at \code{nonstd/integrals/u-substitution.lisp}.
 \end{itemize}
 
 \end{frame}
