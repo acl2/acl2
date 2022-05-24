@@ -30,7 +30,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define struct-read-member ((name identp) (struct valuep))
+(define value-struct-read ((name identp) (struct valuep))
   :guard (value-case struct :struct)
   :returns (val value-resultp)
   :short "Read a member of a structure."
@@ -40,11 +40,11 @@
     "We look up the members in order;
      given that the members have distinct names (see @(tsee value),
      the search order is immaterial."))
-  (struct-read-member-aux name (value-struct->members struct))
+  (value-struct-read-aux name (value-struct->members struct))
   :hooks (:fix)
 
   :prepwork
-  ((define struct-read-member-aux ((name identp) (members member-value-listp))
+  ((define value-struct-read-aux ((name identp) (members member-value-listp))
      :returns (val value-resultp)
      :parents nil
      (b* (((when (endp members))
@@ -52,12 +52,12 @@
           ((member-value member) (car members))
           ((when (equal member.name (ident-fix name)))
            member.value))
-       (struct-read-member-aux name (cdr members)))
+       (value-struct-read-aux name (cdr members)))
      :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define struct-write-member ((name identp) (val valuep) (struct valuep))
+(define value-struct-write ((name identp) (val valuep) (struct valuep))
   :guard (value-case struct :struct)
   :returns (new-struct value-resultp)
   :short "Write a member of a structure."
@@ -69,15 +69,15 @@
      the search order is immaterial.
      The new value must have the same type as the old value."))
   (b* ((new-members
-        (struct-write-member-aux name val (value-struct->members struct)))
+        (value-struct-write-aux name val (value-struct->members struct)))
        ((when (errorp new-members)) new-members))
     (change-value-struct struct :members new-members))
   :hooks (:fix)
 
   :prepwork
-  ((define struct-write-member-aux ((name identp)
-                                    (val valuep)
-                                    (members member-value-listp))
+  ((define value-struct-write-aux ((name identp)
+                                   (val valuep)
+                                   (members member-value-listp))
      :returns
      (new-members
       member-value-list-resultp
@@ -98,7 +98,7 @@
              (error (list :mistype-member (ident-fix name)
                           :old-value member.value
                           :new-value (value-fix val)))))
-          (new-cdr-members (struct-write-member-aux name val (cdr members)))
+          (new-cdr-members (value-struct-write-aux name val (cdr members)))
           ((when (errorp new-cdr-members)) new-cdr-members))
        (cons (member-value-fix (car members))
              new-cdr-members))
@@ -106,7 +106,7 @@
 
   ///
 
-  (defret value-kind-of-struct-write-member
+  (defret value-kind-of-value-struct-write
     (implies (not (errorp new-struct))
              (equal (value-kind new-struct)
                     :struct))))

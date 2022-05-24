@@ -1441,7 +1441,7 @@
         (error (list :mistype-struct-read
                      :pointer reftype
                      :array (type-struct (value-struct->tag struct))))))
-    (struct-read-member mem struct))
+    (value-struct-read mem struct))
   :guard-hints (("Goal" :in-theory (enable pointerp)))
   :hooks (:fix))
 
@@ -1833,7 +1833,7 @@
                (error (list :mistype-struct-read
                             :pointer reftype
                             :array (type-of-value struct))))
-              (new-struct (struct-write-member mem val struct))
+              (new-struct (value-struct-write mem val struct))
               ((when (errorp new-struct)) new-struct))
            (write-object objdes new-struct compst)))
         (t (error (list :expr-asg-left-not-var-or-array-var-subscript left)))))

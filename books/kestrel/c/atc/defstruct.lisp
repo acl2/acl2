@@ -500,7 +500,7 @@
   (defruled defstruct-reader-lemma
     (implies (equal memtypes (member-values-to-types memvals))
              (b* ((type (member-type-lookup name memtypes))
-                  (val (struct-read-member-aux name memvals)))
+                  (val (value-struct-read-aux name memvals)))
                (implies (typep type)
                         (and (valuep val)
                              (equal (type-of-value val)
@@ -508,12 +508,12 @@
     :prep-lemmas
     ((defrule lemma
        (b* ((type (member-type-lookup name (member-values-to-types memvals)))
-            (val (struct-read-member-aux name memvals)))
+            (val (value-struct-read-aux name memvals)))
          (implies (typep type)
                   (and (valuep val)
                        (equal (type-of-value val)
                               type))))
-       :enable (struct-read-member-aux
+       :enable (value-struct-read-aux
                 member-type-lookup
                 member-values-to-types
                 member-value-to-type))))
@@ -521,7 +521,7 @@
   (defruled defstruct-writer-lemma
     (implies (equal memtypes (member-values-to-types memvals))
              (b* ((type (member-type-lookup name memtypes))
-                  (new-memvals (struct-write-member-aux name val memvals)))
+                  (new-memvals (value-struct-write-aux name val memvals)))
                (implies (and (typep type)
                              (valuep val)
                              (equal (type-of-value val)
@@ -532,7 +532,7 @@
     :prep-lemmas
     ((defrule lemma
        (b* ((type (member-type-lookup name (member-values-to-types memvals)))
-            (new-memvals (struct-write-member-aux name val memvals)))
+            (new-memvals (value-struct-write-aux name val memvals)))
          (implies (and (typep type)
                        (valuep val)
                        (equal (type-of-value val)
@@ -540,7 +540,7 @@
                   (and (member-value-listp new-memvals)
                        (equal (member-values-to-types new-memvals)
                               (member-values-to-types memvals)))))
-       :enable (struct-write-member-aux
+       :enable (value-struct-write-aux
                 member-type-lookup
                 member-values-to-types
                 member-value-to-type)))))
@@ -721,11 +721,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a wrapper of @(tsee struct-read-member),
+    "This is a wrapper of @(tsee value-struct-read),
      but it has more specialized input and output types;
      in particular, it never returns an error.
      To prove the output type,
-     we need an intermediate lemma about @(tsee struct-read-member).")
+     we need an intermediate lemma about @(tsee value-struct-read).")
    (xdoc::p
     "Also return the name of the reader
      and the name of the return type theorem of the reader.
@@ -741,9 +741,9 @@
         `(encapsulate ()
            (defrulel lemma
              (implies (,struct-tag-p struct)
-                      (,typep (struct-read-member ',name struct)))
+                      (,typep (value-struct-read ',name struct)))
              :enable (,struct-tag-p
-                      struct-read-member
+                      value-struct-read
                       ,(packn-pos (list typep '-to-type-of-value) typep))
              :use (:instance defstruct-reader-lemma
                    (memtypes ',memtypes)
@@ -751,8 +751,8 @@
                    (memvals (value-struct->members struct))))
            (define ,struct-tag-read-name ((struct ,struct-tag-p))
              :returns (val ,typep)
-             (struct-read-member (ident ,(ident->name name))
-                                 (,struct-tag-fix struct))
+             (value-struct-read (ident ,(ident->name name))
+                                (,struct-tag-fix struct))
              :guard-hints (("Goal" :in-theory (enable ,struct-tag-p)))
              :hooks (:fix)))))
     (mv event struct-tag-read-name return-thm)))
@@ -808,12 +808,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a wrapper of @(tsee struct-write-member),
+    "This is a wrapper of @(tsee value-struct-write),
      but it has more specialized input and output types;
      in particular, it never returns an error.
      To prove the output type,
      we need some intermediate lemmas
-     about @(tsee struct-write-member) and @('struct-write-member-aux').")
+     about @(tsee value-struct-write) and @('value-struct-write-aux').")
    (xdoc::p
     "Also return the name of the writer
      and the name of the return type theorem of the writer.
@@ -831,9 +831,9 @@
            (defrulel lemma
              (implies (and (,struct-tag-p struct)
                            (,typep val))
-                      (,struct-tag-p (struct-write-member ',name val struct)))
+                      (,struct-tag-p (value-struct-write ',name val struct)))
              :enable (,struct-tag-p
-                      struct-write-member
+                      value-struct-write
                       ,(packn-pos (list 'type-of-value-when- typep)
                                   'type-of-value))
              :use (:instance defstruct-writer-lemma
@@ -843,9 +843,9 @@
                    (val val)))
            (define ,struct-tag-write-name ((val ,typep) (struct ,struct-tag-p))
              :returns (new-struct ,struct-tag-p)
-             (struct-write-member (ident ,(ident->name name))
-                                  (,type-fix val)
-                                  (,struct-tag-fix struct))
+             (value-struct-write (ident ,(ident->name name))
+                                 (,type-fix val)
+                                 (,struct-tag-fix struct))
              :guard-hints (("Goal" :in-theory (enable ,struct-tag-p)))
              :hooks (:fix)))))
     (mv event struct-tag-write-name return-thm)))
