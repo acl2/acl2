@@ -216,3 +216,10 @@
                             acl2::*-of-floor-of-same-when-multiple)
                            (<-of-*-of-/-arg2
                             <-of-*-of-/-arg1)))))
+
+(defthm truncate-same
+  (equal (truncate x x)
+         (if (equal 0 (fix x))
+             0
+           1))
+  :hints (("Goal" :in-theory (enable truncate))))

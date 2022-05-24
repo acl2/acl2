@@ -335,11 +335,10 @@
 (defthm get-flag-of-set-flag
   (implies (and (member-eq flag1 *flags*)
                 ;;todo: add more:
-                (member-eq flag2 *one-bit-flags*)
-                (unsigned-byte-p 1 val))
+                (member-eq flag2 *one-bit-flags*))
            (equal (get-flag flag1 (set-flag flag2 val x86))
                   (if (equal flag1 flag2)
-                      val
+                      (acl2::bfix val)
                     (get-flag flag1 x86))))
   :hints (("Goal" :in-theory (enable get-flag
                                      set-flag
