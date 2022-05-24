@@ -89,13 +89,16 @@
 
 \subtitle{Since the ACL2-2020 Workshop}
 
-\author{Alessandro Coglio\inst{1} (presenter),
+\author{Alessandro Coglio\inst{2} (presenter),
+        Cuong Chau,
         Shilpi Goel,\\
-        Matt Kaufmann\inst{2},
-        J Strother Moore\inst{2}}
+        Matt Kaufmann\inst{3},
+        J Strother Moore\inst{3},
+        David Russinoff}
 
-\institute{\inst{1}Kestrel Institute,
-           \inst{2}University of Texas at Austin}
+\institute{\inst{1}ARM,
+           \inst{2}Kestrel Institute,
+           \inst{3}University of Texas at Austin}
 
 \date{ACL2-2022 Workshop}
 
@@ -555,12 +558,45 @@ Utilities in the Kestrel books.
 
 \implibtitle
 
+\bookpath{projects/rac}:
+Restricted Algorithmic C (RAC).
+\begin{itemize}
+\item The \code{tuple} template can have up to {\em eight} arguments.
+\item Support the \code{struct} data type.
+\item Report more detailed error messages.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{rtl}:
+Register-transfer logic library.
+\begin{itemize}
+\item Added a signed version of the radix-4 Booth encoding algorithm.
+\item A new section of \code{books/rtl/rel11/lib/round.lisp} on
+      underflow detection, corresponding to Section 6.7 of ``Formal
+      Verification of Floating-Point Hardware Design'', 2nd edition.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{projects/x86isa}:
 X86ISA, the formal model of the x86 Instruction Set Architecture.
 \begin{itemize}
 \item Simplified the treatment of CPUID features.
 \item Added the \code{MOVD} and \code{MOVQ} instruction variants
-  that move data from/to the XMM registers.
+      that move data from/to the XMM registers.
 \item Simplified state definition by using
       \code{centaur/bigmem} and \code{centaur/defrstobj2}. See
       \code{:doc x86isa-state-history} for details.
