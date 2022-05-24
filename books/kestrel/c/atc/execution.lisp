@@ -16,6 +16,7 @@
 (include-book "integer-operations")
 
 (include-book "../language/abstract-syntax-operations")
+(include-book "../language/structure-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

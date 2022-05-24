@@ -15,6 +15,7 @@
 (include-book "structures")
 
 (include-book "../language/portable-ascii-identifiers")
+(include-book "../language/structure-operations")
 
 (include-book "kestrel/fty/pseudo-event-form" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)

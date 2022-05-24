@@ -26,6 +26,7 @@
 (include-book "values")
 (include-book "pointer-operations")
 (include-book "array-operations")
+(include-book "structure-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
