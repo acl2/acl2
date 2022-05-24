@@ -30,8 +30,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define member-value-to-type ((member member-valuep))
-  :returns (meminfo member-typep)
+(define member-type-of-member-value ((member member-valuep))
+  :returns (memtype member-typep)
   :short "Turn a member value into the corresponding member type."
   :long
   (xdoc::topstring
@@ -44,11 +44,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection member-values-to-types (x)
+(std::defprojection member-types-of-member-values (x)
   :guard (member-value-listp x)
-  :returns (infos member-type-listp)
-  :short "Lift @(tsee member-value-to-type) to lists."
-  (member-value-to-type x)
+  :returns (memtypes member-type-listp)
+  :short "Lift @(tsee member-type-of-member-value) to lists."
+  (member-type-of-member-value x)
   ///
-  (fty::deffixequiv member-values-to-types
+  (fty::deffixequiv member-types-of-member-values
     :args ((x member-value-listp))))

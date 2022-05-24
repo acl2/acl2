@@ -164,7 +164,7 @@
     (xdoc::li
      "The name of the theorem asserting that
       the recognizer implies a specific value of
-      @(tsee member-values-to-types) of @(tsee value-struct->members)."))
+      @(tsee member-types-of-member-values) of @(tsee value-struct->members)."))
    (xdoc::p
     "The call of @(tsee defstruct).
      This supports redundancy checking."))
@@ -499,7 +499,7 @@
      These theorems are proved from some general theorems given here."))
 
   (defruled defstruct-reader-lemma
-    (implies (equal memtypes (member-values-to-types memvals))
+    (implies (equal memtypes (member-types-of-member-values memvals))
              (b* ((type (member-type-lookup name memtypes))
                   (val (value-struct-read-aux name memvals)))
                (implies (typep type)
@@ -508,7 +508,8 @@
                                     type)))))
     :prep-lemmas
     ((defrule lemma
-       (b* ((type (member-type-lookup name (member-values-to-types memvals)))
+       (b* ((type (member-type-lookup name
+                                      (member-types-of-member-values memvals)))
             (val (value-struct-read-aux name memvals)))
          (implies (typep type)
                   (and (valuep val)
@@ -516,11 +517,11 @@
                               type))))
        :enable (value-struct-read-aux
                 member-type-lookup
-                member-values-to-types
-                member-value-to-type))))
+                member-types-of-member-values
+                member-type-of-member-value))))
 
   (defruled defstruct-writer-lemma
-    (implies (equal memtypes (member-values-to-types memvals))
+    (implies (equal memtypes (member-types-of-member-values memvals))
              (b* ((type (member-type-lookup name memtypes))
                   (new-memvals (value-struct-write-aux name val memvals)))
                (implies (and (typep type)
@@ -528,23 +529,24 @@
                              (equal (type-of-value val)
                                     type))
                         (and (member-value-listp new-memvals)
-                             (equal (member-values-to-types new-memvals)
+                             (equal (member-types-of-member-values new-memvals)
                                     memtypes)))))
     :prep-lemmas
     ((defrule lemma
-       (b* ((type (member-type-lookup name (member-values-to-types memvals)))
+       (b* ((type (member-type-lookup name
+                                      (member-types-of-member-values memvals)))
             (new-memvals (value-struct-write-aux name val memvals)))
          (implies (and (typep type)
                        (valuep val)
                        (equal (type-of-value val)
                               type))
                   (and (member-value-listp new-memvals)
-                       (equal (member-values-to-types new-memvals)
-                              (member-values-to-types memvals)))))
+                       (equal (member-types-of-member-values new-memvals)
+                              (member-types-of-member-values memvals)))))
        :enable (value-struct-write-aux
                 member-type-lookup
-                member-values-to-types
-                member-value-to-type)))))
+                member-types-of-member-values
+                member-type-of-member-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -593,7 +595,7 @@
                 (value-case x :struct)
                 (equal (value-struct->tag x)
                        (ident ,(symbol-name tag)))
-                (equal (member-values-to-types (value-struct->members x))
+                (equal (member-types-of-member-values (value-struct->members x))
                        ',memtypes))
            :hooks (:fix)
            ///
@@ -622,7 +624,8 @@
              :in-theory '(,struct-tag-p))
            (defruled ,value-struct->members-when-struct-tag-p
              (implies (,struct-tag-p x)
-                      (equal (member-values-to-types (value-struct->members x))
+                      (equal (member-types-of-member-values
+                              (value-struct->members x))
                              ',memtypes))
              :in-theory '(,struct-tag-p)))))
     (mv event
