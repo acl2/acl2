@@ -31,7 +31,7 @@
   (xdoc::topstring
    (xdoc::p
     "We look up the members in order;
-     given that the members have distinct names (see @(tsee value),
+     given that the members have distinct names (see @(tsee value)),
      the search order is immaterial."))
   (value-struct-read-aux name (value-struct->members struct))
   :hooks (:fix)
