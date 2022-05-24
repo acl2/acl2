@@ -531,25 +531,6 @@ Utilities in the Kestrel books.
 
 \implibtitle
 
-\bookpath{projects/x86isa}:
-X86ISA, the formal model of the x86 Instruction Set Architecture.
-\begin{itemize}
-\item Simplified the treatment of CPUID features.
-\item Added the \code{MOVD} and \code{MOVQ} instruction variants
-  that move data from/to the XMM registers.
-\item Simplified state definition by using
-      \code{centaur/bigmem} and \code{centaur/defrstobj2}. See
-      \code{:doc x86isa-state-history} for details.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
 \bookpath{projects/apply}:
 \code{apply\$} and \code{loop\$} tools.
 \begin{itemize}
@@ -563,6 +544,25 @@ X86ISA, the formal model of the x86 Instruction Set Architecture.
             and is thus the same as \code{loop.lisp}.
       \end{itemize}
 \item Made the inclusion of certain supporting books local.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{projects/x86isa}:
+X86ISA, the formal model of the x86 Instruction Set Architecture.
+\begin{itemize}
+\item Simplified the treatment of CPUID features.
+\item Added the \code{MOVD} and \code{MOVQ} instruction variants
+  that move data from/to the XMM registers.
+\item Simplified state definition by using
+      \code{centaur/bigmem} and \code{centaur/defrstobj2}. See
+      \code{:doc x86isa-state-history} for details.
 \end{itemize}
 
 \end{frame}
