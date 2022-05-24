@@ -3605,7 +3605,8 @@
 ;;     (cons (bvchop size (car lst))
 ;;           (bvchop-list size (cdr lst)))))
 
-(defthm all-signed-byte-p-implies-all-integerp
+;move
+(defthm all-integerp-when-all-signed-byte-p
   (implies (all-signed-byte-p free x)
            (all-integerp x))
   :hints (("Goal" :in-theory (enable all-signed-byte-p all-integerp))))

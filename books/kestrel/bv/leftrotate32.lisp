@@ -172,6 +172,19 @@
          (equal (bvchop 32 x) (bvchop 32 y)))
   :hints (("Goal" :in-theory (enable leftrotate32))))
 
+(defthm getbit-of-leftrotate32-low
+  (implies (and (< n amt)
+                (<= n 31)
+                (unsigned-byte-p 5 amt)
+                (natp n)
+                (natp amt))
+           (equal (getbit n (leftrotate32 amt x))
+                  (getbit (+ 32 (- amt) n) x)))
+  :hints (("Goal" :in-theory (e/d (getbit unsigned-byte-p)
+                                  (bvchop-1-becomes-getbit
+                                   leftrotate32
+                                   slice-becomes-getbit)))))
+
 (defthm getbit-of-leftrotate32-high
   (implies (and (<= amt n) ;todo: other case! see rules for leftrotate
                 (<= n 31)
@@ -184,6 +197,22 @@
                                             leftrotate32
                                             slice-becomes-getbit)))))
 
+;drop the syntap hyp?
+(defthmd getbit-of-leftrotate32
+  (implies (and (syntaxp (and (quotep amt)
+                              (quotep n)))
+                (natp n)
+                (natp amt))
+           (equal (getbit n (leftrotate32 amt x))
+                  (if (< n 32)
+                      (if (< n (mod amt 32))
+                          (getbit (+ 32 (- (mod amt 32)) n) x)
+                        (getbit (- n (mod amt 32)) x))
+                    0)))
+  :hints (("Goal" :in-theory (enable leftrotate32))))
+
+;; "Simple" because there is no mod in the RHS.
+;drop the syntap hyp?
 (defthmd getbit-of-leftrotate32-simple
   (implies (and (syntaxp (and (quotep amt)
                               (quotep n)))
@@ -192,7 +221,7 @@
                 (natp amt))
            (equal (getbit n (leftrotate32 amt x))
                   (if (< n 32)
-                      (if (< n amt) ; this case
+                      (if (< n amt)
                           (getbit (+ 32 (- amt) n) x)
                         (getbit (- n amt) x))
                     0)))
