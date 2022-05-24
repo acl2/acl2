@@ -629,11 +629,20 @@
           (case-match rune
             ((type name . &) (mv name type))
             (& (mv rune nil))))
+         
+         ;; Check if the rule has a corresponding for-rp rule
+         (corresponding-rp-rule (hons-assoc-equal rule-name
+                                                  (table-alist 'corresponding-rp-rule (w state))))
+         (rule-name (if corresponding-rp-rule (cdr corresponding-rp-rule)
+                      rule-name))
+
          ((when (not (symbolp rule-name)))
           (progn$
            (cw "WARNING! Problem reading the rune name. Skipping ~p0 ~%"
                rune)
            rest))
+
+         
          ;; if the current rune is just a name, then treat that as a rewrite
          ;; rule for only the following tests. 
          (rule-type (mv-nth 0 (get-rune-name rule-name state)))
