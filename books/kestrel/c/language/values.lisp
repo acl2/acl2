@@ -261,16 +261,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-array->length ((array valuep))
-  :guard (value-case array :array)
-  :returns (length posp)
-  :short "Length of an array."
-  (len (value-array->elements array))
-  :hooks (:fix)
-  :prepwork ((local (include-book "std/lists/len" :dir :system))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define value-signed-integerp ((val valuep))
   :returns (yes/no booleanp)
   :short "Check if a value is a signed integer [C:6.2.5/4]."
