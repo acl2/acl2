@@ -205,11 +205,6 @@
 ;;       (and (equal (second items) (+ 1 (first items)))
 ;;            (contiguousp (cdr items))))))
 
-;; (defthm all-signed-byte-p-implies-all-integerp
-;;   (implies (all-signed-byte-p free x)
-;;            (all-integerp x))
-;;   :hints (("Goal" :in-theory (enable all-signed-byte-p all-integerp))))
-
 (defthm getbit-of-nth-when-getbit-is-always-0
   (implies (and (getbit-is-always-0 n vals)
                 (natp n)

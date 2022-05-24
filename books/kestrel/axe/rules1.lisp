@@ -24,6 +24,7 @@
 (include-book "kestrel/bv-lists/bvnth" :dir :system)
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
 (local (include-book "kestrel/bv-lists/bytes-to-bits2" :dir :system))
+(include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
@@ -992,7 +993,7 @@
 
 (local (in-theory (enable myif)))
 
-(defthm bytes-to-bits-of-bv-array-write
+(defthmd bytes-to-bits-of-bv-array-write
   (implies (and (equal len (len lst))
                 (< n len)
                 (true-listp lst)
@@ -2378,14 +2379,6 @@
 ;;  (defthm error-state-drop-params
 ;;    (equal (jvm::error-state msg state)
 ;;           (error-state-no-params))))
-
-(defthm unsigned-byte-p-forced-of-bv-array-read
-  (implies (and (<= element-size n)
-                (natp n)
-                (natp element-size))
-           (equal (unsigned-byte-p-forced n (bv-array-read element-size len index data))
-                  t))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 (defthm force-of-non-nil
   (implies x

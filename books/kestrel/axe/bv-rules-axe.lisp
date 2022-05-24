@@ -1,7 +1,7 @@
 ; Axe rules about BVs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2021 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -20,14 +20,18 @@
 
 ;; TODO: Rename rules end in -dag to instead end in -axe.
 
-(include-book "kestrel/bv/rules3" :dir :system) ;for SLICE-TIGHTEN-TOP
-(include-book "kestrel/bv/rules6" :dir :system) ;for BVMULT-TIGHTEN
-(include-book "kestrel/bv/sbvrem-rules" :dir :system)
+(local (include-book "kestrel/bv/rules3" :dir :system)) ;for SLICE-TIGHTEN-TOP
+(local (include-book "kestrel/bv/rules6" :dir :system)) ;for BVMULT-TIGHTEN
+(local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
 ;(include-book "bv-rules-axe0") ;drop?
 (include-book "axe-syntax-functions-bv")
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
-(include-book "kestrel/bv/rules" :dir :system) ;drop?
-(include-book "kestrel/bv/rightrotate32" :dir :system)
+(local (include-book "kestrel/bv/rules" :dir :system)) ;drop?
+(include-book "kestrel/bv/defs" :dir :system)
+(include-book "kestrel/utilities/myif" :dir :system)
+(include-book "kestrel/bv/rightrotate32" :dir :system) ; add to bv/defs.lisp
+(include-book "kestrel/bv/leftrotate32" :dir :system) ; add to bv/defs.lisp
+(include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
 (include-book "known-booleans")
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -725,10 +729,9 @@
                   (bvif (max xsize ysize) test y x)))
   :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
 
-(defthmd slice-too-high-is-0-bind-free
+(defthmd slice-too-high-is-0-bind-free-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (<= xsize low)
-                ;(natp xsize)
                 (natp low)
                 (unsigned-byte-p-forced xsize x))
            (equal (slice high low x)

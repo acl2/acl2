@@ -14,6 +14,8 @@
 (include-book "unsigned-byte-p-forced")
 (include-book "bvchop")
 (include-book "logext")
+(local (include-book "getbit"))
+(local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 
 ;fixme make sure this is right
 ;this is like java's idiv
@@ -109,4 +111,12 @@
                   (if (equal 0 (bvchop size x))
                       0
                     1)))
-  :hints (("Goal" :in-theory (enable sbvdiv))))
+  :hints (("Goal" :in-theory (enable sbvdiv unsigned-byte-p))))
+
+(defthm sbvdiv-of-1-arg3
+  (implies (and (<= 1 size) ; doesn't work for size=1
+                (integerp size))
+           (equal (sbvdiv size x 1)
+                  (bvchop size x)))
+  :hints (("Goal" :cases ((equal 1 size))
+           :in-theory (e/d (sbvdiv) (truncate)))))
