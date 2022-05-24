@@ -17,6 +17,7 @@
 (include-book "../language/values")
 (include-book "../language/pointer-operations")
 (include-book "../language/array-operations")
+(include-book "../language/structure-operations")
 
 (include-book "defthm-disjoint")
 

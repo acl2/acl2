@@ -404,7 +404,32 @@
   (fty::deffixequiv type-list-of-value-list
     :args ((x value-listp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define member-type-of-member-value ((member member-valuep))
+  :returns (memtype member-typep)
+  :short "Member type of a member value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @(tsee member-type) is the static counterpart of
+     a @(tsee member-value)."))
+  (make-member-type :name (member-value->name member)
+                    :type (type-of-value (member-value->value member)))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection member-types-of-member-values (x)
+  :guard (member-value-listp x)
+  :returns (memtypes member-type-listp)
+  :short "Lift @(tsee member-type-of-member-value) to lists."
+  (member-type-of-member-value x)
+  ///
+  (fty::deffixequiv member-types-of-member-values
+    :args ((x member-value-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-of-value-option ((val? value-optionp))
   :returns (type typep)
