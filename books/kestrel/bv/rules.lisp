@@ -3470,6 +3470,16 @@
   (unsigned-byte-p-forced 1 (bitand x y))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
+(defthm unsigned-byte-p-forced-of-leftrotate
+  (implies (natp width)
+           (unsigned-byte-p-forced width (leftrotate width amt val)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+(defthm unsigned-byte-p-forced-of-rightrotate
+  (implies (natp width)
+           (unsigned-byte-p-forced width (rightrotate width amt val)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
 (defthm unsigned-byte-p-forced-of-leftrotate32
   (unsigned-byte-p-forced 32 (leftrotate32 amt val))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
@@ -3483,6 +3493,11 @@
                 (<= oldsize size)
                 (natp size))
            (unsigned-byte-p-forced size (bvsx size oldsize x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+(defthm unsigned-byte-p-forced-of-repeatbit
+  (implies (natp n)
+           (unsigned-byte-p-forced n (repeatbit n bit)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 ;fixme add the rest of the unsigned-byte-p-forced rules!

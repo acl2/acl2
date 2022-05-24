@@ -1,7 +1,7 @@
 ; 32-bit right rotate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,11 +20,16 @@
   (declare (type integer amt val))
   (rightrotate 32 amt val))
 
-;gen
 ;justifies the correctness of some operations performed by Axe
-(defthm unsigned-byte-p-of-rightrotate32
+(defthm unsigned-byte-p-32-of-rightrotate32
   (unsigned-byte-p 32 (rightrotate32 amt val))
   :hints (("Goal" :in-theory (e/d (rightrotate32) (unsigned-byte-p)))))
+
+(defthm unsigned-byte-p-of-rightrotate32
+  (implies (and (<= 32 size)
+                (integerp size))
+           (unsigned-byte-p size (rightrotate32 x y)))
+  :hints (("Goal" :in-theory (enable rightrotate32))))
 
 ;gen
 (defthm rightrotate32-of-bvchop-32
