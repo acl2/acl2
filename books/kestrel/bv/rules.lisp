@@ -494,11 +494,6 @@
             (equal (oddp (+ i j))
                    (oddp j)))
    :hints (("Goal" :in-theory (enable oddp))))
-
-
-
-
-
 ;bozo gen
 (defthm logext-31-drop
  (implies (and (<= (- (expt 2 30)) x)
@@ -508,22 +503,6 @@
                  x))
  :rule-classes ((:rewrite :backchain-limit-lst (1 1 nil)))
  :hints (("Goal" :in-theory (enable SIGNED-BYTE-P))))
-
-
-(defthm getbit-of-logext
-  (implies (and (< n size)
-                (integerp size)
-                (< 0 size)
-                (natp n))
-           (equal (getbit n (logext size x))
-                  (getbit n x)))
-  :hints (("Goal" :cases ((integerp x))
-           :in-theory (e/d (getbit slice BVCHOP-OF-LOGTAIL)
-                           (SLICE-BECOMES-GETBIT ;LOGTAIL-BVCHOP
-                                               BVCHOP-1-BECOMES-GETBIT
-                                               BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-;BVCHOP-OF-LOGTAIL
-                                               )))))
 
 (defthm getbit-of-bvif
   (implies (and (< n size)

@@ -687,3 +687,18 @@
            :in-theory (e/d (logext logtail-of-bvchop)
                            ( slice  BVCHOP-OF-LOGTAIL
                                     )))))
+
+(defthm getbit-of-logext
+  (implies (and (< n size)
+                (integerp size)
+                (< 0 size)
+                (natp n))
+           (equal (getbit n (logext size x))
+                  (getbit n x)))
+  :hints (("Goal" :cases ((integerp x))
+           :in-theory (e/d (getbit slice BVCHOP-OF-LOGTAIL)
+                           (SLICE-BECOMES-GETBIT ;LOGTAIL-BVCHOP
+                                               BVCHOP-1-BECOMES-GETBIT
+                                               BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                                               ;;BVCHOP-OF-LOGTAIL
+                                               )))))
