@@ -27,10 +27,11 @@
 (include-book "kestrel/bv/sbvmoddown" :dir :system)
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these
-(include-book "rules1") ;drop? to prove EQUAL-OF-BV-ARRAY-WRITE-SAME
+(include-book "rules1") ;drop? for BV-ARRAY-WRITE-EQUAL-REWRITE-ALT, to prove EQUAL-OF-BV-ARRAY-WRITE-SAME
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system) ;needed?
+(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/bv-lists/bvnth" :dir :system) ; for nth2
 (include-book "kestrel/utilities/mydefconst" :dir :system)
 (include-book "kestrel/utilities/bind-from-rules" :dir :system)
@@ -12461,8 +12462,7 @@
                 (natp n)
                 (unsigned-byte-p size x)
                 (unsigned-byte-p size y))
-           (equal (equal (bvxor size x y) (bvor size x y))
-                  nil))
+           (not (equal (bvxor size x y) (bvor size x y))))
   :hints (("Goal" ;:cases ((equal 0 (getbit n (bvxor 32 x y))))
            :use (:instance getbit-of-bvxor-core (size size))
            )))
@@ -12642,18 +12642,6 @@
                   (bvxor size (bvand size x y) (bvxor size (bvand size x z) (bvand size y z)))))
   :hints (("Goal" :use (:instance majority-idiom1) :in-theory (disable majority-idiom1))))
 
-(defthm take-of-bytes-to-bits
-  (implies (and (natp m)
-                (<= (floor m 8) (len lst))
-                (equal 0 (mod m 8))
-;                (consp lst)
-                )
-           (equal (take m (bytes-to-bits lst))
-                  (bytes-to-bits (take (floor m 8) lst))))
-  :hints (("Goal" :use (:instance take-of-times-8-and-bytes-to-bits (n (floor m 8)))
-           :in-theory (e/d (natp bytes-to-bits)
-                           (take-of-times-8-and-bytes-to-bits
-                            mod-of-expt-of-2-constant-version)))))
 
 ;gen the 0!
 (defthmd bound-when-low-bits-0-helper
@@ -13318,13 +13306,6 @@
                 (Natp size))
            (equal (bvmult (+ 25 size 2) 4 (bvcat 25 x size k))
                   (bvcat 25 x (+ 2 size) (* k 4)))))
-
-;move
-(defthm all-true-listp-of-nthcdr
-  (implies (all-true-listp x)
-           (equal (all-true-listp (nthcdr n x))
-                  t))
-  :hints (("Goal" :in-theory (e/d (nthcdr) (nthcdr-of-cdr-combine nthcdr-of-cdr-combine-strong)))))
 
 ;gen
 (defthm bvlt-of-one-less-than-max-25
